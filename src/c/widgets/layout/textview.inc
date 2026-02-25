@@ -1,0 +1,2 @@
+case COGITO_TEXTVIEW:
+    

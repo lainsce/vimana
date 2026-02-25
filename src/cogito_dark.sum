@@ -1,0 +1,622 @@
+; Cogito dark theme
+; Generated with primary #72dec2
+@diagnostics: warn
+
+; Primary palette
+@primary: #72dec2
+@on-primary: #00382b
+@primary-container: #005142
+@on-primary-container: #c8f7ef
+
+; Secondary palette
+@secondary: #84e8d0
+@on-secondary: #00382b
+@secondary-container: #005142
+@on-secondary-container: #c8f7ef
+
+; Tertiary palette
+@tertiary: #a5ceca
+@on-tertiary: #00382b
+@tertiary-container: #1d4d49
+@on-tertiary-container: #c8f7ef
+
+; Error palette
+@error: #ffb4ab
+@on-error: #690005
+@error-container: #93000a
+@on-error-container: #ffdad6
+
+; Neutral palette
+@background: #191c1a
+@on-background: #e1e3e0
+@surface: #191c1a
+@surface-tint: #72dec2
+@on-surface: #e1e3e0
+
+; Surface containers
+@surface-dim: #0f110f
+@surface-bright: #23312e
+@surface-container-lowest: #0d100e
+@surface-container-low: #1a1d1b
+@surface-container: #1e211f
+@surface-container-high: #282c2a
+@surface-container-highest: #323632
+
+; Surface variant
+@surface-variant: #3f4946
+@on-surface-variant: #bec9c4
+
+; Outline
+@outline: #89938f
+@outline-variant: #3f4946
+
+; Inverse colors
+@inverse-surface: #e1e3e0
+@inverse-on-surface: #2d312f
+@inverse-primary: #006b56
+
+; Shadow & Scrim
+@shadow: #000000
+@scrim: #000000
+
+*
+  color: @on-surface
+
+window
+  background: @surface
+
+vstack
+  background: @surface-dim
+  color: @on-background
+
+hstack
+  background: @surface-dim
+  color: @on-background
+
+zstack
+  background: @surface-dim
+  color: @on-background
+
+fixed
+  background: transparent
+  color: @on-background
+
+scroller
+  background: @on-background
+  color: @on-background
+
+scroller.sidebar
+  background: @surface-dim
+
+carousel
+  background: transparent
+  color: @on-background
+
+carousel_item
+  background: @surface-variant
+  color: @on-background
+
+label.carousel-item-label
+  color: @on-background
+
+dialogslot
+  background: alpha(@shadow, 40%)
+  color: @on-background
+
+button
+  background: @primary
+  color: @on-primary
+
+button.outlined
+  background: transparent
+  color: @primary
+  border: 1 solid @outline
+
+button.outlined:disabled
+  color: alpha(@on-background, 32%)
+  border-color: alpha(@on-background, 32%)
+  background: alpha(@on-background, 16%)
+  border-color: alpha(@on-surface-variant, 7%)
+
+button.text
+  background: transparent
+  color: @primary
+
+button.text:disabled
+  color: alpha(@on-background, 32%)
+  background: alpha(@on-background, 16%)
+
+fab
+  background: @on-background
+  color: @surface-variant
+
+nav-rail
+  background: @surface
+  color: @on-background
+
+nav-rail:selection
+  background: @surface-variant
+  color: @on-background
+
+textfield
+  background: @surface-container-highest
+  color: @on-background
+
+textfield:hover
+  background: @surface-variant
+
+searchfield
+  background: @surface-container-high
+  color: @on-background
+
+textview
+  background: @inverse-on-surface
+  color: @on-background
+
+textfield:selection
+  background: @surface-container-highest
+
+textview:selection
+  background: @surface-container-highest
+
+dropdown
+  background: @inverse-on-surface
+  color: @on-background
+
+datepicker
+  background: @inverse-on-surface
+  color: @on-background
+
+datepicker:selection
+  background: @surface-container-highest
+
+slider
+  background: @surface-variant
+  color: @primary
+
+stepper
+  background: @inverse-on-surface
+  color: @on-background
+
+tabs
+  background: @inverse-on-surface
+  color: @on-background
+
+tabs:selection
+  background: @surface-container-highest
+
+buttongroup:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+viewswitcher
+  background: @surface-container-low
+  color: @on-background
+
+progress
+  background: @surface-container-highest
+
+progress:selection
+  background: @outline
+
+toasts
+  color: @on-background
+
+toast
+  background: @inverse-on-surface
+  color: @on-background
+
+treeview
+  background: @inverse-on-surface
+  color: @on-background
+
+colorpicker
+  background: @inverse-on-surface
+  color: @on-background
+
+colorpicker:selection
+  background: @surface-container-highest
+
+toolbar
+  background: @inverse-on-surface
+  color: @on-background
+
+iconbtn
+  background: @inverse-on-surface
+  color: @on-background
+
+label
+  color: @on-background
+
+.about-window
+  background: @surface
+  color: @on-background
+
+label.about-window-title
+  color: @on-background
+
+label.about-window-license
+  color: @outline
+
+hstack.about-window-actions
+  background: transparent
+
+tooltip
+  background: @surface-container-highest
+  color: @on-background
+
+checkbox
+radio
+  color: @on-background
+
+checkbox:checked
+radio:checked
+  background: @surface-container-highest
+
+checkbox .check
+radio .check
+  color: @on-background
+
+checkbox:checked .check
+radio:checked .check
+  color: @on-background
+
+chip
+  background: @surface-container-highest
+  color: @on-background
+
+chip:checked
+  background: @surface-variant
+  color: @on-background
+
+checkbox .box
+radio .box
+  background: transparent
+  border-color: @on-surface-variant
+
+checkbox:checked .box
+radio:checked .box
+  background: @surface-container-highest
+
+checkbox .box:hover
+radio .box:hover
+  background: @surface-container-highest
+
+checkbox .box:active
+radio .box:active
+  background: @surface-container-highest
+
+checkbox .check:hover
+radio .check:hover
+  color: @on-background
+
+checkbox .check:active
+radio .check:active
+  color: @on-background
+
+switch
+  color: @on-background
+
+switch track
+  background: @surface-container-highest
+  border: 2 solid @outline
+
+switch:checked track
+  background: @primary
+  border: 0 none @primary
+
+switch track:hover
+  background: @outline
+
+switch track:active
+  background: @primary
+
+switch knob
+  background: @on-background
+
+switch knob:hover
+  background: @on-background
+
+switch knob:active
+  background: @on-background
+
+; Keyboard focus ring
+button:focus, button.text:focus, button.outlined:focus, iconbtn:focus, fab:focus, chip:focus, checkbox:focus, radio:focus, slider:focus, stepper:focus, buttongroup:focus, dropdown:focus, datepicker:focus, colorpicker:focus, nav-rail:focus, bottom-nav:focus
+  border: 2 solid @primary
+
+.monospace
+.tabular
+.big-display
+.display
+.view-title
+.title
+.view-subtitle
+.subtitle
+.heading
+.content-title
+.content-subtitle
+.body
+.caption
+  color: @on-background
+
+list
+  background: @inverse-on-surface
+  color: @on-background
+
+list:selection
+  background: @surface-container-highest
+
+grid
+  background: @inverse-on-surface
+  color: @on-background
+
+grid:selection
+  background: @surface-container-highest
+
+appbar
+  background: @inverse-on-surface
+  color: @on-background
+  border: 0 solid alpha(@shadow, 0%)
+
+appbar.view
+  background: @inverse-on-surface
+  color: @on-background
+
+appbar.sidebar
+  background: @surface
+
+scroller.sidebar
+  background: @surface-container-low
+
+dialog
+  background: @surface-container-high
+  border-radius: 28
+  min-width: 280
+  max-width: 560
+  min-height: 240
+  padding: 24
+
+popover
+  background: @inverse-on-surface
+  box-shadow: [
+    0 2 8 0 alpha(@shadow, 12%)
+  ]
+
+appbar .window-button
+  border-color: alpha(@shadow, 13%)
+
+appbar .window-close
+  background: @error
+
+appbar .window-min
+  background: @error
+
+appbar .window-max
+  background: @inverse-primary
+
+appbar .window-close:hover
+  background: @error
+
+appbar .window-close:active
+  background: @outline
+
+appbar .window-min:hover
+  background: @error
+
+appbar .window-min:active
+  background: @error
+
+appbar .window-max:hover
+  background: @primary
+
+appbar .window-max:active
+  background: @inverse-primary
+
+appbar .iconbtn
+  background: transparent
+
+menu
+  background: @inverse-on-surface
+  color: @on-background
+
+menu:selection
+  background: @surface-container-highest
+
+menu item
+  background: @inverse-on-surface
+  color: @on-background
+
+menu_section
+  background: transparent
+
+menu_section item
+  background: @inverse-on-surface
+  color: @on-background
+
+bottom-nav
+  background: @surface-container-low
+  color: @on-background
+
+bottom-nav:selection
+  background: @surface-variant
+  color: @on-background
+
+.datepicker
+  background: @inverse-on-surface
+  color: @on-background
+
+.datepicker:selection
+  background: @surface-container-highest
+
+.textfield:selection
+  background: @surface-container-highest
+
+.textview:selection
+  background: @surface-container-highest
+
+dropdown:hover
+  background: @surface-variant
+
+searchfield:hover
+  background: @surface-container-highest
+
+searchfield:active
+  border-color: @on-background
+
+searchfield:selection
+  background: @surface-container-highest
+
+switch .track
+  background: @surface-container-highest
+  border: 2 solid @outline
+
+switch:checked .track
+  background: @primary
+  border: 0 none @primary
+
+switch .track:hover
+  background: @outline
+
+switch .track:active
+  background: @primary
+
+switch .knob
+  background: @on-background
+
+switch .knob:hover
+  background: @on-background
+
+switch .knob:active
+  background: @on-background
+
+toast:selection
+  background: @outline
+
+.primary-container
+  background: @surface-variant
+  color: @on-background
+
+.secondary
+  background: @on-surface-variant
+  color: @surface-container-highest
+
+.secondary-container
+  background: @surface-variant
+  color: @on-background
+
+.tertiary
+  background: @error
+  color: @surface-container-highest
+
+.tertiary-container
+  background: @surface-variant
+  color: @on-error-container
+
+.error
+  color: @error
+
+.on-error
+  background: @error
+  color: @on-error
+
+.error-container
+  background: @error-container
+  color: @on-error-container
+
+.surface-variant
+  background: @surface-variant
+  color: @on-surface-variant
+
+.surface-dim
+  background: @surface-dim
+
+.surface-bright
+  background: @surface-container-highest
+
+.surface-container-lowest
+  background: @surface-dim
+
+.surface-container-low
+  background: @surface-container-low
+
+.surface-container
+  background: @surface-container
+
+.surface-container-high
+  background: @surface-container-high
+
+.surface-container-highest
+  background: @surface-container-highest
+
+.inverse-surface
+  background: @on-background
+  color: @inverse-on-surface
+
+.inverse-primary
+  color: @outline
+
+.outline-variant
+  border-color: @surface-variant
+
+.scrim
+  background: @shadow
+
+content-list
+  background: @surface-container-low
+  color: @on-surface
+
+content-list label
+  background: transparent
+
+; Disabled state variants - 16% opaque On Surface for backgrounds, 32% for borders/text/icons
+
+button:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+fab:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+chip:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+  border-color: alpha(@on-background, 32%)
+
+textfield:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+searchfield:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+dropdown:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+slider:disabled
+  color: alpha(@on-background, 32%)
+
+stepper:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+checkbox:disabled
+  color: alpha(@on-background, 32%)
+
+radio:disabled
+  color: alpha(@on-background, 32%)
+
+switch:disabled
+  color: alpha(@on-background, 32%)
+
+switch:disabled track
+  background: alpha(@on-background, 16%)
+
+switch:disabled knob
+  background: alpha(@on-background, 32%)
+
+iconbtn:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)

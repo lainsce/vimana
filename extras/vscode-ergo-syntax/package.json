@@ -1,0 +1,51 @@
+{
+  "name": "ergo-syntax",
+  "displayName": "Ergo + SUM Language Support",
+  "description": "Syntax highlighting and basic editor support for Ergo and SUM.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "ergo",
+        "aliases": [
+          "Ergo",
+          "ergo"
+        ],
+        "extensions": [
+          ".ergo"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "sum",
+        "aliases": [
+          "SUM",
+          "sum"
+        ],
+        "extensions": [
+          ".sum"
+        ],
+        "configuration": "./language-configuration-sum.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ergo",
+        "scopeName": "source.ergo",
+        "path": "./syntaxes/ergo.tmLanguage.json"
+      },
+      {
+        "language": "sum",
+        "scopeName": "source.sum",
+        "path": "./syntaxes/sum.tmLanguage.json"
+      }
+    ]
+  }
+}

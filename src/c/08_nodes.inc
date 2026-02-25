@@ -1,0 +1,760 @@
+static bool cogito_val_equal(ErgoVal a, ErgoVal b) {
+  if (a.tag != b.tag) return false;
+  switch (a.tag) {
+    case EVT_NULL: return true;
+    case EVT_INT: return a.as.i == b.as.i;
+    case EVT_FLOAT: return a.as.f == b.as.f;
+    case EVT_BOOL: return a.as.b == b.as.b;
+    case EVT_STR:
+    case EVT_ARR:
+    case EVT_OBJ:
+    case EVT_FN:
+      return a.as.p == b.as.p;
+  }
+  return false;
+}
+
+static void cogito_timer_cancel_owner_tree(CogitoNode* root);
+
+static bool cogito_group_match(ErgoVal a, ErgoVal b) {
+  if (a.tag != b.tag) return false;
+  if (a.tag == EVT_STR) {
+    ErgoStr* sa = (ErgoStr*)a.as.p;
+    ErgoStr* sb = (ErgoStr*)b.as.p;
+    if (!sa || !sb) return false;
+    if (sa->len != sb->len) return false;
+    return memcmp(sa->data, sb->data, sa->len) == 0;
+  }
+  return cogito_val_equal(a, b);
+}
+
+static bool cogito_str_eq(const ErgoStr* a, const ErgoStr* b) {
+  if (!a || !b) return false;
+  if (a->len != b->len) return false;
+  return memcmp(a->data, b->data, a->len) == 0;
+}
+
+static void cogito_node_drop(ErgoObj* o) {
+  CogitoNode* n = (CogitoNode*)o;
+  cogito_timer_cancel_owner_tree(n);
+  if (n->text) {
+    ergo_release_val(EV_STR(n->text));
+    n->text = NULL;
+  }
+  if (n->subtitle) {
+    ergo_release_val(EV_STR(n->subtitle));
+    n->subtitle = NULL;
+  }
+  if (n->hint) {
+    ergo_release_val(EV_STR(n->hint));
+    n->hint = NULL;
+  }
+  if (n->tooltip) {
+    ergo_release_val(EV_STR(n->tooltip));
+    n->tooltip = NULL;
+  }
+  if (n->icon) {
+    ergo_release_val(EV_STR(n->icon));
+    n->icon = NULL;
+  }
+  if ((n->kind == COGITO_IMAGE || n->kind == COGITO_AVATAR) &&
+      n->image.texture) {
+    cogito_image_cache_release_texture(n->image.texture);
+    n->image.texture = NULL;
+  }
+  if (n->on_click) {
+    ergo_release_val(EV_FN(n->on_click));
+    n->on_click = NULL;
+  }
+  if (n->on_change) {
+    ergo_release_val(EV_FN(n->on_change));
+    n->on_change = NULL;
+  }
+  if (n->on_select) {
+    ergo_release_val(EV_FN(n->on_select));
+    n->on_select = NULL;
+  }
+  if (n->on_activate) {
+    ergo_release_val(EV_FN(n->on_activate));
+    n->on_activate = NULL;
+  }
+  if (n->builder) {
+    ergo_release_val(EV_FN(n->builder));
+    n->builder = NULL;
+  }
+  if (n->on_action) {
+    ergo_release_val(EV_FN(n->on_action));
+    n->on_action = NULL;
+  }
+  if (n->on_draw) {
+    ergo_release_val(EV_FN(n->on_draw));
+    n->on_draw = NULL;
+  }
+  if (n->action_text) {
+    ergo_release_val(EV_STR(n->action_text));
+    n->action_text = NULL;
+  }
+  if (n->class_name) {
+    ergo_release_val(EV_STR(n->class_name));
+    n->class_name = NULL;
+  }
+  if (n->group.tag != EVT_NULL) {
+    ergo_release_val(n->group);
+    n->group = EV_NULLV;
+  }
+  if (n->menu_labels) {
+    for (size_t i = 0; i < n->menu_len; i++) {
+      if (n->menu_labels[i]) ergo_release_val(EV_STR(n->menu_labels[i]));
+      if (n->menu_handlers[i]) ergo_release_val(EV_FN(n->menu_handlers[i]));
+      if (n->menu_icons && n->menu_icons[i]) ergo_release_val(EV_STR(n->menu_icons[i]));
+      if (n->menu_shortcuts && n->menu_shortcuts[i]) ergo_release_val(EV_STR(n->menu_shortcuts[i]));
+    }
+    free(n->menu_labels);
+    free(n->menu_handlers);
+    free(n->menu_section_after);
+    free(n->menu_icons);
+    free(n->menu_shortcuts);
+    free(n->menu_submenu);
+    free(n->menu_toggled);
+    n->menu_labels = NULL;
+    n->menu_handlers = NULL;
+    n->menu_section_after = NULL;
+    n->menu_icons = NULL;
+    n->menu_shortcuts = NULL;
+    n->menu_submenu = NULL;
+    n->menu_toggled = NULL;
+    n->menu_len = 0;
+    n->menu_cap = 0;
+  }
+  if (n->a11y_label) {
+    ergo_release_val(EV_STR(n->a11y_label));
+    n->a11y_label = NULL;
+  }
+  if (n->a11y_role) {
+    ergo_release_val(EV_STR(n->a11y_role));
+    n->a11y_role = NULL;
+  }
+  if (n->tab_labels) {
+    for (size_t i = 0; i < n->tab_len; i++) {
+      if (n->tab_labels[i]) ergo_release_val(EV_STR(n->tab_labels[i]));
+      if (n->tab_icons && n->tab_icons[i]) ergo_release_val(EV_STR(n->tab_icons[i]));
+      if (n->tab_ids && n->tab_ids[i]) ergo_release_val(EV_STR(n->tab_ids[i]));
+    }
+    free(n->tab_labels);
+    free(n->tab_icons);
+    free(n->tab_ids);
+    n->tab_labels = NULL;
+    n->tab_icons = NULL;
+    n->tab_ids = NULL;
+    n->tab_len = 0;
+    n->tab_cap = 0;
+  }
+  if (n->kind == COGITO_NAV_RAIL) {
+    if (n->nav_rail.labels) {
+      for (size_t i = 0; i < n->nav_rail.len; i++) {
+        if (n->nav_rail.labels[i]) ergo_release_val(EV_STR(n->nav_rail.labels[i]));
+        if (n->nav_rail.icons && n->nav_rail.icons[i]) ergo_release_val(EV_STR(n->nav_rail.icons[i]));
+      }
+      free(n->nav_rail.labels);
+      free(n->nav_rail.icons);
+    }
+    if (n->nav_rail.badges) free(n->nav_rail.badges);
+  }
+  if (n->kind == COGITO_BOTTOM_NAV && n->bottom_nav.labels) {
+    for (size_t i = 0; i < n->bottom_nav.len; i++) {
+      if (n->bottom_nav.labels[i]) ergo_release_val(EV_STR(n->bottom_nav.labels[i]));
+      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) ergo_release_val(EV_STR(n->bottom_nav.icons[i]));
+    }
+    free(n->bottom_nav.labels);
+    free(n->bottom_nav.icons);
+  }
+  if (n->view_id) {
+    ergo_release_val(EV_STR(n->view_id));
+    n->view_id = NULL;
+  }
+  if (n->view_active_id) {
+    ergo_release_val(EV_STR(n->view_active_id));
+    n->view_active_id = NULL;
+  }
+  if (n->view_builder_ids) {
+    for (size_t i = 0; i < n->view_builder_len; i++) {
+      if (n->view_builder_ids[i]) ergo_release_val(EV_STR(n->view_builder_ids[i]));
+      if (n->view_builders[i]) ergo_release_val(EV_FN(n->view_builders[i]));
+    }
+    free(n->view_builder_ids);
+    free(n->view_builders);
+    n->view_builder_ids = NULL;
+    n->view_builders = NULL;
+    n->view_builder_len = 0;
+    n->view_builder_cap = 0;
+  }
+  if (n->children) {
+    for (size_t i = 0; i < n->len; i++) {
+      ergo_release_val(EV_OBJ(n->children[i]));
+    }
+    free(n->children);
+    n->children = NULL;
+    n->len = 0;
+    n->cap = 0;
+  }
+  if (n->kind == COGITO_CARD) {
+    if (n->card.header_image) {
+      ergo_release_val(EV_OBJ(n->card.header_image));
+      n->card.header_image = NULL;
+    }
+    if (n->card.actions) {
+      free(n->card.actions);
+      n->card.actions = NULL;
+    }
+  }
+  if (n->dialog) {
+    ergo_release_val(EV_OBJ(n->dialog));
+    n->dialog = NULL;
+  }
+}
+
+static CogitoNode* cogito_node_new(CogitoKind kind) {
+  CogitoNode* n = (CogitoNode*)ergo_obj_new(sizeof(CogitoNode), cogito_node_drop);
+  // Zero everything after the ErgoObj base (which ergo_obj_new already set up)
+  memset((char*)n + sizeof(ErgoObj), 0, sizeof(CogitoNode) - sizeof(ErgoObj));
+  n->kind = kind;
+  // Non-zero common defaults
+  n->selected = -1;
+  n->resizable = true;
+  n->editable = true;
+  n->grid_span_x = 0;
+  n->grid_span_y = 0;
+  n->grid_align_x = 0;
+  n->grid_align_y = 0;
+  n->text_color = cogito_rgba(30, 30, 30, 255);
+  n->border_color = cogito_rgba(25, 25, 25, 255);
+  n->selection_color = cogito_rgba(208, 220, 245, 255);
+  n->track_color = cogito_rgba(170, 170, 170, 255);
+  n->track_on_color = cogito_rgba(90, 160, 110, 255);
+  n->knob_color = cogito_rgba(250, 250, 250, 255);
+  n->check_color = cogito_rgba(30, 30, 30, 255);
+  n->font_weight = 400;
+  n->opacity = 1.0f;
+  n->opacity_from = 1.0f;
+  n->opacity_target = 1.0f;
+  // Layout widgets default to 0 gap, content widgets default to 8 for natural spacing
+  bool is_layout = (kind == COGITO_VSTACK || kind == COGITO_HSTACK || kind == COGITO_ZSTACK ||
+                    kind == COGITO_FIXED || kind == COGITO_SCROLLER || kind == COGITO_LIST || kind == COGITO_GRID);
+  n->gap = is_layout ? 0 : 8;
+  // Kind-specific non-zero defaults
+  switch (kind) {
+    case COGITO_SCROLLER: n->scroller.vert = true; break;
+    case COGITO_STEPPER: n->stepper.max = 100.0; n->stepper.step = 1.0; break;
+    case COGITO_IMAGE: case COGITO_AVATAR: n->image.avg_lum = 0.5f; break;
+    case COGITO_VIEW_DUAL: n->view_dual.ratio = 0.5f; break;
+    default: break;
+  }
+  cogito_apply_style_to_node(n);
+  return n;
+}
+
+static bool cogito_str_has_text(const ErgoStr* s) {
+  return s && s->data && s->data[0];
+}
+
+static const char* cogito_node_default_a11y_role(CogitoKind kind) {
+  switch (kind) {
+    case COGITO_WINDOW: return "window";
+    case COGITO_DIALOG:
+    case COGITO_SETTINGS_WINDOW:
+    case COGITO_ABOUT_WINDOW:
+    case COGITO_BOTTOM_SHEET:
+    case COGITO_SIDE_SHEET:
+      return "dialog";
+    case COGITO_BUTTON:
+    case COGITO_ICONBTN:
+    case COGITO_FAB:
+    case COGITO_FAB_MENU:
+    case COGITO_SPLIT_BUTTON:
+    case COGITO_CHIP:
+      return "button";
+    case COGITO_CHECKBOX: return "checkbox";
+    case COGITO_SWITCH:
+    case COGITO_SWITCHBAR:
+      return "switch";
+    case COGITO_TEXTFIELD:
+    case COGITO_TEXTVIEW:
+    case COGITO_SEARCHFIELD:
+      return "textbox";
+    case COGITO_DROPDOWN: return "combobox";
+    case COGITO_SLIDER:
+    case COGITO_STEPPER:
+      return "slider";
+    case COGITO_PROGRESS: return "progressbar";
+    case COGITO_DATEPICKER:
+    case COGITO_TIMEPICKER:
+    case COGITO_COLORPICKER:
+      return "picker";
+    case COGITO_TABS: return "tablist";
+    case COGITO_NAV_RAIL:
+    case COGITO_BOTTOM_NAV:
+    case COGITO_BUTTON_GROUP:
+    case COGITO_VIEW_CHOOSER:
+      return "radiogroup";
+    case COGITO_LIST:
+    case COGITO_CONTENT_LIST:
+      return "list";
+    case COGITO_GRID: return "grid";
+    case COGITO_TREEVIEW: return "tree";
+    case COGITO_TOOLBAR:
+    case COGITO_APPBAR:
+      return "toolbar";
+    case COGITO_LABEL:
+    case COGITO_BADGE:
+    case COGITO_ACTIVE_INDICATOR:
+      return "text";
+    case COGITO_IMAGE:
+    case COGITO_AVATAR:
+      return "img";
+    case COGITO_DIVIDER: return "separator";
+    case COGITO_TOAST:
+    case COGITO_TOASTS:
+    case COGITO_BANNER:
+      return "status";
+    case COGITO_TOOLTIP:
+    case COGITO_TIP_VIEW:
+      return "tooltip";
+    case COGITO_VSTACK:
+    case COGITO_HSTACK:
+    case COGITO_ZSTACK:
+    case COGITO_FIXED:
+    case COGITO_SCROLLER:
+    case COGITO_CARD:
+    case COGITO_MENU_SECTION:
+    case COGITO_SETTINGS_PAGE:
+    case COGITO_SETTINGS_LIST:
+    case COGITO_SETTINGS_ROW:
+    case COGITO_WELCOME_SCREEN:
+    case COGITO_EMPTY_PAGE:
+    case COGITO_VIEW_DUAL:
+    case COGITO_CAROUSEL:
+    case COGITO_CAROUSEL_ITEM:
+      return "group";
+    default:
+      return "region";
+  }
+}
+
+static const char* cogito_node_effective_a11y_role(const CogitoNode* n) {
+  if (!n) return "region";
+  if (cogito_str_has_text(n->a11y_role)) return n->a11y_role->data;
+  return cogito_node_default_a11y_role(n->kind);
+}
+
+static const char* cogito_node_effective_a11y_label(const CogitoNode* n, char* out, size_t out_sz) {
+  if (!n || !out || out_sz == 0) return "";
+  out[0] = '\0';
+  if (cogito_str_has_text(n->a11y_label)) return n->a11y_label->data;
+  if (cogito_str_has_text(n->text)) return n->text->data;
+  if (cogito_str_has_text(n->subtitle)) return n->subtitle->data;
+  if (cogito_str_has_text(n->hint)) return n->hint->data;
+  if (cogito_str_has_text(n->tooltip)) return n->tooltip->data;
+  if (cogito_str_has_text(n->action_text)) return n->action_text->data;
+  if (cogito_str_has_text(n->view_id)) return n->view_id->data;
+  if (cogito_str_has_text(n->icon)) return n->icon->data;
+  snprintf(out, out_sz, "%s", cogito_node_effective_a11y_role(n));
+  return out;
+}
+
+static void cogito_a11y_emit_event(const char* event, const CogitoNode* n, const char* detail) {
+  const char* path = getenv("COGITO_A11Y_EVENTS_PATH");
+  if (!path || !path[0]) {
+#if defined(__APPLE__)
+    path = "/tmp/cogito_a11y_events_macos.jsonl";
+#else
+    path = "/tmp/cogito_a11y_events_linux.jsonl";
+#endif
+  }
+  FILE* f = fopen(path, "a");
+  if (!f) return;
+  char label_buf[192];
+  const char* label = cogito_node_effective_a11y_label(n, label_buf, sizeof(label_buf));
+  const char* role = cogito_node_effective_a11y_role(n);
+  fprintf(f, "{\"event\":\"");
+  for (const char* p = event ? event : "event"; *p; p++) {
+    if (*p == '"' || *p == '\\') fputc('\\', f);
+    if (*p == '\n') { fputs("\\n", f); continue; }
+    fputc(*p, f);
+  }
+  fputs("\",\"role\":\"", f);
+  for (const char* p = role ? role : "region"; *p; p++) {
+    if (*p == '"' || *p == '\\') fputc('\\', f);
+    if (*p == '\n') { fputs("\\n", f); continue; }
+    fputc(*p, f);
+  }
+  fputs("\",\"label\":\"", f);
+  for (const char* p = label ? label : ""; *p; p++) {
+    if (*p == '"' || *p == '\\') fputc('\\', f);
+    if (*p == '\n') { fputs("\\n", f); continue; }
+    fputc(*p, f);
+  }
+  fputs("\",\"detail\":\"", f);
+  for (const char* p = detail ? detail : ""; *p; p++) {
+    if (*p == '"' || *p == '\\') fputc('\\', f);
+    if (*p == '\n') { fputs("\\n", f); continue; }
+    fputc(*p, f);
+  }
+  fputs("\"}\n", f);
+  fclose(f);
+}
+
+static void cogito_a11y_dump_node_json(FILE* f, const CogitoNode* n) {
+  if (!f || !n) return;
+  char label_buf[192];
+  const char* role = cogito_node_effective_a11y_role(n);
+  const char* label = cogito_node_effective_a11y_label(n, label_buf, sizeof(label_buf));
+  const char* state = "normal";
+  if (n->disabled) state = "disabled";
+  else if (n->checked) state = "checked";
+  fprintf(f, "{\"id\":\"%p\",\"role\":\"", (void*)n);
+  for (const char* p = role ? role : "region"; *p; p++) {
+    if (*p == '"' || *p == '\\') fputc('\\', f);
+    if (*p == '\n') { fputs("\\n", f); continue; }
+    fputc(*p, f);
+  }
+  fputs("\",\"label\":\"", f);
+  for (const char* p = label ? label : ""; *p; p++) {
+    if (*p == '"' || *p == '\\') fputc('\\', f);
+    if (*p == '\n') { fputs("\\n", f); continue; }
+    fputc(*p, f);
+  }
+  fprintf(f, "\",\"state\":\"%s\",\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d,\"children\":[",
+          state, n->x, n->y, n->w, n->h);
+  bool first = true;
+  for (size_t i = 0; i < n->len; i++) {
+    const CogitoNode* c = n->children[i];
+    if (!c || c->w <= 0 || c->h <= 0) continue;
+    if (!first) fprintf(f, ",");
+    cogito_a11y_dump_node_json(f, c);
+    first = false;
+  }
+  fprintf(f, "]}");
+}
+
+static void cogito_a11y_sync_tree(CogitoNode* win) {
+  if (!win || win->kind != COGITO_WINDOW) return;
+  const char* path = getenv("COGITO_A11Y_TREE_PATH");
+  if (!path || !path[0]) {
+#if defined(__APPLE__)
+    path = "/tmp/cogito_a11y_tree_macos.json";
+#else
+    path = "/tmp/cogito_a11y_tree_linux.json";
+#endif
+  }
+  FILE* f = fopen(path, "w");
+  if (!f) return;
+  cogito_a11y_dump_node_json(f, win);
+  fputc('\n', f);
+  fclose(f);
+}
+
+static void cogito_apply_window_a11y_label(CogitoNode* n) {
+  if (!n || n->kind != COGITO_WINDOW) return;
+  if (!cogito_backend_ready || !cogito_backend || !cogito_active_backend_window) return;
+
+  char label_buf[256];
+  const char* label = cogito_node_effective_a11y_label(n, label_buf, sizeof(label_buf));
+
+#if defined(__APPLE__)
+  cogito_macos_set_window_a11y_label(label);
+#endif
+
+  if (cogito_backend->window_set_title) {
+    const char* visible_title = (n->text && n->text->data && n->text->data[0])
+      ? n->text->data
+      : COGITO_USER_VERSION;
+    const char* title = cogito_str_has_text(n->a11y_label) ? label : visible_title;
+    cogito_backend->window_set_title(cogito_active_backend_window, title);
+  }
+  cogito_a11y_sync_tree(n);
+}
+
+static void cogito_node_set_text(CogitoNode* n, ErgoStr* s) {
+  if (!n) return;
+  if (s) ergo_retain_val(EV_STR(s));
+  if (n->text) ergo_release_val(EV_STR(n->text));
+  n->text = s;
+  int len = n->text ? (int)n->text->len : 0;
+  // Only update text_input if node kind actually uses it (to avoid overwriting union fields)
+  if (n->kind == COGITO_TEXTFIELD || n->kind == COGITO_TEXTVIEW || n->kind == COGITO_COLORPICKER) {
+    if (n->text_input.caret > len) n->text_input.caret = len;
+    if (n->text_input.sel_start > len) n->text_input.sel_start = len;
+    if (n->text_input.sel_end > len) n->text_input.sel_end = len;
+  }
+}
+
+static void cogito_node_set_subtitle(CogitoNode* n, ErgoStr* s) {
+  if (!n) return;
+  if (s) ergo_retain_val(EV_STR(s));
+  if (n->subtitle) ergo_release_val(EV_STR(n->subtitle));
+  n->subtitle = s;
+}
+
+static void cogito_node_set_hint(CogitoNode* n, ErgoStr* s) {
+  if (!n) return;
+  if (s) ergo_retain_val(EV_STR(s));
+  if (n->hint) ergo_release_val(EV_STR(n->hint));
+  n->hint = s;
+}
+
+static void cogito_node_set_tooltip(CogitoNode* n, ErgoStr* s) {
+  if (!n) return;
+  if (s) ergo_retain_val(EV_STR(s));
+  if (n->tooltip) ergo_release_val(EV_STR(n->tooltip));
+  n->tooltip = s;
+}
+
+static void cogito_node_set_icon(CogitoNode* n, ErgoStr* s) {
+  if (!n) return;
+  if (s) ergo_retain_val(EV_STR(s));
+  if (n->icon) ergo_release_val(EV_STR(n->icon));
+  n->icon = s;
+}
+
+static void cogito_node_set_group(CogitoNode* n, ErgoVal group) {
+  if (!n) return;
+  if (group.tag != EVT_NULL) ergo_retain_val(group);
+  if (n->group.tag != EVT_NULL) ergo_release_val(n->group);
+  n->group = group;
+}
+
+static void cogito_children_add(CogitoNode* parent, CogitoNode* child) {
+  if (!parent || !child) return;
+  if (parent->len + 1 > parent->cap) {
+    size_t next = parent->cap == 0 ? 4 : parent->cap * 2;
+    parent->children = (CogitoNode**)realloc(parent->children, sizeof(CogitoNode*) * next);
+    parent->cap = next;
+  }
+  parent->children[parent->len++] = child;
+  child->parent = parent;
+  ergo_retain_val(EV_OBJ(child));
+}
+
+static void cogito_node_add_menu(CogitoNode* n, ErgoStr* label, ErgoFn* handler) {
+  if (!n) return;
+  if (n->menu_len + 1 > n->menu_cap) {
+    size_t next = n->menu_cap == 0 ? 4 : n->menu_cap * 2;
+    n->menu_labels = (ErgoStr**)realloc(n->menu_labels, sizeof(ErgoStr*) * next);
+    n->menu_handlers = (ErgoFn**)realloc(n->menu_handlers, sizeof(ErgoFn*) * next);
+    n->menu_section_after = (bool*)realloc(n->menu_section_after, sizeof(bool) * next);
+    n->menu_icons = (ErgoStr**)realloc(n->menu_icons, sizeof(ErgoStr*) * next);
+    n->menu_shortcuts = (ErgoStr**)realloc(n->menu_shortcuts, sizeof(ErgoStr*) * next);
+    n->menu_submenu = (bool*)realloc(n->menu_submenu, sizeof(bool) * next);
+    n->menu_toggled = (bool*)realloc(n->menu_toggled, sizeof(bool) * next);
+    n->menu_cap = next;
+  }
+  n->menu_labels[n->menu_len] = label;
+  n->menu_handlers[n->menu_len] = handler;
+  n->menu_section_after[n->menu_len] = false;
+  n->menu_icons[n->menu_len] = NULL;
+  n->menu_shortcuts[n->menu_len] = NULL;
+  n->menu_submenu[n->menu_len] = false;
+  n->menu_toggled[n->menu_len] = false;
+  if (label) ergo_retain_val(EV_STR(label));
+  if (handler) ergo_retain_val(EV_FN(handler));
+  n->menu_len++;
+}
+
+// Set leading icon on the last-added menu item
+static void cogito_node_menu_set_icon(CogitoNode* n, ErgoStr* icon) {
+  if (!n || n->menu_len == 0) return;
+  size_t idx = n->menu_len - 1;
+  if (n->menu_icons[idx]) ergo_release_val(EV_STR(n->menu_icons[idx]));
+  n->menu_icons[idx] = icon;
+  if (icon) ergo_retain_val(EV_STR(icon));
+}
+
+// Set trailing shortcut text on the last-added menu item
+static void cogito_node_menu_set_shortcut(CogitoNode* n, ErgoStr* shortcut) {
+  if (!n || n->menu_len == 0) return;
+  size_t idx = n->menu_len - 1;
+  if (n->menu_shortcuts[idx]) ergo_release_val(EV_STR(n->menu_shortcuts[idx]));
+  n->menu_shortcuts[idx] = shortcut;
+  if (shortcut) ergo_retain_val(EV_STR(shortcut));
+}
+
+// Mark the last-added menu item as a submenu (trailing arrow)
+static void cogito_node_menu_set_submenu(CogitoNode* n, bool submenu) {
+  if (!n || n->menu_len == 0) return;
+  n->menu_submenu[n->menu_len - 1] = submenu;
+}
+
+// Mark the last-added menu item as toggled
+static void cogito_node_menu_set_toggled(CogitoNode* n, bool toggled) {
+  if (!n || n->menu_len == 0) return;
+  n->menu_toggled[n->menu_len - 1] = toggled;
+}
+
+// Add a menu item with a section divider after it
+void cogito_node_add_menu_section(CogitoNode* n, ErgoStr* label, ErgoFn* handler) {
+  if (!n) return;
+  // Mark the last item as having a section divider after it
+  if (n->menu_len > 0) {
+    n->menu_section_after[n->menu_len - 1] = true;
+  }
+  // Now add the new item
+  cogito_node_add_menu(n, label, handler);
+}
+
+static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
+  int text_w = 0;
+  int text_h = cogito_text_height();
+  if (n->text) {
+    int size = cogito_node_font_size(n);
+    text_w = cogito_text_width_size_node(n, n->text->data, size);
+    text_h = cogito_text_height_size(size);
+  }
+  int w = 0;
+  int h = 0;
+  int pad = 8;
+  switch (n->kind) {
+
+    #include "widgets/intrinsic/button.inc"
+
+    #include "widgets/intrinsic/carousel.inc"
+
+    #include "widgets/intrinsic/carousel_item.inc"
+
+    #include "widgets/intrinsic/iconbtn.inc"
+
+    #include "widgets/intrinsic/image.inc"
+
+    #include "widgets/intrinsic/label.inc"
+
+    #include "widgets/intrinsic/checkbox.inc"
+
+    #include "widgets/intrinsic/chip.inc"
+
+    #include "widgets/intrinsic/switch.inc"
+
+    #include "widgets/intrinsic/textfield.inc"
+
+    #include "widgets/intrinsic/textview.inc"
+
+    #include "widgets/intrinsic/searchfield.inc"
+
+    #include "widgets/intrinsic/dropdown.inc"
+
+    #include "widgets/intrinsic/datepicker.inc"
+
+    #include "widgets/intrinsic/fab.inc"
+
+    #include "widgets/intrinsic/fab_menu.inc"
+
+    #include "widgets/intrinsic/nav_rail.inc"
+
+    #include "widgets/intrinsic/bottom_nav.inc"
+
+    #include "widgets/intrinsic/stepper.inc"
+
+    #include "widgets/intrinsic/slider.inc"
+
+    #include "widgets/intrinsic/tabs.inc"
+
+    #include "widgets/intrinsic/buttongroup.inc"
+
+    #include "widgets/intrinsic/view_switcher.inc"
+
+    #include "widgets/intrinsic/progress.inc"
+
+    #include "widgets/intrinsic/divider.inc"
+
+    #include "widgets/intrinsic/menu_section.inc"
+
+    #include "widgets/intrinsic/card.inc"
+
+    #include "widgets/intrinsic/avatar.inc"
+
+    #include "widgets/intrinsic/badge.inc"
+
+    #include "widgets/intrinsic/banner.inc"
+
+    #include "widgets/intrinsic/bottom_sheet.inc"
+
+    #include "widgets/intrinsic/side_sheet.inc"
+
+    #include "widgets/intrinsic/timepicker.inc"
+
+    #include "widgets/intrinsic/active_indicator.inc"
+
+    #include "widgets/intrinsic/switchbar.inc"
+
+    #include "widgets/intrinsic/content_list.inc"
+
+    #include "widgets/intrinsic/empty_page.inc"
+
+    #include "widgets/intrinsic/tip_view.inc"
+
+    #include "widgets/intrinsic/settings_window.inc"
+
+    #include "widgets/intrinsic/settings_page.inc"
+
+    #include "widgets/intrinsic/settings_list.inc"
+
+    #include "widgets/intrinsic/settings_row.inc"
+
+    #include "widgets/intrinsic/welcome_screen.inc"
+
+    #include "widgets/intrinsic/view_dual.inc"
+
+    #include "widgets/intrinsic/view_chooser.inc"
+
+    #include "widgets/intrinsic/about_window.inc"
+
+    #include "widgets/intrinsic/split_button.inc"
+
+    #include "widgets/intrinsic/drawing_area.inc"
+
+    #include "widgets/intrinsic/shape.inc"
+
+    #include "widgets/intrinsic/treeview.inc"
+
+    #include "widgets/intrinsic/colorpicker.inc"
+
+    #include "widgets/intrinsic/toasts.inc"
+
+    #include "widgets/intrinsic/toolbar.inc"
+
+    #include "widgets/intrinsic/toast.inc"
+
+    #include "widgets/intrinsic/tooltip.inc"
+
+    #include "widgets/intrinsic/fixed.inc"
+
+    #include "widgets/intrinsic/scroller.inc"
+
+    #include "widgets/intrinsic/zstack.inc"
+
+    #include "widgets/intrinsic/list.inc"
+
+    #include "widgets/intrinsic/grid.inc"
+
+    #include "widgets/intrinsic/dialog.inc"
+
+    #include "widgets/intrinsic/dialog_slot.inc"
+
+    #include "widgets/intrinsic/popover.inc"
+
+    #include "widgets/intrinsic/appbar.inc"
+
+    #include "widgets/intrinsic/vstack.inc"
+
+    #include "widgets/intrinsic/hstack.inc"
+
+    #include "widgets/intrinsic/window.inc"
+
+    case COGITO_KIND_COUNT:
+      break;
+  
+  }
+  w += n->padding_left + n->padding_right;
+  h += n->padding_top + n->padding_bottom;
+  cogito_apply_size_constraints(n, &w, &h);
+  if (out_w) *out_w = w;
+  if (out_h) *out_h = h;
+}

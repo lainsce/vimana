@@ -1,0 +1,157 @@
+; ErgoCalc SUM theme
+@diagnostics: warn
+
+@pink: #F1ACC1
+@pink-hover: #F8D8E2
+@pink-active: #EA80A0
+@surface: #fdf6ff
+@surface-container: #ffffff
+@on-surface: #111111
+@primary: #8C56BF
+@on-primary: #FFFFFF
+@primary-hover: #A073D1
+@primary-active: #7839A8
+@primary-container: #E8D4F5
+@muted: #666666
+
+window
+  background: @surface
+  color: @on-surface
+
+appbar
+  background: @surface-container
+
+vstack
+hstack
+zstack
+  background: transparent
+  color: @on-surface
+
+label.calc-display-working
+  color: @on-surface
+  background: transparent
+  font-size: 34
+  padding: 6 18
+
+label.calc-display-expression
+  color: @muted
+  background: transparent
+  font-size: 18
+  padding: 6 18
+
+grid.calc-keypad
+  background: @surface
+  border-radius: 16
+  padding: 12 18 18
+
+button.calc-digit
+  background: alpha(@primary, 5%)
+  color: @primary
+  border: 1 solid alpha(@primary, 35%)
+
+button.calc-digit:hover
+  background: @primary-hover
+  color: @on-primary
+  border-color: @primary-hover
+
+button.calc-digit:active
+  background: @primary-active
+  color: @on-primary
+
+button.calc-digit:focus
+  border: 2 solid @primary
+
+button.calc-op
+  background: alpha(@primary, 0%)
+  color: @primary
+  border: 1 solid alpha(@primary, 35%)
+
+button.calc-op:hover
+  background: @primary-hover
+  color: @on-primary
+  border-color: @primary-hover
+
+button.calc-op:active
+  background: @primary-active
+  color: @on-primary
+
+button.calc-op:focus
+  border: 2 solid @primary
+
+button.calc-clear
+  background: @pink
+  color: @muted
+
+button.calc-clear:hover
+  background: @pink-hover
+  color: @muted
+
+button.calc-clear:active
+  background: @pink-active
+  color: @muted
+
+button.text:focus
+  border: 2 solid @primary
+
+button.calc-clear:focus
+  border: 2 solid @primary
+
+button.calc-equals
+  background: @primary
+  color: @surface
+  border: 0 none #000
+
+button.calc-equals:hover
+  background: @primary-active
+  color: @surface
+
+button.calc-equals:active
+  background: mix(@primary, #000000, 18%)
+  color: @surface
+
+button.calc-equals:focus
+  border: 2 solid @surface
+
+vstack.conv-panel
+  background: @surface
+  padding: 18 18
+  border-radius: 16
+
+label.conv-label
+  color: @muted
+  font-size: 12
+  background: transparent
+
+textfield.conv-input
+textfield.conv-output
+  font-size: 22
+  border-radius: 10
+  padding: 10 12
+
+iconbtn.conv-swap
+  background: @primary-container
+  color: @primary
+
+iconbtn.conv-swap:hover
+  background: @primary-hover
+
+iconbtn.conv-swap:active
+  background: @primary-active
+
+grid.calc-keypad
+  background: @surface-container
+
+dropdown
+  border-radius: 10
+
+@when dark
+  grid.calc-keypad
+    background: @surface-container
+  label.calc-display-working
+    color: @dark-text
+  label.calc-display-expression
+    color: @dark-muted
+  vstack.conv-panel
+    background: @surface-container
+  label.conv-label
+    color: @dark-muted

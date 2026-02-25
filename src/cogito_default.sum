@@ -1,0 +1,810 @@
+; Cogito default theme (light)
+; Generated with primary #72dec2
+@diagnostics: warn
+
+; Primary palette
+@primary: #72dec2
+@on-primary: #00382b
+@primary-container: #c8f7ef
+@on-primary-container: #00201a
+
+; Secondary palette
+@secondary: #4a9e8f
+@on-secondary: #ffffff
+@secondary-container: #c8f7ef
+@on-secondary-container: #00201a
+
+; Tertiary palette
+@tertiary: #3d6463
+@on-tertiary: #ffffff
+@tertiary-container: #c8f7ef
+@on-tertiary-container: #00201a
+
+; Error palette
+@error: #ba1a1a
+@on-error: #ffffff
+@error-container: #ffdad6
+@on-error-container: #410002
+
+; Neutral palette
+@background: #fafdfb
+@on-background: #191c1a
+@surface: #fafdfb
+@surface-tint: #72dec229
+@on-surface: #191c1a
+
+; Surface containers
+@surface-dim: #d9dbd9
+@surface-bright: #fafff8
+@surface-container-lowest: #ffffff
+@surface-container-low: #f3f7f4
+@surface-container: #eff5f2
+@surface-container-high: #e8ebe9
+@surface-container-highest: #e2e5e3
+
+; Surface variant
+@surface-variant: #dbe5e1
+@on-surface-variant: #3f4946
+
+; Outline
+@outline: #6f7975
+@outline-variant: #bec9c4
+
+; Inverse colors
+@inverse-surface: #2d312f
+@inverse-on-surface: #f0f1ef
+@inverse-primary: #84e8d0
+
+; Shadow & Scrim
+@shadow: #000000
+@scrim: #000000
+
+*
+  color: @on-surface
+  font-size: 14
+
+window
+  background: @surface
+
+vstack
+  background: @on-secondary
+  color: @on-background
+
+hstack
+  background: @on-secondary
+  color: @on-background
+
+zstack
+  background: @on-secondary
+  color: @on-background
+
+fixed
+  background: transparent
+  color: @on-background
+
+scroller
+  background: @surface-container-low
+  color: @on-background
+  padding: 0
+
+scroller.sidebar
+  background: @on-secondary
+  padding: 0
+
+carousel
+  background: transparent
+  color: @on-background
+  min-height: 240
+  min-width: 360
+  border-radius: 26
+
+carousel_item
+  background: @primary-container
+  color: @on-background
+  border-radius: 26
+  padding: 16
+
+label.carousel-item-label
+  font-size: 21
+  font-weight: bold
+  color: @on-secondary
+  box-shadow: [ 0 2 4 0 alpha(@shadow, 14%) ]
+
+dialogslot
+  background: alpha(@shadow, 40%)
+  color: @on-background
+
+button
+  background: @primary
+  color: @on-primary
+
+button.outlined
+  background: transparent
+  color: @primary
+  border: 1 solid @outline
+
+button.outlined:disabled
+  color: alpha(@primary, 32%)
+  border-color: alpha(@primary, 32%)
+  background: @surface-tint
+
+button.text
+  background: transparent
+  color: @primary
+
+@when reduced-motion
+  button
+    transition: 0 linear
+  iconbtn
+    transition: 0 linear
+
+button.text:disabled
+  color: alpha(@primary, 32%)
+  background: @surface-tint
+
+button.toolbar_format
+  background: transparent
+  color: @primary
+  border-radius: 100
+  min-width: 48
+  min-height: 48
+  padding: 0 8
+  box-shadow: none
+
+button.toolbar_format_active
+  background: @primary
+  color: @on-primary
+  border-radius: 100
+  min-width: 48
+  min-height: 48
+  padding: 0 8
+  box-shadow: none
+
+fab
+  background: @outline
+  color: @on-secondary
+  elevation: 3
+
+chip
+  background: transparent
+  color: @on-background
+  border-radius: 100
+  min-height: 32
+  padding: 0 16
+  border: 1 solid @outline
+
+chip:checked
+  background: @primary-container
+  color: @on-primary
+  border: 0 none @primary-container
+
+nav-rail
+  background: @surface
+  color: @on-background
+  min-width: 96
+  padding: 4 0
+
+nav-rail:selection
+  background: @surface-container-high
+  color: @on-background
+
+textfield
+  background: @surface-container-high
+  color: @on-background
+  border-radius: 4 4 0 0
+  border: 0 none @shadow
+  min-height: 56
+  padding: 8 16
+
+textfield:hover
+  background: @surface-container-high
+
+searchfield
+  background: @surface-container-high
+  color: @on-background
+  min-height: 56
+  min-width: 180
+  padding: 8 16
+  border-radius: 100
+
+textview
+  background: @surface-container-low
+  color: @on-background
+  border-radius: 8
+  min-height: 96
+
+textfield:selection
+  background: @primary
+
+textview:selection
+  background: @primary
+
+dropdown
+  background: @surface-container-high
+  color: @on-background
+  border-radius: 4 4 0 0
+  min-height: 56
+  padding: 8 16
+
+dropdown:hover
+  background: @surface-container-high
+
+datepicker
+  background: @on-secondary
+  border-radius: 18
+  min-width: 360
+  padding: 16
+  box-shadow: [
+    0 1 3 0 alpha(@shadow, 12%)
+  ]
+
+slider
+  background: @surface-variant
+  color: @primary
+  track-height: 4
+  min-height: 48
+  min-width: 360
+
+stepper
+  background: @surface-container-low
+  color: @on-background
+  border-radius: 8
+  min-height: 32
+  min-width: 96
+
+tabs
+  background: @inverse-on-surface
+  color: @on-background
+  border-radius: 10
+  min-height: 42
+
+tabs:selection
+  background: @on-secondary
+
+viewswitcher
+  background: @on-secondary
+  color: @on-background
+
+progress
+  background: @surface-dim
+  border-radius: 100
+  track-height: 4
+  min-height: 12
+  min-width: 120
+
+progress:selection
+  background: @primary
+
+toasts
+  padding: 8 16
+
+toast
+  background: @on-background
+  color: @on-secondary
+  border-radius: 10
+  min-height: 34
+
+treeview
+  background: @surface-container-low
+  color: @on-background
+  border-radius: 8
+  min-height: 180
+  min-width: 360
+  padding: 8
+
+toolbar
+  background: @inverse-on-surface
+  color: @on-background
+  min-height: 64
+  padding: 8 16
+
+toolbar.floating
+  border-radius: 999
+  elevation: 1
+  padding: 8
+
+toolbar.floating_compact
+  border-radius: 999
+  elevation: 1
+  padding: 8
+
+toolbar.floating_compact
+  border-radius: 999
+  elevation: 1
+  padding: 8
+
+iconbtn
+  background: alpha(@shadow, 5%)
+  color: @on-background
+
+label
+  color: @on-background
+  padding: 8
+
+.about-window
+  background: @on-secondary
+  color: @on-background
+
+image.about-window-icon
+  min-width: 128
+  min-height: 128
+
+label.about-window-title
+  color: @on-background
+  font-size: 28
+  font-weight: bold
+
+label.about-window-license
+  color: @outline
+  font-size: 14
+
+hstack.about-window-actions
+  background: transparent
+  padding: 4 0 0 0
+
+tooltip
+  background: @on-background
+  color: @on-secondary
+  border-radius: 6
+  font-size: 14
+  padding: 8
+
+radio
+checkbox
+  color: @on-background
+  min-height: 24
+  min-width: 24
+
+checkbox:checked
+radio:checked
+  background: @primary
+
+checkbox .check
+radio .check
+  color: @on-background
+
+checkbox:checked .check
+radio:checked .check
+  color: @on-background
+
+checkbox .box
+radio .box
+  background: transparent
+  border-color: @on-surface-variant
+  border-radius: 4
+
+checkbox:checked .box
+radio:checked .box
+  background: @primary
+
+checkbox .box:hover
+radio .box:hover
+  background: @primary
+
+checkbox .box:active
+radio .box:active
+  background: @primary
+
+checkbox .check:hover
+radio .check:hover
+  color: @on-background
+
+checkbox .check:active
+radio .check:active
+  color: @shadow
+
+switch
+  color: @on-background
+  min-height: 28
+  min-width: 64
+
+switch track
+  background: @surface-container-highest
+  border: 2 solid @outline
+
+switch:checked track
+  background: @primary
+  border: 0 none @primary
+
+switch track:hover
+  background: @outline
+
+switch track:active
+  background: @primary
+
+switch knob
+  background: @on-secondary
+  min-width: 32
+  min-height: 24
+
+switch knob:hover
+  background: @surface-container-low
+
+switch knob:active
+  background: @surface-container-high
+
+.monospace
+  font-size: 14
+  font-weight: normal
+
+.tabular
+  font-size: 14
+  font-weight: normal
+  font-variant-numeric: tnum
+
+.big-display
+  font-family: serif
+  font-size: 56
+  font-weight: normal
+
+.display
+  font-family: serif
+  font-size: 36
+  font-weight: normal
+
+.view-title
+.title
+  font-size: 24
+  font-weight: normal
+
+.view-subtitle
+.subtitle
+  font-size: 18
+  font-weight: bold
+
+.heading
+  font-size: 16
+  font-weight: normal
+
+.content-title
+  font-size: 16
+  font-weight: bold
+
+.content-subtitle
+  font-size: 14
+  font-weight: normal
+
+.body
+  font-size: 14
+  font-weight: normal
+
+.caption
+  font-size: 12
+  font-weight: bold
+
+list
+  background: @on-secondary
+
+list:selection
+  background: @primary
+
+grid
+  background: @on-secondary
+  border-radius: 8
+
+grid:selection
+  background: @primary
+
+content-list
+  background: @surface-container-high
+  color: @on-surface
+  border-radius: 12
+
+content-list label
+  padding: 0 16
+  min-height: 80
+  background: transparent
+
+; Element position styling for content-list children
+; Syntax: border-radius: tl tr br bl (top-left, top-right, bottom-right, bottom-left)
+content-list=first
+  border-radius: 12 12 8 8
+
+content-list=last
+  border-radius: 8 8 12 12
+
+content-list=middle
+  border-radius: 8
+
+content-list=single
+  border-radius: 12
+
+appbar
+  background: @inverse-on-surface
+  border: 0 solid alpha(@shadow, 0%)
+
+appbar.view
+  background: @inverse-on-surface
+
+appbar.sidebar
+  background: @surface
+
+dialog
+  background: @surface-container-high
+  border-radius: 28
+  min-width: 280
+  max-width: 560
+  min-height: 240
+  padding: 24
+  box-shadow: [
+    0 8 16 0 alpha(@shadow, 24%)
+  ]
+
+popover
+  background: @on-secondary
+  border-radius: 12
+  padding: 16
+  box-shadow: [
+    0 2 8 0 alpha(@shadow, 12%)
+  ]
+
+appbar .window-button
+  min-width: 14
+
+appbar .window-close
+  background: @error
+
+appbar .window-min
+  background: @outline-variant
+
+appbar .window-max
+  background: @secondary
+
+appbar .window-close:hover
+  background: @outline-variant
+
+appbar .window-close:active
+  background: @error
+
+appbar .window-min:hover
+  background: @error-container
+
+appbar .window-min:active
+  background: @outline
+
+appbar .window-max:hover
+  background: @secondary
+
+appbar .window-max:active
+  background: @tertiary
+
+appbar .iconbtn
+  background: transparent
+
+menu
+  background: @on-secondary
+  border-radius: 4
+  color: @on-background
+  box-shadow: 2
+  font-size: 14
+
+menu:selection
+  background: @primary
+
+menu item
+  border-radius: 0
+  padding: 8 12
+  min-height: 42
+
+menu_section
+  background: transparent
+
+menu_section item
+  border-radius: 0
+  padding: 8 12
+  min-height: 42
+
+bottom-nav
+  background: @on-secondary
+  color: @on-background
+  min-height: 80
+  padding: 0 8
+
+bottom-nav:selection
+  background: @surface-container-high
+  color: @on-background
+
+.colorpicker
+  background: @on-secondary
+  color: @on-background
+  border-radius: 18
+  min-width: 360
+  padding: 16
+
+.datepicker
+  background: @on-secondary
+  color: @on-background
+  border-radius: 18
+  min-width: 360
+  padding: 16
+
+.datepicker:selection
+  background: @primary
+
+.textfield:selection
+  background: @primary
+
+.textview:selection
+  background: @primary
+
+datepicker:selection
+  background: @primary
+
+colorpicker:selection
+  background: @primary
+
+searchfield:hover
+  background: @surface-container-high
+
+searchfield:active
+  border-color: @outline
+  border-width: 2
+
+searchfield:selection
+  background: @primary
+
+buttongroup:selection
+  background: @secondary-container
+  color: @on-secondary-container
+  border: 1 solid @secondary-container
+
+switch .track
+  background: @surface-container-highest
+  border: 2 solid @outline
+
+switch:checked .track
+  background: @primary
+  border: 0 none @primary
+
+switch .track:hover
+  background: @outline
+
+switch .track:active
+  background: @primary
+
+; Keyboard focus ring
+button:focus, button.text:focus, button.outlined:focus, iconbtn:focus, fab:focus, chip:focus, checkbox:focus, radio:focus, slider:focus, stepper:focus, buttongroup:focus, dropdown:focus, datepicker:focus, colorpicker:focus, nav-rail:focus, bottom-nav:focus
+  border: 2 solid @primary
+
+switch .knob
+  background: @on-secondary
+  min-width: 32
+  min-height: 24
+
+switch .knob:hover
+  background: @surface-container-low
+
+switch .knob:active
+  background: @surface-container-high
+
+switch .knob:checked
+  background: @surface
+
+toast:selection
+  background: @primary
+
+scroller.sidebar
+  background: @surface-container-low
+
+; Color tokens
+.primary-container
+  background: @surface-container-high
+  color: @on-background
+
+.secondary
+  background: @outline
+  color: @on-secondary
+
+.secondary-container
+  background: @surface-container-high
+  color: @on-background
+
+.tertiary
+  background: @outline
+  color: @on-secondary
+
+.tertiary-container
+  background: @error-container
+  color: @on-background
+
+.error
+  color: @error
+
+.on-error
+  background: @error
+  color: @on-secondary
+
+.error-container
+  background: @error-container
+  color: @on-error-container
+
+.surface-variant
+  background: @surface-container-high
+  color: @on-surface-variant
+
+.surface-dim
+  background: @surface-dim
+
+.surface-bright
+  background: @on-secondary
+
+.surface-container-lowest
+  background: @on-secondary
+
+.surface-container-low
+  background: @surface-container-low
+
+.surface-container
+  background: @inverse-on-surface
+
+.surface-container-high
+  background: @surface-container-high
+
+.surface-container-highest
+  background: @surface-container-highest
+
+.inverse-surface
+  background: @inverse-surface
+  color: @inverse-on-surface
+
+.inverse-primary
+  color: @surface-dim
+
+.outline-variant
+  border-color: @outline-variant
+
+.scrim
+  background: @shadow
+
+; Disabled state variants - 16% opaque On Surface for backgrounds, 32% for borders/text/icons
+
+button:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+fab:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+chip:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+  border-color: alpha(@on-background, 32%)
+
+textfield:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+searchfield:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+dropdown:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+slider:disabled
+  color: alpha(@on-background, 32%)
+
+stepper:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)
+
+checkbox:disabled
+  color: alpha(@on-background, 32%)
+
+radio:disabled
+  color: alpha(@on-background, 32%)
+
+switch:disabled
+  color: alpha(@on-background, 32%)
+
+switch:disabled track
+  background: alpha(@on-background, 16%)
+
+switch:disabled knob
+  background: alpha(@on-background, 32%)
+
+iconbtn:disabled
+  background: alpha(@on-background, 16%)
+  color: alpha(@on-background, 32%)

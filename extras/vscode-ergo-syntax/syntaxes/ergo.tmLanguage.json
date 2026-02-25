@@ -1,0 +1,286 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Ergo",
+  "scopeName": "source.ergo",
+  "patterns": [
+    {
+      "include": "#returnSpec"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#functionDecl"
+    },
+    {
+      "include": "#typeDecl"
+    },
+    {
+      "include": "#mutableNames"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#memberAccess"
+    },
+    {
+      "include": "#functionCalls"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#punctuation"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-dash.ergo",
+          "match": "--.*$"
+        }
+      ]
+    },
+    "returnSpec": {
+      "name": "meta.return-spec.ergo",
+      "begin": "\\(\\(",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.return.begin.ergo"
+        }
+      },
+      "end": "\\)\\)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.return.end.ergo"
+        }
+      },
+      "patterns": [
+        {
+          "name": "keyword.control.return-void.ergo",
+          "match": "--"
+        },
+        {
+          "name": "punctuation.separator.comma.ergo",
+          "match": ","
+        },
+        {
+          "include": "#types"
+        },
+        {
+          "include": "#memberAccess"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.interpolated.ergo",
+          "begin": "@\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.ergo"
+            }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.ergo"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.ergo",
+              "match": "\\\\(?:[ntr\"\\\\$]|u\\{[0-9A-Fa-f]+\\})"
+            },
+            {
+              "name": "variable.other.interpolated.ergo",
+              "match": "\\$[A-Za-z_][A-Za-z0-9_]*"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.double.ergo",
+          "begin": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.ergo"
+            }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.ergo"
+            }
+          }
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.ergo",
+          "match": "\\b\\d+(?:\\.\\d+)?\\b"
+        }
+      ]
+    },
+    "functionDecl": {
+      "patterns": [
+        {
+          "name": "meta.function.ergo",
+          "match": "\\b(fun)\\s+([A-Za-z_][A-Za-z0-9_]*)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.function.ergo"
+            },
+            "2": {
+              "name": "entity.name.function.ergo"
+            }
+          }
+        }
+      ]
+    },
+    "typeDecl": {
+      "patterns": [
+        {
+          "name": "meta.type.ergo",
+          "match": "\\b(class|struct|enum)\\s+([A-Za-z_][A-Za-z0-9_]*)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.type.ergo"
+            },
+            "2": {
+              "name": "entity.name.type.ergo"
+            }
+          }
+        }
+      ]
+    },
+    "mutableNames": {
+      "patterns": [
+        {
+          "name": "variable.other.mutable.ergo",
+          "match": "\\?[A-Za-z_][A-Za-z0-9_]*"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.ergo",
+          "match": "\\b(?:if|elif|else|for|in|match|return|new|break|continue)\\b"
+        },
+        {
+          "name": "keyword.declaration.ergo",
+          "match": "\\b(?:cask|bring|fun|entry|class|struct|enum|pub|lock|seal|def|let|const)\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.ergo",
+          "match": "\\b(?:true|false|null)\\b"
+        },
+        {
+          "name": "constant.other.ergo",
+          "match": "\\b[A-Z][A-Z0-9_]+\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.ergo",
+          "match": "\\b(?:num|string|bool|int|float|char|byte|void|any)\\b"
+        }
+      ]
+    },
+    "memberAccess": {
+      "patterns": [
+        {
+          "name": "meta.member.access.ergo",
+          "match": "(\\.)\\s*([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "punctuation.accessor.dot.ergo"
+            },
+            "2": {
+              "name": "variable.other.member.ergo"
+            }
+          }
+        }
+      ]
+    },
+    "functionCalls": {
+      "patterns": [
+        {
+          "name": "support.function.call.ergo",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\b\\s*(?=\\()"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.ergo",
+          "match": "(?:\\+=|-=|\\*=|/=|=)"
+        },
+        {
+          "name": "keyword.operator.comparison.ergo",
+          "match": "(?:==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.logical.ergo",
+          "match": "(?:\\?\\?|&&|\\|\\||!)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.ergo",
+          "match": "(?:\\+|-|\\*|/|%)"
+        },
+        {
+          "name": "keyword.operator.arrow.ergo",
+          "match": "=>"
+        },
+        {
+          "name": "keyword.operator.other.ergo",
+          "match": "(?:\\?|\\|)"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.ergo",
+          "match": "(?:,|;|:)"
+        },
+        {
+          "name": "punctuation.definition.array.ergo",
+          "match": "(?:\\[|\\])"
+        },
+        {
+          "name": "punctuation.definition.block.ergo",
+          "match": "(?:\\{|\\})"
+        },
+        {
+          "name": "punctuation.definition.group.ergo",
+          "match": "(?:\\(|\\))"
+        }
+      ]
+    }
+  }
+}

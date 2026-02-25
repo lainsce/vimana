@@ -1,0 +1,542 @@
+cask main
+
+bring stdr
+bring cogito
+
+macro append_digit(d = num) (( num )) {
+    this * 10 + d
+}
+
+def display_expression = cogito.label(@"")
+def display_working = cogito.label(@"0")
+def ?current_value = 0.0
+def ?stored_value = 0.0
+def ?pending_op = @""
+def ?reset_input = true
+def ?has_error = false
+def ?showing_converter = false
+def conv_input = cogito.textfield(@"From")
+def conv_output = cogito.textfield(@"To")
+def ?conv_from_idx = 0
+def ?conv_to_idx = 1
+def conv_from_dd = cogito.dropdown()
+def conv_to_dd = cogito.dropdown()
+def ?conv_category = 0
+def ABOUT_MORE_INFO_URL = @"https://github.com/lainsce/ergo"
+def ABOUT_REPORT_BUG_URL = @"https://github.com/lainsce/ergo/issues"
+
+fun update_display_value(text = string) (( -- )) {
+    display_working.set_text(text)
+}
+
+fun clear_expression() (( -- )) {
+    display_expression.set_text(@"")
+}
+
+fun set_expression(lhs_text = string, op_text = string, rhs_text = string, show_equals = bool) (( -- )) {
+    let text = if rhs_text == @"" {
+        if show_equals { @"$lhs_text $op_text =" } else { @"$lhs_text $op_text" }
+    } else {
+        if show_equals { @"$lhs_text $op_text $rhs_text =" } else { @"$lhs_text $op_text $rhs_text" }
+    }
+    display_expression.set_text(text)
+}
+
+fun clear_all() (( -- )) {
+    current_value = 0.0
+    stored_value = 0.0
+    pending_op = @""
+    reset_input = true
+    has_error = false
+    clear_expression()
+    update_display_value(@"0")
+}
+
+fun commit_pending(show_equals = bool) (( -- )) {
+    let op = pending_op
+    if op == @"" {
+        return
+    }
+    if reset_input {
+        return
+    }
+
+    let lhs = stored_value
+    let rhs = current_value
+
+    if op == @"/" && rhs == 0 {
+        has_error = true
+        pending_op = @""
+        reset_input = true
+        clear_expression()
+        update_display_value(@"Error")
+        return
+    }
+
+    let result = if op == @"+" {
+        lhs + rhs
+    } elif op == @"-" {
+        lhs - rhs
+    } elif op == @"*" {
+        lhs * rhs
+    } else {
+        lhs / rhs
+    }
+
+    current_value = result
+    stored_value = result
+    set_expression(str(lhs), op, str(rhs), show_equals)
+    update_display_value(str(result))
+}
+
+fun input_digit(d = num) (( -- )) {
+    if has_error {
+        clear_all()
+    }
+
+    let ?next = current_value
+    if reset_input {
+        next = d
+        reset_input = false
+    } else {
+        next = next !append_digit d
+    }
+
+    current_value = next
+    if pending_op != @"" {
+        set_expression(str(stored_value), pending_op, str(next), false)
+    } else {
+        clear_expression()
+    }
+    update_display_value(str(next))
+}
+
+fun choose_operator(op = string) (( -- )) {
+    if has_error {
+        clear_all()
+    }
+
+    if pending_op != @"" && !reset_input {
+        commit_pending(false)
+        if has_error {
+            return
+        }
+    } else {
+        stored_value = current_value
+    }
+
+    pending_op = op
+    reset_input = true
+    set_expression(str(stored_value), pending_op, @"", false)
+    update_display_value(str(current_value))
+}
+
+fun evaluate() (( -- )) {
+    if has_error {
+        clear_all()
+        return
+    }
+    if pending_op == @"" {
+        return
+    }
+
+    commit_pending(true)
+    if has_error {
+        return
+    }
+
+    pending_op = @""
+    reset_input = true
+}
+
+fun digit_button(d = num) (( cogito.Button )) {
+    let btn = cogito.button(str(d))
+    .set_class(@"calc-digit")
+    .on_click((b = cogito.Button) => {
+        input_digit(d)
+    })
+    return btn
+}
+
+fun operator_button(text = string, op = string) (( cogito.Button )) {
+    let btn = cogito.button(text)
+    .set_class(@"calc-op")
+    .on_click((b = cogito.Button) => {
+        choose_operator(op)
+    })
+    return btn
+}
+
+fun clear_button() (( cogito.Button )) {
+    let btn = cogito.button(@"C")
+    .set_class(@"calc-clear")
+    .on_click((b = cogito.Button) => {
+        clear_all()
+    })
+    return btn
+}
+
+fun equals_button() (( cogito.Button )) {
+    let btn = cogito.button(@"=")
+    .set_class(@"calc-equals")
+    .on_click((b = cogito.Button) => {
+        evaluate()
+    })
+    return btn
+}
+
+fun spacer() (( cogito.Label )) {
+    let s = cogito.label(@"")
+    .set_class(@"calc-spacer")
+    return s
+}
+
+fun aton(s = string) (( num )) {
+    let ?result = 0.0
+    let ?i = 0
+    let ?neg = false
+    let slen = len(s)
+    if slen == 0 {
+        return 0.0
+    }
+    if s[0] == @"-" {
+        neg = true
+        i = 1
+    }
+    let ?frac = false
+    let ?frac_div = 1.0
+    let ?done = false
+    for (; i < slen && !done; i += 1) {
+        let c = s[i]
+        let ?d = 0 - 1
+        if c == @"." {
+            frac = true
+        } elif c == @"0" { d = 0 }
+        elif c == @"1" { d = 1 }
+        elif c == @"2" { d = 2 }
+        elif c == @"3" { d = 3 }
+        elif c == @"4" { d = 4 }
+        elif c == @"5" { d = 5 }
+        elif c == @"6" { d = 6 }
+        elif c == @"7" { d = 7 }
+        elif c == @"8" { d = 8 }
+        elif c == @"9" { d = 9 }
+        else { done = true }
+        if d >= 0 {
+            if frac {
+                frac_div *= 10.0
+                result += d / frac_div
+            } else {
+                result = result * 10 + d
+            }
+        }
+    }
+    if neg {
+        result = 0 - result
+    }
+    return result
+}
+
+fun conv_unit_names() (( [string] )) {
+    if conv_category == 0 {
+        return [@"Meter", @"Kilometer", @"Centimeter", @"Millimeter", @"Mile", @"Yard", @"Foot", @"Inch"]
+    } elif conv_category == 1 {
+        return [@"Kilogram", @"Gram", @"Milligram", @"Pound", @"Ounce", @"Ton"]
+    } elif conv_category == 2 {
+        return [@"Celsius", @"Fahrenheit", @"Kelvin"]
+    } else {
+        return [@"Liter", @"Milliliter", @"Gallon", @"Quart", @"Cup", @"Fluid Oz"]
+    }
+}
+
+fun conv_to_base(value = num, idx = num) (( num )) {
+    if conv_category == 0 {
+        if idx == 0 { return value }
+        elif idx == 1 { return value * 1000 }
+        elif idx == 2 { return value / 100 }
+        elif idx == 3 { return value / 1000 }
+        elif idx == 4 { return value * 1609.344 }
+        elif idx == 5 { return value * 0.9144 }
+        elif idx == 6 { return value * 0.3048 }
+        else { return value * 0.0254 }
+    } elif conv_category == 1 {
+        if idx == 0 { return value }
+        elif idx == 1 { return value / 1000 }
+        elif idx == 2 { return value / 1000000 }
+        elif idx == 3 { return value * 0.453592 }
+        elif idx == 4 { return value * 0.0283495 }
+        else { return value * 907.185 }
+    } elif conv_category == 2 {
+        if idx == 0 { return value }
+        elif idx == 1 { return (value - 32) * 5 / 9 }
+        else { return value - 273.15 }
+    } else {
+        if idx == 0 { return value }
+        elif idx == 1 { return value / 1000 }
+        elif idx == 2 { return value * 3.78541 }
+        elif idx == 3 { return value * 0.946353 }
+        elif idx == 4 { return value * 0.236588 }
+        else { return value * 0.0295735 }
+    }
+}
+
+fun conv_from_base(value = num, idx = num) (( num )) {
+    if conv_category == 0 {
+        if idx == 0 { return value }
+        elif idx == 1 { return value / 1000 }
+        elif idx == 2 { return value * 100 }
+        elif idx == 3 { return value * 1000 }
+        elif idx == 4 { return value / 1609.344 }
+        elif idx == 5 { return value / 0.9144 }
+        elif idx == 6 { return value / 0.3048 }
+        else { return value / 0.0254 }
+    } elif conv_category == 1 {
+        if idx == 0 { return value }
+        elif idx == 1 { return value * 1000 }
+        elif idx == 2 { return value * 1000000 }
+        elif idx == 3 { return value / 0.453592 }
+        elif idx == 4 { return value / 0.0283495 }
+        else { return value / 907.185 }
+    } elif conv_category == 2 {
+        if idx == 0 { return value }
+        elif idx == 1 { return value * 9 / 5 + 32 }
+        else { return value + 273.15 }
+    } else {
+        if idx == 0 { return value }
+        elif idx == 1 { return value * 1000 }
+        elif idx == 2 { return value / 3.78541 }
+        elif idx == 3 { return value / 0.946353 }
+        elif idx == 4 { return value / 0.236588 }
+        else { return value / 0.0295735 }
+    }
+}
+
+fun do_convert() (( -- )) {
+    let input_text = conv_input.text()
+    let input_val = aton(input_text)
+    let base = conv_to_base(input_val, conv_from_idx)
+    let result = conv_from_base(base, conv_to_idx)
+    conv_output.set_text(str(result))
+}
+
+fun swap_conv() (( -- )) {
+    let old_from = conv_from_idx
+    let old_to = conv_to_idx
+    conv_from_idx = old_to
+    conv_to_idx = old_from
+    conv_from_dd.set_selected(conv_from_idx)
+    conv_to_dd.set_selected(conv_to_idx)
+    let old_input = conv_input.text()
+    let old_output = conv_output.text()
+    conv_input.set_text(old_output)
+    conv_output.set_text(old_input)
+}
+
+fun refresh_conv_units() (( -- )) {
+    let names = conv_unit_names()
+    conv_from_dd.set_items(names)
+    conv_to_dd.set_items(names)
+    conv_from_idx = 0
+    conv_to_idx = 1
+    conv_from_dd.set_selected(0)
+    conv_to_dd.set_selected(1)
+    conv_input.set_text(@"1")
+    do_convert()
+}
+
+fun build_converter_ui() (( cogito.VStack )) {
+    let panel = cogito.vstack()
+    panel.set_hexpand(true)
+    panel.set_vexpand(true)
+    panel.set_gap(12)
+    cogito.set_class(panel, @"conv-panel")
+
+    let cat_dd = cogito.dropdown()
+    .set_items([@"Length", @"Weight", @"Temperature", @"Volume"])
+    .set_selected(0)
+    .set_hexpand(true)
+    .set_class(@"conv-category")
+    .on_change((dd = cogito.Dropdown) => {
+        conv_category = dd.selected()
+        refresh_conv_units()
+    })
+    panel.add(cat_dd)
+
+    let from_row = cogito.hstack()
+    .set_hexpand(true)
+    .set_gap(6)
+
+    let names = conv_unit_names()
+    conv_from_dd.set_items(names)
+    .set_selected(0)
+    .on_change((dd = cogito.Dropdown) => {
+        conv_from_idx = dd.selected()
+        do_convert()
+    })
+
+    conv_input.set_hexpand(true)
+    cogito.set_class(conv_input, @"conv-input")
+    conv_input.on_change((tf = cogito.TextField) => {
+        do_convert()
+    })
+
+    from_row.add(conv_input)
+    from_row.add(conv_from_dd)
+    panel.add(from_row)
+
+    let swap_row = cogito.hstack()
+    swap_row.align_center()
+    let swap_btn = cogito.iconbtn(@"sf:arrow.up.arrow.down")
+    cogito.set_class(swap_btn, @"conv-swap")
+    swap_btn.on_click((b = cogito.Button) => {
+        swap_conv()
+    })
+    swap_row.add(swap_btn)
+    panel.add(swap_row)
+
+    let to_row = cogito.hstack()
+    .set_hexpand(true)
+    .set_gap(6)
+
+    conv_to_dd.set_items(names)
+    .set_selected(1)
+    .on_change((dd = cogito.Dropdown) => {
+        conv_to_idx = dd.selected()
+        do_convert()
+    })
+
+    conv_output.set_hexpand(true)
+    .set_editable(false)
+    .set_class(@"conv-output")
+
+    to_row.add(conv_output)
+    to_row.add(conv_to_dd)
+    panel.add(to_row)
+
+    do_convert()
+    return panel
+}
+
+fun show_about_window(win = cogito.Window) (( -- )) {
+    let dlg = cogito.dialog(@"")
+    let content = cogito.vstack()
+    content.align_center()
+
+    let aw = cogito.about_window(@"ErgoCalc", @"MIT License")
+    .set_icon(@"sf:equal")
+    .set_website(ABOUT_MORE_INFO_URL)
+    .set_issue_url(ABOUT_REPORT_BUG_URL)
+    content.add(aw)
+
+    dlg.add(content)
+    win.set_dialog(dlg)
+}
+
+fun build_ui(win = cogito.Window) (( -- )) {
+    let root = cogito.vstack()
+    .set_class(@"calc-root")
+
+    let switcher = cogito.view_switcher()
+
+    let bar = cogito.appbar(@"", @"")
+    .set_hexpand(true)
+    let about_btn = bar.add_button(@"sf:questionmark", (b = cogito.Button) => {
+        show_about_window(win)
+    })
+    cogito.set_tooltip(about_btn, @"About ErgoCalc")
+    let toggle_btn = bar.add_button(@"sf:arrow.left.arrow.right", (b = cogito.Button) => {
+        showing_converter = !showing_converter
+        if showing_converter {
+            switcher.set_active(@"converter")
+        } else {
+            switcher.set_active(@"calculator")
+        }
+    })
+    cogito.set_tooltip(toggle_btn, @"Unit Converter")
+    root.add(bar)
+
+    -- Calculator view
+    let calc_view = cogito.vstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_id(@"calculator")
+
+    let display_box = cogito.vstack()
+    .set_hexpand(true)
+    .set_gap(4)
+    .set_class(@"calc-display")
+
+    display_expression.set_hexpand(true)
+    .set_text_align(2)
+    .set_class(@"calc-display-expression")
+    display_box.add(display_expression)
+
+    display_working.set_hexpand(true)
+    .set_text_align(2)
+    .set_class(@"calc-display-working")
+    display_box.add(display_working)
+
+    calc_view.add(display_box)
+
+    let keypad = cogito.grid(5)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_gap(12, 12)
+    .set_padding(12, 12, 0, 12)
+    .set_class(@"calc-keypad")
+
+    keypad.add(digit_button(7))
+    keypad.add(digit_button(8))
+    keypad.add(digit_button(9))
+    let c = clear_button()
+    keypad.add(c)
+    keypad.set_span(c, 2, 1)
+
+    keypad.add(digit_button(4))
+    keypad.add(digit_button(5))
+    keypad.add(digit_button(6))
+    keypad.add(operator_button(@"/", @"/"))
+    keypad.add(operator_button(@"*", @"*"))
+
+    keypad.add(digit_button(1))
+    keypad.add(digit_button(2))
+    keypad.add(digit_button(3))
+    keypad.add(operator_button(@"+", @"+"))
+    keypad.add(operator_button(@"-", @"-"))
+
+    let zero = digit_button(0)
+    keypad.add(zero)
+    keypad.set_span(zero, 3, 1)
+    let eq = equals_button()
+    keypad.add(eq)
+    keypad.set_span(eq, 2, 1)
+
+    calc_view.add(keypad)
+
+    -- Converter view
+    let conv_view = build_converter_ui()
+    .set_id(@"converter")
+
+    switcher.add(@"calculator", (vs = cogito.ViewSwitcher) => calc_view)
+    switcher.add(@"converter", (vs = cogito.ViewSwitcher) => conv_view)
+    switcher.set_active(@"calculator")
+    switcher.set_hexpand(true)
+    switcher.set_vexpand(true)
+
+    root.add(switcher)
+    win.add(root)
+
+    clear_all()
+}
+
+entry () (( -- )) {
+    cogito.load_sum(@"ergocalc.sum")
+    let app = cogito.app()
+    .set_accent_color(@"#8C56BF", false)
+    .set_appid(@"ergo.cogito.Calc")
+    .set_app_name(@"ErgoCalc")
+    let win = cogito.window_size(@"Ergo Calc", 360, 480)
+    .build(build_ui)
+    .set_resizable(false)
+    app.run(win)
+}

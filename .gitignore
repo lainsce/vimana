@@ -1,0 +1,24 @@
+# C extensions
+*.so
+*.o
+
+# Translations
+*.mo
+*.pot
+
+# Folders
+.vscode/
+build/
+_build/
+.ergo-cache/
+.DS_Store
+
+# Outputs of ergo compilation
+./run
+run
+run.exe
+.ergo_run.c
+
+# Generated files
+*.app
+.opencode
