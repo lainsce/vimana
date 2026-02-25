@@ -6,7 +6,7 @@ static CogitoNode* cogito_popover_new_obj(void) {
 __attribute__((unused))
 static YisVal cogito_popover_new(void) {
   CogitoNode* pop = cogito_popover_new_obj();
-  return EV_OBJ(pop);
+  return YV_OBJ(pop);
 }
 
 __attribute__((unused))
@@ -22,13 +22,13 @@ static void cogito_popover_show(YisVal anchorv, YisVal popoverv) {
   cogito_overlay_focus_snapshot();
 
   // Release old popover if any
-  if (win->popover) yis_release_val(EV_OBJ(win->popover));
+  if (win->popover) yis_release_val(YV_OBJ(win->popover));
 
   win->popover = pop;
   win->popover_anchor = anchor;
   win->popover_open = true;
   pop->parent = win;
-  yis_retain_val(EV_OBJ(pop));
+  yis_retain_val(YV_OBJ(pop));
 
   cogito_apply_style_tree(pop);
   cogito_window_relayout(win);
@@ -60,7 +60,7 @@ static void cogito_popover_close(YisVal windowv) {
   }
 
   if (win->popover) {
-    yis_release_val(EV_OBJ(win->popover));
+    yis_release_val(YV_OBJ(win->popover));
     win->popover = NULL;
   }
   win->popover_anchor = NULL;

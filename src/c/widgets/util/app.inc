@@ -4,15 +4,15 @@
 static void cogito_app_drop(YisObj* o) {
   CogitoApp* app = (CogitoApp*)o;
   if (app->app_id) {
-    yis_release_val(EV_STR(app->app_id));
+    yis_release_val(YV_STR(app->app_id));
     app->app_id = NULL;
   }
   if (app->app_name) {
-    yis_release_val(EV_STR(app->app_name));
+    yis_release_val(YV_STR(app->app_name));
     app->app_name = NULL;
   }
   if (app->app_icon) {
-    yis_release_val(EV_STR(app->app_icon));
+    yis_release_val(YV_STR(app->app_icon));
     app->app_icon = NULL;
   }
 }
@@ -154,12 +154,12 @@ static void cogito_app_set_appid(YisVal appv, YisVal idv) {
   bool temp = false;
   if (idv.tag == EVT_STR) {
     s = (YisStr*)idv.as.p;
-    if (s) yis_retain_val(EV_STR(s));
+    if (s) yis_retain_val(YV_STR(s));
   } else if (idv.tag != EVT_NULL) {
     s = stdr_to_string(idv);
     temp = true;
   }
-  if (app->app_id) yis_release_val(EV_STR(app->app_id));
+  if (app->app_id) yis_release_val(YV_STR(app->app_id));
   app->app_id = s;
   if (temp && s) {
     // app now owns temp string (ref=1)
@@ -173,12 +173,12 @@ static void cogito_app_set_app_name(YisVal appv, YisVal namev) {
   bool temp = false;
   if (namev.tag == EVT_STR) {
     s = (YisStr*)namev.as.p;
-    if (s) yis_retain_val(EV_STR(s));
+    if (s) yis_retain_val(YV_STR(s));
   } else if (namev.tag != EVT_NULL) {
     s = stdr_to_string(namev);
     temp = true;
   }
-  if (app->app_name) yis_release_val(EV_STR(app->app_name));
+  if (app->app_name) yis_release_val(YV_STR(app->app_name));
   app->app_name = s;
   if (temp && s) {
     // app now owns temp string (ref=1)
@@ -212,7 +212,7 @@ static void cogito_app_set_accent_color(YisVal appv, YisVal colorv, YisVal follo
       fprintf(stderr, "cogito: app_set_accent_color failed to parse color=%s\n", (s && s->data) ? s->data : "");
       fflush(stderr);
     }
-    if (temp && s) yis_release_val(EV_STR(s));
+    if (temp && s) yis_release_val(YV_STR(s));
   }
   cogito_app_update_theme(appv);
 }
@@ -242,12 +242,12 @@ static void cogito_app_set_icon(YisVal appv, YisVal pathv) {
   bool temp = false;
   if (pathv.tag == EVT_STR) {
     s = (YisStr*)pathv.as.p;
-    if (s) yis_retain_val(EV_STR(s));
+    if (s) yis_retain_val(YV_STR(s));
   } else if (pathv.tag != EVT_NULL) {
     s = stdr_to_string(pathv);
     temp = true;
   }
-  if (app->app_icon) yis_release_val(EV_STR(app->app_icon));
+  if (app->app_icon) yis_release_val(YV_STR(app->app_icon));
   app->app_icon = s;
   if (temp && s) {
     // app now owns temp string (ref=1)
@@ -267,7 +267,7 @@ static YisVal cogito_app_new(void) {
     fflush(stderr);
   }
   CogitoApp* app = cogito_app_new_obj();
-  YisVal appv = EV_OBJ(app);
+  YisVal appv = YV_OBJ(app);
   cogito_app_update_theme(appv);
-  return EV_OBJ(app);
+  return YV_OBJ(app);
 }

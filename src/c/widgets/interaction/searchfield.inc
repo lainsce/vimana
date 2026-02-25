@@ -8,7 +8,7 @@ static CogitoNode* cogito_searchfield_new_obj(YisStr* text) {
 static YisVal cogito_searchfield_new(YisVal text) {
   YisStr* ts = stdr_to_string(text);
   CogitoNode* sf = cogito_searchfield_new_obj(ts);
-  return EV_OBJ(sf);
+  return YV_OBJ(sf);
 }
 static void cogito_searchfield_set_text(YisVal nodev, YisVal textv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.searchfield_set_text expects searchfield");
@@ -23,15 +23,15 @@ static YisVal cogito_searchfield_get_text(YisVal nodev) {
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_SEARCHFIELD) yis_trap("cogito.searchfield_get_text expects searchfield");
   YisStr* s = n->text ? n->text : stdr_str_lit("");
-  yis_retain_val(EV_STR(s));
-  return EV_STR(s);
+  yis_retain_val(YV_STR(s));
+  return YV_STR(s);
 }
 static void cogito_searchfield_on_change(YisVal nodev, YisVal handler) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.searchfield_on_change expects searchfield");
   if (handler.tag != EVT_FN) yis_trap("cogito.searchfield_on_change expects function");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_SEARCHFIELD) yis_trap("cogito.searchfield_on_change expects searchfield");
-  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  if (n->on_change) yis_release_val(YV_FN(n->on_change));
   n->on_change = (YisFn*)handler.as.p;
-  yis_retain_val(EV_FN(n->on_change));
+  yis_retain_val(YV_FN(n->on_change));
 }

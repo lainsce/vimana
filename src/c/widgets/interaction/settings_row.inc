@@ -7,5 +7,5 @@ static CogitoNode* cogito_settings_row_new_obj(YisStr* label) {
 static YisVal cogito_settings_row_new(YisVal labelv) {
   YisStr* ts = stdr_to_string(labelv);
   CogitoNode* n = cogito_settings_row_new_obj(ts);
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }

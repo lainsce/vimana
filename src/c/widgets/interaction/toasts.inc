@@ -2,5 +2,5 @@ static CogitoNode* cogito_toasts_new_obj(void) {
   return cogito_node_new(COGITO_TOASTS);
 }
 static YisVal cogito_toasts_new(void) {
-  return EV_OBJ(cogito_toasts_new_obj());
+  return YV_OBJ(cogito_toasts_new_obj());
 }

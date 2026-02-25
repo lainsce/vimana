@@ -38,23 +38,23 @@ static void cogito_node_drop(YisObj* o) {
   CogitoNode* n = (CogitoNode*)o;
   cogito_timer_cancel_owner_tree(n);
   if (n->text) {
-    yis_release_val(EV_STR(n->text));
+    yis_release_val(YV_STR(n->text));
     n->text = NULL;
   }
   if (n->subtitle) {
-    yis_release_val(EV_STR(n->subtitle));
+    yis_release_val(YV_STR(n->subtitle));
     n->subtitle = NULL;
   }
   if (n->hint) {
-    yis_release_val(EV_STR(n->hint));
+    yis_release_val(YV_STR(n->hint));
     n->hint = NULL;
   }
   if (n->tooltip) {
-    yis_release_val(EV_STR(n->tooltip));
+    yis_release_val(YV_STR(n->tooltip));
     n->tooltip = NULL;
   }
   if (n->icon) {
-    yis_release_val(EV_STR(n->icon));
+    yis_release_val(YV_STR(n->icon));
     n->icon = NULL;
   }
   if ((n->kind == COGITO_IMAGE || n->kind == COGITO_AVATAR) &&
@@ -63,51 +63,51 @@ static void cogito_node_drop(YisObj* o) {
     n->image.texture = NULL;
   }
   if (n->on_click) {
-    yis_release_val(EV_FN(n->on_click));
+    yis_release_val(YV_FN(n->on_click));
     n->on_click = NULL;
   }
   if (n->on_change) {
-    yis_release_val(EV_FN(n->on_change));
+    yis_release_val(YV_FN(n->on_change));
     n->on_change = NULL;
   }
   if (n->on_select) {
-    yis_release_val(EV_FN(n->on_select));
+    yis_release_val(YV_FN(n->on_select));
     n->on_select = NULL;
   }
   if (n->on_activate) {
-    yis_release_val(EV_FN(n->on_activate));
+    yis_release_val(YV_FN(n->on_activate));
     n->on_activate = NULL;
   }
   if (n->builder) {
-    yis_release_val(EV_FN(n->builder));
+    yis_release_val(YV_FN(n->builder));
     n->builder = NULL;
   }
   if (n->on_action) {
-    yis_release_val(EV_FN(n->on_action));
+    yis_release_val(YV_FN(n->on_action));
     n->on_action = NULL;
   }
   if (n->on_draw) {
-    yis_release_val(EV_FN(n->on_draw));
+    yis_release_val(YV_FN(n->on_draw));
     n->on_draw = NULL;
   }
   if (n->action_text) {
-    yis_release_val(EV_STR(n->action_text));
+    yis_release_val(YV_STR(n->action_text));
     n->action_text = NULL;
   }
   if (n->class_name) {
-    yis_release_val(EV_STR(n->class_name));
+    yis_release_val(YV_STR(n->class_name));
     n->class_name = NULL;
   }
   if (n->group.tag != EVT_NULL) {
     yis_release_val(n->group);
-    n->group = EV_NULLV;
+    n->group = YV_NULLV;
   }
   if (n->menu_labels) {
     for (size_t i = 0; i < n->menu_len; i++) {
-      if (n->menu_labels[i]) yis_release_val(EV_STR(n->menu_labels[i]));
-      if (n->menu_handlers[i]) yis_release_val(EV_FN(n->menu_handlers[i]));
-      if (n->menu_icons && n->menu_icons[i]) yis_release_val(EV_STR(n->menu_icons[i]));
-      if (n->menu_shortcuts && n->menu_shortcuts[i]) yis_release_val(EV_STR(n->menu_shortcuts[i]));
+      if (n->menu_labels[i]) yis_release_val(YV_STR(n->menu_labels[i]));
+      if (n->menu_handlers[i]) yis_release_val(YV_FN(n->menu_handlers[i]));
+      if (n->menu_icons && n->menu_icons[i]) yis_release_val(YV_STR(n->menu_icons[i]));
+      if (n->menu_shortcuts && n->menu_shortcuts[i]) yis_release_val(YV_STR(n->menu_shortcuts[i]));
     }
     free(n->menu_labels);
     free(n->menu_handlers);
@@ -127,18 +127,18 @@ static void cogito_node_drop(YisObj* o) {
     n->menu_cap = 0;
   }
   if (n->a11y_label) {
-    yis_release_val(EV_STR(n->a11y_label));
+    yis_release_val(YV_STR(n->a11y_label));
     n->a11y_label = NULL;
   }
   if (n->a11y_role) {
-    yis_release_val(EV_STR(n->a11y_role));
+    yis_release_val(YV_STR(n->a11y_role));
     n->a11y_role = NULL;
   }
   if (n->tab_labels) {
     for (size_t i = 0; i < n->tab_len; i++) {
-      if (n->tab_labels[i]) yis_release_val(EV_STR(n->tab_labels[i]));
-      if (n->tab_icons && n->tab_icons[i]) yis_release_val(EV_STR(n->tab_icons[i]));
-      if (n->tab_ids && n->tab_ids[i]) yis_release_val(EV_STR(n->tab_ids[i]));
+      if (n->tab_labels[i]) yis_release_val(YV_STR(n->tab_labels[i]));
+      if (n->tab_icons && n->tab_icons[i]) yis_release_val(YV_STR(n->tab_icons[i]));
+      if (n->tab_ids && n->tab_ids[i]) yis_release_val(YV_STR(n->tab_ids[i]));
     }
     free(n->tab_labels);
     free(n->tab_icons);
@@ -152,8 +152,8 @@ static void cogito_node_drop(YisObj* o) {
   if (n->kind == COGITO_NAV_RAIL) {
     if (n->nav_rail.labels) {
       for (size_t i = 0; i < n->nav_rail.len; i++) {
-        if (n->nav_rail.labels[i]) yis_release_val(EV_STR(n->nav_rail.labels[i]));
-        if (n->nav_rail.icons && n->nav_rail.icons[i]) yis_release_val(EV_STR(n->nav_rail.icons[i]));
+        if (n->nav_rail.labels[i]) yis_release_val(YV_STR(n->nav_rail.labels[i]));
+        if (n->nav_rail.icons && n->nav_rail.icons[i]) yis_release_val(YV_STR(n->nav_rail.icons[i]));
       }
       free(n->nav_rail.labels);
       free(n->nav_rail.icons);
@@ -162,24 +162,24 @@ static void cogito_node_drop(YisObj* o) {
   }
   if (n->kind == COGITO_BOTTOM_NAV && n->bottom_nav.labels) {
     for (size_t i = 0; i < n->bottom_nav.len; i++) {
-      if (n->bottom_nav.labels[i]) yis_release_val(EV_STR(n->bottom_nav.labels[i]));
-      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) yis_release_val(EV_STR(n->bottom_nav.icons[i]));
+      if (n->bottom_nav.labels[i]) yis_release_val(YV_STR(n->bottom_nav.labels[i]));
+      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) yis_release_val(YV_STR(n->bottom_nav.icons[i]));
     }
     free(n->bottom_nav.labels);
     free(n->bottom_nav.icons);
   }
   if (n->view_id) {
-    yis_release_val(EV_STR(n->view_id));
+    yis_release_val(YV_STR(n->view_id));
     n->view_id = NULL;
   }
   if (n->view_active_id) {
-    yis_release_val(EV_STR(n->view_active_id));
+    yis_release_val(YV_STR(n->view_active_id));
     n->view_active_id = NULL;
   }
   if (n->view_builder_ids) {
     for (size_t i = 0; i < n->view_builder_len; i++) {
-      if (n->view_builder_ids[i]) yis_release_val(EV_STR(n->view_builder_ids[i]));
-      if (n->view_builders[i]) yis_release_val(EV_FN(n->view_builders[i]));
+      if (n->view_builder_ids[i]) yis_release_val(YV_STR(n->view_builder_ids[i]));
+      if (n->view_builders[i]) yis_release_val(YV_FN(n->view_builders[i]));
     }
     free(n->view_builder_ids);
     free(n->view_builders);
@@ -190,7 +190,7 @@ static void cogito_node_drop(YisObj* o) {
   }
   if (n->children) {
     for (size_t i = 0; i < n->len; i++) {
-      yis_release_val(EV_OBJ(n->children[i]));
+      yis_release_val(YV_OBJ(n->children[i]));
     }
     free(n->children);
     n->children = NULL;
@@ -199,7 +199,7 @@ static void cogito_node_drop(YisObj* o) {
   }
   if (n->kind == COGITO_CARD) {
     if (n->card.header_image) {
-      yis_release_val(EV_OBJ(n->card.header_image));
+      yis_release_val(YV_OBJ(n->card.header_image));
       n->card.header_image = NULL;
     }
     if (n->card.actions) {
@@ -208,7 +208,7 @@ static void cogito_node_drop(YisObj* o) {
     }
   }
   if (n->dialog) {
-    yis_release_val(EV_OBJ(n->dialog));
+    yis_release_val(YV_OBJ(n->dialog));
     n->dialog = NULL;
   }
 }
@@ -476,8 +476,8 @@ static void cogito_apply_window_a11y_label(CogitoNode* n) {
 
 static void cogito_node_set_text(CogitoNode* n, YisStr* s) {
   if (!n) return;
-  if (s) yis_retain_val(EV_STR(s));
-  if (n->text) yis_release_val(EV_STR(n->text));
+  if (s) yis_retain_val(YV_STR(s));
+  if (n->text) yis_release_val(YV_STR(n->text));
   n->text = s;
   int len = n->text ? (int)n->text->len : 0;
   // Only update text_input if node kind actually uses it (to avoid overwriting union fields)
@@ -490,29 +490,29 @@ static void cogito_node_set_text(CogitoNode* n, YisStr* s) {
 
 static void cogito_node_set_subtitle(CogitoNode* n, YisStr* s) {
   if (!n) return;
-  if (s) yis_retain_val(EV_STR(s));
-  if (n->subtitle) yis_release_val(EV_STR(n->subtitle));
+  if (s) yis_retain_val(YV_STR(s));
+  if (n->subtitle) yis_release_val(YV_STR(n->subtitle));
   n->subtitle = s;
 }
 
 static void cogito_node_set_hint(CogitoNode* n, YisStr* s) {
   if (!n) return;
-  if (s) yis_retain_val(EV_STR(s));
-  if (n->hint) yis_release_val(EV_STR(n->hint));
+  if (s) yis_retain_val(YV_STR(s));
+  if (n->hint) yis_release_val(YV_STR(n->hint));
   n->hint = s;
 }
 
 static void cogito_node_set_tooltip(CogitoNode* n, YisStr* s) {
   if (!n) return;
-  if (s) yis_retain_val(EV_STR(s));
-  if (n->tooltip) yis_release_val(EV_STR(n->tooltip));
+  if (s) yis_retain_val(YV_STR(s));
+  if (n->tooltip) yis_release_val(YV_STR(n->tooltip));
   n->tooltip = s;
 }
 
 static void cogito_node_set_icon(CogitoNode* n, YisStr* s) {
   if (!n) return;
-  if (s) yis_retain_val(EV_STR(s));
-  if (n->icon) yis_release_val(EV_STR(n->icon));
+  if (s) yis_retain_val(YV_STR(s));
+  if (n->icon) yis_release_val(YV_STR(n->icon));
   n->icon = s;
 }
 
@@ -532,7 +532,7 @@ static void cogito_children_add(CogitoNode* parent, CogitoNode* child) {
   }
   parent->children[parent->len++] = child;
   child->parent = parent;
-  yis_retain_val(EV_OBJ(child));
+  yis_retain_val(YV_OBJ(child));
 }
 
 static void cogito_node_add_menu(CogitoNode* n, YisStr* label, YisFn* handler) {
@@ -555,8 +555,8 @@ static void cogito_node_add_menu(CogitoNode* n, YisStr* label, YisFn* handler) {
   n->menu_shortcuts[n->menu_len] = NULL;
   n->menu_submenu[n->menu_len] = false;
   n->menu_toggled[n->menu_len] = false;
-  if (label) yis_retain_val(EV_STR(label));
-  if (handler) yis_retain_val(EV_FN(handler));
+  if (label) yis_retain_val(YV_STR(label));
+  if (handler) yis_retain_val(YV_FN(handler));
   n->menu_len++;
 }
 
@@ -564,18 +564,18 @@ static void cogito_node_add_menu(CogitoNode* n, YisStr* label, YisFn* handler) {
 static void cogito_node_menu_set_icon(CogitoNode* n, YisStr* icon) {
   if (!n || n->menu_len == 0) return;
   size_t idx = n->menu_len - 1;
-  if (n->menu_icons[idx]) yis_release_val(EV_STR(n->menu_icons[idx]));
+  if (n->menu_icons[idx]) yis_release_val(YV_STR(n->menu_icons[idx]));
   n->menu_icons[idx] = icon;
-  if (icon) yis_retain_val(EV_STR(icon));
+  if (icon) yis_retain_val(YV_STR(icon));
 }
 
 // Set trailing shortcut text on the last-added menu item
 static void cogito_node_menu_set_shortcut(CogitoNode* n, YisStr* shortcut) {
   if (!n || n->menu_len == 0) return;
   size_t idx = n->menu_len - 1;
-  if (n->menu_shortcuts[idx]) yis_release_val(EV_STR(n->menu_shortcuts[idx]));
+  if (n->menu_shortcuts[idx]) yis_release_val(YV_STR(n->menu_shortcuts[idx]));
   n->menu_shortcuts[idx] = shortcut;
-  if (shortcut) yis_retain_val(EV_STR(shortcut));
+  if (shortcut) yis_retain_val(YV_STR(shortcut));
 }
 
 // Mark the last-added menu item as a submenu (trailing arrow)

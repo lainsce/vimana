@@ -15,7 +15,7 @@ typedef struct CogitoTimer {
   CogitoNode* owner;
   CogitoTimerCallbackKind cb_kind;
   union {
-    YisFn* yis_fn;
+    YisFn* yi_fn;
     struct {
       cogito_timer_fn fn;
       void* user;
@@ -47,9 +47,9 @@ static uint64_t cogito_timer_take_id(void) {
 
 static void cogito_timer_release_callback(CogitoTimer* timer) {
   if (!timer) return;
-  if (timer->cb_kind == COGITO_TIMER_CB_YIS && timer->cb.yis_fn) {
-    yis_release_val(EV_FN(timer->cb.yis_fn));
-    timer->cb.yis_fn = NULL;
+  if (timer->cb_kind == COGITO_TIMER_CB_YIS && timer->cb.yi_fn) {
+    yis_release_val(YV_FN(timer->cb.yi_fn));
+    timer->cb.yi_fn = NULL;
   } else if (timer->cb_kind == COGITO_TIMER_CB_C &&
              timer->cb.c.user_free && timer->cb.c.user) {
     timer->cb.c.user_free(timer->cb.c.user);
@@ -80,11 +80,11 @@ static void cogito_timer_collect(void) {
 
 static uint64_t cogito_timer_schedule_common(uint32_t delay_ms, bool repeat,
                                              CogitoTimerCallbackKind cb_kind,
-                                             YisFn* yis_fn, cogito_timer_fn c_fn,
+                                             YisFn* yi_fn, cogito_timer_fn c_fn,
                                              void* c_user,
                                              CogitoTimerUserFreeFn c_user_free,
                                              CogitoNode* owner) {
-  if (cb_kind == COGITO_TIMER_CB_YIS && !yis_fn) return 0;
+  if (cb_kind == COGITO_TIMER_CB_YIS && !yi_fn) return 0;
   if (cb_kind == COGITO_TIMER_CB_C && !c_fn) return 0;
 
   CogitoTimer* timer = (CogitoTimer*)calloc(1, sizeof(*timer));
@@ -97,8 +97,8 @@ static uint64_t cogito_timer_schedule_common(uint32_t delay_ms, bool repeat,
   timer->owner = owner;
   timer->cb_kind = cb_kind;
   if (cb_kind == COGITO_TIMER_CB_YIS) {
-    timer->cb.yis_fn = yis_fn;
-    yis_retain_val(EV_FN(yis_fn));
+    timer->cb.yi_fn = yi_fn;
+    yis_retain_val(YV_FN(yi_fn));
   } else {
     timer->cb.c.fn = c_fn;
     timer->cb.c.user = c_user;
@@ -195,7 +195,7 @@ static bool cogito_timer_dispatch_due(void) {
 
     timer->running = true;
     if (timer->cb_kind == COGITO_TIMER_CB_YIS) {
-      if (timer->cb.yis_fn) cogito_invoke(timer->cb.yis_fn, 0, NULL);
+      if (timer->cb.yi_fn) cogito_invoke(timer->cb.yi_fn, 0, NULL);
     } else {
       if (timer->cb.c.fn) timer->cb.c.fn(timer->cb.c.user);
     }
@@ -242,7 +242,7 @@ static YisVal cogito_timer_timeout(YisVal delayv, YisVal handlerv) {
   if (delay < 0) delay = 0;
   uint64_t timer_id =
       cogito_timer_schedule_yis((uint32_t)delay, false, handlerv.as.p);
-  return EV_INT((int64_t)timer_id);
+  return YV_INT((int64_t)timer_id);
 }
 
 __attribute__((unused))
@@ -252,13 +252,13 @@ static YisVal cogito_timer_interval(YisVal delayv, YisVal handlerv) {
   if (delay < 0) delay = 0;
   uint64_t timer_id =
       cogito_timer_schedule_yis((uint32_t)delay, true, handlerv.as.p);
-  return EV_INT((int64_t)timer_id);
+  return YV_INT((int64_t)timer_id);
 }
 
 __attribute__((unused))
 static YisVal cogito_timer_cancel(YisVal timer_id_v) {
   uint64_t timer_id = (uint64_t)yis_as_int(timer_id_v);
-  return EV_BOOL(cogito_timer_cancel_id(timer_id));
+  return YV_BOOL(cogito_timer_cancel_id(timer_id));
 }
 
 __attribute__((unused))

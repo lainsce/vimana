@@ -10,14 +10,14 @@
 .vscode/
 build/
 _build/
-.yis-cache/
+.yi-cache/
 .DS_Store
 
 # Outputs of yis compilation
 ./run
 run
 run.exe
-.yis_run.c
+.yi_run.c
 
 # Generated files
 *.app

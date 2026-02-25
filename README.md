@@ -48,8 +48,8 @@ meson compile -C cogito/build
 Then run GUI examples with Yis:
 
 ```sh
-./yis/build/yis run cogito/examples/gui_hello.yis
-./yis/build/yis run cogito/examples/gui_gallery.yis
+./yis/build/yis run cogito/examples/gui_hello.yi
+./yis/build/yis run cogito/examples/gui_gallery.yi
 ```
 
 If your program uses Cogito, include:

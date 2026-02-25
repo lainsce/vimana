@@ -2,7 +2,7 @@ static CogitoNode* cogito_scroller_new_obj(void) {
   return cogito_node_new(COGITO_SCROLLER);
 }
 static YisVal cogito_scroller_new(void) {
-  return EV_OBJ(cogito_scroller_new_obj());
+  return YV_OBJ(cogito_scroller_new_obj());
 }
 static void cogito_scroller_set_axes(YisVal scv, YisVal horzv, YisVal vertv) {
   if (scv.tag != EVT_OBJ) yis_trap("cogito.scroller_set_axes expects scroller");

@@ -7,7 +7,7 @@ static CogitoNode* cogito_checkbox_new_obj(YisStr* label, YisVal group) {
 static YisVal cogito_checkbox_new(YisVal text, YisVal group) {
   YisStr* ts = stdr_to_string(text);
   CogitoNode* cb = cogito_checkbox_new_obj(ts, group);
-  return EV_OBJ(cb);
+  return YV_OBJ(cb);
 }
 static void cogito_checkbox_set_checked(YisVal cbv, YisVal checked) {
   if (cbv.tag != EVT_OBJ) yis_trap("cogito.checkbox_set_checked expects checkbox");
@@ -17,14 +17,14 @@ static void cogito_checkbox_set_checked(YisVal cbv, YisVal checked) {
 static YisVal cogito_checkbox_get_checked(YisVal cbv) {
   if (cbv.tag != EVT_OBJ) yis_trap("cogito.checkbox_get_checked expects checkbox");
   CogitoNode* cb = (CogitoNode*)cbv.as.p;
-  return EV_BOOL(cb->checked);
+  return YV_BOOL(cb->checked);
 }
 static void cogito_checkbox_on_change(YisVal cbv, YisVal handler) {
   if (cbv.tag != EVT_OBJ) yis_trap("cogito.checkbox_on_change expects checkbox");
   CogitoNode* cb = (CogitoNode*)cbv.as.p;
-  if (cb->on_change) yis_release_val(EV_FN(cb->on_change));
+  if (cb->on_change) yis_release_val(YV_FN(cb->on_change));
   cb->on_change = (YisFn*)handler.as.p;
-  yis_retain_val(EV_FN(cb->on_change));
+  yis_retain_val(YV_FN(cb->on_change));
 }
 static void cogito_uncheck_group(CogitoNode* root, CogitoNode* except, YisVal group) {
   if (!root) return;

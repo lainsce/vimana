@@ -67,7 +67,7 @@ static CogitoNode* cogito_timepicker_open_panel(CogitoNode* owner) {
   panel->timepicker.initialized = true;
 
   cogito_children_add(pop, panel);
-  yis_release_val(EV_OBJ(panel));  // child list now owns the panel reference
+  yis_release_val(YV_OBJ(panel));  // child list now owns the panel reference
   return pop;
 }
 
@@ -78,8 +78,8 @@ static void cogito_timepicker_show_popover(CogitoNode* anchor) {
 
   CogitoNode* pop = cogito_timepicker_open_panel(anchor);
   if (!pop) return;
-  cogito_popover_show(EV_OBJ(anchor), EV_OBJ(pop));
-  yis_release_val(EV_OBJ(pop));  // window popover slot now owns the reference
+  cogito_popover_show(YV_OBJ(anchor), YV_OBJ(pop));
+  yis_release_val(YV_OBJ(pop));  // window popover slot now owns the reference
 }
 
 static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
@@ -108,7 +108,7 @@ static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
     }
     if (cogito_pointer_capture == panel) cogito_pointer_capture = NULL;
     if (cogito_timepicker_active == panel) cogito_timepicker_active = NULL;
-    if (win) cogito_popover_close(EV_OBJ(win));
+    if (win) cogito_popover_close(YV_OBJ(win));
     return true;
   }
 
@@ -126,7 +126,7 @@ static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
     }
     if (cogito_pointer_capture == panel) cogito_pointer_capture = NULL;
     if (cogito_timepicker_active == panel) cogito_timepicker_active = NULL;
-    if (win) cogito_popover_close(EV_OBJ(win));
+    if (win) cogito_popover_close(YV_OBJ(win));
     if (changed && owner) cogito_invoke_change(owner);
     return true;
   }
@@ -185,7 +185,7 @@ static bool cogito_timepicker_hit(CogitoNode* n, int mx, int my, bool clicked) {
   CogitoNode* win = cogito_node_window(n);
   if (!win) return false;
   if (win->popover_open && win->popover_anchor == n) {
-    cogito_popover_close(EV_OBJ(win));
+    cogito_popover_close(YV_OBJ(win));
     return true;
   }
   cogito_timepicker_show_popover(n);
@@ -205,36 +205,36 @@ static CogitoNode* cogito_timepicker_new_obj(void) {
 }
 
 static YisVal cogito_timepicker_new(void) {
-  return EV_OBJ(cogito_timepicker_new_obj());
+  return YV_OBJ(cogito_timepicker_new_obj());
 }
 
 static void cogito_timepicker_on_change(YisVal nodev, YisVal handler) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.timepicker_on_change expects timepicker");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_TIMEPICKER) yis_trap("cogito.timepicker_on_change expects timepicker");
-  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  if (n->on_change) yis_release_val(YV_FN(n->on_change));
   if (handler.tag == EVT_FN) {
     n->on_change = (YisFn*)handler.as.p;
-    yis_retain_val(EV_FN(n->on_change));
+    yis_retain_val(YV_FN(n->on_change));
   } else {
     n->on_change = NULL;
   }
 }
 
 static YisVal cogito_timepicker_get_hour(YisVal nodev) {
-  if (nodev.tag != EVT_OBJ) return EV_INT(0);
+  if (nodev.tag != EVT_OBJ) return YV_INT(0);
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (!n || n->kind != COGITO_TIMEPICKER) return EV_INT(0);
+  if (!n || n->kind != COGITO_TIMEPICKER) return YV_INT(0);
   cogito_timepicker_ensure_time(n);
-  return EV_INT(n->timepicker.hour);
+  return YV_INT(n->timepicker.hour);
 }
 
 static YisVal cogito_timepicker_get_minute(YisVal nodev) {
-  if (nodev.tag != EVT_OBJ) return EV_INT(0);
+  if (nodev.tag != EVT_OBJ) return YV_INT(0);
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (!n || n->kind != COGITO_TIMEPICKER) return EV_INT(0);
+  if (!n || n->kind != COGITO_TIMEPICKER) return YV_INT(0);
   cogito_timepicker_ensure_time(n);
-  return EV_INT(n->timepicker.minute);
+  return YV_INT(n->timepicker.minute);
 }
 
 static void cogito_timepicker_set_time(YisVal nodev, YisVal hourv, YisVal minv) {

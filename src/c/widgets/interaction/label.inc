@@ -6,7 +6,7 @@ static CogitoNode* cogito_label_new_obj(YisStr* label) {
 static YisVal cogito_label_new(YisVal text) {
   YisStr* ts = stdr_to_string(text);
   CogitoNode* lab = cogito_label_new_obj(ts);
-  return EV_OBJ(lab);
+  return YV_OBJ(lab);
 }
 static void cogito_label_set_text(YisVal labelv, YisVal textv) {
   if (labelv.tag != EVT_OBJ) yis_trap("cogito.label_set_text expects label");

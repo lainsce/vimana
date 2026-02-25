@@ -101,6 +101,6 @@ static YisVal cogito_bottom_sheet_new(YisVal titlev) {
     ts = stdr_to_string(titlev);
   }
   CogitoNode* n = cogito_bottom_sheet_new_obj(ts);
-  if (ts && titlev.tag != EVT_STR) yis_release_val(EV_STR(ts));
-  return EV_OBJ(n);
+  if (ts && titlev.tag != EVT_STR) yis_release_val(YV_STR(ts));
+  return YV_OBJ(n);
 }

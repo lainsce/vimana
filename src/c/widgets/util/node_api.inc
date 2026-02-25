@@ -114,8 +114,8 @@ static void cogito_node_set_editable(YisVal nodev, YisVal onv) {
 static YisVal cogito_node_get_editable(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_get_editable expects object");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (!cogito_node_supports_editable(n)) return EV_BOOL(false);
-  return EV_BOOL(n->editable);
+  if (!cogito_node_supports_editable(n)) return YV_BOOL(false);
+  return YV_BOOL(n->editable);
 }
 
 static void cogito_node_set_id(YisVal nodev, YisVal idv) {
@@ -124,11 +124,11 @@ static void cogito_node_set_id(YisVal nodev, YisVal idv) {
   YisStr* s = NULL;
   if (idv.tag == EVT_STR) {
     s = (YisStr*)idv.as.p;
-    if (s) yis_retain_val(EV_STR(s));
+    if (s) yis_retain_val(YV_STR(s));
   } else if (idv.tag != EVT_NULL) {
     s = stdr_to_string(idv);
   }
-  if (n->view_id) yis_release_val(EV_STR(n->view_id));
+  if (n->view_id) yis_release_val(YV_STR(n->view_id));
   n->view_id = s;
   cogito_window_relayout(cogito_node_window(n));
 }
@@ -162,7 +162,7 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
   
   // Clear old class name
   if (n->class_name) {
-    yis_release_val(EV_STR(n->class_name));
+    yis_release_val(YV_STR(n->class_name));
     n->class_name = NULL;
   }
   
@@ -211,12 +211,12 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
         } else {
           // String owned by caller -- retain a separate reference for the node.
           n->class_name = cs;
-          yis_retain_val(EV_STR(cs));
+          yis_retain_val(YV_STR(cs));
         }
       }
     }
   }
-  if (temp && cs) yis_release_val(EV_STR(cs));
+  if (temp && cs) yis_release_val(YV_STR(cs));
   cogito_apply_style_to_node(n);
   extern CogitoNode* cogito_active_window;
   if (cogito_active_window) {
@@ -228,14 +228,14 @@ static void cogito_node_set_a11y_label(YisVal nodev, YisVal labelv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_set_a11y_label expects node");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->a11y_label) {
-    yis_release_val(EV_STR(n->a11y_label));
+    yis_release_val(YV_STR(n->a11y_label));
     n->a11y_label = NULL;
   }
   if (labelv.tag == EVT_STR) {
     YisStr* ls = (YisStr*)labelv.as.p;
     if (ls) {
       n->a11y_label = ls;
-      yis_retain_val(EV_STR(ls));
+      yis_retain_val(YV_STR(ls));
     }
   } else if (labelv.tag != EVT_NULL) {
     n->a11y_label = stdr_to_string(labelv);
@@ -249,14 +249,14 @@ static void cogito_node_set_a11y_role(YisVal nodev, YisVal rolev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_set_a11y_role expects node");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->a11y_role) {
-    yis_release_val(EV_STR(n->a11y_role));
+    yis_release_val(YV_STR(n->a11y_role));
     n->a11y_role = NULL;
   }
   if (rolev.tag == EVT_STR) {
     YisStr* rs = (YisStr*)rolev.as.p;
     if (rs) {
       n->a11y_role = rs;
-      yis_retain_val(EV_STR(rs));
+      yis_retain_val(YV_STR(rs));
     }
   } else if (rolev.tag != EVT_NULL) {
     n->a11y_role = stdr_to_string(rolev);
@@ -268,14 +268,14 @@ static void cogito_node_set_tooltip_val(YisVal nodev, YisVal textv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_set_tooltip expects node");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->tooltip) {
-    yis_release_val(EV_STR(n->tooltip));
+    yis_release_val(YV_STR(n->tooltip));
     n->tooltip = NULL;
   }
   if (textv.tag == EVT_STR) {
     YisStr* ts = (YisStr*)textv.as.p;
     if (ts) {
       n->tooltip = ts;
-      yis_retain_val(EV_STR(ts));
+      yis_retain_val(YV_STR(ts));
     }
   } else if (textv.tag != EVT_NULL) {
     n->tooltip = stdr_to_string(textv);
@@ -297,6 +297,6 @@ static YisVal cogito_node_window_val(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_window expects object");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   CogitoNode* win = cogito_node_window(n);
-  if (win) return EV_OBJ(win);
-  return EV_NULLV;
+  if (win) return YV_OBJ(win);
+  return YV_NULLV;
 }

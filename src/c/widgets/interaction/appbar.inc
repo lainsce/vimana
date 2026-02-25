@@ -44,7 +44,7 @@ static YisVal cogito_appbar_new(YisVal title, YisVal subtitle) {
   YisStr* ts = stdr_to_string(title);
   YisStr* ss = stdr_to_string(subtitle);
   CogitoNode* ab = cogito_appbar_new_obj(ts, ss);
-  return EV_OBJ(ab);
+  return YV_OBJ(ab);
 }
 static YisVal cogito_appbar_add_button(YisVal appv, YisVal text, YisVal handler) {
   if (appv.tag != EVT_OBJ) yis_trap("cogito.appbar_add_button expects appbar");
@@ -55,10 +55,10 @@ static YisVal cogito_appbar_add_button(YisVal appv, YisVal text, YisVal handler)
   btn->button.icon_color_style = 3;
   if (handler.tag == EVT_FN) {
     btn->on_click = (YisFn*)handler.as.p;
-    yis_retain_val(EV_FN(btn->on_click));
+    yis_retain_val(YV_FN(btn->on_click));
   }
   cogito_children_add(ab, btn);
-  return EV_OBJ(btn);
+  return YV_OBJ(btn);
 }
 static void cogito_appbar_set_controls(YisVal appv, YisVal layout) {
   if (appv.tag != EVT_OBJ) yis_trap("cogito.appbar_set_controls expects appbar");

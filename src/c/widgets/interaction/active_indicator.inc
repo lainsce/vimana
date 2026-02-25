@@ -4,5 +4,5 @@ static CogitoNode* cogito_active_indicator_new_obj(void) {
 }
 static YisVal cogito_active_indicator_new(void) {
   CogitoNode* n = cogito_active_indicator_new_obj();
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }

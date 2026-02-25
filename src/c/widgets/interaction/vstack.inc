@@ -2,5 +2,5 @@ static CogitoNode* cogito_vstack_new_obj(void) {
   return cogito_node_new(COGITO_VSTACK);
 }
 static YisVal cogito_vstack_new(void) {
-  return EV_OBJ(cogito_vstack_new_obj());
+  return YV_OBJ(cogito_vstack_new_obj());
 }

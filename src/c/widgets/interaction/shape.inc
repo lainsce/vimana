@@ -295,7 +295,7 @@ static CogitoNode* cogito_shape_new_obj(int preset) {
 
 static YisVal cogito_shape_new(YisVal presetv) {
   int preset = (int)yis_as_int(presetv);
-  return EV_OBJ(cogito_shape_new_obj(preset));
+  return YV_OBJ(cogito_shape_new_obj(preset));
 }
 
 static void cogito_shape_set_preset(YisVal shapev, YisVal presetv) {
@@ -309,7 +309,7 @@ static void cogito_shape_set_preset(YisVal shapev, YisVal presetv) {
 static YisVal cogito_shape_get_preset(YisVal shapev) {
   if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_preset expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  return EV_INT(n->shape.preset);
+  return YV_INT(n->shape.preset);
 }
 
 static void cogito_shape_set_size(YisVal shapev, YisVal sizev) {
@@ -326,7 +326,7 @@ static YisVal cogito_shape_get_size(YisVal shapev) {
   if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_size expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int size_dp = (n->shape.size_dp > 0) ? n->shape.size_dp : 96;
-  return EV_INT(size_dp);
+  return YV_INT(size_dp);
 }
 
 static void cogito_shape_set_color_style(YisVal shapev, YisVal stylev) {
@@ -349,7 +349,7 @@ static YisVal cogito_shape_get_color_style(YisVal shapev) {
   int style = n->shape.color_style;
   if (style < 0) style = 0;
   if (style > 3) style = 3;
-  return EV_INT(style);
+  return YV_INT(style);
 }
 
 static void cogito_shape_set_color(YisVal shapev, YisVal colorv) {
@@ -415,14 +415,14 @@ static YisVal cogito_shape_get_vertex_x(YisVal shapev, YisVal idxv) {
   if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_vertex_x expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int idx = (int)yis_as_int(idxv);
-  if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return EV_FLOAT(0.0);
-  return EV_FLOAT(n->shape.vertices[idx * 2 + 0]);
+  if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return YV_FLOAT(0.0);
+  return YV_FLOAT(n->shape.vertices[idx * 2 + 0]);
 }
 
 static YisVal cogito_shape_get_vertex_y(YisVal shapev, YisVal idxv) {
   if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_vertex_y expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int idx = (int)yis_as_int(idxv);
-  if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return EV_FLOAT(0.0);
-  return EV_FLOAT(n->shape.vertices[idx * 2 + 1]);
+  if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return YV_FLOAT(0.0);
+  return YV_FLOAT(n->shape.vertices[idx * 2 + 1]);
 }

@@ -9,7 +9,7 @@ static CogitoNode* cogito_iconbtn_new_obj(YisStr* label) {
 static YisVal cogito_iconbtn_new(YisVal text) {
   YisStr* ts = stdr_to_string(text);
   CogitoNode* btn = cogito_iconbtn_new_obj(ts);
-  return EV_OBJ(btn);
+  return YV_OBJ(btn);
 }
 static void cogito_iconbtn_add_menu(YisVal btnv, YisVal label, YisVal handler) {
   cogito_button_add_menu(btnv, label, handler);
@@ -37,7 +37,7 @@ static YisVal cogito_iconbtn_get_shape(YisVal btnv) {
   int v = btn->button.icon_shape;
   if (v < 0) v = 0;
   if (v > 1) v = 1;
-  return EV_INT(v);
+  return YV_INT(v);
 }
 
 static void cogito_iconbtn_set_color_style(YisVal btnv, YisVal stylev) {
@@ -57,7 +57,7 @@ static YisVal cogito_iconbtn_get_color_style(YisVal btnv) {
   int v = btn->button.icon_color_style;
   if (v < 0) v = 0;
   if (v > 3) v = 3;
-  return EV_INT(v);
+  return YV_INT(v);
 }
 
 static void cogito_iconbtn_set_width(YisVal btnv, YisVal widthv) {
@@ -77,7 +77,7 @@ static YisVal cogito_iconbtn_get_width(YisVal btnv) {
   int v = btn->button.icon_width;
   if (v < 0) v = 0;
   if (v > 2) v = 2;
-  return EV_INT(v);
+  return YV_INT(v);
 }
 
 static void cogito_iconbtn_set_toggle(YisVal btnv, YisVal togglev) {
@@ -93,7 +93,7 @@ static YisVal cogito_iconbtn_get_toggle(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.iconbtn_get_toggle expects iconbtn");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.iconbtn_get_toggle expects iconbtn");
-  return EV_BOOL(btn->button.icon_toggle);
+  return YV_BOOL(btn->button.icon_toggle);
 }
 
 static void cogito_iconbtn_set_checked(YisVal btnv, YisVal checkedv) {
@@ -108,7 +108,7 @@ static YisVal cogito_iconbtn_get_checked(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.iconbtn_get_checked expects iconbtn");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.iconbtn_get_checked expects iconbtn");
-  return EV_BOOL(btn->checked);
+  return YV_BOOL(btn->checked);
 }
 static bool cogito_iconbtn_accepts_size(const CogitoNode* n) {
   return n && (n->kind == COGITO_ICONBTN);
@@ -125,7 +125,7 @@ static YisVal cogito_iconbtn_get_size(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.iconbtn_get_size expects iconbtn");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (!cogito_iconbtn_accepts_size(btn)) yis_trap("cogito.iconbtn_get_size expects iconbtn");
-  return EV_INT((int)cogito_iconbtn_clamp_size_int((int)btn->button.size));
+  return YV_INT((int)cogito_iconbtn_clamp_size_int((int)btn->button.size));
 }
 
 void cogito_iconbtn_set_menu_divider(YisVal btnv, YisVal dividerv) {
@@ -140,7 +140,7 @@ YisVal cogito_iconbtn_get_menu_divider(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.iconbtn_get_menu_divider expects iconbtn");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.iconbtn_get_menu_divider expects iconbtn");
-  return EV_BOOL(btn->button.menu_divider);
+  return YV_BOOL(btn->button.menu_divider);
 }
 
 void cogito_iconbtn_set_menu_item_gap(YisVal btnv, YisVal gapv) {
@@ -156,7 +156,7 @@ YisVal cogito_iconbtn_get_menu_item_gap(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.iconbtn_get_menu_item_gap expects iconbtn");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.iconbtn_get_menu_item_gap expects iconbtn");
-  return EV_INT(btn->button.menu_item_gap);
+  return YV_INT(btn->button.menu_item_gap);
 }
 
 void cogito_iconbtn_set_menu_vibrant(YisVal btnv, YisVal vibrantv) {
@@ -171,7 +171,7 @@ YisVal cogito_iconbtn_get_menu_vibrant(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.iconbtn_get_menu_vibrant expects iconbtn");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.iconbtn_get_menu_vibrant expects iconbtn");
-  return EV_BOOL(btn->button.menu_vibrant);
+  return YV_BOOL(btn->button.menu_vibrant);
 }
 
 void cogito_iconbtn_on_click(YisVal btnv, YisVal handler) {
@@ -186,10 +186,10 @@ void cogito_iconbtn_on_click(YisVal btnv, YisVal handler) {
     fprintf(stderr, "cogito: set_on_click handler tag=%d (EVT_FN=%d)\n", (int)handler.tag, EVT_FN);
     fflush(stderr);
   }
-  if (btn->on_click) yis_release_val(EV_FN(btn->on_click));
+  if (btn->on_click) yis_release_val(YV_FN(btn->on_click));
   if (handler.tag == EVT_FN) {
     btn->on_click = (YisFn*)handler.as.p;
-    yis_retain_val(EV_FN(btn->on_click));
+    yis_retain_val(YV_FN(btn->on_click));
   } else {
     btn->on_click = NULL;
   }

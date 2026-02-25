@@ -11,7 +11,7 @@ static YisVal cogito_button_new(YisVal text) {
   }
   YisStr* ts = stdr_to_string(text);
   CogitoNode* btn = cogito_button_new_obj(ts);
-  return EV_OBJ(btn);
+  return YV_OBJ(btn);
 }
 static bool cogito_button_accepts_size(const CogitoNode* n) {
   return n && (n->kind == COGITO_BUTTON);
@@ -54,7 +54,7 @@ static YisVal cogito_button_get_size(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_get_size expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (!cogito_button_accepts_size(btn)) yis_trap("cogito.button_get_size expects button");
-  return EV_INT((int)cogito_button_clamp_size_int((int)btn->button.size));
+  return YV_INT((int)cogito_button_clamp_size_int((int)btn->button.size));
 }
 void cogito_button_on_click(YisVal btnv, YisVal handler) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_on_click expects button");
@@ -68,10 +68,10 @@ void cogito_button_on_click(YisVal btnv, YisVal handler) {
     fprintf(stderr, "cogito: set_on_click handler tag=%d (EVT_FN=%d)\n", (int)handler.tag, EVT_FN);
     fflush(stderr);
   }
-  if (btn->on_click) yis_release_val(EV_FN(btn->on_click));
+  if (btn->on_click) yis_release_val(YV_FN(btn->on_click));
   if (handler.tag == EVT_FN) {
     btn->on_click = (YisFn*)handler.as.p;
-    yis_retain_val(EV_FN(btn->on_click));
+    yis_retain_val(YV_FN(btn->on_click));
   } else {
     btn->on_click = NULL;
   }
@@ -109,7 +109,7 @@ YisVal cogito_button_get_menu_divider(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_get_menu_divider expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_get_menu_divider expects button");
-  return EV_BOOL(btn->button.menu_divider);
+  return YV_BOOL(btn->button.menu_divider);
 }
 
 void cogito_button_set_menu_item_gap(YisVal btnv, YisVal gapv) {
@@ -125,7 +125,7 @@ YisVal cogito_button_get_menu_item_gap(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_get_menu_item_gap expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_get_menu_item_gap expects button");
-  return EV_INT(btn->button.menu_item_gap);
+  return YV_INT(btn->button.menu_item_gap);
 }
 
 void cogito_button_set_menu_vibrant(YisVal btnv, YisVal vibrantv) {
@@ -140,5 +140,5 @@ YisVal cogito_button_get_menu_vibrant(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_get_menu_vibrant expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_get_menu_vibrant expects button");
-  return EV_BOOL(btn->button.menu_vibrant);
+  return YV_BOOL(btn->button.menu_vibrant);
 }

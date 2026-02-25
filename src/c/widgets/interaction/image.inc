@@ -11,7 +11,7 @@ static CogitoNode* cogito_image_new_obj(YisStr* source) {
 static YisVal cogito_image_new(YisVal source) {
   YisStr* is = stdr_to_string(source);
   CogitoNode* img = cogito_image_new_obj(is);
-  return EV_OBJ(img);
+  return YV_OBJ(img);
 }
 static void cogito_image_set_icon(YisVal imgv, YisVal icon) {
   if (imgv.tag != EVT_OBJ) yis_trap("cogito.image_set_icon expects image");
@@ -63,14 +63,14 @@ static void cogito_image_set_alt_text(YisVal imgv, YisVal alt_text) {
   if (imgv.tag != EVT_OBJ) yis_trap("cogito.image_set_alt_text expects image");
   CogitoNode* img = (CogitoNode*)imgv.as.p;
   if (img->a11y_label) {
-    yis_release_val(EV_STR(img->a11y_label));
+    yis_release_val(YV_STR(img->a11y_label));
     img->a11y_label = NULL;
   }
   if (alt_text.tag == EVT_STR) {
     YisStr* ls = (YisStr*)alt_text.as.p;
     if (ls) {
       img->a11y_label = ls;
-      yis_retain_val(EV_STR(ls));
+      yis_retain_val(YV_STR(ls));
     }
   } else if (alt_text.tag != EVT_NULL) {
     img->a11y_label = stdr_to_string(alt_text);

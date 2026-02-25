@@ -2,7 +2,7 @@ static CogitoNode* cogito_view_switcher_new_obj(void) {
   return cogito_node_new(COGITO_VIEWSWITCHER);
 }
 static YisVal cogito_view_switcher_new(void) {
-  return EV_OBJ(cogito_view_switcher_new_obj());
+  return YV_OBJ(cogito_view_switcher_new_obj());
 }
 
 // Find a view by ID in the children array
@@ -36,7 +36,7 @@ void cogito_view_switcher_add_lazy(CogitoNode* n, YisVal idv, YisVal builderv) {
   
   // Check if we already have a builder for this ID
   if (cogito_view_switcher_find_builder(n, id, NULL)) {
-    yis_release_val(EV_STR(id));
+    yis_release_val(YV_STR(id));
     return; // Already registered
   }
   
@@ -46,7 +46,7 @@ void cogito_view_switcher_add_lazy(CogitoNode* n, YisVal idv, YisVal builderv) {
     YisStr** new_ids = (YisStr**)realloc(n->view_builder_ids, new_cap * sizeof(YisStr*));
     YisFn** new_builders = (YisFn**)realloc(n->view_builders, new_cap * sizeof(YisFn*));
     if (!new_ids || !new_builders) {
-      yis_release_val(EV_STR(id));
+      yis_release_val(YV_STR(id));
       yis_trap("cogito.view_switcher_add: out of memory");
     }
     n->view_builder_ids = new_ids;
@@ -57,8 +57,8 @@ void cogito_view_switcher_add_lazy(CogitoNode* n, YisVal idv, YisVal builderv) {
   // Store the builder
   n->view_builder_ids[n->view_builder_len] = id;
   n->view_builders[n->view_builder_len] = (YisFn*)builderv.as.p;
-  yis_retain_val(EV_STR(id));
-  yis_retain_val(EV_FN((YisFn*)builderv.as.p));
+  yis_retain_val(YV_STR(id));
+  yis_retain_val(YV_FN((YisFn*)builderv.as.p));
   n->view_builder_len++;
   fflush(stderr);
 }
@@ -71,7 +71,7 @@ static CogitoNode* cogito_view_switcher_build_view(CogitoNode* vs, YisStr* id) {
   if (!builder) return NULL;
   
   // Call the builder function with the view_switcher as argument
-  YisVal vsv = EV_OBJ(vs);
+  YisVal vsv = YV_OBJ(vs);
   yis_retain_val(vsv);
   YisVal ret = builder->fn(builder->env, 1, &vsv);
   yis_release_val(vsv);
@@ -89,7 +89,7 @@ static CogitoNode* cogito_view_switcher_build_view(CogitoNode* vs, YisStr* id) {
     // Set the view_id on the newly created view
     if (view && !view->view_id) {
       view->view_id = id;
-      yis_retain_val(EV_STR(id));
+      yis_retain_val(YV_STR(id));
     }
     // Add the view as a child
     cogito_children_add(vs, view);
@@ -112,8 +112,8 @@ static void cogito_view_switcher_set_active(YisVal vsv, YisVal idv) {
     cogito_view_switcher_build_view(n, s);
   }
   
-  if (n->view_active_id) yis_release_val(EV_STR(n->view_active_id));
+  if (n->view_active_id) yis_release_val(YV_STR(n->view_active_id));
   n->view_active_id = s;
-  if (n->view_active_id) yis_retain_val(EV_STR(n->view_active_id));
+  if (n->view_active_id) yis_retain_val(YV_STR(n->view_active_id));
   cogito_window_relayout(cogito_node_window(n));
 }

@@ -689,7 +689,7 @@ static void cogito_text_set_from_buf(CogitoNode* n, const char* buf, size_t len)
   if (!n) return;
   YisStr* s = stdr_str_from_slice(buf, len);
   cogito_node_set_text(n, s);
-  if (s) yis_release_val(EV_STR(s));
+  if (s) yis_release_val(YV_STR(s));
 }
 
 // Static buffer to reduce heap allocations in text editing hot path

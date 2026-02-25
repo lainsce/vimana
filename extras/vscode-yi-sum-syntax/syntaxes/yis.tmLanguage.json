@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "Yis",
-  "scopeName": "source.yis",
+  "scopeName": "source.yi",
   "patterns": [
     {
       "include": "#returnSpec"
@@ -50,32 +50,32 @@
     "comments": {
       "patterns": [
         {
-          "name": "comment.line.double-dash.yis",
+          "name": "comment.line.double-dash.yi",
           "match": "--.*$"
         }
       ]
     },
     "returnSpec": {
-      "name": "meta.return-spec.yis",
+      "name": "meta.return-spec.yi",
       "begin": "\\(\\(",
       "beginCaptures": {
         "0": {
-          "name": "punctuation.definition.return.begin.yis"
+          "name": "punctuation.definition.return.begin.yi"
         }
       },
       "end": "\\)\\)",
       "endCaptures": {
         "0": {
-          "name": "punctuation.definition.return.end.yis"
+          "name": "punctuation.definition.return.end.yi"
         }
       },
       "patterns": [
         {
-          "name": "keyword.control.return-void.yis",
+          "name": "keyword.control.return-void.yi",
           "match": "--"
         },
         {
-          "name": "punctuation.separator.comma.yis",
+          "name": "punctuation.separator.comma.yi",
           "match": ","
         },
         {
@@ -89,42 +89,42 @@
     "strings": {
       "patterns": [
         {
-          "name": "string.quoted.double.interpolated.yis",
+          "name": "string.quoted.double.interpolated.yi",
           "begin": "@\"",
           "beginCaptures": {
             "0": {
-              "name": "punctuation.definition.string.begin.yis"
+              "name": "punctuation.definition.string.begin.yi"
             }
           },
           "end": "\"",
           "endCaptures": {
             "0": {
-              "name": "punctuation.definition.string.end.yis"
+              "name": "punctuation.definition.string.end.yi"
             }
           },
           "patterns": [
             {
-              "name": "constant.character.escape.yis",
+              "name": "constant.character.escape.yi",
               "match": "\\\\(?:[ntr\"\\\\$]|u\\{[0-9A-Fa-f]+\\})"
             },
             {
-              "name": "variable.other.interpolated.yis",
+              "name": "variable.other.interpolated.yi",
               "match": "\\$[A-Za-z_][A-Za-z0-9_]*"
             }
           ]
         },
         {
-          "name": "string.quoted.double.yis",
+          "name": "string.quoted.double.yi",
           "begin": "\"",
           "beginCaptures": {
             "0": {
-              "name": "punctuation.definition.string.begin.yis"
+              "name": "punctuation.definition.string.begin.yi"
             }
           },
           "end": "\"",
           "endCaptures": {
             "0": {
-              "name": "punctuation.definition.string.end.yis"
+              "name": "punctuation.definition.string.end.yi"
             }
           }
         }
@@ -133,7 +133,7 @@
     "numbers": {
       "patterns": [
         {
-          "name": "constant.numeric.yis",
+          "name": "constant.numeric.yi",
           "match": "\\b\\d+(?:\\.\\d+)?\\b"
         }
       ]
@@ -141,14 +141,14 @@
     "functionDecl": {
       "patterns": [
         {
-          "name": "meta.function.yis",
+          "name": "meta.function.yi",
           "match": "\\b(fun)\\s+([A-Za-z_][A-Za-z0-9_]*)\\b",
           "captures": {
             "1": {
-              "name": "keyword.declaration.function.yis"
+              "name": "keyword.declaration.function.yi"
             },
             "2": {
-              "name": "entity.name.function.yis"
+              "name": "entity.name.function.yi"
             }
           }
         }
@@ -157,14 +157,14 @@
     "typeDecl": {
       "patterns": [
         {
-          "name": "meta.type.yis",
+          "name": "meta.type.yi",
           "match": "\\b(class|struct|enum)\\s+([A-Za-z_][A-Za-z0-9_]*)\\b",
           "captures": {
             "1": {
-              "name": "keyword.declaration.type.yis"
+              "name": "keyword.declaration.type.yi"
             },
             "2": {
-              "name": "entity.name.type.yis"
+              "name": "entity.name.type.yi"
             }
           }
         }
@@ -173,7 +173,7 @@
     "mutableNames": {
       "patterns": [
         {
-          "name": "variable.other.mutable.yis",
+          "name": "variable.other.mutable.yi",
           "match": "\\?[A-Za-z_][A-Za-z0-9_]*"
         }
       ]
@@ -181,11 +181,11 @@
     "keywords": {
       "patterns": [
         {
-          "name": "keyword.control.yis",
+          "name": "keyword.control.yi",
           "match": "\\b(?:if|elif|else|for|in|match|return|new|break|continue)\\b"
         },
         {
-          "name": "keyword.declaration.yis",
+          "name": "keyword.declaration.yi",
           "match": "\\b(?:cask|bring|fun|entry|class|struct|enum|pub|lock|seal|def|let|const)\\b"
         }
       ]
@@ -193,11 +193,11 @@
     "constants": {
       "patterns": [
         {
-          "name": "constant.language.yis",
+          "name": "constant.language.yi",
           "match": "\\b(?:true|false|null)\\b"
         },
         {
-          "name": "constant.other.yis",
+          "name": "constant.other.yi",
           "match": "\\b[A-Z][A-Z0-9_]+\\b"
         }
       ]
@@ -205,7 +205,7 @@
     "types": {
       "patterns": [
         {
-          "name": "storage.type.yis",
+          "name": "storage.type.yi",
           "match": "\\b(?:num|string|bool|int|float|char|byte|void|any)\\b"
         }
       ]
@@ -213,14 +213,14 @@
     "memberAccess": {
       "patterns": [
         {
-          "name": "meta.member.access.yis",
+          "name": "meta.member.access.yi",
           "match": "(\\.)\\s*([A-Za-z_][A-Za-z0-9_]*)",
           "captures": {
             "1": {
-              "name": "punctuation.accessor.dot.yis"
+              "name": "punctuation.accessor.dot.yi"
             },
             "2": {
-              "name": "variable.other.member.yis"
+              "name": "variable.other.member.yi"
             }
           }
         }
@@ -229,7 +229,7 @@
     "functionCalls": {
       "patterns": [
         {
-          "name": "support.function.call.yis",
+          "name": "support.function.call.yi",
           "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\b\\s*(?=\\()"
         }
       ]
@@ -237,27 +237,27 @@
     "operators": {
       "patterns": [
         {
-          "name": "keyword.operator.assignment.yis",
+          "name": "keyword.operator.assignment.yi",
           "match": "(?:\\+=|-=|\\*=|/=|=)"
         },
         {
-          "name": "keyword.operator.comparison.yis",
+          "name": "keyword.operator.comparison.yi",
           "match": "(?:==|!=|<=|>=|<|>)"
         },
         {
-          "name": "keyword.operator.logical.yis",
+          "name": "keyword.operator.logical.yi",
           "match": "(?:\\?\\?|&&|\\|\\||!)"
         },
         {
-          "name": "keyword.operator.arithmetic.yis",
+          "name": "keyword.operator.arithmetic.yi",
           "match": "(?:\\+|-|\\*|/|%)"
         },
         {
-          "name": "keyword.operator.arrow.yis",
+          "name": "keyword.operator.arrow.yi",
           "match": "=>"
         },
         {
-          "name": "keyword.operator.other.yis",
+          "name": "keyword.operator.other.yi",
           "match": "(?:\\?|\\|)"
         }
       ]
@@ -265,19 +265,19 @@
     "punctuation": {
       "patterns": [
         {
-          "name": "punctuation.separator.yis",
+          "name": "punctuation.separator.yi",
           "match": "(?:,|;|:)"
         },
         {
-          "name": "punctuation.definition.array.yis",
+          "name": "punctuation.definition.array.yi",
           "match": "(?:\\[|\\])"
         },
         {
-          "name": "punctuation.definition.block.yis",
+          "name": "punctuation.definition.block.yi",
           "match": "(?:\\{|\\})"
         },
         {
-          "name": "punctuation.definition.group.yis",
+          "name": "punctuation.definition.group.yi",
           "match": "(?:\\(|\\))"
         }
       ]

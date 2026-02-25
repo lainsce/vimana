@@ -14,16 +14,16 @@ static CogitoNode* cogito_colorpicker_new_obj(void) {
   return cp;
 }
 static YisVal cogito_colorpicker_new(void) {
-  return EV_OBJ(cogito_colorpicker_new_obj());
+  return YV_OBJ(cogito_colorpicker_new_obj());
 }
 static void cogito_colorpicker_on_change(YisVal nodev, YisVal handler) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.colorpicker_on_change expects colorpicker");
   if (handler.tag != EVT_FN) yis_trap("cogito.colorpicker_on_change expects function");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_COLORPICKER) yis_trap("cogito.colorpicker_on_change expects colorpicker");
-  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  if (n->on_change) yis_release_val(YV_FN(n->on_change));
   n->on_change = (YisFn*)handler.as.p;
-  yis_retain_val(EV_FN(n->on_change));
+  yis_retain_val(YV_FN(n->on_change));
 }
 
 // Forward declaration (implemented in interaction/slider.inc, included before this)
@@ -59,12 +59,12 @@ static CogitoNode* cogito_colorpicker_open_panel(CogitoNode* owner) {
   cogito_children_add(panel, sh);
   cogito_children_add(panel, sc);
   cogito_children_add(panel, st);
-  yis_release_val(EV_OBJ(sh));
-  yis_release_val(EV_OBJ(sc));
-  yis_release_val(EV_OBJ(st));
+  yis_release_val(YV_OBJ(sh));
+  yis_release_val(YV_OBJ(sc));
+  yis_release_val(YV_OBJ(st));
 
   cogito_children_add(pop, panel);
-  yis_release_val(EV_OBJ(panel));
+  yis_release_val(YV_OBJ(panel));
   return pop;
 }
 
@@ -75,8 +75,8 @@ static void cogito_colorpicker_show_popover(CogitoNode* anchor) {
   if (!win) return;
   CogitoNode* pop = cogito_colorpicker_open_panel(anchor);
   if (!pop) return;
-  cogito_popover_show(EV_OBJ(anchor), EV_OBJ(pop));
-  yis_release_val(EV_OBJ(pop));
+  cogito_popover_show(YV_OBJ(anchor), YV_OBJ(pop));
+  yis_release_val(YV_OBJ(pop));
 }
 
 // Handles Cancel / OK footer button clicks in the panel.
@@ -91,7 +91,7 @@ static bool cogito_colorpicker_hit_panel(CogitoNode* panel, int mx, int my) {
   if (cogito_hit_rect_min48(mx, my, cx, cy, cw, ch)) {
     // Cancel: close popover, discard panel changes
     CogitoNode* win = cogito_node_window(panel);
-    if (win) cogito_popover_close(EV_OBJ(win));
+    if (win) cogito_popover_close(YV_OBJ(win));
     return true;
   }
 
@@ -113,10 +113,10 @@ static bool cogito_colorpicker_hit_panel(CogitoNode* panel, int mx, int my) {
       owner->colorpicker.c = new_c;
       owner->colorpicker.t = new_t;
       cogito_colorpicker_sync_hex(owner);
-      if (win) cogito_popover_close(EV_OBJ(win));
+      if (win) cogito_popover_close(YV_OBJ(win));
       if (changed) cogito_invoke_change(owner);
     } else {
-      if (win) cogito_popover_close(EV_OBJ(win));
+      if (win) cogito_popover_close(YV_OBJ(win));
     }
     return true;
   }
@@ -130,7 +130,7 @@ static void cogito_colorpicker_click(CogitoNode* n, int mx, int my) {
 
   CogitoNode* win = cogito_node_window(n);
   if (win && win->popover_open && win->popover_anchor == n) {
-    cogito_popover_close(EV_OBJ(win));
+    cogito_popover_close(YV_OBJ(win));
     return;
   }
 

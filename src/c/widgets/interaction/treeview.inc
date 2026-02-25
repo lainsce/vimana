@@ -2,7 +2,7 @@ static CogitoNode* cogito_treeview_new_obj(void) {
   return cogito_node_new(COGITO_TREEVIEW);
 }
 static YisVal cogito_treeview_new(void) {
-  return EV_OBJ(cogito_treeview_new_obj());
+  return YV_OBJ(cogito_treeview_new_obj());
 }
 
 static bool cogito_treeview_click(CogitoNode* tree, int x, int y) {

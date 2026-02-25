@@ -42,7 +42,7 @@ static CogitoNode* cogito_carousel_item_new_obj(void) {
 }
 
 static YisVal cogito_carousel_item_new(void) {
-  return EV_OBJ(cogito_carousel_item_new_obj());
+  return YV_OBJ(cogito_carousel_item_new_obj());
 }
 
 // Set text on the built-in label

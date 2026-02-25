@@ -60,25 +60,25 @@ static void cogito_drawing_area_clear_points(CogitoNode* n) {
 }
 
 static YisVal cogito_drawing_area_new(void) {
-  return EV_OBJ(cogito_drawing_area_new_obj());
+  return YV_OBJ(cogito_drawing_area_new_obj());
 }
 
 static YisVal cogito_drawing_area_get_x(YisVal dav) {
   if (dav.tag != EVT_OBJ) yis_trap("cogito.drawing_area_get_x expects drawing_area");
   CogitoNode* n = (CogitoNode*)dav.as.p;
-  return EV_INT(n->drawing_area.pointer_x);
+  return YV_INT(n->drawing_area.pointer_x);
 }
 
 static YisVal cogito_drawing_area_get_y(YisVal dav) {
   if (dav.tag != EVT_OBJ) yis_trap("cogito.drawing_area_get_y expects drawing_area");
   CogitoNode* n = (CogitoNode*)dav.as.p;
-  return EV_INT(n->drawing_area.pointer_y);
+  return YV_INT(n->drawing_area.pointer_y);
 }
 
 static YisVal cogito_drawing_area_get_pressed(YisVal dav) {
   if (dav.tag != EVT_OBJ) yis_trap("cogito.drawing_area_get_pressed expects drawing_area");
   CogitoNode* n = (CogitoNode*)dav.as.p;
-  return EV_BOOL(n->drawing_area.pressed);
+  return YV_BOOL(n->drawing_area.pressed);
 }
 
 static void cogito_drawing_area_clear(YisVal dav) {
@@ -92,12 +92,12 @@ static void cogito_drawing_area_on_draw(YisVal dav, YisVal handler) {
   if (dav.tag != EVT_OBJ) yis_trap("cogito.drawing_area_on_draw expects drawing_area");
   CogitoNode* n = (CogitoNode*)dav.as.p;
   if (n->on_draw) {
-    yis_release_val(EV_FN(n->on_draw));
+    yis_release_val(YV_FN(n->on_draw));
     n->on_draw = NULL;
   }
   if (handler.tag == EVT_FN) {
     n->on_draw = (YisFn*)handler.as.p;
-    yis_retain_val(EV_FN(n->on_draw));
+    yis_retain_val(YV_FN(n->on_draw));
   }
 }
 

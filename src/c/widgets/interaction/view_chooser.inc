@@ -5,7 +5,7 @@ static CogitoNode* cogito_view_chooser_new_obj(void) {
 }
 static YisVal cogito_view_chooser_new(void) {
   CogitoNode* n = cogito_view_chooser_new_obj();
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }
 static void cogito_view_chooser_set_items(YisVal vcv, YisVal arrv) {
   if (vcv.tag != EVT_OBJ) yis_trap("cogito.view_chooser_set_items expects view_chooser");
@@ -13,7 +13,7 @@ static void cogito_view_chooser_set_items(YisVal vcv, YisVal arrv) {
   CogitoNode* n = (CogitoNode*)vcv.as.p;
   if (n->tab_labels) {
     for (size_t i = 0; i < n->tab_len; i++) {
-      if (n->tab_labels[i]) yis_release_val(EV_STR(n->tab_labels[i]));
+      if (n->tab_labels[i]) yis_release_val(YV_STR(n->tab_labels[i]));
     }
     free(n->tab_labels);
     n->tab_labels = NULL;
@@ -21,10 +21,10 @@ static void cogito_view_chooser_set_items(YisVal vcv, YisVal arrv) {
   }
   if (n->menu_labels) {
     for (size_t i = 0; i < n->menu_len; i++) {
-      if (n->menu_labels[i]) yis_release_val(EV_STR(n->menu_labels[i]));
-      if (n->menu_handlers[i]) yis_release_val(EV_FN(n->menu_handlers[i]));
-      if (n->menu_icons && n->menu_icons[i]) yis_release_val(EV_STR(n->menu_icons[i]));
-      if (n->menu_shortcuts && n->menu_shortcuts[i]) yis_release_val(EV_STR(n->menu_shortcuts[i]));
+      if (n->menu_labels[i]) yis_release_val(YV_STR(n->menu_labels[i]));
+      if (n->menu_handlers[i]) yis_release_val(YV_FN(n->menu_handlers[i]));
+      if (n->menu_icons && n->menu_icons[i]) yis_release_val(YV_STR(n->menu_icons[i]));
+      if (n->menu_shortcuts && n->menu_shortcuts[i]) yis_release_val(YV_STR(n->menu_shortcuts[i]));
     }
     free(n->menu_labels);
     free(n->menu_handlers);
@@ -55,9 +55,9 @@ static void cogito_view_chooser_set_items(YisVal vcv, YisVal arrv) {
     YisVal v = yis_arr_get(a, (int64_t)i);
     YisStr* s = stdr_to_string(v);
     n->tab_labels[i] = s;
-    if (s) yis_retain_val(EV_STR(s));
+    if (s) yis_retain_val(YV_STR(s));
     n->menu_labels[i] = s;
-    if (s) yis_retain_val(EV_STR(s));
+    if (s) yis_retain_val(YV_STR(s));
     n->menu_handlers[i] = NULL;
   }
   if (n->selected < 0 && len > 0) n->selected = 0;

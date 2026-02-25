@@ -14,7 +14,7 @@ static CogitoNode* cogito_fab_menu_new_obj(const char* icon) {
 static YisVal cogito_fab_menu_new(YisVal icon) {
   YisStr* ts = stdr_to_string(icon);
   CogitoNode* n = cogito_fab_menu_new_obj(ts ? ts->data : NULL);
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }
 
 void cogito_fab_menu_add_item(YisVal fab_menuv, YisVal icon, YisVal handler) {

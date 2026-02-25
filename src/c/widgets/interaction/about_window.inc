@@ -7,8 +7,8 @@ static void cogito_about_window_apply_class(CogitoNode* n, const char* class_nam
   if (!n || !class_name || !class_name[0]) return;
   YisStr* cls = cogito_about_window_strlit(class_name);
   if (!cls) return;
-  cogito_node_set_class(EV_OBJ(n), EV_STR(cls));
-  yis_release_val(EV_STR(cls));
+  cogito_node_set_class(YV_OBJ(n), YV_STR(cls));
+  yis_release_val(YV_STR(cls));
 }
 
 static bool cogito_about_window_has_class(const CogitoNode* n, const char* class_name) {
@@ -59,12 +59,12 @@ static void cogito_about_window_set_button_url(CogitoNode* btn, YisStr* url) {
   if (!btn || btn->kind != COGITO_BUTTON) return;
   if (btn->action_text == url) return;
   if (btn->action_text) {
-    yis_release_val(EV_STR(btn->action_text));
+    yis_release_val(YV_STR(btn->action_text));
     btn->action_text = NULL;
   }
   if (url) {
     btn->action_text = url;
-    yis_retain_val(EV_STR(url));
+    yis_retain_val(YV_STR(url));
   }
 }
 
@@ -77,7 +77,7 @@ static CogitoNode* cogito_about_window_ensure_issue_action(CogitoNode* aw) {
   issue = cogito_node_new(COGITO_BUTTON);
   YisStr* txt = cogito_about_window_strlit("Report a Bug");
   cogito_node_set_text(issue, txt);
-  if (txt) yis_release_val(EV_STR(txt));
+  if (txt) yis_release_val(YV_STR(txt));
   cogito_about_window_apply_class(issue, "outlined");
   issue->disabled = true;
   cogito_children_add(actions, issue);
@@ -166,7 +166,7 @@ static CogitoNode* cogito_about_window_new_obj(YisStr* app_name, YisStr* version
   CogitoNode* more = cogito_node_new(COGITO_BUTTON);
   YisStr* more_text = cogito_about_window_strlit("More info");
   cogito_node_set_text(more, more_text);
-  if (more_text) yis_release_val(EV_STR(more_text));
+  if (more_text) yis_release_val(YV_STR(more_text));
   cogito_about_window_apply_class(more, "outlined");
   cogito_children_add(actions, more);
   cogito_children_add(n, actions);
@@ -182,7 +182,7 @@ static YisVal cogito_about_window_new(YisVal namev, YisVal versionv) {
   YisStr* ns = stdr_to_string(namev);
   YisStr* vs = stdr_to_string(versionv);
   CogitoNode* n = cogito_about_window_new_obj(ns, vs);
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }
 
 static void cogito_about_window_set_icon(YisVal awv, YisVal iconv) {
@@ -207,9 +207,9 @@ static void cogito_about_window_set_website(YisVal awv, YisVal urlv) {
   if (awv.tag != EVT_OBJ) yis_trap("cogito.about_window_set_website expects about_window");
   CogitoNode* n = (CogitoNode*)awv.as.p;
   YisStr* s = stdr_to_string(urlv);
-  if (n->action_text) yis_release_val(EV_STR(n->action_text));
+  if (n->action_text) yis_release_val(YV_STR(n->action_text));
   n->action_text = s;
-  yis_retain_val(EV_STR(s));
+  yis_retain_val(YV_STR(s));
   cogito_about_window_sync_actions(n);
   cogito_window_relayout(cogito_node_window(n));
 }

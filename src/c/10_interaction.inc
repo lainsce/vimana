@@ -54,7 +54,7 @@ static void cogito_invoke_click(CogitoNode* n) {
     }
     fflush(stderr);
   }
-  YisVal arg = EV_OBJ(n);
+  YisVal arg = YV_OBJ(n);
   cogito_invoke(n->on_click, 1, &arg);
   cogito_a11y_emit_event("activate", n, "click");
 }
@@ -68,19 +68,19 @@ static void cogito_invoke_menu(CogitoNode* n, size_t idx) {
   }
   YisFn* fn = n->menu_handlers[idx];
   if (!fn) return;
-  YisVal arg = EV_OBJ(n);
+  YisVal arg = YV_OBJ(n);
   cogito_invoke(fn, 1, &arg);
 }
 
 static void cogito_invoke_change(CogitoNode* n) {
   if (!n || !n->on_change) return;
-  YisVal arg = EV_OBJ(n);
+  YisVal arg = YV_OBJ(n);
   cogito_invoke(n->on_change, 1, &arg);
   cogito_a11y_emit_event("value-changed", n, "");
 }
 
 static void cogito_invoke_select(CogitoNode* n, int idx, bool activate) {
-  YisVal arg = EV_INT(idx);
+  YisVal arg = YV_INT(idx);
   if (n->on_select) cogito_invoke(n->on_select, 1, &arg);
   if (activate && n->on_activate) cogito_invoke(n->on_activate, 1, &arg);
 }
@@ -164,7 +164,7 @@ static void cogito_state_drop(YisObj* o) {
   CogitoState* s = (CogitoState*)o;
   if (s->value.tag != EVT_NULL) {
     yis_release_val(s->value);
-    s->value = EV_NULLV;
+    s->value = YV_NULLV;
   }
 }
 
@@ -447,7 +447,7 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
   }
   if (idx >= parent->len) return;
   cogito_timer_cancel_owner_tree(parent->children[idx]);
-  yis_release_val(EV_OBJ(parent->children[idx]));
+  yis_release_val(YV_OBJ(parent->children[idx]));
   for (size_t i = idx + 1; i < parent->len; i++) {
     parent->children[i - 1] = parent->children[i];
   }
@@ -458,7 +458,7 @@ static void cogito_clear_children(CogitoNode* node) {
   if (!node || !node->children) return;
   for (size_t i = 0; i < node->len; i++) {
     cogito_timer_cancel_owner_tree(node->children[i]);
-    yis_release_val(EV_OBJ(node->children[i]));
+    yis_release_val(YV_OBJ(node->children[i]));
   }
   free(node->children);
   node->children = NULL;

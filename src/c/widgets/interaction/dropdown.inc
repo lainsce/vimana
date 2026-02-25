@@ -4,7 +4,7 @@ static CogitoNode* cogito_dropdown_new_obj(void) {
   return dd;
 }
 static YisVal cogito_dropdown_new(void) {
-  return EV_OBJ(cogito_dropdown_new_obj());
+  return YV_OBJ(cogito_dropdown_new_obj());
 }
 static void cogito_dropdown_set_items(YisVal nodev, YisVal arrv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.dropdown_set_items expects dropdown");
@@ -12,10 +12,10 @@ static void cogito_dropdown_set_items(YisVal nodev, YisVal arrv) {
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->menu_labels) {
     for (size_t i = 0; i < n->menu_len; i++) {
-      if (n->menu_labels[i]) yis_release_val(EV_STR(n->menu_labels[i]));
-      if (n->menu_handlers[i]) yis_release_val(EV_FN(n->menu_handlers[i]));
-      if (n->menu_icons && n->menu_icons[i]) yis_release_val(EV_STR(n->menu_icons[i]));
-      if (n->menu_shortcuts && n->menu_shortcuts[i]) yis_release_val(EV_STR(n->menu_shortcuts[i]));
+      if (n->menu_labels[i]) yis_release_val(YV_STR(n->menu_labels[i]));
+      if (n->menu_handlers[i]) yis_release_val(YV_FN(n->menu_handlers[i]));
+      if (n->menu_icons && n->menu_icons[i]) yis_release_val(YV_STR(n->menu_icons[i]));
+      if (n->menu_shortcuts && n->menu_shortcuts[i]) yis_release_val(YV_STR(n->menu_shortcuts[i]));
     }
     free(n->menu_labels);
     free(n->menu_handlers);
@@ -43,7 +43,7 @@ static void cogito_dropdown_set_items(YisVal nodev, YisVal arrv) {
     YisStr* s = stdr_to_string(v);
     n->menu_labels[i] = s;
     n->menu_handlers[i] = NULL;
-    if (s) yis_retain_val(EV_STR(s));
+    if (s) yis_retain_val(YV_STR(s));
   }
   if (n->selected < 0 && n->menu_len > 0) n->selected = 0;
   cogito_window_relayout(cogito_node_window(n));
@@ -60,13 +60,13 @@ static void cogito_dropdown_set_selected(YisVal nodev, YisVal idxv) {
 static YisVal cogito_dropdown_get_selected(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.dropdown_get_selected expects dropdown");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  return EV_INT(n->selected);
+  return YV_INT(n->selected);
 }
 static void cogito_dropdown_on_change(YisVal nodev, YisVal handler) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.dropdown_on_change expects dropdown");
   if (handler.tag != EVT_FN) yis_trap("cogito.dropdown_on_change expects function");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  if (n->on_change) yis_release_val(YV_FN(n->on_change));
   n->on_change = (YisFn*)handler.as.p;
-  yis_retain_val(EV_FN(n->on_change));
+  yis_retain_val(YV_FN(n->on_change));
 }

@@ -10,7 +10,7 @@ static CogitoNode* cogito_bottom_nav_new_obj(void) {
 
 static YisVal cogito_bottom_nav_new(void) {
   CogitoNode* n = cogito_bottom_nav_new_obj();
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }
 
 static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal iconsv) {
@@ -20,8 +20,8 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
   // Clear existing items
   if (n->bottom_nav.labels) {
     for (size_t i = 0; i < n->bottom_nav.len; i++) {
-      if (n->bottom_nav.labels[i]) yis_release_val(EV_STR(n->bottom_nav.labels[i]));
-      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) yis_release_val(EV_STR(n->bottom_nav.icons[i]));
+      if (n->bottom_nav.labels[i]) yis_release_val(YV_STR(n->bottom_nav.labels[i]));
+      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) yis_release_val(YV_STR(n->bottom_nav.icons[i]));
     }
     free(n->bottom_nav.labels);
     free(n->bottom_nav.icons);
@@ -41,7 +41,7 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
     YisVal lv = labels->items[i];
     YisStr* ls = stdr_to_string(lv);
     n->bottom_nav.labels[i] = ls;
-    yis_retain_val(EV_STR(ls));
+    yis_retain_val(YV_STR(ls));
   }
 
   // Parse icons array if provided
@@ -52,7 +52,7 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
       YisVal iv = icons->items[i];
       YisStr* is = stdr_to_string(iv);
       n->bottom_nav.icons[i] = is;
-      yis_retain_val(EV_STR(is));
+      yis_retain_val(YV_STR(is));
     }
   }
 
@@ -62,7 +62,7 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
 static YisVal cogito_bottom_nav_get_selected(YisVal navv) {
   if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_get_selected expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
-  return EV_INT(n->bottom_nav.selected);
+  return YV_INT(n->bottom_nav.selected);
 }
 
 static void cogito_bottom_nav_set_selected(YisVal navv, YisVal idxv) {
@@ -77,10 +77,10 @@ static void cogito_bottom_nav_set_selected(YisVal navv, YisVal idxv) {
 static void cogito_bottom_nav_on_change(YisVal navv, YisVal handler) {
   if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_on_change expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
-  if (n->on_select) yis_release_val(EV_FN(n->on_select));
+  if (n->on_select) yis_release_val(YV_FN(n->on_select));
   if (handler.tag == EVT_FN) {
     n->on_select = (YisFn*)handler.as.p;
-    yis_retain_val(EV_FN(n->on_select));
+    yis_retain_val(YV_FN(n->on_select));
   } else {
     n->on_select = NULL;
   }

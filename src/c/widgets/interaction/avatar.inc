@@ -5,7 +5,7 @@ static CogitoNode* cogito_avatar_new_obj(YisStr* text_or_icon) {
     const char* s = text_or_icon->data;
     if (strchr(s, '/') || strchr(s, '.') || strncmp(s, "sf:", 3) == 0) {
       n->icon = text_or_icon;
-      yis_retain_val(EV_STR(text_or_icon));
+      yis_retain_val(YV_STR(text_or_icon));
     } else {
       cogito_node_set_text(n, text_or_icon);
     }
@@ -21,17 +21,17 @@ static YisVal cogito_avatar_new(YisVal textv) {
     ts = stdr_to_string(textv);
   }
   CogitoNode* n = cogito_avatar_new_obj(ts);
-  if (ts && textv.tag != EVT_STR) yis_release_val(EV_STR(ts));
-  return EV_OBJ(n);
+  if (ts && textv.tag != EVT_STR) yis_release_val(YV_STR(ts));
+  return YV_OBJ(n);
 }
 
 static void cogito_avatar_set_image(YisVal avatarv, YisVal pathv) {
   if (avatarv.tag != EVT_OBJ) yis_trap("cogito.avatar_set_image expects avatar");
   CogitoNode* n = (CogitoNode*)avatarv.as.p;
   YisStr* path = stdr_to_string(pathv);
-  if (n->icon) yis_release_val(EV_STR(n->icon));
+  if (n->icon) yis_release_val(YV_STR(n->icon));
   n->icon = path;
-  yis_retain_val(EV_STR(path));
+  yis_retain_val(YV_STR(path));
   n->image.loaded = false;
   n->image.texture = NULL;
   cogito_window_relayout(cogito_node_window(n));

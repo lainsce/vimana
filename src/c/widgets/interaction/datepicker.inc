@@ -31,7 +31,7 @@ static CogitoNode* cogito_datepicker_open_panel(CogitoNode* owner) {
   panel->border_radius = 20;
 
   cogito_children_add(pop, panel);
-  yis_release_val(EV_OBJ(panel));
+  yis_release_val(YV_OBJ(panel));
   return pop;
 }
 
@@ -42,8 +42,8 @@ static void cogito_datepicker_show_popover(CogitoNode* anchor) {
 
   CogitoNode* pop = cogito_datepicker_open_panel(anchor);
   if (!pop) return;
-  cogito_popover_show(EV_OBJ(anchor), EV_OBJ(pop));
-  yis_release_val(EV_OBJ(pop));
+  cogito_popover_show(YV_OBJ(anchor), YV_OBJ(pop));
+  yis_release_val(YV_OBJ(pop));
 }
 
 static bool cogito_datepicker_hit_panel(CogitoNode* panel, int mx, int my) {
@@ -63,7 +63,7 @@ static bool cogito_datepicker_hit_panel(CogitoNode* panel, int mx, int my) {
 
   if (mode == COGITO_DATEPICKER_MODE_CALENDAR) {
     if (cogito_hit_rect_min48(mx, my, ly.cancel_x, ly.cancel_y, ly.cancel_w, ly.cancel_h)) {
-      if (win) cogito_popover_close(EV_OBJ(win));
+      if (win) cogito_popover_close(YV_OBJ(win));
       return true;
     }
 
@@ -79,7 +79,7 @@ static bool cogito_datepicker_hit_panel(CogitoNode* panel, int mx, int my) {
         owner->datepicker.view_year = owner->datepicker.year;
         owner->datepicker.view_month = owner->datepicker.month;
       }
-      if (win) cogito_popover_close(EV_OBJ(win));
+      if (win) cogito_popover_close(YV_OBJ(win));
       if (changed && owner) cogito_invoke_change(owner);
       return true;
     }
@@ -197,7 +197,7 @@ static bool cogito_datepicker_hit(CogitoNode* n, int mx, int my, bool clicked) {
   CogitoNode* win = cogito_node_window(n);
   if (!win) return false;
   if (win->popover_open && win->popover_anchor == n) {
-    cogito_popover_close(EV_OBJ(win));
+    cogito_popover_close(YV_OBJ(win));
     return true;
   }
   cogito_datepicker_show_popover(n);
@@ -216,17 +216,17 @@ static CogitoNode* cogito_datepicker_new_obj(void) {
 }
 
 static YisVal cogito_datepicker_new(void) {
-  return EV_OBJ(cogito_datepicker_new_obj());
+  return YV_OBJ(cogito_datepicker_new_obj());
 }
 
 static void cogito_datepicker_on_change(YisVal nodev, YisVal handler) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.datepicker_on_change expects datepicker");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (!n || n->kind != COGITO_DATEPICKER) yis_trap("cogito.datepicker_on_change expects datepicker");
-  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  if (n->on_change) yis_release_val(YV_FN(n->on_change));
   if (handler.tag == EVT_FN) {
     n->on_change = (YisFn*)handler.as.p;
-    yis_retain_val(EV_FN(n->on_change));
+    yis_retain_val(YV_FN(n->on_change));
   } else {
     n->on_change = NULL;
   }

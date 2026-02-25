@@ -7,7 +7,7 @@ static CogitoNode* cogito_split_button_new_obj(YisStr* text) {
 static YisVal cogito_split_button_new(YisVal textv) {
   YisStr* ts = stdr_to_string(textv);
   CogitoNode* n = cogito_split_button_new_obj(ts);
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }
 static void cogito_split_button_add_menu(YisVal btnv, YisVal label, YisVal handler) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.split_button_add_menu expects split_button");

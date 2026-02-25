@@ -124,9 +124,9 @@ static bool cogito_keyboard_move_indexed_selection(CogitoNode* n, int dir) {
         CogitoNode* vs = n->view_switcher;
         YisStr* id = n->tab_ids[next];
         if (id) {
-          if (vs->view_active_id) yis_release_val(EV_STR(vs->view_active_id));
+          if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
           vs->view_active_id = id;
-          yis_retain_val(EV_STR(vs->view_active_id));
+          yis_retain_val(YV_STR(vs->view_active_id));
         }
       }
       cogito_invoke_change(n);
@@ -161,7 +161,7 @@ static bool cogito_keyboard_move_indexed_selection(CogitoNode* n, int dir) {
       if (next == prev) return false;
       n->selected = next;
       if (n->on_select) {
-        YisVal arg = EV_INT(next);
+        YisVal arg = YV_INT(next);
         cogito_invoke(n->on_select, 1, &arg);
       }
       return true;
@@ -264,11 +264,11 @@ static bool cogito_escape_close_overlays(CogitoNode* win) {
     return true;
   }
   if (win->side_sheet_open && win->side_sheet_node) {
-    cogito_window_clear_side_sheet(EV_OBJ(win));
+    cogito_window_clear_side_sheet(YV_OBJ(win));
     return true;
   }
   if (win->popover_open && win->popover) {
-    cogito_popover_close(EV_OBJ(win));
+    cogito_popover_close(YV_OBJ(win));
     return true;
   }
 
@@ -276,7 +276,7 @@ static bool cogito_escape_close_overlays(CogitoNode* win) {
     ? win->dialog
     : cogito_find_dialog_slot(win);
   if ((slot && slot->dialog_open && slot->dialog) || win->dialog_open) {
-    cogito_window_clear_dialog(EV_OBJ(win));
+    cogito_window_clear_dialog(YV_OBJ(win));
     return true;
   }
 
@@ -1696,7 +1696,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
         da->drawing_area.pressed = false;
         da->drawing_area.dragging = false;
         if (stroke_active && da->on_action) {
-          YisVal arg = EV_OBJ(da);
+          YisVal arg = YV_OBJ(da);
           cogito_invoke(da->on_action, 1, &arg);
         }
         cogito_pointer_capture = NULL;
@@ -1962,7 +1962,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
           bool inside_popover = cogito_hit_node(win->popover, mx, my);
           bool inside_anchor = (win->popover_anchor && cogito_hit_node(win->popover_anchor, mx, my));
           if (!inside_popover && !inside_anchor) {
-            cogito_popover_close(EV_OBJ(win));
+            cogito_popover_close(YV_OBJ(win));
           }
         }
         bool appbar_blocked_by_bottom_sheet = false;
@@ -2009,7 +2009,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
           int sx = 0, sy = 0, sw = 0, sh = 0;
           cogito_side_sheet_close_rect(win->side_sheet_node, &sx, &sy, &sw, &sh);
           if (sw > 0 && sh > 0 && cogito_hit_rect_min48(mx, my, sx, sy, sw, sh)) {
-            cogito_window_clear_side_sheet(EV_OBJ(win));
+            cogito_window_clear_side_sheet(YV_OBJ(win));
             cogito_window_relayout(win);
             handled = true;
           }
@@ -2034,9 +2034,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
           cogito_dialog_close_rect(active_dialog, &dx, &dy, &dw, &dh);
           if (dw > 0 && dh > 0 && cogito_hit_rect_min48(mx, my, dx, dy, dw, dh)) {
             if (slot && slot->kind == COGITO_DIALOG_SLOT) {
-              cogito_dialog_slot_clear(EV_OBJ(slot));
+              cogito_dialog_slot_clear(YV_OBJ(slot));
             } else {
-              cogito_dialog_close(EV_OBJ(active_dialog));
+              cogito_dialog_close(YV_OBJ(active_dialog));
             }
             handled = true;
           }
@@ -2158,7 +2158,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
             const char* about_url = cogito_about_window_action_url(hit, about_host);
             if (about_host && about_url) {
               if (about_host->on_action) {
-                YisVal arg = EV_OBJ(about_host);
+                YisVal arg = YV_OBJ(about_host);
                 cogito_invoke(about_host->on_action,
                 1, &arg);
               } else if (cogito_backend && cogito_backend->open_url) {
@@ -2299,9 +2299,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
                 YisStr* id = hit->tab_ids[idx
                 ];
                 if (id) {
-                  if (vs->view_active_id) yis_release_val(EV_STR(vs->view_active_id));
+                  if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
                   vs->view_active_id = id;
-                  yis_retain_val(EV_STR(vs->view_active_id));
+                  yis_retain_val(YV_STR(vs->view_active_id));
                 }
               }
               cogito_invoke_change(hit);
@@ -2342,7 +2342,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
                       cogito_hit_rect_min48(mx, my, hit->action_button_x, hit->action_button_y,
                                      hit->action_button_w, hit->action_button_h)) {
               if (hit->on_action) {
-                YisVal arg = EV_OBJ(hit);
+                YisVal arg = YV_OBJ(hit);
                 cogito_invoke(hit->on_action,
                 1, &arg);
               }
@@ -2355,7 +2355,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
             if (cw > 0 && ch > 0 && cogito_hit_rect_min48(mx, my, cx, cy, cw, ch)) {
               // Clicked on close button
               if (hit->on_action) {
-                YisVal arg = EV_OBJ(hit);
+                YisVal arg = YV_OBJ(hit);
                 cogito_invoke(hit->on_action,
                 1, &arg);
               }
@@ -2468,7 +2468,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
               if (hit->action_button_w > 0 && cogito_hit_rect_min48(mx, my, hit->action_button_x, hit->action_button_y,
                           hit->action_button_w, hit->action_button_h)) {
                 if (hit->on_action) {
-                  YisVal arg = EV_OBJ(hit);
+                  YisVal arg = YV_OBJ(hit);
                   cogito_invoke(hit->on_action,
                   1, &arg);
                 } else if (hit->kind == COGITO_ABOUT_WINDOW && cogito_backend && cogito_backend->open_url) {

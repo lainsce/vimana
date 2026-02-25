@@ -85,9 +85,9 @@ bool cogito_compat_as_bool(YisVal v) {
 }
 
 YisVal cogito_compat_call(YisVal fnv, int argc, YisVal* argv) {
-  if (fnv.tag != EVT_FN) return EV_NULLV;
+  if (fnv.tag != EVT_FN) return YV_NULLV;
   YisFn* fn = (YisFn*)fnv.as.p;
-  if (!fn || !fn->fn) return EV_NULLV;
+  if (!fn || !fn->fn) return YV_NULLV;
   return fn->fn(fn->env, argc, argv);
 }
 
@@ -141,7 +141,7 @@ void cogito_compat_arr_set(YisArr* a, size_t idx, YisVal v) {
 }
 
 YisVal cogito_compat_arr_get(YisArr* a, int64_t idx) {
-  if (!a || idx < 0 || (size_t)idx >= a->len) return EV_NULLV;
+  if (!a || idx < 0 || (size_t)idx >= a->len) return YV_NULLV;
   YisVal v = a->items[idx];
   cogito_compat_retain_val(v);
   return v;

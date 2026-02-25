@@ -1210,7 +1210,7 @@ static void cogito_load_sum(YisVal pathv) {
       }
     }
   }
-  if (ps) yis_release_val(EV_STR(ps));
+  if (ps) yis_release_val(YV_STR(ps));
 }
 
 static void cogito_load_sum_source(const char* src) {

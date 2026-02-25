@@ -7,7 +7,7 @@ static CogitoNode* cogito_fab_new_obj(YisStr* icon) {
 static YisVal cogito_fab_new(YisVal icon) {
   YisStr* ts = stdr_to_string(icon);
   CogitoNode* n = cogito_fab_new_obj(ts);
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }
 // size: 0=S(42x42), 1=M(56x56), 2=L(96x96)
 static void cogito_fab_set_size(YisVal fabv, YisVal sizev) {
@@ -29,9 +29,9 @@ static void cogito_fab_set_color(YisVal fabv, YisVal colorv) {
   if (c < 0) c = 0;
   if (c > 3) c = 3;
   YisStr* cls = stdr_str_from_slice(names[c], strlen(names[c]));
-  if (n->class_name) yis_release_val(EV_STR(n->class_name));
+  if (n->class_name) yis_release_val(YV_STR(n->class_name));
   n->class_name = cls;
-  yis_retain_val(EV_STR(n->class_name));
+  yis_retain_val(YV_STR(n->class_name));
 }
 
 static void cogito_fab_menu_set_color(YisVal fabv, YisVal colorv) {
@@ -42,9 +42,9 @@ static void cogito_fab_menu_set_color(YisVal fabv, YisVal colorv) {
   if (c < 0) c = 0;
   if (c > 3) c = 3;
   YisStr* cls = stdr_str_from_slice(names[c], strlen(names[c]));
-  if (n->class_name) yis_release_val(EV_STR(n->class_name));
+  if (n->class_name) yis_release_val(YV_STR(n->class_name));
   n->class_name = cls;
-  yis_retain_val(EV_STR(n->class_name));
+  yis_retain_val(YV_STR(n->class_name));
 }
 
 static void cogito_fab_set_extended(YisVal fabv, YisVal extended, YisVal label) {
@@ -53,9 +53,9 @@ static void cogito_fab_set_extended(YisVal fabv, YisVal extended, YisVal label) 
   n->fab.extended = yis_as_bool(extended);
   if (n->fab.extended) {
     YisStr* lbl = stdr_to_string(label);
-    if (n->subtitle) yis_release_val(EV_STR(n->subtitle));
+    if (n->subtitle) yis_release_val(YV_STR(n->subtitle));
     n->subtitle = lbl;
-    yis_retain_val(EV_STR(n->subtitle));
+    yis_retain_val(YV_STR(n->subtitle));
   }
   cogito_window_relayout(cogito_node_window(n));
 }

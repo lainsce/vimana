@@ -9,5 +9,5 @@ static CogitoNode* cogito_menu_button_new_obj(YisStr* icon) {
 static YisVal cogito_menu_button_new(YisVal iconv) {
   YisStr* ts = stdr_to_string(iconv);
   CogitoNode* n = cogito_menu_button_new_obj(ts);
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }

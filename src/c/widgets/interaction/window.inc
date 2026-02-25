@@ -1,7 +1,7 @@
 static void cogito_window_rebuild(CogitoNode* win) {
   if (!win || !win->builder) return;
   cogito_clear_children(win);
-  YisVal wv = EV_OBJ(win);
+  YisVal wv = YV_OBJ(win);
   yis_retain_val(wv);
   YisVal ret = win->builder->fn(win->builder->env, 1, &wv);
   yis_release_val(wv);
@@ -38,7 +38,7 @@ static YisVal cogito_window_new(YisVal title, YisVal w, YisVal h) {
   int wi = (int)yis_as_int(w);
   int hi = (int)yis_as_int(h);
   CogitoNode* win = cogito_window_new_obj(ts, wi, hi);
-  return EV_OBJ(win);
+  return YV_OBJ(win);
 }
 static void cogito_window_set_autosize(YisVal winv, YisVal onv) {
   if (winv.tag != EVT_OBJ) yis_trap("cogito.window_set_autosize expects window");
@@ -58,9 +58,9 @@ static void cogito_window_set_builder(YisVal winv, YisVal builder) {
   if (winv.tag != EVT_OBJ) yis_trap("cogito.window_set_builder expects window");
   if (builder.tag != EVT_FN) yis_trap("cogito.window_set_builder expects function");
   CogitoNode* win = (CogitoNode*)winv.as.p;
-  if (win->builder) yis_release_val(EV_FN(win->builder));
+  if (win->builder) yis_release_val(YV_FN(win->builder));
   win->builder = (YisFn*)builder.as.p;
-  yis_retain_val(EV_FN(win->builder));
+  yis_retain_val(YV_FN(win->builder));
 }
 static void cogito_window_set_dialog(YisVal winv, YisVal dialogv) {
   if (winv.tag != EVT_OBJ) yis_trap("cogito.window_set_dialog expects window");
@@ -69,11 +69,11 @@ static void cogito_window_set_dialog(YisVal winv, YisVal dialogv) {
   CogitoNode* dlg = (CogitoNode*)dialogv.as.p;
   if (dlg->kind == COGITO_DIALOG_SLOT) {
     if (win->dialog && win->dialog != dlg) {
-      yis_release_val(EV_OBJ(win->dialog));
+      yis_release_val(YV_OBJ(win->dialog));
     }
     win->dialog = dlg;
     win->dialog->parent = win;
-    yis_retain_val(EV_OBJ(win->dialog));
+    yis_retain_val(YV_OBJ(win->dialog));
     // Only mark as open if the slot actually has a dialog
     if (dlg->dialog && dlg->dialog_open) {
       win->dialog_open = true;
@@ -87,14 +87,14 @@ static void cogito_window_set_dialog(YisVal winv, YisVal dialogv) {
   }
   if (!win->dialog || win->dialog->kind != COGITO_DIALOG_SLOT) {
     if (win->dialog) {
-      yis_release_val(EV_OBJ(win->dialog));
+      yis_release_val(YV_OBJ(win->dialog));
       win->dialog = NULL;
     }
     win->dialog = cogito_dialog_slot_new_obj();
     win->dialog->parent = win;
-    yis_retain_val(EV_OBJ(win->dialog));
+    yis_retain_val(YV_OBJ(win->dialog));
   }
-  cogito_dialog_slot_show(EV_OBJ(win->dialog), dialogv);
+  cogito_dialog_slot_show(YV_OBJ(win->dialog), dialogv);
   win->dialog_open = true;
 }
 static void cogito_window_clear_dialog(YisVal winv) {
@@ -113,7 +113,7 @@ static void cogito_window_clear_dialog(YisVal winv) {
     fflush(stderr);
   }
   if (win->dialog && win->dialog->kind == COGITO_DIALOG_SLOT) {
-    cogito_dialog_slot_clear(EV_OBJ(win->dialog));
+    cogito_dialog_slot_clear(YV_OBJ(win->dialog));
   }
   win->dialog_open = false;
   cogito_overlay_focus_restore(win);
@@ -135,12 +135,12 @@ static void cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
   CogitoNode* ss = (CogitoNode*)side_sheetv.as.p;
   if (ss->kind != COGITO_SIDE_SHEET) yis_trap("cogito.window_set_side_sheet expects SideSheet node");
   if (win->side_sheet_node && win->side_sheet_node != ss) {
-    yis_release_val(EV_OBJ(win->side_sheet_node));
+    yis_release_val(YV_OBJ(win->side_sheet_node));
   }
   win->side_sheet_node = ss;
   win->side_sheet_node->parent = win;
   win->side_sheet_open = true;
-  yis_retain_val(EV_OBJ(win->side_sheet_node));
+  yis_retain_val(YV_OBJ(win->side_sheet_node));
   cogito_apply_style_tree(ss);
   cogito_window_relayout(win);
 }

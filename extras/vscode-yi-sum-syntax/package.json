@@ -19,7 +19,7 @@
           "yis"
         ],
         "extensions": [
-          ".yis"
+          ".yi"
         ],
         "configuration": "./language-configuration.json"
       },
@@ -38,7 +38,7 @@
     "grammars": [
       {
         "language": "yis",
-        "scopeName": "source.yis",
+        "scopeName": "source.yi",
         "path": "./syntaxes/yis.tmLanguage.json"
       },
       {

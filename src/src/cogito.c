@@ -736,34 +736,34 @@ static YisVal cogito_cb_node(void *env, int argc, YisVal *argv) {
   (void)argc;
   CogitoCbNode *cb = (CogitoCbNode *)env;
   if (!cb || !cb->fn)
-    return EV_NULLV;
+    return YV_NULLV;
   CogitoNode *n = NULL;
   if (argv && argv[0].tag == EVT_OBJ)
     n = (CogitoNode *)argv[0].as.p;
   cb->fn((cogito_node *)n, cb->user);
-  return EV_NULLV;
+  return YV_NULLV;
 }
 
 static YisVal cogito_cb_index(void *env, int argc, YisVal *argv) {
   CogitoCbIndex *cb = (CogitoCbIndex *)env;
   if (!cb || !cb->fn)
-    return EV_NULLV;
+    return YV_NULLV;
   int idx = (argc > 0) ? (int)yis_as_int(argv[0]) : -1;
   cb->fn((cogito_node *)cb->node, idx, cb->user);
-  return EV_NULLV;
+  return YV_NULLV;
 }
 
 static YisVal cogito_cb_draw(void *env, int argc, YisVal *argv) {
   CogitoCbDraw *cb = (CogitoCbDraw *)env;
   if (!cb || !cb->fn)
-    return EV_NULLV;
+    return YV_NULLV;
   CogitoNode *n = NULL;
   if (argc > 0 && argv && argv[0].tag == EVT_OBJ)
     n = (CogitoNode *)argv[0].as.p;
   int width = (argc > 1 && argv) ? (int)yis_as_int(argv[1]) : 0;
   int height = (argc > 2 && argv) ? (int)yis_as_int(argv[2]) : 0;
   cb->fn((cogito_node *)n, width, height, cb->user);
-  return EV_NULLV;
+  return YV_NULLV;
 }
 
 static int cogito_hit_test_bridge(CogitoWindow *window, int x, int y,
@@ -777,17 +777,17 @@ static int cogito_hit_test_bridge(CogitoWindow *window, int x, int y,
 
 static YisVal cogito_val_from_cstr(const char *s) {
   if (!s)
-    return EV_NULLV;
+    return YV_NULLV;
   YisStr *es = stdr_str_from_slice(s, strlen(s));
-  return EV_STR(es);
+  return YV_STR(es);
 }
 
 static void cogito_set_fn(YisFn **slot, YisFn *fn) {
   if (*slot)
-    yis_release_val(EV_FN(*slot));
+    yis_release_val(YV_FN(*slot));
   *slot = fn;
   if (fn)
-    yis_retain_val(EV_FN(fn));
+    yis_retain_val(YV_FN(fn));
 }
 
 cogito_app *cogito_app_new(void) {
@@ -797,14 +797,14 @@ cogito_app *cogito_app_new(void) {
 
 void cogito_app_free(cogito_app *app) {
   if (app)
-    yis_release_val(EV_OBJ(app));
+    yis_release_val(YV_OBJ(app));
 }
 
 void cogito_app_run(cogito_app *app, cogito_window *window) {
   if (!app || !window)
     return;
   cogito_active_app = app;
-  cogito_run_yis(EV_OBJ(app), EV_OBJ(window));
+  cogito_run_yis(YV_OBJ(app), YV_OBJ(window));
   cogito_active_app = NULL;
 }
 
@@ -812,7 +812,7 @@ void cogito_app_set_appid(cogito_app *app, const char *rdnn) {
   if (!app)
     return;
   YisVal idv = cogito_val_from_cstr(rdnn);
-  cogito_app_set_appid_yis(EV_OBJ(app), idv);
+  cogito_app_set_appid_yis(YV_OBJ(app), idv);
   if (idv.tag == EVT_STR)
     yis_release_val(idv);
 }
@@ -821,7 +821,7 @@ void cogito_app_set_app_name(cogito_app *app, const char *name) {
   if (!app)
     return;
   YisVal nv = cogito_val_from_cstr(name);
-  cogito_app_set_app_name_yis(EV_OBJ(app), nv);
+  cogito_app_set_app_name_yis(YV_OBJ(app), nv);
   if (nv.tag == EVT_STR)
     yis_release_val(nv);
 }
@@ -830,7 +830,7 @@ void cogito_app_set_icon(cogito_app *app, const char *path) {
   if (!app)
     return;
   YisVal pv = cogito_val_from_cstr(path);
-  cogito_app_set_icon_yis(EV_OBJ(app), pv);
+  cogito_app_set_icon_yis(YV_OBJ(app), pv);
   if (pv.tag == EVT_STR)
     yis_release_val(pv);
 }
@@ -846,7 +846,7 @@ void cogito_app_set_accent_color(cogito_app *app, const char *hex,
   if (!app)
     return;
   YisVal hv = cogito_val_from_cstr(hex);
-  cogito_app_set_accent_color_yis(EV_OBJ(app), hv, EV_BOOL(follow_system));
+  cogito_app_set_accent_color_yis(YV_OBJ(app), hv, YV_BOOL(follow_system));
   if (hv.tag == EVT_STR)
     yis_release_val(hv);
 }
@@ -854,8 +854,8 @@ void cogito_app_set_accent_color(cogito_app *app, const char *hex,
 void cogito_app_set_dark_mode(cogito_app *app, bool dark, bool follow_system) {
   if (!app)
     return;
-  cogito_app_set_dark_mode_yis(EV_OBJ(app), EV_BOOL(dark),
-                                EV_BOOL(follow_system));
+  cogito_app_set_dark_mode_yis(YV_OBJ(app), YV_BOOL(dark),
+                                YV_BOOL(follow_system));
 }
 
 const char *cogito_app_set_accent_from_image(cogito_app *app, const char *path,
@@ -928,7 +928,7 @@ const char *cogito_app_set_accent_from_image(cogito_app *app, const char *path,
 void cogito_app_set_ensor_variant(cogito_app *app, int variant) {
   if (!app)
     return;
-  cogito_app_set_ensor_variant_yis(EV_OBJ(app), EV_INT(variant));
+  cogito_app_set_ensor_variant_yis(YV_OBJ(app), YV_INT(variant));
 }
 
 void cogito_app_set_contrast(cogito_app *app, double contrast) {
@@ -938,7 +938,7 @@ void cogito_app_set_contrast(cogito_app *app, double contrast) {
     contrast = -1.0;
   if (contrast > 1.0)
     contrast = 1.0;
-  cogito_app_set_contrast_yis(EV_OBJ(app), EV_FLOAT(contrast));
+  cogito_app_set_contrast_yis(YV_OBJ(app), YV_FLOAT(contrast));
 }
 
 int cogito_accent_from_pixels(const unsigned char *pixels, int n_bytes,
@@ -1036,7 +1036,7 @@ void cogito_timer_clear_all(void) { cogito_timer_clear_all_internal(); }
 
 cogito_window *cogito_window_new(const char *title, int w, int h) {
   YisVal tv = cogito_val_from_cstr(title);
-  YisVal v = cogito_window_new_yis(tv, EV_INT(w), EV_INT(h));
+  YisVal v = cogito_window_new_yis(tv, YV_INT(w), YV_INT(h));
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
   return (cogito_window *)v.as.p;
@@ -1044,26 +1044,26 @@ cogito_window *cogito_window_new(const char *title, int w, int h) {
 
 void cogito_window_free(cogito_window *window) {
   if (window)
-    yis_release_val(EV_OBJ(window));
+    yis_release_val(YV_OBJ(window));
 }
 
 void cogito_window_set_resizable(cogito_window *window, bool on) {
   if (!window)
     return;
-  cogito_window_set_resizable_yis(EV_OBJ(window), EV_BOOL(on));
+  cogito_window_set_resizable_yis(YV_OBJ(window), YV_BOOL(on));
 }
 
 void cogito_window_set_autosize(cogito_window *window, bool on) {
   if (!window)
     return;
-  cogito_window_set_autosize_yis(EV_OBJ(window), EV_BOOL(on));
+  cogito_window_set_autosize_yis(YV_OBJ(window), YV_BOOL(on));
 }
 
 void cogito_window_set_a11y_label(cogito_window *window, const char *label) {
   if (!window)
     return;
   YisVal lv = cogito_val_from_cstr(label);
-  cogito_node_set_a11y_label_yis(EV_OBJ(window), lv);
+  cogito_node_set_a11y_label_yis(YV_OBJ(window), lv);
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
 }
@@ -1076,8 +1076,8 @@ void cogito_window_set_builder(cogito_window *window, cogito_node_fn builder,
   env->fn = builder;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_window_set_builder_yis(EV_OBJ(window), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_window_set_builder_yis(YV_OBJ(window), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void *cogito_window_get_native_handle(cogito_window *window) {
@@ -1248,7 +1248,7 @@ cogito_node *cogito_node_new(cogito_node_kind kind) {
 }
 
 cogito_node *cogito_grid_new_with_cols(int cols) {
-  return cogito_from_val(cogito_grid_new_yis(EV_INT(cols)));
+  return cogito_from_val(cogito_grid_new_yis(YV_INT(cols)));
 }
 
 static cogito_node *cogito_from_val(YisVal v) {
@@ -1288,7 +1288,7 @@ void cogito_carousel_item_set_text(cogito_node *item, const char *text) {
   if (!item)
     return;
   YisVal tv = cogito_val_from_cstr(text);
-  cogito_carousel_item_set_text_yis(EV_OBJ(item), tv);
+  cogito_carousel_item_set_text_yis(YV_OBJ(item), tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
 }
@@ -1297,20 +1297,20 @@ void cogito_carousel_item_set_text(cogito_node *item, const char *text) {
 void cogito_carousel_item_set_halign(cogito_node *item, int align) {
   if (!item)
     return;
-  cogito_carousel_item_set_halign_yis(EV_OBJ(item), EV_INT(align));
+  cogito_carousel_item_set_halign_yis(YV_OBJ(item), YV_INT(align));
 }
 
 #undef cogito_carousel_item_set_valign
 void cogito_carousel_item_set_valign(cogito_node *item, int align) {
   if (!item)
     return;
-  cogito_carousel_item_set_valign_yis(EV_OBJ(item), EV_INT(align));
+  cogito_carousel_item_set_valign_yis(YV_OBJ(item), YV_INT(align));
 }
 
 int cogito_carousel_get_active_index(cogito_node *node) {
   if (!node)
     return 0;
-  YisVal nv = EV_OBJ((void *)node);
+  YisVal nv = YV_OBJ((void *)node);
   YisVal v = cogito_carousel_get_active_index_yis(nv);
   return (int)yis_as_int(v);
 }
@@ -1318,8 +1318,8 @@ int cogito_carousel_get_active_index(cogito_node *node) {
 void cogito_carousel_set_active_index(cogito_node *node, int index) {
   if (!node)
     return;
-  YisVal nv = EV_OBJ((void *)node);
-  YisVal iv = EV_INT((int64_t)index);
+  YisVal nv = YV_OBJ((void *)node);
+  YisVal iv = YV_INT((int64_t)index);
   cogito_carousel_set_active_index_yis(nv, iv);
 }
 
@@ -1333,7 +1333,7 @@ cogito_node *cogito_iconbtn_new(const char *text) {
 
 cogito_node *cogito_checkbox_new(const char *text, const char *group) {
   YisVal tv = cogito_val_from_cstr(text);
-  YisVal gv = group ? cogito_val_from_cstr(group) : EV_NULLV;
+  YisVal gv = group ? cogito_val_from_cstr(group) : YV_NULLV;
   YisVal v = cogito_checkbox_new_yis(tv, gv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
@@ -1379,12 +1379,12 @@ cogito_node *cogito_dropdown_new(void) {
 }
 cogito_node *cogito_slider_new(double min, double max, double value) {
   return cogito_from_val(
-      cogito_slider_new_yis(EV_FLOAT(min), EV_FLOAT(max), EV_FLOAT(value)));
+      cogito_slider_new_yis(YV_FLOAT(min), YV_FLOAT(max), YV_FLOAT(value)));
 }
 cogito_node *cogito_slider_range_new(double min, double max, double start,
                                      double end) {
   return cogito_from_val(cogito_slider_range_new_yis(
-      EV_FLOAT(min), EV_FLOAT(max), EV_FLOAT(start), EV_FLOAT(end)));
+      YV_FLOAT(min), YV_FLOAT(max), YV_FLOAT(start), YV_FLOAT(end)));
 }
 cogito_node *cogito_tabs_new(void) {
   return cogito_from_val(cogito_tabs_new_yis());
@@ -1393,17 +1393,17 @@ cogito_node *cogito_view_switcher_new(void) {
   return cogito_from_val(cogito_view_switcher_new_yis());
 }
 cogito_node *cogito_progress_new(double value) {
-  return cogito_from_val(cogito_progress_new_yis(EV_FLOAT(value)));
+  return cogito_from_val(cogito_progress_new_yis(YV_FLOAT(value)));
 }
 cogito_node *cogito_divider_new(const char *orientation, bool is_inset) {
-  YisVal ov = orientation ? cogito_val_from_cstr(orientation) : EV_NULLV;
-  YisVal v = cogito_divider_new_yis(ov, EV_BOOL(is_inset));
+  YisVal ov = orientation ? cogito_val_from_cstr(orientation) : YV_NULLV;
+  YisVal v = cogito_divider_new_yis(ov, YV_BOOL(is_inset));
   if (ov.tag == EVT_STR)
     yis_release_val(ov);
   return cogito_from_val(v);
 }
 cogito_node *cogito_card_new(const char *title) {
-  YisVal tv = title ? cogito_val_from_cstr(title) : EV_NULLV;
+  YisVal tv = title ? cogito_val_from_cstr(title) : YV_NULLV;
   YisVal v = cogito_card_new_yis(tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
@@ -1421,7 +1421,7 @@ void cogito_card_set_variant(cogito_node *card, int variant) {
   }
 }
 cogito_node *cogito_avatar_new(const char *text_or_icon) {
-  YisVal tv = text_or_icon ? cogito_val_from_cstr(text_or_icon) : EV_NULLV;
+  YisVal tv = text_or_icon ? cogito_val_from_cstr(text_or_icon) : YV_NULLV;
   YisVal v = cogito_avatar_new_yis(tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
@@ -1429,18 +1429,18 @@ cogito_node *cogito_avatar_new(const char *text_or_icon) {
 }
 void cogito_avatar_set_image(cogito_node *avatar, const char *path) {
   YisVal pv = cogito_val_from_cstr(path);
-  cogito_avatar_set_image_yis(EV_OBJ(avatar), pv);
+  cogito_avatar_set_image_yis(YV_OBJ(avatar), pv);
   if (pv.tag == EVT_STR)
     yis_release_val(pv);
 }
 cogito_node *cogito_badge_new(int count) {
-  return cogito_from_val(cogito_badge_new_yis(EV_INT(count)));
+  return cogito_from_val(cogito_badge_new_yis(YV_INT(count)));
 }
 void cogito_badge_set_count(cogito_node *badge, int count) {
-  cogito_badge_set_count_yis(EV_OBJ(badge), EV_INT(count));
+  cogito_badge_set_count_yis(YV_OBJ(badge), YV_INT(count));
 }
 int cogito_badge_get_count(cogito_node *badge) {
-  YisVal v = cogito_badge_get_count_yis(EV_OBJ(badge));
+  YisVal v = cogito_badge_get_count_yis(YV_OBJ(badge));
   return (int)v.as.i;
 }
 cogito_node *cogito_banner_new(const char *text) {
@@ -1457,26 +1457,26 @@ void cogito_banner_set_action(cogito_node *banner, const char *text,
   env->fn = handler;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_banner_set_action_yis(EV_OBJ(banner), tv, EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_banner_set_action_yis(YV_OBJ(banner), tv, YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
 }
 void cogito_banner_set_icon(cogito_node *banner, const char *icon) {
   YisVal iv = cogito_val_from_cstr(icon);
-  cogito_banner_set_icon_yis(EV_OBJ(banner), iv);
+  cogito_banner_set_icon_yis(YV_OBJ(banner), iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
 }
 cogito_node *cogito_bottom_sheet_new(const char *title) {
-  YisVal tv = title ? cogito_val_from_cstr(title) : EV_NULLV;
+  YisVal tv = title ? cogito_val_from_cstr(title) : YV_NULLV;
   YisVal v = cogito_bottom_sheet_new_yis(tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
   return cogito_from_val(v);
 }
 cogito_node *cogito_side_sheet_new(const char *title) {
-  YisVal tv = title ? cogito_val_from_cstr(title) : EV_NULLV;
+  YisVal tv = title ? cogito_val_from_cstr(title) : YV_NULLV;
   YisVal v = cogito_side_sheet_new_yis(tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
@@ -1491,19 +1491,19 @@ void cogito_timepicker_on_change(cogito_node *tp, cogito_node_fn handler,
   env->fn = handler;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_timepicker_on_change_yis(EV_OBJ(tp), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_timepicker_on_change_yis(YV_OBJ(tp), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 int cogito_timepicker_get_hour(cogito_node *tp) {
-  YisVal v = cogito_timepicker_get_hour_yis(EV_OBJ(tp));
+  YisVal v = cogito_timepicker_get_hour_yis(YV_OBJ(tp));
   return (int)v.as.i;
 }
 int cogito_timepicker_get_minute(cogito_node *tp) {
-  YisVal v = cogito_timepicker_get_minute_yis(EV_OBJ(tp));
+  YisVal v = cogito_timepicker_get_minute_yis(YV_OBJ(tp));
   return (int)v.as.i;
 }
 void cogito_timepicker_set_time(cogito_node *tp, int hour, int minute) {
-  cogito_timepicker_set_time_yis(EV_OBJ(tp), EV_INT(hour), EV_INT(minute));
+  cogito_timepicker_set_time_yis(YV_OBJ(tp), YV_INT(hour), YV_INT(minute));
 }
 cogito_node *cogito_datepicker_new(void) {
   return cogito_from_val(cogito_datepicker_new_yis());
@@ -1540,7 +1540,7 @@ const char *cogito_colorpicker_get_hex(cogito_node *colorpicker) {
 cogito_node *cogito_stepper_new(double min, double max, double value,
                                 double step) {
   return cogito_from_val(cogito_stepper_new_yis(
-      EV_FLOAT(min), EV_FLOAT(max), EV_FLOAT(value), EV_FLOAT(step)));
+      YV_FLOAT(min), YV_FLOAT(max), YV_FLOAT(value), YV_FLOAT(step)));
 }
 cogito_node *cogito_buttongroup_new(void) {
   return cogito_from_val(cogito_buttongroup_new_yis());
@@ -1565,26 +1565,26 @@ cogito_node *cogito_toolbar_new(void) {
 void cogito_toolbar_set_vibrant(cogito_node *toolbar, bool vibrant) {
   if (!toolbar)
     return;
-  cogito_toolbar_set_vibrant_yis(EV_OBJ(toolbar), EV_BOOL(vibrant));
+  cogito_toolbar_set_vibrant_yis(YV_OBJ(toolbar), YV_BOOL(vibrant));
 }
 
 bool cogito_toolbar_get_vibrant(cogito_node *toolbar) {
   if (!toolbar)
     return false;
-  YisVal v = cogito_toolbar_get_vibrant_yis(EV_OBJ(toolbar));
+  YisVal v = cogito_toolbar_get_vibrant_yis(YV_OBJ(toolbar));
   return yis_as_bool(v);
 }
 
 void cogito_toolbar_set_vertical(cogito_node *toolbar, bool vertical) {
   if (!toolbar)
     return;
-  cogito_toolbar_set_vertical_yis(EV_OBJ(toolbar), EV_BOOL(vertical));
+  cogito_toolbar_set_vertical_yis(YV_OBJ(toolbar), YV_BOOL(vertical));
 }
 
 bool cogito_toolbar_get_vertical(cogito_node *toolbar) {
   if (!toolbar)
     return false;
-  YisVal v = cogito_toolbar_get_vertical_yis(EV_OBJ(toolbar));
+  YisVal v = cogito_toolbar_get_vertical_yis(YV_OBJ(toolbar));
   return yis_as_bool(v);
 }
 
@@ -1619,89 +1619,89 @@ cogito_node *cogito_drawing_area_new(void) {
   return cogito_from_val(cogito_drawing_area_new_yis());
 }
 cogito_node *cogito_shape_new(int preset) {
-  return cogito_from_val(cogito_shape_new_yis(EV_INT(preset)));
+  return cogito_from_val(cogito_shape_new_yis(YV_INT(preset)));
 }
 void cogito_shape_set_preset(cogito_node *shape, int preset) {
   if (!shape)
     return;
-  cogito_shape_set_preset_yis(EV_OBJ(shape), EV_INT(preset));
+  cogito_shape_set_preset_yis(YV_OBJ(shape), YV_INT(preset));
 }
 int cogito_shape_get_preset(cogito_node *shape) {
   if (!shape)
     return 0;
-  YisVal v = cogito_shape_get_preset_yis(EV_OBJ(shape));
+  YisVal v = cogito_shape_get_preset_yis(YV_OBJ(shape));
   return (int)yis_as_int(v);
 }
 void cogito_shape_set_size(cogito_node *shape, int size_dp) {
   if (!shape)
     return;
-  cogito_shape_set_size_yis(EV_OBJ(shape), EV_INT(size_dp));
+  cogito_shape_set_size_yis(YV_OBJ(shape), YV_INT(size_dp));
 }
 int cogito_shape_get_size(cogito_node *shape) {
   if (!shape)
     return 96;
-  YisVal v = cogito_shape_get_size_yis(EV_OBJ(shape));
+  YisVal v = cogito_shape_get_size_yis(YV_OBJ(shape));
   return (int)yis_as_int(v);
 }
 void cogito_shape_set_color(cogito_node *shape, const char *color) {
   if (!shape)
     return;
   YisVal cv = cogito_val_from_cstr(color);
-  cogito_shape_set_color_yis(EV_OBJ(shape), cv);
+  cogito_shape_set_color_yis(YV_OBJ(shape), cv);
   if (cv.tag == EVT_STR)
     yis_release_val(cv);
 }
 void cogito_shape_set_color_style(cogito_node *shape, int style) {
   if (!shape)
     return;
-  cogito_shape_set_color_style_yis(EV_OBJ(shape), EV_INT(style));
+  cogito_shape_set_color_style_yis(YV_OBJ(shape), YV_INT(style));
 }
 int cogito_shape_get_color_style(cogito_node *shape) {
   if (!shape)
     return 0;
-  YisVal v = cogito_shape_get_color_style_yis(EV_OBJ(shape));
+  YisVal v = cogito_shape_get_color_style_yis(YV_OBJ(shape));
   return (int)yis_as_int(v);
 }
 void cogito_shape_set_vertex(cogito_node *shape, int index, float x, float y) {
   if (!shape)
     return;
-  cogito_shape_set_vertex_yis(EV_OBJ(shape), EV_INT(index), EV_FLOAT(x),
-                               EV_FLOAT(y));
+  cogito_shape_set_vertex_yis(YV_OBJ(shape), YV_INT(index), YV_FLOAT(x),
+                               YV_FLOAT(y));
 }
 float cogito_shape_get_vertex_x(cogito_node *shape, int index) {
   if (!shape)
     return 0.0f;
-  YisVal v = cogito_shape_get_vertex_x_yis(EV_OBJ(shape), EV_INT(index));
+  YisVal v = cogito_shape_get_vertex_x_yis(YV_OBJ(shape), YV_INT(index));
   return (float)yis_as_float(v);
 }
 float cogito_shape_get_vertex_y(cogito_node *shape, int index) {
   if (!shape)
     return 0.0f;
-  YisVal v = cogito_shape_get_vertex_y_yis(EV_OBJ(shape), EV_INT(index));
+  YisVal v = cogito_shape_get_vertex_y_yis(YV_OBJ(shape), YV_INT(index));
   return (float)yis_as_float(v);
 }
 int cogito_drawing_area_get_x(cogito_node *area) {
   if (!area)
     return 0;
-  YisVal v = cogito_drawing_area_get_x_yis(EV_OBJ(area));
+  YisVal v = cogito_drawing_area_get_x_yis(YV_OBJ(area));
   return (int)yis_as_int(v);
 }
 int cogito_drawing_area_get_y(cogito_node *area) {
   if (!area)
     return 0;
-  YisVal v = cogito_drawing_area_get_y_yis(EV_OBJ(area));
+  YisVal v = cogito_drawing_area_get_y_yis(YV_OBJ(area));
   return (int)yis_as_int(v);
 }
 bool cogito_drawing_area_get_pressed(cogito_node *area) {
   if (!area)
     return false;
-  YisVal v = cogito_drawing_area_get_pressed_yis(EV_OBJ(area));
+  YisVal v = cogito_drawing_area_get_pressed_yis(YV_OBJ(area));
   return yis_as_bool(v);
 }
 void cogito_drawing_area_clear(cogito_node *area) {
   if (!area)
     return;
-  cogito_drawing_area_clear_yis(EV_OBJ(area));
+  cogito_drawing_area_clear_yis(YV_OBJ(area));
 }
 void cogito_drawing_area_on_press(cogito_node *area, cogito_node_fn fn,
                                   void *user) {
@@ -1725,7 +1725,7 @@ void cogito_drawing_area_on_release(cogito_node *area, cogito_node_fn fn,
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
   cogito_set_fn(&n->on_action, wrap);
-  yis_release_val(EV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 void cogito_drawing_area_on_draw(cogito_node *area, cogito_draw_fn fn,
                                  void *user) {
@@ -1741,38 +1741,38 @@ void cogito_drawing_area_on_draw(cogito_node *area, cogito_draw_fn fn,
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_draw, env);
   cogito_set_fn(&n->on_draw, wrap);
-  yis_release_val(EV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 void cogito_canvas_set_color(cogito_node *area, const char *color) {
   if (!area)
     return;
   YisVal cv = cogito_val_from_cstr(color);
-  cogito_canvas_set_color_yis(EV_OBJ(area), cv);
+  cogito_canvas_set_color_yis(YV_OBJ(area), cv);
   if (cv.tag == EVT_STR)
     yis_release_val(cv);
 }
 void cogito_canvas_set_line_width(cogito_node *area, int width) {
   if (!area)
     return;
-  cogito_canvas_set_line_width_yis(EV_OBJ(area), EV_INT(width));
+  cogito_canvas_set_line_width_yis(YV_OBJ(area), YV_INT(width));
 }
 void cogito_canvas_line(cogito_node *area, int x1, int y1, int x2, int y2) {
   if (!area)
     return;
-  cogito_canvas_line_yis(EV_OBJ(area), EV_INT(x1), EV_INT(y1), EV_INT(x2),
-                          EV_INT(y2));
+  cogito_canvas_line_yis(YV_OBJ(area), YV_INT(x1), YV_INT(y1), YV_INT(x2),
+                          YV_INT(y2));
 }
 void cogito_canvas_rect(cogito_node *area, int x, int y, int w, int h) {
   if (!area)
     return;
-  cogito_canvas_rect_yis(EV_OBJ(area), EV_INT(x), EV_INT(y), EV_INT(w),
-                          EV_INT(h));
+  cogito_canvas_rect_yis(YV_OBJ(area), YV_INT(x), YV_INT(y), YV_INT(w),
+                          YV_INT(h));
 }
 void cogito_canvas_fill_rect(cogito_node *area, int x, int y, int w, int h) {
   if (!area)
     return;
-  cogito_canvas_fill_rect_yis(EV_OBJ(area), EV_INT(x), EV_INT(y), EV_INT(w),
-                               EV_INT(h));
+  cogito_canvas_fill_rect_yis(YV_OBJ(area), YV_INT(x), YV_INT(y), YV_INT(w),
+                               YV_INT(h));
 }
 
 cogito_node *cogito_active_indicator_new(void) {
@@ -1786,26 +1786,26 @@ cogito_node *cogito_switchbar_new(const char *text) {
   return cogito_from_val(v);
 }
 bool cogito_switchbar_get_checked(cogito_node *sb) {
-  YisVal v = cogito_switchbar_get_checked_yis(EV_OBJ(sb));
+  YisVal v = cogito_switchbar_get_checked_yis(YV_OBJ(sb));
   return yis_as_bool(v);
 }
 void cogito_switchbar_set_checked(cogito_node *sb, bool checked) {
-  cogito_switchbar_set_checked_yis(EV_OBJ(sb), EV_BOOL(checked));
+  cogito_switchbar_set_checked_yis(YV_OBJ(sb), YV_BOOL(checked));
 }
 void cogito_switchbar_on_change(cogito_node *sb, cogito_node_fn fn,
                                 void *user) {
   if (!sb)
     return;
   if (!fn) {
-    cogito_switchbar_on_change_yis(EV_OBJ(sb), EV_NULLV);
+    cogito_switchbar_on_change_yis(YV_OBJ(sb), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_switchbar_on_change_yis(EV_OBJ(sb), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_switchbar_on_change_yis(YV_OBJ(sb), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 cogito_node *cogito_content_list_new(void) {
   return cogito_from_val(cogito_content_list_new_yis());
@@ -1819,13 +1819,13 @@ cogito_node *cogito_empty_page_new(const char *title) {
 }
 void cogito_empty_page_set_description(cogito_node *ep, const char *desc) {
   YisVal dv = cogito_val_from_cstr(desc);
-  cogito_empty_page_set_description_yis(EV_OBJ(ep), dv);
+  cogito_empty_page_set_description_yis(YV_OBJ(ep), dv);
   if (dv.tag == EVT_STR)
     yis_release_val(dv);
 }
 void cogito_empty_page_set_icon(cogito_node *ep, const char *icon) {
   YisVal iv = cogito_val_from_cstr(icon);
-  cogito_empty_page_set_icon_yis(EV_OBJ(ep), iv);
+  cogito_empty_page_set_icon_yis(YV_OBJ(ep), iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
 }
@@ -1833,14 +1833,14 @@ void cogito_empty_page_set_action(cogito_node *ep, const char *text,
                                   cogito_node_fn fn, void *user) {
   YisVal tv = cogito_val_from_cstr(text);
   if (!fn) {
-    cogito_empty_page_set_action_yis(EV_OBJ(ep), tv, EV_NULLV);
+    cogito_empty_page_set_action_yis(YV_OBJ(ep), tv, YV_NULLV);
   } else {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    cogito_empty_page_set_action_yis(EV_OBJ(ep), tv, EV_FN(wrap));
-    yis_release_val(EV_FN(wrap));
+    cogito_empty_page_set_action_yis(YV_OBJ(ep), tv, YV_FN(wrap));
+    yis_release_val(YV_FN(wrap));
   }
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
@@ -1854,7 +1854,7 @@ cogito_node *cogito_tip_view_new(const char *text) {
 }
 void cogito_tip_view_set_title(cogito_node *tv, const char *title) {
   YisVal tiv = cogito_val_from_cstr(title);
-  cogito_tip_view_set_title_yis(EV_OBJ(tv), tiv);
+  cogito_tip_view_set_title_yis(YV_OBJ(tv), tiv);
   if (tiv.tag == EVT_STR)
     yis_release_val(tiv);
 }
@@ -1895,13 +1895,13 @@ cogito_node *cogito_welcome_screen_new(const char *title) {
 }
 void cogito_welcome_screen_set_description(cogito_node *ws, const char *desc) {
   YisVal dv = cogito_val_from_cstr(desc);
-  cogito_welcome_screen_set_description_yis(EV_OBJ(ws), dv);
+  cogito_welcome_screen_set_description_yis(YV_OBJ(ws), dv);
   if (dv.tag == EVT_STR)
     yis_release_val(dv);
 }
 void cogito_welcome_screen_set_icon(cogito_node *ws, const char *icon) {
   YisVal iv = cogito_val_from_cstr(icon);
-  cogito_welcome_screen_set_icon_yis(EV_OBJ(ws), iv);
+  cogito_welcome_screen_set_icon_yis(YV_OBJ(ws), iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
 }
@@ -1909,14 +1909,14 @@ void cogito_welcome_screen_set_action(cogito_node *ws, const char *text,
                                       cogito_node_fn fn, void *user) {
   YisVal tv = cogito_val_from_cstr(text);
   if (!fn) {
-    cogito_welcome_screen_set_action_yis(EV_OBJ(ws), tv, EV_NULLV);
+    cogito_welcome_screen_set_action_yis(YV_OBJ(ws), tv, YV_NULLV);
   } else {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    cogito_welcome_screen_set_action_yis(EV_OBJ(ws), tv, EV_FN(wrap));
-    yis_release_val(EV_FN(wrap));
+    cogito_welcome_screen_set_action_yis(YV_OBJ(ws), tv, YV_FN(wrap));
+    yis_release_val(YV_FN(wrap));
   }
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
@@ -1925,7 +1925,7 @@ cogito_node *cogito_view_dual_new(void) {
   return cogito_from_val(cogito_view_dual_new_yis());
 }
 void cogito_view_dual_set_ratio(cogito_node *vd, double ratio) {
-  cogito_view_dual_set_ratio_yis(EV_OBJ(vd), EV_FLOAT(ratio));
+  cogito_view_dual_set_ratio_yis(YV_OBJ(vd), YV_FLOAT(ratio));
 }
 cogito_node *cogito_view_chooser_new(void) {
   return cogito_from_val(cogito_view_chooser_new_yis());
@@ -1941,11 +1941,11 @@ void cogito_view_chooser_set_items(cogito_node *vc, const char **items,
     YisVal sv = cogito_val_from_cstr(items[i]);
     yis_arr_set(arr, i, sv);
   }
-  cogito_view_chooser_set_items_yis(EV_OBJ(vc), EV_ARR(arr));
-  yis_release_val(EV_ARR(arr));
+  cogito_view_chooser_set_items_yis(YV_OBJ(vc), YV_ARR(arr));
+  yis_release_val(YV_ARR(arr));
 }
 void cogito_view_chooser_bind(cogito_node *vc, cogito_node *view_switcher) {
-  cogito_view_chooser_bind_yis(EV_OBJ(vc), EV_OBJ(view_switcher));
+  cogito_view_chooser_bind_yis(YV_OBJ(vc), YV_OBJ(view_switcher));
 }
 cogito_node *cogito_about_window_new(const char *app_name,
                                      const char *version) {
@@ -1960,25 +1960,25 @@ cogito_node *cogito_about_window_new(const char *app_name,
 }
 void cogito_about_window_set_icon(cogito_node *aw, const char *icon) {
   YisVal iv = cogito_val_from_cstr(icon);
-  cogito_about_window_set_icon_yis(EV_OBJ(aw), iv);
+  cogito_about_window_set_icon_yis(YV_OBJ(aw), iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
 }
 void cogito_about_window_set_description(cogito_node *aw, const char *desc) {
   YisVal dv = cogito_val_from_cstr(desc);
-  cogito_about_window_set_description_yis(EV_OBJ(aw), dv);
+  cogito_about_window_set_description_yis(YV_OBJ(aw), dv);
   if (dv.tag == EVT_STR)
     yis_release_val(dv);
 }
 void cogito_about_window_set_website(cogito_node *aw, const char *url) {
   YisVal uv = cogito_val_from_cstr(url);
-  cogito_about_window_set_website_yis(EV_OBJ(aw), uv);
+  cogito_about_window_set_website_yis(YV_OBJ(aw), uv);
   if (uv.tag == EVT_STR)
     yis_release_val(uv);
 }
 void cogito_about_window_set_issue_url(cogito_node *aw, const char *url) {
   YisVal uv = cogito_val_from_cstr(url);
-  cogito_about_window_set_issue_url_yis(EV_OBJ(aw), uv);
+  cogito_about_window_set_issue_url_yis(YV_OBJ(aw), uv);
   if (uv.tag == EVT_STR)
     yis_release_val(uv);
 }
@@ -2000,14 +2000,14 @@ void cogito_split_button_add_menu(cogito_node *sb, const char *label,
                                   cogito_node_fn fn, void *user) {
   YisVal lv = cogito_val_from_cstr(label);
   if (!fn) {
-    cogito_split_button_add_menu_yis(EV_OBJ(sb), lv, EV_NULLV);
+    cogito_split_button_add_menu_yis(YV_OBJ(sb), lv, YV_NULLV);
   } else {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    cogito_split_button_add_menu_yis(EV_OBJ(sb), lv, EV_FN(wrap));
-    yis_release_val(EV_FN(wrap));
+    cogito_split_button_add_menu_yis(YV_OBJ(sb), lv, YV_FN(wrap));
+    yis_release_val(YV_FN(wrap));
   }
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
@@ -2017,14 +2017,14 @@ void cogito_split_button_add_menu_section(cogito_node *sb, const char *label,
                                           cogito_node_fn fn, void *user) {
   YisVal lv = cogito_val_from_cstr(label);
   if (!fn) {
-    cogito_split_button_add_menu_section_yis(EV_OBJ(sb), lv, EV_NULLV);
+    cogito_split_button_add_menu_section_yis(YV_OBJ(sb), lv, YV_NULLV);
   } else {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    cogito_split_button_add_menu_section_yis(EV_OBJ(sb), lv, EV_FN(wrap));
-    yis_release_val(EV_FN(wrap));
+    cogito_split_button_add_menu_section_yis(YV_OBJ(sb), lv, YV_FN(wrap));
+    yis_release_val(YV_FN(wrap));
   }
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
@@ -2032,18 +2032,18 @@ void cogito_split_button_add_menu_section(cogito_node *sb, const char *label,
 
 void cogito_split_button_set_size(cogito_node *sb, int size) {
   if (!sb) return;
-  cogito_split_button_set_size_yis(EV_OBJ(sb), EV_INT(size));
+  cogito_split_button_set_size_yis(YV_OBJ(sb), YV_INT(size));
 }
 
 void cogito_split_button_set_variant(cogito_node *sb, int variant) {
   if (!sb) return;
-  cogito_split_button_set_variant_yis(EV_OBJ(sb), EV_INT(variant));
+  cogito_split_button_set_variant_yis(YV_OBJ(sb), YV_INT(variant));
 }
 
 void cogito_node_add(cogito_node *parent, cogito_node *child) {
   if (!parent || !child)
     return;
-  cogito_container_add(EV_OBJ(parent), EV_OBJ(child));
+  cogito_container_add(YV_OBJ(parent), YV_OBJ(child));
 }
 
 void cogito_node_remove(cogito_node *parent, cogito_node *child) {
@@ -2054,62 +2054,62 @@ void cogito_node_remove(cogito_node *parent, cogito_node *child) {
 
 void cogito_node_free(cogito_node *node) {
   if (node)
-    yis_release_val(EV_OBJ(node));
+    yis_release_val(YV_OBJ(node));
 }
 
 void cogito_node_set_margins(cogito_node *node, int top, int right, int bottom,
                              int left) {
   if (!node)
     return;
-  cogito_container_set_margins(EV_OBJ(node), EV_INT(top), EV_INT(right),
-                               EV_INT(bottom), EV_INT(left));
+  cogito_container_set_margins(YV_OBJ(node), YV_INT(top), YV_INT(right),
+                               YV_INT(bottom), YV_INT(left));
 }
 
 void cogito_node_set_padding(cogito_node *node, int top, int right, int bottom,
                              int left) {
   if (!node)
     return;
-  cogito_container_set_padding(EV_OBJ(node), EV_INT(top), EV_INT(right),
-                               EV_INT(bottom), EV_INT(left));
+  cogito_container_set_padding(YV_OBJ(node), YV_INT(top), YV_INT(right),
+                               YV_INT(bottom), YV_INT(left));
 }
 
 void cogito_node_set_align(cogito_node *node, int align) {
   if (!node)
     return;
-  cogito_container_set_align(EV_OBJ(node), EV_INT(align));
+  cogito_container_set_align(YV_OBJ(node), YV_INT(align));
 }
 
 void cogito_node_set_halign(cogito_node *node, int align) {
   if (!node)
     return;
-  cogito_container_set_halign(EV_OBJ(node), EV_INT(align));
+  cogito_container_set_halign(YV_OBJ(node), YV_INT(align));
 }
 
 void cogito_node_set_valign(cogito_node *node, int align) {
   if (!node)
     return;
-  cogito_container_set_valign(EV_OBJ(node), EV_INT(align));
+  cogito_container_set_valign(YV_OBJ(node), YV_INT(align));
 }
 
 void cogito_node_set_hexpand(cogito_node *node, bool expand) {
-  cogito_container_set_hexpand(EV_OBJ(node), EV_BOOL(expand));
+  cogito_container_set_hexpand(YV_OBJ(node), YV_BOOL(expand));
 }
 
 void cogito_node_set_vexpand(cogito_node *node, bool expand) {
-  cogito_container_set_vexpand(EV_OBJ(node), EV_BOOL(expand));
+  cogito_container_set_vexpand(YV_OBJ(node), YV_BOOL(expand));
 }
 
 void cogito_node_set_gap(cogito_node *node, int gap) {
   if (!node)
     return;
-  cogito_container_set_gap(EV_OBJ(node), EV_INT(gap));
+  cogito_container_set_gap(YV_OBJ(node), YV_INT(gap));
 }
 
 void cogito_node_set_id(cogito_node *node, const char *id) {
   if (!node)
     return;
   YisVal iv = cogito_val_from_cstr(id);
-  cogito_node_set_id_yis(EV_OBJ(node), iv);
+  cogito_node_set_id_yis(YV_OBJ(node), iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
 }
@@ -2120,7 +2120,7 @@ void cogito_node_set_text(cogito_node *node, const char *text) {
   YisStr *s = stdr_str_lit(text ? text : "");
   cogito_node_set_text_yis((CogitoNode *)node, s);
   if (s)
-    yis_release_val(EV_STR(s));
+    yis_release_val(YV_STR(s));
 }
 
 const char *cogito_node_get_text(cogito_node *node) {
@@ -2137,7 +2137,7 @@ void cogito_node_set_subtitle(cogito_node *node, const char *subtitle) {
   YisStr *s = subtitle ? stdr_str_lit(subtitle) : NULL;
   cogito_node_set_subtitle_yis(n, s);
   if (s)
-    yis_release_val(EV_STR(s));
+    yis_release_val(YV_STR(s));
 }
 
 
@@ -2169,7 +2169,7 @@ void cogito_label_set_class(cogito_node *label, const char *cls) {
   if (!label)
     return;
   YisVal cv = cogito_val_from_cstr(cls);
-  cogito_label_set_class_yis(EV_OBJ(label), cv);
+  cogito_label_set_class_yis(YV_OBJ(label), cv);
   if (cv.tag == EVT_STR)
     yis_release_val(cv);
 }
@@ -2178,7 +2178,7 @@ void cogito_label_set_text(cogito_node *label, const char *text) {
   if (!label)
     return;
   YisVal tv = cogito_val_from_cstr(text);
-  cogito_label_set_text_yis(EV_OBJ(label), tv);
+  cogito_label_set_text_yis(YV_OBJ(label), tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
 }
@@ -2188,19 +2188,19 @@ void cogito_load_sum(YisVal pathv) { cogito_load_sum_yis(pathv); }
 void cogito_node_set_disabled(cogito_node *node, bool on) {
   if (!node)
     return;
-  cogito_node_set_disabled_yis(EV_OBJ(node), EV_BOOL(on));
+  cogito_node_set_disabled_yis(YV_OBJ(node), YV_BOOL(on));
 }
 
 void cogito_node_set_editable(cogito_node *node, bool on) {
   if (!node)
     return;
-  cogito_node_set_editable_yis(EV_OBJ(node), EV_BOOL(on));
+  cogito_node_set_editable_yis(YV_OBJ(node), YV_BOOL(on));
 }
 
 bool cogito_node_get_editable(cogito_node *node) {
   if (!node)
     return false;
-  YisVal v = cogito_node_get_editable_yis(EV_OBJ(node));
+  YisVal v = cogito_node_get_editable_yis(YV_OBJ(node));
   return yis_as_bool(v);
 }
 
@@ -2208,7 +2208,7 @@ void cogito_node_set_class(cogito_node *node, const char *cls) {
   if (!node)
     return;
   YisVal cv = cogito_val_from_cstr(cls);
-  cogito_node_set_class_yis(EV_OBJ(node), cv);
+  cogito_node_set_class_yis(YV_OBJ(node), cv);
   if (cv.tag == EVT_STR)
     yis_release_val(cv);
 }
@@ -2217,7 +2217,7 @@ void cogito_node_set_a11y_label(cogito_node *node, const char *label) {
   if (!node)
     return;
   YisVal lv = cogito_val_from_cstr(label);
-  cogito_node_set_a11y_label_yis(EV_OBJ(node), lv);
+  cogito_node_set_a11y_label_yis(YV_OBJ(node), lv);
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
 }
@@ -2226,7 +2226,7 @@ void cogito_node_set_a11y_role(cogito_node *node, const char *role) {
   if (!node)
     return;
   YisVal rv = cogito_val_from_cstr(role);
-  cogito_node_set_a11y_role_yis(EV_OBJ(node), rv);
+  cogito_node_set_a11y_role_yis(YV_OBJ(node), rv);
   if (rv.tag == EVT_STR)
     yis_release_val(rv);
 }
@@ -2315,21 +2315,21 @@ void cogito_dropdown_set_items(cogito_node *dropdown, const char **items,
     YisVal sv = cogito_val_from_cstr(items[i]);
     yis_arr_set(arr, i, sv);
   }
-  cogito_dropdown_set_items_yis(EV_OBJ(dropdown), EV_ARR(arr));
-  yis_release_val(EV_ARR(arr));
+  cogito_dropdown_set_items_yis(YV_OBJ(dropdown), YV_ARR(arr));
+  yis_release_val(YV_ARR(arr));
 }
 
 int cogito_dropdown_get_selected(cogito_node *dropdown) {
   if (!dropdown)
     return -1;
-  YisVal v = cogito_dropdown_get_selected_yis(EV_OBJ(dropdown));
+  YisVal v = cogito_dropdown_get_selected_yis(YV_OBJ(dropdown));
   return (int)yis_as_int(v);
 }
 
 void cogito_dropdown_set_selected(cogito_node *dropdown, int idx) {
   if (!dropdown)
     return;
-  cogito_dropdown_set_selected_yis(EV_OBJ(dropdown), EV_INT(idx));
+  cogito_dropdown_set_selected_yis(YV_OBJ(dropdown), YV_INT(idx));
 }
 
 void cogito_tabs_set_items(cogito_node *tabs, const char **items,
@@ -2343,8 +2343,8 @@ void cogito_tabs_set_items(cogito_node *tabs, const char **items,
     YisVal sv = cogito_val_from_cstr(items[i]);
     yis_arr_set(arr, i, sv);
   }
-  cogito_tabs_set_items_yis(EV_OBJ(tabs), EV_ARR(arr));
-  yis_release_val(EV_ARR(arr));
+  cogito_tabs_set_items_yis(YV_OBJ(tabs), YV_ARR(arr));
+  yis_release_val(YV_ARR(arr));
 }
 
 void cogito_tabs_set_ids(cogito_node *tabs, const char **ids, size_t count) {
@@ -2357,52 +2357,52 @@ void cogito_tabs_set_ids(cogito_node *tabs, const char **ids, size_t count) {
     YisVal sv = cogito_val_from_cstr(ids[i]);
     yis_arr_set(arr, i, sv);
   }
-  cogito_tabs_set_ids_yis(EV_OBJ(tabs), EV_ARR(arr));
-  yis_release_val(EV_ARR(arr));
+  cogito_tabs_set_ids_yis(YV_OBJ(tabs), YV_ARR(arr));
+  yis_release_val(YV_ARR(arr));
 }
 
 int cogito_tabs_get_selected(cogito_node *tabs) {
   if (!tabs)
     return -1;
-  YisVal v = cogito_tabs_get_selected_yis(EV_OBJ(tabs));
+  YisVal v = cogito_tabs_get_selected_yis(YV_OBJ(tabs));
   return (int)yis_as_int(v);
 }
 
 void cogito_tabs_set_selected(cogito_node *tabs, int idx) {
   if (!tabs)
     return;
-  cogito_tabs_set_selected_yis(EV_OBJ(tabs), EV_INT(idx));
+  cogito_tabs_set_selected_yis(YV_OBJ(tabs), YV_INT(idx));
 }
 
 void cogito_tabs_bind(cogito_node *tabs, cogito_node *view_switcher) {
   if (!tabs || !view_switcher)
     return;
-  cogito_tabs_bind_yis(EV_OBJ(tabs), EV_OBJ(view_switcher));
+  cogito_tabs_bind_yis(YV_OBJ(tabs), YV_OBJ(view_switcher));
 }
 
 double cogito_slider_get_value(cogito_node *slider) {
   if (!slider)
     return 0.0;
-  YisVal v = cogito_slider_get_value_yis(EV_OBJ(slider));
+  YisVal v = cogito_slider_get_value_yis(YV_OBJ(slider));
   return yis_as_float(v);
 }
 
 void cogito_slider_set_value(cogito_node *slider, double value) {
   if (!slider)
     return;
-  cogito_slider_set_value_yis(EV_OBJ(slider), EV_FLOAT(value));
+  cogito_slider_set_value_yis(YV_OBJ(slider), YV_FLOAT(value));
 }
 
 void cogito_slider_set_size(cogito_node *slider, int size) {
   if (!slider)
     return;
-  cogito_slider_set_size_yis(EV_OBJ(slider), EV_INT(size));
+  cogito_slider_set_size_yis(YV_OBJ(slider), YV_INT(size));
 }
 
 int cogito_slider_get_size(cogito_node *slider) {
   if (!slider)
     return 0;
-  YisVal v = cogito_slider_get_size_yis(EV_OBJ(slider));
+  YisVal v = cogito_slider_get_size_yis(YV_OBJ(slider));
   return (int)yis_as_int(v);
 }
 
@@ -2411,90 +2411,90 @@ void cogito_slider_set_icon(cogito_node *slider, const char *icon) {
     return;
   if (icon) {
     YisVal iv = cogito_val_from_cstr(icon);
-    cogito_slider_set_icon_yis(EV_OBJ(slider), iv);
+    cogito_slider_set_icon_yis(YV_OBJ(slider), iv);
     if (iv.tag == EVT_STR)
       yis_release_val(iv);
   } else {
-    cogito_slider_set_icon_yis(EV_OBJ(slider), EV_NULLV);
+    cogito_slider_set_icon_yis(YV_OBJ(slider), YV_NULLV);
   }
 }
 
 void cogito_slider_set_centered(cogito_node *slider, bool on) {
   if (!slider)
     return;
-  cogito_slider_set_centered_yis(EV_OBJ(slider), EV_BOOL(on));
+  cogito_slider_set_centered_yis(YV_OBJ(slider), YV_BOOL(on));
 }
 
 bool cogito_slider_get_centered(cogito_node *slider) {
   if (!slider)
     return false;
-  YisVal v = cogito_slider_get_centered_yis(EV_OBJ(slider));
+  YisVal v = cogito_slider_get_centered_yis(YV_OBJ(slider));
   return yis_as_bool(v);
 }
 
 void cogito_slider_set_range(cogito_node *slider, double start, double end) {
   if (!slider)
     return;
-  cogito_slider_set_range_yis(EV_OBJ(slider), EV_FLOAT(start), EV_FLOAT(end));
+  cogito_slider_set_range_yis(YV_OBJ(slider), YV_FLOAT(start), YV_FLOAT(end));
 }
 
 void cogito_slider_set_range_start(cogito_node *slider, double start) {
   if (!slider)
     return;
-  cogito_slider_set_range_start_yis(EV_OBJ(slider), EV_FLOAT(start));
+  cogito_slider_set_range_start_yis(YV_OBJ(slider), YV_FLOAT(start));
 }
 
 void cogito_slider_set_range_end(cogito_node *slider, double end) {
   if (!slider)
     return;
-  cogito_slider_set_range_end_yis(EV_OBJ(slider), EV_FLOAT(end));
+  cogito_slider_set_range_end_yis(YV_OBJ(slider), YV_FLOAT(end));
 }
 
 double cogito_slider_get_range_start(cogito_node *slider) {
   if (!slider)
     return 0.0;
-  YisVal v = cogito_slider_get_range_start_yis(EV_OBJ(slider));
+  YisVal v = cogito_slider_get_range_start_yis(YV_OBJ(slider));
   return yis_as_float(v);
 }
 
 double cogito_slider_get_range_end(cogito_node *slider) {
   if (!slider)
     return 0.0;
-  YisVal v = cogito_slider_get_range_end_yis(EV_OBJ(slider));
+  YisVal v = cogito_slider_get_range_end_yis(YV_OBJ(slider));
   return yis_as_float(v);
 }
 
 bool cogito_checkbox_get_checked(cogito_node *cb) {
   if (!cb)
     return false;
-  YisVal v = cogito_checkbox_get_checked_yis(EV_OBJ(cb));
+  YisVal v = cogito_checkbox_get_checked_yis(YV_OBJ(cb));
   return yis_as_bool(v);
 }
 
 void cogito_checkbox_set_checked(cogito_node *cb, bool checked) {
   if (!cb)
     return;
-  cogito_checkbox_set_checked_yis(EV_OBJ(cb), EV_BOOL(checked));
+  cogito_checkbox_set_checked_yis(YV_OBJ(cb), YV_BOOL(checked));
 }
 
 bool cogito_switch_get_checked(cogito_node *sw) {
   if (!sw)
     return false;
-  YisVal v = cogito_switch_get_checked_yis(EV_OBJ(sw));
+  YisVal v = cogito_switch_get_checked_yis(YV_OBJ(sw));
   return yis_as_bool(v);
 }
 
 void cogito_switch_set_checked(cogito_node *sw, bool checked) {
   if (!sw)
     return;
-  cogito_switch_set_checked_yis(EV_OBJ(sw), EV_BOOL(checked));
+  cogito_switch_set_checked_yis(YV_OBJ(sw), YV_BOOL(checked));
 }
 
 void cogito_textfield_set_text(cogito_node *tf, const char *text) {
   if (!tf)
     return;
   YisVal tv = cogito_val_from_cstr(text);
-  cogito_textfield_set_text_yis(EV_OBJ(tf), tv);
+  cogito_textfield_set_text_yis(YV_OBJ(tf), tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
 }
@@ -2502,7 +2502,7 @@ void cogito_textfield_set_text(cogito_node *tf, const char *text) {
 const char *cogito_textfield_get_text(cogito_node *tf) {
   if (!tf)
     return NULL;
-  YisVal v = cogito_textfield_get_text_yis(EV_OBJ(tf));
+  YisVal v = cogito_textfield_get_text_yis(YV_OBJ(tf));
   return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
 }
 
@@ -2510,7 +2510,7 @@ void cogito_textfield_set_hint(cogito_node *tf, const char *hint) {
   if (!tf)
     return;
   YisVal hv = cogito_val_from_cstr(hint);
-  cogito_textfield_set_hint_yis(EV_OBJ(tf), hv);
+  cogito_textfield_set_hint_yis(YV_OBJ(tf), hv);
   if (hv.tag == EVT_STR)
     yis_release_val(hv);
 }
@@ -2518,7 +2518,7 @@ void cogito_textfield_set_hint(cogito_node *tf, const char *hint) {
 const char *cogito_textfield_get_hint(cogito_node *tf) {
   if (!tf)
     return NULL;
-  YisVal v = cogito_textfield_get_hint_yis(EV_OBJ(tf));
+  YisVal v = cogito_textfield_get_hint_yis(YV_OBJ(tf));
   return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
 }
 
@@ -2526,7 +2526,7 @@ void cogito_textview_set_text(cogito_node *tv, const char *text) {
   if (!tv)
     return;
   YisVal sv = cogito_val_from_cstr(text);
-  cogito_textview_set_text_yis(EV_OBJ(tv), sv);
+  cogito_textview_set_text_yis(YV_OBJ(tv), sv);
   if (sv.tag == EVT_STR)
     yis_release_val(sv);
 }
@@ -2534,7 +2534,7 @@ void cogito_textview_set_text(cogito_node *tv, const char *text) {
 const char *cogito_textview_get_text(cogito_node *tv) {
   if (!tv)
     return NULL;
-  YisVal v = cogito_textview_get_text_yis(EV_OBJ(tv));
+  YisVal v = cogito_textview_get_text_yis(YV_OBJ(tv));
   return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
 }
 
@@ -2542,7 +2542,7 @@ void cogito_searchfield_set_text(cogito_node *sf, const char *text) {
   if (!sf)
     return;
   YisVal sv = cogito_val_from_cstr(text);
-  cogito_searchfield_set_text_yis(EV_OBJ(sf), sv);
+  cogito_searchfield_set_text_yis(YV_OBJ(sf), sv);
   if (sv.tag == EVT_STR)
     yis_release_val(sv);
 }
@@ -2550,72 +2550,72 @@ void cogito_searchfield_set_text(cogito_node *sf, const char *text) {
 const char *cogito_searchfield_get_text(cogito_node *sf) {
   if (!sf)
     return NULL;
-  YisVal v = cogito_searchfield_get_text_yis(EV_OBJ(sf));
+  YisVal v = cogito_searchfield_get_text_yis(YV_OBJ(sf));
   return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
 }
 
 void cogito_progress_set_value(cogito_node *prog, double value) {
   if (!prog)
     return;
-  cogito_progress_set_value_yis(EV_OBJ(prog), EV_FLOAT(value));
+  cogito_progress_set_value_yis(YV_OBJ(prog), YV_FLOAT(value));
 }
 
 double cogito_progress_get_value(cogito_node *prog) {
   if (!prog)
     return 0.0;
-  YisVal v = cogito_progress_get_value_yis(EV_OBJ(prog));
+  YisVal v = cogito_progress_get_value_yis(YV_OBJ(prog));
   return yis_as_float(v);
 }
 
 void cogito_progress_set_indeterminate(cogito_node *prog, bool on) {
   if (!prog)
     return;
-  cogito_progress_set_indeterminate_yis(EV_OBJ(prog), EV_BOOL(on));
+  cogito_progress_set_indeterminate_yis(YV_OBJ(prog), YV_BOOL(on));
 }
 
 bool cogito_progress_get_indeterminate(cogito_node *prog) {
   if (!prog)
     return false;
-  YisVal v = cogito_progress_get_indeterminate_yis(EV_OBJ(prog));
+  YisVal v = cogito_progress_get_indeterminate_yis(YV_OBJ(prog));
   return yis_as_bool(v);
 }
 
 void cogito_progress_set_thickness(cogito_node *prog, int px) {
   if (!prog)
     return;
-  cogito_progress_set_thickness_yis(EV_OBJ(prog), EV_INT(px));
+  cogito_progress_set_thickness_yis(YV_OBJ(prog), YV_INT(px));
 }
 
 int cogito_progress_get_thickness(cogito_node *prog) {
   if (!prog)
     return 4;
-  YisVal v = cogito_progress_get_thickness_yis(EV_OBJ(prog));
+  YisVal v = cogito_progress_get_thickness_yis(YV_OBJ(prog));
   return (int)yis_as_int(v);
 }
 
 void cogito_progress_set_wavy(cogito_node *prog, bool on) {
   if (!prog)
     return;
-  cogito_progress_set_wavy_yis(EV_OBJ(prog), EV_BOOL(on));
+  cogito_progress_set_wavy_yis(YV_OBJ(prog), YV_BOOL(on));
 }
 
 bool cogito_progress_get_wavy(cogito_node *prog) {
   if (!prog)
     return false;
-  YisVal v = cogito_progress_get_wavy_yis(EV_OBJ(prog));
+  YisVal v = cogito_progress_get_wavy_yis(YV_OBJ(prog));
   return yis_as_bool(v);
 }
 
 void cogito_progress_set_circular(cogito_node *prog, bool on) {
   if (!prog)
     return;
-  cogito_progress_set_circular_yis(EV_OBJ(prog), EV_BOOL(on));
+  cogito_progress_set_circular_yis(YV_OBJ(prog), YV_BOOL(on));
 }
 
 bool cogito_progress_get_circular(cogito_node *prog) {
   if (!prog)
     return false;
-  YisVal v = cogito_progress_get_circular_yis(EV_OBJ(prog));
+  YisVal v = cogito_progress_get_circular_yis(YV_OBJ(prog));
   return yis_as_bool(v);
 }
 
@@ -2632,7 +2632,7 @@ void cogito_stepper_set_value(cogito_node *stepper, double value) {
 }
 
 double cogito_stepper_get_value(cogito_node *stepper) {
-  YisVal v = cogito_stepper_get_value_yis(EV_OBJ(stepper));
+  YisVal v = cogito_stepper_get_value_yis(YV_OBJ(stepper));
   return yis_as_float(v);
 }
 
@@ -2641,15 +2641,15 @@ void cogito_stepper_on_change(cogito_node *stepper, cogito_node_fn fn,
   if (!stepper)
     return;
   if (!fn) {
-    cogito_stepper_on_change_yis(EV_OBJ(stepper), EV_NULLV);
+    cogito_stepper_on_change_yis(YV_OBJ(stepper), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_stepper_on_change_yis(EV_OBJ(stepper), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_stepper_on_change_yis(YV_OBJ(stepper), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_buttongroup_on_select(cogito_node *seg, cogito_index_fn fn,
@@ -2657,7 +2657,7 @@ void cogito_buttongroup_on_select(cogito_node *seg, cogito_index_fn fn,
   if (!seg)
     return;
   if (!fn) {
-    cogito_buttongroup_on_select_yis(EV_OBJ(seg), EV_NULLV);
+    cogito_buttongroup_on_select_yis(YV_OBJ(seg), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -2665,8 +2665,8 @@ void cogito_buttongroup_on_select(cogito_node *seg, cogito_index_fn fn,
   env->user = user;
   env->node = (CogitoNode *)seg;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_buttongroup_on_select_yis(EV_OBJ(seg), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_buttongroup_on_select_yis(YV_OBJ(seg), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_buttongroup_set_size(cogito_node *bg, int size) {
@@ -2674,13 +2674,13 @@ void cogito_buttongroup_set_size(cogito_node *bg, int size) {
     return;
   if (size < 0) size = 0;
   if (size > 4) size = 4;
-  cogito_buttongroup_set_size_yis(EV_OBJ(bg), EV_INT(size));
+  cogito_buttongroup_set_size_yis(YV_OBJ(bg), YV_INT(size));
 }
 
 int cogito_buttongroup_get_size(cogito_node *bg) {
   if (!bg)
     return 2;
-  YisVal v = cogito_buttongroup_get_size_yis(EV_OBJ(bg));
+  YisVal v = cogito_buttongroup_get_size_yis(YV_OBJ(bg));
   return (int)yis_as_int(v);
 }
 
@@ -2689,26 +2689,26 @@ void cogito_buttongroup_set_shape(cogito_node *bg, int shape) {
     return;
   if (shape < 0) shape = 0;
   if (shape > 1) shape = 1;
-  cogito_buttongroup_set_shape_yis(EV_OBJ(bg), EV_INT(shape));
+  cogito_buttongroup_set_shape_yis(YV_OBJ(bg), YV_INT(shape));
 }
 
 int cogito_buttongroup_get_shape(cogito_node *bg) {
   if (!bg)
     return 0;
-  YisVal v = cogito_buttongroup_get_shape_yis(EV_OBJ(bg));
+  YisVal v = cogito_buttongroup_get_shape_yis(YV_OBJ(bg));
   return (int)yis_as_int(v);
 }
 
 void cogito_buttongroup_set_connected(cogito_node *bg, bool connected) {
   if (!bg)
     return;
-  cogito_buttongroup_set_connected_yis(EV_OBJ(bg), EV_BOOL(connected));
+  cogito_buttongroup_set_connected_yis(YV_OBJ(bg), YV_BOOL(connected));
 }
 
 bool cogito_buttongroup_get_connected(cogito_node *bg) {
   if (!bg)
     return false;
-  YisVal v = cogito_buttongroup_get_connected_yis(EV_OBJ(bg));
+  YisVal v = cogito_buttongroup_get_connected_yis(YV_OBJ(bg));
   return yis_as_bool(v);
 }
 
@@ -2755,15 +2755,15 @@ void cogito_node_build(cogito_node *node, cogito_node_fn builder, void *user) {
   env->fn = builder;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_build_yis(EV_OBJ(node), EV_FN(wrap));
+  cogito_build_yis(YV_OBJ(node), YV_FN(wrap));
 }
 
 void cogito_pointer_capture(cogito_node *node) {
   if (!node) {
-    cogito_pointer_capture_set_yis(EV_NULLV);
+    cogito_pointer_capture_set_yis(YV_NULLV);
     return;
   }
-  cogito_pointer_capture_set_yis(EV_OBJ(node));
+  cogito_pointer_capture_set_yis(YV_OBJ(node));
 }
 
 void cogito_pointer_release(void) { cogito_pointer_capture_clear_yis(); }
@@ -2771,26 +2771,26 @@ void cogito_pointer_release(void) { cogito_pointer_capture_clear_yis(); }
 void cogito_label_set_wrap(cogito_node *label, bool on) {
   if (!label)
     return;
-  cogito_label_set_wrap_yis(EV_OBJ(label), EV_BOOL(on));
+  cogito_label_set_wrap_yis(YV_OBJ(label), YV_BOOL(on));
 }
 
 void cogito_label_set_ellipsis(cogito_node *label, bool on) {
   if (!label)
     return;
-  cogito_label_set_ellipsis_yis(EV_OBJ(label), EV_BOOL(on));
+  cogito_label_set_ellipsis_yis(YV_OBJ(label), YV_BOOL(on));
 }
 
 void cogito_label_set_align(cogito_node *label, int align) {
   if (!label)
     return;
-  cogito_label_set_align_yis(EV_OBJ(label), EV_INT(align));
+  cogito_label_set_align_yis(YV_OBJ(label), YV_INT(align));
 }
 
 void cogito_image_set_icon(cogito_node *image, const char *icon) {
   if (!image)
     return;
   YisVal iv = cogito_val_from_cstr(icon);
-  cogito_image_set_icon_yis(EV_OBJ(image), iv);
+  cogito_image_set_icon_yis(YV_OBJ(image), iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
 }
@@ -2799,7 +2799,7 @@ void cogito_image_set_source(cogito_node *image, const char *source) {
   if (!image)
     return;
   YisVal sv = cogito_val_from_cstr(source);
-  cogito_image_set_source_yis(EV_OBJ(image), sv);
+  cogito_image_set_source_yis(YV_OBJ(image), sv);
   if (sv.tag == EVT_STR)
     yis_release_val(sv);
 }
@@ -2807,20 +2807,20 @@ void cogito_image_set_source(cogito_node *image, const char *source) {
 void cogito_image_set_size(cogito_node *image, int w, int h) {
   if (!image)
     return;
-  cogito_image_set_size_yis(EV_OBJ(image), EV_INT(w), EV_INT(h));
+  cogito_image_set_size_yis(YV_OBJ(image), YV_INT(w), YV_INT(h));
 }
 
 void cogito_image_set_radius(cogito_node *image, int radius) {
   if (!image)
     return;
-  cogito_image_set_radius_yis(EV_OBJ(image), EV_INT(radius));
+  cogito_image_set_radius_yis(YV_OBJ(image), YV_INT(radius));
 }
 
 void cogito_image_set_alt_text(cogito_node *image, const char *alt_text) {
   if (!image)
     return;
   YisVal av = cogito_val_from_cstr(alt_text);
-  cogito_image_set_alt_text_yis(EV_OBJ(image), av);
+  cogito_image_set_alt_text_yis(YV_OBJ(image), av);
   if (av.tag == EVT_STR)
     yis_release_val(av);
 }
@@ -2830,15 +2830,15 @@ cogito_node *cogito_appbar_add_button(cogito_node *appbar, const char *icon,
   if (!appbar)
     return NULL;
   YisVal iv = cogito_val_from_cstr(icon);
-  YisVal handler = EV_NULLV;
+  YisVal handler = YV_NULLV;
   if (fn) {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    handler = EV_FN(wrap);
+    handler = YV_FN(wrap);
   }
-  YisVal v = cogito_appbar_add_button_yis(EV_OBJ(appbar), iv, handler);
+  YisVal v = cogito_appbar_add_button_yis(YV_OBJ(appbar), iv, handler);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
   if (handler.tag == EVT_FN)
@@ -2850,7 +2850,7 @@ void cogito_appbar_set_controls(cogito_node *appbar, const char *layout) {
   if (!appbar)
     return;
   YisVal lv = cogito_val_from_cstr(layout);
-  cogito_appbar_set_controls_yis(EV_OBJ(appbar), lv);
+  cogito_appbar_set_controls_yis(YV_OBJ(appbar), lv);
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
 }
@@ -2859,7 +2859,7 @@ void cogito_appbar_set_title(cogito_node *appbar, const char *title) {
   if (!appbar)
     return;
   YisVal tv = cogito_val_from_cstr(title);
-  cogito_appbar_set_title_yis(EV_OBJ(appbar), tv);
+  cogito_appbar_set_title_yis(YV_OBJ(appbar), tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
 }
@@ -2868,7 +2868,7 @@ void cogito_appbar_set_subtitle(cogito_node *appbar, const char *subtitle) {
   if (!appbar)
     return;
   YisVal sv = cogito_val_from_cstr(subtitle);
-  cogito_appbar_set_subtitle_yis(EV_OBJ(appbar), sv);
+  cogito_appbar_set_subtitle_yis(YV_OBJ(appbar), sv);
   if (sv.tag == EVT_STR)
     yis_release_val(sv);
 }
@@ -2876,76 +2876,76 @@ void cogito_appbar_set_subtitle(cogito_node *appbar, const char *subtitle) {
 void cogito_dialog_slot_show(cogito_node *slot, cogito_node *dialog) {
   if (!slot || !dialog)
     return;
-  cogito_dialog_slot_show_yis(EV_OBJ(slot), EV_OBJ(dialog));
+  cogito_dialog_slot_show_yis(YV_OBJ(slot), YV_OBJ(dialog));
 }
 
 void cogito_dialog_slot_clear(cogito_node *slot) {
   if (!slot)
     return;
-  cogito_dialog_slot_clear_yis(EV_OBJ(slot));
+  cogito_dialog_slot_clear_yis(YV_OBJ(slot));
 }
 
 void cogito_window_set_dialog(cogito_window *window, cogito_node *dialog) {
   if (!window || !dialog)
     return;
-  cogito_window_set_dialog_yis(EV_OBJ(window), EV_OBJ(dialog));
+  cogito_window_set_dialog_yis(YV_OBJ(window), YV_OBJ(dialog));
 }
 
 void cogito_window_clear_dialog(cogito_window *window) {
   if (!window)
     return;
-  cogito_window_clear_dialog_yis(EV_OBJ(window));
+  cogito_window_clear_dialog_yis(YV_OBJ(window));
 }
 
 void cogito_window_set_side_sheet(cogito_window *window,
                                   cogito_node *side_sheet) {
   if (!window || !side_sheet)
     return;
-  cogito_window_set_side_sheet_yis(EV_OBJ(window), EV_OBJ(side_sheet));
+  cogito_window_set_side_sheet_yis(YV_OBJ(window), YV_OBJ(side_sheet));
 }
 
 void cogito_window_clear_side_sheet(cogito_window *window) {
   if (!window)
     return;
-  cogito_window_clear_side_sheet_yis(EV_OBJ(window));
+  cogito_window_clear_side_sheet_yis(YV_OBJ(window));
 }
 
 void cogito_fixed_set_pos(cogito_node *fixed, cogito_node *child, int x,
                           int y) {
   if (!fixed || !child)
     return;
-  cogito_fixed_set_pos_yis(EV_OBJ(fixed), EV_OBJ(child), EV_INT(x), EV_INT(y));
+  cogito_fixed_set_pos_yis(YV_OBJ(fixed), YV_OBJ(child), YV_INT(x), YV_INT(y));
 }
 
 void cogito_scroller_set_axes(cogito_node *scroller, bool h, bool v) {
   if (!scroller)
     return;
-  cogito_scroller_set_axes_yis(EV_OBJ(scroller), EV_BOOL(h), EV_BOOL(v));
+  cogito_scroller_set_axes_yis(YV_OBJ(scroller), YV_BOOL(h), YV_BOOL(v));
 }
 
 void cogito_grid_set_gap(cogito_node *grid, int x, int y) {
   if (!grid)
     return;
-  cogito_grid_set_gap_yis(EV_OBJ(grid), EV_INT(x), EV_INT(y));
+  cogito_grid_set_gap_yis(YV_OBJ(grid), YV_INT(x), YV_INT(y));
 }
 
 void cogito_grid_set_span(cogito_node *child, int col_span, int row_span) {
   if (!child)
     return;
-  cogito_grid_set_span_yis(EV_OBJ(child), EV_INT(col_span), EV_INT(row_span));
+  cogito_grid_set_span_yis(YV_OBJ(child), YV_INT(col_span), YV_INT(row_span));
 }
 
 void cogito_grid_set_align(cogito_node *child, int halign, int valign) {
   if (!child)
     return;
-  cogito_grid_set_align_yis(EV_OBJ(child), EV_INT(halign), EV_INT(valign));
+  cogito_grid_set_align_yis(YV_OBJ(child), YV_INT(halign), YV_INT(valign));
 }
 
 void cogito_button_set_text(cogito_node *button, const char *text) {
   if (!button)
     return;
   YisVal tv = cogito_val_from_cstr(text);
-  cogito_button_set_text_yis(EV_OBJ(button), tv);
+  cogito_button_set_text_yis(YV_OBJ(button), tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
 }
@@ -2953,26 +2953,26 @@ void cogito_button_set_text(cogito_node *button, const char *text) {
 void cogito_button_set_size(cogito_node *button, int size) {
   if (!button)
     return;
-  cogito_button_set_size_yis(EV_OBJ(button), EV_INT(size));
+  cogito_button_set_size_yis(YV_OBJ(button), YV_INT(size));
 }
 
 int cogito_button_get_size(cogito_node *button) {
   if (!button)
     return 2;
-  YisVal v = cogito_button_get_size_yis(EV_OBJ(button));
+  YisVal v = cogito_button_get_size_yis(YV_OBJ(button));
   return (int)yis_as_int(v);
 }
 
 void cogito_iconbtn_set_size(cogito_node *iconbtn, int size) {
   if (!iconbtn)
     return;
-  cogito_iconbtn_set_size_yis(EV_OBJ(iconbtn), EV_INT(size));
+  cogito_iconbtn_set_size_yis(YV_OBJ(iconbtn), YV_INT(size));
 }
 
 int cogito_iconbtn_get_size(cogito_node *iconbtn) {
   if (!iconbtn)
     return 2;
-  YisVal v = cogito_iconbtn_get_size_yis(EV_OBJ(iconbtn));
+  YisVal v = cogito_iconbtn_get_size_yis(YV_OBJ(iconbtn));
   return (int)yis_as_int(v);
 }
 
@@ -2981,15 +2981,15 @@ void cogito_button_add_menu(cogito_node *button, const char *label,
   if (!button)
     return;
   YisVal lv = cogito_val_from_cstr(label);
-  YisVal handler = EV_NULLV;
+  YisVal handler = YV_NULLV;
   if (fn) {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    handler = EV_FN(wrap);
+    handler = YV_FN(wrap);
   }
-  cogito_button_add_menu_yis(EV_OBJ(button), lv, handler);
+  cogito_button_add_menu_yis(YV_OBJ(button), lv, handler);
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
   if (handler.tag == EVT_FN)
@@ -3001,15 +3001,15 @@ void cogito_button_add_menu_section(cogito_node *button, const char *label,
   if (!button)
     return;
   YisVal lv = cogito_val_from_cstr(label);
-  YisVal handler = EV_NULLV;
+  YisVal handler = YV_NULLV;
   if (fn) {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    handler = EV_FN(wrap);
+    handler = YV_FN(wrap);
   }
-  cogito_button_add_menu_section_yis(EV_OBJ(button), lv, handler);
+  cogito_button_add_menu_section_yis(YV_OBJ(button), lv, handler);
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
   if (handler.tag == EVT_FN)
@@ -3021,15 +3021,15 @@ void cogito_iconbtn_add_menu_section(cogito_node *button, const char *label,
   if (!button)
     return;
   YisVal lv = cogito_val_from_cstr(label);
-  YisVal handler = EV_NULLV;
+  YisVal handler = YV_NULLV;
   if (fn) {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    handler = EV_FN(wrap);
+    handler = YV_FN(wrap);
   }
-  cogito_iconbtn_add_menu_section_yis(EV_OBJ(button), lv, handler);
+  cogito_iconbtn_add_menu_section_yis(YV_OBJ(button), lv, handler);
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
   if (handler.tag == EVT_FN)
@@ -3039,56 +3039,56 @@ void cogito_iconbtn_add_menu_section(cogito_node *button, const char *label,
 void cogito_iconbtn_set_shape(cogito_node *button, int shape) {
   if (!button)
     return;
-  cogito_iconbtn_set_shape_yis(EV_OBJ(button), EV_INT(shape));
+  cogito_iconbtn_set_shape_yis(YV_OBJ(button), YV_INT(shape));
 }
 int cogito_iconbtn_get_shape(cogito_node *button) {
   if (!button)
     return 0;
-  YisVal v = cogito_iconbtn_get_shape_yis(EV_OBJ(button));
+  YisVal v = cogito_iconbtn_get_shape_yis(YV_OBJ(button));
   return (int)yis_as_int(v);
 }
 void cogito_iconbtn_set_color_style(cogito_node *button, int style) {
   if (!button)
     return;
-  cogito_iconbtn_set_color_style_yis(EV_OBJ(button), EV_INT(style));
+  cogito_iconbtn_set_color_style_yis(YV_OBJ(button), YV_INT(style));
 }
 int cogito_iconbtn_get_color_style(cogito_node *button) {
   if (!button)
     return 1;
-  YisVal v = cogito_iconbtn_get_color_style_yis(EV_OBJ(button));
+  YisVal v = cogito_iconbtn_get_color_style_yis(YV_OBJ(button));
   return (int)yis_as_int(v);
 }
 void cogito_iconbtn_set_width(cogito_node *button, int width) {
   if (!button)
     return;
-  cogito_iconbtn_set_width_yis(EV_OBJ(button), EV_INT(width));
+  cogito_iconbtn_set_width_yis(YV_OBJ(button), YV_INT(width));
 }
 int cogito_iconbtn_get_width(cogito_node *button) {
   if (!button)
     return 1;
-  YisVal v = cogito_iconbtn_get_width_yis(EV_OBJ(button));
+  YisVal v = cogito_iconbtn_get_width_yis(YV_OBJ(button));
   return (int)yis_as_int(v);
 }
 void cogito_iconbtn_set_toggle(cogito_node *button, bool on) {
   if (!button)
     return;
-  cogito_iconbtn_set_toggle_yis(EV_OBJ(button), EV_BOOL(on));
+  cogito_iconbtn_set_toggle_yis(YV_OBJ(button), YV_BOOL(on));
 }
 bool cogito_iconbtn_get_toggle(cogito_node *button) {
   if (!button)
     return false;
-  YisVal v = cogito_iconbtn_get_toggle_yis(EV_OBJ(button));
+  YisVal v = cogito_iconbtn_get_toggle_yis(YV_OBJ(button));
   return yis_as_bool(v);
 }
 void cogito_iconbtn_set_checked(cogito_node *button, bool checked) {
   if (!button)
     return;
-  cogito_iconbtn_set_checked_yis(EV_OBJ(button), EV_BOOL(checked));
+  cogito_iconbtn_set_checked_yis(YV_OBJ(button), YV_BOOL(checked));
 }
 bool cogito_iconbtn_get_checked(cogito_node *button) {
   if (!button)
     return false;
-  YisVal v = cogito_iconbtn_get_checked_yis(EV_OBJ(button));
+  YisVal v = cogito_iconbtn_get_checked_yis(YV_OBJ(button));
   return yis_as_bool(v);
 }
 
@@ -3097,15 +3097,15 @@ void cogito_iconbtn_add_menu(cogito_node *button, const char *label,
   if (!button)
     return;
   YisVal lv = cogito_val_from_cstr(label);
-  YisVal handler = EV_NULLV;
+  YisVal handler = YV_NULLV;
   if (fn) {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    handler = EV_FN(wrap);
+    handler = YV_FN(wrap);
   }
-  cogito_iconbtn_add_menu_yis(EV_OBJ(button), lv, handler);
+  cogito_iconbtn_add_menu_yis(YV_OBJ(button), lv, handler);
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
   if (handler.tag == EVT_FN)
@@ -3115,78 +3115,78 @@ void cogito_iconbtn_add_menu(cogito_node *button, const char *label,
 void cogito_iconbtn_set_menu_divider(cogito_node *iconbtn, bool divider) {
   if (!iconbtn)
     return;
-  cogito_iconbtn_set_menu_divider_yis(EV_OBJ(iconbtn), EV_BOOL(divider));
+  cogito_iconbtn_set_menu_divider_yis(YV_OBJ(iconbtn), YV_BOOL(divider));
 }
 
 bool cogito_iconbtn_get_menu_divider(cogito_node *iconbtn) {
   if (!iconbtn)
     return false;
-  YisVal v = cogito_iconbtn_get_menu_divider_yis(EV_OBJ(iconbtn));
+  YisVal v = cogito_iconbtn_get_menu_divider_yis(YV_OBJ(iconbtn));
   return yis_as_bool(v);
 }
 
 void cogito_iconbtn_set_menu_item_gap(cogito_node *iconbtn, int gap) {
   if (!iconbtn)
     return;
-  cogito_iconbtn_set_menu_item_gap_yis(EV_OBJ(iconbtn), EV_INT(gap));
+  cogito_iconbtn_set_menu_item_gap_yis(YV_OBJ(iconbtn), YV_INT(gap));
 }
 
 int cogito_iconbtn_get_menu_item_gap(cogito_node *iconbtn) {
   if (!iconbtn)
     return 0;
-  YisVal v = cogito_iconbtn_get_menu_item_gap_yis(EV_OBJ(iconbtn));
+  YisVal v = cogito_iconbtn_get_menu_item_gap_yis(YV_OBJ(iconbtn));
   return (int)yis_as_int(v);
 }
 
 void cogito_button_set_menu_divider(cogito_node *button, bool divider) {
   if (!button)
     return;
-  cogito_button_set_menu_divider_yis(EV_OBJ(button), EV_BOOL(divider));
+  cogito_button_set_menu_divider_yis(YV_OBJ(button), YV_BOOL(divider));
 }
 
 bool cogito_button_get_menu_divider(cogito_node *button) {
   if (!button)
     return false;
-  YisVal v = cogito_button_get_menu_divider_yis(EV_OBJ(button));
+  YisVal v = cogito_button_get_menu_divider_yis(YV_OBJ(button));
   return yis_as_bool(v);
 }
 
 void cogito_button_set_menu_item_gap(cogito_node *button, int gap) {
   if (!button)
     return;
-  cogito_button_set_menu_item_gap_yis(EV_OBJ(button), EV_INT(gap));
+  cogito_button_set_menu_item_gap_yis(YV_OBJ(button), YV_INT(gap));
 }
 
 int cogito_button_get_menu_item_gap(cogito_node *button) {
   if (!button)
     return 0;
-  YisVal v = cogito_button_get_menu_item_gap_yis(EV_OBJ(button));
+  YisVal v = cogito_button_get_menu_item_gap_yis(YV_OBJ(button));
   return (int)yis_as_int(v);
 }
 
 void cogito_button_set_menu_vibrant(cogito_node *button, bool vibrant) {
   if (!button)
     return;
-  cogito_button_set_menu_vibrant_yis(EV_OBJ(button), EV_BOOL(vibrant));
+  cogito_button_set_menu_vibrant_yis(YV_OBJ(button), YV_BOOL(vibrant));
 }
 
 bool cogito_button_get_menu_vibrant(cogito_node *button) {
   if (!button)
     return false;
-  YisVal v = cogito_button_get_menu_vibrant_yis(EV_OBJ(button));
+  YisVal v = cogito_button_get_menu_vibrant_yis(YV_OBJ(button));
   return yis_as_bool(v);
 }
 
 void cogito_iconbtn_set_menu_vibrant(cogito_node *iconbtn, bool vibrant) {
   if (!iconbtn)
     return;
-  cogito_iconbtn_set_menu_vibrant_yis(EV_OBJ(iconbtn), EV_BOOL(vibrant));
+  cogito_iconbtn_set_menu_vibrant_yis(YV_OBJ(iconbtn), YV_BOOL(vibrant));
 }
 
 bool cogito_iconbtn_get_menu_vibrant(cogito_node *iconbtn) {
   if (!iconbtn)
     return false;
-  YisVal v = cogito_iconbtn_get_menu_vibrant_yis(EV_OBJ(iconbtn));
+  YisVal v = cogito_iconbtn_get_menu_vibrant_yis(YV_OBJ(iconbtn));
   return yis_as_bool(v);
 }
 
@@ -3226,30 +3226,30 @@ void cogito_checkbox_on_change(cogito_node *cb, cogito_node_fn fn, void *user) {
   if (!cb)
     return;
   if (!fn) {
-    cogito_checkbox_on_change_yis(EV_OBJ(cb), EV_NULLV);
+    cogito_checkbox_on_change_yis(YV_OBJ(cb), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_checkbox_on_change_yis(EV_OBJ(cb), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_checkbox_on_change_yis(YV_OBJ(cb), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_switch_on_change(cogito_node *sw, cogito_node_fn fn, void *user) {
   if (!sw)
     return;
   if (!fn) {
-    cogito_switch_on_change_yis(EV_OBJ(sw), EV_NULLV);
+    cogito_switch_on_change_yis(YV_OBJ(sw), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_switch_on_change_yis(EV_OBJ(sw), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_switch_on_change_yis(YV_OBJ(sw), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_textfield_on_change(cogito_node *tf, cogito_node_fn fn,
@@ -3257,30 +3257,30 @@ void cogito_textfield_on_change(cogito_node *tf, cogito_node_fn fn,
   if (!tf)
     return;
   if (!fn) {
-    cogito_textfield_on_change_yis(EV_OBJ(tf), EV_NULLV);
+    cogito_textfield_on_change_yis(YV_OBJ(tf), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_textfield_on_change_yis(EV_OBJ(tf), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_textfield_on_change_yis(YV_OBJ(tf), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_textview_on_change(cogito_node *tv, cogito_node_fn fn, void *user) {
   if (!tv)
     return;
   if (!fn) {
-    cogito_textview_on_change_yis(EV_OBJ(tv), EV_NULLV);
+    cogito_textview_on_change_yis(YV_OBJ(tv), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_textview_on_change_yis(EV_OBJ(tv), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_textview_on_change_yis(YV_OBJ(tv), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_searchfield_on_change(cogito_node *sf, cogito_node_fn fn,
@@ -3288,15 +3288,15 @@ void cogito_searchfield_on_change(cogito_node *sf, cogito_node_fn fn,
   if (!sf)
     return;
   if (!fn) {
-    cogito_searchfield_on_change_yis(EV_OBJ(sf), EV_NULLV);
+    cogito_searchfield_on_change_yis(YV_OBJ(sf), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_searchfield_on_change_yis(EV_OBJ(sf), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_searchfield_on_change_yis(YV_OBJ(sf), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_dropdown_on_change(cogito_node *dropdown, cogito_node_fn fn,
@@ -3304,15 +3304,15 @@ void cogito_dropdown_on_change(cogito_node *dropdown, cogito_node_fn fn,
   if (!dropdown)
     return;
   if (!fn) {
-    cogito_dropdown_on_change_yis(EV_OBJ(dropdown), EV_NULLV);
+    cogito_dropdown_on_change_yis(YV_OBJ(dropdown), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_dropdown_on_change_yis(EV_OBJ(dropdown), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_dropdown_on_change_yis(YV_OBJ(dropdown), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_slider_on_change(cogito_node *slider, cogito_node_fn fn,
@@ -3320,30 +3320,30 @@ void cogito_slider_on_change(cogito_node *slider, cogito_node_fn fn,
   if (!slider)
     return;
   if (!fn) {
-    cogito_slider_on_change_yis(EV_OBJ(slider), EV_NULLV);
+    cogito_slider_on_change_yis(YV_OBJ(slider), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_slider_on_change_yis(EV_OBJ(slider), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_slider_on_change_yis(YV_OBJ(slider), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_tabs_on_change(cogito_node *tabs, cogito_node_fn fn, void *user) {
   if (!tabs)
     return;
   if (!fn) {
-    cogito_tabs_on_change_yis(EV_OBJ(tabs), EV_NULLV);
+    cogito_tabs_on_change_yis(YV_OBJ(tabs), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_tabs_on_change_yis(EV_OBJ(tabs), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_tabs_on_change_yis(YV_OBJ(tabs), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_datepicker_on_change(cogito_node *datepicker, cogito_node_fn fn,
@@ -3351,15 +3351,15 @@ void cogito_datepicker_on_change(cogito_node *datepicker, cogito_node_fn fn,
   if (!datepicker)
     return;
   if (!fn) {
-    cogito_datepicker_on_change_yis(EV_OBJ(datepicker), EV_NULLV);
+    cogito_datepicker_on_change_yis(YV_OBJ(datepicker), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_datepicker_on_change_yis(EV_OBJ(datepicker), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_datepicker_on_change_yis(YV_OBJ(datepicker), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_colorpicker_on_change(cogito_node *colorpicker, cogito_node_fn fn,
@@ -3367,22 +3367,22 @@ void cogito_colorpicker_on_change(cogito_node *colorpicker, cogito_node_fn fn,
   if (!colorpicker)
     return;
   if (!fn) {
-    cogito_colorpicker_on_change_yis(EV_OBJ(colorpicker), EV_NULLV);
+    cogito_colorpicker_on_change_yis(YV_OBJ(colorpicker), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_colorpicker_on_change_yis(EV_OBJ(colorpicker), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_colorpicker_on_change_yis(YV_OBJ(colorpicker), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_list_on_select(cogito_node *list, cogito_index_fn fn, void *user) {
   if (!list)
     return;
   if (!fn) {
-    cogito_list_on_select_yis(EV_OBJ(list), EV_NULLV);
+    cogito_list_on_select_yis(YV_OBJ(list), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -3390,8 +3390,8 @@ void cogito_list_on_select(cogito_node *list, cogito_index_fn fn, void *user) {
   env->user = user;
   env->node = (CogitoNode *)list;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_list_on_select_yis(EV_OBJ(list), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_list_on_select_yis(YV_OBJ(list), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_list_on_activate(cogito_node *list, cogito_index_fn fn,
@@ -3399,7 +3399,7 @@ void cogito_list_on_activate(cogito_node *list, cogito_index_fn fn,
   if (!list)
     return;
   if (!fn) {
-    cogito_list_on_activate_yis(EV_OBJ(list), EV_NULLV);
+    cogito_list_on_activate_yis(YV_OBJ(list), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -3407,15 +3407,15 @@ void cogito_list_on_activate(cogito_node *list, cogito_index_fn fn,
   env->user = user;
   env->node = (CogitoNode *)list;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_list_on_activate_yis(EV_OBJ(list), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_list_on_activate_yis(YV_OBJ(list), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_grid_on_select(cogito_node *grid, cogito_index_fn fn, void *user) {
   if (!grid)
     return;
   if (!fn) {
-    cogito_grid_on_select_yis(EV_OBJ(grid), EV_NULLV);
+    cogito_grid_on_select_yis(YV_OBJ(grid), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -3423,8 +3423,8 @@ void cogito_grid_on_select(cogito_node *grid, cogito_index_fn fn, void *user) {
   env->user = user;
   env->node = (CogitoNode *)grid;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_grid_on_select_yis(EV_OBJ(grid), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_grid_on_select_yis(YV_OBJ(grid), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_grid_on_activate(cogito_node *grid, cogito_index_fn fn,
@@ -3432,7 +3432,7 @@ void cogito_grid_on_activate(cogito_node *grid, cogito_index_fn fn,
   if (!grid)
     return;
   if (!fn) {
-    cogito_grid_on_activate_yis(EV_OBJ(grid), EV_NULLV);
+    cogito_grid_on_activate_yis(YV_OBJ(grid), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -3440,8 +3440,8 @@ void cogito_grid_on_activate(cogito_node *grid, cogito_index_fn fn,
   env->user = user;
   env->node = (CogitoNode *)grid;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_grid_on_activate_yis(EV_OBJ(grid), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_grid_on_activate_yis(YV_OBJ(grid), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_nav_rail_on_change(cogito_node *rail, cogito_index_fn fn,
@@ -3449,7 +3449,7 @@ void cogito_nav_rail_on_change(cogito_node *rail, cogito_index_fn fn,
   if (!rail)
     return;
   if (!fn) {
-    cogito_nav_rail_on_change_yis(EV_OBJ(rail), EV_NULLV);
+    cogito_nav_rail_on_change_yis(YV_OBJ(rail), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -3457,8 +3457,8 @@ void cogito_nav_rail_on_change(cogito_node *rail, cogito_index_fn fn,
   env->user = user;
   env->node = (CogitoNode *)rail;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_nav_rail_on_change_yis(EV_OBJ(rail), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_nav_rail_on_change_yis(YV_OBJ(rail), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_bottom_nav_on_change(cogito_node *nav, cogito_index_fn fn,
@@ -3466,7 +3466,7 @@ void cogito_bottom_nav_on_change(cogito_node *nav, cogito_index_fn fn,
   if (!nav)
     return;
   if (!fn) {
-    cogito_bottom_nav_on_change_yis(EV_OBJ(nav), EV_NULLV);
+    cogito_bottom_nav_on_change_yis(YV_OBJ(nav), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -3474,8 +3474,8 @@ void cogito_bottom_nav_on_change(cogito_node *nav, cogito_index_fn fn,
   env->user = user;
   env->node = (CogitoNode *)nav;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_bottom_nav_on_change_yis(EV_OBJ(nav), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_bottom_nav_on_change_yis(YV_OBJ(nav), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 cogito_node *cogito_chip_new(const char *text) {
@@ -3500,26 +3500,26 @@ cogito_node *cogito_fab_menu_new(const char *icon) {
 
 void cogito_fab_menu_set_color(cogito_node *fabm, int color) {
   if (!fabm) return;
-  cogito_fab_menu_set_color_yis(EV_OBJ(fabm), EV_INT(color));
+  cogito_fab_menu_set_color_yis(YV_OBJ(fabm), YV_INT(color));
 }
 
 void cogito_chip_set_selected(cogito_node *chip, bool selected) {
   if (!chip)
     return;
-  cogito_chip_set_selected_yis(EV_OBJ(chip), EV_BOOL(selected));
+  cogito_chip_set_selected_yis(YV_OBJ(chip), YV_BOOL(selected));
 }
 
 bool cogito_chip_get_selected(cogito_node *chip) {
   if (!chip)
     return false;
-  YisVal v = cogito_chip_get_selected_yis(EV_OBJ(chip));
+  YisVal v = cogito_chip_get_selected_yis(YV_OBJ(chip));
   return yis_as_bool(v);
 }
 
 void cogito_chip_set_closable(cogito_node *chip, bool closable) {
   if (!chip)
     return;
-  cogito_chip_set_closable_yis(EV_OBJ(chip), EV_BOOL(closable));
+  cogito_chip_set_closable_yis(YV_OBJ(chip), YV_BOOL(closable));
 }
 
 void cogito_chip_on_click(cogito_node *chip, cogito_node_fn fn, void *user) {
@@ -3541,15 +3541,15 @@ void cogito_chip_on_close(cogito_node *chip, cogito_node_fn fn, void *user) {
   if (!chip)
     return;
   if (!fn) {
-    cogito_chip_on_close_yis(EV_OBJ(chip), EV_NULLV);
+    cogito_chip_on_close_yis(YV_OBJ(chip), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_chip_on_close_yis(EV_OBJ(chip), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_chip_on_close_yis(YV_OBJ(chip), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 void cogito_fab_set_extended(cogito_node *fab, bool extended,
@@ -3557,19 +3557,19 @@ void cogito_fab_set_extended(cogito_node *fab, bool extended,
   if (!fab)
     return;
   YisVal lv = cogito_val_from_cstr(label);
-  cogito_fab_set_extended_yis(EV_OBJ(fab), EV_BOOL(extended), lv);
+  cogito_fab_set_extended_yis(YV_OBJ(fab), YV_BOOL(extended), lv);
   if (lv.tag == EVT_STR)
     yis_release_val(lv);
 }
 
 void cogito_fab_set_size(cogito_node *fab, int size) {
   if (!fab) return;
-  cogito_fab_set_size_yis(EV_OBJ(fab), EV_INT(size));
+  cogito_fab_set_size_yis(YV_OBJ(fab), YV_INT(size));
 }
 
 void cogito_fab_set_color(cogito_node *fab, int color) {
   if (!fab) return;
-  cogito_fab_set_color_yis(EV_OBJ(fab), EV_INT(color));
+  cogito_fab_set_color_yis(YV_OBJ(fab), YV_INT(color));
 }
 
 void cogito_fab_on_click(cogito_node *fab, cogito_node_fn fn, void *user) {
@@ -3602,7 +3602,7 @@ void cogito_view_switcher_set_active(cogito_node *view_switcher,
   if (!view_switcher)
     return;
   YisVal iv = cogito_val_from_cstr(id);
-  cogito_view_switcher_set_active_yis(EV_OBJ(view_switcher), iv);
+  cogito_view_switcher_set_active_yis(YV_OBJ(view_switcher), iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
 }
@@ -3615,8 +3615,8 @@ void cogito_view_switcher_add_lazy(cogito_node *view_switcher, const char *id,
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = builder;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_view_switcher_add_lazy_yis(view_switcher, iv, EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_view_switcher_add_lazy_yis(view_switcher, iv, YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
 }
@@ -3625,7 +3625,7 @@ void cogito_toast_set_text(cogito_node *toast, const char *text) {
   if (!toast)
     return;
   YisVal tv = cogito_val_from_cstr(text);
-  cogito_toast_set_text_yis(EV_OBJ(toast), tv);
+  cogito_toast_set_text_yis(YV_OBJ(toast), tv);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
 }
@@ -3634,21 +3634,21 @@ void cogito_toast_on_click(cogito_node *toast, cogito_node_fn fn, void *user) {
   if (!toast)
     return;
   if (!fn) {
-    cogito_toast_on_click_yis(EV_OBJ(toast), EV_NULLV);
+    cogito_toast_on_click_yis(YV_OBJ(toast), YV_NULLV);
     return;
   }
   CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
   env->fn = fn;
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-  cogito_toast_on_click_yis(EV_OBJ(toast), EV_FN(wrap));
-  yis_release_val(EV_FN(wrap));
+  cogito_toast_on_click_yis(YV_OBJ(toast), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
 }
 
 cogito_window *cogito_node_window(cogito_node *node) {
   if (!node)
     return NULL;
-  YisVal v = cogito_node_window_val_yis(EV_OBJ(node));
+  YisVal v = cogito_node_window_val_yis(YV_OBJ(node));
   return v.tag == EVT_OBJ ? (cogito_window *)v.as.p : NULL;
 }
 
@@ -3657,15 +3657,15 @@ void cogito_toast_set_action(cogito_node *toast, const char *action_text,
   if (!toast)
     return;
   YisVal tv = cogito_val_from_cstr(action_text);
-  YisVal handler = EV_NULLV;
+  YisVal handler = YV_NULLV;
   if (fn) {
     CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
     env->fn = fn;
     env->user = user;
     YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
-    handler = EV_FN(wrap);
+    handler = YV_FN(wrap);
   }
-  cogito_toast_set_action_yis(EV_OBJ(toast), tv, handler);
+  cogito_toast_set_action_yis(YV_OBJ(toast), tv, handler);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
   if (handler.tag == EVT_FN)
@@ -3690,10 +3690,10 @@ void cogito_nav_rail_set_items(cogito_node *rail, const char **labels,
       yis_arr_set(icons_arr, i, iv);
     }
   }
-  cogito_nav_rail_set_items_yis(EV_OBJ(rail), EV_ARR(labels_arr),
-                                 EV_ARR(icons_arr));
-  yis_release_val(EV_ARR(labels_arr));
-  yis_release_val(EV_ARR(icons_arr));
+  cogito_nav_rail_set_items_yis(YV_OBJ(rail), YV_ARR(labels_arr),
+                                 YV_ARR(icons_arr));
+  yis_release_val(YV_ARR(labels_arr));
+  yis_release_val(YV_ARR(icons_arr));
 }
 
 void cogito_nav_rail_set_badges(cogito_node *rail, const int *badges,
@@ -3701,36 +3701,36 @@ void cogito_nav_rail_set_badges(cogito_node *rail, const int *badges,
   if (!rail)
     return;
   if (!badges) {
-    cogito_nav_rail_set_badges_yis(EV_OBJ(rail), EV_NULLV);
+    cogito_nav_rail_set_badges_yis(YV_OBJ(rail), YV_NULLV);
     return;
   }
   YisArr *badges_arr = yis_arr_new(count);
   if (badges_arr)
     badges_arr->len = count;
   for (size_t i = 0; i < count; i++) {
-    yis_arr_set(badges_arr, i, EV_INT(badges[i]));
+    yis_arr_set(badges_arr, i, YV_INT(badges[i]));
   }
-  cogito_nav_rail_set_badges_yis(EV_OBJ(rail), EV_ARR(badges_arr));
-  yis_release_val(EV_ARR(badges_arr));
+  cogito_nav_rail_set_badges_yis(YV_OBJ(rail), YV_ARR(badges_arr));
+  yis_release_val(YV_ARR(badges_arr));
 }
 
 void cogito_nav_rail_set_toggle(cogito_node *rail, bool visible) {
   if (!rail)
     return;
-  cogito_nav_rail_set_toggle_yis(EV_OBJ(rail), EV_BOOL(visible));
+  cogito_nav_rail_set_toggle_yis(YV_OBJ(rail), YV_BOOL(visible));
 }
 
 int cogito_nav_rail_get_selected(cogito_node *rail) {
   if (!rail)
     return -1;
-  YisVal v = cogito_nav_rail_get_selected_yis(EV_OBJ(rail));
+  YisVal v = cogito_nav_rail_get_selected_yis(YV_OBJ(rail));
   return (int)yis_as_int(v);
 }
 
 void cogito_nav_rail_set_selected(cogito_node *rail, int idx) {
   if (!rail)
     return;
-  cogito_nav_rail_set_selected_yis(EV_OBJ(rail), EV_INT(idx));
+  cogito_nav_rail_set_selected_yis(YV_OBJ(rail), YV_INT(idx));
 }
 
 void cogito_nav_rail_set_no_label(cogito_node *rail, bool no_label) {
@@ -3743,7 +3743,7 @@ bool cogito_nav_rail_get_no_label(cogito_node *rail) {
   if (!rail)
     return false;
   bool v = cogito_nav_rail_get_no_label_yis(rail);
-  return yis_as_bool(EV_BOOL(v));
+  return yis_as_bool(YV_BOOL(v));
 }
 
 void cogito_bottom_nav_set_items(cogito_node *nav, const char **labels,
@@ -3764,40 +3764,40 @@ void cogito_bottom_nav_set_items(cogito_node *nav, const char **labels,
       yis_arr_set(icons_arr, i, iv);
     }
   }
-  cogito_bottom_nav_set_items_yis(EV_OBJ(nav), EV_ARR(labels_arr),
-                                   EV_ARR(icons_arr));
-  yis_release_val(EV_ARR(labels_arr));
-  yis_release_val(EV_ARR(icons_arr));
+  cogito_bottom_nav_set_items_yis(YV_OBJ(nav), YV_ARR(labels_arr),
+                                   YV_ARR(icons_arr));
+  yis_release_val(YV_ARR(labels_arr));
+  yis_release_val(YV_ARR(icons_arr));
 }
 
 int cogito_bottom_nav_get_selected(cogito_node *nav) {
   if (!nav)
     return -1;
-  YisVal v = cogito_bottom_nav_get_selected_yis(EV_OBJ(nav));
+  YisVal v = cogito_bottom_nav_get_selected_yis(YV_OBJ(nav));
   return (int)yis_as_int(v);
 }
 
 void cogito_bottom_nav_set_selected(cogito_node *nav, int idx) {
   if (!nav)
     return;
-  cogito_bottom_nav_set_selected_yis(EV_OBJ(nav), EV_INT(idx));
+  cogito_bottom_nav_set_selected_yis(YV_OBJ(nav), YV_INT(idx));
 }
 
 void cogito_dialog_close(cogito_node *dialog) {
   if (!dialog)
     return;
-  cogito_dialog_close_yis(EV_OBJ(dialog));
+  cogito_dialog_close_yis(YV_OBJ(dialog));
 }
 
 void cogito_dialog_remove(cogito_node *dialog) {
   if (!dialog)
     return;
-  cogito_dialog_remove_yis(EV_OBJ(dialog));
+  cogito_dialog_remove_yis(YV_OBJ(dialog));
 }
 
 cogito_node *cogito_node_parent(cogito_node *node) {
   if (!node)
     return NULL;
-  YisVal v = cogito_node_parent_yis(EV_OBJ(node));
+  YisVal v = cogito_node_parent_yis(YV_OBJ(node));
   return v.tag == EVT_OBJ ? (cogito_node *)v.as.p : NULL;
 }

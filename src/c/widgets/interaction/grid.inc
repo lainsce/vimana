@@ -7,7 +7,7 @@ static CogitoNode* cogito_grid_new_obj(int cols) {
 }
 static YisVal cogito_grid_new(YisVal cols) {
   int c = (int)yis_as_int(cols);
-  return EV_OBJ(cogito_grid_new_obj(c));
+  return YV_OBJ(cogito_grid_new_obj(c));
 }
 static void cogito_grid_set_gap(YisVal gridv, YisVal xv, YisVal yv) {
   if (gridv.tag != EVT_OBJ) yis_trap("cogito.grid_set_gap expects grid");
@@ -35,14 +35,14 @@ static void cogito_grid_set_align(YisVal childv, YisVal halignv, YisVal valignv)
 static void cogito_grid_on_select(YisVal gridv, YisVal handler) {
   if (gridv.tag != EVT_OBJ) yis_trap("cogito.grid_on_select expects grid");
   CogitoNode* grid = (CogitoNode*)gridv.as.p;
-  if (grid->on_select) yis_release_val(EV_FN(grid->on_select));
+  if (grid->on_select) yis_release_val(YV_FN(grid->on_select));
   grid->on_select = (YisFn*)handler.as.p;
-  yis_retain_val(EV_FN(grid->on_select));
+  yis_retain_val(YV_FN(grid->on_select));
 }
 static void cogito_grid_on_activate(YisVal gridv, YisVal handler) {
   if (gridv.tag != EVT_OBJ) yis_trap("cogito.grid_on_activate expects grid");
   CogitoNode* grid = (CogitoNode*)gridv.as.p;
-  if (grid->on_activate) yis_release_val(EV_FN(grid->on_activate));
+  if (grid->on_activate) yis_release_val(YV_FN(grid->on_activate));
   grid->on_activate = (YisFn*)handler.as.p;
-  yis_retain_val(EV_FN(grid->on_activate));
+  yis_retain_val(YV_FN(grid->on_activate));
 }

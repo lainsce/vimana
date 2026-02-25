@@ -9,5 +9,5 @@ static CogitoNode* cogito_settings_window_new_obj(YisStr* title) {
 static YisVal cogito_settings_window_new(YisVal titlev) {
   YisStr* ts = stdr_to_string(titlev);
   CogitoNode* n = cogito_settings_window_new_obj(ts);
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }

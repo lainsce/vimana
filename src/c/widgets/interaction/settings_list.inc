@@ -8,5 +8,5 @@ static CogitoNode* cogito_settings_list_new_obj(YisStr* title) {
 static YisVal cogito_settings_list_new(YisVal titlev) {
   YisStr* ts = stdr_to_string(titlev);
   CogitoNode* n = cogito_settings_list_new_obj(ts);
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }

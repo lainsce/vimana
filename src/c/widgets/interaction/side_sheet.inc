@@ -103,9 +103,9 @@ void cogito_side_sheet_set_mode(CogitoNode* n, int mode) {
     }
     if (class_name) {
         YisStr* cls = stdr_str_from_slice(class_name, strlen(class_name));
-        if (n->class_name) yis_release_val(EV_STR(n->class_name));
+        if (n->class_name) yis_release_val(YV_STR(n->class_name));
         n->class_name = cls;
-        yis_retain_val(EV_STR(cls));
+        yis_retain_val(YV_STR(cls));
     }
 }
 
@@ -133,6 +133,6 @@ static YisVal cogito_side_sheet_new(YisVal titlev) {
     ts = stdr_to_string(titlev);
   }
   CogitoNode* n = cogito_side_sheet_new_obj(ts);
-  if (ts && titlev.tag != EVT_STR) yis_release_val(EV_STR(ts));
-  return EV_OBJ(n);
+  if (ts && titlev.tag != EVT_STR) yis_release_val(YV_STR(ts));
+  return YV_OBJ(n);
 }

@@ -10,7 +10,7 @@ static CogitoNode* cogito_progress_new_obj(double value) {
 }
 static YisVal cogito_progress_new(YisVal valv) {
   double v = yis_as_float(valv);
-  return EV_OBJ(cogito_progress_new_obj(v));
+  return YV_OBJ(cogito_progress_new_obj(v));
 }
 static void cogito_progress_set_value(YisVal pv, YisVal valv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_set_value expects progress");
@@ -24,7 +24,7 @@ static void cogito_progress_set_value(YisVal pv, YisVal valv) {
 static YisVal cogito_progress_get_value(YisVal pv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_get_value expects progress");
   CogitoNode* p = (CogitoNode*)pv.as.p;
-  return EV_FLOAT(p->progress.value);
+  return YV_FLOAT(p->progress.value);
 }
 static void cogito_progress_set_indeterminate(YisVal pv, YisVal onv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_set_indeterminate expects progress");
@@ -35,7 +35,7 @@ static void cogito_progress_set_indeterminate(YisVal pv, YisVal onv) {
 static YisVal cogito_progress_get_indeterminate(YisVal pv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_get_indeterminate expects progress");
   CogitoNode* p = (CogitoNode*)pv.as.p;
-  return EV_BOOL(p->progress.indeterminate);
+  return YV_BOOL(p->progress.indeterminate);
 }
 static void cogito_progress_set_thickness(YisVal pv, YisVal pxv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_set_thickness expects progress");
@@ -49,7 +49,7 @@ static void cogito_progress_set_thickness(YisVal pv, YisVal pxv) {
 static YisVal cogito_progress_get_thickness(YisVal pv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_get_thickness expects progress");
   CogitoNode* p = (CogitoNode*)pv.as.p;
-  return EV_INT(p->track_height_set ? p->track_height : 4);
+  return YV_INT(p->track_height_set ? p->track_height : 4);
 }
 static void cogito_progress_set_wavy(YisVal pv, YisVal onv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_set_wavy expects progress");
@@ -60,7 +60,7 @@ static void cogito_progress_set_wavy(YisVal pv, YisVal onv) {
 static YisVal cogito_progress_get_wavy(YisVal pv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_get_wavy expects progress");
   CogitoNode* p = (CogitoNode*)pv.as.p;
-  return EV_BOOL(p->progress.shape == COGITO_PROGRESS_SHAPE_WAVY);
+  return YV_BOOL(p->progress.shape == COGITO_PROGRESS_SHAPE_WAVY);
 }
 static void cogito_progress_set_circular(YisVal pv, YisVal onv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_set_circular expects progress");
@@ -71,5 +71,5 @@ static void cogito_progress_set_circular(YisVal pv, YisVal onv) {
 static YisVal cogito_progress_get_circular(YisVal pv) {
   if (pv.tag != EVT_OBJ) yis_trap("cogito.progress_get_circular expects progress");
   CogitoNode* p = (CogitoNode*)pv.as.p;
-  return EV_BOOL(p->progress.circular);
+  return YV_BOOL(p->progress.circular);
 }

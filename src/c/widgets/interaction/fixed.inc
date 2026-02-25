@@ -2,7 +2,7 @@ static CogitoNode* cogito_fixed_new_obj(void) {
   return cogito_node_new(COGITO_FIXED);
 }
 static YisVal cogito_fixed_new(void) {
-  return EV_OBJ(cogito_fixed_new_obj());
+  return YV_OBJ(cogito_fixed_new_obj());
 }
 static void cogito_fixed_set_pos(YisVal fixedv, YisVal childv, YisVal xv, YisVal yv) {
   if (fixedv.tag != EVT_OBJ) yis_trap("cogito.fixed_set_pos expects fixed");

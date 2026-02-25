@@ -26,10 +26,10 @@ static CogitoNode* cogito_dialog_slot_new_obj(void) {
 static YisVal cogito_dialog_new(YisVal title) {
   YisStr* ts = stdr_to_string(title);
   CogitoNode* dlg = cogito_dialog_new_obj(ts);
-  return EV_OBJ(dlg);
+  return YV_OBJ(dlg);
 }
 static YisVal cogito_dialog_slot_new(void) {
-  return EV_OBJ(cogito_dialog_slot_new_obj());
+  return YV_OBJ(cogito_dialog_slot_new_obj());
 }
 static void cogito_dialog_slot_show(YisVal slotv, YisVal dialogv) {
   if (slotv.tag != EVT_OBJ) yis_trap("cogito.dialog_slot_show expects dialog slot");
@@ -38,11 +38,11 @@ static void cogito_dialog_slot_show(YisVal slotv, YisVal dialogv) {
   CogitoNode* dlg = (CogitoNode*)dialogv.as.p;
   CogitoNode* win = cogito_node_window(slot);
   cogito_overlay_focus_snapshot();
-  if (slot->dialog) yis_release_val(EV_OBJ(slot->dialog));
+  if (slot->dialog) yis_release_val(YV_OBJ(slot->dialog));
   slot->dialog = dlg;
   slot->dialog_open = true;
   dlg->parent = slot;
-  yis_retain_val(EV_OBJ(dlg));
+  yis_retain_val(YV_OBJ(dlg));
   if (win) {
     win->dialog = slot;
     win->dialog_open = true;
@@ -106,8 +106,8 @@ static void cogito_dialog_remove(YisVal dialogv) {
 static YisVal cogito_node_parent(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_parent expects object");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (n->parent) return EV_OBJ(n->parent);
-  return EV_NULLV;
+  if (n->parent) return YV_OBJ(n->parent);
+  return YV_NULLV;
 }
 static CogitoNode* cogito_find_dialog_slot(CogitoNode* n) {
   if (!n) return NULL;

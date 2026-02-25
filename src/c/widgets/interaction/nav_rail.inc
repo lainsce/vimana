@@ -14,7 +14,7 @@ static CogitoNode* cogito_nav_rail_new_obj(void) {
 
 static YisVal cogito_nav_rail_new(void) {
   CogitoNode* n = cogito_nav_rail_new_obj();
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }
 
 static void cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal iconsv) {
@@ -24,8 +24,8 @@ static void cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal icons
   // Clear existing items
   if (n->nav_rail.labels || n->nav_rail.badges) {
     for (size_t i = 0; i < n->nav_rail.len; i++) {
-      if (n->nav_rail.labels && n->nav_rail.labels[i]) yis_release_val(EV_STR(n->nav_rail.labels[i]));
-      if (n->nav_rail.icons && n->nav_rail.icons[i]) yis_release_val(EV_STR(n->nav_rail.icons[i]));
+      if (n->nav_rail.labels && n->nav_rail.labels[i]) yis_release_val(YV_STR(n->nav_rail.labels[i]));
+      if (n->nav_rail.icons && n->nav_rail.icons[i]) yis_release_val(YV_STR(n->nav_rail.icons[i]));
     }
     free(n->nav_rail.labels);
     free(n->nav_rail.icons);
@@ -47,7 +47,7 @@ static void cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal icons
     YisVal lv = labels->items[i];
     YisStr* ls = stdr_to_string(lv);
     n->nav_rail.labels[i] = ls;
-    yis_retain_val(EV_STR(ls));
+    yis_retain_val(YV_STR(ls));
   }
 
   // Parse icons array if provided
@@ -58,7 +58,7 @@ static void cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal icons
       YisVal iv = icons->items[i];
       YisStr* is = stdr_to_string(iv);
       n->nav_rail.icons[i] = is;
-      yis_retain_val(EV_STR(is));
+      yis_retain_val(YV_STR(is));
     }
   }
 
@@ -126,7 +126,7 @@ static void cogito_nav_rail_set_toggle(YisVal railv, YisVal onv) {
 static YisVal cogito_nav_rail_get_selected(YisVal railv) {
   if (railv.tag != EVT_OBJ) yis_trap("cogito.nav_rail_get_selected expects nav_rail");
   CogitoNode* n = (CogitoNode*)railv.as.p;
-  return EV_INT(n->nav_rail.selected);
+  return YV_INT(n->nav_rail.selected);
 }
 
 static void cogito_nav_rail_set_selected(YisVal railv, YisVal idxv) {
@@ -141,10 +141,10 @@ static void cogito_nav_rail_set_selected(YisVal railv, YisVal idxv) {
 static void cogito_nav_rail_on_change(YisVal railv, YisVal handler) {
   if (railv.tag != EVT_OBJ) yis_trap("cogito.nav_rail_on_change expects nav_rail");
   CogitoNode* n = (CogitoNode*)railv.as.p;
-  if (n->on_select) yis_release_val(EV_FN(n->on_select));
+  if (n->on_select) yis_release_val(YV_FN(n->on_select));
   if (handler.tag == EVT_FN) {
     n->on_select = (YisFn*)handler.as.p;
-    yis_retain_val(EV_FN(n->on_select));
+    yis_retain_val(YV_FN(n->on_select));
   } else {
     n->on_select = NULL;
   }

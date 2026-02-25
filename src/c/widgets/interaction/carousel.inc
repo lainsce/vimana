@@ -18,7 +18,7 @@ static CogitoNode* cogito_carousel_new_obj(void) {
 }
 
 static YisVal cogito_carousel_new(void) {
-  return EV_OBJ(cogito_carousel_new_obj());
+  return YV_OBJ(cogito_carousel_new_obj());
 }
 
 static void cogito_carousel_set_active_index(YisVal nodev, YisVal idxv) {
@@ -61,7 +61,7 @@ static void cogito_carousel_set_active_index(YisVal nodev, YisVal idxv) {
 static YisVal cogito_carousel_get_active_index(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.carousel_get_active_index expects carousel");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  return EV_INT((int64_t)n->carousel.active_index);
+  return YV_INT((int64_t)n->carousel.active_index);
 }
 
 

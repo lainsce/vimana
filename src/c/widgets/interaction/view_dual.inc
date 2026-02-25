@@ -6,7 +6,7 @@ static CogitoNode* cogito_view_dual_new_obj(void) {
 }
 static YisVal cogito_view_dual_new(void) {
   CogitoNode* n = cogito_view_dual_new_obj();
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }
 static void cogito_view_dual_set_ratio(YisVal vdv, YisVal ratiov) {
   if (vdv.tag != EVT_OBJ) yis_trap("cogito.view_dual_set_ratio expects view_dual");

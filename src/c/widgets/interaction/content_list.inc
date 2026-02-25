@@ -6,5 +6,5 @@ static CogitoNode* cogito_content_list_new_obj(void) {
 }
 static YisVal cogito_content_list_new(void) {
   CogitoNode* n = cogito_content_list_new_obj();
-  return EV_OBJ(n);
+  return YV_OBJ(n);
 }

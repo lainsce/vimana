@@ -21,7 +21,7 @@ static CogitoNode* cogito_tabs_new_obj(void) {
   return t;
 }
 static YisVal cogito_tabs_new(void) {
-  return EV_OBJ(cogito_tabs_new_obj());
+  return YV_OBJ(cogito_tabs_new_obj());
 }
 static void cogito_tabs_set_items(YisVal tabsv, YisVal arrv) {
   if (tabsv.tag != EVT_OBJ) yis_trap("cogito.tabs_set_items expects tabs");
@@ -29,8 +29,8 @@ static void cogito_tabs_set_items(YisVal tabsv, YisVal arrv) {
   CogitoNode* n = (CogitoNode*)tabsv.as.p;
   if (n->tab_labels) {
     for (size_t i = 0; i < n->tab_len; i++) {
-      if (n->tab_labels[i]) yis_release_val(EV_STR(n->tab_labels[i]));
-      if (n->tab_icons && n->tab_icons[i]) yis_release_val(EV_STR(n->tab_icons[i]));
+      if (n->tab_labels[i]) yis_release_val(YV_STR(n->tab_labels[i]));
+      if (n->tab_icons && n->tab_icons[i]) yis_release_val(YV_STR(n->tab_icons[i]));
     }
     free(n->tab_labels);
     free(n->tab_icons);
@@ -39,7 +39,7 @@ static void cogito_tabs_set_items(YisVal tabsv, YisVal arrv) {
   }
   if (n->tab_ids) {
     for (size_t i = 0; i < n->tab_len; i++) {
-      if (n->tab_ids[i]) yis_release_val(EV_STR(n->tab_ids[i]));
+      if (n->tab_ids[i]) yis_release_val(YV_STR(n->tab_ids[i]));
     }
     free(n->tab_ids);
     n->tab_ids = NULL;
@@ -72,9 +72,9 @@ static void cogito_tabs_set_items(YisVal tabsv, YisVal arrv) {
     }
     if (!label) label = stdr_str_lit("");
     n->tab_labels[i] = label;
-    if (label) yis_retain_val(EV_STR(label));
+    if (label) yis_retain_val(YV_STR(label));
     n->tab_icons[i] = icon;
-    if (icon) yis_retain_val(EV_STR(icon));
+    if (icon) yis_retain_val(YV_STR(icon));
   }
   if (n->selected < 0 && n->tab_len > 0) n->selected = 0;
   if (n->selected >= (int)n->tab_len) n->selected = (int)n->tab_len - 1;
@@ -82,9 +82,9 @@ static void cogito_tabs_set_items(YisVal tabsv, YisVal arrv) {
     CogitoNode* vs = n->view_switcher;
     YisStr* id = n->tab_ids[n->selected];
     if (id) {
-      if (vs->view_active_id) yis_release_val(EV_STR(vs->view_active_id));
+      if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
       vs->view_active_id = id;
-      yis_retain_val(EV_STR(vs->view_active_id));
+      yis_retain_val(YV_STR(vs->view_active_id));
     }
   }
   cogito_window_relayout(cogito_node_window(n));
@@ -95,7 +95,7 @@ static void cogito_tabs_set_ids(YisVal tabsv, YisVal arrv) {
   CogitoNode* n = (CogitoNode*)tabsv.as.p;
   if (n->tab_ids) {
     for (size_t i = 0; i < n->tab_len; i++) {
-      if (n->tab_ids[i]) yis_release_val(EV_STR(n->tab_ids[i]));
+      if (n->tab_ids[i]) yis_release_val(YV_STR(n->tab_ids[i]));
     }
     free(n->tab_ids);
     n->tab_ids = NULL;
@@ -118,16 +118,16 @@ static void cogito_tabs_set_ids(YisVal tabsv, YisVal arrv) {
       YisVal v = yis_arr_get(a, (int64_t)i);
       YisStr* s = stdr_to_string(v);
       n->tab_ids[i] = s;
-      if (s) yis_retain_val(EV_STR(s));
+      if (s) yis_retain_val(YV_STR(s));
     }
   }
   if (n->view_switcher && n->selected >= 0 && (size_t)n->selected < n->tab_len) {
     CogitoNode* vs = n->view_switcher;
     YisStr* id = n->tab_ids[n->selected];
     if (id) {
-      if (vs->view_active_id) yis_release_val(EV_STR(vs->view_active_id));
+      if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
       vs->view_active_id = id;
-      yis_retain_val(EV_STR(vs->view_active_id));
+      yis_retain_val(YV_STR(vs->view_active_id));
     }
   }
   cogito_window_relayout(cogito_node_window(n));
@@ -143,9 +143,9 @@ static void cogito_tabs_set_selected(YisVal tabsv, YisVal idxv) {
     CogitoNode* vs = n->view_switcher;
     YisStr* id = n->tab_ids[idx];
     if (id) {
-      if (vs->view_active_id) yis_release_val(EV_STR(vs->view_active_id));
+      if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
       vs->view_active_id = id;
-      yis_retain_val(EV_STR(vs->view_active_id));
+      yis_retain_val(YV_STR(vs->view_active_id));
     }
   }
   cogito_window_relayout(cogito_node_window(n));
@@ -153,15 +153,15 @@ static void cogito_tabs_set_selected(YisVal tabsv, YisVal idxv) {
 static YisVal cogito_tabs_get_selected(YisVal tabsv) {
   if (tabsv.tag != EVT_OBJ) yis_trap("cogito.tabs_get_selected expects tabs");
   CogitoNode* n = (CogitoNode*)tabsv.as.p;
-  return EV_INT(n->selected);
+  return YV_INT(n->selected);
 }
 static void cogito_tabs_on_change(YisVal tabsv, YisVal handler) {
   if (tabsv.tag != EVT_OBJ) yis_trap("cogito.tabs_on_change expects tabs");
   if (handler.tag != EVT_FN) yis_trap("cogito.tabs_on_change expects function");
   CogitoNode* n = (CogitoNode*)tabsv.as.p;
-  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  if (n->on_change) yis_release_val(YV_FN(n->on_change));
   n->on_change = (YisFn*)handler.as.p;
-  yis_retain_val(EV_FN(n->on_change));
+  yis_retain_val(YV_FN(n->on_change));
 }
 static void cogito_tabs_bind(YisVal tabsv, YisVal vsv) {
   if (tabsv.tag != EVT_OBJ) yis_trap("cogito.tabs_bind expects tabs");
@@ -173,9 +173,9 @@ static void cogito_tabs_bind(YisVal tabsv, YisVal vsv) {
   if (t->tab_ids && t->selected >= 0 && (size_t)t->selected < t->tab_len) {
     YisStr* id = t->tab_ids[t->selected];
     if (id) {
-      if (vs->view_active_id) yis_release_val(EV_STR(vs->view_active_id));
+      if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
       vs->view_active_id = id;
-      yis_retain_val(EV_STR(vs->view_active_id));
+      yis_retain_val(YV_STR(vs->view_active_id));
     }
   }
 }

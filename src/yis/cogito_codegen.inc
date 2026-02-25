@@ -513,7 +513,7 @@
                         ], &toolbar, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_BOOL(cogito_toolbar_get_vibrant(%s));", t, toolbar.tmp);
+                        "YisVal %s = YV_BOOL(cogito_toolbar_get_vibrant(%s));", t, toolbar.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", toolbar.tmp);
                         gen_expr_release_except(cg, &toolbar, toolbar.tmp);
@@ -553,7 +553,7 @@
                         ], &toolbar, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_BOOL(cogito_toolbar_get_vertical(%s));", t, toolbar.tmp);
+                        "YisVal %s = YV_BOOL(cogito_toolbar_get_vertical(%s));", t, toolbar.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", toolbar.tmp);
                         gen_expr_release_except(cg, &toolbar, toolbar.tmp);
@@ -647,7 +647,7 @@
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -691,7 +691,7 @@
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -718,7 +718,7 @@
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -745,7 +745,7 @@
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -798,7 +798,7 @@
                         gen_expr_free(&child);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -849,7 +849,7 @@
                         gen_expr_free(&left);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -876,7 +876,7 @@
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -903,7 +903,7 @@
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -930,7 +930,7 @@
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -957,7 +957,7 @@
                         gen_expr_free(&expand);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -984,7 +984,7 @@
                         gen_expr_free(&expand);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1011,7 +1011,7 @@
                         gen_expr_free(&gap);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1038,7 +1038,7 @@
                         gen_expr_free(&dialog);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1057,7 +1057,7 @@
                         gen_expr_free(&slot);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1108,7 +1108,7 @@
                         gen_expr_free(&left);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1151,7 +1151,7 @@
                         gen_expr_free(&y);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1186,7 +1186,7 @@
                         gen_expr_free(&vert);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1221,7 +1221,7 @@
                         gen_expr_free(&y);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1256,7 +1256,7 @@
                         gen_expr_free(&rows);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1291,7 +1291,7 @@
                         gen_expr_free(&hy);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1318,7 +1318,7 @@
                         gen_expr_free(&classv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1345,7 +1345,7 @@
                         gen_expr_free(&textv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1372,7 +1372,7 @@
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1399,7 +1399,7 @@
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1426,7 +1426,7 @@
                         gen_expr_free(&alignv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1453,7 +1453,7 @@
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1480,7 +1480,7 @@
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1524,7 +1524,7 @@
                         gen_expr_free(&idv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1551,7 +1551,7 @@
                         gen_expr_free(&classv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1578,7 +1578,7 @@
                         gen_expr_free(&labelv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1605,7 +1605,7 @@
                         gen_expr_free(&rolev);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1632,7 +1632,7 @@
                         gen_expr_free(&textv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1659,7 +1659,7 @@
                         gen_expr_free(&idv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1686,7 +1686,7 @@
                         gen_expr_free(&namev);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1721,7 +1721,7 @@
                         gen_expr_free(&ov);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1744,7 +1744,7 @@
                         gen_expr_free(&variantv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1763,7 +1763,7 @@
                         gen_expr_free(&node);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1774,7 +1774,7 @@
                         "cogito_pointer_capture_clear();");
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1801,7 +1801,7 @@
                         gen_expr_free(&idv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1836,7 +1836,7 @@
                         gen_expr_free(&builderv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1863,7 +1863,7 @@
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1907,7 +1907,7 @@
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1951,7 +1951,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1978,7 +1978,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2005,7 +2005,7 @@
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2049,7 +2049,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2076,7 +2076,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2103,7 +2103,7 @@
                         gen_expr_free(&arr);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2130,7 +2130,7 @@
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2174,7 +2174,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2201,7 +2201,7 @@
                         gen_expr_free(&val);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2245,7 +2245,7 @@
                         gen_expr_free(&sizev);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2289,7 +2289,7 @@
                         gen_expr_free(&iconv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2316,7 +2316,7 @@
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2368,7 +2368,7 @@
                         gen_expr_free(&endv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2395,7 +2395,7 @@
                         gen_expr_free(&startv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2422,7 +2422,7 @@
                         gen_expr_free(&endv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2483,7 +2483,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2510,7 +2510,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2537,7 +2537,7 @@
                         gen_expr_free(&arr);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2564,7 +2564,7 @@
                         gen_expr_free(&arr);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2591,7 +2591,7 @@
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2635,7 +2635,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2662,7 +2662,7 @@
                         gen_expr_free(&vs);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2689,7 +2689,7 @@
                         gen_expr_free(&val);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2733,7 +2733,7 @@
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2777,7 +2777,7 @@
                         gen_expr_free(&px);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2821,7 +2821,7 @@
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2865,7 +2865,7 @@
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2909,7 +2909,7 @@
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2936,7 +2936,7 @@
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2963,7 +2963,7 @@
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2990,7 +2990,7 @@
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3017,7 +3017,7 @@
                         gen_expr_free(&dialog);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3036,7 +3036,7 @@
                         gen_expr_free(&win);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3063,7 +3063,7 @@
                         gen_expr_free(&side_sheet);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3082,7 +3082,7 @@
                         gen_expr_free(&win);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3126,7 +3126,7 @@
                         gen_expr_free(&builder);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3153,7 +3153,7 @@
                         gen_expr_free(&builder);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3214,7 +3214,7 @@
                         gen_expr_free(&val);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3241,7 +3241,7 @@
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3268,7 +3268,7 @@
                         gen_expr_free(&icon);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3303,7 +3303,7 @@
                         gen_expr_free(&h);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3330,7 +3330,7 @@
                         gen_expr_free(&r);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3357,7 +3357,7 @@
                         gen_expr_free(&alt);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3384,7 +3384,7 @@
                         gen_expr_free(&checked);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3428,7 +3428,7 @@
                         gen_expr_free(&checked);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3472,7 +3472,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3499,7 +3499,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3526,7 +3526,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3553,7 +3553,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3580,7 +3580,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3607,7 +3607,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3634,7 +3634,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3661,7 +3661,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3696,7 +3696,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3723,7 +3723,7 @@
                         gen_expr_free(&divider);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3736,7 +3736,7 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_BOOL(cogito_iconbtn_get_menu_divider(%s));", t, btn.tmp);
+                        "YisVal %s = YV_BOOL(cogito_iconbtn_get_menu_divider(%s));", t, btn.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
@@ -3767,7 +3767,7 @@
                         gen_expr_free(&gap);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3780,7 +3780,7 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_INT(cogito_iconbtn_get_menu_item_gap(%s));", t, btn.tmp);
+                        "YisVal %s = YV_INT(cogito_iconbtn_get_menu_item_gap(%s));", t, btn.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
@@ -3811,7 +3811,7 @@
                         gen_expr_free(&divider);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3824,7 +3824,7 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_BOOL(cogito_button_get_menu_divider(%s));", t, btn.tmp);
+                        "YisVal %s = YV_BOOL(cogito_button_get_menu_divider(%s));", t, btn.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
@@ -3855,7 +3855,7 @@
                         gen_expr_free(&gap);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3868,7 +3868,7 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_INT(cogito_button_get_menu_item_gap(%s));", t, btn.tmp);
+                        "YisVal %s = YV_INT(cogito_button_get_menu_item_gap(%s));", t, btn.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
@@ -3908,7 +3908,7 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_BOOL(cogito_iconbtn_get_menu_vibrant(%s));", t, btn.tmp);
+                        "YisVal %s = YV_BOOL(cogito_iconbtn_get_menu_vibrant(%s));", t, btn.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
@@ -3948,7 +3948,7 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_BOOL(cogito_button_get_menu_vibrant(%s));", t, btn.tmp);
+                        "YisVal %s = YV_BOOL(cogito_button_get_menu_vibrant(%s));", t, btn.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
@@ -4072,7 +4072,7 @@
                         gen_expr_free(&layout);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4099,7 +4099,7 @@
                         gen_expr_free(&title);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4126,7 +4126,7 @@
                         gen_expr_free(&subtitle);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4161,7 +4161,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4188,7 +4188,7 @@
                         gen_expr_free(&shape);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4232,7 +4232,7 @@
                         gen_expr_free(&style);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4276,7 +4276,7 @@
                         gen_expr_free(&width);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4320,7 +4320,7 @@
                         gen_expr_free(&toggle);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4364,7 +4364,7 @@
                         gen_expr_free(&checked);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4408,7 +4408,7 @@
                         gen_expr_free(&win);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4432,7 +4432,7 @@
                                 "cogito_load_sum_inline(\"%s\");", esc);
                                 char *t = codegen_new_tmp(cg);
                                 w_line(&cg->w,
-                                "YisVal %s = EV_NULLV;", t);
+                                "YisVal %s = YV_NULLV;", t);
                                 gen_expr_add(out, t);
                                 out->tmp = t;
                                 return true;
@@ -4450,7 +4450,7 @@
                         gen_expr_free(&pathv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4512,7 +4512,7 @@
                         gen_expr_free(&sel);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4556,7 +4556,7 @@
                         gen_expr_free(&closable);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4583,7 +4583,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4610,7 +4610,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4655,7 +4655,7 @@
                         gen_expr_free(&sizev);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4682,7 +4682,7 @@
                         gen_expr_free(&colorv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4717,7 +4717,7 @@
                         gen_expr_free(&label);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4744,7 +4744,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4795,7 +4795,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4822,7 +4822,7 @@
                         gen_expr_free(&colorv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4867,7 +4867,7 @@
                         gen_expr_free(&icons);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4894,7 +4894,7 @@
                         gen_expr_free(&badges);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4921,7 +4921,7 @@
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4965,7 +4965,7 @@
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4992,7 +4992,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5019,7 +5019,7 @@
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5032,7 +5032,7 @@
                         ], &rail, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_BOOL(cogito_nav_rail_get_no_label(%s));", t, rail.tmp);
+                        "YisVal %s = YV_BOOL(cogito_nav_rail_get_no_label(%s));", t, rail.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", rail.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
@@ -5081,7 +5081,7 @@
                         gen_expr_free(&icons);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5125,7 +5125,7 @@
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5152,7 +5152,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5276,7 +5276,7 @@
                         gen_expr_free(&path_arg);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5321,7 +5321,7 @@
                         gen_expr_free(&count);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5391,7 +5391,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5418,7 +5418,7 @@
                         gen_expr_free(&icon);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5491,7 +5491,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5560,7 +5560,7 @@
                         gen_expr_free(&min);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "YisVal %s = EV_NULLV;", t);
+                        "YisVal %s = YV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;

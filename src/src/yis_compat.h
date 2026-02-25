@@ -55,14 +55,14 @@ struct YisVal {
   } as;
 };
 
-#define EV_NULLV ((YisVal){ .tag = EVT_NULL })
-#define EV_INT(v) ((YisVal){ .tag = EVT_INT, .as.i = (int64_t)(v) })
-#define EV_FLOAT(v) ((YisVal){ .tag = EVT_FLOAT, .as.f = (double)(v) })
-#define EV_BOOL(v) ((YisVal){ .tag = EVT_BOOL, .as.b = (bool)(v) })
-#define EV_STR(v) ((YisVal){ .tag = EVT_STR, .as.p = (void*)(v) })
-#define EV_ARR(v) ((YisVal){ .tag = EVT_ARR, .as.p = (void*)(v) })
-#define EV_OBJ(v) ((YisVal){ .tag = EVT_OBJ, .as.p = (void*)(v) })
-#define EV_FN(v) ((YisVal){ .tag = EVT_FN, .as.p = (void*)(v) })
+#define YV_NULLV ((YisVal){ .tag = EVT_NULL })
+#define YV_INT(v) ((YisVal){ .tag = EVT_INT, .as.i = (int64_t)(v) })
+#define YV_FLOAT(v) ((YisVal){ .tag = EVT_FLOAT, .as.f = (double)(v) })
+#define YV_BOOL(v) ((YisVal){ .tag = EVT_BOOL, .as.b = (bool)(v) })
+#define YV_STR(v) ((YisVal){ .tag = EVT_STR, .as.p = (void*)(v) })
+#define YV_ARR(v) ((YisVal){ .tag = EVT_ARR, .as.p = (void*)(v) })
+#define YV_OBJ(v) ((YisVal){ .tag = EVT_OBJ, .as.p = (void*)(v) })
+#define YV_FN(v) ((YisVal){ .tag = EVT_FN, .as.p = (void*)(v) })
 
 void* cogito_compat_obj_new(size_t size, void (*drop)(YisObj* o));
 void cogito_compat_retain_val(YisVal v);

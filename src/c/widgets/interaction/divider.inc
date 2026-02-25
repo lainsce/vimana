@@ -15,7 +15,7 @@ static bool cogito_divider_orientation_vertical(YisVal orientationv) {
                strcmp(o, "column") == 0 ||
                strcmp(o, "y") == 0;
   }
-  if (temp && s) yis_release_val(EV_STR(s));
+  if (temp && s) yis_release_val(YV_STR(s));
   return vertical;
 }
 
@@ -31,5 +31,5 @@ static CogitoNode* cogito_divider_new_obj(bool vertical, bool inset) {
 static YisVal cogito_divider_new(YisVal orientationv, YisVal insetv) {
   bool vertical = cogito_divider_orientation_vertical(orientationv);
   bool inset = yis_as_bool(insetv);
-  return EV_OBJ(cogito_divider_new_obj(vertical, inset));
+  return YV_OBJ(cogito_divider_new_obj(vertical, inset));
 }
