@@ -345,7 +345,7 @@ fun build_right_panel() (( cogito.VStack )) {
 
 entry() (( -- )) {
     let app = gafu_app
-    .set_appid(@"yis.cogito.Gafu")
+    .set_appid(@"com.fyralabs.Gafu")
     .set_app_name(@"Gafu")
     .set_ensor_variant(ENSOR_DEFAULT)
     .set_dark_mode(false, false)

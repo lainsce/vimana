@@ -848,14 +848,10 @@ static YisVal __cogito_card(YisVal titlev) {
 }
 static void __cogito_card_set_subtitle(YisVal cardv, YisVal subtitlev) {
   cogito_node* n = cogito_node_from_val(cardv);
-  YisStr* ts = NULL;
-  if (subtitlev.tag == EVT_STR) {
-    ts = (YisStr*)subtitlev.as.p;
-  } else if (subtitlev.tag != EVT_NULL) {
-    ts = stdr_to_string(subtitlev);
-  }
+  YisStr* tmp = NULL;
+  const char* ts = cogito_required_cstr(subtitlev, &tmp);
   cogito_node_set_subtitle(n, ts);
-  if (ts && subtitlev.tag != EVT_STR) yis_release_val(YV_STR(ts));
+  if (tmp) yis_release_val(YV_STR(tmp));
   cogito_window_relayout(cogito_node_window(n));
 }
 
@@ -874,25 +870,24 @@ static void __cogito_card_on_click(YisVal cardv, YisVal handler) {
 static void __cogito_card_set_variant(YisVal cardv, YisVal variantv) {
   cogito_node* n = cogito_node_from_val(cardv);
   int v = (int)yis_as_int(variantv);
-  n->card.variant = (uint8_t)(v < 0 ? 0 : v > 2 ? 2 : v);
-  if (!n->shadow_set) {
-    n->shadow_level = (n->card.variant == 0) ? 1 : 0;
-  }
+  cogito_card_set_variant(n, v);
   cogito_window_relayout(cogito_node_window(n));
 }
 
 static void __cogito_card_set_header_image(YisVal cardv, YisVal urlv) {
   cogito_node* n = cogito_node_from_val(cardv);
-  if (n->card.header_image) {
-    yis_release_val(YV_OBJ(n->card.header_image));
-    n->card.header_image = NULL;
-  }
+  // Note: Card header_image requires internal API - using placeholder approach
+  // The public API doesn't expose card header image setter, so we skip this
+  // or could add the image as a child node instead
   if (urlv.tag != EVT_NULL) {
-    YisVal img_val = cogito_image_new(urlv);
-    if (img_val.tag == EVT_OBJ) {
-      n->card.header_image = (cogito_node*)img_val.as.p;
-      // img_val already holds the reference; do not release
-    }
+    YisStr* tmp = NULL;
+    const char* url = cogito_required_cstr(urlv, &tmp);
+    // Create an image node and add it to the card as header
+    cogito_node* img = cogito_image_new(url);
+    cogito_image_set_source(img, url);
+    // Note: Adding as child - actual header image positioning would need proper API
+    cogito_node_add(n, img);
+    if (tmp) yis_release_val(YV_STR(tmp));
   }
   cogito_window_relayout(cogito_node_window(n));
 }
@@ -901,32 +896,27 @@ static void __cogito_card_add_action(YisVal cardv, YisVal btnv) {
   cogito_node* card = cogito_node_from_val(cardv);
   if (btnv.tag != EVT_OBJ) return;
   cogito_node* btn = cogito_node_from_val(btnv);
-  if (card->card.action_len + 1 > card->card.action_cap) {
-    size_t next = card->card.action_cap == 0 ? 4 : card->card.action_cap * 2;
-    card->card.actions = (cogito_node**)realloc(card->card.actions, sizeof(cogito_node*) * next);
-    card->card.action_cap = next;
-  }
-  card->card.actions[card->card.action_len++] = btn;
-  cogito_children_add(card, btn);
-  cogito_apply_style_tree(btn);
+  // Use public API to add the button to the card
+  cogito_node_add(card, btn);
   cogito_window_relayout(cogito_node_window(card));
 }
 
 static void __cogito_card_add_overflow(YisVal cardv, YisVal labelv, YisVal handler) {
   cogito_node* card = cogito_node_from_val(cardv);
-  if (!card->card.overflow_btn) {
-    YisStr* icon_str = stdr_str_lit("more-vert-symbolic");
-    cogito_node* btn = cogito_iconbtn_new_obj(icon_str);
-    yis_release_val(YV_STR(icon_str));
-    card->card.overflow_btn = btn;
-    cogito_children_add(card, btn);
-    cogito_apply_style_tree(btn);
-  }
+  // Use public API to create icon button
+  YisStr* icon_str = stdr_str_lit("more-vert-symbolic");
   YisStr* tmp = NULL;
-  const char* label = cogito_required_cstr(labelv, &tmp);
+  const char* icon = cogito_required_cstr(YV_STR(icon_str), &tmp);
+  cogito_node* btn = cogito_iconbtn_new(icon);
+  yis_release_val(YV_STR(icon_str));
+  // Add to card using public API
+  cogito_node_add(card, btn);
+  
+  YisStr* label_tmp = NULL;
+  const char* label = cogito_required_cstr(labelv, &label_tmp);
   CogitoMenuHandler* mh = handler.tag == EVT_FN ? cogito_menu_handler_new(handler) : NULL;
-  cogito_iconbtn_add_menu(card->card.overflow_btn, label, mh ? cogito_cb_menu : NULL, mh);
-  if (tmp) yis_release_val(YV_STR(tmp));
+  cogito_iconbtn_add_menu(btn, label, mh ? cogito_cb_menu : NULL, mh);
+  if (label_tmp) yis_release_val(YV_STR(label_tmp));
   cogito_window_relayout(cogito_node_window(card));
 }
 

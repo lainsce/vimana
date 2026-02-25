@@ -138,13 +138,13 @@ fun show_about_window(win = cogito.Window) (( -- )) {
 
 entry() (( -- )) {
     let app = cogito.app()
-    .set_appid(@"yis.cogito.TextEditor")
-    .set_app_name(@"YisText")
+    .set_appid(@"com.fyralabs.Enigma")
+    .set_app_name(@"Enigma")
     .set_accent_color(@"#4838d7", false)
 
-    cogito.load_sum(@"yistexteditor.sum")
+    cogito.load_sum(@"enigma.sum")
 
-    let win = cogito.window_size(@"YisText", 900, 640)
+    let win = cogito.window_size(@"Enigma", 900, 640)
     .set_resizable(true)
 
     let root = cogito.vstack()

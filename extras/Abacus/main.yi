@@ -530,13 +530,14 @@ fun build_ui(win = cogito.Window) (( -- )) {
 }
 
 entry () (( -- )) {
-    cogito.load_sum(@"yiscalc.sum")
+    cogito.load_sum(@"calc.sum")
     let app = cogito.app()
     .set_accent_color(@"#8C56BF", false)
-    .set_appid(@"yis.cogito.Calc")
-    .set_app_name(@"YisCalc")
-    let win = cogito.window_size(@"Yis Calc", 360, 480)
+    .set_appid(@"com.fyralabs.Abacus")
+    .set_app_name(@"Abacus")
+    let win = cogito.window_size(@"Abacus", 360, 480)
     .build(build_ui)
     .set_resizable(false)
+    .set_autosize(false)
     app.run(win)
 }

@@ -231,13 +231,13 @@ fun build_window(win = cogito.Window) (( -- )) {
 
 entry() (( -- )) {
     let app = cogito.app()
-    .set_appid(@"yis.cogito.YisTask")
-    .set_app_name(@"YisTask")
+    .set_appid(@"com.fyralabs.Tasks")
+    .set_app_name(@"Tasks")
     .set_accent_color(@"#008888", false)
 
-    cogito.load_sum(@"yistask.sum")
+    cogito.load_sum(@"tasks.sum")
 
-    let win = cogito.window_size(@"YisTask", 460, 720)
+    let win = cogito.window_size(@"Tasks", 460, 720)
     .set_resizable(true)
     .build((w = cogito.Window) => {
         build_window(w)
