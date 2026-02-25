@@ -2,7 +2,7 @@
                     "__cogito_app")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_app_new();", t);
+                        "YisVal %s = cogito_app_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -23,13 +23,13 @@
                         }
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_window_new(%s, %s, %s);", t, title.tmp, w.tmp, h.tmp);
+                        "YisVal %s = cogito_window_new(%s, %s, %s);", t, title.tmp, w.tmp, h.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", title.tmp);
+                        "yis_release_val(%s);", title.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", w.tmp);
+                        "yis_release_val(%s);", w.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", h.tmp);
+                        "yis_release_val(%s);", h.tmp);
                         gen_expr_release_except(cg, &title, title.tmp);
                         gen_expr_release_except(cg, &w, w.tmp);
                         gen_expr_release_except(cg, &h, h.tmp);
@@ -48,9 +48,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_button_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_button_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -65,9 +65,9 @@
                         ], &icon, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_iconbtn_new(%s);", t, icon.tmp);
+                        "YisVal %s = cogito_iconbtn_new(%s);", t, icon.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", icon.tmp);
+                        "yis_release_val(%s);", icon.tmp);
                         gen_expr_release_except(cg, &icon, icon.tmp);
                         gen_expr_free(&icon);
                         gen_expr_add(out, t);
@@ -82,9 +82,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_label_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_label_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -99,9 +99,9 @@
                         ], &title, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_dialog_new(%s);", t, title.tmp);
+                        "YisVal %s = cogito_dialog_new(%s);", t, title.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", title.tmp);
+                        "yis_release_val(%s);", title.tmp);
                         gen_expr_release_except(cg, &title, title.tmp);
                         gen_expr_free(&title);
                         gen_expr_add(out, t);
@@ -112,7 +112,7 @@
                     "__cogito_dialog_slot")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_dialog_slot_new();", t);
+                        "YisVal %s = cogito_dialog_slot_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -125,9 +125,9 @@
                         ], &icon, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_image_new(%s);", t, icon.tmp);
+                        "YisVal %s = cogito_image_new(%s);", t, icon.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", icon.tmp);
+                        "yis_release_val(%s);", icon.tmp);
                         gen_expr_release_except(cg, &icon, icon.tmp);
                         gen_expr_free(&icon);
                         gen_expr_add(out, t);
@@ -146,11 +146,11 @@
                         }
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_checkbox_new(%s, %s);", t, text.tmp, group.tmp);
+                        "YisVal %s = cogito_checkbox_new(%s, %s);", t, text.tmp, group.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", group.tmp);
+                        "yis_release_val(%s);", group.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_release_except(cg, &group, group.tmp);
                         gen_expr_free(&text);
@@ -167,9 +167,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_switch_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_switch_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -184,9 +184,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_textfield_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_textfield_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -201,9 +201,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_searchfield_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_searchfield_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -218,9 +218,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_textview_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_textview_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -231,7 +231,7 @@
                     "__cogito_dropdown")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_dropdown_new();", t);
+                        "YisVal %s = cogito_dropdown_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -240,7 +240,7 @@
                     "__cogito_datepicker")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_datepicker_new();", t);
+                        "YisVal %s = cogito_datepicker_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -265,15 +265,15 @@
                         }
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_stepper_new(%s, %s, %s, %s);", t, minv.tmp, maxv.tmp, valv.tmp, stepv.tmp);
+                        "YisVal %s = cogito_stepper_new(%s, %s, %s, %s);", t, minv.tmp, maxv.tmp, valv.tmp, stepv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", minv.tmp);
+                        "yis_release_val(%s);", minv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", maxv.tmp);
+                        "yis_release_val(%s);", maxv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", valv.tmp);
+                        "yis_release_val(%s);", valv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", stepv.tmp);
+                        "yis_release_val(%s);", stepv.tmp);
                         gen_expr_release_except(cg, &minv, minv.tmp);
                         gen_expr_release_except(cg, &maxv, maxv.tmp);
                         gen_expr_release_except(cg, &valv, valv.tmp);
@@ -302,13 +302,13 @@
                         }
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_slider_new(%s, %s, %s);", t, minv.tmp, maxv.tmp, valv.tmp);
+                        "YisVal %s = cogito_slider_new(%s, %s, %s);", t, minv.tmp, maxv.tmp, valv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", minv.tmp);
+                        "yis_release_val(%s);", minv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", maxv.tmp);
+                        "yis_release_val(%s);", maxv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", valv.tmp);
+                        "yis_release_val(%s);", valv.tmp);
                         gen_expr_release_except(cg, &minv, minv.tmp);
                         gen_expr_release_except(cg, &maxv, maxv.tmp);
                         gen_expr_release_except(cg, &valv, valv.tmp);
@@ -339,15 +339,15 @@
                         }
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_slider_range_new(%s, %s, %s, %s);", t, minv.tmp, maxv.tmp, startv.tmp, endv.tmp);
+                        "YisVal %s = cogito_slider_range_new(%s, %s, %s, %s);", t, minv.tmp, maxv.tmp, startv.tmp, endv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", minv.tmp);
+                        "yis_release_val(%s);", minv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", maxv.tmp);
+                        "yis_release_val(%s);", maxv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", startv.tmp);
+                        "yis_release_val(%s);", startv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", endv.tmp);
+                        "yis_release_val(%s);", endv.tmp);
                         gen_expr_release_except(cg, &minv, minv.tmp);
                         gen_expr_release_except(cg, &maxv, maxv.tmp);
                         gen_expr_release_except(cg, &startv, startv.tmp);
@@ -364,7 +364,7 @@
                     "__cogito_tabs")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_tabs_new();", t);
+                        "YisVal %s = cogito_tabs_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -373,7 +373,7 @@
                     "__cogito_buttongroup")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_buttongroup_new();", t);
+                        "YisVal %s = cogito_buttongroup_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -382,7 +382,7 @@
                     "__cogito_view_switcher")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_view_switcher_new();", t);
+                        "YisVal %s = cogito_view_switcher_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -395,9 +395,9 @@
                         ], &val, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_progress_new(%s);", t, val.tmp);
+                        "YisVal %s = cogito_progress_new(%s);", t, val.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", val.tmp);
+                        "yis_release_val(%s);", val.tmp);
                         gen_expr_release_except(cg, &val, val.tmp);
                         gen_expr_free(&val);
                         gen_expr_add(out, t);
@@ -408,7 +408,7 @@
                     "__cogito_treeview")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_treeview_new();", t);
+                        "YisVal %s = cogito_treeview_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -417,7 +417,7 @@
                     "__cogito_colorpicker")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_colorpicker_new();", t);
+                        "YisVal %s = cogito_colorpicker_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -426,7 +426,7 @@
                     "__cogito_toasts")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_toasts_new();", t);
+                        "YisVal %s = cogito_toasts_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -439,9 +439,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_toast_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_toast_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -460,11 +460,11 @@
                         }
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_appbar_new(%s, %s);", t, title.tmp, subtitle.tmp);
+                        "YisVal %s = cogito_appbar_new(%s, %s);", t, title.tmp, subtitle.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", title.tmp);
+                        "yis_release_val(%s);", title.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", subtitle.tmp);
+                        "yis_release_val(%s);", subtitle.tmp);
                         gen_expr_release_except(cg, &title, title.tmp);
                         gen_expr_release_except(cg, &subtitle, subtitle.tmp);
                         gen_expr_free(&title);
@@ -477,7 +477,7 @@
                     "__cogito_toolbar")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_toolbar_new();", t);
+                        "YisVal %s = cogito_toolbar_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -495,9 +495,9 @@
                         w_line(&cg->w,
                         "cogito_toolbar_set_vibrant(%s, %s);", toolbar.tmp, vibrant.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", toolbar.tmp);
+                        "yis_release_val(%s);", toolbar.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", vibrant.tmp);
+                        "yis_release_val(%s);", vibrant.tmp);
                         gen_expr_release_except(cg, &toolbar, toolbar.tmp);
                         gen_expr_release_except(cg, &vibrant, vibrant.tmp);
                         gen_expr_free(&toolbar);
@@ -513,9 +513,9 @@
                         ], &toolbar, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_BOOL(cogito_toolbar_get_vibrant(%s));", t, toolbar.tmp);
+                        "YisVal %s = EV_BOOL(cogito_toolbar_get_vibrant(%s));", t, toolbar.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", toolbar.tmp);
+                        "yis_release_val(%s);", toolbar.tmp);
                         gen_expr_release_except(cg, &toolbar, toolbar.tmp);
                         gen_expr_free(&toolbar);
                         gen_expr_add(out, t);
@@ -535,9 +535,9 @@
                         w_line(&cg->w,
                         "cogito_toolbar_set_vertical(%s, %s);", toolbar.tmp, vertical.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", toolbar.tmp);
+                        "yis_release_val(%s);", toolbar.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", vertical.tmp);
+                        "yis_release_val(%s);", vertical.tmp);
                         gen_expr_release_except(cg, &toolbar, toolbar.tmp);
                         gen_expr_release_except(cg, &vertical, vertical.tmp);
                         gen_expr_free(&toolbar);
@@ -553,9 +553,9 @@
                         ], &toolbar, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_BOOL(cogito_toolbar_get_vertical(%s));", t, toolbar.tmp);
+                        "YisVal %s = EV_BOOL(cogito_toolbar_get_vertical(%s));", t, toolbar.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", toolbar.tmp);
+                        "yis_release_val(%s);", toolbar.tmp);
                         gen_expr_release_except(cg, &toolbar, toolbar.tmp);
                         gen_expr_free(&toolbar);
                         gen_expr_add(out, t);
@@ -566,7 +566,7 @@
                     "__cogito_vstack")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_vstack_new();", t);
+                        "YisVal %s = cogito_vstack_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -575,7 +575,7 @@
                     "__cogito_hstack")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_hstack_new();", t);
+                        "YisVal %s = cogito_hstack_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -584,7 +584,7 @@
                     "__cogito_zstack")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_zstack_new();", t);
+                        "YisVal %s = cogito_zstack_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -593,7 +593,7 @@
                     "__cogito_fixed")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_fixed_new();", t);
+                        "YisVal %s = cogito_fixed_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -602,7 +602,7 @@
                     "__cogito_scroller")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_scroller_new();", t);
+                        "YisVal %s = cogito_scroller_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -611,7 +611,7 @@
                     "__cogito_carousel")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_carousel_new();", t);
+                        "YisVal %s = cogito_carousel_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -620,7 +620,7 @@
                     "__cogito_carousel_item")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_carousel_item_new();", t);
+                        "YisVal %s = cogito_carousel_item_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -638,16 +638,16 @@
                         w_line(&cg->w,
                         "cogito_carousel_set_active_index(%s, %s);", carousel.tmp, idx.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", carousel.tmp);
+                        "yis_release_val(%s);", carousel.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idx.tmp);
+                        "yis_release_val(%s);", idx.tmp);
                         gen_expr_release_except(cg, &carousel, carousel.tmp);
                         gen_expr_release_except(cg, &idx, idx.tmp);
                         gen_expr_free(&carousel);
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -660,9 +660,9 @@
                         ], &carousel, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_carousel_get_active_index(%s);", t, carousel.tmp);
+                        "YisVal %s = cogito_carousel_get_active_index(%s);", t, carousel.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", carousel.tmp);
+                        "yis_release_val(%s);", carousel.tmp);
                         gen_expr_release_except(cg, &carousel, carousel.tmp);
                         gen_expr_free(&carousel);
                         gen_expr_add(out, t);
@@ -682,16 +682,16 @@
                         w_line(&cg->w,
                         "cogito_carousel_item_set_text(%s, %s);", item.tmp, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", item.tmp);
+                        "yis_release_val(%s);", item.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &item, item.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&item);
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -709,16 +709,16 @@
                         w_line(&cg->w,
                         "cogito_carousel_item_set_halign(%s, %s);", item.tmp, align.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", item.tmp);
+                        "yis_release_val(%s);", item.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", align.tmp);
+                        "yis_release_val(%s);", align.tmp);
                         gen_expr_release_except(cg, &item, item.tmp);
                         gen_expr_release_except(cg, &align, align.tmp);
                         gen_expr_free(&item);
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -736,16 +736,16 @@
                         w_line(&cg->w,
                         "cogito_carousel_item_set_valign(%s, %s);", item.tmp, align.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", item.tmp);
+                        "yis_release_val(%s);", item.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", align.tmp);
+                        "yis_release_val(%s);", align.tmp);
                         gen_expr_release_except(cg, &item, item.tmp);
                         gen_expr_release_except(cg, &align, align.tmp);
                         gen_expr_free(&item);
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -754,7 +754,7 @@
                     "__cogito_list")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_list_new();", t);
+                        "YisVal %s = cogito_list_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -767,9 +767,9 @@
                         ], &cols, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_grid_new(%s);", t, cols.tmp);
+                        "YisVal %s = cogito_grid_new(%s);", t, cols.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", cols.tmp);
+                        "yis_release_val(%s);", cols.tmp);
                         gen_expr_release_except(cg, &cols, cols.tmp);
                         gen_expr_free(&cols);
                         gen_expr_add(out, t);
@@ -789,16 +789,16 @@
                         w_line(&cg->w,
                         "cogito_container_add(%s, %s);", parent.tmp, child.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", parent.tmp);
+                        "yis_release_val(%s);", parent.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", child.tmp);
+                        "yis_release_val(%s);", child.tmp);
                         gen_expr_release_except(cg, &parent, parent.tmp);
                         gen_expr_release_except(cg, &child, child.tmp);
                         gen_expr_free(&parent);
                         gen_expr_free(&child);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -828,15 +828,15 @@
                         w_line(&cg->w,
                         "cogito_container_set_margins(%s, %s, %s, %s, %s);", node.tmp, top.tmp, right.tmp, bottom.tmp, left.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", top.tmp);
+                        "yis_release_val(%s);", top.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", right.tmp);
+                        "yis_release_val(%s);", right.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", bottom.tmp);
+                        "yis_release_val(%s);", bottom.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", left.tmp);
+                        "yis_release_val(%s);", left.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &top, top.tmp);
                         gen_expr_release_except(cg, &right, right.tmp);
@@ -849,7 +849,7 @@
                         gen_expr_free(&left);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -867,16 +867,16 @@
                         w_line(&cg->w,
                         "cogito_container_set_align(%s, %s);", node.tmp, align.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", align.tmp);
+                        "yis_release_val(%s);", align.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &align, align.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -894,16 +894,16 @@
                         w_line(&cg->w,
                         "cogito_container_set_halign(%s, %s);", node.tmp, align.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", align.tmp);
+                        "yis_release_val(%s);", align.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &align, align.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -921,16 +921,16 @@
                         w_line(&cg->w,
                         "cogito_container_set_valign(%s, %s);", node.tmp, align.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", align.tmp);
+                        "yis_release_val(%s);", align.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &align, align.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&align);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -948,16 +948,16 @@
                         w_line(&cg->w,
                         "cogito_container_set_hexpand(%s, %s);", node.tmp, expand.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", expand.tmp);
+                        "yis_release_val(%s);", expand.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &expand, expand.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&expand);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -975,16 +975,16 @@
                         w_line(&cg->w,
                         "cogito_container_set_vexpand(%s, %s);", node.tmp, expand.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", expand.tmp);
+                        "yis_release_val(%s);", expand.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &expand, expand.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&expand);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1002,16 +1002,16 @@
                         w_line(&cg->w,
                         "cogito_container_set_gap(%s, %s);", node.tmp, gap.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", gap.tmp);
+                        "yis_release_val(%s);", gap.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &gap, gap.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&gap);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1029,16 +1029,16 @@
                         w_line(&cg->w,
                         "cogito_dialog_slot_show(%s, %s);", slot.tmp, dialog.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", slot.tmp);
+                        "yis_release_val(%s);", slot.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", dialog.tmp);
+                        "yis_release_val(%s);", dialog.tmp);
                         gen_expr_release_except(cg, &slot, slot.tmp);
                         gen_expr_release_except(cg, &dialog, dialog.tmp);
                         gen_expr_free(&slot);
                         gen_expr_free(&dialog);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1052,12 +1052,12 @@
                         w_line(&cg->w,
                         "cogito_dialog_slot_clear(%s);", slot.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", slot.tmp);
+                        "yis_release_val(%s);", slot.tmp);
                         gen_expr_release_except(cg, &slot, slot.tmp);
                         gen_expr_free(&slot);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1087,15 +1087,15 @@
                         w_line(&cg->w,
                         "cogito_container_set_padding(%s, %s, %s, %s, %s);", node.tmp, top.tmp, right.tmp, bottom.tmp, left.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", top.tmp);
+                        "yis_release_val(%s);", top.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", right.tmp);
+                        "yis_release_val(%s);", right.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", bottom.tmp);
+                        "yis_release_val(%s);", bottom.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", left.tmp);
+                        "yis_release_val(%s);", left.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &top, top.tmp);
                         gen_expr_release_except(cg, &right, right.tmp);
@@ -1108,7 +1108,7 @@
                         gen_expr_free(&left);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1134,13 +1134,13 @@
                         w_line(&cg->w,
                         "cogito_fixed_set_pos(%s, %s, %s, %s);", fixedv.tmp, child.tmp, x.tmp, y.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fixedv.tmp);
+                        "yis_release_val(%s);", fixedv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", child.tmp);
+                        "yis_release_val(%s);", child.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", x.tmp);
+                        "yis_release_val(%s);", x.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", y.tmp);
+                        "yis_release_val(%s);", y.tmp);
                         gen_expr_release_except(cg, &fixedv, fixedv.tmp);
                         gen_expr_release_except(cg, &child, child.tmp);
                         gen_expr_release_except(cg, &x, x.tmp);
@@ -1151,7 +1151,7 @@
                         gen_expr_free(&y);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1173,11 +1173,11 @@
                         w_line(&cg->w,
                         "cogito_scroller_set_axes(%s, %s, %s);", sc.tmp, horz.tmp, vert.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", sc.tmp);
+                        "yis_release_val(%s);", sc.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", horz.tmp);
+                        "yis_release_val(%s);", horz.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", vert.tmp);
+                        "yis_release_val(%s);", vert.tmp);
                         gen_expr_release_except(cg, &sc, sc.tmp);
                         gen_expr_release_except(cg, &horz, horz.tmp);
                         gen_expr_release_except(cg, &vert, vert.tmp);
@@ -1186,7 +1186,7 @@
                         gen_expr_free(&vert);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1208,11 +1208,11 @@
                         w_line(&cg->w,
                         "cogito_grid_set_gap(%s, %s, %s);", grid.tmp, x.tmp, y.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", grid.tmp);
+                        "yis_release_val(%s);", grid.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", x.tmp);
+                        "yis_release_val(%s);", x.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", y.tmp);
+                        "yis_release_val(%s);", y.tmp);
                         gen_expr_release_except(cg, &grid, grid.tmp);
                         gen_expr_release_except(cg, &x, x.tmp);
                         gen_expr_release_except(cg, &y, y.tmp);
@@ -1221,7 +1221,7 @@
                         gen_expr_free(&y);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1243,11 +1243,11 @@
                         w_line(&cg->w,
                         "cogito_grid_set_span(%s, %s, %s);", child.tmp, cols.tmp, rows.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", child.tmp);
+                        "yis_release_val(%s);", child.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", cols.tmp);
+                        "yis_release_val(%s);", cols.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rows.tmp);
+                        "yis_release_val(%s);", rows.tmp);
                         gen_expr_release_except(cg, &child, child.tmp);
                         gen_expr_release_except(cg, &cols, cols.tmp);
                         gen_expr_release_except(cg, &rows, rows.tmp);
@@ -1256,7 +1256,7 @@
                         gen_expr_free(&rows);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1278,11 +1278,11 @@
                         w_line(&cg->w,
                         "cogito_grid_set_align(%s, %s, %s);", child.tmp, hx.tmp, hy.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", child.tmp);
+                        "yis_release_val(%s);", child.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", hx.tmp);
+                        "yis_release_val(%s);", hx.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", hy.tmp);
+                        "yis_release_val(%s);", hy.tmp);
                         gen_expr_release_except(cg, &child, child.tmp);
                         gen_expr_release_except(cg, &hx, hx.tmp);
                         gen_expr_release_except(cg, &hy, hy.tmp);
@@ -1291,7 +1291,7 @@
                         gen_expr_free(&hy);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1309,16 +1309,16 @@
                         w_line(&cg->w,
                         "cogito_label_set_class(%s, %s);", label.tmp, classv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", classv.tmp);
+                        "yis_release_val(%s);", classv.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
                         gen_expr_release_except(cg, &classv, classv.tmp);
                         gen_expr_free(&label);
                         gen_expr_free(&classv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1336,16 +1336,16 @@
                         w_line(&cg->w,
                         "cogito_label_set_text(%s, %s);", label.tmp, textv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", textv.tmp);
+                        "yis_release_val(%s);", textv.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
                         gen_expr_release_except(cg, &textv, textv.tmp);
                         gen_expr_free(&label);
                         gen_expr_free(&textv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1363,16 +1363,16 @@
                         w_line(&cg->w,
                         "cogito_label_set_wrap(%s, %s);", label.tmp, onv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", onv.tmp);
+                        "yis_release_val(%s);", onv.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
                         gen_expr_release_except(cg, &onv, onv.tmp);
                         gen_expr_free(&label);
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1390,16 +1390,16 @@
                         w_line(&cg->w,
                         "cogito_label_set_ellipsis(%s, %s);", label.tmp, onv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", onv.tmp);
+                        "yis_release_val(%s);", onv.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
                         gen_expr_release_except(cg, &onv, onv.tmp);
                         gen_expr_free(&label);
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1417,16 +1417,16 @@
                         w_line(&cg->w,
                         "cogito_label_set_align(%s, %s);", label.tmp, alignv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", alignv.tmp);
+                        "yis_release_val(%s);", alignv.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
                         gen_expr_release_except(cg, &alignv, alignv.tmp);
                         gen_expr_free(&label);
                         gen_expr_free(&alignv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1444,16 +1444,16 @@
                         w_line(&cg->w,
                         "cogito_node_set_disabled(%s, %s);", node.tmp, onv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", onv.tmp);
+                        "yis_release_val(%s);", onv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &onv, onv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1471,16 +1471,16 @@
                         w_line(&cg->w,
                         "cogito_node_set_editable(%s, %s);", node.tmp, onv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", onv.tmp);
+                        "yis_release_val(%s);", onv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &onv, onv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1493,9 +1493,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_node_get_editable(%s);", t, node.tmp);
+                        "YisVal %s = cogito_node_get_editable(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -1515,16 +1515,16 @@
                         w_line(&cg->w,
                         "cogito_node_set_id(%s, %s);", node.tmp, idv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idv.tmp);
+                        "yis_release_val(%s);", idv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &idv, idv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&idv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1542,16 +1542,16 @@
                         w_line(&cg->w,
                         "cogito_node_set_class(%s, %s);", node.tmp, classv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", classv.tmp);
+                        "yis_release_val(%s);", classv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &classv, classv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&classv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1569,16 +1569,16 @@
                         w_line(&cg->w,
                         "cogito_node_set_a11y_label(%s, %s);", node.tmp, labelv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", labelv.tmp);
+                        "yis_release_val(%s);", labelv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &labelv, labelv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&labelv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1596,16 +1596,16 @@
                         w_line(&cg->w,
                         "cogito_node_set_a11y_role(%s, %s);", node.tmp, rolev.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rolev.tmp);
+                        "yis_release_val(%s);", rolev.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &rolev, rolev.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&rolev);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1623,16 +1623,16 @@
                         w_line(&cg->w,
                         "cogito_node_set_tooltip_val(%s, %s);", node.tmp, textv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", textv.tmp);
+                        "yis_release_val(%s);", textv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &textv, textv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&textv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1650,16 +1650,16 @@
                         w_line(&cg->w,
                         "cogito_app_set_appid(%s, %s);", app.tmp, idv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idv.tmp);
+                        "yis_release_val(%s);", idv.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &idv, idv.tmp);
                         gen_expr_free(&app);
                         gen_expr_free(&idv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1677,16 +1677,16 @@
                         w_line(&cg->w,
                         "cogito_app_set_app_name(%s, %s);", app.tmp, namev.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", namev.tmp);
+                        "yis_release_val(%s);", namev.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &namev, namev.tmp);
                         gen_expr_free(&app);
                         gen_expr_free(&namev);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1708,11 +1708,11 @@
                         w_line(&cg->w,
                         "cogito_app_set_accent_color(%s, %s, %s);", app.tmp, colorv.tmp, ov.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", colorv.tmp);
+                        "yis_release_val(%s);", colorv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", ov.tmp);
+                        "yis_release_val(%s);", ov.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &colorv, colorv.tmp);
                         gen_expr_release_except(cg, &ov, ov.tmp);
@@ -1721,7 +1721,7 @@
                         gen_expr_free(&ov);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1735,16 +1735,16 @@
                         w_line(&cg->w,
                         "cogito_app_set_ensor_variant(%s, %s);", app.tmp, variantv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", variantv.tmp);
+                        "yis_release_val(%s);", variantv.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &variantv, variantv.tmp);
                         gen_expr_free(&app);
                         gen_expr_free(&variantv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1758,12 +1758,12 @@
                         w_line(&cg->w,
                         "cogito_pointer_capture_set(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1774,7 +1774,7 @@
                         "cogito_pointer_capture_clear();");
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1792,16 +1792,16 @@
                         w_line(&cg->w,
                         "cogito_view_switcher_set_active(%s, %s);", node.tmp, idv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idv.tmp);
+                        "yis_release_val(%s);", idv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &idv, idv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&idv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1823,11 +1823,11 @@
                         w_line(&cg->w,
                         "cogito_view_switcher_add(%s, %s, %s);", node.tmp, idv.tmp, builderv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idv.tmp);
+                        "yis_release_val(%s);", idv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", builderv.tmp);
+                        "yis_release_val(%s);", builderv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &idv, idv.tmp);
                         gen_expr_release_except(cg, &builderv, builderv.tmp);
@@ -1836,7 +1836,7 @@
                         gen_expr_free(&builderv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1854,16 +1854,16 @@
                         w_line(&cg->w,
                         "cogito_textfield_set_text(%s, %s);", node.tmp, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1876,9 +1876,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_textfield_get_text(%s);", t, node.tmp);
+                        "YisVal %s = cogito_textfield_get_text(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -1898,16 +1898,16 @@
                         w_line(&cg->w,
                         "cogito_searchfield_set_text(%s, %s);", node.tmp, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1920,9 +1920,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_searchfield_get_text(%s);", t, node.tmp);
+                        "YisVal %s = cogito_searchfield_get_text(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -1942,16 +1942,16 @@
                         w_line(&cg->w,
                         "cogito_searchfield_on_change(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1969,16 +1969,16 @@
                         w_line(&cg->w,
                         "cogito_textfield_on_change(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -1996,16 +1996,16 @@
                         w_line(&cg->w,
                         "cogito_textview_set_text(%s, %s);", node.tmp, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2018,9 +2018,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_textview_get_text(%s);", t, node.tmp);
+                        "YisVal %s = cogito_textview_get_text(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2040,16 +2040,16 @@
                         w_line(&cg->w,
                         "cogito_textview_on_change(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2067,16 +2067,16 @@
                         w_line(&cg->w,
                         "cogito_datepicker_on_change(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2094,16 +2094,16 @@
                         w_line(&cg->w,
                         "cogito_dropdown_set_items(%s, %s);", node.tmp, arr.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", arr.tmp);
+                        "yis_release_val(%s);", arr.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &arr, arr.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&arr);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2121,16 +2121,16 @@
                         w_line(&cg->w,
                         "cogito_dropdown_set_selected(%s, %s);", node.tmp, idx.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idx.tmp);
+                        "yis_release_val(%s);", idx.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &idx, idx.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2143,9 +2143,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_dropdown_get_selected(%s);", t, node.tmp);
+                        "YisVal %s = cogito_dropdown_get_selected(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2165,16 +2165,16 @@
                         w_line(&cg->w,
                         "cogito_dropdown_on_change(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2192,16 +2192,16 @@
                         w_line(&cg->w,
                         "cogito_slider_set_value(%s, %s);", node.tmp, val.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", val.tmp);
+                        "yis_release_val(%s);", val.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &val, val.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&val);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2214,9 +2214,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_slider_get_value(%s);", t, node.tmp);
+                        "YisVal %s = cogito_slider_get_value(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2236,16 +2236,16 @@
                         w_line(&cg->w,
                         "cogito_slider_set_size(%s, %s);", node.tmp, sizev.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", sizev.tmp);
+                        "yis_release_val(%s);", sizev.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &sizev, sizev.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&sizev);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2258,9 +2258,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_slider_get_size(%s);", t, node.tmp);
+                        "YisVal %s = cogito_slider_get_size(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2280,16 +2280,16 @@
                         w_line(&cg->w,
                         "cogito_slider_set_icon(%s, %s);", node.tmp, iconv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", iconv.tmp);
+                        "yis_release_val(%s);", iconv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &iconv, iconv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&iconv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2307,16 +2307,16 @@
                         w_line(&cg->w,
                         "cogito_slider_set_centered(%s, %s);", node.tmp, onv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", onv.tmp);
+                        "yis_release_val(%s);", onv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &onv, onv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&onv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2329,9 +2329,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_slider_get_centered(%s);", t, node.tmp);
+                        "YisVal %s = cogito_slider_get_centered(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2355,11 +2355,11 @@
                         w_line(&cg->w,
                         "cogito_slider_set_range(%s, %s, %s);", node.tmp, startv.tmp, endv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", startv.tmp);
+                        "yis_release_val(%s);", startv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", endv.tmp);
+                        "yis_release_val(%s);", endv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &startv, startv.tmp);
                         gen_expr_release_except(cg, &endv, endv.tmp);
@@ -2368,7 +2368,7 @@
                         gen_expr_free(&endv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2386,16 +2386,16 @@
                         w_line(&cg->w,
                         "cogito_slider_set_range_start(%s, %s);", node.tmp, startv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", startv.tmp);
+                        "yis_release_val(%s);", startv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &startv, startv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&startv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2413,16 +2413,16 @@
                         w_line(&cg->w,
                         "cogito_slider_set_range_end(%s, %s);", node.tmp, endv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", endv.tmp);
+                        "yis_release_val(%s);", endv.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &endv, endv.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&endv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2435,9 +2435,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_slider_get_range_start(%s);", t, node.tmp);
+                        "YisVal %s = cogito_slider_get_range_start(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2452,9 +2452,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_slider_get_range_end(%s);", t, node.tmp);
+                        "YisVal %s = cogito_slider_get_range_end(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2474,16 +2474,16 @@
                         w_line(&cg->w,
                         "cogito_slider_on_change(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2501,16 +2501,16 @@
                         w_line(&cg->w,
                         "cogito_colorpicker_on_change(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2528,16 +2528,16 @@
                         w_line(&cg->w,
                         "cogito_tabs_set_items(%s, %s);", node.tmp, arr.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", arr.tmp);
+                        "yis_release_val(%s);", arr.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &arr, arr.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&arr);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2555,16 +2555,16 @@
                         w_line(&cg->w,
                         "cogito_tabs_set_ids(%s, %s);", node.tmp, arr.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", arr.tmp);
+                        "yis_release_val(%s);", arr.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &arr, arr.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&arr);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2582,16 +2582,16 @@
                         w_line(&cg->w,
                         "cogito_tabs_set_selected(%s, %s);", node.tmp, idx.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idx.tmp);
+                        "yis_release_val(%s);", idx.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &idx, idx.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2604,9 +2604,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_tabs_get_selected(%s);", t, node.tmp);
+                        "YisVal %s = cogito_tabs_get_selected(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2626,16 +2626,16 @@
                         w_line(&cg->w,
                         "cogito_tabs_on_change(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2653,16 +2653,16 @@
                         w_line(&cg->w,
                         "cogito_tabs_bind(%s, %s);", tabs.tmp, vs.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", tabs.tmp);
+                        "yis_release_val(%s);", tabs.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", vs.tmp);
+                        "yis_release_val(%s);", vs.tmp);
                         gen_expr_release_except(cg, &tabs, tabs.tmp);
                         gen_expr_release_except(cg, &vs, vs.tmp);
                         gen_expr_free(&tabs);
                         gen_expr_free(&vs);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2680,16 +2680,16 @@
                         w_line(&cg->w,
                         "cogito_progress_set_value(%s, %s);", node.tmp, val.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", val.tmp);
+                        "yis_release_val(%s);", val.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &val, val.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&val);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2702,9 +2702,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_progress_get_value(%s);", t, node.tmp);
+                        "YisVal %s = cogito_progress_get_value(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2724,16 +2724,16 @@
                         w_line(&cg->w,
                         "cogito_progress_set_indeterminate(%s, %s);", node.tmp, on.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", on.tmp);
+                        "yis_release_val(%s);", on.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &on, on.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2746,9 +2746,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_progress_get_indeterminate(%s);", t, node.tmp);
+                        "YisVal %s = cogito_progress_get_indeterminate(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2768,16 +2768,16 @@
                         w_line(&cg->w,
                         "cogito_progress_set_thickness(%s, %s);", node.tmp, px.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", px.tmp);
+                        "yis_release_val(%s);", px.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &px, px.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&px);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2790,9 +2790,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_progress_get_thickness(%s);", t, node.tmp);
+                        "YisVal %s = cogito_progress_get_thickness(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2812,16 +2812,16 @@
                         w_line(&cg->w,
                         "cogito_progress_set_wavy(%s, %s);", node.tmp, on.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", on.tmp);
+                        "yis_release_val(%s);", on.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &on, on.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2834,9 +2834,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_progress_get_wavy(%s);", t, node.tmp);
+                        "YisVal %s = cogito_progress_get_wavy(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2856,16 +2856,16 @@
                         w_line(&cg->w,
                         "cogito_progress_set_circular(%s, %s);", node.tmp, on.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", on.tmp);
+                        "yis_release_val(%s);", on.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &on, on.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2878,9 +2878,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_progress_get_circular(%s);", t, node.tmp);
+                        "YisVal %s = cogito_progress_get_circular(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -2900,16 +2900,16 @@
                         w_line(&cg->w,
                         "cogito_toast_set_text(%s, %s);", node.tmp, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2927,16 +2927,16 @@
                         w_line(&cg->w,
                         "cogito_toast_on_click(%s, %s);", node.tmp, fn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fn.tmp);
+                        "yis_release_val(%s);", fn.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &fn, fn.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&fn);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2954,16 +2954,16 @@
                         w_line(&cg->w,
                         "cogito_window_set_autosize(%s, %s);", win.tmp, on.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", win.tmp);
+                        "yis_release_val(%s);", win.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", on.tmp);
+                        "yis_release_val(%s);", on.tmp);
                         gen_expr_release_except(cg, &win, win.tmp);
                         gen_expr_release_except(cg, &on, on.tmp);
                         gen_expr_free(&win);
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -2981,16 +2981,16 @@
                         w_line(&cg->w,
                         "cogito_window_set_resizable(%s, %s);", win.tmp, on.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", win.tmp);
+                        "yis_release_val(%s);", win.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", on.tmp);
+                        "yis_release_val(%s);", on.tmp);
                         gen_expr_release_except(cg, &win, win.tmp);
                         gen_expr_release_except(cg, &on, on.tmp);
                         gen_expr_free(&win);
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3008,16 +3008,16 @@
                         w_line(&cg->w,
                         "cogito_window_set_dialog(%s, %s);", win.tmp, dialog.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", win.tmp);
+                        "yis_release_val(%s);", win.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", dialog.tmp);
+                        "yis_release_val(%s);", dialog.tmp);
                         gen_expr_release_except(cg, &win, win.tmp);
                         gen_expr_release_except(cg, &dialog, dialog.tmp);
                         gen_expr_free(&win);
                         gen_expr_free(&dialog);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3031,12 +3031,12 @@
                         w_line(&cg->w,
                         "cogito_window_clear_dialog(%s);", win.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", win.tmp);
+                        "yis_release_val(%s);", win.tmp);
                         gen_expr_release_except(cg, &win, win.tmp);
                         gen_expr_free(&win);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3054,16 +3054,16 @@
                         w_line(&cg->w,
                         "cogito_window_set_side_sheet(%s, %s);", win.tmp, side_sheet.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", win.tmp);
+                        "yis_release_val(%s);", win.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", side_sheet.tmp);
+                        "yis_release_val(%s);", side_sheet.tmp);
                         gen_expr_release_except(cg, &win, win.tmp);
                         gen_expr_release_except(cg, &side_sheet, side_sheet.tmp);
                         gen_expr_free(&win);
                         gen_expr_free(&side_sheet);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3077,12 +3077,12 @@
                         w_line(&cg->w,
                         "cogito_window_clear_side_sheet(%s);", win.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", win.tmp);
+                        "yis_release_val(%s);", win.tmp);
                         gen_expr_release_except(cg, &win, win.tmp);
                         gen_expr_free(&win);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3095,9 +3095,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_node_window_val(%s);", t, node.tmp);
+                        "YisVal %s = cogito_node_window_val(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -3117,16 +3117,16 @@
                         w_line(&cg->w,
                         "cogito_build(%s, %s);", node.tmp, builder.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", builder.tmp);
+                        "yis_release_val(%s);", builder.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &builder, builder.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&builder);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3144,16 +3144,16 @@
                         w_line(&cg->w,
                         "cogito_window_set_builder(%s, %s);", win.tmp, builder.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", win.tmp);
+                        "yis_release_val(%s);", win.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", builder.tmp);
+                        "yis_release_val(%s);", builder.tmp);
                         gen_expr_release_except(cg, &win, win.tmp);
                         gen_expr_release_except(cg, &builder, builder.tmp);
                         gen_expr_free(&win);
                         gen_expr_free(&builder);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3166,9 +3166,9 @@
                         ], &val, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_state_new(%s);", t, val.tmp);
+                        "YisVal %s = cogito_state_new(%s);", t, val.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", val.tmp);
+                        "yis_release_val(%s);", val.tmp);
                         gen_expr_release_except(cg, &val, val.tmp);
                         gen_expr_free(&val);
                         gen_expr_add(out, t);
@@ -3183,9 +3183,9 @@
                         ], &st, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_state_get(%s);", t, st.tmp);
+                        "YisVal %s = cogito_state_get(%s);", t, st.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", st.tmp);
+                        "yis_release_val(%s);", st.tmp);
                         gen_expr_release_except(cg, &st, st.tmp);
                         gen_expr_free(&st);
                         gen_expr_add(out, t);
@@ -3205,16 +3205,16 @@
                         w_line(&cg->w,
                         "cogito_state_set(%s, %s);", st.tmp, val.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", st.tmp);
+                        "yis_release_val(%s);", st.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", val.tmp);
+                        "yis_release_val(%s);", val.tmp);
                         gen_expr_release_except(cg, &st, st.tmp);
                         gen_expr_release_except(cg, &val, val.tmp);
                         gen_expr_free(&st);
                         gen_expr_free(&val);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3232,16 +3232,16 @@
                         w_line(&cg->w,
                         "cogito_button_set_text(%s, %s);", btn.tmp, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&text);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3259,16 +3259,16 @@
                         w_line(&cg->w,
                         "cogito_image_set_icon(%s, %s);", img.tmp, icon.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", img.tmp);
+                        "yis_release_val(%s);", img.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", icon.tmp);
+                        "yis_release_val(%s);", icon.tmp);
                         gen_expr_release_except(cg, &img, img.tmp);
                         gen_expr_release_except(cg, &icon, icon.tmp);
                         gen_expr_free(&img);
                         gen_expr_free(&icon);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3290,11 +3290,11 @@
                         w_line(&cg->w,
                         "cogito_image_set_size(%s, %s, %s);", img.tmp, w.tmp, h.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", img.tmp);
+                        "yis_release_val(%s);", img.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", w.tmp);
+                        "yis_release_val(%s);", w.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", h.tmp);
+                        "yis_release_val(%s);", h.tmp);
                         gen_expr_release_except(cg, &img, img.tmp);
                         gen_expr_release_except(cg, &w, w.tmp);
                         gen_expr_release_except(cg, &h, h.tmp);
@@ -3303,7 +3303,7 @@
                         gen_expr_free(&h);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3321,16 +3321,16 @@
                         w_line(&cg->w,
                         "cogito_image_set_radius(%s, %s);", img.tmp, r.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", img.tmp);
+                        "yis_release_val(%s);", img.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", r.tmp);
+                        "yis_release_val(%s);", r.tmp);
                         gen_expr_release_except(cg, &img, img.tmp);
                         gen_expr_release_except(cg, &r, r.tmp);
                         gen_expr_free(&img);
                         gen_expr_free(&r);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3348,16 +3348,16 @@
                         w_line(&cg->w,
                         "cogito_image_set_alt_text(%s, %s);", img.tmp, alt.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", img.tmp);
+                        "yis_release_val(%s);", img.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", alt.tmp);
+                        "yis_release_val(%s);", alt.tmp);
                         gen_expr_release_except(cg, &img, img.tmp);
                         gen_expr_release_except(cg, &alt, alt.tmp);
                         gen_expr_free(&img);
                         gen_expr_free(&alt);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3375,16 +3375,16 @@
                         w_line(&cg->w,
                         "cogito_checkbox_set_checked(%s, %s);", cb.tmp, checked.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", cb.tmp);
+                        "yis_release_val(%s);", cb.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", checked.tmp);
+                        "yis_release_val(%s);", checked.tmp);
                         gen_expr_release_except(cg, &cb, cb.tmp);
                         gen_expr_release_except(cg, &checked, checked.tmp);
                         gen_expr_free(&cb);
                         gen_expr_free(&checked);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3397,9 +3397,9 @@
                         ], &cb, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_checkbox_get_checked(%s);", t, cb.tmp);
+                        "YisVal %s = cogito_checkbox_get_checked(%s);", t, cb.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", cb.tmp);
+                        "yis_release_val(%s);", cb.tmp);
                         gen_expr_release_except(cg, &cb, cb.tmp);
                         gen_expr_free(&cb);
                         gen_expr_add(out, t);
@@ -3419,16 +3419,16 @@
                         w_line(&cg->w,
                         "cogito_switch_set_checked(%s, %s);", sw.tmp, checked.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", sw.tmp);
+                        "yis_release_val(%s);", sw.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", checked.tmp);
+                        "yis_release_val(%s);", checked.tmp);
                         gen_expr_release_except(cg, &sw, sw.tmp);
                         gen_expr_release_except(cg, &checked, checked.tmp);
                         gen_expr_free(&sw);
                         gen_expr_free(&checked);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3441,9 +3441,9 @@
                         ], &sw, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_switch_get_checked(%s);", t, sw.tmp);
+                        "YisVal %s = cogito_switch_get_checked(%s);", t, sw.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", sw.tmp);
+                        "yis_release_val(%s);", sw.tmp);
                         gen_expr_release_except(cg, &sw, sw.tmp);
                         gen_expr_free(&sw);
                         gen_expr_add(out, t);
@@ -3463,16 +3463,16 @@
                         w_line(&cg->w,
                         "cogito_checkbox_on_change(%s, %s);", cb.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", cb.tmp);
+                        "yis_release_val(%s);", cb.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &cb, cb.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&cb);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3490,16 +3490,16 @@
                         w_line(&cg->w,
                         "cogito_switch_on_change(%s, %s);", sw.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", sw.tmp);
+                        "yis_release_val(%s);", sw.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &sw, sw.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&sw);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3517,16 +3517,16 @@
                         w_line(&cg->w,
                         "cogito_buttongroup_on_select(%s, %s);", button_group.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", button_group.tmp);
+                        "yis_release_val(%s);", button_group.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &button_group, button_group.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&button_group);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3544,16 +3544,16 @@
                         w_line(&cg->w,
                         "cogito_list_on_select(%s, %s);", list.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", list.tmp);
+                        "yis_release_val(%s);", list.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &list, list.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&list);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3571,16 +3571,16 @@
                         w_line(&cg->w,
                         "cogito_list_on_activate(%s, %s);", list.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", list.tmp);
+                        "yis_release_val(%s);", list.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &list, list.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&list);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3598,16 +3598,16 @@
                         w_line(&cg->w,
                         "cogito_grid_on_select(%s, %s);", grid.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", grid.tmp);
+                        "yis_release_val(%s);", grid.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &grid, grid.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&grid);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3625,16 +3625,16 @@
                         w_line(&cg->w,
                         "cogito_grid_on_activate(%s, %s);", grid.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", grid.tmp);
+                        "yis_release_val(%s);", grid.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &grid, grid.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&grid);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3652,16 +3652,16 @@
                         w_line(&cg->w,
                         "cogito_button_on_click(%s, %s);", btn.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3683,11 +3683,11 @@
                         w_line(&cg->w,
                         "cogito_button_add_menu(%s, %s, %s);", btn.tmp, label.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
@@ -3696,7 +3696,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3714,16 +3714,16 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_set_menu_divider(%s, %s);", btn.tmp, divider.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", divider.tmp);
+                        "yis_release_val(%s);", divider.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &divider, divider.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&divider);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3736,9 +3736,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_BOOL(cogito_iconbtn_get_menu_divider(%s));", t, btn.tmp);
+                        "YisVal %s = EV_BOOL(cogito_iconbtn_get_menu_divider(%s));", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -3758,16 +3758,16 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_set_menu_item_gap(%s, %s);", btn.tmp, gap.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", gap.tmp);
+                        "yis_release_val(%s);", gap.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &gap, gap.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&gap);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3780,9 +3780,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_INT(cogito_iconbtn_get_menu_item_gap(%s));", t, btn.tmp);
+                        "YisVal %s = EV_INT(cogito_iconbtn_get_menu_item_gap(%s));", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -3802,16 +3802,16 @@
                         w_line(&cg->w,
                         "cogito_button_set_menu_divider(%s, %s);", btn.tmp, divider.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", divider.tmp);
+                        "yis_release_val(%s);", divider.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &divider, divider.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&divider);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3824,9 +3824,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_BOOL(cogito_button_get_menu_divider(%s));", t, btn.tmp);
+                        "YisVal %s = EV_BOOL(cogito_button_get_menu_divider(%s));", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -3846,16 +3846,16 @@
                         w_line(&cg->w,
                         "cogito_button_set_menu_item_gap(%s, %s);", btn.tmp, gap.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", gap.tmp);
+                        "yis_release_val(%s);", gap.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &gap, gap.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&gap);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -3868,9 +3868,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_INT(cogito_button_get_menu_item_gap(%s));", t, btn.tmp);
+                        "YisVal %s = EV_INT(cogito_button_get_menu_item_gap(%s));", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -3890,9 +3890,9 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_set_menu_vibrant(%s, %s);", btn.tmp, vibrant.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", vibrant.tmp);
+                        "yis_release_val(%s);", vibrant.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &vibrant, vibrant.tmp);
                         gen_expr_free(&btn);
@@ -3908,9 +3908,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_BOOL(cogito_iconbtn_get_menu_vibrant(%s));", t, btn.tmp);
+                        "YisVal %s = EV_BOOL(cogito_iconbtn_get_menu_vibrant(%s));", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -3930,9 +3930,9 @@
                         w_line(&cg->w,
                         "cogito_button_set_menu_vibrant(%s, %s);", btn.tmp, vibrant.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", vibrant.tmp);
+                        "yis_release_val(%s);", vibrant.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &vibrant, vibrant.tmp);
                         gen_expr_free(&btn);
@@ -3948,9 +3948,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_BOOL(cogito_button_get_menu_vibrant(%s));", t, btn.tmp);
+                        "YisVal %s = EV_BOOL(cogito_button_get_menu_vibrant(%s));", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -3963,8 +3963,8 @@
                         if (!gen_expr(cg, path, e->as.call.args[0], &node, err)) return false;
                         if (!gen_expr(cg, path, e->as.call.args[1], &icon, err)) { gen_expr_free(&node); return false; }
                         w_line(&cg->w, "cogito_menu_set_icon(%s, %s);", node.tmp, icon.tmp);
-                        w_line(&cg->w, "ergo_release_val(%s);", node.tmp);
-                        w_line(&cg->w, "ergo_release_val(%s);", icon.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", icon.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &icon, icon.tmp);
                         gen_expr_free(&node);
@@ -3978,8 +3978,8 @@
                         if (!gen_expr(cg, path, e->as.call.args[0], &node, err)) return false;
                         if (!gen_expr(cg, path, e->as.call.args[1], &shortcut, err)) { gen_expr_free(&node); return false; }
                         w_line(&cg->w, "cogito_menu_set_shortcut(%s, %s);", node.tmp, shortcut.tmp);
-                        w_line(&cg->w, "ergo_release_val(%s);", node.tmp);
-                        w_line(&cg->w, "ergo_release_val(%s);", shortcut.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", shortcut.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &shortcut, shortcut.tmp);
                         gen_expr_free(&node);
@@ -3993,8 +3993,8 @@
                         if (!gen_expr(cg, path, e->as.call.args[0], &node, err)) return false;
                         if (!gen_expr(cg, path, e->as.call.args[1], &submenu, err)) { gen_expr_free(&node); return false; }
                         w_line(&cg->w, "cogito_menu_set_submenu(%s, %s);", node.tmp, submenu.tmp);
-                        w_line(&cg->w, "ergo_release_val(%s);", node.tmp);
-                        w_line(&cg->w, "ergo_release_val(%s);", submenu.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", submenu.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &submenu, submenu.tmp);
                         gen_expr_free(&node);
@@ -4008,8 +4008,8 @@
                         if (!gen_expr(cg, path, e->as.call.args[0], &node, err)) return false;
                         if (!gen_expr(cg, path, e->as.call.args[1], &toggled, err)) { gen_expr_free(&node); return false; }
                         w_line(&cg->w, "cogito_menu_set_toggled(%s, %s);", node.tmp, toggled.tmp);
-                        w_line(&cg->w, "ergo_release_val(%s);", node.tmp);
-                        w_line(&cg->w, "ergo_release_val(%s);", toggled.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", toggled.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_release_except(cg, &toggled, toggled.tmp);
                         gen_expr_free(&node);
@@ -4033,13 +4033,13 @@
                         }
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_appbar_add_button(%s, %s, %s);", t, app.tmp, text.tmp, handler.tmp);
+                        "YisVal %s = cogito_appbar_add_button(%s, %s, %s);", t, app.tmp, text.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
@@ -4063,16 +4063,16 @@
                         w_line(&cg->w,
                         "cogito_appbar_set_controls(%s, %s);", app.tmp, layout.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", layout.tmp);
+                        "yis_release_val(%s);", layout.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &layout, layout.tmp);
                         gen_expr_free(&app);
                         gen_expr_free(&layout);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4090,16 +4090,16 @@
                         w_line(&cg->w,
                         "cogito_appbar_set_title(%s, %s);", app.tmp, title.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", title.tmp);
+                        "yis_release_val(%s);", title.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &title, title.tmp);
                         gen_expr_free(&app);
                         gen_expr_free(&title);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4117,16 +4117,16 @@
                         w_line(&cg->w,
                         "cogito_appbar_set_subtitle(%s, %s);", app.tmp, subtitle.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", subtitle.tmp);
+                        "yis_release_val(%s);", subtitle.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &subtitle, subtitle.tmp);
                         gen_expr_free(&app);
                         gen_expr_free(&subtitle);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4148,11 +4148,11 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_add_menu(%s, %s, %s);", btn.tmp, label.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
@@ -4161,7 +4161,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4179,16 +4179,16 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_set_shape(%s, %s);", btn.tmp, shape.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", shape.tmp);
+                        "yis_release_val(%s);", shape.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &shape, shape.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&shape);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4201,9 +4201,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_iconbtn_get_shape(%s);", t, btn.tmp);
+                        "YisVal %s = cogito_iconbtn_get_shape(%s);", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -4223,16 +4223,16 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_set_color_style(%s, %s);", btn.tmp, style.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", style.tmp);
+                        "yis_release_val(%s);", style.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &style, style.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&style);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4245,9 +4245,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_iconbtn_get_color_style(%s);", t, btn.tmp);
+                        "YisVal %s = cogito_iconbtn_get_color_style(%s);", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -4267,16 +4267,16 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_set_width(%s, %s);", btn.tmp, width.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", width.tmp);
+                        "yis_release_val(%s);", width.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &width, width.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&width);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4289,9 +4289,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_iconbtn_get_width(%s);", t, btn.tmp);
+                        "YisVal %s = cogito_iconbtn_get_width(%s);", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -4311,16 +4311,16 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_set_toggle(%s, %s);", btn.tmp, toggle.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", toggle.tmp);
+                        "yis_release_val(%s);", toggle.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &toggle, toggle.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&toggle);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4333,9 +4333,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_iconbtn_get_toggle(%s);", t, btn.tmp);
+                        "YisVal %s = cogito_iconbtn_get_toggle(%s);", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -4355,16 +4355,16 @@
                         w_line(&cg->w,
                         "cogito_iconbtn_set_checked(%s, %s);", btn.tmp, checked.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", checked.tmp);
+                        "yis_release_val(%s);", checked.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_release_except(cg, &checked, checked.tmp);
                         gen_expr_free(&btn);
                         gen_expr_free(&checked);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4377,9 +4377,9 @@
                         ], &btn, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_iconbtn_get_checked(%s);", t, btn.tmp);
+                        "YisVal %s = cogito_iconbtn_get_checked(%s);", t, btn.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", btn.tmp);
+                        "yis_release_val(%s);", btn.tmp);
                         gen_expr_release_except(cg, &btn, btn.tmp);
                         gen_expr_free(&btn);
                         gen_expr_add(out, t);
@@ -4399,16 +4399,16 @@
                         w_line(&cg->w,
                         "cogito_run(%s, %s);", app.tmp, win.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", app.tmp);
+                        "yis_release_val(%s);", app.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", win.tmp);
+                        "yis_release_val(%s);", win.tmp);
                         gen_expr_release_except(cg, &app, app.tmp);
                         gen_expr_release_except(cg, &win, win.tmp);
                         gen_expr_free(&app);
                         gen_expr_free(&win);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4432,7 +4432,7 @@
                                 "cogito_load_sum_inline(\"%s\");", esc);
                                 char *t = codegen_new_tmp(cg);
                                 w_line(&cg->w,
-                                "ErgoVal %s = EV_NULLV;", t);
+                                "YisVal %s = EV_NULLV;", t);
                                 gen_expr_add(out, t);
                                 out->tmp = t;
                                 return true;
@@ -4445,12 +4445,12 @@
                         w_line(&cg->w,
                         "cogito_load_sum(%s);", pathv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", pathv.tmp);
+                        "yis_release_val(%s);", pathv.tmp);
                         gen_expr_release_except(cg, &pathv, pathv.tmp);
                         gen_expr_free(&pathv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4463,9 +4463,9 @@
                         ], &urlv, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_open_url(%s);", t, urlv.tmp);
+                        "YisVal %s = cogito_open_url(%s);", t, urlv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", urlv.tmp);
+                        "yis_release_val(%s);", urlv.tmp);
                         gen_expr_release_except(cg, &urlv, urlv.tmp);
                         gen_expr_free(&urlv);
                         gen_expr_add(out, t);
@@ -4481,9 +4481,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_chip_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_chip_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -4503,16 +4503,16 @@
                         w_line(&cg->w,
                         "cogito_chip_set_selected(%s, %s);", chip.tmp, sel.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", chip.tmp);
+                        "yis_release_val(%s);", chip.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", sel.tmp);
+                        "yis_release_val(%s);", sel.tmp);
                         gen_expr_release_except(cg, &chip, chip.tmp);
                         gen_expr_release_except(cg, &sel, sel.tmp);
                         gen_expr_free(&chip);
                         gen_expr_free(&sel);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4525,9 +4525,9 @@
                         ], &chip, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_chip_get_selected(%s);", t, chip.tmp);
+                        "YisVal %s = cogito_chip_get_selected(%s);", t, chip.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", chip.tmp);
+                        "yis_release_val(%s);", chip.tmp);
                         gen_expr_release_except(cg, &chip, chip.tmp);
                         gen_expr_free(&chip);
                         gen_expr_add(out, t);
@@ -4547,16 +4547,16 @@
                         w_line(&cg->w,
                         "cogito_chip_set_closable(%s, %s);", chip.tmp, closable.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", chip.tmp);
+                        "yis_release_val(%s);", chip.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", closable.tmp);
+                        "yis_release_val(%s);", closable.tmp);
                         gen_expr_release_except(cg, &chip, chip.tmp);
                         gen_expr_release_except(cg, &closable, closable.tmp);
                         gen_expr_free(&chip);
                         gen_expr_free(&closable);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4574,16 +4574,16 @@
                         w_line(&cg->w,
                         "cogito_chip_on_click(%s, %s);", chip.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", chip.tmp);
+                        "yis_release_val(%s);", chip.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &chip, chip.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&chip);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4601,16 +4601,16 @@
                         w_line(&cg->w,
                         "cogito_chip_on_close(%s, %s);", chip.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", chip.tmp);
+                        "yis_release_val(%s);", chip.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &chip, chip.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&chip);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4624,9 +4624,9 @@
                         ], &icon, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_fab_new(%s);", t, icon.tmp);
+                        "YisVal %s = cogito_fab_new(%s);", t, icon.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", icon.tmp);
+                        "yis_release_val(%s);", icon.tmp);
                         gen_expr_release_except(cg, &icon, icon.tmp);
                         gen_expr_free(&icon);
                         gen_expr_add(out, t);
@@ -4646,16 +4646,16 @@
                         w_line(&cg->w,
                         "cogito_fab_set_size(%s, %s);", fab.tmp, sizev.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fab.tmp);
+                        "yis_release_val(%s);", fab.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", sizev.tmp);
+                        "yis_release_val(%s);", sizev.tmp);
                         gen_expr_release_except(cg, &fab, fab.tmp);
                         gen_expr_release_except(cg, &sizev, sizev.tmp);
                         gen_expr_free(&fab);
                         gen_expr_free(&sizev);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4673,16 +4673,16 @@
                         w_line(&cg->w,
                         "cogito_fab_set_color(%s, %s);", fab.tmp, colorv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fab.tmp);
+                        "yis_release_val(%s);", fab.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", colorv.tmp);
+                        "yis_release_val(%s);", colorv.tmp);
                         gen_expr_release_except(cg, &fab, fab.tmp);
                         gen_expr_release_except(cg, &colorv, colorv.tmp);
                         gen_expr_free(&fab);
                         gen_expr_free(&colorv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4704,11 +4704,11 @@
                         w_line(&cg->w,
                         "cogito_fab_set_extended(%s, %s, %s);", fab.tmp, ext.tmp, label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fab.tmp);
+                        "yis_release_val(%s);", fab.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", ext.tmp);
+                        "yis_release_val(%s);", ext.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         gen_expr_release_except(cg, &fab, fab.tmp);
                         gen_expr_release_except(cg, &ext, ext.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
@@ -4717,7 +4717,7 @@
                         gen_expr_free(&label);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4735,16 +4735,16 @@
                         w_line(&cg->w,
                         "cogito_fab_on_click(%s, %s);", fab.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fab.tmp);
+                        "yis_release_val(%s);", fab.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &fab, fab.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&fab);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4757,9 +4757,9 @@
                         ], &icon, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_fab_menu_new(%s);", t, icon.tmp);
+                        "YisVal %s = cogito_fab_menu_new(%s);", t, icon.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", icon.tmp);
+                        "yis_release_val(%s);", icon.tmp);
                         gen_expr_release_except(cg, &icon, icon.tmp);
                         gen_expr_add(out, t);
                         out->tmp = t;
@@ -4782,11 +4782,11 @@
                         w_line(&cg->w,
                         "cogito_fab_menu_add_item(%s, %s, %s);", fab.tmp, label.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fab.tmp);
+                        "yis_release_val(%s);", fab.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", label.tmp);
+                        "yis_release_val(%s);", label.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &fab, fab.tmp);
                         gen_expr_release_except(cg, &label, label.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
@@ -4795,7 +4795,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4813,16 +4813,16 @@
                         w_line(&cg->w,
                         "cogito_fab_menu_set_color(%s, %s);", fab.tmp, colorv.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", fab.tmp);
+                        "yis_release_val(%s);", fab.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", colorv.tmp);
+                        "yis_release_val(%s);", colorv.tmp);
                         gen_expr_release_except(cg, &fab, fab.tmp);
                         gen_expr_release_except(cg, &colorv, colorv.tmp);
                         gen_expr_free(&fab);
                         gen_expr_free(&colorv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4832,7 +4832,7 @@
                     "__cogito_nav_rail")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_nav_rail_new();", t);
+                        "YisVal %s = cogito_nav_rail_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4854,11 +4854,11 @@
                         w_line(&cg->w,
                         "cogito_nav_rail_set_items(%s, %s, %s);", rail.tmp, labels.tmp, icons.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rail.tmp);
+                        "yis_release_val(%s);", rail.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", labels.tmp);
+                        "yis_release_val(%s);", labels.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", icons.tmp);
+                        "yis_release_val(%s);", icons.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
                         gen_expr_release_except(cg, &labels, labels.tmp);
                         gen_expr_release_except(cg, &icons, icons.tmp);
@@ -4867,7 +4867,7 @@
                         gen_expr_free(&icons);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4885,16 +4885,16 @@
                         w_line(&cg->w,
                         "cogito_nav_rail_set_badges(%s, %s);", rail.tmp, badges.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rail.tmp);
+                        "yis_release_val(%s);", rail.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", badges.tmp);
+                        "yis_release_val(%s);", badges.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
                         gen_expr_release_except(cg, &badges, badges.tmp);
                         gen_expr_free(&rail);
                         gen_expr_free(&badges);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4912,16 +4912,16 @@
                         w_line(&cg->w,
                         "cogito_nav_rail_set_toggle(%s, %s);", rail.tmp, on.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rail.tmp);
+                        "yis_release_val(%s);", rail.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", on.tmp);
+                        "yis_release_val(%s);", on.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
                         gen_expr_release_except(cg, &on, on.tmp);
                         gen_expr_free(&rail);
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4934,9 +4934,9 @@
                         ], &rail, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_nav_rail_get_selected(%s);", t, rail.tmp);
+                        "YisVal %s = cogito_nav_rail_get_selected(%s);", t, rail.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rail.tmp);
+                        "yis_release_val(%s);", rail.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
                         gen_expr_free(&rail);
                         gen_expr_add(out, t);
@@ -4956,16 +4956,16 @@
                         w_line(&cg->w,
                         "cogito_nav_rail_set_selected(%s, %s);", rail.tmp, idx.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rail.tmp);
+                        "yis_release_val(%s);", rail.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idx.tmp);
+                        "yis_release_val(%s);", idx.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
                         gen_expr_release_except(cg, &idx, idx.tmp);
                         gen_expr_free(&rail);
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -4983,16 +4983,16 @@
                         w_line(&cg->w,
                         "cogito_nav_rail_on_change(%s, %s);", rail.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rail.tmp);
+                        "yis_release_val(%s);", rail.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&rail);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5010,16 +5010,16 @@
                         w_line(&cg->w,
                         "cogito_nav_rail_set_no_label(%s, %s);", rail.tmp, on.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rail.tmp);
+                        "yis_release_val(%s);", rail.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", on.tmp);
+                        "yis_release_val(%s);", on.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
                         gen_expr_release_except(cg, &on, on.tmp);
                         gen_expr_free(&rail);
                         gen_expr_free(&on);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5032,9 +5032,9 @@
                         ], &rail, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_BOOL(cogito_nav_rail_get_no_label(%s));", t, rail.tmp);
+                        "YisVal %s = EV_BOOL(cogito_nav_rail_get_no_label(%s));", t, rail.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", rail.tmp);
+                        "yis_release_val(%s);", rail.tmp);
                         gen_expr_release_except(cg, &rail, rail.tmp);
                         gen_expr_free(&rail);
                         gen_expr_add(out, t);
@@ -5046,7 +5046,7 @@
                     "__cogito_bottom_nav")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_bottom_nav_new();", t);
+                        "YisVal %s = cogito_bottom_nav_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5068,11 +5068,11 @@
                         w_line(&cg->w,
                         "cogito_bottom_nav_set_items(%s, %s, %s);", nav.tmp, labels.tmp, icons.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", nav.tmp);
+                        "yis_release_val(%s);", nav.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", labels.tmp);
+                        "yis_release_val(%s);", labels.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", icons.tmp);
+                        "yis_release_val(%s);", icons.tmp);
                         gen_expr_release_except(cg, &nav, nav.tmp);
                         gen_expr_release_except(cg, &labels, labels.tmp);
                         gen_expr_release_except(cg, &icons, icons.tmp);
@@ -5081,7 +5081,7 @@
                         gen_expr_free(&icons);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5094,9 +5094,9 @@
                         ], &nav, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_bottom_nav_get_selected(%s);", t, nav.tmp);
+                        "YisVal %s = cogito_bottom_nav_get_selected(%s);", t, nav.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", nav.tmp);
+                        "yis_release_val(%s);", nav.tmp);
                         gen_expr_release_except(cg, &nav, nav.tmp);
                         gen_expr_free(&nav);
                         gen_expr_add(out, t);
@@ -5116,16 +5116,16 @@
                         w_line(&cg->w,
                         "cogito_bottom_nav_set_selected(%s, %s);", nav.tmp, idx.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", nav.tmp);
+                        "yis_release_val(%s);", nav.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", idx.tmp);
+                        "yis_release_val(%s);", idx.tmp);
                         gen_expr_release_except(cg, &nav, nav.tmp);
                         gen_expr_release_except(cg, &idx, idx.tmp);
                         gen_expr_free(&nav);
                         gen_expr_free(&idx);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5143,16 +5143,16 @@
                         w_line(&cg->w,
                         "cogito_bottom_nav_on_change(%s, %s);", nav.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", nav.tmp);
+                        "yis_release_val(%s);", nav.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &nav, nav.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&nav);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5166,9 +5166,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_find_parent(%s);", t, node.tmp);
+                        "YisVal %s = cogito_find_parent(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -5183,9 +5183,9 @@
                         ], &node, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_find_children(%s);", t, node.tmp);
+                        "YisVal %s = cogito_find_children(%s);", t, node.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", node.tmp);
+                        "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);
                         gen_expr_free(&node);
                         gen_expr_add(out, t);
@@ -5205,11 +5205,11 @@
                         }
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_divider_new(%s, %s);", t, orient.tmp, inset.tmp);
+                        "YisVal %s = cogito_divider_new(%s, %s);", t, orient.tmp, inset.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", orient.tmp);
+                        "yis_release_val(%s);", orient.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", inset.tmp);
+                        "yis_release_val(%s);", inset.tmp);
                         gen_expr_release_except(cg, &orient, orient.tmp);
                         gen_expr_release_except(cg, &inset, inset.tmp);
                         gen_expr_free(&orient);
@@ -5227,9 +5227,9 @@
                         ], &title, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_card_new(%s);", t, title.tmp);
+                        "YisVal %s = cogito_card_new(%s);", t, title.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", title.tmp);
+                        "yis_release_val(%s);", title.tmp);
                         gen_expr_release_except(cg, &title, title.tmp);
                         gen_expr_free(&title);
                         gen_expr_add(out, t);
@@ -5245,9 +5245,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_avatar_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_avatar_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -5267,16 +5267,16 @@
                         w_line(&cg->w,
                         "cogito_avatar_set_image(%s, %s);", avatar.tmp, path_arg.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", avatar.tmp);
+                        "yis_release_val(%s);", avatar.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", path_arg.tmp);
+                        "yis_release_val(%s);", path_arg.tmp);
                         gen_expr_release_except(cg, &avatar, avatar.tmp);
                         gen_expr_release_except(cg, &path_arg, path_arg.tmp);
                         gen_expr_free(&avatar);
                         gen_expr_free(&path_arg);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5290,9 +5290,9 @@
                         ], &count, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_badge_new(%s);", t, count.tmp);
+                        "YisVal %s = cogito_badge_new(%s);", t, count.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", count.tmp);
+                        "yis_release_val(%s);", count.tmp);
                         gen_expr_release_except(cg, &count, count.tmp);
                         gen_expr_free(&count);
                         gen_expr_add(out, t);
@@ -5312,16 +5312,16 @@
                         w_line(&cg->w,
                         "cogito_badge_set_count(%s, %s);", badge.tmp, count.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", badge.tmp);
+                        "yis_release_val(%s);", badge.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", count.tmp);
+                        "yis_release_val(%s);", count.tmp);
                         gen_expr_release_except(cg, &badge, badge.tmp);
                         gen_expr_release_except(cg, &count, count.tmp);
                         gen_expr_free(&badge);
                         gen_expr_free(&count);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5334,9 +5334,9 @@
                         ], &badge, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_badge_get_count(%s);", t, badge.tmp);
+                        "YisVal %s = cogito_badge_get_count(%s);", t, badge.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", badge.tmp);
+                        "yis_release_val(%s);", badge.tmp);
                         gen_expr_release_except(cg, &badge, badge.tmp);
                         gen_expr_free(&badge);
                         gen_expr_add(out, t);
@@ -5352,9 +5352,9 @@
                         ], &text, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_banner_new(%s);", t, text.tmp);
+                        "YisVal %s = cogito_banner_new(%s);", t, text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_free(&text);
                         gen_expr_add(out, t);
@@ -5378,11 +5378,11 @@
                         w_line(&cg->w,
                         "cogito_banner_set_action(%s, %s, %s);", banner.tmp, text.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", banner.tmp);
+                        "yis_release_val(%s);", banner.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", text.tmp);
+                        "yis_release_val(%s);", text.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &banner, banner.tmp);
                         gen_expr_release_except(cg, &text, text.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
@@ -5391,7 +5391,7 @@
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5409,16 +5409,16 @@
                         w_line(&cg->w,
                         "cogito_banner_set_icon(%s, %s);", banner.tmp, icon.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", banner.tmp);
+                        "yis_release_val(%s);", banner.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", icon.tmp);
+                        "yis_release_val(%s);", icon.tmp);
                         gen_expr_release_except(cg, &banner, banner.tmp);
                         gen_expr_release_except(cg, &icon, icon.tmp);
                         gen_expr_free(&banner);
                         gen_expr_free(&icon);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5432,9 +5432,9 @@
                         ], &title, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_bottom_sheet_new(%s);", t, title.tmp);
+                        "YisVal %s = cogito_bottom_sheet_new(%s);", t, title.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", title.tmp);
+                        "yis_release_val(%s);", title.tmp);
                         gen_expr_release_except(cg, &title, title.tmp);
                         gen_expr_free(&title);
                         gen_expr_add(out, t);
@@ -5450,9 +5450,9 @@
                         ], &title, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_side_sheet_new(%s);", t, title.tmp);
+                        "YisVal %s = cogito_side_sheet_new(%s);", t, title.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", title.tmp);
+                        "yis_release_val(%s);", title.tmp);
                         gen_expr_release_except(cg, &title, title.tmp);
                         gen_expr_free(&title);
                         gen_expr_add(out, t);
@@ -5464,7 +5464,7 @@
                     "__cogito_timepicker")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_timepicker_new();", t);
+                        "YisVal %s = cogito_timepicker_new();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5482,16 +5482,16 @@
                         w_line(&cg->w,
                         "cogito_timepicker_on_change(%s, %s);", tp.tmp, handler.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", tp.tmp);
+                        "yis_release_val(%s);", tp.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", handler.tmp);
+                        "yis_release_val(%s);", handler.tmp);
                         gen_expr_release_except(cg, &tp, tp.tmp);
                         gen_expr_release_except(cg, &handler, handler.tmp);
                         gen_expr_free(&tp);
                         gen_expr_free(&handler);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;
@@ -5504,9 +5504,9 @@
                         ], &tp, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_timepicker_get_hour(%s);", t, tp.tmp);
+                        "YisVal %s = cogito_timepicker_get_hour(%s);", t, tp.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", tp.tmp);
+                        "yis_release_val(%s);", tp.tmp);
                         gen_expr_release_except(cg, &tp, tp.tmp);
                         gen_expr_free(&tp);
                         gen_expr_add(out, t);
@@ -5521,9 +5521,9 @@
                         ], &tp, err)) return false;
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = cogito_timepicker_get_minute(%s);", t, tp.tmp);
+                        "YisVal %s = cogito_timepicker_get_minute(%s);", t, tp.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", tp.tmp);
+                        "yis_release_val(%s);", tp.tmp);
                         gen_expr_release_except(cg, &tp, tp.tmp);
                         gen_expr_free(&tp);
                         gen_expr_add(out, t);
@@ -5547,11 +5547,11 @@
                         w_line(&cg->w,
                         "cogito_timepicker_set_time(%s, %s, %s);", tp.tmp, hour.tmp, min.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", tp.tmp);
+                        "yis_release_val(%s);", tp.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", hour.tmp);
+                        "yis_release_val(%s);", hour.tmp);
                         w_line(&cg->w,
-                        "ergo_release_val(%s);", min.tmp);
+                        "yis_release_val(%s);", min.tmp);
                         gen_expr_release_except(cg, &tp, tp.tmp);
                         gen_expr_release_except(cg, &hour, hour.tmp);
                         gen_expr_release_except(cg, &min, min.tmp);
@@ -5560,7 +5560,7 @@
                         gen_expr_free(&min);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
-                        "ErgoVal %s = EV_NULLV;", t);
+                        "YisVal %s = EV_NULLV;", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;

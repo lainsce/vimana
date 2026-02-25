@@ -41,16 +41,16 @@ static bool sum_env_truthy(const char* name) {
 
 static bool sum_system_high_contrast(void) {
   const char* v = getenv("COGITO_CONTRAST");
-  if (!v || !v[0]) v = getenv("ERGO_CONTRAST");
+  if (!v || !v[0]) v = getenv("YIS_CONTRAST");
   if (v && (strstr(v, "high") || strstr(v, "HIGH"))) return true;
-  if (sum_env_truthy("COGITO_HIGH_CONTRAST") || sum_env_truthy("ERGO_HIGH_CONTRAST")) return true;
+  if (sum_env_truthy("COGITO_HIGH_CONTRAST") || sum_env_truthy("YIS_HIGH_CONTRAST")) return true;
   return false;
 }
 
 static bool sum_system_reduced_motion(void) {
-  if (sum_env_truthy("COGITO_REDUCED_MOTION") || sum_env_truthy("ERGO_REDUCED_MOTION")) return true;
+  if (sum_env_truthy("COGITO_REDUCED_MOTION") || sum_env_truthy("YIS_REDUCED_MOTION")) return true;
   const char* v = getenv("COGITO_MOTION");
-  if (!v || !v[0]) v = getenv("ERGO_MOTION");
+  if (!v || !v[0]) v = getenv("YIS_MOTION");
   if (v && (strstr(v, "reduce") || strstr(v, "REDUCE") || strstr(v, "minimal"))) return true;
   return false;
 }
@@ -934,7 +934,7 @@ static char* sum_read_file(const char* path, size_t* out_len) {
 }
 
 static const char* sum_default_path(void) {
-  const char* stdlib = getenv("ERGO_STDLIB");
+  const char* stdlib = getenv("YIS_STDLIB");
   if (stdlib && stdlib[0]) {
     static char buf[PATH_MAX];
     snprintf(buf, sizeof(buf), "%s/cogito_default.sum", stdlib);
@@ -946,7 +946,7 @@ static const char* sum_default_path(void) {
 }
 
 static const char* sum_dark_path(void) {
-  const char* stdlib = getenv("ERGO_STDLIB");
+  const char* stdlib = getenv("YIS_STDLIB");
   if (stdlib && stdlib[0]) {
     static char buf[PATH_MAX];
     snprintf(buf, sizeof(buf), "%s/cogito_dark.sum", stdlib);
@@ -992,7 +992,7 @@ static bool sum_env_dark_true(const char* name) {
 }
 
 static bool sum_system_is_dark(void) {
-  if (sum_env_dark_true("COGITO_DARK") || sum_env_dark_true("ERGO_DARK")) {
+  if (sum_env_dark_true("COGITO_DARK") || sum_env_dark_true("YIS_DARK")) {
     return true;
   }
 #if defined(__APPLE__)

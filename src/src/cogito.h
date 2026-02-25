@@ -171,6 +171,7 @@ void cogito_window_set_hit_test(cogito_window *window,
 void cogito_hit_test_cleanup(void);
 void cogito_window_set_debug_overlay(cogito_window *window, bool enable);
 void cogito_rebuild_active_window(void);
+void cogito_window_relayout(cogito_window *window);
 
 // Node creation
 cogito_node *cogito_node_new(cogito_node_kind kind);
@@ -215,6 +216,7 @@ cogito_node *cogito_view_switcher_new(void);
 cogito_node *cogito_progress_new(double value);
 cogito_node *cogito_divider_new(const char *orientation, bool is_inset);
 cogito_node *cogito_card_new(const char *title);
+void cogito_card_set_variant(cogito_node *card, int variant);
 cogito_node *cogito_avatar_new(const char *text_or_icon);
 cogito_node *cogito_badge_new(int count);
 cogito_node *cogito_banner_new(const char *text);
@@ -318,6 +320,7 @@ void cogito_node_set_id(cogito_node *node, const char *id);
 // Common props
 void cogito_node_set_text(cogito_node *node, const char *text);
 const char *cogito_node_get_text(cogito_node *node);
+void cogito_node_set_subtitle(cogito_node *node, const char *text);
 void cogito_node_set_disabled(cogito_node *node, bool on);
 void cogito_node_set_editable(cogito_node *node, bool on);
 bool cogito_node_get_editable(cogito_node *node);

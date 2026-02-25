@@ -8,79 +8,79 @@ static CogitoNode* cogito_bottom_nav_new_obj(void) {
   return n;
 }
 
-static ErgoVal cogito_bottom_nav_new(void) {
+static YisVal cogito_bottom_nav_new(void) {
   CogitoNode* n = cogito_bottom_nav_new_obj();
   return EV_OBJ(n);
 }
 
-static void cogito_bottom_nav_set_items(ErgoVal navv, ErgoVal labelsv, ErgoVal iconsv) {
-  if (navv.tag != EVT_OBJ) ergo_trap("cogito.bottom_nav_set_items expects bottom_nav");
+static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal iconsv) {
+  if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_set_items expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
 
   // Clear existing items
   if (n->bottom_nav.labels) {
     for (size_t i = 0; i < n->bottom_nav.len; i++) {
-      if (n->bottom_nav.labels[i]) ergo_release_val(EV_STR(n->bottom_nav.labels[i]));
-      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) ergo_release_val(EV_STR(n->bottom_nav.icons[i]));
+      if (n->bottom_nav.labels[i]) yis_release_val(EV_STR(n->bottom_nav.labels[i]));
+      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) yis_release_val(EV_STR(n->bottom_nav.icons[i]));
     }
     free(n->bottom_nav.labels);
     free(n->bottom_nav.icons);
   }
 
   // Parse labels array
-  if (labelsv.tag != EVT_ARR) ergo_trap("cogito.bottom_nav_set_items expects array of labels");
-  ErgoArr* labels = (ErgoArr*)labelsv.as.p;
+  if (labelsv.tag != EVT_ARR) yis_trap("cogito.bottom_nav_set_items expects array of labels");
+  YisArr* labels = (YisArr*)labelsv.as.p;
   size_t count = labels->len;
 
   n->bottom_nav.len = count;
   n->bottom_nav.cap = count;
-  n->bottom_nav.labels = (ErgoStr**)calloc(count, sizeof(ErgoStr*));
-  n->bottom_nav.icons = (ErgoStr**)calloc(count, sizeof(ErgoStr*));
+  n->bottom_nav.labels = (YisStr**)calloc(count, sizeof(YisStr*));
+  n->bottom_nav.icons = (YisStr**)calloc(count, sizeof(YisStr*));
 
   for (size_t i = 0; i < count; i++) {
-    ErgoVal lv = labels->items[i];
-    ErgoStr* ls = stdr_to_string(lv);
+    YisVal lv = labels->items[i];
+    YisStr* ls = stdr_to_string(lv);
     n->bottom_nav.labels[i] = ls;
-    ergo_retain_val(EV_STR(ls));
+    yis_retain_val(EV_STR(ls));
   }
 
   // Parse icons array if provided
   if (iconsv.tag == EVT_ARR) {
-    ErgoArr* icons = (ErgoArr*)iconsv.as.p;
+    YisArr* icons = (YisArr*)iconsv.as.p;
     size_t icon_count = icons->len < count ? icons->len : count;
     for (size_t i = 0; i < icon_count; i++) {
-      ErgoVal iv = icons->items[i];
-      ErgoStr* is = stdr_to_string(iv);
+      YisVal iv = icons->items[i];
+      YisStr* is = stdr_to_string(iv);
       n->bottom_nav.icons[i] = is;
-      ergo_retain_val(EV_STR(is));
+      yis_retain_val(EV_STR(is));
     }
   }
 
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_bottom_nav_get_selected(ErgoVal navv) {
-  if (navv.tag != EVT_OBJ) ergo_trap("cogito.bottom_nav_get_selected expects bottom_nav");
+static YisVal cogito_bottom_nav_get_selected(YisVal navv) {
+  if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_get_selected expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
   return EV_INT(n->bottom_nav.selected);
 }
 
-static void cogito_bottom_nav_set_selected(ErgoVal navv, ErgoVal idxv) {
-  if (navv.tag != EVT_OBJ) ergo_trap("cogito.bottom_nav_set_selected expects bottom_nav");
+static void cogito_bottom_nav_set_selected(YisVal navv, YisVal idxv) {
+  if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_set_selected expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
-  int idx = (int)ergo_as_int(idxv);
+  int idx = (int)yis_as_int(idxv);
   if (idx >= 0 && idx < (int)n->bottom_nav.len) {
     n->bottom_nav.selected = idx;
   }
 }
 
-static void cogito_bottom_nav_on_change(ErgoVal navv, ErgoVal handler) {
-  if (navv.tag != EVT_OBJ) ergo_trap("cogito.bottom_nav_on_change expects bottom_nav");
+static void cogito_bottom_nav_on_change(YisVal navv, YisVal handler) {
+  if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_on_change expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
-  if (n->on_select) ergo_release_val(EV_FN(n->on_select));
+  if (n->on_select) yis_release_val(EV_FN(n->on_select));
   if (handler.tag == EVT_FN) {
-    n->on_select = (ErgoFn*)handler.as.p;
-    ergo_retain_val(EV_FN(n->on_select));
+    n->on_select = (YisFn*)handler.as.p;
+    yis_retain_val(EV_FN(n->on_select));
   } else {
     n->on_select = NULL;
   }

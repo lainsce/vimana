@@ -1,9 +1,9 @@
-static bool cogito_divider_orientation_vertical(ErgoVal orientationv) {
-  ErgoStr* s = NULL;
+static bool cogito_divider_orientation_vertical(YisVal orientationv) {
+  YisStr* s = NULL;
   bool temp = false;
   bool vertical = false;
   if (orientationv.tag == EVT_STR) {
-    s = (ErgoStr*)orientationv.as.p;
+    s = (YisStr*)orientationv.as.p;
   } else if (orientationv.tag != EVT_NULL) {
     s = stdr_to_string(orientationv);
     temp = true;
@@ -15,7 +15,7 @@ static bool cogito_divider_orientation_vertical(ErgoVal orientationv) {
                strcmp(o, "column") == 0 ||
                strcmp(o, "y") == 0;
   }
-  if (temp && s) ergo_release_val(EV_STR(s));
+  if (temp && s) yis_release_val(EV_STR(s));
   return vertical;
 }
 
@@ -28,8 +28,8 @@ static CogitoNode* cogito_divider_new_obj(bool vertical, bool inset) {
   return d;
 }
 
-static ErgoVal cogito_divider_new(ErgoVal orientationv, ErgoVal insetv) {
+static YisVal cogito_divider_new(YisVal orientationv, YisVal insetv) {
   bool vertical = cogito_divider_orientation_vertical(orientationv);
-  bool inset = ergo_as_bool(insetv);
+  bool inset = yis_as_bool(insetv);
   return EV_OBJ(cogito_divider_new_obj(vertical, inset));
 }

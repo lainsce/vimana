@@ -1805,8 +1805,8 @@ fun build_about_window_page() (( cogito.VStack )) {
         let aw = cogito.about_window(@"Cogito Gallery", @"1.0.0")
         aw.set_icon(@"sf:sparkles")
         aw.set_description(@"A showcase of Cogito widgets.")
-        aw.set_website(@"https://github.com/lainsce/ergo")
-        aw.set_issue_url(@"https://github.com/lainsce/ergo/issues")
+        aw.set_website(@"https://github.com/lainsce/yis")
+        aw.set_issue_url(@"https://github.com/lainsce/yis/issues")
         dlg.add(aw)
         slot.show(dlg)
         status.set_text(@"About dialog opened.")
@@ -2366,7 +2366,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
 
 entry () (( -- )) {
     let the_app = app
-    the_app.set_appid(@"ergo.cogito.Gallery")
+    the_app.set_appid(@"yis.cogito.Gallery")
     the_app.set_accent_color(@"#72dec2", false)
 
     let main_win = cogito.window_size(@"Cogito Gallery", 800, 700)

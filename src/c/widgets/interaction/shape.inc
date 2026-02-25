@@ -293,46 +293,46 @@ static CogitoNode* cogito_shape_new_obj(int preset) {
   return n;
 }
 
-static ErgoVal cogito_shape_new(ErgoVal presetv) {
-  int preset = (int)ergo_as_int(presetv);
+static YisVal cogito_shape_new(YisVal presetv) {
+  int preset = (int)yis_as_int(presetv);
   return EV_OBJ(cogito_shape_new_obj(preset));
 }
 
-static void cogito_shape_set_preset(ErgoVal shapev, ErgoVal presetv) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_set_preset expects shape");
+static void cogito_shape_set_preset(YisVal shapev, YisVal presetv) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_set_preset expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  int preset = (int)ergo_as_int(presetv);
+  int preset = (int)yis_as_int(presetv);
   cogito_shape_apply_preset_node(n, preset);
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_shape_get_preset(ErgoVal shapev) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_get_preset expects shape");
+static YisVal cogito_shape_get_preset(YisVal shapev) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_preset expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   return EV_INT(n->shape.preset);
 }
 
-static void cogito_shape_set_size(ErgoVal shapev, ErgoVal sizev) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_set_size expects shape");
+static void cogito_shape_set_size(YisVal shapev, YisVal sizev) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_set_size expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  int size_dp = (int)ergo_as_int(sizev);
+  int size_dp = (int)yis_as_int(sizev);
   if (size_dp < 1) size_dp = 1;
   if (n->shape.size_dp == size_dp) return;
   n->shape.size_dp = size_dp;
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_shape_get_size(ErgoVal shapev) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_get_size expects shape");
+static YisVal cogito_shape_get_size(YisVal shapev) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_size expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int size_dp = (n->shape.size_dp > 0) ? n->shape.size_dp : 96;
   return EV_INT(size_dp);
 }
 
-static void cogito_shape_set_color_style(ErgoVal shapev, ErgoVal stylev) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_set_color_style expects shape");
+static void cogito_shape_set_color_style(YisVal shapev, YisVal stylev) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_set_color_style expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  int style = (int)ergo_as_int(stylev);
+  int style = (int)yis_as_int(stylev);
   if (style < 0) style = 0;
   if (style > 3) style = 3;
   n->shape.color_style = style;
@@ -343,8 +343,8 @@ static void cogito_shape_set_color_style(ErgoVal shapev, ErgoVal stylev) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_shape_get_color_style(ErgoVal shapev) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_get_color_style expects shape");
+static YisVal cogito_shape_get_color_style(YisVal shapev) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_color_style expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int style = n->shape.color_style;
   if (style < 0) style = 0;
@@ -352,12 +352,12 @@ static ErgoVal cogito_shape_get_color_style(ErgoVal shapev) {
   return EV_INT(style);
 }
 
-static void cogito_shape_set_color(ErgoVal shapev, ErgoVal colorv) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_set_color expects shape");
+static void cogito_shape_set_color(YisVal shapev, YisVal colorv) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_set_color expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
 
   if (colorv.tag == EVT_INT || colorv.tag == EVT_FLOAT) {
-    int style = (int)ergo_as_int(colorv);
+    int style = (int)yis_as_int(colorv);
     if (style < 0) style = 0;
     if (style > 3) style = 3;
     n->shape.color_style = style;
@@ -369,7 +369,7 @@ static void cogito_shape_set_color(ErgoVal shapev, ErgoVal colorv) {
     return;
   }
 
-  ErgoStr* s = stdr_to_string(colorv);
+  YisStr* s = stdr_to_string(colorv);
   const char* text = (s && s->data) ? s->data : "";
   if (strcmp(text, "primary") == 0 || strcmp(text, "Primary") == 0) {
     n->shape.color_style = 1;
@@ -397,13 +397,13 @@ static void cogito_shape_set_color(ErgoVal shapev, ErgoVal colorv) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void cogito_shape_set_vertex(ErgoVal shapev, ErgoVal idxv, ErgoVal xv, ErgoVal yv) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_set_vertex expects shape");
+static void cogito_shape_set_vertex(YisVal shapev, YisVal idxv, YisVal xv, YisVal yv) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_set_vertex expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  int idx = (int)ergo_as_int(idxv);
+  int idx = (int)yis_as_int(idxv);
   if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return;
-  float x = (float)ergo_as_float(xv);
-  float y = (float)ergo_as_float(yv);
+  float x = (float)yis_as_float(xv);
+  float y = (float)yis_as_float(yv);
   n->shape.vertices[idx * 2 + 0] = cogito_shape_clamp01(x);
   n->shape.vertices[idx * 2 + 1] = cogito_shape_clamp01(y);
   n->shape.svg_poly_count = 0;
@@ -411,18 +411,18 @@ static void cogito_shape_set_vertex(ErgoVal shapev, ErgoVal idxv, ErgoVal xv, Er
   cogito_queue_draw(cogito_node_window(n));
 }
 
-static ErgoVal cogito_shape_get_vertex_x(ErgoVal shapev, ErgoVal idxv) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_get_vertex_x expects shape");
+static YisVal cogito_shape_get_vertex_x(YisVal shapev, YisVal idxv) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_vertex_x expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  int idx = (int)ergo_as_int(idxv);
+  int idx = (int)yis_as_int(idxv);
   if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return EV_FLOAT(0.0);
   return EV_FLOAT(n->shape.vertices[idx * 2 + 0]);
 }
 
-static ErgoVal cogito_shape_get_vertex_y(ErgoVal shapev, ErgoVal idxv) {
-  if (shapev.tag != EVT_OBJ) ergo_trap("cogito.shape_get_vertex_y expects shape");
+static YisVal cogito_shape_get_vertex_y(YisVal shapev, YisVal idxv) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_vertex_y expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  int idx = (int)ergo_as_int(idxv);
+  int idx = (int)yis_as_int(idxv);
   if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return EV_FLOAT(0.0);
   return EV_FLOAT(n->shape.vertices[idx * 2 + 1]);
 }

@@ -1,12 +1,12 @@
 static CogitoNode* cogito_view_switcher_new_obj(void) {
   return cogito_node_new(COGITO_VIEWSWITCHER);
 }
-static ErgoVal cogito_view_switcher_new(void) {
+static YisVal cogito_view_switcher_new(void) {
   return EV_OBJ(cogito_view_switcher_new_obj());
 }
 
 // Find a view by ID in the children array
-static CogitoNode* cogito_view_switcher_find_child(CogitoNode* n, ErgoStr* id) {
+static CogitoNode* cogito_view_switcher_find_child(CogitoNode* n, YisStr* id) {
   if (!n || !id) return NULL;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
@@ -16,7 +16,7 @@ static CogitoNode* cogito_view_switcher_find_child(CogitoNode* n, ErgoStr* id) {
 }
 
 // Find a builder by ID in the lazy builders array
-static ErgoFn* cogito_view_switcher_find_builder(CogitoNode* n, ErgoStr* id, size_t* idx) {
+static YisFn* cogito_view_switcher_find_builder(CogitoNode* n, YisStr* id, size_t* idx) {
   if (!n || !id) return NULL;
   for (size_t i = 0; i < n->view_builder_len; i++) {
     if (n->view_builder_ids[i] && cogito_str_eq(n->view_builder_ids[i], id)) {
@@ -28,26 +28,26 @@ static ErgoFn* cogito_view_switcher_find_builder(CogitoNode* n, ErgoStr* id, siz
 }
 
 // Add a lazy builder for a view ID
-void cogito_view_switcher_add_lazy(CogitoNode* n, ErgoVal idv, ErgoVal builderv) {
-  if (n->kind != COGITO_VIEWSWITCHER) ergo_trap("cogito.view_switcher_add_lazy expects view_switcher");
-  if (builderv.tag != EVT_FN) ergo_trap("cogito.view_switcher_add_lazy expects function");
+void cogito_view_switcher_add_lazy(CogitoNode* n, YisVal idv, YisVal builderv) {
+  if (n->kind != COGITO_VIEWSWITCHER) yis_trap("cogito.view_switcher_add_lazy expects view_switcher");
+  if (builderv.tag != EVT_FN) yis_trap("cogito.view_switcher_add_lazy expects function");
   
-  ErgoStr* id = stdr_to_string(idv);
+  YisStr* id = stdr_to_string(idv);
   
   // Check if we already have a builder for this ID
   if (cogito_view_switcher_find_builder(n, id, NULL)) {
-    ergo_release_val(EV_STR(id));
+    yis_release_val(EV_STR(id));
     return; // Already registered
   }
   
   // Grow arrays if needed
   if (n->view_builder_len >= n->view_builder_cap) {
     size_t new_cap = n->view_builder_cap == 0 ? 4 : n->view_builder_cap * 2;
-    ErgoStr** new_ids = (ErgoStr**)realloc(n->view_builder_ids, new_cap * sizeof(ErgoStr*));
-    ErgoFn** new_builders = (ErgoFn**)realloc(n->view_builders, new_cap * sizeof(ErgoFn*));
+    YisStr** new_ids = (YisStr**)realloc(n->view_builder_ids, new_cap * sizeof(YisStr*));
+    YisFn** new_builders = (YisFn**)realloc(n->view_builders, new_cap * sizeof(YisFn*));
     if (!new_ids || !new_builders) {
-      ergo_release_val(EV_STR(id));
-      ergo_trap("cogito.view_switcher_add: out of memory");
+      yis_release_val(EV_STR(id));
+      yis_trap("cogito.view_switcher_add: out of memory");
     }
     n->view_builder_ids = new_ids;
     n->view_builders = new_builders;
@@ -56,40 +56,40 @@ void cogito_view_switcher_add_lazy(CogitoNode* n, ErgoVal idv, ErgoVal builderv)
   
   // Store the builder
   n->view_builder_ids[n->view_builder_len] = id;
-  n->view_builders[n->view_builder_len] = (ErgoFn*)builderv.as.p;
-  ergo_retain_val(EV_STR(id));
-  ergo_retain_val(EV_FN((ErgoFn*)builderv.as.p));
+  n->view_builders[n->view_builder_len] = (YisFn*)builderv.as.p;
+  yis_retain_val(EV_STR(id));
+  yis_retain_val(EV_FN((YisFn*)builderv.as.p));
   n->view_builder_len++;
   fflush(stderr);
 }
 
 // Build a view on-demand using its registered builder
-static CogitoNode* cogito_view_switcher_build_view(CogitoNode* vs, ErgoStr* id) {
+static CogitoNode* cogito_view_switcher_build_view(CogitoNode* vs, YisStr* id) {
   size_t idx = 0;
-  ErgoFn* builder = cogito_view_switcher_find_builder(vs, id, &idx);
+  YisFn* builder = cogito_view_switcher_find_builder(vs, id, &idx);
   
   if (!builder) return NULL;
   
   // Call the builder function with the view_switcher as argument
-  ErgoVal vsv = EV_OBJ(vs);
-  ergo_retain_val(vsv);
-  ErgoVal ret = builder->fn(builder->env, 1, &vsv);
-  ergo_release_val(vsv);
+  YisVal vsv = EV_OBJ(vs);
+  yis_retain_val(vsv);
+  YisVal ret = builder->fn(builder->env, 1, &vsv);
+  yis_release_val(vsv);
   
   // The builder should return the view node (wrapped in a CogitoHandle)
-  // CogitoHandle layout: ErgoObj base; void* ptr; int kind; ...
-  // ErgoObj layout: int ref; void (*drop)(ErgoObj*);
+  // CogitoHandle layout: YisObj base; void* ptr; int kind; ...
+  // YisObj layout: int ref; void (*drop)(YisObj*);
   // So ptr is at offset: sizeof(int) + sizeof(void*) = typically 8 bytes on 64-bit
   CogitoNode* view = NULL;
   if (ret.tag == EVT_OBJ) {
     // Directly extract the ptr from CogitoHandle-like structure
-    // The handle starts with ErgoObj (ref + drop), then ptr
+    // The handle starts with YisObj (ref + drop), then ptr
     char* handle = (char*)ret.as.p;
-    view = *(CogitoNode**)(handle + sizeof(ErgoObj));
+    view = *(CogitoNode**)(handle + sizeof(YisObj));
     // Set the view_id on the newly created view
     if (view && !view->view_id) {
       view->view_id = id;
-      ergo_retain_val(EV_STR(id));
+      yis_retain_val(EV_STR(id));
     }
     // Add the view as a child
     cogito_children_add(vs, view);
@@ -97,23 +97,23 @@ static CogitoNode* cogito_view_switcher_build_view(CogitoNode* vs, ErgoStr* id) 
     cogito_apply_style_tree(view);
   }
   
-  ergo_release_val(ret);
+  yis_release_val(ret);
   return view;
 }
 
-static void cogito_view_switcher_set_active(ErgoVal vsv, ErgoVal idv) {
-  if (vsv.tag != EVT_OBJ) ergo_trap("cogito.view_switcher_set_active expects view_switcher");
+static void cogito_view_switcher_set_active(YisVal vsv, YisVal idv) {
+  if (vsv.tag != EVT_OBJ) yis_trap("cogito.view_switcher_set_active expects view_switcher");
   CogitoNode* n = (CogitoNode*)vsv.as.p;
-  if (n->kind != COGITO_VIEWSWITCHER) ergo_trap("cogito.view_switcher_set_active expects view_switcher");
-  ErgoStr* s = stdr_to_string(idv);
+  if (n->kind != COGITO_VIEWSWITCHER) yis_trap("cogito.view_switcher_set_active expects view_switcher");
+  YisStr* s = stdr_to_string(idv);
   
   // Check if view already exists, if not try to build it lazily
   if (!cogito_view_switcher_find_child(n, s)) {
     cogito_view_switcher_build_view(n, s);
   }
   
-  if (n->view_active_id) ergo_release_val(EV_STR(n->view_active_id));
+  if (n->view_active_id) yis_release_val(EV_STR(n->view_active_id));
   n->view_active_id = s;
-  if (n->view_active_id) ergo_retain_val(EV_STR(n->view_active_id));
+  if (n->view_active_id) yis_retain_val(EV_STR(n->view_active_id));
   cogito_window_relayout(cogito_node_window(n));
 }

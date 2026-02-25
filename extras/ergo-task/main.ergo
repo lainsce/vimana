@@ -197,7 +197,7 @@ fun build_window(win = cogito.Window) (( -- )) {
     let done = completed_count()
     let is_sheet_open = sheet_open_state.get() == true
 
-    let bar = cogito.appbar(@"ErgoTask", @"$done of $total done")
+    let bar = cogito.appbar(@"YisTask", @"$done of $total done")
     .set_hexpand(true)
     win.add(bar)
 
@@ -231,13 +231,13 @@ fun build_window(win = cogito.Window) (( -- )) {
 
 entry() (( -- )) {
     let app = cogito.app()
-    .set_appid(@"ergo.cogito.ErgoTask")
-    .set_app_name(@"ErgoTask")
+    .set_appid(@"yis.cogito.YisTask")
+    .set_app_name(@"YisTask")
     .set_accent_color(@"#008888", false)
 
-    cogito.load_sum(@"ergotask.sum")
+    cogito.load_sum(@"yistask.sum")
 
-    let win = cogito.window_size(@"ErgoTask", 460, 720)
+    let win = cogito.window_size(@"YisTask", 460, 720)
     .set_resizable(true)
     .build((w = cogito.Window) => {
         build_window(w)

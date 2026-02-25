@@ -19,7 +19,7 @@ static CogitoNode* cogito_carousel_item_new_obj(void) {
   CogitoNode* label = cogito_node_new(COGITO_LABEL);
   label->text_align = 0;  // left alignment
   {
-    ErgoStr* cls = (ErgoStr*)calloc(1, sizeof(ErgoStr));
+    YisStr* cls = (YisStr*)calloc(1, sizeof(YisStr));
     cls->len = 19;
     cls->data = (char*)malloc(20);
     memcpy(cls->data, "carousel-item-label", 19);
@@ -41,17 +41,17 @@ static CogitoNode* cogito_carousel_item_new_obj(void) {
   return item;
 }
 
-static ErgoVal cogito_carousel_item_new(void) {
+static YisVal cogito_carousel_item_new(void) {
   return EV_OBJ(cogito_carousel_item_new_obj());
 }
 
 // Set text on the built-in label
-static void cogito_carousel_item_set_text(ErgoVal itemv, ErgoVal textv) {
-  if (itemv.tag != EVT_OBJ) ergo_trap("cogito.carousel_item_set_text expects CarouselItem");
+static void cogito_carousel_item_set_text(YisVal itemv, YisVal textv) {
+  if (itemv.tag != EVT_OBJ) yis_trap("cogito.carousel_item_set_text expects CarouselItem");
   CogitoNode* n = (CogitoNode*)itemv.as.p;
   CogitoNode* label = cogito_carousel_item_find_label(n);
   if (label) {
-    ErgoStr* ts = stdr_to_string(textv);
+    YisStr* ts = stdr_to_string(textv);
     cogito_node_set_text(label, ts);
     cogito_window_relayout(cogito_node_window(n));
   }
@@ -59,10 +59,10 @@ static void cogito_carousel_item_set_text(ErgoVal itemv, ErgoVal textv) {
 
 // Set horizontal alignment on the carousel item's content.
 // alignv: 0=left, 1=center, 2=right (mapped to align columns).
-static void cogito_carousel_item_set_halign(ErgoVal itemv, ErgoVal alignv) {
-  if (itemv.tag != EVT_OBJ) ergo_trap("cogito.carousel_item_set_halign expects CarouselItem");
+static void cogito_carousel_item_set_halign(YisVal itemv, YisVal alignv) {
+  if (itemv.tag != EVT_OBJ) yis_trap("cogito.carousel_item_set_halign expects CarouselItem");
   CogitoNode* n = (CogitoNode*)itemv.as.p;
-  int h = (int)ergo_as_int(alignv);
+  int h = (int)yis_as_int(alignv);
   if (h < 0) h = 0;
   if (h > 2) h = 2;
   // align encodes row*3 + col; preserve current row, update column
@@ -80,10 +80,10 @@ static void cogito_carousel_item_set_halign(ErgoVal itemv, ErgoVal alignv) {
 // This sets the item's align property which controls child positioning
 // in the zstack-like layout (0=top-left..8=bottom-right).
 // alignv: 0=top, 1=center, 2=bottom (mapped to align rows 0,1,2).
-static void cogito_carousel_item_set_valign(ErgoVal itemv, ErgoVal alignv) {
-  if (itemv.tag != EVT_OBJ) ergo_trap("cogito.carousel_item_set_valign expects CarouselItem");
+static void cogito_carousel_item_set_valign(YisVal itemv, YisVal alignv) {
+  if (itemv.tag != EVT_OBJ) yis_trap("cogito.carousel_item_set_valign expects CarouselItem");
   CogitoNode* n = (CogitoNode*)itemv.as.p;
-  int v = (int)ergo_as_int(alignv);
+  int v = (int)yis_as_int(alignv);
   if (v < 0) v = 0;
   if (v > 2) v = 2;
   // align encodes row*3 + col; preserve current column, update row

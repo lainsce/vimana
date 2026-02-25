@@ -1,11 +1,11 @@
-// Minimal Ergo-compatible runtime for Cogito; mirrors Ergo's runtime layout.
-#include "ergo_compat.h"
+// Minimal Yis-compatible runtime for Cogito; mirrors Yis's runtime layout.
+#include "yis_compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static void ergo_obj_release(ErgoObj* o) {
+static void yis_obj_release(YisObj* o) {
   if (!o) return;
   o->ref--;
   if (o->ref == 0) {
@@ -14,39 +14,39 @@ static void ergo_obj_release(ErgoObj* o) {
   }
 }
 
-void* cogito_compat_obj_new(size_t size, void (*drop)(ErgoObj* o)) {
-  ErgoObj* o = (ErgoObj*)calloc(1, size);
+void* cogito_compat_obj_new(size_t size, void (*drop)(YisObj* o)) {
+  YisObj* o = (YisObj*)calloc(1, size);
   if (!o) return NULL;
   o->ref = 1;
   o->drop = drop;
   return o;
 }
 
-void cogito_compat_retain_val(ErgoVal v) {
-  if (v.tag == EVT_STR) ((ErgoStr*)v.as.p)->ref++;
-  else if (v.tag == EVT_ARR) ((ErgoArr*)v.as.p)->ref++;
-  else if (v.tag == EVT_OBJ) ((ErgoObj*)v.as.p)->ref++;
-  else if (v.tag == EVT_FN) ((ErgoFn*)v.as.p)->ref++;
+void cogito_compat_retain_val(YisVal v) {
+  if (v.tag == EVT_STR) ((YisStr*)v.as.p)->ref++;
+  else if (v.tag == EVT_ARR) ((YisArr*)v.as.p)->ref++;
+  else if (v.tag == EVT_OBJ) ((YisObj*)v.as.p)->ref++;
+  else if (v.tag == EVT_FN) ((YisFn*)v.as.p)->ref++;
 }
 
-void cogito_compat_release_val(ErgoVal v) {
+void cogito_compat_release_val(YisVal v) {
   if (v.tag == EVT_STR) {
-    ErgoStr* s = (ErgoStr*)v.as.p;
+    YisStr* s = (YisStr*)v.as.p;
     if (--s->ref == 0) {
       free(s->data);
       free(s);
     }
   } else if (v.tag == EVT_ARR) {
-    ErgoArr* a = (ErgoArr*)v.as.p;
+    YisArr* a = (YisArr*)v.as.p;
     if (--a->ref == 0) {
       for (size_t i = 0; i < a->len; i++) cogito_compat_release_val(a->items[i]);
       free(a->items);
       free(a);
     }
   } else if (v.tag == EVT_OBJ) {
-    ergo_obj_release((ErgoObj*)v.as.p);
+    yis_obj_release((YisObj*)v.as.p);
   } else if (v.tag == EVT_FN) {
-    ErgoFn* f = (ErgoFn*)v.as.p;
+    YisFn* f = (YisFn*)v.as.p;
     if (--f->ref == 0) free(f);
   }
 }
@@ -57,7 +57,7 @@ void cogito_compat_trap(const char* msg) {
   abort();
 }
 
-int64_t cogito_compat_as_int(ErgoVal v) {
+int64_t cogito_compat_as_int(YisVal v) {
   switch (v.tag) {
     case EVT_INT: return v.as.i;
     case EVT_FLOAT: return (int64_t)v.as.f;
@@ -66,7 +66,7 @@ int64_t cogito_compat_as_int(ErgoVal v) {
   }
 }
 
-double cogito_compat_as_float(ErgoVal v) {
+double cogito_compat_as_float(YisVal v) {
   switch (v.tag) {
     case EVT_FLOAT: return v.as.f;
     case EVT_INT: return (double)v.as.i;
@@ -75,7 +75,7 @@ double cogito_compat_as_float(ErgoVal v) {
   }
 }
 
-bool cogito_compat_as_bool(ErgoVal v) {
+bool cogito_compat_as_bool(YisVal v) {
   switch (v.tag) {
     case EVT_BOOL: return v.as.b;
     case EVT_INT: return v.as.i != 0;
@@ -84,15 +84,15 @@ bool cogito_compat_as_bool(ErgoVal v) {
   }
 }
 
-ErgoVal cogito_compat_call(ErgoVal fnv, int argc, ErgoVal* argv) {
+YisVal cogito_compat_call(YisVal fnv, int argc, YisVal* argv) {
   if (fnv.tag != EVT_FN) return EV_NULLV;
-  ErgoFn* fn = (ErgoFn*)fnv.as.p;
+  YisFn* fn = (YisFn*)fnv.as.p;
   if (!fn || !fn->fn) return EV_NULLV;
   return fn->fn(fn->env, argc, argv);
 }
 
-ErgoStr* cogito_compat_str_from_slice(const char* s, size_t len) {
-  ErgoStr* out = (ErgoStr*)calloc(1, sizeof(ErgoStr));
+YisStr* cogito_compat_str_from_slice(const char* s, size_t len) {
+  YisStr* out = (YisStr*)calloc(1, sizeof(YisStr));
   if (!out) return NULL;
   out->ref = 1;
   out->data = (char*)malloc(len + 1);
@@ -103,13 +103,13 @@ ErgoStr* cogito_compat_str_from_slice(const char* s, size_t len) {
   return out;
 }
 
-ErgoStr* cogito_compat_str_lit(const char* s) {
+YisStr* cogito_compat_str_lit(const char* s) {
   size_t len = s ? strlen(s) : 0;
   return cogito_compat_str_from_slice(s ? s : "", len);
 }
 
-ErgoStr* cogito_compat_to_string(ErgoVal v) {
-  if (v.tag == EVT_STR) return (ErgoStr*)v.as.p;
+YisStr* cogito_compat_to_string(YisVal v) {
+  if (v.tag == EVT_STR) return (YisStr*)v.as.p;
   if (v.tag == EVT_NULL) return NULL;
   char buf[64];
   if (v.tag == EVT_INT) {
@@ -124,25 +124,25 @@ ErgoStr* cogito_compat_to_string(ErgoVal v) {
   return cogito_compat_str_from_slice(buf, strlen(buf));
 }
 
-ErgoArr* cogito_compat_arr_new(size_t len) {
-  ErgoArr* a = (ErgoArr*)calloc(1, sizeof(ErgoArr));
+YisArr* cogito_compat_arr_new(size_t len) {
+  YisArr* a = (YisArr*)calloc(1, sizeof(YisArr));
   if (!a) return NULL;
   a->ref = 1;
   a->len = 0;
   a->cap = (len > 0) ? len : 4;
-  a->items = (ErgoVal*)calloc(a->cap, sizeof(ErgoVal));
+  a->items = (YisVal*)calloc(a->cap, sizeof(YisVal));
   return a;
 }
 
-void cogito_compat_arr_set(ErgoArr* a, size_t idx, ErgoVal v) {
+void cogito_compat_arr_set(YisArr* a, size_t idx, YisVal v) {
   if (!a || idx >= a->len) return;
   cogito_compat_release_val(a->items[idx]);
   a->items[idx] = v;
 }
 
-ErgoVal cogito_compat_arr_get(ErgoArr* a, int64_t idx) {
+YisVal cogito_compat_arr_get(YisArr* a, int64_t idx) {
   if (!a || idx < 0 || (size_t)idx >= a->len) return EV_NULLV;
-  ErgoVal v = a->items[idx];
+  YisVal v = a->items[idx];
   cogito_compat_retain_val(v);
   return v;
 }

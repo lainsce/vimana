@@ -67,7 +67,7 @@ static CogitoNode* cogito_timepicker_open_panel(CogitoNode* owner) {
   panel->timepicker.initialized = true;
 
   cogito_children_add(pop, panel);
-  ergo_release_val(EV_OBJ(panel));  // child list now owns the panel reference
+  yis_release_val(EV_OBJ(panel));  // child list now owns the panel reference
   return pop;
 }
 
@@ -79,7 +79,7 @@ static void cogito_timepicker_show_popover(CogitoNode* anchor) {
   CogitoNode* pop = cogito_timepicker_open_panel(anchor);
   if (!pop) return;
   cogito_popover_show(EV_OBJ(anchor), EV_OBJ(pop));
-  ergo_release_val(EV_OBJ(pop));  // window popover slot now owns the reference
+  yis_release_val(EV_OBJ(pop));  // window popover slot now owns the reference
 }
 
 static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
@@ -204,24 +204,24 @@ static CogitoNode* cogito_timepicker_new_obj(void) {
   return n;
 }
 
-static ErgoVal cogito_timepicker_new(void) {
+static YisVal cogito_timepicker_new(void) {
   return EV_OBJ(cogito_timepicker_new_obj());
 }
 
-static void cogito_timepicker_on_change(ErgoVal nodev, ErgoVal handler) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.timepicker_on_change expects timepicker");
+static void cogito_timepicker_on_change(YisVal nodev, YisVal handler) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.timepicker_on_change expects timepicker");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (n->kind != COGITO_TIMEPICKER) ergo_trap("cogito.timepicker_on_change expects timepicker");
-  if (n->on_change) ergo_release_val(EV_FN(n->on_change));
+  if (n->kind != COGITO_TIMEPICKER) yis_trap("cogito.timepicker_on_change expects timepicker");
+  if (n->on_change) yis_release_val(EV_FN(n->on_change));
   if (handler.tag == EVT_FN) {
-    n->on_change = (ErgoFn*)handler.as.p;
-    ergo_retain_val(EV_FN(n->on_change));
+    n->on_change = (YisFn*)handler.as.p;
+    yis_retain_val(EV_FN(n->on_change));
   } else {
     n->on_change = NULL;
   }
 }
 
-static ErgoVal cogito_timepicker_get_hour(ErgoVal nodev) {
+static YisVal cogito_timepicker_get_hour(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) return EV_INT(0);
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (!n || n->kind != COGITO_TIMEPICKER) return EV_INT(0);
@@ -229,7 +229,7 @@ static ErgoVal cogito_timepicker_get_hour(ErgoVal nodev) {
   return EV_INT(n->timepicker.hour);
 }
 
-static ErgoVal cogito_timepicker_get_minute(ErgoVal nodev) {
+static YisVal cogito_timepicker_get_minute(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) return EV_INT(0);
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (!n || n->kind != COGITO_TIMEPICKER) return EV_INT(0);
@@ -237,10 +237,10 @@ static ErgoVal cogito_timepicker_get_minute(ErgoVal nodev) {
   return EV_INT(n->timepicker.minute);
 }
 
-static void cogito_timepicker_set_time(ErgoVal nodev, ErgoVal hourv, ErgoVal minv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.timepicker_set_time expects timepicker");
+static void cogito_timepicker_set_time(YisVal nodev, YisVal hourv, YisVal minv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.timepicker_set_time expects timepicker");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (!n || n->kind != COGITO_TIMEPICKER) ergo_trap("cogito.timepicker_set_time expects timepicker");
+  if (!n || n->kind != COGITO_TIMEPICKER) yis_trap("cogito.timepicker_set_time expects timepicker");
 
   int h = 0, m = 0;
   if (hourv.tag == EVT_INT) h = (int)hourv.as.i;

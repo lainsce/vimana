@@ -4,7 +4,7 @@ static CogitoNode* cogito_content_list_new_obj(void) {
   n->gap = 4;
   return n;
 }
-static ErgoVal cogito_content_list_new(void) {
+static YisVal cogito_content_list_new(void) {
   CogitoNode* n = cogito_content_list_new_obj();
   return EV_OBJ(n);
 }

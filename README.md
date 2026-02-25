@@ -11,7 +11,7 @@
 - SDL3_ttf
 - freetype2
 - SDL3_image (optional, used for themed icon file loading)
-- (Optionally) Ergo compiler [for extras folder apps]
+- (Optionally) Yis compiler [for extras folder apps]
 
 Example (macOS/Homebrew):
 
@@ -24,10 +24,10 @@ brew install meson ninja sdl3 sdl3_ttf sdl3_image freetype
 Validate Cogito SUM themes (including `@bring` expansion with source-mapped diagnostics):
 
 ```sh
-./ergo/build/ergo sum validate cogito/examples/sum_validator_fixtures/theme.sum
-./ergo/build/ergo sum validate --mode off cogito/examples/sum_validator_fixtures/theme.sum
-./ergo/build/ergo sum validate --mode strict cogito/examples/sum_validator_fixtures/theme.sum
-./ergo/build/ergo sum validate cogito/examples/sum_validator_fixtures
+./yis/build/yis sum validate cogito/examples/sum_validator_fixtures/theme.sum
+./yis/build/yis sum validate --mode off cogito/examples/sum_validator_fixtures/theme.sum
+./yis/build/yis sum validate --mode strict cogito/examples/sum_validator_fixtures/theme.sum
+./yis/build/yis sum validate cogito/examples/sum_validator_fixtures
 ```
 
 Fixtures for validator behavior are in:
@@ -45,16 +45,16 @@ meson setup cogito/build cogito
 meson compile -C cogito/build
 ```
 
-Then run GUI examples with Ergo:
+Then run GUI examples with Yis:
 
 ```sh
-./ergo/build/ergo run cogito/examples/gui_hello.ergo
-./ergo/build/ergo run cogito/examples/gui_gallery.ergo
+./yis/build/yis run cogito/examples/gui_hello.yis
+./yis/build/yis run cogito/examples/gui_gallery.yis
 ```
 
 If your program uses Cogito, include:
 
-```ergo
+```yis
 bring cogito
 ```
 
@@ -64,5 +64,5 @@ Install Cogito library and headers:
 meson install -C cogito/build
 ```
 
-- `ERGO_COGITO_CFLAGS`: extra C flags for Cogito
-- `ERGO_COGITO_FLAGS`: extra linker flags for Cogito
+- `YIS_COGITO_CFLAGS`: extra C flags for Cogito
+- `YIS_COGITO_FLAGS`: extra linker flags for Cogito

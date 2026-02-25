@@ -9,22 +9,22 @@ static int cogito_list_hit_index(CogitoNode* list, int x, int y) {
 static CogitoNode* cogito_list_new_obj(void) {
   return cogito_node_new(COGITO_LIST);
 }
-static ErgoVal cogito_list_new(void) {
+static YisVal cogito_list_new(void) {
   return EV_OBJ(cogito_list_new_obj());
 }
-static void cogito_list_on_select(ErgoVal listv, ErgoVal handler) {
-  if (listv.tag != EVT_OBJ) ergo_trap("cogito.list_on_select expects list");
+static void cogito_list_on_select(YisVal listv, YisVal handler) {
+  if (listv.tag != EVT_OBJ) yis_trap("cogito.list_on_select expects list");
   CogitoNode* list = (CogitoNode*)listv.as.p;
-  if (list->on_select) ergo_release_val(EV_FN(list->on_select));
-  list->on_select = (ErgoFn*)handler.as.p;
-  ergo_retain_val(EV_FN(list->on_select));
+  if (list->on_select) yis_release_val(EV_FN(list->on_select));
+  list->on_select = (YisFn*)handler.as.p;
+  yis_retain_val(EV_FN(list->on_select));
 }
-static void cogito_list_on_activate(ErgoVal listv, ErgoVal handler) {
-  if (listv.tag != EVT_OBJ) ergo_trap("cogito.list_on_activate expects list");
+static void cogito_list_on_activate(YisVal listv, YisVal handler) {
+  if (listv.tag != EVT_OBJ) yis_trap("cogito.list_on_activate expects list");
   CogitoNode* list = (CogitoNode*)listv.as.p;
-  if (list->on_activate) ergo_release_val(EV_FN(list->on_activate));
-  list->on_activate = (ErgoFn*)handler.as.p;
-  ergo_retain_val(EV_FN(list->on_activate));
+  if (list->on_activate) yis_release_val(EV_FN(list->on_activate));
+  list->on_activate = (YisFn*)handler.as.p;
+  yis_retain_val(EV_FN(list->on_activate));
 }
 static CogitoNode* cogito_find_list_grid_hit(CogitoNode* n, int x, int y, int* out_idx) {
   if (!n) return NULL;

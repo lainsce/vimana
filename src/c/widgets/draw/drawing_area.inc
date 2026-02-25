@@ -20,7 +20,7 @@ case COGITO_DRAWING_AREA: {
       if (n->on_draw) {
         CogitoNode* prev_canvas = cogito_canvas_active;
         cogito_canvas_active = n;
-        ErgoVal args[3] = {EV_OBJ(n), EV_INT(n->w), EV_INT(n->h)};
+        YisVal args[3] = {EV_OBJ(n), EV_INT(n->w), EV_INT(n->h)};
         cogito_invoke(n->on_draw, 3, args);
         cogito_canvas_active = prev_canvas;
       }

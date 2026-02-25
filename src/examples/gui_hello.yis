@@ -35,7 +35,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
 
 entry () (( -- )) {
     let app = cogito.app()
-    .set_appid(@"ergo.cogito.Hello")
+    .set_appid(@"yis.cogito.Hello")
     .set_accent_color(@"#72dec2", false)
 
     let win = cogito.window_title(@"Minimal Cogito Demo", 800, 800)

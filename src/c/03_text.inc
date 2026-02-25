@@ -448,7 +448,7 @@ static int cogito_text_height_size(int size) {
   return size + 2;
 }
 
-static void cogito_node_set_text(CogitoNode* n, ErgoStr* s);
+static void cogito_node_set_text(CogitoNode* n, YisStr* s);
 
 static int cogito_text_width_size_n(const char* s, int len, int size);
 static int cogito_text_width_size_font(CogitoFont* f, const char* s, int size);
@@ -687,9 +687,9 @@ static int cogito_text_width_size_n_node(const CogitoNode* n, const char* s, int
 
 static void cogito_text_set_from_buf(CogitoNode* n, const char* buf, size_t len) {
   if (!n) return;
-  ErgoStr* s = stdr_str_from_slice(buf, len);
+  YisStr* s = stdr_str_from_slice(buf, len);
   cogito_node_set_text(n, s);
-  if (s) ergo_release_val(EV_STR(s));
+  if (s) yis_release_val(EV_STR(s));
 }
 
 // Static buffer to reduce heap allocations in text editing hot path

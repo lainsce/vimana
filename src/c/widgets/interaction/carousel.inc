@@ -17,14 +17,14 @@ static CogitoNode* cogito_carousel_new_obj(void) {
   return cr;
 }
 
-static ErgoVal cogito_carousel_new(void) {
+static YisVal cogito_carousel_new(void) {
   return EV_OBJ(cogito_carousel_new_obj());
 }
 
-static void cogito_carousel_set_active_index(ErgoVal nodev, ErgoVal idxv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.carousel_set_active_index expects carousel");
+static void cogito_carousel_set_active_index(YisVal nodev, YisVal idxv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.carousel_set_active_index expects carousel");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  int idx = (int)ergo_as_int(idxv);
+  int idx = (int)yis_as_int(idxv);
   if (idx < 0) idx = 0;
   if (idx >= (int)n->len) idx = (int)n->len - 1;
   if (idx < 0) idx = 0;
@@ -58,8 +58,8 @@ static void cogito_carousel_set_active_index(ErgoVal nodev, ErgoVal idxv) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_carousel_get_active_index(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.carousel_get_active_index expects carousel");
+static YisVal cogito_carousel_get_active_index(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.carousel_get_active_index expects carousel");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return EV_INT((int64_t)n->carousel.active_index);
 }

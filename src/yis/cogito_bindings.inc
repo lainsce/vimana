@@ -279,16 +279,16 @@ typedef enum {
 } CogitoHandleKind;
 
 typedef struct CogitoHandle {
-  ErgoObj base;
+  YisObj base;
   void* ptr;
   int kind;
-  ErgoVal on_click;
-  ErgoVal on_change;
-  ErgoVal on_select;
-  ErgoVal on_activate;
-  ErgoVal on_action;
-  ErgoVal on_draw;
-  ErgoVal builder;
+  YisVal on_click;
+  YisVal on_change;
+  YisVal on_select;
+  YisVal on_activate;
+  YisVal on_action;
+  YisVal on_draw;
+  YisVal builder;
 } CogitoHandle;
 
 typedef struct CogitoHandleEntry {
@@ -298,17 +298,17 @@ typedef struct CogitoHandleEntry {
 } CogitoHandleEntry;
 
 typedef struct CogitoMenuHandler {
-  ErgoVal fn;
+  YisVal fn;
 } CogitoMenuHandler;
 
-static void __cogito_button_on_click(ErgoVal btnv, ErgoVal handler);
+static void __cogito_button_on_click(YisVal btnv, YisVal handler);
 
-// Forward declaration for internal ErgoVal-based function
-extern void cogito_view_switcher_add_lazy_ergo(cogito_node* view_switcher, ErgoVal id, ErgoVal builder);
+// Forward declaration for internal YisVal-based function
+extern void cogito_view_switcher_add_lazy_yis(cogito_node* view_switcher, YisVal id, YisVal builder);
 
 typedef struct CogitoState {
-  ErgoObj base;
-  ErgoVal value;
+  YisObj base;
+  YisVal value;
 } CogitoState;
 
 static CogitoHandleEntry* cogito_handle_entries = NULL;
@@ -341,16 +341,16 @@ static void cogito_handle_unregister(cogito_node* node) {
   }
 }
 
-static void cogito_handle_drop(ErgoObj* o) {
+static void cogito_handle_drop(YisObj* o) {
   CogitoHandle* h = (CogitoHandle*)o;
   if (!h) return;
-  if (h->on_click.tag != EVT_NULL) ergo_release_val(h->on_click);
-  if (h->on_change.tag != EVT_NULL) ergo_release_val(h->on_change);
-  if (h->on_select.tag != EVT_NULL) ergo_release_val(h->on_select);
-  if (h->on_activate.tag != EVT_NULL) ergo_release_val(h->on_activate);
-  if (h->on_action.tag != EVT_NULL) ergo_release_val(h->on_action);
-  if (h->on_draw.tag != EVT_NULL) ergo_release_val(h->on_draw);
-  if (h->builder.tag != EVT_NULL) ergo_release_val(h->builder);
+  if (h->on_click.tag != EVT_NULL) yis_release_val(h->on_click);
+  if (h->on_change.tag != EVT_NULL) yis_release_val(h->on_change);
+  if (h->on_select.tag != EVT_NULL) yis_release_val(h->on_select);
+  if (h->on_activate.tag != EVT_NULL) yis_release_val(h->on_activate);
+  if (h->on_action.tag != EVT_NULL) yis_release_val(h->on_action);
+  if (h->on_draw.tag != EVT_NULL) yis_release_val(h->on_draw);
+  if (h->builder.tag != EVT_NULL) yis_release_val(h->builder);
   if (h->kind == COGITO_HANDLE_WINDOW || h->kind == COGITO_HANDLE_NODE) {
     cogito_handle_unregister((cogito_node*)h->ptr);
   }
@@ -358,7 +358,7 @@ static void cogito_handle_drop(ErgoObj* o) {
 }
 
 static CogitoHandle* cogito_handle_new(void* ptr, int kind) {
-  CogitoHandle* h = (CogitoHandle*)ergo_obj_new(sizeof(CogitoHandle), cogito_handle_drop);
+  CogitoHandle* h = (CogitoHandle*)yis_obj_new(sizeof(CogitoHandle), cogito_handle_drop);
   h->ptr = ptr;
   h->kind = kind;
   h->on_click = EV_NULLV;
@@ -371,7 +371,7 @@ static CogitoHandle* cogito_handle_new(void* ptr, int kind) {
   return h;
 }
 
-static ErgoVal cogito_wrap_node(cogito_node* node, int kind) {
+static YisVal cogito_wrap_node(cogito_node* node, int kind) {
   if (!node) return EV_NULLV;
   CogitoHandle* h = cogito_handle_lookup(node);
   if (!h) {
@@ -381,90 +381,90 @@ static ErgoVal cogito_wrap_node(cogito_node* node, int kind) {
   return EV_OBJ(h);
 }
 
-static CogitoHandle* cogito_handle_from_val(ErgoVal v, const char* what) {
-  if (v.tag != EVT_OBJ) ergo_trap(what);
+static CogitoHandle* cogito_handle_from_val(YisVal v, const char* what) {
+  if (v.tag != EVT_OBJ) yis_trap(what);
   return (CogitoHandle*)v.as.p;
 }
 
-static cogito_app* cogito_app_from_val(ErgoVal v) {
+static cogito_app* cogito_app_from_val(YisVal v) {
   CogitoHandle* h = cogito_handle_from_val(v,
   "cogito.app expects app");
   return (cogito_app*)h->ptr;
 }
 
-static cogito_window* cogito_window_from_val(ErgoVal v) {
+static cogito_window* cogito_window_from_val(YisVal v) {
   CogitoHandle* h = cogito_handle_from_val(v,
   "cogito.window expects window");
   return (cogito_window*)h->ptr;
 }
 
-static cogito_node* cogito_node_from_val(ErgoVal v) {
+static cogito_node* cogito_node_from_val(YisVal v) {
   CogitoHandle* h = cogito_handle_from_val(v,
   "cogito.node expects node");
   return (cogito_node*)h->ptr;
 }
 // Non-static version for use by view_switcher.inc
-cogito_node* cogito_unwrap_handle(ErgoVal v) {
+cogito_node* cogito_unwrap_handle(YisVal v) {
   if (v.tag != EVT_OBJ) return NULL;
   CogitoHandle* h = (CogitoHandle*)v.as.p;
   return (cogito_node*)h->ptr;
 }
 
-static const char* cogito_required_cstr(ErgoVal v, ErgoStr** tmp) {
+static const char* cogito_required_cstr(YisVal v, YisStr** tmp) {
   if (v.tag == EVT_NULL) return "";
-  if (v.tag == EVT_STR) return ((ErgoStr*)v.as.p)->data;
-  ErgoStr* s = stdr_to_string(v);
+  if (v.tag == EVT_STR) return ((YisStr*)v.as.p)->data;
+  YisStr* s = stdr_to_string(v);
   if (tmp) *tmp = s;
   return s ? s->data : "";
 }
 
-static const char* cogito_optional_cstr(ErgoVal v, ErgoStr** tmp) {
+static const char* cogito_optional_cstr(YisVal v, YisStr** tmp) {
   if (v.tag == EVT_NULL) return NULL;
-  if (v.tag == EVT_STR) return ((ErgoStr*)v.as.p)->data;
-  ErgoStr* s = stdr_to_string(v);
+  if (v.tag == EVT_STR) return ((YisStr*)v.as.p)->data;
+  YisStr* s = stdr_to_string(v);
   if (tmp) *tmp = s;
   return s ? s->data : NULL;
 }
 
-static void cogito_set_handler(CogitoHandle* h, ErgoVal* slot, ErgoVal handler) {
+static void cogito_set_handler(CogitoHandle* h, YisVal* slot, YisVal handler) {
   bool had = slot->tag != EVT_NULL;
-  if (had) ergo_release_val(*slot);
+  if (had) yis_release_val(*slot);
   *slot = handler;
   bool has = handler.tag != EVT_NULL;
-  if (has) ergo_retain_val(handler);
+  if (has) yis_retain_val(handler);
   if (h) {
-    if (!had && has) ergo_retain_val(EV_OBJ(h));
-    if (had && !has) ergo_release_val(EV_OBJ(h));
+    if (!had && has) yis_retain_val(EV_OBJ(h));
+    if (had && !has) yis_release_val(EV_OBJ(h));
   }
 }
 
-static void cogito_invoke_node_handler(ErgoVal handler, cogito_node* node) {
+static void cogito_invoke_node_handler(YisVal handler, cogito_node* node) {
   if (handler.tag != EVT_FN) return;
-  ErgoVal arg = cogito_wrap_node(node, COGITO_HANDLE_NODE);
-  ergo_retain_val(arg);
-  ErgoVal ret = ergo_call(handler,
+  YisVal arg = cogito_wrap_node(node, COGITO_HANDLE_NODE);
+  yis_retain_val(arg);
+  YisVal ret = yis_call(handler,
   1, &arg);
-  ergo_release_val(arg);
-  ergo_release_val(ret);
+  yis_release_val(arg);
+  yis_release_val(ret);
 }
 
-static void cogito_invoke_index_handler(ErgoVal handler, int idx) {
+static void cogito_invoke_index_handler(YisVal handler, int idx) {
   if (handler.tag != EVT_FN) return;
-  ErgoVal arg = EV_INT(idx);
-  ErgoVal ret = ergo_call(handler,
+  YisVal arg = EV_INT(idx);
+  YisVal ret = yis_call(handler,
   1, &arg);
-  ergo_release_val(ret);
+  yis_release_val(ret);
 }
 
-static void cogito_invoke_draw_handler(ErgoVal handler, cogito_node* node,
+static void cogito_invoke_draw_handler(YisVal handler, cogito_node* node,
                                        int width, int height) {
   if (handler.tag != EVT_FN) return;
-  ErgoVal args[3] = {cogito_wrap_node(node, COGITO_HANDLE_NODE), EV_INT(width),
+  YisVal args[3] = {cogito_wrap_node(node, COGITO_HANDLE_NODE), EV_INT(width),
                      EV_INT(height)};
-  ergo_retain_val(args[0]);
-  ErgoVal ret = ergo_call(handler, 3, args);
-  ergo_release_val(args[0]);
-  ergo_release_val(ret);
+  yis_retain_val(args[0]);
+  YisVal ret = yis_call(handler, 3, args);
+  yis_release_val(args[0]);
+  yis_release_val(ret);
 }
 
 static void cogito_cb_click(cogito_node* node, void* user) {
@@ -511,10 +511,10 @@ static void cogito_cb_builder(cogito_node* node, void* user) {
   cogito_invoke_node_handler(h->builder, node);
 }
 
-static CogitoMenuHandler* cogito_menu_handler_new(ErgoVal handler) {
+static CogitoMenuHandler* cogito_menu_handler_new(YisVal handler) {
   CogitoMenuHandler* mh = (CogitoMenuHandler*)calloc(1, sizeof(*mh));
   mh->fn = handler;
-  if (handler.tag != EVT_NULL) ergo_retain_val(handler);
+  if (handler.tag != EVT_NULL) yis_retain_val(handler);
   return mh;
 }
 
@@ -524,154 +524,154 @@ static void cogito_cb_menu(cogito_node* node, void* user) {
   cogito_invoke_node_handler(mh->fn, node);
 }
 
-static void cogito_state_drop(ErgoObj* o) {
+static void cogito_state_drop(YisObj* o) {
   CogitoState* s = (CogitoState*)o;
   if (s->value.tag != EVT_NULL) {
-    ergo_release_val(s->value);
+    yis_release_val(s->value);
     s->value = EV_NULLV;
   }
 }
 
-static ErgoVal cogito_state_new_val(ErgoVal initial) {
-  CogitoState* s = (CogitoState*)ergo_obj_new(sizeof(CogitoState), cogito_state_drop);
+static YisVal cogito_state_new_val(YisVal initial) {
+  CogitoState* s = (CogitoState*)yis_obj_new(sizeof(CogitoState), cogito_state_drop);
   s->value = initial;
-  if (initial.tag != EVT_NULL) ergo_retain_val(initial);
+  if (initial.tag != EVT_NULL) yis_retain_val(initial);
   return EV_OBJ(s);
 }
 
-static ErgoVal cogito_state_get_val(ErgoVal sv) {
-  if (sv.tag != EVT_OBJ) ergo_trap("cogito.state_get expects state");
+static YisVal cogito_state_get_val(YisVal sv) {
+  if (sv.tag != EVT_OBJ) yis_trap("cogito.state_get expects state");
   CogitoState* s = (CogitoState*)sv.as.p;
-  ErgoVal v = s->value;
-  if (v.tag != EVT_NULL) ergo_retain_val(v);
+  YisVal v = s->value;
+  if (v.tag != EVT_NULL) yis_retain_val(v);
   return v;
 }
 
-static void cogito_state_set_val(ErgoVal sv, ErgoVal nv) {
-  if (sv.tag != EVT_OBJ) ergo_trap("cogito.state_set expects state");
+static void cogito_state_set_val(YisVal sv, YisVal nv) {
+  if (sv.tag != EVT_OBJ) yis_trap("cogito.state_set expects state");
   CogitoState* s = (CogitoState*)sv.as.p;
-  if (s->value.tag != EVT_NULL) ergo_release_val(s->value);
+  if (s->value.tag != EVT_NULL) yis_release_val(s->value);
   s->value = nv;
-  if (nv.tag != EVT_NULL) ergo_retain_val(nv);
+  if (nv.tag != EVT_NULL) yis_retain_val(nv);
   cogito_rebuild_active_window();
 }
 
-static ErgoVal __cogito_app(void) {
+static YisVal __cogito_app(void) {
   cogito_app* app = cogito_app_new();
   CogitoHandle* h = cogito_handle_new(app, COGITO_HANDLE_APP);
   return EV_OBJ(h);
 }
 
-static void __cogito_app_set_appid(ErgoVal appv, ErgoVal idv) {
+static void __cogito_app_set_appid(YisVal appv, YisVal idv) {
   cogito_app* app = cogito_app_from_val(appv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* id = cogito_optional_cstr(idv, &tmp);
   if (id) cogito_app_set_appid(app, id);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_app_set_app_name(ErgoVal appv, ErgoVal namev) {
+static void __cogito_app_set_app_name(YisVal appv, YisVal namev) {
   cogito_app* app = cogito_app_from_val(appv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* name = cogito_optional_cstr(namev, &tmp);
   if (name) cogito_app_set_app_name(app, name);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_app_set_accent_color(ErgoVal appv, ErgoVal colorv, ErgoVal overridev) {
+static void __cogito_app_set_accent_color(YisVal appv, YisVal colorv, YisVal overridev) {
   cogito_app* app = cogito_app_from_val(appv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* color = cogito_optional_cstr(colorv, &tmp);
   bool ov = overridev.tag == EVT_BOOL ? overridev.as.b : false;
   if (color) cogito_app_set_accent_color(app, color, ov);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_app_set_dark_mode(ErgoVal appv, ErgoVal darkv, ErgoVal follow_systemv) {
+static void __cogito_app_set_dark_mode(YisVal appv, YisVal darkv, YisVal follow_systemv) {
   cogito_app* app = cogito_app_from_val(appv);
-  bool dark = darkv.tag == EVT_BOOL ? darkv.as.b : ergo_as_bool(darkv);
+  bool dark = darkv.tag == EVT_BOOL ? darkv.as.b : yis_as_bool(darkv);
   bool follow_system = follow_systemv.tag == EVT_BOOL ? follow_systemv.as.b : false;
   if (app) cogito_app_set_dark_mode(app, dark, follow_system);
 }
 
-static ErgoVal __cogito_app_set_accent_from_image(ErgoVal appv, ErgoVal pathv, ErgoVal follow_systemv) {
+static YisVal __cogito_app_set_accent_from_image(YisVal appv, YisVal pathv, YisVal follow_systemv) {
   cogito_app* app = cogito_app_from_val(appv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* path = cogito_optional_cstr(pathv, &tmp);
   bool follow_system = follow_systemv.tag == EVT_BOOL ? follow_systemv.as.b : false;
   const char* hex = (app && path && path[0]) ? cogito_app_set_accent_from_image(app, path, follow_system) : NULL;
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   if (!hex || !hex[0]) return EV_NULLV;
   return EV_STR(stdr_str_lit(hex));
 }
 
-static void __cogito_app_set_ensor_variant(ErgoVal appv, ErgoVal variantv) {
+static void __cogito_app_set_ensor_variant(YisVal appv, YisVal variantv) {
   cogito_app* app = cogito_app_from_val(appv);
   if (app) {
-    cogito_app_set_ensor_variant(app, (int)ergo_as_int(variantv));
+    cogito_app_set_ensor_variant(app, (int)yis_as_int(variantv));
   }
 }
 
-static void __cogito_app_set_contrast(ErgoVal appv, ErgoVal contrastv) {
+static void __cogito_app_set_contrast(YisVal appv, YisVal contrastv) {
   cogito_app* app = cogito_app_from_val(appv);
   if (app) {
-    cogito_app_set_contrast(app, ergo_as_float(contrastv));
+    cogito_app_set_contrast(app, yis_as_float(contrastv));
   }
 }
 
-static void __cogito_app_set_icon(ErgoVal appv, ErgoVal pathv) {
+static void __cogito_app_set_icon(YisVal appv, YisVal pathv) {
   cogito_app* app = cogito_app_from_val(appv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* path = cogito_optional_cstr(pathv, &tmp);
   if (path) cogito_app_set_icon(app, path);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_app_get_icon(ErgoVal appv) {
+static YisVal __cogito_app_get_icon(YisVal appv) {
   cogito_app* app = cogito_app_from_val(appv);
   const char* path = cogito_app_get_icon(app);
   return EV_STR(stdr_str_lit(path ? path : ""));
 }
 
-static ErgoVal __cogito_app_copy_to_clipboard(ErgoVal appv, ErgoVal textv) {
+static YisVal __cogito_app_copy_to_clipboard(YisVal appv, YisVal textv) {
   cogito_app* app = cogito_app_from_val(appv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_optional_cstr(textv, &tmp);
   bool ok = false;
   if (app && text) ok = cogito_app_copy_to_clipboard(app, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return EV_BOOL(ok);
 }
 
-static ErgoVal __cogito_window(ErgoVal titlev, ErgoVal wv, ErgoVal hv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_window(YisVal titlev, YisVal wv, YisVal hv) {
+  YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
-  int w = (int)ergo_as_int(wv);
-  int h = (int)ergo_as_int(hv);
+  int w = (int)yis_as_int(wv);
+  int h = (int)yis_as_int(hv);
   cogito_window* win = cogito_window_new(title, w, h);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node((cogito_node*)win, COGITO_HANDLE_WINDOW);
 }
 
-static void __cogito_window_set_resizable(ErgoVal winv, ErgoVal onv) {
+static void __cogito_window_set_resizable(YisVal winv, YisVal onv) {
   cogito_window* win = cogito_window_from_val(winv);
   cogito_window_set_resizable(win, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
-static void __cogito_window_set_autosize(ErgoVal winv, ErgoVal onv) {
+static void __cogito_window_set_autosize(YisVal winv, YisVal onv) {
   cogito_window* win = cogito_window_from_val(winv);
   cogito_window_set_autosize(win, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
-static void __cogito_window_set_a11y_label(ErgoVal winv, ErgoVal labelv) {
+static void __cogito_window_set_a11y_label(YisVal winv, YisVal labelv) {
   cogito_window* win = cogito_window_from_val(winv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_optional_cstr(labelv, &tmp);
   if (label) cogito_window_set_a11y_label(win, label);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_window_set_builder(ErgoVal winv, ErgoVal builder) {
+static void __cogito_window_set_builder(YisVal winv, YisVal builder) {
   cogito_window* win = cogito_window_from_val(winv);
   CogitoHandle* h = (CogitoHandle*)winv.as.p;
   if (builder.tag != EVT_FN) {
@@ -683,76 +683,76 @@ static void __cogito_window_set_builder(ErgoVal winv, ErgoVal builder) {
   cogito_window_set_builder(win, cogito_cb_builder, h);
 }
 
-static ErgoVal __cogito_label(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_label(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_label_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_button(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_button(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_button_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_iconbtn(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_iconbtn(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_iconbtn_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_fab(ErgoVal iconv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_fab(YisVal iconv) {
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_node* n = cogito_fab_new(icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
 // Forward declarations for FAB Menu
 struct CogitoNode* cogito_fab_menu_new(const char* icon);
-extern void cogito_fab_menu_add_item(ErgoVal fab_menuv, ErgoVal iconv, ErgoVal action);
+extern void cogito_fab_menu_add_item(YisVal fab_menuv, YisVal iconv, YisVal action);
 
-static void __cogito_fab_set_size(ErgoVal fabv, ErgoVal sizev) {
+static void __cogito_fab_set_size(YisVal fabv, YisVal sizev) {
   cogito_node* fab = cogito_node_from_val(fabv);
-  int size = (int)ergo_as_int(sizev);
+  int size = (int)yis_as_int(sizev);
   if (size < 0) size = 0;
   if (size > 2) size = 2;
   cogito_fab_set_size(fab, size);
 }
 
-static void __cogito_fab_set_color(ErgoVal fabv, ErgoVal colorv) {
+static void __cogito_fab_set_color(YisVal fabv, YisVal colorv) {
   cogito_node* fab = cogito_node_from_val(fabv);
-  int color = (int)ergo_as_int(colorv);
+  int color = (int)yis_as_int(colorv);
   if (color < 0) color = 0;
   if (color > 3) color = 3;
   cogito_fab_set_color(fab, color);
 }
 
-static void __cogito_fab_menu_set_color(ErgoVal fabv, ErgoVal colorv) {
+static void __cogito_fab_menu_set_color(YisVal fabv, YisVal colorv) {
   cogito_node* fab = cogito_node_from_val(fabv);
-  int color = (int)ergo_as_int(colorv);
+  int color = (int)yis_as_int(colorv);
   if (color < 0) color = 0;
   if (color > 3) color = 3;
   cogito_fab_menu_set_color(fab, color);
 }
 
-static void __cogito_fab_set_extended(ErgoVal fabv, ErgoVal extendedv, ErgoVal labelv) {
+static void __cogito_fab_set_extended(YisVal fabv, YisVal extendedv, YisVal labelv) {
   cogito_node* fab = cogito_node_from_val(fabv);
-  bool extended = ergo_as_bool(extendedv);
-  ErgoStr* tmp = NULL;
+  bool extended = yis_as_bool(extendedv);
+  YisStr* tmp = NULL;
   const char* label = cogito_optional_cstr(labelv, &tmp);
   cogito_fab_set_extended(fab, extended, label ? label : "");
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_fab_on_click(ErgoVal fabv, ErgoVal handler) {
+static void __cogito_fab_on_click(YisVal fabv, YisVal handler) {
   cogito_node* fab = cogito_node_from_val(fabv);
   CogitoHandle* h = (CogitoHandle*)fabv.as.p;
   if (handler.tag != EVT_FN) {
@@ -764,43 +764,43 @@ static void __cogito_fab_on_click(ErgoVal fabv, ErgoVal handler) {
   cogito_fab_on_click(fab, cogito_cb_click, h);
 }
 
-static ErgoVal __cogito_fab_menu(ErgoVal iconv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_fab_menu(YisVal iconv) {
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_node* n = cogito_fab_menu_new(icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_fab_menu_add_item(ErgoVal fabv, ErgoVal iconv, ErgoVal actionv) {
+static void __cogito_fab_menu_add_item(YisVal fabv, YisVal iconv, YisVal actionv) {
   cogito_node* node = cogito_node_from_val(fabv);
   cogito_fab_menu_add_item(EV_OBJ(node), iconv, actionv);
 }
 
-static ErgoVal __cogito_chip(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_chip(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_chip_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_chip_set_selected(ErgoVal chipv, ErgoVal sel) {
+static void __cogito_chip_set_selected(YisVal chipv, YisVal sel) {
   cogito_node* n = cogito_node_from_val(chipv);
-  cogito_chip_set_selected(n, ergo_as_bool(sel));
+  cogito_chip_set_selected(n, yis_as_bool(sel));
 }
 
-static ErgoVal __cogito_chip_get_selected(ErgoVal chipv) {
+static YisVal __cogito_chip_get_selected(YisVal chipv) {
   cogito_node* n = cogito_node_from_val(chipv);
   return EV_BOOL(cogito_chip_get_selected(n));
 }
 
-static void __cogito_chip_set_closable(ErgoVal chipv, ErgoVal closable) {
+static void __cogito_chip_set_closable(YisVal chipv, YisVal closable) {
   cogito_node* n = cogito_node_from_val(chipv);
-  cogito_chip_set_closable(n, ergo_as_bool(closable));
+  cogito_chip_set_closable(n, yis_as_bool(closable));
 }
 
-static void __cogito_chip_on_click(ErgoVal chipv, ErgoVal handler) {
+static void __cogito_chip_on_click(YisVal chipv, YisVal handler) {
   cogito_node* chip = cogito_node_from_val(chipv);
   CogitoHandle* h = (CogitoHandle*)chipv.as.p;
   if (handler.tag != EVT_FN) {
@@ -812,7 +812,7 @@ static void __cogito_chip_on_click(ErgoVal chipv, ErgoVal handler) {
   cogito_chip_on_click(chip, cogito_cb_click, h);
 }
 
-static void __cogito_chip_on_close(ErgoVal chipv, ErgoVal handler) {
+static void __cogito_chip_on_close(YisVal chipv, YisVal handler) {
   cogito_node* chip = cogito_node_from_val(chipv);
   CogitoHandle* h = (CogitoHandle*)chipv.as.p;
   if (handler.tag != EVT_FN) {
@@ -824,42 +824,42 @@ static void __cogito_chip_on_close(ErgoVal chipv, ErgoVal handler) {
   cogito_chip_on_close(chip, cogito_cb_action, h);
 }
 // --- Divider ---
-static ErgoVal __cogito_divider(ErgoVal orientationv, ErgoVal insetv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_divider(YisVal orientationv, YisVal insetv) {
+  YisStr* tmp = NULL;
   const char* orientation = NULL;
   if (orientationv.tag != EVT_NULL) {
     orientation = cogito_required_cstr(orientationv, &tmp);
   }
-  bool inset = ergo_as_bool(insetv);
+  bool inset = yis_as_bool(insetv);
   cogito_node* n = cogito_divider_new(orientation, inset);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 // --- Card ---
-static ErgoVal __cogito_card(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_card(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = NULL;
   if (titlev.tag != EVT_NULL) {
     title = cogito_required_cstr(titlev, &tmp);
   }
   cogito_node* n = cogito_card_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_card_set_subtitle(ErgoVal cardv, ErgoVal subtitlev) {
+static void __cogito_card_set_subtitle(YisVal cardv, YisVal subtitlev) {
   cogito_node* n = cogito_node_from_val(cardv);
-  ErgoStr* ts = NULL;
+  YisStr* ts = NULL;
   if (subtitlev.tag == EVT_STR) {
-    ts = (ErgoStr*)subtitlev.as.p;
+    ts = (YisStr*)subtitlev.as.p;
   } else if (subtitlev.tag != EVT_NULL) {
     ts = stdr_to_string(subtitlev);
   }
   cogito_node_set_subtitle(n, ts);
-  if (ts && subtitlev.tag != EVT_STR) ergo_release_val(EV_STR(ts));
+  if (ts && subtitlev.tag != EVT_STR) yis_release_val(EV_STR(ts));
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void __cogito_card_on_click(ErgoVal cardv, ErgoVal handler) {
+static void __cogito_card_on_click(YisVal cardv, YisVal handler) {
   cogito_node* n = cogito_node_from_val(cardv);
   CogitoHandle* h = (CogitoHandle*)cardv.as.p;
   if (handler.tag != EVT_FN) {
@@ -871,9 +871,9 @@ static void __cogito_card_on_click(ErgoVal cardv, ErgoVal handler) {
   cogito_node_on_click(n, cogito_cb_click, h);
 }
 
-static void __cogito_card_set_variant(ErgoVal cardv, ErgoVal variantv) {
+static void __cogito_card_set_variant(YisVal cardv, YisVal variantv) {
   cogito_node* n = cogito_node_from_val(cardv);
-  int v = (int)ergo_as_int(variantv);
+  int v = (int)yis_as_int(variantv);
   n->card.variant = (uint8_t)(v < 0 ? 0 : v > 2 ? 2 : v);
   if (!n->shadow_set) {
     n->shadow_level = (n->card.variant == 0) ? 1 : 0;
@@ -881,14 +881,14 @@ static void __cogito_card_set_variant(ErgoVal cardv, ErgoVal variantv) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void __cogito_card_set_header_image(ErgoVal cardv, ErgoVal urlv) {
+static void __cogito_card_set_header_image(YisVal cardv, YisVal urlv) {
   cogito_node* n = cogito_node_from_val(cardv);
   if (n->card.header_image) {
-    ergo_release_val(EV_OBJ(n->card.header_image));
+    yis_release_val(EV_OBJ(n->card.header_image));
     n->card.header_image = NULL;
   }
   if (urlv.tag != EVT_NULL) {
-    ErgoVal img_val = cogito_image_new(urlv);
+    YisVal img_val = cogito_image_new(urlv);
     if (img_val.tag == EVT_OBJ) {
       n->card.header_image = (cogito_node*)img_val.as.p;
       // img_val already holds the reference; do not release
@@ -897,7 +897,7 @@ static void __cogito_card_set_header_image(ErgoVal cardv, ErgoVal urlv) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void __cogito_card_add_action(ErgoVal cardv, ErgoVal btnv) {
+static void __cogito_card_add_action(YisVal cardv, YisVal btnv) {
   cogito_node* card = cogito_node_from_val(cardv);
   if (btnv.tag != EVT_OBJ) return;
   cogito_node* btn = cogito_node_from_val(btnv);
@@ -912,45 +912,45 @@ static void __cogito_card_add_action(ErgoVal cardv, ErgoVal btnv) {
   cogito_window_relayout(cogito_node_window(card));
 }
 
-static void __cogito_card_add_overflow(ErgoVal cardv, ErgoVal labelv, ErgoVal handler) {
+static void __cogito_card_add_overflow(YisVal cardv, YisVal labelv, YisVal handler) {
   cogito_node* card = cogito_node_from_val(cardv);
   if (!card->card.overflow_btn) {
-    ErgoStr* icon_str = stdr_str_lit("more-vert-symbolic");
+    YisStr* icon_str = stdr_str_lit("more-vert-symbolic");
     cogito_node* btn = cogito_iconbtn_new_obj(icon_str);
-    ergo_release_val(EV_STR(icon_str));
+    yis_release_val(EV_STR(icon_str));
     card->card.overflow_btn = btn;
     cogito_children_add(card, btn);
     cogito_apply_style_tree(btn);
   }
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &tmp);
   CogitoMenuHandler* mh = handler.tag == EVT_FN ? cogito_menu_handler_new(handler) : NULL;
   cogito_iconbtn_add_menu(card->card.overflow_btn, label, mh ? cogito_cb_menu : NULL, mh);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   cogito_window_relayout(cogito_node_window(card));
 }
 
 // --- Avatar ---
-static ErgoVal __cogito_avatar(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_avatar(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = NULL;
   if (textv.tag != EVT_NULL) {
     text = cogito_required_cstr(textv, &tmp);
   }
   cogito_node* n = cogito_avatar_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_avatar_set_image(ErgoVal avatarv, ErgoVal pathv) {
+static void __cogito_avatar_set_image(YisVal avatarv, YisVal pathv) {
   cogito_node* n = cogito_node_from_val(avatarv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* path = cogito_required_cstr(pathv, &tmp);
   cogito_avatar_set_image(n, path);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 // --- Badge ---
-static ErgoVal __cogito_badge(ErgoVal countv) {
+static YisVal __cogito_badge(YisVal countv) {
   int count = 0;
   if (countv.tag == EVT_INT) count = (int)countv.as.i;
   else if (countv.tag == EVT_FLOAT) count = (int)countv.as.f;
@@ -958,7 +958,7 @@ static ErgoVal __cogito_badge(ErgoVal countv) {
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_badge_set_count(ErgoVal badgev, ErgoVal countv) {
+static void __cogito_badge_set_count(YisVal badgev, YisVal countv) {
   cogito_node* n = cogito_node_from_val(badgev);
   int count = 0;
   if (countv.tag == EVT_INT) count = (int)countv.as.i;
@@ -966,23 +966,23 @@ static void __cogito_badge_set_count(ErgoVal badgev, ErgoVal countv) {
   cogito_badge_set_count(n, count);
 }
 
-static ErgoVal __cogito_badge_get_count(ErgoVal badgev) {
+static YisVal __cogito_badge_get_count(YisVal badgev) {
   cogito_node* n = cogito_node_from_val(badgev);
   return EV_INT(cogito_badge_get_count(n));
 }
 // --- Banner ---
-static ErgoVal __cogito_banner(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_banner(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_banner_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_banner_set_action(ErgoVal bannerv, ErgoVal textv, ErgoVal handlerv) {
+static void __cogito_banner_set_action(YisVal bannerv, YisVal textv, YisVal handlerv) {
   cogito_node* banner = cogito_node_from_val(bannerv);
   CogitoHandle* h = (CogitoHandle*)bannerv.as.p;
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   if (handlerv.tag != EVT_FN) {
     cogito_set_handler(h, &h->on_action, handlerv);
@@ -991,50 +991,50 @@ static void __cogito_banner_set_action(ErgoVal bannerv, ErgoVal textv, ErgoVal h
     cogito_set_handler(h, &h->on_action, handlerv);
     cogito_banner_set_action(banner, text, cogito_cb_action, h);
   }
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_banner_set_icon(ErgoVal bannerv, ErgoVal iconv) {
+static void __cogito_banner_set_icon(YisVal bannerv, YisVal iconv) {
   cogito_node* banner = cogito_node_from_val(bannerv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_banner_set_icon(banner, icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 // --- BottomSheet ---
-static ErgoVal __cogito_bottom_sheet(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_bottom_sheet(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = NULL;
   if (titlev.tag != EVT_NULL) {
     title = cogito_required_cstr(titlev, &tmp);
   }
   cogito_node* n = cogito_bottom_sheet_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_side_sheet(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_side_sheet(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = NULL;
   if (titlev.tag != EVT_NULL) {
     title = cogito_required_cstr(titlev, &tmp);
   }
   cogito_node* n = cogito_side_sheet_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_side_sheet_set_mode(ErgoVal sheetv, ErgoVal modev) {
+static void __cogito_side_sheet_set_mode(YisVal sheetv, YisVal modev) {
   cogito_node* n = cogito_node_from_val(sheetv);
-  cogito_side_sheet_set_mode(n, (int)ergo_as_int(modev));
+  cogito_side_sheet_set_mode(n, (int)yis_as_int(modev));
 }
 // --- TimePicker ---
-static ErgoVal __cogito_timepicker(void) {
+static YisVal __cogito_timepicker(void) {
   cogito_node* n = cogito_timepicker_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_timepicker_on_change(ErgoVal tpv, ErgoVal handler) {
+static void __cogito_timepicker_on_change(YisVal tpv, YisVal handler) {
   cogito_node* tp = cogito_node_from_val(tpv);
   CogitoHandle* h = (CogitoHandle*)tpv.as.p;
   if (handler.tag != EVT_FN) {
@@ -1046,17 +1046,17 @@ static void __cogito_timepicker_on_change(ErgoVal tpv, ErgoVal handler) {
   cogito_timepicker_on_change(tp, cogito_cb_change, h);
 }
 
-static ErgoVal __cogito_timepicker_get_hour(ErgoVal tpv) {
+static YisVal __cogito_timepicker_get_hour(YisVal tpv) {
   cogito_node* n = cogito_node_from_val(tpv);
   return EV_INT(cogito_timepicker_get_hour(n));
 }
 
-static ErgoVal __cogito_timepicker_get_minute(ErgoVal tpv) {
+static YisVal __cogito_timepicker_get_minute(YisVal tpv) {
   cogito_node* n = cogito_node_from_val(tpv);
   return EV_INT(cogito_timepicker_get_minute(n));
 }
 
-static void __cogito_timepicker_set_time(ErgoVal tpv, ErgoVal hourv, ErgoVal minv) {
+static void __cogito_timepicker_set_time(YisVal tpv, YisVal hourv, YisVal minv) {
   cogito_node* n = cogito_node_from_val(tpv);
   int hour = 0, minute = 0;
   if (hourv.tag == EVT_INT) hour = (int)hourv.as.i;
@@ -1066,27 +1066,27 @@ static void __cogito_timepicker_set_time(ErgoVal tpv, ErgoVal hourv, ErgoVal min
   cogito_timepicker_set_time(n, hour, minute);
 }
 // --- ActiveIndicator ---
-static ErgoVal __cogito_active_indicator(void) {
+static YisVal __cogito_active_indicator(void) {
   cogito_node* n = cogito_active_indicator_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 // --- SwitchBar ---
-static ErgoVal __cogito_switchbar(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_switchbar(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_switchbar_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static ErgoVal __cogito_switchbar_get_checked(ErgoVal sbv) {
+static YisVal __cogito_switchbar_get_checked(YisVal sbv) {
   cogito_node* n = cogito_node_from_val(sbv);
   return EV_BOOL(cogito_switchbar_get_checked(n));
 }
-static void __cogito_switchbar_set_checked(ErgoVal sbv, ErgoVal val) {
+static void __cogito_switchbar_set_checked(YisVal sbv, YisVal val) {
   cogito_node* n = cogito_node_from_val(sbv);
-  cogito_switchbar_set_checked(n, ergo_as_bool(val));
+  cogito_switchbar_set_checked(n, yis_as_bool(val));
 }
-static void __cogito_switchbar_on_change(ErgoVal sbv, ErgoVal handler) {
+static void __cogito_switchbar_on_change(YisVal sbv, YisVal handler) {
   cogito_node* sb = cogito_node_from_val(sbv);
   CogitoHandle* h = (CogitoHandle*)sbv.as.p;
   if (handler.tag != EVT_FN) {
@@ -1098,11 +1098,11 @@ static void __cogito_switchbar_on_change(ErgoVal sbv, ErgoVal handler) {
   cogito_switchbar_on_change(sb, cogito_cb_change, h);
 }
 // --- DrawingArea ---
-static ErgoVal __cogito_drawing_area(void) {
+static YisVal __cogito_drawing_area(void) {
   cogito_node* n = cogito_drawing_area_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_drawing_area_on_press(ErgoVal dav, ErgoVal handler) {
+static void __cogito_drawing_area_on_press(YisVal dav, YisVal handler) {
   cogito_node* da = cogito_node_from_val(dav);
   CogitoHandle* h = (CogitoHandle*)dav.as.p;
   if (handler.tag != EVT_FN) {
@@ -1113,7 +1113,7 @@ static void __cogito_drawing_area_on_press(ErgoVal dav, ErgoVal handler) {
   cogito_set_handler(h, &h->on_click, handler);
   cogito_drawing_area_on_press(da, cogito_cb_click, h);
 }
-static void __cogito_drawing_area_on_drag(ErgoVal dav, ErgoVal handler) {
+static void __cogito_drawing_area_on_drag(YisVal dav, YisVal handler) {
   cogito_node* da = cogito_node_from_val(dav);
   CogitoHandle* h = (CogitoHandle*)dav.as.p;
   if (handler.tag != EVT_FN) {
@@ -1124,7 +1124,7 @@ static void __cogito_drawing_area_on_drag(ErgoVal dav, ErgoVal handler) {
   cogito_set_handler(h, &h->on_change, handler);
   cogito_drawing_area_on_drag(da, cogito_cb_change, h);
 }
-static void __cogito_drawing_area_on_release(ErgoVal dav, ErgoVal handler) {
+static void __cogito_drawing_area_on_release(YisVal dav, YisVal handler) {
   cogito_node* da = cogito_node_from_val(dav);
   CogitoHandle* h = (CogitoHandle*)dav.as.p;
   if (handler.tag != EVT_FN) {
@@ -1135,7 +1135,7 @@ static void __cogito_drawing_area_on_release(ErgoVal dav, ErgoVal handler) {
   cogito_set_handler(h, &h->on_action, handler);
   cogito_drawing_area_on_release(da, cogito_cb_action, h);
 }
-static void __cogito_drawing_area_on_draw(ErgoVal dav, ErgoVal handler) {
+static void __cogito_drawing_area_on_draw(YisVal dav, YisVal handler) {
   cogito_node* da = cogito_node_from_val(dav);
   CogitoHandle* h = (CogitoHandle*)dav.as.p;
   if (handler.tag != EVT_FN) {
@@ -1146,135 +1146,135 @@ static void __cogito_drawing_area_on_draw(ErgoVal dav, ErgoVal handler) {
   cogito_set_handler(h, &h->on_draw, handler);
   cogito_drawing_area_on_draw(da, cogito_cb_draw, h);
 }
-static ErgoVal __cogito_drawing_area_get_x(ErgoVal dav) {
+static YisVal __cogito_drawing_area_get_x(YisVal dav) {
   cogito_node* da = cogito_node_from_val(dav);
   return EV_INT(cogito_drawing_area_get_x(da));
 }
-static ErgoVal __cogito_drawing_area_get_y(ErgoVal dav) {
+static YisVal __cogito_drawing_area_get_y(YisVal dav) {
   cogito_node* da = cogito_node_from_val(dav);
   return EV_INT(cogito_drawing_area_get_y(da));
 }
-static ErgoVal __cogito_drawing_area_get_pressed(ErgoVal dav) {
+static YisVal __cogito_drawing_area_get_pressed(YisVal dav) {
   cogito_node* da = cogito_node_from_val(dav);
   return EV_BOOL(cogito_drawing_area_get_pressed(da));
 }
-static void __cogito_drawing_area_clear(ErgoVal dav) {
+static void __cogito_drawing_area_clear(YisVal dav) {
   cogito_node* da = cogito_node_from_val(dav);
   cogito_drawing_area_clear(da);
 }
-static void __cogito_canvas_set_color(ErgoVal dav, ErgoVal colorv) {
+static void __cogito_canvas_set_color(YisVal dav, YisVal colorv) {
   cogito_node* da = cogito_node_from_val(dav);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* color = cogito_required_cstr(colorv, &tmp);
   cogito_canvas_set_color(da, color);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_canvas_set_line_width(ErgoVal dav, ErgoVal widthv) {
+static void __cogito_canvas_set_line_width(YisVal dav, YisVal widthv) {
   cogito_node* da = cogito_node_from_val(dav);
-  cogito_canvas_set_line_width(da, (int)ergo_as_int(widthv));
+  cogito_canvas_set_line_width(da, (int)yis_as_int(widthv));
 }
-static void __cogito_canvas_line(ErgoVal dav, ErgoVal x1v, ErgoVal y1v,
-                                 ErgoVal x2v, ErgoVal y2v) {
+static void __cogito_canvas_line(YisVal dav, YisVal x1v, YisVal y1v,
+                                 YisVal x2v, YisVal y2v) {
   cogito_node* da = cogito_node_from_val(dav);
-  cogito_canvas_line(da, (int)ergo_as_int(x1v), (int)ergo_as_int(y1v),
-                     (int)ergo_as_int(x2v), (int)ergo_as_int(y2v));
+  cogito_canvas_line(da, (int)yis_as_int(x1v), (int)yis_as_int(y1v),
+                     (int)yis_as_int(x2v), (int)yis_as_int(y2v));
 }
-static void __cogito_canvas_rect(ErgoVal dav, ErgoVal xv, ErgoVal yv,
-                                 ErgoVal wv, ErgoVal hv) {
+static void __cogito_canvas_rect(YisVal dav, YisVal xv, YisVal yv,
+                                 YisVal wv, YisVal hv) {
   cogito_node* da = cogito_node_from_val(dav);
-  cogito_canvas_rect(da, (int)ergo_as_int(xv), (int)ergo_as_int(yv),
-                     (int)ergo_as_int(wv), (int)ergo_as_int(hv));
+  cogito_canvas_rect(da, (int)yis_as_int(xv), (int)yis_as_int(yv),
+                     (int)yis_as_int(wv), (int)yis_as_int(hv));
 }
-static void __cogito_canvas_fill_rect(ErgoVal dav, ErgoVal xv, ErgoVal yv,
-                                      ErgoVal wv, ErgoVal hv) {
+static void __cogito_canvas_fill_rect(YisVal dav, YisVal xv, YisVal yv,
+                                      YisVal wv, YisVal hv) {
   cogito_node* da = cogito_node_from_val(dav);
-  cogito_canvas_fill_rect(da, (int)ergo_as_int(xv), (int)ergo_as_int(yv),
-                          (int)ergo_as_int(wv), (int)ergo_as_int(hv));
+  cogito_canvas_fill_rect(da, (int)yis_as_int(xv), (int)yis_as_int(yv),
+                          (int)yis_as_int(wv), (int)yis_as_int(hv));
 }
 // --- Shape ---
-static ErgoVal __cogito_shape(ErgoVal presetv) {
-  cogito_node* n = cogito_shape_new((int)ergo_as_int(presetv));
+static YisVal __cogito_shape(YisVal presetv) {
+  cogito_node* n = cogito_shape_new((int)yis_as_int(presetv));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_shape_set_preset(ErgoVal shapev, ErgoVal presetv) {
+static void __cogito_shape_set_preset(YisVal shapev, YisVal presetv) {
   cogito_node* n = cogito_node_from_val(shapev);
-  cogito_shape_set_preset(n, (int)ergo_as_int(presetv));
+  cogito_shape_set_preset(n, (int)yis_as_int(presetv));
 }
-static ErgoVal __cogito_shape_get_preset(ErgoVal shapev) {
+static YisVal __cogito_shape_get_preset(YisVal shapev) {
   cogito_node* n = cogito_node_from_val(shapev);
   return EV_INT(cogito_shape_get_preset(n));
 }
-static void __cogito_shape_set_size(ErgoVal shapev, ErgoVal sizev) {
+static void __cogito_shape_set_size(YisVal shapev, YisVal sizev) {
   cogito_node* n = cogito_node_from_val(shapev);
-  cogito_shape_set_size(n, (int)ergo_as_int(sizev));
+  cogito_shape_set_size(n, (int)yis_as_int(sizev));
 }
-static ErgoVal __cogito_shape_get_size(ErgoVal shapev) {
+static YisVal __cogito_shape_get_size(YisVal shapev) {
   cogito_node* n = cogito_node_from_val(shapev);
   return EV_INT(cogito_shape_get_size(n));
 }
-static void __cogito_shape_set_color(ErgoVal shapev, ErgoVal colorv) {
+static void __cogito_shape_set_color(YisVal shapev, YisVal colorv) {
   cogito_node* n = cogito_node_from_val(shapev);
   if (colorv.tag == EVT_INT || colorv.tag == EVT_FLOAT) {
-    cogito_shape_set_color_style(n, (int)ergo_as_int(colorv));
+    cogito_shape_set_color_style(n, (int)yis_as_int(colorv));
     return;
   }
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(colorv, &tmp);
   cogito_shape_set_color(n, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_shape_set_color_style(ErgoVal shapev, ErgoVal stylev) {
+static void __cogito_shape_set_color_style(YisVal shapev, YisVal stylev) {
   cogito_node* n = cogito_node_from_val(shapev);
-  cogito_shape_set_color_style(n, (int)ergo_as_int(stylev));
+  cogito_shape_set_color_style(n, (int)yis_as_int(stylev));
 }
-static ErgoVal __cogito_shape_get_color_style(ErgoVal shapev) {
+static YisVal __cogito_shape_get_color_style(YisVal shapev) {
   cogito_node* n = cogito_node_from_val(shapev);
   return EV_INT(cogito_shape_get_color_style(n));
 }
-static void __cogito_shape_set_vertex(ErgoVal shapev, ErgoVal idxv, ErgoVal xv, ErgoVal yv) {
+static void __cogito_shape_set_vertex(YisVal shapev, YisVal idxv, YisVal xv, YisVal yv) {
   cogito_node* n = cogito_node_from_val(shapev);
-  cogito_shape_set_vertex(n, (int)ergo_as_int(idxv), (float)ergo_as_float(xv),
-                          (float)ergo_as_float(yv));
+  cogito_shape_set_vertex(n, (int)yis_as_int(idxv), (float)yis_as_float(xv),
+                          (float)yis_as_float(yv));
 }
-static ErgoVal __cogito_shape_get_vertex_x(ErgoVal shapev, ErgoVal idxv) {
+static YisVal __cogito_shape_get_vertex_x(YisVal shapev, YisVal idxv) {
   cogito_node* n = cogito_node_from_val(shapev);
-  return EV_FLOAT((double)cogito_shape_get_vertex_x(n, (int)ergo_as_int(idxv)));
+  return EV_FLOAT((double)cogito_shape_get_vertex_x(n, (int)yis_as_int(idxv)));
 }
-static ErgoVal __cogito_shape_get_vertex_y(ErgoVal shapev, ErgoVal idxv) {
+static YisVal __cogito_shape_get_vertex_y(YisVal shapev, YisVal idxv) {
   cogito_node* n = cogito_node_from_val(shapev);
-  return EV_FLOAT((double)cogito_shape_get_vertex_y(n, (int)ergo_as_int(idxv)));
+  return EV_FLOAT((double)cogito_shape_get_vertex_y(n, (int)yis_as_int(idxv)));
 }
 // --- ContentList ---
-static ErgoVal __cogito_content_list(void) {
+static YisVal __cogito_content_list(void) {
   cogito_node* n = cogito_content_list_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 // --- EmptyPage ---
-static ErgoVal __cogito_empty_page(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_empty_page(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
   cogito_node* n = cogito_empty_page_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_empty_page_set_description(ErgoVal epv, ErgoVal descv) {
+static void __cogito_empty_page_set_description(YisVal epv, YisVal descv) {
   cogito_node* n = cogito_node_from_val(epv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* desc = cogito_required_cstr(descv, &tmp);
   cogito_empty_page_set_description(n, desc);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_empty_page_set_icon(ErgoVal epv, ErgoVal iconv) {
+static void __cogito_empty_page_set_icon(YisVal epv, YisVal iconv) {
   cogito_node* n = cogito_node_from_val(epv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_empty_page_set_icon(n, icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_empty_page_set_action(ErgoVal epv, ErgoVal textv, ErgoVal handlerv) {
+static void __cogito_empty_page_set_action(YisVal epv, YisVal textv, YisVal handlerv) {
   cogito_node* ep = cogito_node_from_val(epv);
   CogitoHandle* h = (CogitoHandle*)epv.as.p;
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   if (handlerv.tag != EVT_FN) {
     cogito_set_handler(h, &h->on_action, handlerv);
@@ -1283,81 +1283,81 @@ static void __cogito_empty_page_set_action(ErgoVal epv, ErgoVal textv, ErgoVal h
     cogito_set_handler(h, &h->on_action, handlerv);
     cogito_empty_page_set_action(ep, text, cogito_cb_action, h);
   }
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 // --- TipView ---
-static ErgoVal __cogito_tip_view(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_tip_view(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_tip_view_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_tip_view_set_title(ErgoVal tvv, ErgoVal titlev) {
+static void __cogito_tip_view_set_title(YisVal tvv, YisVal titlev) {
   cogito_node* n = cogito_node_from_val(tvv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
   cogito_tip_view_set_title(n, title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 // --- SettingsWindow ---
-static ErgoVal __cogito_settings_window(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_settings_window(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
   cogito_node* n = cogito_settings_window_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 // --- SettingsPage ---
-static ErgoVal __cogito_settings_page(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_settings_page(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
   cogito_node* n = cogito_settings_page_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 // --- SettingsList ---
-static ErgoVal __cogito_settings_list(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_settings_list(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
   cogito_node* n = cogito_settings_list_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 // --- SettingsRow ---
-static ErgoVal __cogito_settings_row(ErgoVal labelv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_settings_row(YisVal labelv) {
+  YisStr* tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &tmp);
   cogito_node* n = cogito_settings_row_new(label);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 // --- WelcomeScreen ---
-static ErgoVal __cogito_welcome_screen(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_welcome_screen(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
   cogito_node* n = cogito_welcome_screen_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_welcome_screen_set_description(ErgoVal wsv, ErgoVal descv) {
+static void __cogito_welcome_screen_set_description(YisVal wsv, YisVal descv) {
   cogito_node* n = cogito_node_from_val(wsv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* desc = cogito_required_cstr(descv, &tmp);
   cogito_welcome_screen_set_description(n, desc);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_welcome_screen_set_icon(ErgoVal wsv, ErgoVal iconv) {
+static void __cogito_welcome_screen_set_icon(YisVal wsv, YisVal iconv) {
   cogito_node* n = cogito_node_from_val(wsv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_welcome_screen_set_icon(n, icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_welcome_screen_set_action(ErgoVal wsv, ErgoVal textv, ErgoVal handlerv) {
+static void __cogito_welcome_screen_set_action(YisVal wsv, YisVal textv, YisVal handlerv) {
   cogito_node* ws = cogito_node_from_val(wsv);
   CogitoHandle* h = (CogitoHandle*)wsv.as.p;
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   if (handlerv.tag != EVT_FN) {
     cogito_set_handler(h, &h->on_action, handlerv);
@@ -1366,32 +1366,32 @@ static void __cogito_welcome_screen_set_action(ErgoVal wsv, ErgoVal textv, ErgoV
     cogito_set_handler(h, &h->on_action, handlerv);
     cogito_welcome_screen_set_action(ws, text, cogito_cb_action, h);
   }
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 // --- ViewDual ---
-static ErgoVal __cogito_view_dual(void) {
+static YisVal __cogito_view_dual(void) {
   cogito_node* n = cogito_view_dual_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_view_dual_set_ratio(ErgoVal vdv, ErgoVal ratiov) {
+static void __cogito_view_dual_set_ratio(YisVal vdv, YisVal ratiov) {
   cogito_node* n = cogito_node_from_val(vdv);
-  double ratio = ergo_as_float(ratiov);
+  double ratio = yis_as_float(ratiov);
   cogito_view_dual_set_ratio(n, ratio);
 }
 // --- ViewChooser ---
-static ErgoVal __cogito_view_chooser(void) {
+static YisVal __cogito_view_chooser(void) {
   cogito_node* n = cogito_view_chooser_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_view_chooser_set_items(ErgoVal vcv, ErgoVal arrv) {
+static void __cogito_view_chooser_set_items(YisVal vcv, YisVal arrv) {
   cogito_node* n = cogito_node_from_val(vcv);
-  if (arrv.tag != EVT_ARR) ergo_trap("view_chooser_set_items expects array");
-  ErgoArr* a = (ErgoArr*)arrv.as.p;
+  if (arrv.tag != EVT_ARR) yis_trap("view_chooser_set_items expects array");
+  YisArr* a = (YisArr*)arrv.as.p;
   size_t len = (size_t)a->len;
   const char** items = (const char**)malloc(sizeof(const char*) * len);
-  ErgoStr** tmps = (ErgoStr**)malloc(sizeof(ErgoStr*) * len);
+  YisStr** tmps = (YisStr**)malloc(sizeof(YisStr*) * len);
   for (size_t i = 0; i < len; i++) {
-    ErgoVal v = ergo_arr_get(a, (int64_t)i);
+    YisVal v = yis_arr_get(a, (int64_t)i);
     tmps[i
     ] = NULL;
     items[i
@@ -1401,76 +1401,76 @@ static void __cogito_view_chooser_set_items(ErgoVal vcv, ErgoVal arrv) {
   cogito_view_chooser_set_items(n, items, len);
   for (size_t i = 0; i < len; i++) {
     if (tmps[i
-    ]) ergo_release_val(EV_STR(tmps[i
+    ]) yis_release_val(EV_STR(tmps[i
     ]));
   }
   free(items);
   free(tmps);
 }
-static void __cogito_view_chooser_bind(ErgoVal vcv, ErgoVal vsv) {
+static void __cogito_view_chooser_bind(YisVal vcv, YisVal vsv) {
   cogito_node* vc = cogito_node_from_val(vcv);
   cogito_node* vs = cogito_node_from_val(vsv);
   cogito_view_chooser_bind(vc, vs);
 }
 // --- AboutWindow ---
-static ErgoVal __cogito_about_window(ErgoVal namev, ErgoVal versionv) {
-  ErgoStr* tmp1 = NULL;
-  ErgoStr* tmp2 = NULL;
+static YisVal __cogito_about_window(YisVal namev, YisVal versionv) {
+  YisStr* tmp1 = NULL;
+  YisStr* tmp2 = NULL;
   const char* name = cogito_required_cstr(namev, &tmp1);
   const char* version = cogito_required_cstr(versionv, &tmp2);
   cogito_node* n = cogito_about_window_new(name, version);
-  if (tmp1) ergo_release_val(EV_STR(tmp1));
-  if (tmp2) ergo_release_val(EV_STR(tmp2));
+  if (tmp1) yis_release_val(EV_STR(tmp1));
+  if (tmp2) yis_release_val(EV_STR(tmp2));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_about_window_set_icon(ErgoVal awv, ErgoVal iconv) {
+static void __cogito_about_window_set_icon(YisVal awv, YisVal iconv) {
   cogito_node* n = cogito_node_from_val(awv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_about_window_set_icon(n, icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_about_window_set_description(ErgoVal awv, ErgoVal descv) {
+static void __cogito_about_window_set_description(YisVal awv, YisVal descv) {
   cogito_node* n = cogito_node_from_val(awv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* desc = cogito_required_cstr(descv, &tmp);
   cogito_about_window_set_description(n, desc);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_about_window_set_website(ErgoVal awv, ErgoVal urlv) {
+static void __cogito_about_window_set_website(YisVal awv, YisVal urlv) {
   cogito_node* n = cogito_node_from_val(awv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* url = cogito_required_cstr(urlv, &tmp);
   cogito_about_window_set_website(n, url);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
-static void __cogito_about_window_set_issue_url(ErgoVal awv, ErgoVal urlv) {
+static void __cogito_about_window_set_issue_url(YisVal awv, YisVal urlv) {
   cogito_node* n = cogito_node_from_val(awv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* url = cogito_required_cstr(urlv, &tmp);
   cogito_about_window_set_issue_url(n, url);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 // --- MenuButton ---
-static ErgoVal __cogito_menu_button(ErgoVal iconv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_menu_button(YisVal iconv) {
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_node* n = cogito_menu_button_new(icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 // --- SplitButton ---
-static ErgoVal __cogito_split_button(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_split_button(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_split_button_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
-static void __cogito_split_button_add_menu(ErgoVal btnv, ErgoVal labelv, ErgoVal handlerv) {
+static void __cogito_split_button_add_menu(YisVal btnv, YisVal labelv, YisVal handlerv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   CogitoHandle* h = (CogitoHandle*)btnv.as.p;
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &tmp);
   if (handlerv.tag == EVT_FN) {
     cogito_set_handler(h, &h->on_action, handlerv);
@@ -1478,13 +1478,13 @@ static void __cogito_split_button_add_menu(ErgoVal btnv, ErgoVal labelv, ErgoVal
   } else {
     cogito_split_button_add_menu(btn, label, NULL, NULL);
   }
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_split_button_add_menu_section(ErgoVal btnv, ErgoVal labelv, ErgoVal handlerv) {
+static void __cogito_split_button_add_menu_section(YisVal btnv, YisVal labelv, YisVal handlerv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   CogitoHandle* h = (CogitoHandle*)btnv.as.p;
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &tmp);
   if (handlerv.tag == EVT_FN) {
     cogito_set_handler(h, &h->on_action, handlerv);
@@ -1492,241 +1492,241 @@ static void __cogito_split_button_add_menu_section(ErgoVal btnv, ErgoVal labelv,
   } else {
     cogito_split_button_add_menu_section(btn, label, NULL, NULL);
   }
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_split_button_set_size(ErgoVal btnv, ErgoVal sizev) {
+static void __cogito_split_button_set_size(YisVal btnv, YisVal sizev) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  int size = (int)ergo_as_int(sizev);
+  int size = (int)yis_as_int(sizev);
   cogito_split_button_set_size(btn, size);
 }
 
-static void __cogito_split_button_set_variant(ErgoVal btnv, ErgoVal variantv) {
+static void __cogito_split_button_set_variant(YisVal btnv, YisVal variantv) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  int variant = (int)ergo_as_int(variantv);
+  int variant = (int)yis_as_int(variantv);
   cogito_split_button_set_variant(btn, variant);
 }
 
-static ErgoVal __cogito_image(ErgoVal iconv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_image(YisVal iconv) {
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_node* n = cogito_image_new(icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_image_set_icon(ErgoVal imgv, ErgoVal iconv) {
+static void __cogito_image_set_icon(YisVal imgv, YisVal iconv) {
   cogito_node* n = cogito_node_from_val(imgv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_image_set_icon(n, icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_image_set_source(ErgoVal imgv, ErgoVal sourcev) {
+static void __cogito_image_set_source(YisVal imgv, YisVal sourcev) {
   cogito_node* n = cogito_node_from_val(imgv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* source = cogito_required_cstr(sourcev, &tmp);
   cogito_image_set_source(n, source);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_image_set_size(ErgoVal imgv, ErgoVal wv, ErgoVal hv) {
+static void __cogito_image_set_size(YisVal imgv, YisVal wv, YisVal hv) {
   cogito_node* n = cogito_node_from_val(imgv);
-  int w = (int)ergo_as_int(wv);
-  int h = (int)ergo_as_int(hv);
+  int w = (int)yis_as_int(wv);
+  int h = (int)yis_as_int(hv);
   cogito_image_set_size(n, w, h);
 }
 
-static void __cogito_image_set_radius(ErgoVal imgv, ErgoVal rv) {
+static void __cogito_image_set_radius(YisVal imgv, YisVal rv) {
   cogito_node* n = cogito_node_from_val(imgv);
-  int r = (int)ergo_as_int(rv);
+  int r = (int)yis_as_int(rv);
   cogito_image_set_radius(n, r);
 }
 
-static void __cogito_image_set_alt_text(ErgoVal imgv, ErgoVal altv) {
+static void __cogito_image_set_alt_text(YisVal imgv, YisVal altv) {
   cogito_node* n = cogito_node_from_val(imgv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* alt = cogito_optional_cstr(altv, &tmp);
   if (alt) cogito_image_set_alt_text(n, alt);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_appbar(ErgoVal titlev, ErgoVal subtitlev) {
-  ErgoStr* ttmp = NULL;
-  ErgoStr* stmp = NULL;
+static YisVal __cogito_appbar(YisVal titlev, YisVal subtitlev) {
+  YisStr* ttmp = NULL;
+  YisStr* stmp = NULL;
   const char* title = cogito_required_cstr(titlev, &ttmp);
   const char* subtitle = cogito_required_cstr(subtitlev, &stmp);
   cogito_node* n = cogito_appbar_new(title, subtitle);
-  if (ttmp) ergo_release_val(EV_STR(ttmp));
-  if (stmp) ergo_release_val(EV_STR(stmp));
+  if (ttmp) yis_release_val(EV_STR(ttmp));
+  if (stmp) yis_release_val(EV_STR(stmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_appbar_add_button(ErgoVal appbarv, ErgoVal iconv, ErgoVal handler) {
+static YisVal __cogito_appbar_add_button(YisVal appbarv, YisVal iconv, YisVal handler) {
   cogito_node* appbar = cogito_node_from_val(appbarv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_node* btn = cogito_appbar_add_button(appbar, icon, NULL, NULL);
-  if (tmp) ergo_release_val(EV_STR(tmp));
-  ErgoVal btnv = cogito_wrap_node(btn, COGITO_HANDLE_NODE);
+  if (tmp) yis_release_val(EV_STR(tmp));
+  YisVal btnv = cogito_wrap_node(btn, COGITO_HANDLE_NODE);
   if (handler.tag == EVT_FN) __cogito_button_on_click(btnv, handler);
   return btnv;
 }
 
-static void __cogito_appbar_set_controls(ErgoVal appbarv, ErgoVal layoutv) {
+static void __cogito_appbar_set_controls(YisVal appbarv, YisVal layoutv) {
   cogito_node* appbar = cogito_node_from_val(appbarv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* layout = cogito_optional_cstr(layoutv, &tmp);
   if (layout) cogito_appbar_set_controls(appbar, layout);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_appbar_set_title(ErgoVal appbarv, ErgoVal titlev) {
+static void __cogito_appbar_set_title(YisVal appbarv, YisVal titlev) {
   cogito_node* appbar = cogito_node_from_val(appbarv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* title = cogito_optional_cstr(titlev, &tmp);
   cogito_appbar_set_title(appbar, title ? title : "");
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_appbar_set_subtitle(ErgoVal appbarv, ErgoVal subtitlev) {
+static void __cogito_appbar_set_subtitle(YisVal appbarv, YisVal subtitlev) {
   cogito_node* appbar = cogito_node_from_val(appbarv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* subtitle = cogito_optional_cstr(subtitlev, &tmp);
   cogito_appbar_set_subtitle(appbar, subtitle ? subtitle : "");
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_dialog(ErgoVal titlev) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_dialog(YisVal titlev) {
+  YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
   cogito_node* n = cogito_dialog_new(title);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_dialog_close(ErgoVal dialogv) {
+static void __cogito_dialog_close(YisVal dialogv) {
   cogito_node* dialog = cogito_node_from_val(dialogv);
   cogito_dialog_close(dialog);
 }
 
-static void __cogito_dialog_remove(ErgoVal dialogv) {
+static void __cogito_dialog_remove(YisVal dialogv) {
   cogito_node* dialog = cogito_node_from_val(dialogv);
   cogito_dialog_remove(dialog);
 }
 
-static ErgoVal __cogito_dialog_slot(void) {
+static YisVal __cogito_dialog_slot(void) {
   cogito_node* n = cogito_dialog_slot_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_dialog_slot_show(ErgoVal slotv, ErgoVal dialogv) {
+static void __cogito_dialog_slot_show(YisVal slotv, YisVal dialogv) {
   cogito_node* slot = cogito_node_from_val(slotv);
   cogito_node* dialog = cogito_node_from_val(dialogv);
   cogito_dialog_slot_show(slot, dialog);
 }
 
-static void __cogito_dialog_slot_clear(ErgoVal slotv) {
+static void __cogito_dialog_slot_clear(YisVal slotv) {
   cogito_node* slot = cogito_node_from_val(slotv);
   cogito_dialog_slot_clear(slot);
 }
 
-static void __cogito_window_set_dialog(ErgoVal winv, ErgoVal dialogv) {
+static void __cogito_window_set_dialog(YisVal winv, YisVal dialogv) {
   cogito_window* win = cogito_window_from_val(winv);
   cogito_node* dialog = cogito_node_from_val(dialogv);
   cogito_window_set_dialog(win, dialog);
 }
 
-static void __cogito_window_clear_dialog(ErgoVal winv) {
+static void __cogito_window_clear_dialog(YisVal winv) {
   cogito_window* win = cogito_window_from_val(winv);
   cogito_window_clear_dialog(win);
 }
 
-static void __cogito_window_set_side_sheet(ErgoVal winv, ErgoVal side_sheetv) {
+static void __cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
   cogito_window* win = cogito_window_from_val(winv);
   cogito_node* side_sheet = cogito_node_from_val(side_sheetv);
   cogito_window_set_side_sheet(win, side_sheet);
 }
 
-static void __cogito_window_clear_side_sheet(ErgoVal winv) {
+static void __cogito_window_clear_side_sheet(YisVal winv) {
   cogito_window* win = cogito_window_from_val(winv);
   cogito_window_clear_side_sheet(win);
 }
 
-static ErgoVal __cogito_node_window(ErgoVal nodev) {
+static YisVal __cogito_node_window(YisVal nodev) {
   cogito_node* n = cogito_node_from_val(nodev);
   cogito_window* win = cogito_node_window(n);
   return cogito_wrap_node((cogito_node*)win, COGITO_HANDLE_WINDOW);
 }
 
-static ErgoVal __cogito_find_parent(ErgoVal nodev) {
+static YisVal __cogito_find_parent(YisVal nodev) {
   cogito_node* n = cogito_node_from_val(nodev);
   cogito_node* p = cogito_node_get_parent(n);
   if (!p) return EV_NULLV;
   return cogito_wrap_node(p, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_find_children(ErgoVal nodev) {
+static YisVal __cogito_find_children(YisVal nodev) {
   cogito_node* n = cogito_node_from_val(nodev);
   size_t count = cogito_node_get_child_count(n);
-  ErgoArr* arr = stdr_arr_new((int)count);
+  YisArr* arr = stdr_arr_new((int)count);
   for (size_t i = 0; i < count; i++) {
     cogito_node* child = cogito_node_get_child(n, i);
-    ergo_arr_add(arr, cogito_wrap_node(child, COGITO_HANDLE_NODE));
+    yis_arr_add(arr, cogito_wrap_node(child, COGITO_HANDLE_NODE));
   }
   return EV_ARR(arr);
 }
 
-static void __cogito_label_set_class(ErgoVal labelv, ErgoVal classv) {
+static void __cogito_label_set_class(YisVal labelv, YisVal classv) {
   cogito_node* n = cogito_node_from_val(labelv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* cls = cogito_optional_cstr(classv, &tmp);
   if (cls) cogito_node_set_class(n, cls);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_label_set_text(ErgoVal labelv, ErgoVal textv) {
+static void __cogito_label_set_text(YisVal labelv, YisVal textv) {
   cogito_node* n = cogito_node_from_val(labelv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_optional_cstr(textv, &tmp);
   if (text) cogito_node_set_text(n, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_node_set_class(ErgoVal nodev, ErgoVal classv) {
+static void __cogito_node_set_class(YisVal nodev, YisVal classv) {
   cogito_node* n = cogito_node_from_val(nodev);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* cls = cogito_optional_cstr(classv, &tmp);
   if (cls) cogito_node_set_class(n, cls);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_node_set_a11y_label(ErgoVal nodev, ErgoVal labelv) {
+static void __cogito_node_set_a11y_label(YisVal nodev, YisVal labelv) {
   cogito_node* n = cogito_node_from_val(nodev);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_optional_cstr(labelv, &tmp);
   if (label) cogito_node_set_a11y_label(n, label);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_node_set_a11y_role(ErgoVal nodev, ErgoVal rolev) {
+static void __cogito_node_set_a11y_role(YisVal nodev, YisVal rolev) {
   cogito_node* n = cogito_node_from_val(nodev);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* role = cogito_optional_cstr(rolev, &tmp);
   if (role) cogito_node_set_a11y_role(n, role);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_node_set_tooltip(ErgoVal nodev, ErgoVal textv) {
+static void __cogito_node_set_tooltip(YisVal nodev, YisVal textv) {
   cogito_node* n = cogito_node_from_val(nodev);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_optional_cstr(textv, &tmp);
   if (text) cogito_node_set_tooltip(n, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_pointer_capture(ErgoVal nodev) {
+static void __cogito_pointer_capture(YisVal nodev) {
   if (nodev.tag == EVT_NULL) {
     cogito_pointer_release();
     return;
@@ -1739,79 +1739,79 @@ static void __cogito_pointer_release(void) {
   cogito_pointer_release();
 }
 
-static void __cogito_label_set_wrap(ErgoVal labelv, ErgoVal onv) {
+static void __cogito_label_set_wrap(YisVal labelv, YisVal onv) {
   cogito_node* n = cogito_node_from_val(labelv);
   cogito_label_set_wrap(n, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
-static void __cogito_label_set_ellipsis(ErgoVal labelv, ErgoVal onv) {
+static void __cogito_label_set_ellipsis(YisVal labelv, YisVal onv) {
   cogito_node* n = cogito_node_from_val(labelv);
   cogito_label_set_ellipsis(n, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
-static void __cogito_label_set_align(ErgoVal labelv, ErgoVal alignv) {
+static void __cogito_label_set_align(YisVal labelv, YisVal alignv) {
   cogito_node* n = cogito_node_from_val(labelv);
-  cogito_label_set_align(n, (int)ergo_as_int(alignv));
+  cogito_label_set_align(n, (int)yis_as_int(alignv));
 }
 
-static ErgoVal __cogito_checkbox(ErgoVal textv, ErgoVal groupv) {
-  ErgoStr* ttmp = NULL;
-  ErgoStr* gtmp = NULL;
+static YisVal __cogito_checkbox(YisVal textv, YisVal groupv) {
+  YisStr* ttmp = NULL;
+  YisStr* gtmp = NULL;
   const char* text = cogito_required_cstr(textv, &ttmp);
   const char* group = cogito_optional_cstr(groupv, &gtmp);
   cogito_node* n = cogito_checkbox_new(text, group);
-  if (ttmp) ergo_release_val(EV_STR(ttmp));
-  if (gtmp) ergo_release_val(EV_STR(gtmp));
+  if (ttmp) yis_release_val(EV_STR(ttmp));
+  if (gtmp) yis_release_val(EV_STR(gtmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_switch(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_switch(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_switch_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_textfield(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_textfield(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_textfield_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_textview(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_textview(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_textview_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_searchfield(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_searchfield(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_searchfield_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_searchfield_set_text(ErgoVal sfv, ErgoVal textv) {
+static void __cogito_searchfield_set_text(YisVal sfv, YisVal textv) {
   cogito_node* sf = cogito_node_from_val(sfv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_searchfield_set_text(sf, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_searchfield_get_text(ErgoVal sfv) {
+static YisVal __cogito_searchfield_get_text(YisVal sfv) {
   cogito_node* sf = cogito_node_from_val(sfv);
   const char* text = cogito_searchfield_get_text(sf);
   return EV_STR(stdr_str_lit(text ? text : ""));
 }
 
-static void __cogito_searchfield_on_change(ErgoVal sfv, ErgoVal handler) {
+static void __cogito_searchfield_on_change(YisVal sfv, YisVal handler) {
   cogito_node* sf = cogito_node_from_val(sfv);
   CogitoHandle* h = (CogitoHandle*)sfv.as.p;
   if (handler.tag != EVT_FN) {
@@ -1823,17 +1823,17 @@ static void __cogito_searchfield_on_change(ErgoVal sfv, ErgoVal handler) {
   cogito_searchfield_on_change(sf, cogito_cb_change, h);
 }
 
-static ErgoVal __cogito_dropdown(void) {
+static YisVal __cogito_dropdown(void) {
   cogito_node* n = cogito_dropdown_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_datepicker(void) {
+static YisVal __cogito_datepicker(void) {
   cogito_node* n = cogito_datepicker_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_datepicker_on_change(ErgoVal dpv, ErgoVal handler) {
+static void __cogito_datepicker_on_change(YisVal dpv, YisVal handler) {
   cogito_node* dp = cogito_node_from_val(dpv);
   CogitoHandle* h = (CogitoHandle*)dpv.as.p;
   if (handler.tag != EVT_FN) {
@@ -1845,57 +1845,57 @@ static void __cogito_datepicker_on_change(ErgoVal dpv, ErgoVal handler) {
   cogito_datepicker_on_change(dp, cogito_cb_change, h);
 }
 
-static ErgoVal __cogito_stepper(ErgoVal minv, ErgoVal maxv, ErgoVal valuev, ErgoVal stepv) {
-  cogito_node* n = cogito_stepper_new(ergo_as_float(minv), ergo_as_float(maxv), ergo_as_float(valuev), ergo_as_float(stepv));
+static YisVal __cogito_stepper(YisVal minv, YisVal maxv, YisVal valuev, YisVal stepv) {
+  cogito_node* n = cogito_stepper_new(yis_as_float(minv), yis_as_float(maxv), yis_as_float(valuev), yis_as_float(stepv));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_slider(ErgoVal minv, ErgoVal maxv, ErgoVal valuev) {
-  cogito_node* n = cogito_slider_new(ergo_as_float(minv), ergo_as_float(maxv), ergo_as_float(valuev));
+static YisVal __cogito_slider(YisVal minv, YisVal maxv, YisVal valuev) {
+  cogito_node* n = cogito_slider_new(yis_as_float(minv), yis_as_float(maxv), yis_as_float(valuev));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_slider_range(ErgoVal minv, ErgoVal maxv, ErgoVal startv, ErgoVal endv) {
-  cogito_node* n = cogito_slider_range_new(ergo_as_float(minv), ergo_as_float(maxv), ergo_as_float(startv), ergo_as_float(endv));
+static YisVal __cogito_slider_range(YisVal minv, YisVal maxv, YisVal startv, YisVal endv) {
+  cogito_node* n = cogito_slider_range_new(yis_as_float(minv), yis_as_float(maxv), yis_as_float(startv), yis_as_float(endv));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_tabs(void) {
+static YisVal __cogito_tabs(void) {
   cogito_node* n = cogito_tabs_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_nav_rail(void) {
+static YisVal __cogito_nav_rail(void) {
   cogito_node* n = cogito_nav_rail_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_buttongroup(void) {
+static YisVal __cogito_buttongroup(void) {
   cogito_node* n = cogito_buttongroup_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_view_switcher(void) {
+static YisVal __cogito_view_switcher(void) {
   cogito_node* n = cogito_view_switcher_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_progress(ErgoVal valuev) {
-  cogito_node* n = cogito_progress_new(ergo_as_float(valuev));
+static YisVal __cogito_progress(YisVal valuev) {
+  cogito_node* n = cogito_progress_new(yis_as_float(valuev));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_treeview(void) {
+static YisVal __cogito_treeview(void) {
   cogito_node* n = cogito_treeview_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_colorpicker(void) {
+static YisVal __cogito_colorpicker(void) {
   cogito_node* n = cogito_colorpicker_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_colorpicker_on_change(ErgoVal cpv, ErgoVal handler) {
+static void __cogito_colorpicker_on_change(YisVal cpv, YisVal handler) {
   cogito_node* cp = cogito_node_from_val(cpv);
   CogitoHandle* h = (CogitoHandle*)cpv.as.p;
   if (handler.tag != EVT_FN) {
@@ -1907,240 +1907,240 @@ static void __cogito_colorpicker_on_change(ErgoVal cpv, ErgoVal handler) {
   cogito_colorpicker_on_change(cp, cogito_cb_change, h);
 }
 
-static void __cogito_colorpicker_set_hex(ErgoVal cpv, ErgoVal hexv) {
+static void __cogito_colorpicker_set_hex(YisVal cpv, YisVal hexv) {
   cogito_node* cp = cogito_node_from_val(cpv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* hex = cogito_optional_cstr(hexv, &tmp);
   if (hex) cogito_colorpicker_set_hex(cp, hex);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_colorpicker_get_hex(ErgoVal cpv) {
+static YisVal __cogito_colorpicker_get_hex(YisVal cpv) {
   cogito_node* cp = cogito_node_from_val(cpv);
   const char* hex = cogito_colorpicker_get_hex(cp);
   return EV_STR(stdr_str_lit(hex ? hex : ""));
 }
 
-static ErgoVal __cogito_toasts(void) {
+static YisVal __cogito_toasts(void) {
   cogito_node* n = cogito_toasts_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_toast(ErgoVal textv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_toast(YisVal textv) {
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_node* n = cogito_toast_new(text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_toolbar(void) {
+static YisVal __cogito_toolbar(void) {
   cogito_node* n = cogito_toolbar_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_toolbar_set_vibrant(ErgoVal toolbarv, ErgoVal vibrantv) {
+static void __cogito_toolbar_set_vibrant(YisVal toolbarv, YisVal vibrantv) {
   cogito_node* toolbar = cogito_node_from_val(toolbarv);
-  cogito_toolbar_set_vibrant(toolbar, ergo_as_bool(vibrantv));
+  cogito_toolbar_set_vibrant(toolbar, yis_as_bool(vibrantv));
 }
 
-static ErgoVal __cogito_toolbar_get_vibrant(ErgoVal toolbarv) {
+static YisVal __cogito_toolbar_get_vibrant(YisVal toolbarv) {
   cogito_node* toolbar = cogito_node_from_val(toolbarv);
   return EV_BOOL(cogito_toolbar_get_vibrant(toolbar));
 }
 
-static void __cogito_toolbar_set_vertical(ErgoVal toolbarv, ErgoVal verticalv) {
+static void __cogito_toolbar_set_vertical(YisVal toolbarv, YisVal verticalv) {
   cogito_node* toolbar = cogito_node_from_val(toolbarv);
-  cogito_toolbar_set_vertical(toolbar, ergo_as_bool(verticalv));
+  cogito_toolbar_set_vertical(toolbar, yis_as_bool(verticalv));
 }
 
-static ErgoVal __cogito_toolbar_get_vertical(ErgoVal toolbarv) {
+static YisVal __cogito_toolbar_get_vertical(YisVal toolbarv) {
   cogito_node* toolbar = cogito_node_from_val(toolbarv);
   return EV_BOOL(cogito_toolbar_get_vertical(toolbar));
 }
 
-static ErgoVal __cogito_vstack(void) {
+static YisVal __cogito_vstack(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_VSTACK), COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_hstack(void) {
+static YisVal __cogito_hstack(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_HSTACK), COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_zstack(void) {
+static YisVal __cogito_zstack(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_ZSTACK), COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_fixed(void) {
+static YisVal __cogito_fixed(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_FIXED), COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_scroller(void) {
+static YisVal __cogito_scroller(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_SCROLLER), COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_carousel(void) {
+static YisVal __cogito_carousel(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_CAROUSEL), COGITO_HANDLE_NODE);
 }
 
-static void __cogito_carousel_set_active_index(ErgoVal carouselv, ErgoVal idxv) {
+static void __cogito_carousel_set_active_index(YisVal carouselv, YisVal idxv) {
   cogito_node* carousel = cogito_node_from_val(carouselv);
-  cogito_carousel_set_active_index(carousel, (int)ergo_as_int(idxv));
+  cogito_carousel_set_active_index(carousel, (int)yis_as_int(idxv));
 }
 
-static ErgoVal __cogito_carousel_get_active_index(ErgoVal carouselv) {
+static YisVal __cogito_carousel_get_active_index(YisVal carouselv) {
   cogito_node* carousel = cogito_node_from_val(carouselv);
   int idx = cogito_carousel_get_active_index(carousel);
   return EV_INT(idx);
 }
 
-static ErgoVal __cogito_carousel_item(void) {
+static YisVal __cogito_carousel_item(void) {
   return cogito_wrap_node(cogito_carousel_item_new(), COGITO_HANDLE_NODE);
 }
 
-static void __cogito_carousel_item_set_text(ErgoVal itemv, ErgoVal textv) {
+static void __cogito_carousel_item_set_text(YisVal itemv, YisVal textv) {
   cogito_node* item = cogito_node_from_val(itemv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_carousel_item_set_text(item, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_carousel_item_set_halign(ErgoVal itemv, ErgoVal alignv) {
+static void __cogito_carousel_item_set_halign(YisVal itemv, YisVal alignv) {
   cogito_node* item = cogito_node_from_val(itemv);
-  cogito_carousel_item_set_halign(item, (int)ergo_as_int(alignv));
+  cogito_carousel_item_set_halign(item, (int)yis_as_int(alignv));
 }
 
-static void __cogito_carousel_item_set_valign(ErgoVal itemv, ErgoVal alignv) {
+static void __cogito_carousel_item_set_valign(YisVal itemv, YisVal alignv) {
   cogito_node* item = cogito_node_from_val(itemv);
-  cogito_carousel_item_set_valign(item, (int)ergo_as_int(alignv));
+  cogito_carousel_item_set_valign(item, (int)yis_as_int(alignv));
 }
 
-static ErgoVal __cogito_list(void) {
+static YisVal __cogito_list(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_LIST), COGITO_HANDLE_NODE);
 }
 
-static ErgoVal __cogito_grid(ErgoVal cols) {
-  return cogito_wrap_node(cogito_grid_new_with_cols((int)ergo_as_int(cols)), COGITO_HANDLE_NODE);
+static YisVal __cogito_grid(YisVal cols) {
+  return cogito_wrap_node(cogito_grid_new_with_cols((int)yis_as_int(cols)), COGITO_HANDLE_NODE);
 }
 
-static void __cogito_container_add(ErgoVal parentv, ErgoVal childv) {
+static void __cogito_container_add(YisVal parentv, YisVal childv) {
   cogito_node* parent = cogito_node_from_val(parentv);
   cogito_node* child = cogito_node_from_val(childv);
   cogito_node_add(parent, child);
 }
 
-static void __cogito_container_set_margins(ErgoVal nodev, ErgoVal top, ErgoVal right, ErgoVal bottom, ErgoVal left) {
+static void __cogito_container_set_margins(YisVal nodev, YisVal top, YisVal right, YisVal bottom, YisVal left) {
   cogito_node* node = cogito_node_from_val(nodev);
-  cogito_node_set_margins(node, (int)ergo_as_int(top), (int)ergo_as_int(right), (int)ergo_as_int(bottom), (int)ergo_as_int(left));
+  cogito_node_set_margins(node, (int)yis_as_int(top), (int)yis_as_int(right), (int)yis_as_int(bottom), (int)yis_as_int(left));
 }
 
-static void __cogito_container_set_align(ErgoVal nodev, ErgoVal align) {
+static void __cogito_container_set_align(YisVal nodev, YisVal align) {
   cogito_node* node = cogito_node_from_val(nodev);
-  cogito_node_set_align(node, (int)ergo_as_int(align));
+  cogito_node_set_align(node, (int)yis_as_int(align));
 }
 
-static void __cogito_container_set_halign(ErgoVal nodev, ErgoVal align) {
+static void __cogito_container_set_halign(YisVal nodev, YisVal align) {
   cogito_node* node = cogito_node_from_val(nodev);
-  cogito_node_set_halign(node, (int)ergo_as_int(align));
+  cogito_node_set_halign(node, (int)yis_as_int(align));
 }
 
-static void __cogito_container_set_valign(ErgoVal nodev, ErgoVal align) {
+static void __cogito_container_set_valign(YisVal nodev, YisVal align) {
   cogito_node* node = cogito_node_from_val(nodev);
-  cogito_node_set_valign(node, (int)ergo_as_int(align));
+  cogito_node_set_valign(node, (int)yis_as_int(align));
 }
 
-static void __cogito_container_set_hexpand(ErgoVal nodev, ErgoVal expand) {
+static void __cogito_container_set_hexpand(YisVal nodev, YisVal expand) {
   cogito_node* node = cogito_node_from_val(nodev);
-  cogito_node_set_hexpand(node, ergo_as_bool(expand));
+  cogito_node_set_hexpand(node, yis_as_bool(expand));
 }
 
-static void __cogito_container_set_vexpand(ErgoVal nodev, ErgoVal expand) {
+static void __cogito_container_set_vexpand(YisVal nodev, YisVal expand) {
   cogito_node* node = cogito_node_from_val(nodev);
-  bool expand_bool = ergo_as_bool(expand);
+  bool expand_bool = yis_as_bool(expand);
   cogito_node_set_vexpand(node, expand_bool);
 }
 
-static void __cogito_container_set_gap(ErgoVal nodev, ErgoVal gap) {
+static void __cogito_container_set_gap(YisVal nodev, YisVal gap) {
   cogito_node* node = cogito_node_from_val(nodev);
-  cogito_node_set_gap(node, (int)ergo_as_int(gap));
+  cogito_node_set_gap(node, (int)yis_as_int(gap));
 }
 
-static void __cogito_container_set_padding(ErgoVal nodev, ErgoVal top, ErgoVal right, ErgoVal bottom, ErgoVal left) {
+static void __cogito_container_set_padding(YisVal nodev, YisVal top, YisVal right, YisVal bottom, YisVal left) {
   cogito_node* node = cogito_node_from_val(nodev);
-  cogito_node_set_padding(node, (int)ergo_as_int(top), (int)ergo_as_int(right), (int)ergo_as_int(bottom), (int)ergo_as_int(left));
+  cogito_node_set_padding(node, (int)yis_as_int(top), (int)yis_as_int(right), (int)yis_as_int(bottom), (int)yis_as_int(left));
 }
 
-static void __cogito_fixed_set_pos(ErgoVal fixedv, ErgoVal childv, ErgoVal xv, ErgoVal yv) {
+static void __cogito_fixed_set_pos(YisVal fixedv, YisVal childv, YisVal xv, YisVal yv) {
   cogito_node* fixed = cogito_node_from_val(fixedv);
   cogito_node* child = cogito_node_from_val(childv);
-  cogito_fixed_set_pos(fixed, child, (int)ergo_as_int(xv), (int)ergo_as_int(yv));
+  cogito_fixed_set_pos(fixed, child, (int)yis_as_int(xv), (int)yis_as_int(yv));
 }
 
-static void __cogito_scroller_set_axes(ErgoVal scv, ErgoVal hv, ErgoVal vv) {
+static void __cogito_scroller_set_axes(YisVal scv, YisVal hv, YisVal vv) {
   cogito_node* sc = cogito_node_from_val(scv);
   bool h = hv.tag == EVT_BOOL ? hv.as.b : false;
   bool v = vv.tag == EVT_BOOL ? vv.as.b : false;
   cogito_scroller_set_axes(sc, h, v);
 }
 
-static void __cogito_grid_set_gap(ErgoVal gridv, ErgoVal xv, ErgoVal yv) {
+static void __cogito_grid_set_gap(YisVal gridv, YisVal xv, YisVal yv) {
   cogito_node* grid = cogito_node_from_val(gridv);
-  cogito_grid_set_gap(grid, (int)ergo_as_int(xv), (int)ergo_as_int(yv));
+  cogito_grid_set_gap(grid, (int)yis_as_int(xv), (int)yis_as_int(yv));
 }
 
-static void __cogito_grid_set_span(ErgoVal childv, ErgoVal col_span, ErgoVal row_span) {
+static void __cogito_grid_set_span(YisVal childv, YisVal col_span, YisVal row_span) {
   cogito_node* child = cogito_node_from_val(childv);
-  cogito_grid_set_span(child, (int)ergo_as_int(col_span), (int)ergo_as_int(row_span));
+  cogito_grid_set_span(child, (int)yis_as_int(col_span), (int)yis_as_int(row_span));
 }
 
-static void __cogito_grid_set_align(ErgoVal childv, ErgoVal halign, ErgoVal valign) {
+static void __cogito_grid_set_align(YisVal childv, YisVal halign, YisVal valign) {
   cogito_node* child = cogito_node_from_val(childv);
-  cogito_grid_set_align(child, (int)ergo_as_int(halign), (int)ergo_as_int(valign));
+  cogito_grid_set_align(child, (int)yis_as_int(halign), (int)yis_as_int(valign));
 }
 
-static void __cogito_node_set_disabled(ErgoVal nodev, ErgoVal onv) {
+static void __cogito_node_set_disabled(YisVal nodev, YisVal onv) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_disabled(node, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
-static void __cogito_node_set_editable(ErgoVal nodev, ErgoVal onv) {
+static void __cogito_node_set_editable(YisVal nodev, YisVal onv) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_editable(node, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
-static ErgoVal __cogito_node_get_editable(ErgoVal nodev) {
+static YisVal __cogito_node_get_editable(YisVal nodev) {
   cogito_node* node = cogito_node_from_val(nodev);
   return EV_BOOL(cogito_node_get_editable(node));
 }
 
-static void __cogito_node_set_id(ErgoVal nodev, ErgoVal idv) {
+static void __cogito_node_set_id(YisVal nodev, YisVal idv) {
   cogito_node* node = cogito_node_from_val(nodev);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* id = cogito_optional_cstr(idv, &tmp);
   if (id) cogito_node_set_id(node, id);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_button_set_text(ErgoVal btnv, ErgoVal textv) {
+static void __cogito_button_set_text(YisVal btnv, YisVal textv) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_button_set_text(btn, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_button_set_size(ErgoVal btnv, ErgoVal sizev) {
+static void __cogito_button_set_size(YisVal btnv, YisVal sizev) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_button_set_size(btn, (int)ergo_as_int(sizev));
+  cogito_button_set_size(btn, (int)yis_as_int(sizev));
 }
 
-static ErgoVal __cogito_button_get_size(ErgoVal btnv) {
+static YisVal __cogito_button_get_size(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_INT(cogito_button_get_size(btn));
 }
 
-static void __cogito_button_on_click(ErgoVal btnv, ErgoVal handler) {
+static void __cogito_button_on_click(YisVal btnv, YisVal handler) {
   cogito_node* btn = cogito_node_from_val(btnv);
   CogitoHandle* h = (CogitoHandle*)btnv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2152,196 +2152,196 @@ static void __cogito_button_on_click(ErgoVal btnv, ErgoVal handler) {
   cogito_node_on_click(btn, cogito_cb_click, h);
 }
 
-static void __cogito_button_add_menu(ErgoVal btnv, ErgoVal labelv, ErgoVal handler) {
+static void __cogito_button_add_menu(YisVal btnv, YisVal labelv, YisVal handler) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &tmp);
   CogitoMenuHandler* mh = handler.tag == EVT_FN ? cogito_menu_handler_new(handler) : NULL;
   cogito_button_add_menu(btn, label, mh ? cogito_cb_menu : NULL, mh);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_button_add_menu_section(ErgoVal btnv, ErgoVal labelv, ErgoVal handler) {
+static void __cogito_button_add_menu_section(YisVal btnv, YisVal labelv, YisVal handler) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &tmp);
   CogitoMenuHandler* mh = handler.tag == EVT_FN ? cogito_menu_handler_new(handler) : NULL;
   cogito_button_add_menu_section(btn, label, mh ? cogito_cb_menu : NULL, mh);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_iconbtn_add_menu(ErgoVal btnv, ErgoVal labelv, ErgoVal handler) {
+static void __cogito_iconbtn_add_menu(YisVal btnv, YisVal labelv, YisVal handler) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &tmp);
   CogitoMenuHandler* mh = handler.tag == EVT_FN ? cogito_menu_handler_new(handler) : NULL;
   cogito_iconbtn_add_menu(btn, label, mh ? cogito_cb_menu : NULL, mh);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_iconbtn_add_menu_section(ErgoVal btnv, ErgoVal labelv, ErgoVal handler) {
+static void __cogito_iconbtn_add_menu_section(YisVal btnv, YisVal labelv, YisVal handler) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &tmp);
   CogitoMenuHandler* mh = handler.tag == EVT_FN ? cogito_menu_handler_new(handler) : NULL;
   cogito_iconbtn_add_menu_section(btn, label, mh ? cogito_cb_menu : NULL, mh);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
 // Menu item property setters (work on any node with menu items)
 // Use public API (cogito_menu_set_*) so these compile against the opaque cogito_node.
-static void __cogito_menu_set_icon(ErgoVal nodev, ErgoVal iconv) {
+static void __cogito_menu_set_icon(YisVal nodev, YisVal iconv) {
   cogito_node* n = cogito_node_from_val(nodev);
   if (!n) return;
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_menu_set_icon(n, icon);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_menu_set_shortcut(ErgoVal nodev, ErgoVal shortcutv) {
+static void __cogito_menu_set_shortcut(YisVal nodev, YisVal shortcutv) {
   cogito_node* n = cogito_node_from_val(nodev);
   if (!n) return;
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* shortcut = cogito_required_cstr(shortcutv, &tmp);
   cogito_menu_set_shortcut(n, shortcut);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_menu_set_submenu(ErgoVal nodev, ErgoVal submenuv) {
+static void __cogito_menu_set_submenu(YisVal nodev, YisVal submenuv) {
   cogito_node* n = cogito_node_from_val(nodev);
   if (!n) return;
-  cogito_menu_set_submenu(n, ergo_as_bool(submenuv));
+  cogito_menu_set_submenu(n, yis_as_bool(submenuv));
 }
 
-static void __cogito_menu_set_toggled(ErgoVal nodev, ErgoVal toggledv) {
+static void __cogito_menu_set_toggled(YisVal nodev, YisVal toggledv) {
   cogito_node* n = cogito_node_from_val(nodev);
   if (!n) return;
-  cogito_menu_set_toggled(n, ergo_as_bool(toggledv));
+  cogito_menu_set_toggled(n, yis_as_bool(toggledv));
 }
 
 // Icon button setters/getters
-static void __cogito_iconbtn_set_shape(ErgoVal btnv, ErgoVal shapev) {
+static void __cogito_iconbtn_set_shape(YisVal btnv, YisVal shapev) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_iconbtn_set_shape(btn, (int)ergo_as_int(shapev));
+  cogito_iconbtn_set_shape(btn, (int)yis_as_int(shapev));
 }
 
-static ErgoVal __cogito_iconbtn_get_shape(ErgoVal btnv) {
+static YisVal __cogito_iconbtn_get_shape(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_INT(cogito_iconbtn_get_shape(btn));
 }
 
-static void __cogito_iconbtn_set_color_style(ErgoVal btnv, ErgoVal stylev) {
+static void __cogito_iconbtn_set_color_style(YisVal btnv, YisVal stylev) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_iconbtn_set_color_style(btn, (int)ergo_as_int(stylev));
+  cogito_iconbtn_set_color_style(btn, (int)yis_as_int(stylev));
 }
 
-static ErgoVal __cogito_iconbtn_get_color_style(ErgoVal btnv) {
+static YisVal __cogito_iconbtn_get_color_style(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_INT(cogito_iconbtn_get_color_style(btn));
 }
 
-static void __cogito_iconbtn_set_width(ErgoVal btnv, ErgoVal widthv) {
+static void __cogito_iconbtn_set_width(YisVal btnv, YisVal widthv) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_iconbtn_set_width(btn, (int)ergo_as_int(widthv));
+  cogito_iconbtn_set_width(btn, (int)yis_as_int(widthv));
 }
 
-static ErgoVal __cogito_iconbtn_get_width(ErgoVal btnv) {
+static YisVal __cogito_iconbtn_get_width(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_INT(cogito_iconbtn_get_width(btn));
 }
 
-static void __cogito_iconbtn_set_toggle(ErgoVal btnv, ErgoVal togglev) {
+static void __cogito_iconbtn_set_toggle(YisVal btnv, YisVal togglev) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_iconbtn_set_toggle(btn, ergo_as_bool(togglev));
+  cogito_iconbtn_set_toggle(btn, yis_as_bool(togglev));
 }
 
-static ErgoVal __cogito_iconbtn_get_toggle(ErgoVal btnv) {
+static YisVal __cogito_iconbtn_get_toggle(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_BOOL(cogito_iconbtn_get_toggle(btn));
 }
 
-static void __cogito_iconbtn_set_checked(ErgoVal btnv, ErgoVal checkedv) {
+static void __cogito_iconbtn_set_checked(YisVal btnv, YisVal checkedv) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_iconbtn_set_checked(btn, ergo_as_bool(checkedv));
+  cogito_iconbtn_set_checked(btn, yis_as_bool(checkedv));
 }
 
-static ErgoVal __cogito_iconbtn_get_checked(ErgoVal btnv) {
+static YisVal __cogito_iconbtn_get_checked(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_BOOL(cogito_iconbtn_get_checked(btn));
 }
 
-static void __cogito_iconbtn_set_size(ErgoVal btnv, ErgoVal sizev) {
+static void __cogito_iconbtn_set_size(YisVal btnv, YisVal sizev) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_iconbtn_set_size(btn, (int)ergo_as_int(sizev));
+  cogito_iconbtn_set_size(btn, (int)yis_as_int(sizev));
 }
 
-static ErgoVal __cogito_iconbtn_get_size(ErgoVal btnv) {
+static YisVal __cogito_iconbtn_get_size(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_INT(cogito_iconbtn_get_size(btn));
 }
 
-static void __cogito_iconbtn_set_menu_divider(ErgoVal btnv, ErgoVal dividerv) {
+static void __cogito_iconbtn_set_menu_divider(YisVal btnv, YisVal dividerv) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_button_set_menu_divider(btn, ergo_as_bool(dividerv));
+  cogito_button_set_menu_divider(btn, yis_as_bool(dividerv));
 }
 
-static ErgoVal __cogito_iconbtn_get_menu_divider(ErgoVal btnv) {
-  cogito_node* btn = cogito_node_from_val(btnv);
-  return EV_BOOL(cogito_button_get_menu_divider(btn));
-}
-
-static void __cogito_iconbtn_set_menu_item_gap(ErgoVal btnv, ErgoVal gapv) {
-  cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_button_set_menu_item_gap(btn, (int)ergo_as_int(gapv));
-}
-
-static ErgoVal __cogito_iconbtn_get_menu_item_gap(ErgoVal btnv) {
-  cogito_node* btn = cogito_node_from_val(btnv);
-  return EV_INT(cogito_button_get_menu_item_gap(btn));
-}
-
-static void __cogito_button_set_menu_divider(ErgoVal btnv, ErgoVal dividerv) {
-  cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_button_set_menu_divider(btn, ergo_as_bool(dividerv));
-}
-
-static ErgoVal __cogito_button_get_menu_divider(ErgoVal btnv) {
+static YisVal __cogito_iconbtn_get_menu_divider(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_BOOL(cogito_button_get_menu_divider(btn));
 }
 
-static void __cogito_button_set_menu_item_gap(ErgoVal btnv, ErgoVal gapv) {
+static void __cogito_iconbtn_set_menu_item_gap(YisVal btnv, YisVal gapv) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_button_set_menu_item_gap(btn, (int)ergo_as_int(gapv));
+  cogito_button_set_menu_item_gap(btn, (int)yis_as_int(gapv));
 }
 
-static ErgoVal __cogito_button_get_menu_item_gap(ErgoVal btnv) {
+static YisVal __cogito_iconbtn_get_menu_item_gap(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_INT(cogito_button_get_menu_item_gap(btn));
 }
 
-static void __cogito_iconbtn_set_menu_vibrant(ErgoVal btnv, ErgoVal vibrantv) {
+static void __cogito_button_set_menu_divider(YisVal btnv, YisVal dividerv) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_button_set_menu_vibrant(btn, ergo_as_bool(vibrantv));
+  cogito_button_set_menu_divider(btn, yis_as_bool(dividerv));
 }
 
-static ErgoVal __cogito_iconbtn_get_menu_vibrant(ErgoVal btnv) {
+static YisVal __cogito_button_get_menu_divider(YisVal btnv) {
+  cogito_node* btn = cogito_node_from_val(btnv);
+  return EV_BOOL(cogito_button_get_menu_divider(btn));
+}
+
+static void __cogito_button_set_menu_item_gap(YisVal btnv, YisVal gapv) {
+  cogito_node* btn = cogito_node_from_val(btnv);
+  cogito_button_set_menu_item_gap(btn, (int)yis_as_int(gapv));
+}
+
+static YisVal __cogito_button_get_menu_item_gap(YisVal btnv) {
+  cogito_node* btn = cogito_node_from_val(btnv);
+  return EV_INT(cogito_button_get_menu_item_gap(btn));
+}
+
+static void __cogito_iconbtn_set_menu_vibrant(YisVal btnv, YisVal vibrantv) {
+  cogito_node* btn = cogito_node_from_val(btnv);
+  cogito_button_set_menu_vibrant(btn, yis_as_bool(vibrantv));
+}
+
+static YisVal __cogito_iconbtn_get_menu_vibrant(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_BOOL(cogito_button_get_menu_vibrant(btn));
 }
 
-static void __cogito_button_set_menu_vibrant(ErgoVal btnv, ErgoVal vibrantv) {
+static void __cogito_button_set_menu_vibrant(YisVal btnv, YisVal vibrantv) {
   cogito_node* btn = cogito_node_from_val(btnv);
-  cogito_button_set_menu_vibrant(btn, ergo_as_bool(vibrantv));
+  cogito_button_set_menu_vibrant(btn, yis_as_bool(vibrantv));
 }
 
-static ErgoVal __cogito_button_get_menu_vibrant(ErgoVal btnv) {
+static YisVal __cogito_button_get_menu_vibrant(YisVal btnv) {
   cogito_node* btn = cogito_node_from_val(btnv);
   return EV_BOOL(cogito_button_get_menu_vibrant(btn));
 }
 
-static void __cogito_iconbtn_on_click(ErgoVal btnv, ErgoVal handler) {
+static void __cogito_iconbtn_on_click(YisVal btnv, YisVal handler) {
   cogito_node* btn = cogito_node_from_val(btnv);
   CogitoHandle* h = (CogitoHandle*)btnv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2353,27 +2353,27 @@ static void __cogito_iconbtn_on_click(ErgoVal btnv, ErgoVal handler) {
   cogito_node_on_click(btn, cogito_cb_click, h);
 }
 
-static void __cogito_checkbox_set_checked(ErgoVal cbv, ErgoVal checkedv) {
+static void __cogito_checkbox_set_checked(YisVal cbv, YisVal checkedv) {
   cogito_node* cb = cogito_node_from_val(cbv);
   cogito_checkbox_set_checked(cb, checkedv.tag == EVT_BOOL ? checkedv.as.b : false);
 }
 
-static ErgoVal __cogito_checkbox_get_checked(ErgoVal cbv) {
+static YisVal __cogito_checkbox_get_checked(YisVal cbv) {
   cogito_node* cb = cogito_node_from_val(cbv);
   return EV_BOOL(cogito_checkbox_get_checked(cb));
 }
 
-static void __cogito_switch_set_checked(ErgoVal swv, ErgoVal checkedv) {
+static void __cogito_switch_set_checked(YisVal swv, YisVal checkedv) {
   cogito_node* sw = cogito_node_from_val(swv);
   cogito_switch_set_checked(sw, checkedv.tag == EVT_BOOL ? checkedv.as.b : false);
 }
 
-static ErgoVal __cogito_switch_get_checked(ErgoVal swv) {
+static YisVal __cogito_switch_get_checked(YisVal swv) {
   cogito_node* sw = cogito_node_from_val(swv);
   return EV_BOOL(cogito_switch_get_checked(sw));
 }
 
-static void __cogito_checkbox_on_change(ErgoVal cbv, ErgoVal handler) {
+static void __cogito_checkbox_on_change(YisVal cbv, YisVal handler) {
   cogito_node* cb = cogito_node_from_val(cbv);
   CogitoHandle* h = (CogitoHandle*)cbv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2385,7 +2385,7 @@ static void __cogito_checkbox_on_change(ErgoVal cbv, ErgoVal handler) {
   cogito_checkbox_on_change(cb, cogito_cb_change, h);
 }
 
-static void __cogito_switch_on_change(ErgoVal swv, ErgoVal handler) {
+static void __cogito_switch_on_change(YisVal swv, YisVal handler) {
   cogito_node* sw = cogito_node_from_val(swv);
   CogitoHandle* h = (CogitoHandle*)swv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2397,35 +2397,35 @@ static void __cogito_switch_on_change(ErgoVal swv, ErgoVal handler) {
   cogito_switch_on_change(sw, cogito_cb_change, h);
 }
 
-static void __cogito_textfield_set_text(ErgoVal tfv, ErgoVal textv) {
+static void __cogito_textfield_set_text(YisVal tfv, YisVal textv) {
   cogito_node* tf = cogito_node_from_val(tfv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_textfield_set_text(tf, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_textfield_get_text(ErgoVal tfv) {
+static YisVal __cogito_textfield_get_text(YisVal tfv) {
   cogito_node* tf = cogito_node_from_val(tfv);
   const char* text = cogito_textfield_get_text(tf);
   return EV_STR(stdr_str_lit(text ? text : ""));
 }
 
-static void __cogito_textfield_set_hint(ErgoVal tfv, ErgoVal hintv) {
+static void __cogito_textfield_set_hint(YisVal tfv, YisVal hintv) {
   cogito_node* tf = cogito_node_from_val(tfv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* hint = cogito_required_cstr(hintv, &tmp);
   cogito_textfield_set_hint(tf, hint);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_textfield_get_hint(ErgoVal tfv) {
+static YisVal __cogito_textfield_get_hint(YisVal tfv) {
   cogito_node* tf = cogito_node_from_val(tfv);
   const char* hint = cogito_textfield_get_hint(tf);
   return EV_STR(stdr_str_lit(hint ? hint : ""));
 }
 
-static void __cogito_textfield_on_change(ErgoVal tfv, ErgoVal handler) {
+static void __cogito_textfield_on_change(YisVal tfv, YisVal handler) {
   cogito_node* tf = cogito_node_from_val(tfv);
   CogitoHandle* h = (CogitoHandle*)tfv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2437,21 +2437,21 @@ static void __cogito_textfield_on_change(ErgoVal tfv, ErgoVal handler) {
   cogito_textfield_on_change(tf, cogito_cb_change, h);
 }
 
-static void __cogito_textview_set_text(ErgoVal tvv, ErgoVal textv) {
+static void __cogito_textview_set_text(YisVal tvv, YisVal textv) {
   cogito_node* tv = cogito_node_from_val(tvv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_textview_set_text(tv, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_textview_get_text(ErgoVal tvv) {
+static YisVal __cogito_textview_get_text(YisVal tvv) {
   cogito_node* tv = cogito_node_from_val(tvv);
   const char* text = cogito_textview_get_text(tv);
   return EV_STR(stdr_str_lit(text ? text : ""));
 }
 
-static void __cogito_textview_on_change(ErgoVal tvv, ErgoVal handler) {
+static void __cogito_textview_on_change(YisVal tvv, YisVal handler) {
   cogito_node* tv = cogito_node_from_val(tvv);
   CogitoHandle* h = (CogitoHandle*)tvv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2463,13 +2463,13 @@ static void __cogito_textview_on_change(ErgoVal tvv, ErgoVal handler) {
   cogito_textview_on_change(tv, cogito_cb_change, h);
 }
 
-static void __cogito_dropdown_set_items(ErgoVal ddv, ErgoVal itemsv) {
+static void __cogito_dropdown_set_items(YisVal ddv, YisVal itemsv) {
   cogito_node* dd = cogito_node_from_val(ddv);
-  if (itemsv.tag != EVT_ARR) ergo_trap("cogito.dropdown_set_items expects array");
-  ErgoArr* arr = (ErgoArr*)itemsv.as.p;
+  if (itemsv.tag != EVT_ARR) yis_trap("cogito.dropdown_set_items expects array");
+  YisArr* arr = (YisArr*)itemsv.as.p;
   size_t count = arr->len;
   const char** items = (const char**)calloc(count, sizeof(char*));
-  ErgoStr** temps = (ErgoStr**)calloc(count, sizeof(ErgoStr*));
+  YisStr** temps = (YisStr**)calloc(count, sizeof(YisStr*));
   for (size_t i = 0; i < count; i++) {
     items[i
     ] = cogito_required_cstr(arr->items[i
@@ -2479,24 +2479,24 @@ static void __cogito_dropdown_set_items(ErgoVal ddv, ErgoVal itemsv) {
   cogito_dropdown_set_items(dd, items, count);
   for (size_t i = 0; i < count; i++) {
     if (temps[i
-    ]) ergo_release_val(EV_STR(temps[i
+    ]) yis_release_val(EV_STR(temps[i
     ]));
   }
   free(temps);
   free(items);
 }
 
-static void __cogito_dropdown_set_selected(ErgoVal ddv, ErgoVal idxv) {
+static void __cogito_dropdown_set_selected(YisVal ddv, YisVal idxv) {
   cogito_node* dd = cogito_node_from_val(ddv);
-  cogito_dropdown_set_selected(dd, (int)ergo_as_int(idxv));
+  cogito_dropdown_set_selected(dd, (int)yis_as_int(idxv));
 }
 
-static ErgoVal __cogito_dropdown_get_selected(ErgoVal ddv) {
+static YisVal __cogito_dropdown_get_selected(YisVal ddv) {
   cogito_node* dd = cogito_node_from_val(ddv);
   return EV_INT(cogito_dropdown_get_selected(dd));
 }
 
-static void __cogito_dropdown_on_change(ErgoVal ddv, ErgoVal handler) {
+static void __cogito_dropdown_on_change(YisVal ddv, YisVal handler) {
   cogito_node* dd = cogito_node_from_val(ddv);
   CogitoHandle* h = (CogitoHandle*)ddv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2508,78 +2508,78 @@ static void __cogito_dropdown_on_change(ErgoVal ddv, ErgoVal handler) {
   cogito_dropdown_on_change(dd, cogito_cb_change, h);
 }
 
-static void __cogito_slider_set_value(ErgoVal slv, ErgoVal valuev) {
+static void __cogito_slider_set_value(YisVal slv, YisVal valuev) {
   cogito_node* sl = cogito_node_from_val(slv);
-  cogito_slider_set_value(sl, ergo_as_float(valuev));
+  cogito_slider_set_value(sl, yis_as_float(valuev));
 }
 
-static ErgoVal __cogito_slider_get_value(ErgoVal slv) {
+static YisVal __cogito_slider_get_value(YisVal slv) {
   cogito_node* sl = cogito_node_from_val(slv);
   return EV_FLOAT(cogito_slider_get_value(sl));
 }
 
-static void __cogito_slider_set_size(ErgoVal slv, ErgoVal sizev) {
+static void __cogito_slider_set_size(YisVal slv, YisVal sizev) {
   cogito_node* sl = cogito_node_from_val(slv);
-  cogito_slider_set_size(sl, (int)ergo_as_int(sizev));
+  cogito_slider_set_size(sl, (int)yis_as_int(sizev));
 }
 
-static ErgoVal __cogito_slider_get_size(ErgoVal slv) {
+static YisVal __cogito_slider_get_size(YisVal slv) {
   cogito_node* sl = cogito_node_from_val(slv);
   return EV_INT(cogito_slider_get_size(sl));
 }
 
-static void __cogito_slider_set_icon(ErgoVal slv, ErgoVal iconv) {
+static void __cogito_slider_set_icon(YisVal slv, YisVal iconv) {
   cogito_node* sl = cogito_node_from_val(slv);
   if (iconv.tag == EVT_NULL) {
     cogito_slider_set_icon(sl, NULL);
     return;
   }
   if (iconv.tag == EVT_STR) {
-    ErgoStr* s = (ErgoStr*)iconv.as.p;
+    YisStr* s = (YisStr*)iconv.as.p;
     cogito_slider_set_icon(sl, s ? s->data : NULL);
     return;
   }
-  ErgoStr* s = stdr_to_string(iconv);
+  YisStr* s = stdr_to_string(iconv);
   cogito_slider_set_icon(sl, s ? s->data : NULL);
-  if (s) ergo_release_val(EV_STR(s));
+  if (s) yis_release_val(EV_STR(s));
 }
 
-static void __cogito_slider_set_centered(ErgoVal slv, ErgoVal onv) {
+static void __cogito_slider_set_centered(YisVal slv, YisVal onv) {
   cogito_node* sl = cogito_node_from_val(slv);
-  cogito_slider_set_centered(sl, ergo_as_bool(onv));
+  cogito_slider_set_centered(sl, yis_as_bool(onv));
 }
 
-static ErgoVal __cogito_slider_get_centered(ErgoVal slv) {
+static YisVal __cogito_slider_get_centered(YisVal slv) {
   cogito_node* sl = cogito_node_from_val(slv);
   return EV_BOOL(cogito_slider_get_centered(sl));
 }
 
-static void __cogito_slider_set_range(ErgoVal slv, ErgoVal startv, ErgoVal endv) {
+static void __cogito_slider_set_range(YisVal slv, YisVal startv, YisVal endv) {
   cogito_node* sl = cogito_node_from_val(slv);
-  cogito_slider_set_range(sl, ergo_as_float(startv), ergo_as_float(endv));
+  cogito_slider_set_range(sl, yis_as_float(startv), yis_as_float(endv));
 }
 
-static void __cogito_slider_set_range_start(ErgoVal slv, ErgoVal startv) {
+static void __cogito_slider_set_range_start(YisVal slv, YisVal startv) {
   cogito_node* sl = cogito_node_from_val(slv);
-  cogito_slider_set_range_start(sl, ergo_as_float(startv));
+  cogito_slider_set_range_start(sl, yis_as_float(startv));
 }
 
-static void __cogito_slider_set_range_end(ErgoVal slv, ErgoVal endv) {
+static void __cogito_slider_set_range_end(YisVal slv, YisVal endv) {
   cogito_node* sl = cogito_node_from_val(slv);
-  cogito_slider_set_range_end(sl, ergo_as_float(endv));
+  cogito_slider_set_range_end(sl, yis_as_float(endv));
 }
 
-static ErgoVal __cogito_slider_get_range_start(ErgoVal slv) {
+static YisVal __cogito_slider_get_range_start(YisVal slv) {
   cogito_node* sl = cogito_node_from_val(slv);
   return EV_FLOAT(cogito_slider_get_range_start(sl));
 }
 
-static ErgoVal __cogito_slider_get_range_end(ErgoVal slv) {
+static YisVal __cogito_slider_get_range_end(YisVal slv) {
   cogito_node* sl = cogito_node_from_val(slv);
   return EV_FLOAT(cogito_slider_get_range_end(sl));
 }
 
-static void __cogito_slider_on_change(ErgoVal slv, ErgoVal handler) {
+static void __cogito_slider_on_change(YisVal slv, YisVal handler) {
   cogito_node* sl = cogito_node_from_val(slv);
   CogitoHandle* h = (CogitoHandle*)slv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2591,17 +2591,17 @@ static void __cogito_slider_on_change(ErgoVal slv, ErgoVal handler) {
   cogito_slider_on_change(sl, cogito_cb_change, h);
 }
 
-static void __cogito_stepper_set_value(ErgoVal stv, ErgoVal valuev) {
+static void __cogito_stepper_set_value(YisVal stv, YisVal valuev) {
   cogito_node* st = cogito_node_from_val(stv);
-  cogito_stepper_set_value(st, ergo_as_float(valuev));
+  cogito_stepper_set_value(st, yis_as_float(valuev));
 }
 
-static ErgoVal __cogito_stepper_get_value(ErgoVal stv) {
+static YisVal __cogito_stepper_get_value(YisVal stv) {
   cogito_node* st = cogito_node_from_val(stv);
   return EV_FLOAT(cogito_stepper_get_value(st));
 }
 
-static void __cogito_stepper_on_change(ErgoVal stv, ErgoVal handler) {
+static void __cogito_stepper_on_change(YisVal stv, YisVal handler) {
   cogito_node* st = cogito_node_from_val(stv);
   CogitoHandle* h = (CogitoHandle*)stv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2613,7 +2613,7 @@ static void __cogito_stepper_on_change(ErgoVal stv, ErgoVal handler) {
   cogito_stepper_on_change(st, cogito_cb_change, h);
 }
 
-static void __cogito_buttongroup_on_select(ErgoVal segv, ErgoVal handler) {
+static void __cogito_buttongroup_on_select(YisVal segv, YisVal handler) {
   cogito_node* seg = cogito_node_from_val(segv);
   CogitoHandle* h = (CogitoHandle*)segv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2625,49 +2625,49 @@ static void __cogito_buttongroup_on_select(ErgoVal segv, ErgoVal handler) {
   cogito_buttongroup_on_select(seg, cogito_cb_select, h);
 }
 
-static void __cogito_buttongroup_set_size(ErgoVal bgv, ErgoVal sizev) {
+static void __cogito_buttongroup_set_size(YisVal bgv, YisVal sizev) {
   cogito_node* bg = cogito_node_from_val(bgv);
-  int size = (int)ergo_as_int(sizev);
+  int size = (int)yis_as_int(sizev);
   if (size < 0) size = 0;
   if (size > 4) size = 4;
   cogito_buttongroup_set_size(bg, size);
 }
 
-static ErgoVal __cogito_buttongroup_get_size(ErgoVal bgv) {
+static YisVal __cogito_buttongroup_get_size(YisVal bgv) {
   cogito_node* bg = cogito_node_from_val(bgv);
   return EV_INT(cogito_buttongroup_get_size(bg));
 }
 
-static void __cogito_buttongroup_set_shape(ErgoVal bgv, ErgoVal shapev) {
+static void __cogito_buttongroup_set_shape(YisVal bgv, YisVal shapev) {
   cogito_node* bg = cogito_node_from_val(bgv);
-  int shape = (int)ergo_as_int(shapev);
+  int shape = (int)yis_as_int(shapev);
   if (shape < 0) shape = 0;
   if (shape > 1) shape = 1;
   cogito_buttongroup_set_shape(bg, shape);
 }
 
-static ErgoVal __cogito_buttongroup_get_shape(ErgoVal bgv) {
+static YisVal __cogito_buttongroup_get_shape(YisVal bgv) {
   cogito_node* bg = cogito_node_from_val(bgv);
   return EV_INT(cogito_buttongroup_get_shape(bg));
 }
 
-static void __cogito_buttongroup_set_connected(ErgoVal bgv, ErgoVal connectedv) {
+static void __cogito_buttongroup_set_connected(YisVal bgv, YisVal connectedv) {
   cogito_node* bg = cogito_node_from_val(bgv);
-  cogito_buttongroup_set_connected(bg, ergo_as_bool(connectedv));
+  cogito_buttongroup_set_connected(bg, yis_as_bool(connectedv));
 }
 
-static ErgoVal __cogito_buttongroup_get_connected(ErgoVal bgv) {
+static YisVal __cogito_buttongroup_get_connected(YisVal bgv) {
   cogito_node* bg = cogito_node_from_val(bgv);
   return EV_BOOL(cogito_buttongroup_get_connected(bg));
 }
 
-static void __cogito_tabs_set_items(ErgoVal tabsv, ErgoVal itemsv) {
+static void __cogito_tabs_set_items(YisVal tabsv, YisVal itemsv) {
   cogito_node* tabs = cogito_node_from_val(tabsv);
-  if (itemsv.tag != EVT_ARR) ergo_trap("cogito.tabs_set_items expects array");
-  ErgoArr* arr = (ErgoArr*)itemsv.as.p;
+  if (itemsv.tag != EVT_ARR) yis_trap("cogito.tabs_set_items expects array");
+  YisArr* arr = (YisArr*)itemsv.as.p;
   size_t count = arr->len;
   const char** items = (const char**)calloc(count, sizeof(char*));
-  ErgoStr** temps = (ErgoStr**)calloc(count, sizeof(ErgoStr*));
+  YisStr** temps = (YisStr**)calloc(count, sizeof(YisStr*));
   for (size_t i = 0; i < count; i++) {
     items[i
     ] = cogito_required_cstr(arr->items[i
@@ -2677,20 +2677,20 @@ static void __cogito_tabs_set_items(ErgoVal tabsv, ErgoVal itemsv) {
   cogito_tabs_set_items(tabs, items, count);
   for (size_t i = 0; i < count; i++) {
     if (temps[i
-    ]) ergo_release_val(EV_STR(temps[i
+    ]) yis_release_val(EV_STR(temps[i
     ]));
   }
   free(temps);
   free(items);
 }
 
-static void __cogito_tabs_set_ids(ErgoVal tabsv, ErgoVal itemsv) {
+static void __cogito_tabs_set_ids(YisVal tabsv, YisVal itemsv) {
   cogito_node* tabs = cogito_node_from_val(tabsv);
-  if (itemsv.tag != EVT_ARR) ergo_trap("cogito.tabs_set_ids expects array");
-  ErgoArr* arr = (ErgoArr*)itemsv.as.p;
+  if (itemsv.tag != EVT_ARR) yis_trap("cogito.tabs_set_ids expects array");
+  YisArr* arr = (YisArr*)itemsv.as.p;
   size_t count = arr->len;
   const char** items = (const char**)calloc(count, sizeof(char*));
-  ErgoStr** temps = (ErgoStr**)calloc(count, sizeof(ErgoStr*));
+  YisStr** temps = (YisStr**)calloc(count, sizeof(YisStr*));
   for (size_t i = 0; i < count; i++) {
     items[i
     ] = cogito_required_cstr(arr->items[i
@@ -2700,24 +2700,24 @@ static void __cogito_tabs_set_ids(ErgoVal tabsv, ErgoVal itemsv) {
   cogito_tabs_set_ids(tabs, items, count);
   for (size_t i = 0; i < count; i++) {
     if (temps[i
-    ]) ergo_release_val(EV_STR(temps[i
+    ]) yis_release_val(EV_STR(temps[i
     ]));
   }
   free(temps);
   free(items);
 }
 
-static void __cogito_tabs_set_selected(ErgoVal tabsv, ErgoVal idxv) {
+static void __cogito_tabs_set_selected(YisVal tabsv, YisVal idxv) {
   cogito_node* tabs = cogito_node_from_val(tabsv);
-  cogito_tabs_set_selected(tabs, (int)ergo_as_int(idxv));
+  cogito_tabs_set_selected(tabs, (int)yis_as_int(idxv));
 }
 
-static ErgoVal __cogito_tabs_get_selected(ErgoVal tabsv) {
+static YisVal __cogito_tabs_get_selected(YisVal tabsv) {
   cogito_node* tabs = cogito_node_from_val(tabsv);
   return EV_INT(cogito_tabs_get_selected(tabs));
 }
 
-static void __cogito_tabs_on_change(ErgoVal tabsv, ErgoVal handler) {
+static void __cogito_tabs_on_change(YisVal tabsv, YisVal handler) {
   cogito_node* tabs = cogito_node_from_val(tabsv);
   CogitoHandle* h = (CogitoHandle*)tabsv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2729,20 +2729,20 @@ static void __cogito_tabs_on_change(ErgoVal tabsv, ErgoVal handler) {
   cogito_tabs_on_change(tabs, cogito_cb_change, h);
 }
 
-static void __cogito_tabs_bind(ErgoVal tabsv, ErgoVal viewv) {
+static void __cogito_tabs_bind(YisVal tabsv, YisVal viewv) {
   cogito_node* tabs = cogito_node_from_val(tabsv);
   cogito_node* view = cogito_node_from_val(viewv);
   cogito_tabs_bind(tabs, view);
 }
 
-static void __cogito_nav_rail_set_items(ErgoVal railv, ErgoVal labelsv, ErgoVal iconsv) {
+static void __cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal iconsv) {
   cogito_node* rail = cogito_node_from_val(railv);
-  if (labelsv.tag != EVT_ARR) ergo_trap("cogito.nav_rail_set_items expects array of labels");
-  ErgoArr* labels = (ErgoArr*)labelsv.as.p;
+  if (labelsv.tag != EVT_ARR) yis_trap("cogito.nav_rail_set_items expects array of labels");
+  YisArr* labels = (YisArr*)labelsv.as.p;
   size_t count = labels->len;
 
   const char** label_strs = (const char**)calloc(count, sizeof(char*));
-  ErgoStr** label_temps = (ErgoStr**)calloc(count, sizeof(ErgoStr*));
+  YisStr** label_temps = (YisStr**)calloc(count, sizeof(YisStr*));
   for (size_t i = 0; i < count; i++) {
     label_strs[i
     ] = cogito_required_cstr(labels->items[i
@@ -2751,12 +2751,12 @@ static void __cogito_nav_rail_set_items(ErgoVal railv, ErgoVal labelsv, ErgoVal 
   }
 
   const char** icon_strs = NULL;
-  ErgoStr** icon_temps = NULL;
+  YisStr** icon_temps = NULL;
   if (iconsv.tag == EVT_ARR) {
-    ErgoArr* icons = (ErgoArr*)iconsv.as.p;
+    YisArr* icons = (YisArr*)iconsv.as.p;
     size_t icon_count = icons->len;
     icon_strs = (const char**)calloc(icon_count, sizeof(char*));
-    icon_temps = (ErgoStr**)calloc(icon_count, sizeof(ErgoStr*));
+    icon_temps = (YisStr**)calloc(icon_count, sizeof(YisStr*));
     for (size_t i = 0; i < icon_count; i++) {
       icon_strs[i
       ] = cogito_required_cstr(icons->items[i
@@ -2766,7 +2766,7 @@ static void __cogito_nav_rail_set_items(ErgoVal railv, ErgoVal labelsv, ErgoVal 
     cogito_nav_rail_set_items(rail, label_strs, icon_strs, icon_count < count ? icon_count : count);
     for (size_t i = 0; i < icon_count; i++) {
       if (icon_temps[i
-      ]) ergo_release_val(EV_STR(icon_temps[i
+      ]) yis_release_val(EV_STR(icon_temps[i
       ]));
     }
     free(icon_temps);
@@ -2777,26 +2777,26 @@ static void __cogito_nav_rail_set_items(ErgoVal railv, ErgoVal labelsv, ErgoVal 
 
   for (size_t i = 0; i < count; i++) {
     if (label_temps[i
-    ]) ergo_release_val(EV_STR(label_temps[i
+    ]) yis_release_val(EV_STR(label_temps[i
     ]));
   }
   free(label_temps);
   free(label_strs);
 }
 
-static void __cogito_nav_rail_set_badges(ErgoVal railv, ErgoVal badgesv) {
+static void __cogito_nav_rail_set_badges(YisVal railv, YisVal badgesv) {
   cogito_node* rail = cogito_node_from_val(railv);
   if (badgesv.tag == EVT_NULL) {
     cogito_nav_rail_set_badges(rail, NULL,
     0);
     return;
   }
-  if (badgesv.tag != EVT_ARR) ergo_trap("cogito.nav_rail_set_badges expects array");
-  ErgoArr* badges = (ErgoArr*)badgesv.as.p;
+  if (badgesv.tag != EVT_ARR) yis_trap("cogito.nav_rail_set_badges expects array");
+  YisArr* badges = (YisArr*)badgesv.as.p;
   size_t count = badges->len;
   int* vals = (int*)calloc(count, sizeof(int));
   for (size_t i = 0; i < count; i++) {
-    ErgoVal bv = badges->items[i
+    YisVal bv = badges->items[i
     ];
     int v = 0;
     switch (bv.tag) {
@@ -2817,7 +2817,7 @@ static void __cogito_nav_rail_set_badges(ErgoVal railv, ErgoVal badgesv) {
       }
       default:
         free(vals);
-        ergo_trap("cogito.nav_rail_set_badges expects int/bool/null entries");
+        yis_trap("cogito.nav_rail_set_badges expects int/bool/null entries");
     }
     vals[i] = v;
   }
@@ -2825,27 +2825,27 @@ static void __cogito_nav_rail_set_badges(ErgoVal railv, ErgoVal badgesv) {
   free(vals);
 }
 
-static void __cogito_nav_rail_set_toggle(ErgoVal railv, ErgoVal onv) {
+static void __cogito_nav_rail_set_toggle(YisVal railv, YisVal onv) {
   cogito_node* rail = cogito_node_from_val(railv);
-  cogito_nav_rail_set_toggle(rail, ergo_as_bool(onv));
+  cogito_nav_rail_set_toggle(rail, yis_as_bool(onv));
 }
 
-static void __cogito_nav_rail_set_selected(ErgoVal railv, ErgoVal idxv) {
+static void __cogito_nav_rail_set_selected(YisVal railv, YisVal idxv) {
   cogito_node* rail = cogito_node_from_val(railv);
-  cogito_nav_rail_set_selected(rail, (int)ergo_as_int(idxv));
+  cogito_nav_rail_set_selected(rail, (int)yis_as_int(idxv));
 }
 
-static ErgoVal __cogito_nav_rail_get_selected(ErgoVal railv) {
+static YisVal __cogito_nav_rail_get_selected(YisVal railv) {
   cogito_node* rail = cogito_node_from_val(railv);
   return EV_INT(cogito_nav_rail_get_selected(rail));
 }
 
-static ErgoVal __cogito_bottom_nav(void) {
+static YisVal __cogito_bottom_nav(void) {
   cogito_node* n = cogito_bottom_nav_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_nav_rail_on_change(ErgoVal railv, ErgoVal handler) {
+static void __cogito_nav_rail_on_change(YisVal railv, YisVal handler) {
   cogito_node* rail = cogito_node_from_val(railv);
   CogitoHandle* h = (CogitoHandle*)railv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2857,29 +2857,29 @@ static void __cogito_nav_rail_on_change(ErgoVal railv, ErgoVal handler) {
   cogito_nav_rail_on_change(rail, cogito_cb_select, h);
 }
 
-static void __cogito_bottom_nav_set_items(ErgoVal navv, ErgoVal labelsv, ErgoVal iconsv) {
+static void __cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal iconsv) {
   cogito_node* nav = cogito_node_from_val(navv);
-  if (labelsv.tag != EVT_ARR) ergo_trap("cogito.bottom_nav_set_items expects array of labels");
-  ErgoArr* labels = (ErgoArr*)labelsv.as.p;
+  if (labelsv.tag != EVT_ARR) yis_trap("cogito.bottom_nav_set_items expects array of labels");
+  YisArr* labels = (YisArr*)labelsv.as.p;
   size_t count = labels->len;
   const char** label_strs = (const char**)calloc(count, sizeof(char*));
-  ErgoStr** label_temps = (ErgoStr**)calloc(count, sizeof(ErgoStr*));
+  YisStr** label_temps = (YisStr**)calloc(count, sizeof(YisStr*));
   for (size_t i = 0; i < count; i++) {
     label_strs[i] = cogito_required_cstr(labels->items[i], &label_temps[i]);
   }
   const char** icon_strs = NULL;
-  ErgoStr** icon_temps = NULL;
+  YisStr** icon_temps = NULL;
   if (iconsv.tag == EVT_ARR) {
-    ErgoArr* icons = (ErgoArr*)iconsv.as.p;
+    YisArr* icons = (YisArr*)iconsv.as.p;
     size_t icon_count = icons->len;
     icon_strs = (const char**)calloc(icon_count, sizeof(char*));
-    icon_temps = (ErgoStr**)calloc(icon_count, sizeof(ErgoStr*));
+    icon_temps = (YisStr**)calloc(icon_count, sizeof(YisStr*));
     for (size_t i = 0; i < icon_count; i++) {
       icon_strs[i] = cogito_required_cstr(icons->items[i], &icon_temps[i]);
     }
     cogito_bottom_nav_set_items(nav, label_strs, icon_strs, icon_count < count ? icon_count : count);
     for (size_t i = 0; i < icon_count; i++) {
-      if (icon_temps[i]) ergo_release_val(EV_STR(icon_temps[i]));
+      if (icon_temps[i]) yis_release_val(EV_STR(icon_temps[i]));
     }
     free(icon_temps);
     free(icon_strs);
@@ -2887,23 +2887,23 @@ static void __cogito_bottom_nav_set_items(ErgoVal navv, ErgoVal labelsv, ErgoVal
     cogito_bottom_nav_set_items(nav, label_strs, NULL, count);
   }
   for (size_t i = 0; i < count; i++) {
-    if (label_temps[i]) ergo_release_val(EV_STR(label_temps[i]));
+    if (label_temps[i]) yis_release_val(EV_STR(label_temps[i]));
   }
   free(label_temps);
   free(label_strs);
 }
 
-static void __cogito_bottom_nav_set_selected(ErgoVal navv, ErgoVal idxv) {
+static void __cogito_bottom_nav_set_selected(YisVal navv, YisVal idxv) {
   cogito_node* nav = cogito_node_from_val(navv);
-  cogito_bottom_nav_set_selected(nav, (int)ergo_as_int(idxv));
+  cogito_bottom_nav_set_selected(nav, (int)yis_as_int(idxv));
 }
 
-static ErgoVal __cogito_bottom_nav_get_selected(ErgoVal navv) {
+static YisVal __cogito_bottom_nav_get_selected(YisVal navv) {
   cogito_node* nav = cogito_node_from_val(navv);
   return EV_INT(cogito_bottom_nav_get_selected(nav));
 }
 
-static void __cogito_bottom_nav_on_change(ErgoVal navv, ErgoVal handler) {
+static void __cogito_bottom_nav_on_change(YisVal navv, YisVal handler) {
   cogito_node* nav = cogito_node_from_val(navv);
   CogitoHandle* h = (CogitoHandle*)navv.as.p;
   if (handler.tag != EVT_FN) {
@@ -2915,82 +2915,82 @@ static void __cogito_bottom_nav_on_change(ErgoVal navv, ErgoVal handler) {
   cogito_bottom_nav_on_change(nav, cogito_cb_select, h);
 }
 
-static void __cogito_view_switcher_set_active(ErgoVal viewv, ErgoVal idv) {
+static void __cogito_view_switcher_set_active(YisVal viewv, YisVal idv) {
   cogito_node* view = cogito_node_from_val(viewv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* id = cogito_required_cstr(idv, &tmp);
   cogito_view_switcher_set_active(view, id);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_view_switcher_add(ErgoVal vsv, ErgoVal idv, ErgoVal builderv) {
+static void __cogito_view_switcher_add(YisVal vsv, YisVal idv, YisVal builderv) {
   cogito_node* nvs = cogito_node_from_val(vsv);
-  cogito_view_switcher_add_lazy_ergo(nvs, idv, builderv);
+  cogito_view_switcher_add_lazy_yis(nvs, idv, builderv);
 }
 
-static void __cogito_view_switcher_add_lazy(ErgoVal vsv, ErgoVal idv, ErgoVal builderv) {
+static void __cogito_view_switcher_add_lazy(YisVal vsv, YisVal idv, YisVal builderv) {
   __cogito_view_switcher_add(vsv, idv, builderv);
 }
 
-static void __cogito_progress_set_value(ErgoVal pv, ErgoVal valuev) {
+static void __cogito_progress_set_value(YisVal pv, YisVal valuev) {
   cogito_node* p = cogito_node_from_val(pv);
-  cogito_progress_set_value(p, ergo_as_float(valuev));
+  cogito_progress_set_value(p, yis_as_float(valuev));
 }
 
-static ErgoVal __cogito_progress_get_value(ErgoVal pv) {
+static YisVal __cogito_progress_get_value(YisVal pv) {
   cogito_node* p = cogito_node_from_val(pv);
   return EV_FLOAT(cogito_progress_get_value(p));
 }
 
-static void __cogito_progress_set_indeterminate(ErgoVal pv, ErgoVal onv) {
+static void __cogito_progress_set_indeterminate(YisVal pv, YisVal onv) {
   cogito_node* p = cogito_node_from_val(pv);
-  cogito_progress_set_indeterminate(p, ergo_as_bool(onv));
+  cogito_progress_set_indeterminate(p, yis_as_bool(onv));
 }
 
-static ErgoVal __cogito_progress_get_indeterminate(ErgoVal pv) {
+static YisVal __cogito_progress_get_indeterminate(YisVal pv) {
   cogito_node* p = cogito_node_from_val(pv);
   return EV_BOOL(cogito_progress_get_indeterminate(p));
 }
 
-static void __cogito_progress_set_thickness(ErgoVal pv, ErgoVal pxv) {
+static void __cogito_progress_set_thickness(YisVal pv, YisVal pxv) {
   cogito_node* p = cogito_node_from_val(pv);
-  cogito_progress_set_thickness(p, (int)ergo_as_int(pxv));
+  cogito_progress_set_thickness(p, (int)yis_as_int(pxv));
 }
 
-static ErgoVal __cogito_progress_get_thickness(ErgoVal pv) {
+static YisVal __cogito_progress_get_thickness(YisVal pv) {
   cogito_node* p = cogito_node_from_val(pv);
   return EV_INT(cogito_progress_get_thickness(p));
 }
 
-static void __cogito_progress_set_wavy(ErgoVal pv, ErgoVal onv) {
+static void __cogito_progress_set_wavy(YisVal pv, YisVal onv) {
   cogito_node* p = cogito_node_from_val(pv);
-  cogito_progress_set_wavy(p, ergo_as_bool(onv));
+  cogito_progress_set_wavy(p, yis_as_bool(onv));
 }
 
-static ErgoVal __cogito_progress_get_wavy(ErgoVal pv) {
+static YisVal __cogito_progress_get_wavy(YisVal pv) {
   cogito_node* p = cogito_node_from_val(pv);
   return EV_BOOL(cogito_progress_get_wavy(p));
 }
 
-static void __cogito_progress_set_circular(ErgoVal pv, ErgoVal onv) {
+static void __cogito_progress_set_circular(YisVal pv, YisVal onv) {
   cogito_node* p = cogito_node_from_val(pv);
-  cogito_progress_set_circular(p, ergo_as_bool(onv));
+  cogito_progress_set_circular(p, yis_as_bool(onv));
 }
 
-static ErgoVal __cogito_progress_get_circular(ErgoVal pv) {
+static YisVal __cogito_progress_get_circular(YisVal pv) {
   cogito_node* p = cogito_node_from_val(pv);
   return EV_BOOL(cogito_progress_get_circular(p));
 }
 
-static void __cogito_toast_set_text(ErgoVal tv, ErgoVal textv) {
+static void __cogito_toast_set_text(YisVal tv, YisVal textv) {
   cogito_node* t = cogito_node_from_val(tv);
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   cogito_toast_set_text(t, text);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_toast_on_click(ErgoVal tv, ErgoVal handler) {
+static void __cogito_toast_on_click(YisVal tv, YisVal handler) {
   cogito_node* t = cogito_node_from_val(tv);
   CogitoHandle* h = (CogitoHandle*)tv.as.p;
   if (handler.tag != EVT_FN) {
@@ -3002,23 +3002,23 @@ static void __cogito_toast_on_click(ErgoVal tv, ErgoVal handler) {
   cogito_toast_on_click(t, cogito_cb_click, h);
 }
 
-static void __cogito_toast_set_action(ErgoVal tv, ErgoVal textv, ErgoVal handler) {
+static void __cogito_toast_set_action(YisVal tv, YisVal textv, YisVal handler) {
   cogito_node* t = cogito_node_from_val(tv);
   CogitoHandle* h = (CogitoHandle*)tv.as.p;
-  ErgoStr* tmp = NULL;
+  YisStr* tmp = NULL;
   const char* text = cogito_required_cstr(textv, &tmp);
   if (handler.tag != EVT_FN) {
     cogito_set_handler(h, &h->on_action, handler);
     cogito_toast_set_action(t, text, NULL, NULL);
-    if (tmp) ergo_release_val(EV_STR(tmp));
+    if (tmp) yis_release_val(EV_STR(tmp));
     return;
   }
   cogito_set_handler(h, &h->on_action, handler);
   cogito_toast_set_action(t, text, cogito_cb_action, h);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_list_on_select(ErgoVal listv, ErgoVal handler) {
+static void __cogito_list_on_select(YisVal listv, YisVal handler) {
   cogito_node* list = cogito_node_from_val(listv);
   CogitoHandle* h = (CogitoHandle*)listv.as.p;
   if (handler.tag != EVT_FN) {
@@ -3030,7 +3030,7 @@ static void __cogito_list_on_select(ErgoVal listv, ErgoVal handler) {
   cogito_list_on_select(list, cogito_cb_select, h);
 }
 
-static void __cogito_list_on_activate(ErgoVal listv, ErgoVal handler) {
+static void __cogito_list_on_activate(YisVal listv, YisVal handler) {
   cogito_node* list = cogito_node_from_val(listv);
   CogitoHandle* h = (CogitoHandle*)listv.as.p;
   if (handler.tag != EVT_FN) {
@@ -3042,7 +3042,7 @@ static void __cogito_list_on_activate(ErgoVal listv, ErgoVal handler) {
   cogito_list_on_activate(list, cogito_cb_activate, h);
 }
 
-static void __cogito_grid_on_select(ErgoVal gridv, ErgoVal handler) {
+static void __cogito_grid_on_select(YisVal gridv, YisVal handler) {
   cogito_node* grid = cogito_node_from_val(gridv);
   CogitoHandle* h = (CogitoHandle*)gridv.as.p;
   if (handler.tag != EVT_FN) {
@@ -3054,7 +3054,7 @@ static void __cogito_grid_on_select(ErgoVal gridv, ErgoVal handler) {
   cogito_grid_on_select(grid, cogito_cb_select, h);
 }
 
-static void __cogito_grid_on_activate(ErgoVal gridv, ErgoVal handler) {
+static void __cogito_grid_on_activate(YisVal gridv, YisVal handler) {
   cogito_node* grid = cogito_node_from_val(gridv);
   CogitoHandle* h = (CogitoHandle*)gridv.as.p;
   if (handler.tag != EVT_FN) {
@@ -3066,96 +3066,96 @@ static void __cogito_grid_on_activate(ErgoVal gridv, ErgoVal handler) {
   cogito_grid_on_activate(grid, cogito_cb_activate, h);
 }
 
-static void __cogito_build(ErgoVal nodev, ErgoVal builder) {
-  if (builder.tag != EVT_FN) ergo_trap("cogito.build expects function");
-  ErgoVal arg = nodev;
-  ergo_retain_val(arg);
-  ErgoVal ret = ergo_call(builder, 1, &arg);
-  ergo_release_val(arg);
-  ergo_release_val(ret);
+static void __cogito_build(YisVal nodev, YisVal builder) {
+  if (builder.tag != EVT_FN) yis_trap("cogito.build expects function");
+  YisVal arg = nodev;
+  yis_retain_val(arg);
+  YisVal ret = yis_call(builder, 1, &arg);
+  yis_release_val(arg);
+  yis_release_val(ret);
 }
 
-static ErgoVal __cogito_state_new(ErgoVal initial) { return cogito_state_new_val(initial);
+static YisVal __cogito_state_new(YisVal initial) { return cogito_state_new_val(initial);
 }
-static ErgoVal __cogito_state_get(ErgoVal state) { return cogito_state_get_val(state);
+static YisVal __cogito_state_get(YisVal state) { return cogito_state_get_val(state);
 }
-static void __cogito_state_set(ErgoVal state, ErgoVal value) { cogito_state_set_val(state, value);
+static void __cogito_state_set(YisVal state, YisVal value) { cogito_state_set_val(state, value);
 }
 
-static void __cogito_timer_cb_call_ergo(void* user) {
-  ErgoFn* fn = (ErgoFn*)user;
+static void __cogito_timer_cb_call_yis(void* user) {
+  YisFn* fn = (YisFn*)user;
   if (!fn) return;
-  ErgoVal ret = ergo_call(EV_FN(fn), 0, NULL);
-  ergo_release_val(ret);
+  YisVal ret = yis_call(EV_FN(fn), 0, NULL);
+  yis_release_val(ret);
 }
 
-static void __cogito_timer_cb_release_ergo(void* user) {
-  ErgoFn* fn = (ErgoFn*)user;
+static void __cogito_timer_cb_release_yis(void* user) {
+  YisFn* fn = (YisFn*)user;
   if (!fn) return;
-  ergo_release_val(EV_FN(fn));
+  yis_release_val(EV_FN(fn));
 }
 
-static ErgoVal __cogito_timer_timeout(ErgoVal delayv, ErgoVal handlerv) {
-  if (handlerv.tag != EVT_FN) ergo_trap("cogito.set_timeout expects function");
-  int64_t delay = ergo_as_int(delayv);
+static YisVal __cogito_timer_timeout(YisVal delayv, YisVal handlerv) {
+  if (handlerv.tag != EVT_FN) yis_trap("cogito.set_timeout expects function");
+  int64_t delay = yis_as_int(delayv);
   if (delay < 0) delay = 0;
-  ErgoFn* fn = (ErgoFn*)handlerv.as.p;
-  ergo_retain_val(EV_FN(fn));
+  YisFn* fn = (YisFn*)handlerv.as.p;
+  yis_retain_val(EV_FN(fn));
   uint64_t id = cogito_timer_set_timeout_ex((uint32_t)delay,
-                                            __cogito_timer_cb_call_ergo, fn,
-                                            __cogito_timer_cb_release_ergo);
-  if (id == 0) ergo_release_val(EV_FN(fn));
+                                            __cogito_timer_cb_call_yis, fn,
+                                            __cogito_timer_cb_release_yis);
+  if (id == 0) yis_release_val(EV_FN(fn));
   return EV_INT((int64_t)id);
 }
 
-static ErgoVal __cogito_timer_interval(ErgoVal delayv, ErgoVal handlerv) {
-  if (handlerv.tag != EVT_FN) ergo_trap("cogito.set_interval expects function");
-  int64_t delay = ergo_as_int(delayv);
+static YisVal __cogito_timer_interval(YisVal delayv, YisVal handlerv) {
+  if (handlerv.tag != EVT_FN) yis_trap("cogito.set_interval expects function");
+  int64_t delay = yis_as_int(delayv);
   if (delay < 0) delay = 0;
-  ErgoFn* fn = (ErgoFn*)handlerv.as.p;
-  ergo_retain_val(EV_FN(fn));
+  YisFn* fn = (YisFn*)handlerv.as.p;
+  yis_retain_val(EV_FN(fn));
   uint64_t id = cogito_timer_set_interval_ex((uint32_t)delay,
-                                             __cogito_timer_cb_call_ergo, fn,
-                                             __cogito_timer_cb_release_ergo);
-  if (id == 0) ergo_release_val(EV_FN(fn));
+                                             __cogito_timer_cb_call_yis, fn,
+                                             __cogito_timer_cb_release_yis);
+  if (id == 0) yis_release_val(EV_FN(fn));
   return EV_INT((int64_t)id);
 }
 
-static ErgoVal __cogito_timer_timeout_for(ErgoVal ownerv, ErgoVal delayv, ErgoVal handlerv) {
-  if (handlerv.tag != EVT_FN) ergo_trap("cogito.set_timeout_for expects function");
+static YisVal __cogito_timer_timeout_for(YisVal ownerv, YisVal delayv, YisVal handlerv) {
+  if (handlerv.tag != EVT_FN) yis_trap("cogito.set_timeout_for expects function");
   cogito_node* owner = cogito_node_from_val(ownerv);
-  int64_t delay = ergo_as_int(delayv);
+  int64_t delay = yis_as_int(delayv);
   if (delay < 0) delay = 0;
-  ErgoFn* fn = (ErgoFn*)handlerv.as.p;
-  ergo_retain_val(EV_FN(fn));
+  YisFn* fn = (YisFn*)handlerv.as.p;
+  yis_retain_val(EV_FN(fn));
   uint64_t id = cogito_timer_set_timeout_for_ex(
-      owner, (uint32_t)delay, __cogito_timer_cb_call_ergo, fn,
-      __cogito_timer_cb_release_ergo);
-  if (id == 0) ergo_release_val(EV_FN(fn));
+      owner, (uint32_t)delay, __cogito_timer_cb_call_yis, fn,
+      __cogito_timer_cb_release_yis);
+  if (id == 0) yis_release_val(EV_FN(fn));
   return EV_INT((int64_t)id);
 }
 
-static ErgoVal __cogito_timer_interval_for(ErgoVal ownerv, ErgoVal delayv, ErgoVal handlerv) {
-  if (handlerv.tag != EVT_FN) ergo_trap("cogito.set_interval_for expects function");
+static YisVal __cogito_timer_interval_for(YisVal ownerv, YisVal delayv, YisVal handlerv) {
+  if (handlerv.tag != EVT_FN) yis_trap("cogito.set_interval_for expects function");
   cogito_node* owner = cogito_node_from_val(ownerv);
-  int64_t delay = ergo_as_int(delayv);
+  int64_t delay = yis_as_int(delayv);
   if (delay < 0) delay = 0;
-  ErgoFn* fn = (ErgoFn*)handlerv.as.p;
-  ergo_retain_val(EV_FN(fn));
+  YisFn* fn = (YisFn*)handlerv.as.p;
+  yis_retain_val(EV_FN(fn));
   uint64_t id = cogito_timer_set_interval_for_ex(
-      owner, (uint32_t)delay, __cogito_timer_cb_call_ergo, fn,
-      __cogito_timer_cb_release_ergo);
-  if (id == 0) ergo_release_val(EV_FN(fn));
+      owner, (uint32_t)delay, __cogito_timer_cb_call_yis, fn,
+      __cogito_timer_cb_release_yis);
+  if (id == 0) yis_release_val(EV_FN(fn));
   return EV_INT((int64_t)id);
 }
 
-static ErgoVal __cogito_timer_cancel(ErgoVal timer_id_v) {
-  cogito_timer_id id = (cogito_timer_id)ergo_as_int(timer_id_v);
+static YisVal __cogito_timer_cancel(YisVal timer_id_v) {
+  cogito_timer_id id = (cogito_timer_id)yis_as_int(timer_id_v);
   bool ok = cogito_timer_clear(id);
   return EV_BOOL(ok);
 }
 
-static void __cogito_timer_cancel_for(ErgoVal ownerv) {
+static void __cogito_timer_cancel_for(YisVal ownerv) {
   cogito_node* owner = cogito_node_from_val(ownerv);
   cogito_timer_clear_for(owner);
 }
@@ -3164,37 +3164,37 @@ static void __cogito_timer_cancel_all(void) {
   cogito_timer_clear_all();
 }
 
-static void __cogito_run(ErgoVal appv, ErgoVal winv) {
+static void __cogito_run(YisVal appv, YisVal winv) {
   cogito_app* app = cogito_app_from_val(appv);
   cogito_window* win = cogito_window_from_val(winv);
   cogito_app_run(app, win);
 }
 
-static void __cogito_set_ensor_variant(ErgoVal appv, ErgoVal variantv) {
+static void __cogito_set_ensor_variant(YisVal appv, YisVal variantv) {
   cogito_app* app = cogito_app_from_val(appv);
-  if (app) cogito_app_set_ensor_variant(app, (int)ergo_as_int(variantv));
+  if (app) cogito_app_set_ensor_variant(app, (int)yis_as_int(variantv));
 }
 
-static void __cogito_load_sum(ErgoVal pathv) {
-  ErgoStr* tmp = NULL;
+static void __cogito_load_sum(YisVal pathv) {
+  YisStr* tmp = NULL;
   const char* path = cogito_required_cstr(pathv, &tmp);
   cogito_load_sum_file(path);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static void __cogito_set_script_dir(ErgoVal dirv) {
-  ErgoStr* tmp = NULL;
+static void __cogito_set_script_dir(YisVal dirv) {
+  YisStr* tmp = NULL;
   const char* dir = cogito_optional_cstr(dirv, &tmp);
   if (dir && dir[0]) cogito_set_script_dir(dir); // Call the actual cogito library function
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
 }
 
-static ErgoVal __cogito_open_url(ErgoVal urlv) {
-  ErgoStr* tmp = NULL;
+static YisVal __cogito_open_url(YisVal urlv) {
+  YisStr* tmp = NULL;
   const char* url = cogito_optional_cstr(urlv, &tmp);
   bool ok = false;
   if (url && url[0]) ok = cogito_open_url(url);
-  if (tmp) ergo_release_val(EV_STR(tmp));
+  if (tmp) yis_release_val(EV_STR(tmp));
   return EV_BOOL(ok);
 }
 // ---- Codegen aliases ----
@@ -3394,7 +3394,7 @@ static ErgoVal __cogito_open_url(ErgoVal urlv) {
 #define cogito_list_on_activate __cogito_list_on_activate
 #define cogito_grid_on_select __cogito_grid_on_select
 #define cogito_grid_on_activate __cogito_grid_on_activate
-void __cogito_button_on_click(ErgoVal btn, ErgoVal handler);
+void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_button_on_click __cogito_button_on_click
 #define cogito_button_add_menu __cogito_button_add_menu
 #define cogito_button_add_menu_section __cogito_button_add_menu_section

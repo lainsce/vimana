@@ -1,44 +1,44 @@
 // CogitoApp lifecycle management
 // App object creation, accent color, system theme detection.
 
-static void cogito_app_drop(ErgoObj* o) {
+static void cogito_app_drop(YisObj* o) {
   CogitoApp* app = (CogitoApp*)o;
   if (app->app_id) {
-    ergo_release_val(EV_STR(app->app_id));
+    yis_release_val(EV_STR(app->app_id));
     app->app_id = NULL;
   }
   if (app->app_name) {
-    ergo_release_val(EV_STR(app->app_name));
+    yis_release_val(EV_STR(app->app_name));
     app->app_name = NULL;
   }
   if (app->app_icon) {
-    ergo_release_val(EV_STR(app->app_icon));
+    yis_release_val(EV_STR(app->app_icon));
     app->app_icon = NULL;
   }
 }
 
 static bool cogito_system_prefers_reduced_motion(void) {
   const char* v = getenv("COGITO_REDUCED_MOTION");
-  if (!v || !v[0]) v = getenv("ERGO_REDUCED_MOTION");
+  if (!v || !v[0]) v = getenv("YIS_REDUCED_MOTION");
   if (v && (strcmp(v, "1") == 0 || strcmp(v, "true") == 0 || strcmp(v, "yes") == 0 || strcmp(v, "on") == 0)) return true;
   v = getenv("COGITO_MOTION");
-  if (!v || !v[0]) v = getenv("ERGO_MOTION");
+  if (!v || !v[0]) v = getenv("YIS_MOTION");
   if (v && (strstr(v, "reduce") || strstr(v, "REDUCE") || strstr(v, "minimal"))) return true;
   return false;
 }
 
 static bool cogito_system_prefers_high_contrast(void) {
   const char* v = getenv("COGITO_HIGH_CONTRAST");
-  if (!v || !v[0]) v = getenv("ERGO_HIGH_CONTRAST");
+  if (!v || !v[0]) v = getenv("YIS_HIGH_CONTRAST");
   if (v && (strcmp(v, "1") == 0 || strcmp(v, "true") == 0 || strcmp(v, "yes") == 0 || strcmp(v, "on") == 0)) return true;
   v = getenv("COGITO_CONTRAST");
-  if (!v || !v[0]) v = getenv("ERGO_CONTRAST");
+  if (!v || !v[0]) v = getenv("YIS_CONTRAST");
   if (v && (strstr(v, "high") || strstr(v, "HIGH"))) return true;
   return false;
 }
 
 static CogitoApp* cogito_app_new_obj(void) {
-  CogitoApp* app = (CogitoApp*)ergo_obj_new(sizeof(CogitoApp), cogito_app_drop);
+  CogitoApp* app = (CogitoApp*)yis_obj_new(sizeof(CogitoApp), cogito_app_drop);
   app->native = NULL;
   app->app_id = NULL;
   app->app_name = NULL;
@@ -55,7 +55,7 @@ static CogitoApp* cogito_app_new_obj(void) {
   return app;
 }
 
-static CogitoColor cogito_app_effective_accent(ErgoVal appv) {
+static CogitoColor cogito_app_effective_accent(YisVal appv) {
   CogitoApp* app = (CogitoApp*)appv.as.p;
   if (app->accent_override && app->accent_set) return app->accent_color;
   if (app->system_accent_set) return app->system_accent;
@@ -63,7 +63,7 @@ static CogitoColor cogito_app_effective_accent(ErgoVal appv) {
   return cogito_rgba(114, 222, 194, 255);
 }
 
-static void cogito_app_update_theme(ErgoVal appv) {
+static void cogito_app_update_theme(YisVal appv) {
   CogitoApp* app = (CogitoApp*)appv.as.p;
   bool dark = app ? (app->dark_override ? app->dark_mode : app->system_dark) : false;
   CogitoColor accent = app ? cogito_app_effective_accent(appv) : cogito_rgba(114, 222, 194, 255);
@@ -94,7 +94,7 @@ static void cogito_app_update_theme(ErgoVal appv) {
   }
 }
 
-static void cogito_update_system_theme(ErgoVal appv) {
+static void cogito_update_system_theme(YisVal appv) {
   CogitoApp* app = (CogitoApp*)appv.as.p;
   if (!app) return;
   {
@@ -147,54 +147,54 @@ static void cogito_update_system_theme(ErgoVal appv) {
   if (changed) cogito_app_update_theme(appv);
 }
 
-static void cogito_app_set_appid(ErgoVal appv, ErgoVal idv) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.app_set_appid expects app");
+static void cogito_app_set_appid(YisVal appv, YisVal idv) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_appid expects app");
   CogitoApp* app = (CogitoApp*)appv.as.p;
-  ErgoStr* s = NULL;
+  YisStr* s = NULL;
   bool temp = false;
   if (idv.tag == EVT_STR) {
-    s = (ErgoStr*)idv.as.p;
-    if (s) ergo_retain_val(EV_STR(s));
+    s = (YisStr*)idv.as.p;
+    if (s) yis_retain_val(EV_STR(s));
   } else if (idv.tag != EVT_NULL) {
     s = stdr_to_string(idv);
     temp = true;
   }
-  if (app->app_id) ergo_release_val(EV_STR(app->app_id));
+  if (app->app_id) yis_release_val(EV_STR(app->app_id));
   app->app_id = s;
   if (temp && s) {
     // app now owns temp string (ref=1)
   }
 }
 
-static void cogito_app_set_app_name(ErgoVal appv, ErgoVal namev) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.app_set_app_name expects app");
+static void cogito_app_set_app_name(YisVal appv, YisVal namev) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_app_name expects app");
   CogitoApp* app = (CogitoApp*)appv.as.p;
-  ErgoStr* s = NULL;
+  YisStr* s = NULL;
   bool temp = false;
   if (namev.tag == EVT_STR) {
-    s = (ErgoStr*)namev.as.p;
-    if (s) ergo_retain_val(EV_STR(s));
+    s = (YisStr*)namev.as.p;
+    if (s) yis_retain_val(EV_STR(s));
   } else if (namev.tag != EVT_NULL) {
     s = stdr_to_string(namev);
     temp = true;
   }
-  if (app->app_name) ergo_release_val(EV_STR(app->app_name));
+  if (app->app_name) yis_release_val(EV_STR(app->app_name));
   app->app_name = s;
   if (temp && s) {
     // app now owns temp string (ref=1)
   }
 }
 
-static void cogito_app_set_accent_color(ErgoVal appv, ErgoVal colorv, ErgoVal follow_systemv) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.app_set_accent_color expects app");
+static void cogito_app_set_accent_color(YisVal appv, YisVal colorv, YisVal follow_systemv) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_accent_color expects app");
   CogitoApp* app = (CogitoApp*)appv.as.p;
-  bool follow_system = ergo_as_bool(follow_systemv);
+  bool follow_system = yis_as_bool(follow_systemv);
   app->accent_override = !follow_system;
   if (colorv.tag != EVT_NULL) {
-    ErgoStr* s = NULL;
+    YisStr* s = NULL;
     bool temp = false;
     if (colorv.tag == EVT_STR) {
-      s = (ErgoStr*)colorv.as.p;
+      s = (YisStr*)colorv.as.p;
     } else {
       s = stdr_to_string(colorv);
       temp = true;
@@ -212,16 +212,16 @@ static void cogito_app_set_accent_color(ErgoVal appv, ErgoVal colorv, ErgoVal fo
       fprintf(stderr, "cogito: app_set_accent_color failed to parse color=%s\n", (s && s->data) ? s->data : "");
       fflush(stderr);
     }
-    if (temp && s) ergo_release_val(EV_STR(s));
+    if (temp && s) yis_release_val(EV_STR(s));
   }
   cogito_app_update_theme(appv);
 }
 
-static void cogito_app_set_dark_mode(ErgoVal appv, ErgoVal darkv, ErgoVal follow_systemv) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.app_set_dark_mode expects app");
+static void cogito_app_set_dark_mode(YisVal appv, YisVal darkv, YisVal follow_systemv) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_dark_mode expects app");
   CogitoApp* app = (CogitoApp*)appv.as.p;
-  bool dark = ergo_as_bool(darkv);
-  bool follow_system = ergo_as_bool(follow_systemv);
+  bool dark = yis_as_bool(darkv);
+  bool follow_system = yis_as_bool(follow_systemv);
   bool prev_override = app->dark_override;
   bool prev_dark = app->dark_mode;
   app->dark_override = !follow_system;
@@ -235,19 +235,19 @@ static void cogito_app_set_dark_mode(ErgoVal appv, ErgoVal darkv, ErgoVal follow
   cogito_app_update_theme(appv);
 }
 
-static void cogito_app_set_icon(ErgoVal appv, ErgoVal pathv) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.app_set_icon expects app");
+static void cogito_app_set_icon(YisVal appv, YisVal pathv) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_icon expects app");
   CogitoApp* app = (CogitoApp*)appv.as.p;
-  ErgoStr* s = NULL;
+  YisStr* s = NULL;
   bool temp = false;
   if (pathv.tag == EVT_STR) {
-    s = (ErgoStr*)pathv.as.p;
-    if (s) ergo_retain_val(EV_STR(s));
+    s = (YisStr*)pathv.as.p;
+    if (s) yis_retain_val(EV_STR(s));
   } else if (pathv.tag != EVT_NULL) {
     s = stdr_to_string(pathv);
     temp = true;
   }
-  if (app->app_icon) ergo_release_val(EV_STR(app->app_icon));
+  if (app->app_icon) yis_release_val(EV_STR(app->app_icon));
   app->app_icon = s;
   if (temp && s) {
     // app now owns temp string (ref=1)
@@ -261,13 +261,13 @@ static const char* cogito_app_get_icon_path(CogitoApp* app) {
   return NULL;
 }
 
-static ErgoVal cogito_app_new(void) {
+static YisVal cogito_app_new(void) {
   if (cogito_debug_enabled()) {
     fprintf(stderr, "cogito: app_new\n");
     fflush(stderr);
   }
   CogitoApp* app = cogito_app_new_obj();
-  ErgoVal appv = EV_OBJ(app);
+  YisVal appv = EV_OBJ(app);
   cogito_app_update_theme(appv);
   return EV_OBJ(app);
 }

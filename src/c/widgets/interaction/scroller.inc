@@ -1,14 +1,14 @@
 static CogitoNode* cogito_scroller_new_obj(void) {
   return cogito_node_new(COGITO_SCROLLER);
 }
-static ErgoVal cogito_scroller_new(void) {
+static YisVal cogito_scroller_new(void) {
   return EV_OBJ(cogito_scroller_new_obj());
 }
-static void cogito_scroller_set_axes(ErgoVal scv, ErgoVal horzv, ErgoVal vertv) {
-  if (scv.tag != EVT_OBJ) ergo_trap("cogito.scroller_set_axes expects scroller");
+static void cogito_scroller_set_axes(YisVal scv, YisVal horzv, YisVal vertv) {
+  if (scv.tag != EVT_OBJ) yis_trap("cogito.scroller_set_axes expects scroller");
   CogitoNode* sc = (CogitoNode*)scv.as.p;
-  sc->scroller.horz = ergo_as_bool(horzv);
-  sc->scroller.vert = ergo_as_bool(vertv);
+  sc->scroller.horz = yis_as_bool(horzv);
+  sc->scroller.vert = yis_as_bool(vertv);
   cogito_window_relayout(cogito_node_window(sc));
 }
 static CogitoNode* cogito_find_scroller(CogitoNode* n, int x, int y) {

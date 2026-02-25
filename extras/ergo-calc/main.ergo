@@ -22,8 +22,8 @@ def ?conv_to_idx = 1
 def conv_from_dd = cogito.dropdown()
 def conv_to_dd = cogito.dropdown()
 def ?conv_category = 0
-def ABOUT_MORE_INFO_URL = @"https://github.com/lainsce/ergo"
-def ABOUT_REPORT_BUG_URL = @"https://github.com/lainsce/ergo/issues"
+def ABOUT_MORE_INFO_URL = @"https://github.com/lainsce/yis"
+def ABOUT_REPORT_BUG_URL = @"https://github.com/lainsce/yis/issues"
 
 fun update_display_value(text = string) (( -- )) {
     display_working.set_text(text)
@@ -422,7 +422,7 @@ fun show_about_window(win = cogito.Window) (( -- )) {
     let content = cogito.vstack()
     content.align_center()
 
-    let aw = cogito.about_window(@"ErgoCalc", @"MIT License")
+    let aw = cogito.about_window(@"YisCalc", @"MIT License")
     .set_icon(@"sf:equal")
     .set_website(ABOUT_MORE_INFO_URL)
     .set_issue_url(ABOUT_REPORT_BUG_URL)
@@ -443,7 +443,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     let about_btn = bar.add_button(@"sf:questionmark", (b = cogito.Button) => {
         show_about_window(win)
     })
-    cogito.set_tooltip(about_btn, @"About ErgoCalc")
+    cogito.set_tooltip(about_btn, @"About YisCalc")
     let toggle_btn = bar.add_button(@"sf:arrow.left.arrow.right", (b = cogito.Button) => {
         showing_converter = !showing_converter
         if showing_converter {
@@ -530,12 +530,12 @@ fun build_ui(win = cogito.Window) (( -- )) {
 }
 
 entry () (( -- )) {
-    cogito.load_sum(@"ergocalc.sum")
+    cogito.load_sum(@"yiscalc.sum")
     let app = cogito.app()
     .set_accent_color(@"#8C56BF", false)
-    .set_appid(@"ergo.cogito.Calc")
-    .set_app_name(@"ErgoCalc")
-    let win = cogito.window_size(@"Ergo Calc", 360, 480)
+    .set_appid(@"yis.cogito.Calc")
+    .set_app_name(@"YisCalc")
+    let win = cogito.window_size(@"Yis Calc", 360, 480)
     .build(build_ui)
     .set_resizable(false)
     app.run(win)

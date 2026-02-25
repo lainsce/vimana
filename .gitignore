@@ -10,14 +10,14 @@
 .vscode/
 build/
 _build/
-.ergo-cache/
+.yis-cache/
 .DS_Store
 
-# Outputs of ergo compilation
+# Outputs of yis compilation
 ./run
 run
 run.exe
-.ergo_run.c
+.yis_run.c
 
 # Generated files
 *.app

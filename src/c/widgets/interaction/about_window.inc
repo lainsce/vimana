@@ -1,14 +1,14 @@
-static ErgoStr* cogito_about_window_strlit(const char* s) {
+static YisStr* cogito_about_window_strlit(const char* s) {
   if (!s) return NULL;
   return stdr_str_from_slice(s, (int)strlen(s));
 }
 
 static void cogito_about_window_apply_class(CogitoNode* n, const char* class_name) {
   if (!n || !class_name || !class_name[0]) return;
-  ErgoStr* cls = cogito_about_window_strlit(class_name);
+  YisStr* cls = cogito_about_window_strlit(class_name);
   if (!cls) return;
   cogito_node_set_class(EV_OBJ(n), EV_STR(cls));
-  ergo_release_val(EV_STR(cls));
+  yis_release_val(EV_STR(cls));
 }
 
 static bool cogito_about_window_has_class(const CogitoNode* n, const char* class_name) {
@@ -55,16 +55,16 @@ static CogitoNode* cogito_about_window_action_button(CogitoNode* aw, size_t inde
   return NULL;
 }
 
-static void cogito_about_window_set_button_url(CogitoNode* btn, ErgoStr* url) {
+static void cogito_about_window_set_button_url(CogitoNode* btn, YisStr* url) {
   if (!btn || btn->kind != COGITO_BUTTON) return;
   if (btn->action_text == url) return;
   if (btn->action_text) {
-    ergo_release_val(EV_STR(btn->action_text));
+    yis_release_val(EV_STR(btn->action_text));
     btn->action_text = NULL;
   }
   if (url) {
     btn->action_text = url;
-    ergo_retain_val(EV_STR(url));
+    yis_retain_val(EV_STR(url));
   }
 }
 
@@ -75,9 +75,9 @@ static CogitoNode* cogito_about_window_ensure_issue_action(CogitoNode* aw) {
   if (!actions) return NULL;
 
   issue = cogito_node_new(COGITO_BUTTON);
-  ErgoStr* txt = cogito_about_window_strlit("Report a Bug");
+  YisStr* txt = cogito_about_window_strlit("Report a Bug");
   cogito_node_set_text(issue, txt);
-  if (txt) ergo_release_val(EV_STR(txt));
+  if (txt) yis_release_val(EV_STR(txt));
   cogito_about_window_apply_class(issue, "outlined");
   issue->disabled = true;
   cogito_children_add(actions, issue);
@@ -95,7 +95,7 @@ static void cogito_about_window_sync_title(CogitoNode* aw) {
 static void cogito_about_window_sync_icon(CogitoNode* aw) {
   CogitoNode* icon = cogito_about_window_icon_node(aw);
   if (!icon) return;
-  ErgoStr* source = aw->icon;
+  YisStr* source = aw->icon;
   if (icon->icon != source) {
     cogito_node_set_icon(icon, source);
   }
@@ -104,7 +104,7 @@ static void cogito_about_window_sync_icon(CogitoNode* aw) {
 static void cogito_about_window_sync_meta(CogitoNode* aw) {
   CogitoNode* meta = cogito_about_window_meta_node(aw);
   if (!meta) return;
-  ErgoStr* text = NULL;
+  YisStr* text = NULL;
   if (aw->tooltip && aw->tooltip->data && aw->tooltip->data[0]) {
     text = aw->tooltip;
   } else if (aw->subtitle && aw->subtitle->data && aw->subtitle->data[0]) {
@@ -117,7 +117,7 @@ static void cogito_about_window_sync_meta(CogitoNode* aw) {
 
 static void cogito_about_window_sync_actions(CogitoNode* aw) {
   CogitoNode* primary = cogito_about_window_action_button(aw, 0);
-  ErgoStr* website = (aw->action_text && aw->action_text->data && aw->action_text->data[0])
+  YisStr* website = (aw->action_text && aw->action_text->data && aw->action_text->data[0])
                        ? aw->action_text
                        : NULL;
   if (primary) {
@@ -132,7 +132,7 @@ static void cogito_about_window_sync_actions(CogitoNode* aw) {
   }
 }
 
-static CogitoNode* cogito_about_window_new_obj(ErgoStr* app_name, ErgoStr* version) {
+static CogitoNode* cogito_about_window_new_obj(YisStr* app_name, YisStr* version) {
   CogitoNode* n = cogito_node_new(COGITO_ABOUT_WINDOW);
   cogito_node_set_text(n, app_name);
   cogito_node_set_subtitle(n, version);
@@ -164,9 +164,9 @@ static CogitoNode* cogito_about_window_new_obj(ErgoStr* app_name, ErgoStr* versi
   cogito_about_window_apply_class(actions, "about-window-actions");
 
   CogitoNode* more = cogito_node_new(COGITO_BUTTON);
-  ErgoStr* more_text = cogito_about_window_strlit("More info");
+  YisStr* more_text = cogito_about_window_strlit("More info");
   cogito_node_set_text(more, more_text);
-  if (more_text) ergo_release_val(EV_STR(more_text));
+  if (more_text) yis_release_val(EV_STR(more_text));
   cogito_about_window_apply_class(more, "outlined");
   cogito_children_add(actions, more);
   cogito_children_add(n, actions);
@@ -178,49 +178,49 @@ static CogitoNode* cogito_about_window_new_obj(ErgoStr* app_name, ErgoStr* versi
   return n;
 }
 
-static ErgoVal cogito_about_window_new(ErgoVal namev, ErgoVal versionv) {
-  ErgoStr* ns = stdr_to_string(namev);
-  ErgoStr* vs = stdr_to_string(versionv);
+static YisVal cogito_about_window_new(YisVal namev, YisVal versionv) {
+  YisStr* ns = stdr_to_string(namev);
+  YisStr* vs = stdr_to_string(versionv);
   CogitoNode* n = cogito_about_window_new_obj(ns, vs);
   return EV_OBJ(n);
 }
 
-static void cogito_about_window_set_icon(ErgoVal awv, ErgoVal iconv) {
-  if (awv.tag != EVT_OBJ) ergo_trap("cogito.about_window_set_icon expects about_window");
+static void cogito_about_window_set_icon(YisVal awv, YisVal iconv) {
+  if (awv.tag != EVT_OBJ) yis_trap("cogito.about_window_set_icon expects about_window");
   CogitoNode* n = (CogitoNode*)awv.as.p;
-  ErgoStr* s = stdr_to_string(iconv);
+  YisStr* s = stdr_to_string(iconv);
   cogito_node_set_icon(n, s);
   cogito_about_window_sync_icon(n);
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void cogito_about_window_set_description(ErgoVal awv, ErgoVal descv) {
-  if (awv.tag != EVT_OBJ) ergo_trap("cogito.about_window_set_description expects about_window");
+static void cogito_about_window_set_description(YisVal awv, YisVal descv) {
+  if (awv.tag != EVT_OBJ) yis_trap("cogito.about_window_set_description expects about_window");
   CogitoNode* n = (CogitoNode*)awv.as.p;
-  ErgoStr* s = stdr_to_string(descv);
+  YisStr* s = stdr_to_string(descv);
   cogito_node_set_tooltip(n, s);
   cogito_about_window_sync_meta(n);
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void cogito_about_window_set_website(ErgoVal awv, ErgoVal urlv) {
-  if (awv.tag != EVT_OBJ) ergo_trap("cogito.about_window_set_website expects about_window");
+static void cogito_about_window_set_website(YisVal awv, YisVal urlv) {
+  if (awv.tag != EVT_OBJ) yis_trap("cogito.about_window_set_website expects about_window");
   CogitoNode* n = (CogitoNode*)awv.as.p;
-  ErgoStr* s = stdr_to_string(urlv);
-  if (n->action_text) ergo_release_val(EV_STR(n->action_text));
+  YisStr* s = stdr_to_string(urlv);
+  if (n->action_text) yis_release_val(EV_STR(n->action_text));
   n->action_text = s;
-  ergo_retain_val(EV_STR(s));
+  yis_retain_val(EV_STR(s));
   cogito_about_window_sync_actions(n);
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void cogito_about_window_set_issue_url(ErgoVal awv, ErgoVal urlv) {
-  if (awv.tag != EVT_OBJ) ergo_trap("cogito.about_window_set_issue_url expects about_window");
+static void cogito_about_window_set_issue_url(YisVal awv, YisVal urlv) {
+  if (awv.tag != EVT_OBJ) yis_trap("cogito.about_window_set_issue_url expects about_window");
   CogitoNode* n = (CogitoNode*)awv.as.p;
-  ErgoStr* s = stdr_to_string(urlv);
+  YisStr* s = stdr_to_string(urlv);
   CogitoNode* issue = cogito_about_window_ensure_issue_action(n);
   if (issue) {
-    ErgoStr* url = (s && s->data && s->data[0]) ? s : NULL;
+    YisStr* url = (s && s->data && s->data[0]) ? s : NULL;
     cogito_about_window_set_button_url(issue, url);
   }
   cogito_about_window_sync_actions(n);

@@ -1,7 +1,7 @@
 {
-  "name": "ergo-syntax",
-  "displayName": "Ergo + SUM Language Support",
-  "description": "Syntax highlighting and basic editor support for Ergo and SUM.",
+  "name": "yis-syntax",
+  "displayName": "Yis + SUM Language Support",
+  "description": "Syntax highlighting and basic editor support for Yis and SUM.",
   "version": "0.0.1",
   "publisher": "local",
   "engines": {
@@ -13,13 +13,13 @@
   "contributes": {
     "languages": [
       {
-        "id": "ergo",
+        "id": "yis",
         "aliases": [
-          "Ergo",
-          "ergo"
+          "Yis",
+          "yis"
         ],
         "extensions": [
-          ".ergo"
+          ".yis"
         ],
         "configuration": "./language-configuration.json"
       },
@@ -37,9 +37,9 @@
     ],
     "grammars": [
       {
-        "language": "ergo",
-        "scopeName": "source.ergo",
-        "path": "./syntaxes/ergo.tmLanguage.json"
+        "language": "yis",
+        "scopeName": "source.yis",
+        "path": "./syntaxes/yis.tmLanguage.json"
       },
       {
         "language": "sum",

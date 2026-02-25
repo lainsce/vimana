@@ -2,8 +2,8 @@
 // Builds SUM source from accent color, dark/light mode, and Ensor scheme variant.
 
 // Set the Ensor scheme variant and re-apply the current theme.
-static void cogito_app_set_ensor_variant(ErgoVal app, ErgoVal variant) {
-  int v = ergo_as_int(variant);
+static void cogito_app_set_ensor_variant(YisVal app, YisVal variant) {
+  int v = yis_as_int(variant);
   if (v < 0) v = 0;
   if (v > 5) v = 5;
   if (v == cogito_theme_ensor_variant) return;
@@ -19,8 +19,8 @@ static void cogito_app_set_ensor_variant(ErgoVal app, ErgoVal variant) {
 }
 
 // Set theme contrast in [-1, 1] and re-apply current theme.
-static void cogito_app_set_contrast(ErgoVal app, ErgoVal contrast) {
-  double v = ergo_as_float(contrast);
+static void cogito_app_set_contrast(YisVal app, YisVal contrast) {
+  double v = yis_as_float(contrast);
   if (v < -1.0) v = -1.0;
   if (v > 1.0) v = 1.0;
   if (fabs(v - cogito_theme_contrast) < 0.000001) return;

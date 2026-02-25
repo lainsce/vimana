@@ -40,7 +40,7 @@ target_system = target_machine.system()
 # Platform-specific source files and link args
 cogito_src = files(
   'src/cogito.c',
-  'src/ergo_compat.c',
+  'src/yis_compat.c',
   'c/backend/backend_sdl3.c',
   'c/backend/csd_sdl3.c',
 )
@@ -72,14 +72,14 @@ libcogito_dep = declare_dependency(
   link_with : libcogito,
 )
 
-# Install Cogito Ergo module into the Ergo stdlib
+# Install Cogito Yis module into the Yis stdlib
 install_data(
-  'cogito.ergo',
-  install_dir : get_option('datadir') / 'ergo' / 'stdlib'
+  'cogito.yi',
+  install_dir : get_option('datadir') / 'yis' / 'stdlib'
 )
 
-# Install Ergo-side C bindings shim used by `ergo run` codegen when `import cogito` is present.
+# Install Yis-side C bindings shim used by `yis run` codegen when `import cogito` is present.
 install_data(
-  'ergo/cogito_bindings.inc',
-  install_dir : get_option('datadir') / 'ergo' / 'cogito'
+  'yis/cogito_bindings.inc',
+  install_dir : get_option('datadir') / 'yis' / 'cogito'
 )

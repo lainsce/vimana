@@ -1,7 +1,7 @@
 // Forward declarations for popover functions (implemented in interaction/popover.inc)
 static CogitoNode* cogito_popover_new_obj(void);
-static void cogito_popover_show(ErgoVal anchorv, ErgoVal popoverv);
-static void cogito_popover_close(ErgoVal windowv);
+static void cogito_popover_show(YisVal anchorv, YisVal popoverv);
+static void cogito_popover_close(YisVal windowv);
 
 static CogitoNode* cogito_colorpicker_new_obj(void) {
   CogitoNode* cp = cogito_node_new(COGITO_COLORPICKER);
@@ -13,17 +13,17 @@ static CogitoNode* cogito_colorpicker_new_obj(void) {
   cogito_colorpicker_sync_hex(cp);
   return cp;
 }
-static ErgoVal cogito_colorpicker_new(void) {
+static YisVal cogito_colorpicker_new(void) {
   return EV_OBJ(cogito_colorpicker_new_obj());
 }
-static void cogito_colorpicker_on_change(ErgoVal nodev, ErgoVal handler) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.colorpicker_on_change expects colorpicker");
-  if (handler.tag != EVT_FN) ergo_trap("cogito.colorpicker_on_change expects function");
+static void cogito_colorpicker_on_change(YisVal nodev, YisVal handler) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.colorpicker_on_change expects colorpicker");
+  if (handler.tag != EVT_FN) yis_trap("cogito.colorpicker_on_change expects function");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (n->kind != COGITO_COLORPICKER) ergo_trap("cogito.colorpicker_on_change expects colorpicker");
-  if (n->on_change) ergo_release_val(EV_FN(n->on_change));
-  n->on_change = (ErgoFn*)handler.as.p;
-  ergo_retain_val(EV_FN(n->on_change));
+  if (n->kind != COGITO_COLORPICKER) yis_trap("cogito.colorpicker_on_change expects colorpicker");
+  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  n->on_change = (YisFn*)handler.as.p;
+  yis_retain_val(EV_FN(n->on_change));
 }
 
 // Forward declaration (implemented in interaction/slider.inc, included before this)
@@ -59,12 +59,12 @@ static CogitoNode* cogito_colorpicker_open_panel(CogitoNode* owner) {
   cogito_children_add(panel, sh);
   cogito_children_add(panel, sc);
   cogito_children_add(panel, st);
-  ergo_release_val(EV_OBJ(sh));
-  ergo_release_val(EV_OBJ(sc));
-  ergo_release_val(EV_OBJ(st));
+  yis_release_val(EV_OBJ(sh));
+  yis_release_val(EV_OBJ(sc));
+  yis_release_val(EV_OBJ(st));
 
   cogito_children_add(pop, panel);
-  ergo_release_val(EV_OBJ(panel));
+  yis_release_val(EV_OBJ(panel));
   return pop;
 }
 
@@ -76,7 +76,7 @@ static void cogito_colorpicker_show_popover(CogitoNode* anchor) {
   CogitoNode* pop = cogito_colorpicker_open_panel(anchor);
   if (!pop) return;
   cogito_popover_show(EV_OBJ(anchor), EV_OBJ(pop));
-  ergo_release_val(EV_OBJ(pop));
+  yis_release_val(EV_OBJ(pop));
 }
 
 // Handles Cancel / OK footer button clicks in the panel.

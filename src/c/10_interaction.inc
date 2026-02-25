@@ -5,9 +5,9 @@ static bool cogito_hit_rect_min48(int x, int y, int rx, int ry, int rw, int rh);
 static bool cogito_hit_node_min48(const CogitoNode* n, int x, int y);
 static void cogito_clear_children(CogitoNode* node);
 static void cogito_timer_cancel_owner_tree(CogitoNode* root);
-static void cogito_node_set_class(ErgoVal nodev, ErgoVal classv);
+static void cogito_node_set_class(YisVal nodev, YisVal classv);
 
-static void cogito_invoke(ErgoFn* fn, int argc, ErgoVal* argv) {
+static void cogito_invoke(YisFn* fn, int argc, YisVal* argv) {
   if (!fn) return;
   static int cogito_debug_invoke = -1;
   if (cogito_debug_invoke < 0) {
@@ -19,13 +19,13 @@ static void cogito_invoke(ErgoFn* fn, int argc, ErgoVal* argv) {
             (void*)fn, (void*)fn->fn, fn->env, argc);
     fflush(stderr);
   }
-  ErgoVal ret = fn->fn(fn->env, argc, argv);
+  YisVal ret = fn->fn(fn->env, argc, argv);
   if (cogito_debug_invoke) {
     fprintf(stderr, "cogito: invoke ret tag=%d\n", (int)ret.tag);
     fflush(stderr);
   }
   if (ret.tag != EVT_NULL) {
-    ergo_release_val(ret);
+    yis_release_val(ret);
   }
   if (cogito_debug_invoke) {
     fprintf(stderr, "cogito: invoke done fn=%p\n", (void*)fn);
@@ -54,7 +54,7 @@ static void cogito_invoke_click(CogitoNode* n) {
     }
     fflush(stderr);
   }
-  ErgoVal arg = EV_OBJ(n);
+  YisVal arg = EV_OBJ(n);
   cogito_invoke(n->on_click, 1, &arg);
   cogito_a11y_emit_event("activate", n, "click");
 }
@@ -66,30 +66,30 @@ static void cogito_invoke_menu(CogitoNode* n, size_t idx) {
     cogito_invoke_change(n);
     return;
   }
-  ErgoFn* fn = n->menu_handlers[idx];
+  YisFn* fn = n->menu_handlers[idx];
   if (!fn) return;
-  ErgoVal arg = EV_OBJ(n);
+  YisVal arg = EV_OBJ(n);
   cogito_invoke(fn, 1, &arg);
 }
 
 static void cogito_invoke_change(CogitoNode* n) {
   if (!n || !n->on_change) return;
-  ErgoVal arg = EV_OBJ(n);
+  YisVal arg = EV_OBJ(n);
   cogito_invoke(n->on_change, 1, &arg);
   cogito_a11y_emit_event("value-changed", n, "");
 }
 
 static void cogito_invoke_select(CogitoNode* n, int idx, bool activate) {
-  ErgoVal arg = EV_INT(idx);
+  YisVal arg = EV_INT(idx);
   if (n->on_select) cogito_invoke(n->on_select, 1, &arg);
   if (activate && n->on_activate) cogito_invoke(n->on_activate, 1, &arg);
 }
 
-static void cogito_dialog_slot_show(ErgoVal slotv, ErgoVal dialogv);
-static void cogito_dialog_slot_clear(ErgoVal slotv);
-static void cogito_dialog_close(ErgoVal dialogv);
-static void cogito_dialog_remove(ErgoVal dialogv);
-static ErgoVal cogito_node_parent(ErgoVal nodev);
+static void cogito_dialog_slot_show(YisVal slotv, YisVal dialogv);
+static void cogito_dialog_slot_clear(YisVal slotv);
+static void cogito_dialog_close(YisVal dialogv);
+static void cogito_dialog_remove(YisVal dialogv);
+static YisVal cogito_node_parent(YisVal nodev);
 static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child);
 
 #include "widgets/interaction/button.inc"
@@ -160,19 +160,19 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
 #include "widgets/interaction/zstack.inc"
 #include "widgets/interaction/appbar.inc"
 
-static void cogito_state_drop(ErgoObj* o) {
+static void cogito_state_drop(YisObj* o) {
   CogitoState* s = (CogitoState*)o;
   if (s->value.tag != EVT_NULL) {
-    ergo_release_val(s->value);
+    yis_release_val(s->value);
     s->value = EV_NULLV;
   }
 }
 
 __attribute__((unused))
-static CogitoState* cogito_state_new_obj(ErgoVal initial) {
-  CogitoState* s = (CogitoState*)ergo_obj_new(sizeof(CogitoState), cogito_state_drop);
+static CogitoState* cogito_state_new_obj(YisVal initial) {
+  CogitoState* s = (CogitoState*)yis_obj_new(sizeof(CogitoState), cogito_state_drop);
   s->value = initial;
-  if (initial.tag != EVT_NULL) ergo_retain_val(initial);
+  if (initial.tag != EVT_NULL) yis_retain_val(initial);
   return s;
 }
 
@@ -447,7 +447,7 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
   }
   if (idx >= parent->len) return;
   cogito_timer_cancel_owner_tree(parent->children[idx]);
-  ergo_release_val(EV_OBJ(parent->children[idx]));
+  yis_release_val(EV_OBJ(parent->children[idx]));
   for (size_t i = idx + 1; i < parent->len; i++) {
     parent->children[i - 1] = parent->children[i];
   }
@@ -458,7 +458,7 @@ static void cogito_clear_children(CogitoNode* node) {
   if (!node || !node->children) return;
   for (size_t i = 0; i < node->len; i++) {
     cogito_timer_cancel_owner_tree(node->children[i]);
-    ergo_release_val(EV_OBJ(node->children[i]));
+    yis_release_val(EV_OBJ(node->children[i]));
   }
   free(node->children);
   node->children = NULL;

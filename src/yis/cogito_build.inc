@@ -213,8 +213,8 @@ static const char *cogito_default_cflags(void) {
     if (path_is_file("../../cogito/include/cogito.h")) {
         return "-I../../cogito/include";
     }
-    // Try relative to executable (binary at <project>/ergo/build/ergo)
-    char *exe_dir = ergo_exe_dir();
+    // Try relative to executable (binary at <project>/yis/build/yis)
+    char *exe_dir = yis_exe_dir();
     if (exe_dir) {
         static char cflag_buf[512];
         const char *rel[] = {
@@ -281,9 +281,9 @@ static const char *cogito_default_ldflags(void) {
         }
     }
 
-    // 2) Try relative to the executable (binary at <project>/ergo/build/ergo)
+    // 2) Try relative to the executable (binary at <project>/yis/build/yis)
     {
-        char *exe_dir = ergo_exe_dir();
+        char *exe_dir = yis_exe_dir();
         if (exe_dir) {
             const char *rel_dirs[] = {
                 "../../cogito/_build",

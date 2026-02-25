@@ -122,11 +122,11 @@ static bool cogito_keyboard_move_indexed_selection(CogitoNode* n, int dir) {
       n->selected = next;
       if (n->view_switcher && n->tab_ids && (size_t)next < n->tab_len) {
         CogitoNode* vs = n->view_switcher;
-        ErgoStr* id = n->tab_ids[next];
+        YisStr* id = n->tab_ids[next];
         if (id) {
-          if (vs->view_active_id) ergo_release_val(EV_STR(vs->view_active_id));
+          if (vs->view_active_id) yis_release_val(EV_STR(vs->view_active_id));
           vs->view_active_id = id;
-          ergo_retain_val(EV_STR(vs->view_active_id));
+          yis_retain_val(EV_STR(vs->view_active_id));
         }
       }
       cogito_invoke_change(n);
@@ -161,7 +161,7 @@ static bool cogito_keyboard_move_indexed_selection(CogitoNode* n, int dir) {
       if (next == prev) return false;
       n->selected = next;
       if (n->on_select) {
-        ErgoVal arg = EV_INT(next);
+        YisVal arg = EV_INT(next);
         cogito_invoke(n->on_select, 1, &arg);
       }
       return true;
@@ -420,9 +420,9 @@ static bool cogito_apply_window_icon(CogitoWindow* window, CogitoApp* app) {
   return icon_set;
 }
 
-static void cogito_run(ErgoVal appv, ErgoVal winv) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.run expects app");
-  if (winv.tag != EVT_OBJ) ergo_trap("cogito.run expects window");
+static void cogito_run(YisVal appv, YisVal winv) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.run expects app");
+  if (winv.tag != EVT_OBJ) yis_trap("cogito.run expects window");
   // Timers are scoped to a single run lifecycle.
   cogito_timer_clear_all_internal();
   CogitoApp* app = (CogitoApp*)appv.as.p;
@@ -477,7 +477,7 @@ static void cogito_run(ErgoVal appv, ErgoVal winv) {
     cogito_backend_sdl3_init();
   }
   if (!cogito_backend || !cogito_backend->init()) {
-    ergo_trap("Failed to initialize SDL3 backend");
+    yis_trap("Failed to initialize SDL3 backend");
   }
   
   if (win->auto_size) {
@@ -499,7 +499,7 @@ static void cogito_run(ErgoVal appv, ErgoVal winv) {
 #endif
   CogitoWindow* window = cogito_backend->window_create(title, win->w, win->h, win->resizable, borderless, true);
   if (!window) {
-    ergo_trap("Failed to create window");
+    yis_trap("Failed to create window");
   }
   cogito_active_backend_window = window;
 
@@ -1696,7 +1696,7 @@ static void cogito_run(ErgoVal appv, ErgoVal winv) {
         da->drawing_area.pressed = false;
         da->drawing_area.dragging = false;
         if (stroke_active && da->on_action) {
-          ErgoVal arg = EV_OBJ(da);
+          YisVal arg = EV_OBJ(da);
           cogito_invoke(da->on_action, 1, &arg);
         }
         cogito_pointer_capture = NULL;
@@ -2158,7 +2158,7 @@ static void cogito_run(ErgoVal appv, ErgoVal winv) {
             const char* about_url = cogito_about_window_action_url(hit, about_host);
             if (about_host && about_url) {
               if (about_host->on_action) {
-                ErgoVal arg = EV_OBJ(about_host);
+                YisVal arg = EV_OBJ(about_host);
                 cogito_invoke(about_host->on_action,
                 1, &arg);
               } else if (cogito_backend && cogito_backend->open_url) {
@@ -2296,12 +2296,12 @@ static void cogito_run(ErgoVal appv, ErgoVal winv) {
               hit->selected = idx;
               if (hit->view_switcher && hit->tab_ids && (size_t)idx < hit->tab_len) {
                 CogitoNode* vs = hit->view_switcher;
-                ErgoStr* id = hit->tab_ids[idx
+                YisStr* id = hit->tab_ids[idx
                 ];
                 if (id) {
-                  if (vs->view_active_id) ergo_release_val(EV_STR(vs->view_active_id));
+                  if (vs->view_active_id) yis_release_val(EV_STR(vs->view_active_id));
                   vs->view_active_id = id;
-                  ergo_retain_val(EV_STR(vs->view_active_id));
+                  yis_retain_val(EV_STR(vs->view_active_id));
                 }
               }
               cogito_invoke_change(hit);
@@ -2342,7 +2342,7 @@ static void cogito_run(ErgoVal appv, ErgoVal winv) {
                       cogito_hit_rect_min48(mx, my, hit->action_button_x, hit->action_button_y,
                                      hit->action_button_w, hit->action_button_h)) {
               if (hit->on_action) {
-                ErgoVal arg = EV_OBJ(hit);
+                YisVal arg = EV_OBJ(hit);
                 cogito_invoke(hit->on_action,
                 1, &arg);
               }
@@ -2355,7 +2355,7 @@ static void cogito_run(ErgoVal appv, ErgoVal winv) {
             if (cw > 0 && ch > 0 && cogito_hit_rect_min48(mx, my, cx, cy, cw, ch)) {
               // Clicked on close button
               if (hit->on_action) {
-                ErgoVal arg = EV_OBJ(hit);
+                YisVal arg = EV_OBJ(hit);
                 cogito_invoke(hit->on_action,
                 1, &arg);
               }
@@ -2468,7 +2468,7 @@ static void cogito_run(ErgoVal appv, ErgoVal winv) {
               if (hit->action_button_w > 0 && cogito_hit_rect_min48(mx, my, hit->action_button_x, hit->action_button_y,
                           hit->action_button_w, hit->action_button_h)) {
                 if (hit->on_action) {
-                  ErgoVal arg = EV_OBJ(hit);
+                  YisVal arg = EV_OBJ(hit);
                   cogito_invoke(hit->on_action,
                   1, &arg);
                 } else if (hit->kind == COGITO_ABOUT_WINDOW && cogito_backend && cogito_backend->open_url) {

@@ -63,25 +63,25 @@ static CogitoNode* cogito_slider_range_new_obj(double min, double max, double st
   return sl;
 }
 
-static ErgoVal cogito_slider_new(ErgoVal minv, ErgoVal maxv, ErgoVal valv) {
-  double min = ergo_as_float(minv);
-  double max = ergo_as_float(maxv);
-  double val = ergo_as_float(valv);
+static YisVal cogito_slider_new(YisVal minv, YisVal maxv, YisVal valv) {
+  double min = yis_as_float(minv);
+  double max = yis_as_float(maxv);
+  double val = yis_as_float(valv);
   return EV_OBJ(cogito_slider_new_obj(min, max, val));
 }
 
-static ErgoVal cogito_slider_range_new(ErgoVal minv, ErgoVal maxv, ErgoVal startv, ErgoVal endv) {
-  double min = ergo_as_float(minv);
-  double max = ergo_as_float(maxv);
-  double start = ergo_as_float(startv);
-  double end = ergo_as_float(endv);
+static YisVal cogito_slider_range_new(YisVal minv, YisVal maxv, YisVal startv, YisVal endv) {
+  double min = yis_as_float(minv);
+  double max = yis_as_float(maxv);
+  double start = yis_as_float(startv);
+  double end = yis_as_float(endv);
   return EV_OBJ(cogito_slider_range_new_obj(min, max, start, end));
 }
 
-static void cogito_slider_set_value(ErgoVal nodev, ErgoVal valv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_set_value expects slider");
+static void cogito_slider_set_value(YisVal nodev, YisVal valv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_value expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  double v = cogito_slider_clamp(ergo_as_float(valv), n->slider.min, n->slider.max);
+  double v = cogito_slider_clamp(yis_as_float(valv), n->slider.min, n->slider.max);
   if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
     n->slider.value = v;
     if (n->slider.value > n->slider.value2) n->slider.value2 = n->slider.value;
@@ -94,16 +94,16 @@ static void cogito_slider_set_value(ErgoVal nodev, ErgoVal valv) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_slider_get_value(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_get_value expects slider");
+static YisVal cogito_slider_get_value(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_value expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return EV_FLOAT(n->slider.value);
 }
 
-static void cogito_slider_set_centered(ErgoVal nodev, ErgoVal onv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_set_centered expects slider");
+static void cogito_slider_set_centered(YisVal nodev, YisVal onv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_centered expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  bool on = ergo_as_bool(onv);
+  bool on = yis_as_bool(onv);
   if (n->slider.mode == COGITO_SLIDER_MODE_RANGE && !on) {
     n->slider.mode = COGITO_SLIDER_MODE_NORMAL;
   } else if (n->slider.mode == COGITO_SLIDER_MODE_RANGE && on) {
@@ -120,96 +120,96 @@ static void cogito_slider_set_centered(ErgoVal nodev, ErgoVal onv) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_slider_get_centered(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_get_centered expects slider");
+static YisVal cogito_slider_get_centered(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_centered expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return EV_BOOL(n->slider.mode == COGITO_SLIDER_MODE_CENTERED);
 }
 
-static void cogito_slider_set_range(ErgoVal nodev, ErgoVal startv, ErgoVal endv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_set_range expects slider");
+static void cogito_slider_set_range(YisVal nodev, YisVal startv, YisVal endv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_range expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   n->slider.mode = COGITO_SLIDER_MODE_RANGE;
-  n->slider.value = ergo_as_float(startv);
-  n->slider.value2 = ergo_as_float(endv);
+  n->slider.value = yis_as_float(startv);
+  n->slider.value2 = yis_as_float(endv);
   n->slider.active_handle = 1;
   cogito_slider_normalize_range(n);
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void cogito_slider_set_range_start(ErgoVal nodev, ErgoVal startv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_set_range_start expects slider");
+static void cogito_slider_set_range_start(YisVal nodev, YisVal startv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_range_start expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->slider.mode != COGITO_SLIDER_MODE_RANGE) {
     n->slider.mode = COGITO_SLIDER_MODE_RANGE;
     n->slider.value2 = n->slider.value;
   }
-  double v = cogito_slider_clamp(ergo_as_float(startv), n->slider.min, n->slider.max);
+  double v = cogito_slider_clamp(yis_as_float(startv), n->slider.min, n->slider.max);
   n->slider.value = v;
   if (n->slider.value > n->slider.value2) n->slider.value2 = n->slider.value;
   n->slider.active_handle = 1;
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void cogito_slider_set_range_end(ErgoVal nodev, ErgoVal endv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_set_range_end expects slider");
+static void cogito_slider_set_range_end(YisVal nodev, YisVal endv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_range_end expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->slider.mode != COGITO_SLIDER_MODE_RANGE) {
     n->slider.mode = COGITO_SLIDER_MODE_RANGE;
     n->slider.value2 = n->slider.value;
   }
-  double v = cogito_slider_clamp(ergo_as_float(endv), n->slider.min, n->slider.max);
+  double v = cogito_slider_clamp(yis_as_float(endv), n->slider.min, n->slider.max);
   n->slider.value2 = v;
   if (n->slider.value2 < n->slider.value) n->slider.value = n->slider.value2;
   n->slider.active_handle = 2;
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_slider_get_range_start(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_get_range_start expects slider");
+static YisVal cogito_slider_get_range_start(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_range_start expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return EV_FLOAT(n->slider.value);
 }
 
-static ErgoVal cogito_slider_get_range_end(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_get_range_end expects slider");
+static YisVal cogito_slider_get_range_end(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_range_end expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return EV_FLOAT(n->slider.value2);
 }
 
-static void cogito_slider_set_size(ErgoVal nodev, ErgoVal sizev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_set_size expects slider");
+static void cogito_slider_set_size(YisVal nodev, YisVal sizev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_size expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  n->slider.size = cogito_slider_clamp_size_int((int)ergo_as_int(sizev));
+  n->slider.size = cogito_slider_clamp_size_int((int)yis_as_int(sizev));
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static ErgoVal cogito_slider_get_size(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_get_size expects slider");
+static YisVal cogito_slider_get_size(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_size expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return EV_INT((int)n->slider.size);
 }
 
-static void cogito_slider_set_icon(ErgoVal nodev, ErgoVal iconv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_set_icon expects slider");
+static void cogito_slider_set_icon(YisVal nodev, YisVal iconv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_icon expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (iconv.tag == EVT_NULL) {
     cogito_node_set_icon(n, NULL);
   } else if (iconv.tag == EVT_STR) {
-    cogito_node_set_icon(n, (ErgoStr*)iconv.as.p);
+    cogito_node_set_icon(n, (YisStr*)iconv.as.p);
   } else {
-    ErgoStr* s = stdr_to_string(iconv);
+    YisStr* s = stdr_to_string(iconv);
     cogito_node_set_icon(n, s);
-    if (s) ergo_release_val(EV_STR(s));
+    if (s) yis_release_val(EV_STR(s));
   }
   cogito_window_relayout(cogito_node_window(n));
 }
 
-static void cogito_slider_on_change(ErgoVal nodev, ErgoVal handler) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.slider_on_change expects slider");
-  if (handler.tag != EVT_FN) ergo_trap("cogito.slider_on_change expects function");
+static void cogito_slider_on_change(YisVal nodev, YisVal handler) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_on_change expects slider");
+  if (handler.tag != EVT_FN) yis_trap("cogito.slider_on_change expects function");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (n->on_change) ergo_release_val(EV_FN(n->on_change));
-  n->on_change = (ErgoFn*)handler.as.p;
-  ergo_retain_val(EV_FN(n->on_change));
+  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  n->on_change = (YisFn*)handler.as.p;
+  yis_retain_val(EV_FN(n->on_change));
 }

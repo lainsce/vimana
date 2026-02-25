@@ -4,16 +4,16 @@ static CogitoNode* cogito_view_dual_new_obj(void) {
   n->vexpand = true;
   return n;
 }
-static ErgoVal cogito_view_dual_new(void) {
+static YisVal cogito_view_dual_new(void) {
   CogitoNode* n = cogito_view_dual_new_obj();
   return EV_OBJ(n);
 }
-static void cogito_view_dual_set_ratio(ErgoVal vdv, ErgoVal ratiov) {
-  if (vdv.tag != EVT_OBJ) ergo_trap("cogito.view_dual_set_ratio expects view_dual");
+static void cogito_view_dual_set_ratio(YisVal vdv, YisVal ratiov) {
+  if (vdv.tag != EVT_OBJ) yis_trap("cogito.view_dual_set_ratio expects view_dual");
   CogitoNode* n = (CogitoNode*)vdv.as.p;
   int handle_w = 4;
   const int min_item_w = 218;
-  float r = (float)ergo_as_float(ratiov);
+  float r = (float)yis_as_float(ratiov);
   if (r < 0.0f) r = 0.0f;
   if (r > 1.0f) r = 1.0f;
   if (n->w > 0) {

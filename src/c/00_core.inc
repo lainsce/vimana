@@ -193,10 +193,10 @@ static void cogito_spring_dt_update(void) {
 #define cogito_on_color cogito_color_on_color
 
 typedef struct CogitoApp {
-  ErgoObj base;
+  YisObj base;
   void* native;
-  ErgoStr* app_id;
-  ErgoStr* app_name;
+  YisStr* app_id;
+  YisStr* app_name;
   bool accent_override;
   bool dark_override;
   bool dark_mode;
@@ -206,7 +206,7 @@ typedef struct CogitoApp {
   CogitoColor system_accent;
   bool system_accent_set;
   double system_theme_next_check;
-  ErgoStr* app_icon; // path to app icon (png/svg/jpg/bmp)
+  YisStr* app_icon; // path to app icon (png/svg/jpg/bmp)
 } CogitoApp;
 
 typedef enum {
@@ -551,7 +551,7 @@ typedef struct CogitoFontCacheEntry {
 } CogitoFontCacheEntry;
 
 typedef struct CogitoNode {
-  ErgoObj base;
+  YisObj base;
   CogitoKind kind;
   struct CogitoNode* parent;
   struct CogitoNode** children;
@@ -559,53 +559,53 @@ typedef struct CogitoNode {
   size_t cap;
 
   // Content
-  ErgoStr* text;
-  ErgoStr* subtitle;
-  ErgoStr* hint;
-  ErgoStr* icon;
-  ErgoStr* tooltip;
-  ErgoStr* action_text;
-  ErgoStr* view_id;
-  ErgoStr* view_active_id;
-  ErgoStr* class_name;
-  ErgoStr* a11y_label;
-  ErgoStr* a11y_role;
+  YisStr* text;
+  YisStr* subtitle;
+  YisStr* hint;
+  YisStr* icon;
+  YisStr* tooltip;
+  YisStr* action_text;
+  YisStr* view_id;
+  YisStr* view_active_id;
+  YisStr* class_name;
+  YisStr* a11y_label;
+  YisStr* a11y_role;
 
   // Lazy view builders (ViewSwitcher)
-  ErgoStr** view_builder_ids;
-  ErgoFn** view_builders;
+  YisStr** view_builder_ids;
+  YisFn** view_builders;
   size_t view_builder_len;
   size_t view_builder_cap;
 
   // Collections (menus, tabs)
-  ErgoStr** menu_labels;
-  ErgoFn** menu_handlers;
+  YisStr** menu_labels;
+  YisFn** menu_handlers;
   size_t menu_len;
   size_t menu_cap;
   // Menu sections for intelligent dividers
   bool* menu_section_after;
   // Menu item properties (parallel arrays, same length as menu_labels)
-  ErgoStr** menu_icons;      // Leading icon name per item (NULL = none)
-  ErgoStr** menu_shortcuts;  // Trailing shortcut text per item (NULL = none)
+  YisStr** menu_icons;      // Leading icon name per item (NULL = none)
+  YisStr** menu_shortcuts;  // Trailing shortcut text per item (NULL = none)
   bool* menu_submenu;        // Whether item opens a submenu (trailing arrow)
   bool* menu_toggled;        // Whether item is in toggled state
-  ErgoStr** tab_labels;
-  ErgoStr** tab_icons;
-  ErgoStr** tab_ids;
+  YisStr** tab_labels;
+  YisStr** tab_icons;
+  YisStr** tab_ids;
   size_t tab_len;
   size_t tab_cap;
 
   // Callbacks
-  ErgoFn* on_click;
-  ErgoFn* on_change;
-  ErgoFn* on_select;
-  ErgoFn* on_activate;
-  ErgoFn* builder;
-  ErgoFn* on_action;
-  ErgoFn* on_draw;
+  YisFn* on_click;
+  YisFn* on_change;
+  YisFn* on_select;
+  YisFn* on_activate;
+  YisFn* builder;
+  YisFn* on_action;
+  YisFn* on_draw;
 
   // State
-  ErgoVal group;
+  YisVal group;
   bool checked;
   int selected;
   bool tree_collapsed;
@@ -867,8 +867,8 @@ typedef struct CogitoNode {
     } text_input;
 
     struct {
-      ErgoStr** labels;
-      ErgoStr** icons;
+      YisStr** labels;
+      YisStr** icons;
       int* badges; // 0: none, -1: dot, >0: numeric
       size_t len, cap;
       int selected;
@@ -878,8 +878,8 @@ typedef struct CogitoNode {
     } nav_rail;
 
     struct {
-      ErgoStr** labels;
-      ErgoStr** icons;
+      YisStr** labels;
+      YisStr** icons;
       size_t len, cap;
       int selected;
     } bottom_nav;
@@ -975,8 +975,8 @@ typedef struct CogitoNode {
 } CogitoNode;
 
 typedef struct CogitoState {
-  ErgoObj base;
-  ErgoVal value;
+  YisObj base;
+  YisVal value;
 } CogitoState;
 
 typedef struct CogitoMenu {

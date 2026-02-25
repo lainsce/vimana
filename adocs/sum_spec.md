@@ -1,6 +1,6 @@
 # Sum (Style Unified Model) Styling Language — Working Spec
 
-This document defines the current SUM behavior used by Ergo/Cogito in this repository.
+This document defines the current SUM behavior used by Yis/Cogito in this repository.
 It supersedes the old "minimal v1" draft for implementation work.
 
 ## 0. Status

@@ -29,7 +29,7 @@ static void cogito_appbar_window_action(CogitoNode* win, int action) {
     }
   }
 }
-static CogitoNode* cogito_appbar_new_obj(ErgoStr* title, ErgoStr* subtitle) {
+static CogitoNode* cogito_appbar_new_obj(YisStr* title, YisStr* subtitle) {
   CogitoNode* ab = cogito_node_new(COGITO_APPBAR);
   cogito_node_set_text(ab, title);
   cogito_node_set_subtitle(ab, subtitle);
@@ -40,31 +40,31 @@ static CogitoNode* cogito_appbar_new_obj(ErgoStr* title, ErgoStr* subtitle) {
   ab->appbar.controls[sizeof(ab->appbar.controls) - 1] = 0;
   return ab;
 }
-static ErgoVal cogito_appbar_new(ErgoVal title, ErgoVal subtitle) {
-  ErgoStr* ts = stdr_to_string(title);
-  ErgoStr* ss = stdr_to_string(subtitle);
+static YisVal cogito_appbar_new(YisVal title, YisVal subtitle) {
+  YisStr* ts = stdr_to_string(title);
+  YisStr* ss = stdr_to_string(subtitle);
   CogitoNode* ab = cogito_appbar_new_obj(ts, ss);
   return EV_OBJ(ab);
 }
-static ErgoVal cogito_appbar_add_button(ErgoVal appv, ErgoVal text, ErgoVal handler) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.appbar_add_button expects appbar");
+static YisVal cogito_appbar_add_button(YisVal appv, YisVal text, YisVal handler) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.appbar_add_button expects appbar");
   CogitoNode* ab = (CogitoNode*)appv.as.p;
-  ErgoStr* ts = stdr_to_string(text);
+  YisStr* ts = stdr_to_string(text);
   CogitoNode* btn = cogito_iconbtn_new_obj(ts);
   // AppBar action icons default to iconic treatment.
   btn->button.icon_color_style = 3;
   if (handler.tag == EVT_FN) {
-    btn->on_click = (ErgoFn*)handler.as.p;
-    ergo_retain_val(EV_FN(btn->on_click));
+    btn->on_click = (YisFn*)handler.as.p;
+    yis_retain_val(EV_FN(btn->on_click));
   }
   cogito_children_add(ab, btn);
   return EV_OBJ(btn);
 }
-static void cogito_appbar_set_controls(ErgoVal appv, ErgoVal layout) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.appbar_set_controls expects appbar");
-  if (layout.tag != EVT_STR) ergo_trap("cogito.appbar_set_controls expects string");
+static void cogito_appbar_set_controls(YisVal appv, YisVal layout) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.appbar_set_controls expects appbar");
+  if (layout.tag != EVT_STR) yis_trap("cogito.appbar_set_controls expects string");
   CogitoNode* ab = (CogitoNode*)appv.as.p;
-  ErgoStr* ls = (ErgoStr*)layout.as.p;
+  YisStr* ls = (YisStr*)layout.as.p;
   const char* s = ls ? ls->data : "";
   char buf[16];
   size_t j = 0;
@@ -95,10 +95,10 @@ static void cogito_appbar_set_controls(ErgoVal appv, ErgoVal layout) {
   }
 }
 
-static void cogito_appbar_set_title(ErgoVal appv, ErgoVal titlev) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.appbar_set_title expects appbar");
+static void cogito_appbar_set_title(YisVal appv, YisVal titlev) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.appbar_set_title expects appbar");
   CogitoNode* ab = (CogitoNode*)appv.as.p;
-  ErgoStr* ts = stdr_to_string(titlev);
+  YisStr* ts = stdr_to_string(titlev);
   cogito_node_set_text(ab, ts);
   CogitoNode* win = cogito_root(ab);
   if (win && win->kind == COGITO_WINDOW) {
@@ -106,10 +106,10 @@ static void cogito_appbar_set_title(ErgoVal appv, ErgoVal titlev) {
   }
 }
 
-static void cogito_appbar_set_subtitle(ErgoVal appv, ErgoVal subtitlev) {
-  if (appv.tag != EVT_OBJ) ergo_trap("cogito.appbar_set_subtitle expects appbar");
+static void cogito_appbar_set_subtitle(YisVal appv, YisVal subtitlev) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.appbar_set_subtitle expects appbar");
   CogitoNode* ab = (CogitoNode*)appv.as.p;
-  ErgoStr* ss = stdr_to_string(subtitlev);
+  YisStr* ss = stdr_to_string(subtitlev);
   cogito_node_set_subtitle(ab, ss);
   CogitoNode* win = cogito_root(ab);
   if (win && win->kind == COGITO_WINDOW) {

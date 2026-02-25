@@ -13,26 +13,26 @@ static CogitoNode* cogito_stepper_new_obj(double min, double max, double value, 
   st->stepper.step = step;
   return st;
 }
-static ErgoVal cogito_stepper_new(ErgoVal minv, ErgoVal maxv, ErgoVal valv, ErgoVal stepv) {
-  double min = ergo_as_float(minv);
-  double max = ergo_as_float(maxv);
-  double val = ergo_as_float(valv);
-  double step = ergo_as_float(stepv);
+static YisVal cogito_stepper_new(YisVal minv, YisVal maxv, YisVal valv, YisVal stepv) {
+  double min = yis_as_float(minv);
+  double max = yis_as_float(maxv);
+  double val = yis_as_float(valv);
+  double step = yis_as_float(stepv);
   return EV_OBJ(cogito_stepper_new_obj(min, max, val, step));
 }
-static void cogito_stepper_on_change(ErgoVal nodev, ErgoVal handler) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.stepper_on_change expects stepper");
-  if (handler.tag != EVT_FN) ergo_trap("cogito.stepper_on_change expects function");
+static void cogito_stepper_on_change(YisVal nodev, YisVal handler) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.stepper_on_change expects stepper");
+  if (handler.tag != EVT_FN) yis_trap("cogito.stepper_on_change expects function");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (n->kind != COGITO_STEPPER) ergo_trap("cogito.stepper_on_change expects stepper");
-  if (n->on_change) ergo_release_val(EV_FN(n->on_change));
-  n->on_change = (ErgoFn*)handler.as.p;
-  ergo_retain_val(EV_FN(n->on_change));
+  if (n->kind != COGITO_STEPPER) yis_trap("cogito.stepper_on_change expects stepper");
+  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  n->on_change = (YisFn*)handler.as.p;
+  yis_retain_val(EV_FN(n->on_change));
 }
-static ErgoVal cogito_stepper_get_value(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.stepper_value expects stepper");
+static YisVal cogito_stepper_get_value(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.stepper_value expects stepper");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (n->kind != COGITO_STEPPER) ergo_trap("cogito.stepper_value expects stepper");
+  if (n->kind != COGITO_STEPPER) yis_trap("cogito.stepper_value expects stepper");
   return EV_FLOAT(n->stepper.value);
 }
 static void cogito_stepper_hit_test(CogitoNode* n, int mx, int my) {

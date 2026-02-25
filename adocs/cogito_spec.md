@@ -397,5 +397,5 @@ Implementation note:
 ## 12. Compatibility Notes
 
 - Public C API is declared in `cogito/src/cogito.h`.
-- Ergo bindings are expected to preserve this model at the language level.
+- Yis bindings are expected to preserve this model at the language level.
 - Backend and renderer details are intentionally non-normative in this spec.

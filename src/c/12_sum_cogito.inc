@@ -1190,8 +1190,8 @@ static void cogito_load_sum_file(const char* path) {
   }
 }
 
-static void cogito_load_sum(ErgoVal pathv) {
-  ErgoStr* ps = stdr_to_string(pathv);
+static void cogito_load_sum(YisVal pathv) {
+  YisStr* ps = stdr_to_string(pathv);
   if (ps && ps->data) {
     char resolved_path[PATH_MAX];
     const char* load_path = ps->data;
@@ -1210,7 +1210,7 @@ static void cogito_load_sum(ErgoVal pathv) {
       }
     }
   }
-  if (ps) ergo_release_val(EV_STR(ps));
+  if (ps) yis_release_val(EV_STR(ps));
 }
 
 static void cogito_load_sum_source(const char* src) {

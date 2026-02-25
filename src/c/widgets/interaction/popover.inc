@@ -4,15 +4,15 @@ static CogitoNode* cogito_popover_new_obj(void) {
 }
 
 __attribute__((unused))
-static ErgoVal cogito_popover_new(void) {
+static YisVal cogito_popover_new(void) {
   CogitoNode* pop = cogito_popover_new_obj();
   return EV_OBJ(pop);
 }
 
 __attribute__((unused))
-static void cogito_popover_show(ErgoVal anchorv, ErgoVal popoverv) {
-  if (anchorv.tag != EVT_OBJ) ergo_trap("cogito.popover_show expects anchor node");
-  if (popoverv.tag != EVT_OBJ) ergo_trap("cogito.popover_show expects popover");
+static void cogito_popover_show(YisVal anchorv, YisVal popoverv) {
+  if (anchorv.tag != EVT_OBJ) yis_trap("cogito.popover_show expects anchor node");
+  if (popoverv.tag != EVT_OBJ) yis_trap("cogito.popover_show expects popover");
   CogitoNode* anchor = (CogitoNode*)anchorv.as.p;
   CogitoNode* pop = (CogitoNode*)popoverv.as.p;
 
@@ -22,13 +22,13 @@ static void cogito_popover_show(ErgoVal anchorv, ErgoVal popoverv) {
   cogito_overlay_focus_snapshot();
 
   // Release old popover if any
-  if (win->popover) ergo_release_val(EV_OBJ(win->popover));
+  if (win->popover) yis_release_val(EV_OBJ(win->popover));
 
   win->popover = pop;
   win->popover_anchor = anchor;
   win->popover_open = true;
   pop->parent = win;
-  ergo_retain_val(EV_OBJ(pop));
+  yis_retain_val(EV_OBJ(pop));
 
   cogito_apply_style_tree(pop);
   cogito_window_relayout(win);
@@ -36,8 +36,8 @@ static void cogito_popover_show(ErgoVal anchorv, ErgoVal popoverv) {
 }
 
 __attribute__((unused))
-static void cogito_popover_close(ErgoVal windowv) {
-  if (windowv.tag != EVT_OBJ) ergo_trap("cogito.popover_close expects window");
+static void cogito_popover_close(YisVal windowv) {
+  if (windowv.tag != EVT_OBJ) yis_trap("cogito.popover_close expects window");
   CogitoNode* win = (CogitoNode*)windowv.as.p;
 
   if (win->popover) {
@@ -60,7 +60,7 @@ static void cogito_popover_close(ErgoVal windowv) {
   }
 
   if (win->popover) {
-    ergo_release_val(EV_OBJ(win->popover));
+    yis_release_val(EV_OBJ(win->popover));
     win->popover = NULL;
   }
   win->popover_anchor = NULL;

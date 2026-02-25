@@ -1,50 +1,50 @@
-static CogitoNode* cogito_textfield_new_obj(ErgoStr* text) {
+static CogitoNode* cogito_textfield_new_obj(YisStr* text) {
   CogitoNode* tf = cogito_node_new(COGITO_TEXTFIELD);
   // Treat constructor text as placeholder; value starts empty.
   cogito_node_set_subtitle(tf, text);
   cogito_node_set_text(tf, NULL);
   return tf;
 }
-static ErgoVal cogito_textfield_new(ErgoVal text) {
-  ErgoStr* ts = stdr_to_string(text);
+static YisVal cogito_textfield_new(YisVal text) {
+  YisStr* ts = stdr_to_string(text);
   CogitoNode* tf = cogito_textfield_new_obj(ts);
   return EV_OBJ(tf);
 }
-static void cogito_textfield_set_text(ErgoVal nodev, ErgoVal textv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.textfield_set_text expects textfield");
+static void cogito_textfield_set_text(YisVal nodev, YisVal textv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_set_text expects textfield");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  ErgoStr* ts = stdr_to_string(textv);
+  YisStr* ts = stdr_to_string(textv);
   cogito_node_set_text(n, ts);
   cogito_window_relayout(cogito_node_window(n));
 }
-static ErgoVal cogito_textfield_get_text(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.textfield_get_text expects textfield");
+static YisVal cogito_textfield_get_text(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_get_text expects textfield");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  ErgoStr* s = n->text ? n->text : stdr_str_lit("");
-  ergo_retain_val(EV_STR(s));
+  YisStr* s = n->text ? n->text : stdr_str_lit("");
+  yis_retain_val(EV_STR(s));
   return EV_STR(s);
 }
-static void cogito_textfield_set_hint(ErgoVal nodev, ErgoVal hintv) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.textfield_set_hint expects textfield");
+static void cogito_textfield_set_hint(YisVal nodev, YisVal hintv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_set_hint expects textfield");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  ErgoStr* hs = stdr_to_string(hintv);
+  YisStr* hs = stdr_to_string(hintv);
   cogito_node_set_hint(n, hs);
   cogito_window_relayout(cogito_node_window(n));
 }
-static ErgoVal cogito_textfield_get_hint(ErgoVal nodev) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.textfield_get_hint expects textfield");
+static YisVal cogito_textfield_get_hint(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_get_hint expects textfield");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  ErgoStr* s = n->hint ? n->hint : stdr_str_lit("");
-  ergo_retain_val(EV_STR(s));
+  YisStr* s = n->hint ? n->hint : stdr_str_lit("");
+  yis_retain_val(EV_STR(s));
   return EV_STR(s);
 }
-static void cogito_textfield_on_change(ErgoVal nodev, ErgoVal handler) {
-  if (nodev.tag != EVT_OBJ) ergo_trap("cogito.textfield_on_change expects textfield");
-  if (handler.tag != EVT_FN) ergo_trap("cogito.textfield_on_change expects function");
+static void cogito_textfield_on_change(YisVal nodev, YisVal handler) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_on_change expects textfield");
+  if (handler.tag != EVT_FN) yis_trap("cogito.textfield_on_change expects function");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
-  if (n->on_change) ergo_release_val(EV_FN(n->on_change));
-  n->on_change = (ErgoFn*)handler.as.p;
-  ergo_retain_val(EV_FN(n->on_change));
+  if (n->on_change) yis_release_val(EV_FN(n->on_change));
+  n->on_change = (YisFn*)handler.as.p;
+  yis_retain_val(EV_FN(n->on_change));
 }
 static CogitoNode* cogito_find_text_input(CogitoNode* n, int x, int y) {
   if (!n) return NULL;

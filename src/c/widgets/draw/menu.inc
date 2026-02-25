@@ -277,7 +277,7 @@ static void cogito_draw_menu(void) {
 
     // Draw leading icon if present
     if (has_any_icon) {
-      ErgoStr* icon_str = cogito_menu.owner->menu_icons ? cogito_menu.owner->menu_icons[i] : NULL;
+      YisStr* icon_str = cogito_menu.owner->menu_icons ? cogito_menu.owner->menu_icons[i] : NULL;
       if (icon_str) {
         int icon_y = current_item_y + (cogito_menu.item_h - icon_size) / 2;
         cogito_draw_icon_fallback(cogito_menu.owner, icon_str->data, x + cogito_menu.pad_x, icon_y, icon_size, item_text_color);
@@ -289,7 +289,7 @@ static void cogito_draw_menu(void) {
 
     // Draw trailing content: shortcut text or submenu arrow
     bool is_submenu = cogito_menu.owner->menu_submenu && cogito_menu.owner->menu_submenu[i];
-    ErgoStr* shortcut = cogito_menu.owner->menu_shortcuts ? cogito_menu.owner->menu_shortcuts[i] : NULL;
+    YisStr* shortcut = cogito_menu.owner->menu_shortcuts ? cogito_menu.owner->menu_shortcuts[i] : NULL;
     if (is_submenu) {
       int arrow_size = 16;
       int arrow_x = x + w - trailing_pad - arrow_size;
