@@ -57,16 +57,16 @@
     },
     "returnSpec": {
       "name": "meta.return-spec.yi",
-      "begin": "\\(\\(",
+      "begin": "(\\(\\()",
       "beginCaptures": {
         "0": {
-          "name": "punctuation.definition.return.begin.yi"
+          "name": "punctuation.definition.return.bracket.yi"
         }
       },
-      "end": "\\)\\)",
+      "end": "(\\)\\))",
       "endCaptures": {
         "0": {
-          "name": "punctuation.definition.return.end.yi"
+          "name": "punctuation.definition.return.bracket.yi"
         }
       },
       "patterns": [
@@ -186,7 +186,7 @@
         },
         {
           "name": "keyword.declaration.yi",
-          "match": "\\b(?:cask|bring|fun|entry|class|struct|enum|pub|lock|seal|def|let|const)\\b"
+          "match": "\\b(?:cask|bring|fun|entry|class|struct|enum|pub|lock|seal|def|let|const|macro)\\b"
         }
       ]
     },
@@ -258,7 +258,7 @@
         },
         {
           "name": "keyword.operator.other.yi",
-          "match": "(?:\\?|\\|)"
+          "match": "(?:\\?|\\||is)"
         }
       ]
     },
@@ -275,10 +275,6 @@
         {
           "name": "punctuation.definition.block.yi",
           "match": "(?:\\{|\\})"
-        },
-        {
-          "name": "punctuation.definition.group.yi",
-          "match": "(?:\\(|\\))"
         }
       ]
     }
