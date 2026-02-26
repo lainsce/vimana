@@ -434,6 +434,8 @@ fun show_about_window(win = cogito.Window) (( -- )) {
 
 fun build_ui(win = cogito.Window) (( -- )) {
     let root = cogito.vstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
     .set_class(@"calc-root")
 
     let switcher = cogito.view_switcher()
@@ -482,7 +484,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .set_hexpand(true)
     .set_vexpand(true)
     .set_gap(12, 12)
-    .set_padding(12, 12, 0, 12)
+    .set_padding(12, 12, 12, 12)
     .set_class(@"calc-keypad")
 
     keypad.add(digit_button(7))
