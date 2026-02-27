@@ -20,14 +20,20 @@ case COGITO_SCROLLER: {
           cogito_backend->end_scissor();
     }
   }
-  /* Overlay scrollbars: narrow (4px) when cursor over scroller but not on bar, wide (8px) when on bar; fade after 0.3s when cursor leaves scroller */
+  /* Overlay scrollbars: narrow (4px) when cursor over scroller but not on bar, wide (8px) when on bar; fade after 0.3s when cursor leaves scroller.
+     Use WIDE for hit-test when pointer is in the scrollbar gutter (right/bottom edge) so the bar doesn't aggressively shrink back to 4px after a track click or small movement.
+     While the user is using the scrollbar (bar_in_use), keep it wide and fully visible — no shrink or fade until release. */
   {
         bool cursor_over_scroller = cogito_main_pointer_valid &&
             cogito_hit_rect(cogito_main_pointer_x, cogito_main_pointer_y, n->x, n->y, n->w, n->h);
         bool prev_bar_hovered = n->scroller.bar_hovered;
         bool cursor_over_sb = false;
-        if (cursor_over_scroller && cogito_main_pointer_valid) {
-          int hit_w = n->scroller.bar_hovered ? COGITO_SCROLLBAR_WIDTH_WIDE : COGITO_SCROLLBAR_WIDTH_NARROW;
+        if (n->scroller.bar_in_use) {
+          cursor_over_sb = true;
+        } else if (cursor_over_scroller && cogito_main_pointer_valid) {
+          bool in_vert_gutter = n->scroller.vert && cogito_main_pointer_x >= n->x + n->w - COGITO_SCROLLBAR_A11Y_MIN;
+          bool in_horz_gutter = n->scroller.horz && cogito_main_pointer_y >= n->y + n->h - COGITO_SCROLLBAR_A11Y_MIN;
+          int hit_w = (n->scroller.bar_hovered || in_vert_gutter || in_horz_gutter) ? COGITO_SCROLLBAR_WIDTH_WIDE : COGITO_SCROLLBAR_WIDTH_NARROW;
           cursor_over_sb = cogito_scroller_hit_scrollbar(
               n, cogito_main_pointer_x, cogito_main_pointer_y, hit_w, hit_w) != COGITO_SCROLLBAR_HIT_NONE;
           if (!cursor_over_sb && n->scroller.bar_hovered) {
@@ -36,13 +42,22 @@ case COGITO_SCROLLER: {
                 n, cogito_main_pointer_x, cogito_main_pointer_y,
                 COGITO_SCROLLBAR_WIDTH_NARROW, COGITO_SCROLLBAR_WIDTH_NARROW) != COGITO_SCROLLBAR_HIT_NONE;
       }
+          /* Keep bar hovered whenever pointer is in the gutter to avoid thumb flashing from hit-test edge cases. */
+          if (in_vert_gutter || in_horz_gutter) cursor_over_sb = true;
     }
         n->scroller.bar_hovered = cursor_over_sb;
         int sb_w = n->scroller.bar_hovered ? COGITO_SCROLLBAR_WIDTH_WIDE : COGITO_SCROLLBAR_WIDTH_NARROW;
         int sb_h = sb_w;
         double now = cogito_now();
         bool bar_alpha_changed = false;
-        if (cursor_over_scroller) {
+        if (n->scroller.bar_in_use) {
+          /* User is interacting: keep bar full opacity, no fade. */
+          if (n->scroller.bar_alpha < 255) {
+            n->scroller.bar_alpha = 255;
+            bar_alpha_changed = true;
+          }
+          n->scroller.bar_hover_until = 0.0;
+        } else if (cursor_over_scroller) {
           if (cursor_over_sb) {
             if (n->scroller.bar_alpha < 255) {
               n->scroller.bar_alpha = (uint8_t)(n->scroller.bar_alpha + 51) > 255 ? 255 : (n->scroller.bar_alpha + 51);

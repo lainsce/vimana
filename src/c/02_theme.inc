@@ -789,7 +789,11 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
     n->font_mono = s.font_mono;
   }
   // Only apply theme size constraints; never clear user-set values
-  if (s.has_min_w) { n->min_w = s.min_w; n->min_w_set = true;
+  // Sidebar appbars must not get a default min-width so the sidebar column can be narrow
+  if (s.has_min_w) {
+    bool sidebar_appbar = (n->kind == COGITO_APPBAR && n->class_name && n->class_name->data &&
+                           strcmp(n->class_name->data, "sidebar") == 0);
+    if (!sidebar_appbar) { n->min_w = s.min_w; n->min_w_set = true; }
   }
   if (s.has_min_h) { n->min_h = s.min_h; n->min_h_set = true;
   }

@@ -4,18 +4,18 @@ bring stdr
 bring cogito
 
 macro is_blank_char() (( bool )) {
-    this == @" " || this == @"\t" || this == @"\n" || this == @"\r"
+    this == " " || this == "\t" || this == "\n" || this == "\r"
 }
 
 def ?tasks = []: [string]
 def ?completed = []: [bool]
 def sheet_open_state = cogito.state(false)
-def ?draft_task = @""
+def ?draft_task = ""
 
 fun trim_text(text = string) (( string )) {
     let n = len(text)
     if n == 0 {
-        return @""
+        return ""
     }
 
     let ?start = 0
@@ -26,7 +26,7 @@ fun trim_text(text = string) (( string )) {
         }
     }
     if start >= n {
-        return @""
+        return ""
     }
 
     let ?end = n - 1
@@ -37,9 +37,9 @@ fun trim_text(text = string) (( string )) {
         }
     }
 
-    let ?out = @""
+    let ?out = ""
     for (let ?i = start; i <= end; i += 1) {
-        out = @"$out$text[i]"
+        out = "<out> <text[i]>"
     }
     return out
 }
@@ -50,12 +50,12 @@ fun request_rebuild() (( -- )) {
 }
 
 fun open_create_sheet() (( -- )) {
-    draft_task = @""
+    draft_task = ""
     sheet_open_state.set(true)
 }
 
 fun close_create_sheet() (( -- )) {
-    draft_task = @""
+    draft_task = ""
     sheet_open_state.set(false)
 }
 
@@ -101,18 +101,18 @@ fun completed_count() (( num )) {
 }
 
 fun task_label(text = string, checked = bool) (( string )) {
-    return if checked { @"[x] $text" } else { @"[ ] $text" }
+    return if checked { "(x) <text>" } else { "( ) <text>" }
 }
 
 fun build_task_sheet() (( cogito.BottomSheet )) {
-    let sheet = cogito.bottom_sheet(@"Create Task")
-    .set_class(@"task-sheet")
+    let sheet = cogito.bottom_sheet("Create Task")
+    .set_class("task-sheet")
     .set_gap(10)
 
     let input = cogito.textfield(draft_task)
-    .set_class(@"sheet-input")
+    .set_class("sheet-input")
     .set_hexpand(true)
-    .set_hint_text(@"Enter task details, like what, when, and how often.")
+    .set_hint_text("Enter task details, like what, when, and how often.")
     input.on_change((tf = cogito.TextField) => {
         draft_task = tf.text()
     })
@@ -122,15 +122,15 @@ fun build_task_sheet() (( cogito.BottomSheet )) {
     .set_gap(8)
     .set_hexpand(true)
 
-    let cancel_btn = cogito.button(@"Cancel")
-    .set_class(@"outline")
+    let cancel_btn = cogito.button("Cancel")
+    .set_class("outline")
     .set_hexpand(true)
     cancel_btn.on_click((b = cogito.Button) => {
         close_create_sheet()
     })
     actions.add(cancel_btn)
 
-    let add_btn = cogito.button(@"Add Task")
+    let add_btn = cogito.button("Add Task")
     .set_hexpand(true)
     add_btn.on_click((b = cogito.Button) => {
         add_task_from_sheet()
@@ -152,14 +152,14 @@ fun build_main_content() (( cogito.VStack )) {
     .set_padding(14, 14, 90, 14)
 
     if total == 0 {
-        let empty = cogito.empty_page(@"No Tasks Yet")
-        .set_description(@"Tap the + button to create your first task.")
-        .set_icon(@"sf:checklist")
-        .set_action(@"Create Task", (b = any) => {
+        let empty = cogito.empty_page("No Tasks Yet")
+        .set_description("Tap the + button to create your first task.")
+        .set_icon("sf:checklist")
+        .set_action("Create Task", (b = any) => {
             open_create_sheet()
         })
         .set_hexpand(true)
-        .set_class(@"task-empty")
+        .set_class("task-empty")
         content.add(empty)
         return content
     }
@@ -167,15 +167,15 @@ fun build_main_content() (( cogito.VStack )) {
     let list = cogito.list()
     .set_hexpand(true)
     .set_vexpand(true)
-    .set_class(@"task-list")
+    .set_class("task-list")
 
     let done_len = len(completed)
     for (let ?i = 0; i < total; i += 1) {
         let checked = if i < done_len { completed[i] } else { false }
-        let text = tasks[i] ?? @""
+        let text = tasks[i] ?? ""
         let item = cogito.label(task_label(text, checked))
         .set_wrap(true)
-        .set_class(if checked { @"task-item-done" } else { @"task-item" })
+        .set_class(if checked { "task-item-done" } else { "task-item" })
         list.add(item)
     }
     list.on_select((idx = num) => {
@@ -197,7 +197,7 @@ fun build_window(win = cogito.Window) (( -- )) {
     let done = completed_count()
     let is_sheet_open = sheet_open_state.get() == true
 
-    let bar = cogito.appbar(@"YisTask", @"$done of $total done")
+    let bar = cogito.appbar("YisTask", "<done> of <total> Done")
     .set_hexpand(true)
     win.add(bar)
 
@@ -220,8 +220,8 @@ fun build_window(win = cogito.Window) (( -- )) {
     .set_align(8)
     .set_padding(0, 18, 18, 0)
 
-    let fab = cogito.fab(@"plus")
-    .set_class(@"task-fab")
+    let fab = cogito.fab("plus")
+    .set_class("task-fab")
     .on_click((f = cogito.FAB) => {
         open_create_sheet()
     })
@@ -231,13 +231,13 @@ fun build_window(win = cogito.Window) (( -- )) {
 
 entry() (( -- )) {
     let app = cogito.app()
-    .set_appid(@"com.fyralabs.Tasks")
-    .set_app_name(@"Tasks")
-    .set_accent_color(@"#008888", false)
+    .set_appid("com.fyralabs.Tasks")
+    .set_app_name("Tasks")
+    .set_accent_color("#008888", false)
 
-    cogito.load_sum(@"tasks.sum")
+    cogito.load_sum("tasks.sum")
 
-    let win = cogito.window_size(@"Tasks", 460, 720)
+    let win = cogito.window_size("Tasks", 460, 720)
     .set_resizable(true)
     .build((w = cogito.Window) => {
         build_window(w)

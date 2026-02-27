@@ -11,6 +11,7 @@
 build/
 _build/
 .yi-cache/
+.cache/
 .DS_Store
 
 # Outputs of yis compilation

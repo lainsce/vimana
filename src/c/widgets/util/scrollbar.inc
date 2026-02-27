@@ -12,6 +12,8 @@ typedef enum {
 #define COGITO_SCROLLBAR_WIDTH_NARROW  4
 #define COGITO_SCROLLBAR_WIDTH_WIDE    8
 #define COGITO_SCROLLBAR_MIN_THUMB     24
+#define COGITO_SCROLLBAR_A11Y_MIN       40  /* minimum hit target size (e.g. WCAG) */
+#define COGITO_SCROLLBAR_MARGIN         4  /* inset from scroller edge (dp) */
 
 /* Compute vertical scrollbar track and thumb rects. Returns true if vertical bar is visible.
  * track/thumb out rects: x, y, w, h. sb_width is the bar thickness (4 or 8). */
@@ -24,13 +26,14 @@ static bool cogito_scroller_vert_scrollbar_rects(CogitoNode* n, int sb_width,
   if (inner_h <= 0) return false;
   int max_y = n->scroller.content_h - inner_h;
   if (max_y <= 0) return false;
-  *track_x = n->x + n->w - sb_width;
-  *track_y = inner_y;
+  *track_x = n->x + n->w - sb_width - COGITO_SCROLLBAR_MARGIN;
+  *track_y = inner_y + COGITO_SCROLLBAR_MARGIN;
   *track_w = sb_width;
-  *track_h = inner_h;
+  *track_h = inner_h - 2 * COGITO_SCROLLBAR_MARGIN;
+  if (*track_h <= 0) return false;
   int th_h = (inner_h * inner_h) / n->scroller.content_h;
   if (th_h < COGITO_SCROLLBAR_MIN_THUMB) th_h = COGITO_SCROLLBAR_MIN_THUMB;
-  if (th_h > inner_h) th_h = inner_h;
+  if (th_h > *track_h) th_h = *track_h;
   *thumb_x = *track_x;
   *thumb_w = sb_width;
   *thumb_h = th_h;
@@ -49,13 +52,14 @@ static bool cogito_scroller_horz_scrollbar_rects(CogitoNode* n, int sb_height,
   if (inner_w <= 0) return false;
   int max_x = n->scroller.content_w - inner_w;
   if (max_x <= 0) return false;
-  *track_x = inner_x;
-  *track_y = n->y + n->h - sb_height;
-  *track_w = inner_w;
+  *track_x = inner_x + COGITO_SCROLLBAR_MARGIN;
+  *track_y = n->y + n->h - sb_height - COGITO_SCROLLBAR_MARGIN;
+  *track_w = inner_w - 2 * COGITO_SCROLLBAR_MARGIN;
   *track_h = sb_height;
+  if (*track_w <= 0) return false;
   int th_w = (inner_w * inner_w) / n->scroller.content_w;
   if (th_w < COGITO_SCROLLBAR_MIN_THUMB) th_w = COGITO_SCROLLBAR_MIN_THUMB;
-  if (th_w > inner_w) th_w = inner_w;
+  if (th_w > *track_w) th_w = *track_w;
   *thumb_y = *track_y;
   *thumb_h = sb_height;
   *thumb_w = th_w;
@@ -65,16 +69,33 @@ static bool cogito_scroller_horz_scrollbar_rects(CogitoNode* n, int sb_height,
   return true;
 }
 
-/* Hit-test (mx, my) against scrollbar. Use sb_width/sb_height for bar size (narrow=4 for testing hover). */
+/* Hit-test (mx, my) against scrollbar. Use sb_width/sb_height for bar size (narrow=4 for testing hover).
+ * For a11y, hit area is at least COGITO_SCROLLBAR_A11Y_MIN (40) in each dimension; thumb hit rect is expanded to meet that. */
 static CogitoScrollbarHit cogito_scroller_hit_scrollbar(CogitoNode* n, int mx, int my, int sb_width, int sb_height) {
   if (!n) return COGITO_SCROLLBAR_HIT_NONE;
+  int hit_w = sb_width >= COGITO_SCROLLBAR_A11Y_MIN ? sb_width : COGITO_SCROLLBAR_A11Y_MIN;
+  int hit_h = sb_height >= COGITO_SCROLLBAR_A11Y_MIN ? sb_height : COGITO_SCROLLBAR_A11Y_MIN;
   int vtx, vty, vtw, vth, vux, vuy, vuw, vuh;
-  if (cogito_scroller_vert_scrollbar_rects(n, sb_width, &vtx, &vty, &vtw, &vth, &vux, &vuy, &vuw, &vuh)) {
+  if (cogito_scroller_vert_scrollbar_rects(n, hit_w, &vtx, &vty, &vtw, &vth, &vux, &vuy, &vuw, &vuh)) {
+    if (vuh < COGITO_SCROLLBAR_A11Y_MIN) {
+      int d = COGITO_SCROLLBAR_A11Y_MIN - vuh;
+      vuy -= d / 2;
+      vuh = COGITO_SCROLLBAR_A11Y_MIN;
+      if (vuy < vty) vuy = vty;
+      if (vuy + vuh > vty + vth) vuy = vty + vth - vuh;
+    }
     if (cogito_hit_rect(mx, my, vux, vuy, vuw, vuh)) return COGITO_SCROLLBAR_HIT_VERT_THUMB;
     if (cogito_hit_rect(mx, my, vtx, vty, vtw, vth)) return COGITO_SCROLLBAR_HIT_VERT_TRACK;
   }
   int htx, hty, htw, hth, hux, huy, huw, huh;
-  if (cogito_scroller_horz_scrollbar_rects(n, sb_height, &htx, &hty, &htw, &hth, &hux, &huy, &huw, &huh)) {
+  if (cogito_scroller_horz_scrollbar_rects(n, hit_h, &htx, &hty, &htw, &hth, &hux, &huy, &huw, &huh)) {
+    if (huw < COGITO_SCROLLBAR_A11Y_MIN) {
+      int d = COGITO_SCROLLBAR_A11Y_MIN - huw;
+      hux -= d / 2;
+      huw = COGITO_SCROLLBAR_A11Y_MIN;
+      if (hux < htx) hux = htx;
+      if (hux + huw > htx + htw) hux = htx + htw - huw;
+    }
     if (cogito_hit_rect(mx, my, hux, huy, huw, huh)) return COGITO_SCROLLBAR_HIT_HORZ_THUMB;
     if (cogito_hit_rect(mx, my, htx, hty, htw, hth)) return COGITO_SCROLLBAR_HIT_HORZ_TRACK;
   }

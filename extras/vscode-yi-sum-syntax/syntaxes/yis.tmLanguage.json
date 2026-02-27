@@ -206,7 +206,7 @@
       "patterns": [
         {
           "name": "storage.type.yi",
-          "match": "\\b(?:num|string|bool|int|float|char|byte|void|any)\\b"
+          "match": "\\b(?:num|string|bool|any)\\b"
         }
       ]
     },

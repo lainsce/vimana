@@ -372,7 +372,7 @@ pub class App {
     }
     pub fun set_accent_from_image(this, path = string, follow_system = bool) (( string )) {
         let out = __cogito_app_set_accent_from_image(this, path, follow_system)
-        return if is_null(out) { @"" } else { str(out) }
+        return if is_null(out) { "" } else { str(out) }
     }
     pub fun set_ensor_variant(this, variant = num) (( App )) {
         __cogito_app_set_ensor_variant(this, variant)
@@ -471,7 +471,7 @@ pub class AppBar {
         return this
     }
     pub fun set_title_widget(this, widget = any) (( AppBar )) {
-        __cogito_node_set_class(widget, @"appbar-title")
+        __cogito_node_set_class(widget, "appbar-title")
         __cogito_container_add(this, widget)
         return this
     }
@@ -3425,7 +3425,7 @@ pub fun pointer_release() (( -- )) {
 }
 
 pub fun window() (( Window )) {
-    return __cogito_window(@"Cogito", 360, 296)
+    return __cogito_window("Cogito", 360, 296)
 }
 
 pub fun window_title(title = string, w = num, h = num) (( Window )) {

@@ -266,10 +266,12 @@
 #undef cogito_card_add_action
 #undef cogito_card_add_overflow
 
+#ifndef COGITO_DEFINED_COGITO_DEBUG_ENABLED
 static bool cogito_debug_enabled(void) {
   const char* env = getenv("COGITO_DEBUG");
   return env && env[0] && env[0] != '0';
 }
+#endif
 
 typedef enum {
   COGITO_HANDLE_APP = 1,

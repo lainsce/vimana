@@ -783,6 +783,7 @@ typedef struct CogitoNode {
       int content_w, content_h;
       bool horz, vert;
       bool bar_hovered;
+      bool bar_in_use;  /* true while user is interacting (thumb drag or track click until release) */
       uint8_t bar_alpha;
       double bar_hover_until;
     } scroller;
@@ -1465,6 +1466,7 @@ static int cogito_inspector_tree_scroll_y = 0;
 #define COGITO_INSPECTOR_STATUS_H 24
 /* Scrollbar thumb drag (one at a time) */
 static CogitoNode* cogito_scrollbar_drag_scroller = NULL;
+static CogitoNode* cogito_scrollbar_in_use = NULL; /* scrollbar being interacted with (drag or track) until release */
 static bool cogito_scrollbar_drag_vert = false;
 static int cogito_scrollbar_drag_start_mouse = 0;
 static int cogito_scrollbar_drag_start_scroll = 0;

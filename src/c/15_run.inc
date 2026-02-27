@@ -1777,6 +1777,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
       }
     }
     /* Scrollbar thumb drag and track click (overlay scrollbars) */
+    if (left_released && cogito_scrollbar_in_use) {
+      cogito_scrollbar_in_use->scroller.bar_in_use = false;
+      cogito_scrollbar_in_use = NULL;
+    }
     if (cogito_scrollbar_drag_scroller) {
       if (!left_down) {
         cogito_scrollbar_drag_scroller = NULL;
@@ -1800,9 +1804,25 @@ static void cogito_run(YisVal appv, YisVal winv) {
       CogitoNode* sc = cogito_find_scroller(root, mx, my);
       if (sc) {
         CogitoScrollbarHit hit = cogito_scroller_hit_scrollbar(sc, mx, my, COGITO_SCROLLBAR_WIDTH_WIDE, COGITO_SCROLLBAR_WIDTH_WIDE);
+        /* If the deepest scroller has no scrollbar under the point, the click may be on an outer scroller's bar. Walk up to find the outermost ancestor scroller whose scrollbar is under the point. */
+        if (hit == COGITO_SCROLLBAR_HIT_NONE) {
+          CogitoNode* p = sc->parent;
+          while (p) {
+            if (p->kind == COGITO_SCROLLER && cogito_hit_rect(mx, my, p->x, p->y, p->w, p->h)) {
+              CogitoScrollbarHit phit = cogito_scroller_hit_scrollbar(p, mx, my, COGITO_SCROLLBAR_WIDTH_WIDE, COGITO_SCROLLBAR_WIDTH_WIDE);
+              if (phit != COGITO_SCROLLBAR_HIT_NONE) {
+                sc = p;
+                hit = phit;
+              }
+            }
+            p = p->parent;
+          }
+        }
         if (hit == COGITO_SCROLLBAR_HIT_VERT_THUMB) {
           int max_s = 0, travel = 1;
           if (cogito_scroller_vert_drag_params(sc, &max_s, &travel)) {
+            sc->scroller.bar_in_use = true;
+            cogito_scrollbar_in_use = sc;
             cogito_scrollbar_drag_scroller = sc;
             cogito_scrollbar_drag_vert = true;
             cogito_scrollbar_drag_start_mouse = my;
@@ -1814,6 +1834,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
         } else if (hit == COGITO_SCROLLBAR_HIT_HORZ_THUMB) {
           int max_s = 0, travel = 1;
           if (cogito_scroller_horz_drag_params(sc, &max_s, &travel)) {
+            sc->scroller.bar_in_use = true;
+            cogito_scrollbar_in_use = sc;
             cogito_scrollbar_drag_scroller = sc;
             cogito_scrollbar_drag_vert = false;
             cogito_scrollbar_drag_start_mouse = mx;
@@ -1827,6 +1849,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
           if (cogito_scroller_vert_scrollbar_rects(sc, COGITO_SCROLLBAR_WIDTH_WIDE, &vtx, &vty, &vtw, &vth, &vux, &vuy, &vuw, &vuh)) {
             int max_s = 0, travel = 1;
             if (cogito_scroller_vert_drag_params(sc, &max_s, &travel)) {
+              sc->scroller.bar_in_use = true;
+              cogito_scrollbar_in_use = sc;
               sc->scroller.scroll_y = cogito_scroller_track_to_scroll(my, vty, vth, vuh, max_s);
               if (sc->scroller.scroll_y < 0) sc->scroller.scroll_y = 0;
               if (sc->scroller.scroll_y > max_s) sc->scroller.scroll_y = max_s;
@@ -1840,6 +1864,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
           if (cogito_scroller_horz_scrollbar_rects(sc, COGITO_SCROLLBAR_WIDTH_WIDE, &htx, &hty, &htw, &hth, &hux, &huy, &huw, &huh)) {
             int max_s = 0, travel = 1;
             if (cogito_scroller_horz_drag_params(sc, &max_s, &travel)) {
+              sc->scroller.bar_in_use = true;
+              cogito_scrollbar_in_use = sc;
               sc->scroller.scroll_x = cogito_scroller_track_to_scroll(mx, htx, htw, huw, max_s);
               if (sc->scroller.scroll_x < 0) sc->scroller.scroll_x = 0;
               if (sc->scroller.scroll_x > max_s) sc->scroller.scroll_x = max_s;

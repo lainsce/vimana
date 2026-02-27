@@ -11,7 +11,7 @@ macro fill_center() (( cogito.Button )) {
 }
 
 fun on_btn(btn = cogito.Button) (( -- )) {
-    btn.set_text(@"This Button Got Clicked!")
+    btn.set_text("This Button Got Clicked!")
 }
 
 fun build_ui(win = cogito.Window) (( -- )) {
@@ -21,11 +21,11 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .set_hexpand(true)
     .set_vexpand(true)
 
-    let appbar = cogito.appbar(@"Welcome to Cogito", @"Minimal GUI")
+    let appbar = cogito.appbar("Welcome to Cogito", "Minimal GUI")
     .set_hexpand(true)
     win.add(appbar)
 
-    let btn = cogito.button(@"Click")
+    let btn = cogito.button("Click")
     .on_click(on_btn)
     .fill_center()
 
@@ -35,10 +35,10 @@ fun build_ui(win = cogito.Window) (( -- )) {
 
 entry () (( -- )) {
     let app = cogito.app()
-    .set_appid(@"yis.cogito.Hello")
-    .set_accent_color(@"#72dec2", false)
+    .set_appid("yis.cogito.Hello")
+    .set_accent_color("#72dec2", false)
 
-    let win = cogito.window_title(@"Minimal Cogito Demo", 800, 800)
+    let win = cogito.window_title("Minimal Cogito Demo", 800, 800)
     .build(build_ui)
     .set_resizable(false)
     app.run(win)
