@@ -123,7 +123,7 @@ case COGITO_TEXTVIEW: {
             if (slen > 1000) slen = 1000;
             memcpy(sbuf, t + sa, (size_t)slen);
             sbuf[slen] = '\0';
-            cogito_draw_text_size_node(n, n->x + pad + sx2, cy2, sbuf, sel_text, size, cogito_node_bold(n));
+            cogito_draw_text_size_node(n, n->x + pad + sx2, cy2, sbuf, sel_text, size, cogito_node_bold(n), false);
           }
           cy2 += line_h2;
         }

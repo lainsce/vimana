@@ -147,6 +147,71 @@ static const char* cogito_guess_mono_font_path(const char* regular_path) {
   return NULL;
 }
 
+static const char* cogito_guess_medium_font_path(const char* regular_path) {
+  static char buf[PATH_MAX];
+  bool has_regular = regular_path && regular_path[0];
+  if (has_regular) {
+    if (strstr(regular_path, "Medium") || strstr(regular_path, "medium")) {
+      if (cogito_file_exists(regular_path)) return regular_path;
+    }
+    const struct { const char* find; const char* repl; } swaps[] = {
+      {"-Regular", "-Medium"}, {"_Regular", "_Medium"}, {" Regular", " Medium"}, {"Regular", "Medium"},
+      {"-Roman", "-Medium"}, {"_Roman", "_Medium"}, {" Roman", " Medium"}, {"Roman", "Medium"},
+      {"-Book", "-Medium"}, {"_Book", "_Medium"}, {" Book", " Medium"}, {"Book", "Medium"},
+      {"-Text", "-Medium"}, {"_Text", "_Medium"}, {" Text", " Medium"}, {"Text", "Medium"},
+      {"-Light", "-Medium"}, {"_Light", "_Medium"}, {" Light", " Medium"}, {"Light", "Medium"},
+      {"-regular", "-medium"}, {"_regular", "_medium"}, {" regular", " medium"}, {"regular", "medium"},
+      {"-roman", "-medium"}, {"_roman", "_medium"}, {" roman", " medium"}, {"roman", "medium"},
+      {"-book", "-medium"}, {"_book", "_medium"}, {" book", " medium"}, {"book", "medium"},
+      {"-text", "-medium"}, {"_text", "_medium"}, {" text", " medium"}, {"text", "medium"},
+      {"-light", "-medium"}, {"_light", "_medium"}, {" light", " medium"}, {"light", "medium"}
+    };
+    for (size_t i = 0; i < sizeof(swaps) / sizeof(swaps[0]); i++) {
+      if (cogito_replace_once(regular_path, swaps[i].find, swaps[i].repl, buf, sizeof(buf))) {
+        if (cogito_file_exists(buf)) return buf;
+      }
+    }
+    const char* dot = strrchr(regular_path, '.');
+    if (dot && dot != regular_path) {
+      size_t base_len = (size_t)(dot - regular_path);
+      if (base_len + 7 + strlen(dot) + 1 < sizeof(buf)) {
+        memcpy(buf, regular_path, base_len);
+        memcpy(buf + base_len, "-Medium", 7);
+        strcpy(buf + base_len + 7, dot);
+        if (cogito_file_exists(buf)) return buf;
+      }
+      if (base_len + 6 + strlen(dot) + 1 < sizeof(buf)) {
+        memcpy(buf, regular_path, base_len);
+        memcpy(buf + base_len, "Medium", 6);
+        strcpy(buf + base_len + 6, dot);
+        if (cogito_file_exists(buf)) return buf;
+      }
+    }
+  }
+  if (has_regular) {
+    return NULL;
+  }
+#if defined(__APPLE__)
+  const char* candidates[] = {
+    "/System/Library/Fonts/HelveticaNeue.ttc",
+    "/System/Library/Fonts/Helvetica.ttc"
+  };
+#elif defined(_WIN32)
+  const char* candidates[] = {
+    "C:\\Windows\\Fonts\\segoeui.ttf"
+  };
+#else
+  const char* candidates[] = {
+    "/usr/share/fonts/truetype/noto/NotoSans-Medium.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  };
+#endif
+  for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); i++) {
+    if (cogito_file_exists(candidates[i])) return candidates[i];
+  }
+  return NULL;
+}
+
 static const char* cogito_guess_serif_font_path(const char* regular_path) {
   static char buf[PATH_MAX];
   bool has_regular = regular_path && regular_path[0];
@@ -170,8 +235,8 @@ static const char* cogito_guess_serif_font_path(const char* regular_path) {
   };
 #elif defined(_WIN32)
   const char* candidates[] = {
-    "C:\\\\Windows\\\\Fonts\\\\times.ttf",
-    "C:\\\\Windows\\\\Fonts\\\\georgia.ttf"
+    "C:\\Windows\\Fonts\\times.ttf",
+    "C:\\Windows\\Fonts\\georgia.ttf"
   };
 #else
   const char* candidates[] = {

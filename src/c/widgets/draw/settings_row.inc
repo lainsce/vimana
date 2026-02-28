@@ -8,7 +8,7 @@ case COGITO_SETTINGS_ROW: {
     int th = cogito_text_height_size(ts);
     int tx = n->x + 16;
     int ty = n->y + (n->h - th) / 2;
-    cogito_draw_text_size_node(n, tx, ty, n->text->data, text_color, ts, false);
+    cogito_draw_text_size_node(n, tx, ty, n->text->data, text_color, ts, false, false);
   }
 
   // Draw child widget (on right, positioned by layout)

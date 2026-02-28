@@ -141,7 +141,7 @@ case COGITO_SPLIT_BUTTON: {
     int th = cogito_text_height_size(ts);
     int tx = n->x + (main_w - tw) / 2;
     int ty = n->y + (n->h - th) / 2;
-    cogito_draw_text_size_node(n, tx, ty, n->text->data, text_color, ts, true);
+    cogito_draw_text_size_node(n, tx, ty, n->text->data, text_color, ts, false, true);
   }
 
   // Draw dropdown chevron via platform icon theme (SF symbol on macOS)

@@ -28,7 +28,7 @@ static const char* cogito_kind_name(CogitoKind kind) {
     case COGITO_ICONBTN: return "iconbtn";
     case COGITO_IMAGE: return "image";
     case COGITO_LABEL: return "label";
-    case COGITO_LIST: return "list";
+    case COGITO_CONTENT_LIST: return "content-list";
     case COGITO_NAV_RAIL: return "nav-rail";
     case COGITO_POPOVER: return "popover";
     case COGITO_PROGRESS: return "progress";
@@ -60,7 +60,6 @@ static const char* cogito_kind_name(CogitoKind kind) {
     case COGITO_TIMEPICKER: return "timepicker";
     case COGITO_ACTIVE_INDICATOR: return "active-indicator";
     case COGITO_SWITCHBAR: return "switchbar";
-    case COGITO_CONTENT_LIST: return "content-list";
     case COGITO_EMPTY_PAGE: return "empty-page";
     case COGITO_TIP_VIEW: return "tip-view";
     case COGITO_SETTINGS_WINDOW: return "settings-window";

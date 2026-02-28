@@ -285,7 +285,7 @@ static void cogito_draw_menu(void) {
     }
 
     // Draw label text
-    cogito_draw_text_size_node(cogito_menu.owner, x + text_x_offset, ty, text, item_text_color, font_size, false);
+    cogito_draw_text_size_node(cogito_menu.owner, x + text_x_offset, ty, text, item_text_color, font_size, false, false);
 
     // Draw trailing content: shortcut text or submenu arrow
     bool is_submenu = cogito_menu.owner->menu_submenu && cogito_menu.owner->menu_submenu[i];
@@ -298,7 +298,7 @@ static void cogito_draw_menu(void) {
     } else if (shortcut) {
       int sc_w = cogito_text_width_size(shortcut->data, font_size);
       int sc_x = x + w - trailing_pad - sc_w;
-      cogito_draw_text_size_node(cogito_menu.owner, sc_x, ty, shortcut->data, item_text_color, font_size, false);
+      cogito_draw_text_size_node(cogito_menu.owner, sc_x, ty, shortcut->data, item_text_color, font_size, false, false);
     }
 
     // Draw divider if this item has a section break after it

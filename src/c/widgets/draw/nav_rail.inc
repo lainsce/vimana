@@ -169,7 +169,7 @@ case COGITO_NAV_RAIL: {
             cogito_draw_rect(bx, by, bw, bh, badge_bg, bh / 2);
             int tx = bx + (bw - tw) / 2;
             int ty = by + (bh - cogito_text_height_size(text_size)) / 2;
-            cogito_draw_text_size_node(n, tx, ty, buf, badge_fg, text_size, true);
+            cogito_draw_text_size_node(n, tx, ty, buf, badge_fg, text_size, true, false);
           }
         }
         content_x += icon_size + COGITO_NAV_RAIL_EXPANDED_LABEL_GAP;
@@ -177,7 +177,7 @@ case COGITO_NAV_RAIL: {
       if (has_label) {
         int label_y = bg_y + (indicator_h - cogito_text_height_size(label_size)) / 2;
         cogito_draw_text_size_node(n, content_x, label_y, n->nav_rail.labels[i
-        ]->data, content_color, label_size, false);
+        ]->data, content_color, label_size, false, false);
       }
 
       item_y += item_step;
@@ -236,7 +236,7 @@ case COGITO_NAV_RAIL: {
             cogito_draw_rect(bx, by, bw, bh, badge_bg, bh / 2);
             int tx = bx + (bw - tw) / 2;
             int ty = by + (bh - cogito_text_height_size(text_size)) / 2;
-            cogito_draw_text_size_node(n, tx, ty, buf, badge_fg, text_size, true);
+            cogito_draw_text_size_node(n, tx, ty, buf, badge_fg, text_size, true, false);
           }
         }
       }
@@ -250,7 +250,7 @@ case COGITO_NAV_RAIL: {
         int label_x = n->x + (rail_w - label_w) / 2;
         int label_y = item_y + COGITO_NAV_RAIL_COLLAPSED_INDICATOR_HEIGHT + COGITO_NAV_RAIL_COLLAPSED_INDICATOR_LABEL_GAP;
         cogito_draw_text_size_node(n, label_x, label_y, n->nav_rail.labels[i
-        ]->data, label_color, size, selected);
+        ]->data, label_color, size, selected, false);
       }
 
       item_y += item_step;

@@ -35,7 +35,7 @@ case COGITO_COLORPICKER: {
           if (!c) continue;
           int lh = cogito_text_height_size(size);
           int ly = c->y + (c->h - lh) / 2;
-          cogito_draw_text_size_node(n, lx, ly, labels[si], text_col, size, false);
+          cogito_draw_text_size_node(n, lx, ly, labels[si], text_col, size, false, false);
         }
 
         // Draw slider children (positioned by layout phase)
@@ -66,9 +66,9 @@ case COGITO_COLORPICKER: {
           int cancel_tw = cogito_text_width_size_node(n, "Cancel", action_size + 1);
           int ok_tw = cogito_text_width_size_node(n, "OK", action_size + 1);
           cogito_draw_text_size_node(n, fcx + (fcw - cancel_tw) / 2, fcy + (fch - act_th) / 2,
-                                     "Cancel", accent, action_size + 1, true);
+                                     "Cancel", accent, action_size + 1, true, false);
           cogito_draw_text_size_node(n, fox + (fow - ok_tw) / 2, foy + (foh - act_th) / 2,
-                                     "OK", accent, action_size + 1, true);
+                                     "OK", accent, action_size + 1, true, false);
         }
       } else {
         // ---- Trigger mode: compact field with swatch + editable hex + palette icon ----

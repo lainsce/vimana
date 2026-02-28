@@ -46,7 +46,6 @@ typedef enum {
   COGITO_NODE_ZSTACK,
   COGITO_NODE_FIXED,
   COGITO_NODE_SCROLLER,
-  COGITO_NODE_LIST,
   COGITO_NODE_GRID,
   COGITO_NODE_LABEL,
   COGITO_NODE_BUTTON,
@@ -540,8 +539,9 @@ void cogito_fab_set_extended(cogito_node *fab, bool extended,
                              const char *label);
 void cogito_fab_set_size(cogito_node *fab, int size); // 0=S(42), 1=M(56), 2=L(96)
 void cogito_fab_set_icon(cogito_node *fab, const char *icon);
-void cogito_fab_set_color(cogito_node *fab, int color); // 0=Primary, 1=Secondary, 2=Tertiary, 4=Surface
-void cogito_fab_menu_set_color(cogito_node *fab, int color);
+void cogito_fab_set_color(cogito_node *fab, int color); // 0=Primary, 1=Secondary, 2=Tertiary, 3=PrimaryContainer, 4=SecondaryContainer, 5=TertiaryContainer
+void cogito_fab_menu_set_color(cogito_node *fab, int color); // 0=Primary, 1=Secondary, 2=Tertiary
+void cogito_fab_menu_set_size(cogito_node *fab, int size); // 0=S(56), 1=M(80), 2=L(96)
 void cogito_fab_on_click(cogito_node *fab, cogito_node_fn fn, void *user);
 void cogito_switch_on_change(cogito_node *sw, cogito_node_fn fn, void *user);
 
@@ -562,8 +562,9 @@ void cogito_colorpicker_on_change(cogito_node *colorpicker, cogito_node_fn fn,
 void cogito_colorpicker_set_hex(cogito_node *colorpicker, const char *hex);
 const char *cogito_colorpicker_get_hex(cogito_node *colorpicker);
 
-void cogito_list_on_select(cogito_node *list, cogito_index_fn fn, void *user);
-void cogito_list_on_activate(cogito_node *list, cogito_index_fn fn, void *user);
+void cogito_content_list_set_selected(cogito_node *list, int idx);
+void cogito_content_list_on_select(cogito_node *list, cogito_index_fn fn, void *user);
+void cogito_content_list_on_activate(cogito_node *list, cogito_index_fn fn, void *user);
 void cogito_grid_on_select(cogito_node *grid, cogito_index_fn fn, void *user);
 void cogito_grid_on_activate(cogito_node *grid, cogito_index_fn fn, void *user);
 

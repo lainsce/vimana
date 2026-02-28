@@ -1,8 +1,13 @@
 case COGITO_CONTENT_LIST: {
-  CogitoStyle s = cogito_theme_resolve_node(n);
+  bool hover = false;
+  bool active = false;
+  cogito_node_hover_state(n, &hover, &active);
+  CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
   CogitoColor bg = s.has_bg ? s.bg : n->bg;
   CogitoColor border_color = s.has_border ? s.border : n->border_color;
   int border_w = s.has_border_width ? s.border_width : (n->border_width_set ? n->border_width : 1);
+  CogitoColor sel_bg = s.has_selection ? s.selection : n->selection_color;
+  cogito_anim_apply(n, &s, &bg, NULL, NULL, &sel_bg);
 
   // Draw overall background with base radius
   int r = s.has_radius ? s.radius : 12;
@@ -16,10 +21,18 @@ case COGITO_CONTENT_LIST: {
   CogitoStyle* middle_style = &cogito_theme.content_list_item_middle;
   CogitoStyle* single_style = &cogito_theme.content_list_item_single;
 
+  bool has_selection = n->selected >= 0 && (size_t)n->selected < n->len;
+
+  // Determine unselected item background based on parent class
+  bool in_sidebar = n->parent && n->parent->class_name &&
+                    n->parent->class_name->data &&
+                    strcmp(n->parent->class_name->data, "sidebar") == 0;
+  CogitoColor unsel_bg = in_sidebar ? cogito_cached_surface_container_high
+                                    : cogito_cached_surface_container;
+
   // Draw children with proper rounded corners based on position
   for (size_t i = 0; i < n->len; i++) {
-    CogitoNode* child = n->children[i
-    ];
+    CogitoNode* child = n->children[i];
     if (!cogito_rect_visible(child->x, child->y, child->w, child->h, n->x, n->y, n->w, n->h)) continue;
 
     // Determine element position and get corresponding style
@@ -52,20 +65,28 @@ case COGITO_CONTENT_LIST: {
     if (child->w > 0 && child->h > 0) {
       cogito_clamp_corner_radii(child->w, child->h, &tl, &tr, &br, &bl);
     }
-    // Use element-specific background if available, otherwise use list bg
-    CogitoColor item_bg = bg;
-    if (item_style && item_style->has_bg) {
-      item_bg = item_style->bg;
+
+    bool is_selected = has_selection && (size_t)n->selected == i;
+
+    if (is_selected) {
+        int sr = child->h / 2;
+        CogitoColor sel_bg = cogito_cached_secondary_container;
+        cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, sel_bg, sr, sr, sr, sr);
+        cogito_has_selection_text = true;
+        cogito_selection_text = cogito_cached_on_secondary_container;
+        cogito_draw_node(child);
+        cogito_has_selection_text = false;
+    } else {
+      // Draw unselected item background with position-specific rounded corners
+      if (unsel_bg.a > 0) {
+        cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, unsel_bg, tl, tr, br, bl);
+      }
+      // Draw the child
+      cogito_draw_node(child);
     }
-    // Draw child background with position-specific rounded corners
-    if (item_bg.a > 0) {
-      cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, item_bg, tl, tr, br, bl);
-    }
-    // Draw the child
-    cogito_draw_node(child);
-    
-    // Draw divider between items (not after last)
-    if (i + 1 < n->len) {
+
+    // Draw divider between items (not after last, not around selected items)
+    if (i + 1 < n->len && !is_selected && !(has_selection && (size_t)n->selected == i + 1)) {
       CogitoColor div_color = border_color;
       // Check if middle style has custom divider color
       if (middle_style->has_border) {

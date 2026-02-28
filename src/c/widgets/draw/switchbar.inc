@@ -1,11 +1,12 @@
 case COGITO_SWITCHBAR: {
-	  bool hover = false, active = false;
-	  cogito_node_hover_state(n, &hover, &active);
-	  CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-	  CogitoColor secondary_container = {0}, on_secondary_container = {0};
-	  cogito_theme_get_state_layer_palette(NULL, NULL, &secondary_container, NULL,
-	                                       NULL, NULL, NULL, &on_secondary_container,
-	                                       NULL, NULL);
+  	  bool hover = false, active = false;
+  	  cogito_node_hover_state(n, &hover, &active);
+  	  CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+  	  CogitoColor secondary_container = {0}, on_secondary_container = {0};
+  	  cogito_theme_get_state_layer_palette(NULL, NULL, NULL,
+  	                                       NULL, &secondary_container, &on_secondary_container,
+  	                                       NULL, NULL, NULL,
+  	                                       NULL, NULL, NULL, NULL);
 	  
 	  // When checked/activated, use Secondary Container + On Secondary Container.
 	  CogitoColor bg = n->checked 
@@ -36,7 +37,7 @@ case COGITO_SWITCHBAR: {
     int th = cogito_text_height_size(ts);
     int tx = n->x + 20;
     int ty = n->y + (bar_h - th) / 2;
-    cogito_draw_text_size_node(n, tx, ty, n->text->data, text_color, ts, false);
+    cogito_draw_text_size_node(n, tx, ty, n->text->data, text_color, ts, false, false);
   }
   // Draw switch - replicate switch.inc rendering for consistent look
   {

@@ -236,7 +236,6 @@ typedef enum {
   COGITO_ICONBTN,
   COGITO_IMAGE,
   COGITO_LABEL,
-  COGITO_LIST,
   COGITO_NAV_RAIL,
   COGITO_POPOVER,
   COGITO_PROGRESS,
@@ -921,8 +920,15 @@ typedef struct CogitoNode {
        int desired_w;
        uint8_t mode;
     } side_sheet;
-    struct { bool extended; uint8_t size; // 0=S(42), 1=M(56, default), 2=L(96)
+    struct {
+        bool extended;
+        uint8_t variant; // 0=Primary, 1=Secondary, 2=Tertiary, 3=PContainer, 4=SContainer, 5=TContainer
+        uint8_t size;    // 0=S(42), 1=M(56, default), 2=L(96)
     } fab;
+    struct {
+        uint8_t variant; // 0=Primary, 1=Secondary, 2=Tertiary
+        uint8_t size;    // 0=S(42), 1=M(56, default), 2=L(96)
+    } fab_menu;
     struct { bool vertical, inset;
     } divider;
     struct { int cls;
@@ -1018,6 +1024,9 @@ static int cogito_font_mono_loaded_size = 0;
 static CogitoFont* cogito_font_bold = NULL;
 static bool cogito_font_bold_ready = false;
 static bool cogito_font_bold_variable = false;
+static CogitoFont* cogito_font_medium = NULL;
+static bool cogito_font_medium_ready = false;
+static bool cogito_font_medium_variable = false;
 static CogitoFontCacheEntry cogito_font_cache[
   8
 ];
@@ -1027,14 +1036,19 @@ static CogitoFontCacheEntry cogito_font_serif_cache[
 static CogitoFontCacheEntry cogito_font_bold_cache[
   8
 ];
+static CogitoFontCacheEntry cogito_font_medium_cache[
+  8
+];
 static CogitoFontCacheEntry cogito_font_tabular_cache[
   8
 ];
 static int cogito_font_size_value = 16;
 static int cogito_font_loaded_size = 0;
 static int cogito_font_bold_loaded_size = 0;
+static int cogito_font_medium_loaded_size = 0;
 static bool cogito_font_from_env = false;
 static bool cogito_font_bold_from_env = false;
+static bool cogito_font_medium_from_env = false;
 static bool cogito_sum_default_loaded = false;
 static char* cogito_user_sum = NULL;
 static int cogito_style_version = 0;
@@ -1440,7 +1454,7 @@ static void cogito_window_theme_reveal_start(CogitoNode* win, int origin_x, int 
 
   win->window_theme_reveal_active = true;
   win->window_theme_reveal_start = cogito_now();
-  win->window_theme_reveal_duration = 0.52;
+  win->window_theme_reveal_duration = 0.300; // 300ms
   win->window_theme_reveal_origin_x = origin_x;
   win->window_theme_reveal_origin_y = origin_y;
   win->window_theme_reveal_radius = 0.0f;
@@ -2075,7 +2089,7 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
 // or if it's a button-like element with Surface variant
 static bool cogito_node_should_ripple(const CogitoNode* n) {
   if (!n) return false;
-  
+
   // Check class name for color variants
   if (n->class_name && n->class_name->data && n->class_name->data[0]) {
     const char* cls = n->class_name->data;
@@ -2092,25 +2106,28 @@ static bool cogito_node_should_ripple(const CogitoNode* n) {
       }
     }
   }
-  
+
   // Check if node is in a ButtonGroup (selected items use Secondary color)
   if (n->parent && n->parent->kind == COGITO_BUTTON_GROUP) {
     return true;
   }
-  
+
   return false;
 }
 
 static void cogito_theme_get_state_layer_palette(
   CogitoColor* out_primary,
+  CogitoColor* out_primary_container,
+  CogitoColor* out_on_primary_container,
   CogitoColor* out_secondary,
   CogitoColor* out_secondary_container,
-  CogitoColor* out_tertiary,
-  CogitoColor* out_surface,
-  CogitoColor* out_on_surface,
-  CogitoColor* out_on_primary_container,
   CogitoColor* out_on_secondary_container,
+  CogitoColor* out_tertiary,
+  CogitoColor* out_tertiary_container,
   CogitoColor* out_on_tertiary_container,
+  CogitoColor* out_surface,
+  CogitoColor* out_surface_container,
+  CogitoColor* out_on_surface,
   CogitoColor* out_on_surface_variant
 );
 
@@ -2128,9 +2145,10 @@ static CogitoColor cogito_node_state_layer_seed(const CogitoNode* n) {
   CogitoColor on_secondary_container = on_surface;
   CogitoColor on_tertiary_container = on_surface;
   CogitoColor on_surface_variant = on_surface;
-  cogito_theme_get_state_layer_palette(&primary, &secondary, NULL, &tertiary, &surface, &on_surface,
-                                       &on_primary_container, &on_secondary_container,
-                                       &on_tertiary_container, &on_surface_variant);
+  cogito_theme_get_state_layer_palette(&primary, NULL, &on_primary_container,
+                                       &secondary, NULL, &on_secondary_container,
+                                       &tertiary, NULL, &on_tertiary_container,
+                                       &surface, NULL, &on_surface, &on_surface_variant);
   const char* cls = (n && n->class_name && n->class_name->data) ? n->class_name->data : NULL;
   bool primary_container = cls && (strstr(cls, "primary-container") || strstr(cls, "primary_container"));
   bool secondary_container = cls && (strstr(cls, "secondary-container") || strstr(cls, "secondary_container"));
@@ -2242,6 +2260,7 @@ static CogitoNode* cogito_node_window(CogitoNode* n);
 static bool cogito_file_exists(const char* path);
 static int cogito_font_weight_normal(void);
 static int cogito_font_weight_bold(void);
+static int cogito_font_weight_medium(void);
 static bool cogito_load_font_file_ex(CogitoFont** out, const char* path, int size, int weight, bool* out_weight_applied);
 static bool cogito_load_font_file(CogitoFont** out, const char* path, int size, int weight);
 static bool cogito_load_font_file_tabular(CogitoFont** out, const char* path, int size, int weight);

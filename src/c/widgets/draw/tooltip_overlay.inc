@@ -34,5 +34,5 @@ static void cogito_draw_tooltip(CogitoNode* win, CogitoNode* target) {
   if (border_w > 0) {
     cogito_draw_rect_lines(x, y, w, h, border, radius, border_w);
   }
-  cogito_draw_text_size_node(target, x + pad_x, y + pad_y, t, text, font_size, false);
+  cogito_draw_text_size_node(target, x + pad_x, y + pad_y, t, text, font_size, false, false);
 }

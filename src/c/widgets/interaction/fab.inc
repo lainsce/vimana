@@ -20,31 +20,35 @@ static void cogito_fab_set_size(YisVal fabv, YisVal sizev) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
-// color: 0=Primary, 1=Secondary, 2=Tertiary, 3=Surface
+// color: 0=Primary, 1=Secondary, 2=Tertiary, 3=PrimaryContainer, 4=SecondaryContainer, 5=TertiaryContainer
 static void cogito_fab_set_color(YisVal fabv, YisVal colorv) {
   if (fabv.tag != EVT_OBJ) yis_trap("cogito.fab_set_color expects fab");
   CogitoNode* n = (CogitoNode*)fabv.as.p;
-  static const char* names[] = { "primary", "secondary", "tertiary", "surface" };
   int c = (int)yis_as_int(colorv);
   if (c < 0) c = 0;
-  if (c > 3) c = 3;
-  YisStr* cls = stdr_str_from_slice(names[c], strlen(names[c]));
-  if (n->class_name) yis_release_val(YV_STR(n->class_name));
-  n->class_name = cls;
-  yis_retain_val(YV_STR(n->class_name));
+  if (c > 5) c = 5;
+  n->fab.variant = (uint8_t)c;
 }
 
+// color: 0=Primary, 1=Secondary, 2=Tertiary
 static void cogito_fab_menu_set_color(YisVal fabv, YisVal colorv) {
   if (fabv.tag != EVT_OBJ) yis_trap("cogito.fab_menu_set_color expects fab_menu");
   CogitoNode* n = (CogitoNode*)fabv.as.p;
-  static const char* names[] = { "primary", "secondary", "tertiary", "surface" };
   int c = (int)yis_as_int(colorv);
   if (c < 0) c = 0;
-  if (c > 3) c = 3;
-  YisStr* cls = stdr_str_from_slice(names[c], strlen(names[c]));
-  if (n->class_name) yis_release_val(YV_STR(n->class_name));
-  n->class_name = cls;
-  yis_retain_val(YV_STR(n->class_name));
+  if (c > 2) c = 2;
+  n->fab_menu.variant = (uint8_t)c;
+}
+
+// size: 0=S(56x56), 1=M(80x80), 2=L(96x96)
+static void cogito_fab_menu_set_size(YisVal fabv, YisVal sizev) {
+  if (fabv.tag != EVT_OBJ) yis_trap("cogito.fab_menu_set_size expects fab_menu");
+  CogitoNode* n = (CogitoNode*)fabv.as.p;
+  int s = (int)yis_as_int(sizev);
+  if (s < 0) s = 0;
+  if (s > 2) s = 2;
+  n->fab_menu.size = (uint8_t)s;
+  cogito_window_relayout(cogito_node_window(n));
 }
 
 static void cogito_fab_set_extended(YisVal fabv, YisVal extended, YisVal label) {

@@ -14,7 +14,7 @@ case COGITO_SETTINGS_WINDOW: {
   if (n->text && n->text->data && n->text->data[0]) {
     int ts = cogito_node_font_size(n);
     if (ts < 16) ts = 16;
-    cogito_draw_text_size_node(n, n->x + 16, n->y + 16, n->text->data, text_color, ts, true);
+    cogito_draw_text_size_node(n, n->x + 16, n->y + 16, n->text->data, text_color, ts, true, false);
   }
 
   // Draw sidebar items (page titles)
@@ -36,7 +36,7 @@ case COGITO_SETTINGS_WINDOW: {
       int ty = iy + (item_h - th) / 2;
       CogitoColor item_color = text_color;
       if (!is_sel) item_color.a = (uint8_t)(item_color.a * 0.6f);
-      cogito_draw_text_size_node(n, n->x + 16, ty, page->text->data, item_color, ts, is_sel);
+      cogito_draw_text_size_node(n, n->x + 16, ty, page->text->data, item_color, ts, is_sel, false);
     }
     iy += item_h;
   }

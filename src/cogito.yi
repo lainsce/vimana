@@ -103,6 +103,7 @@ fun __cogito_container_set_padding(node = any, top = num, right = num, bottom = 
 fun __cogito_container_set_valign(node = any, align = num) (( -- )) { }
 fun __cogito_container_set_vexpand(node = any, expand = bool) (( -- )) { }
 fun __cogito_content_list() (( ContentList )) { }
+fun __cogito_content_list_set_selected(list = ContentList, idx = num) (( -- )) { }
 fun __cogito_datepicker_on_change(dp = DatePicker, handler = any) (( -- )) { }
 fun __cogito_datepicker() (( DatePicker )) { }
 fun __cogito_dialog_close(dialog = Dialog) (( -- )) { }
@@ -123,10 +124,13 @@ fun __cogito_empty_page_set_icon(ep = EmptyPage, icon = string) (( -- )) { }
 fun __cogito_empty_page(title = string) (( EmptyPage )) { }
 fun __cogito_fab_on_click(fab = FAB, handler = any) (( -- )) { }
 fun __cogito_fab_set_extended(fab = FAB, extended = bool, label = string) (( -- )) { }
+fun __cogito_fab_set_color(fab = FAB, color = num) (( -- )) { }
+fun __cogito_fab_set_size(fab = FAB, size = num) (( -- )) { }
 fun __cogito_fab(icon = string) (( FAB )) { }
 fun __cogito_fab_menu(icon = string) (( FABMenu )) { }
-fun __cogito_fab_menu_add_item(fab_menu = FABMenu, icon = string, handler = any) (( -- )) { }
+fun __cogito_fab_menu_add_item(fab_menu = FABMenu, label = string, icon = any, handler = any) (( -- )) { }
 fun __cogito_fab_menu_set_color(fabmenu = FABMenu, color = num) (( -- )) {}
+fun __cogito_fab_menu_set_size(fabmenu = FABMenu, size = num) (( -- )) {}
 fun __cogito_find_children(node = any) (( [any] )) { }
 fun __cogito_find_parent(node = any) (( any )) { }
 fun __cogito_fixed_set_pos(fixed = Fixed, child = any, x = num, y = num) (( -- )) { }
@@ -196,9 +200,9 @@ fun __cogito_label_set_ellipsis(label = Label, on = bool) (( -- )) { }
 fun __cogito_label_set_text(label = Label, text = string) (( -- )) { }
 fun __cogito_label_set_wrap(label = Label, on = bool) (( -- )) { }
 fun __cogito_label(text = string) (( Label )) { }
-fun __cogito_list_on_activate(list = List, handler = any) (( -- )) { }
-fun __cogito_list_on_select(list = List, handler = any) (( -- )) { }
-fun __cogito_list() (( List )) { }
+fun __cogito_content_list_on_activate(list = ContentList, handler = any) (( -- )) { }
+fun __cogito_content_list_on_select(list = ContentList, handler = any) (( -- )) { }
+fun __cogito_list() (( ContentList )) { }
 fun __cogito_load_sum(path = string) (( -- )) { }
 fun __cogito_menu_button(icon = string) (( IconButton )) { }
 fun __cogito_nav_rail_get_selected(rail = NavRail) (( num )) { }
@@ -503,8 +507,8 @@ pub class AppBar {
 }
 
 pub class FABMenu {
-    pub fun add_item(this, icon = string, handler = any) (( FABMenu )) {
-        __cogito_fab_menu_add_item(this, icon, handler)
+    pub fun add_item(this, label = string, icon = any, handler = any) (( FABMenu )) {
+        __cogito_fab_menu_add_item(this, label, icon, handler)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( FABMenu )) {
@@ -515,7 +519,14 @@ pub class FABMenu {
         __cogito_container_set_vexpand(this, expand)
         return this
     }
-
+    pub fun set_color(this, color = num) (( FABMenu )) {
+        __cogito_fab_menu_set_color(this, color)
+        return this
+    }
+    pub fun set_size(this, size = num) (( FABMenu )) {
+        __cogito_fab_menu_set_size(this, size)
+        return this
+    }
     pub fun set_disabled(this, on = bool) (( FABMenu )) {
         __cogito_node_set_disabled(this, on)
         return this
@@ -1038,77 +1049,6 @@ pub class CarouselItem {
     }
     pub fun set_valign(this, align = num) (( CarouselItem )) {
         __cogito_carousel_item_set_valign(this, align)
-        return this
-    }
-}
-
-pub class List {
-    pub fun add(this, child = any) (( List )) {
-        __cogito_container_add(this, child)
-        return this
-    }
-    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( List )) {
-        __cogito_container_set_margins(this, top, right, bottom, left)
-        return this
-    }
-    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( List )) {
-        __cogito_container_set_padding(this, top, right, bottom, left)
-        return this
-    }
-    pub fun set_align(this, align = num) (( List )) {
-        __cogito_container_set_align(this, align)
-        return this
-    }
-    pub fun halign(this, align = num) (( List )) {
-        __cogito_container_set_halign(this, align)
-        return this
-    }
-    pub fun valign(this, align = num) (( List )) {
-        __cogito_container_set_valign(this, align)
-        return this
-    }
-    pub fun align_begin(this) (( List )) {
-        __cogito_container_set_align(this, 0)
-        return this
-    }
-    pub fun align_center(this) (( List )) {
-        __cogito_container_set_align(this, 1)
-        return this
-    }
-    pub fun align_end(this) (( List )) {
-        __cogito_container_set_align(this, 2)
-        return this
-    }
-    pub fun on_select(this, handler = any) (( List )) {
-        __cogito_list_on_select(this, handler)
-        return this
-    }
-    pub fun on_activate(this, handler = any) (( List )) {
-        __cogito_list_on_activate(this, handler)
-        return this
-    }
-    pub fun build(this, builder = any) (( List )) {
-        __cogito_build(this, builder)
-        return this
-    }
-    pub fun set_hexpand(this, expand = bool) (( List )) {
-        __cogito_container_set_hexpand(this, expand)
-        return this
-    }
-    pub fun set_vexpand(this, expand = bool) (( List )) {
-        __cogito_container_set_vexpand(this, expand)
-        return this
-    }
-    pub fun set_disabled(this, on = bool) (( List )) {
-        __cogito_node_set_disabled(this, on)
-        return this
-    }
-    pub fun set_class(this, cls = string) (( List )) {
-        __cogito_node_set_class(this, cls)
-        return this
-    }
-    pub fun set_id(this, id = string) (( List )) {
-        __cogito_node_set_id(this, id)
         return this
     }
 }
@@ -3237,6 +3177,14 @@ pub class FAB {
         __cogito_fab_set_extended(this, extended, label)
         return this
     }
+    pub fun set_color(this, color = num) (( FAB )) {
+        __cogito_fab_set_color(this, color)
+        return this
+    }
+    pub fun set_size(this, size = num) (( FAB )) {
+        __cogito_fab_set_size(this, size)
+        return this
+    }
     pub fun on_click(this, handler = any) (( FAB )) {
         __cogito_fab_on_click(this, handler)
         return this
@@ -3477,7 +3425,7 @@ pub fun carousel_item() (( CarouselItem )) {
     return __cogito_carousel_item()
 }
 
-pub fun list() (( List )) {
+pub fun list() (( ContentList )) {
     return __cogito_list()
 }
 
@@ -3954,16 +3902,64 @@ pub class ContentList {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( ContentList )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( ContentList )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( ContentList )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_gap(this, gap = num) (( ContentList )) {
         __cogito_container_set_gap(this, gap)
         return this
     }
+    pub fun set_align(this, align = num) (( ContentList )) {
+        __cogito_container_set_align(this, align)
+        return this
+    }
+    pub fun halign(this, align = num) (( ContentList )) {
+        __cogito_container_set_halign(this, align)
+        return this
+    }
+    pub fun valign(this, align = num) (( ContentList )) {
+        __cogito_container_set_valign(this, align)
+        return this
+    }
+    pub fun align_begin(this) (( ContentList )) {
+        __cogito_container_set_align(this, 0)
+        return this
+    }
+    pub fun align_center(this) (( ContentList )) {
+        __cogito_container_set_align(this, 1)
+        return this
+    }
+    pub fun align_end(this) (( ContentList )) {
+        __cogito_container_set_align(this, 2)
+        return this
+    }
+    pub fun set_selected(this, idx = num) (( ContentList )) {
+        __cogito_content_list_set_selected(this, idx)
+        return this
+    }
+    pub fun on_select(this, handler = any) (( ContentList )) {
+        __cogito_content_list_on_select(this, handler)
+        return this
+    }
+    pub fun on_activate(this, handler = any) (( ContentList )) {
+        __cogito_content_list_on_activate(this, handler)
+        return this
+    }
     pub fun set_hexpand(this, expand = bool) (( ContentList )) {
         __cogito_container_set_hexpand(this, expand)
+        return this
+    }
+    pub fun set_vexpand(this, expand = bool) (( ContentList )) {
+        __cogito_container_set_vexpand(this, expand)
+        return this
+    }
+    pub fun set_disabled(this, on = bool) (( ContentList )) {
+        __cogito_node_set_disabled(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( ContentList )) {

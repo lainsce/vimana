@@ -26,6 +26,7 @@ fun build_page(title = string, blurb = string) (( cogito.VStack )) {
     let info = cogito.label(blurb)
     .set_class("body")
     .set_wrap(true)
+    .set_padding(0, 0, 24, 0)
     vstack.add(info)
 
     return vstack
@@ -55,7 +56,7 @@ fun build_button_page() (( cogito.VStack )) {
     styles_row.add(filled)
 
     let outlined = cogito.button("Outlined")
-    .set_class("outlined") 
+    .set_class("outlined")
     .on_click((b = cogito.Button) => {
         status.set_text("Outlined" !clicked_message)
     })
@@ -70,8 +71,37 @@ fun build_button_page() (( cogito.VStack )) {
 
     vstack.add(styles_row)
 
-    -- Section: Button Sizes
-    let sizes_label = cogito.label("Sizes")
+    -- Section: Button Size Dropdown
+    let size_dd_label = cogito.label("Size Selector")
+    .set_class("heading")
+    vstack.add(size_dd_label)
+
+    let size_dd_row = cogito.hstack()
+    .set_gap(12)
+    .set_hexpand(true)
+
+    let size_dd = cogito.dropdown()
+    .set_items(["XS", "S", "M", "L", "XL"])
+    .set_selected(2)
+    size_dd_row.add(size_dd)
+
+    let sized_btn = cogito.button("Dynamic Size")
+    .set_size(2)
+    .on_click((b = cogito.Button) => {
+        status.set_text("Dynamic button clicked!")
+    })
+    size_dd_row.add(sized_btn)
+
+    size_dd.on_change((d = cogito.Dropdown) => {
+        let ?sel = d.selected()
+        sized_btn.set_size(sel)
+        status.set_text("Button size changed to: <sel>")
+    })
+
+    vstack.add(size_dd_row)
+
+    -- Section: Button Sizes (Static Examples)
+    let sizes_label = cogito.label("Static Size Examples")
     .set_class("heading")
     vstack.add(sizes_label)
 
@@ -565,13 +595,13 @@ fun build_progress_page() (( cogito.VStack )) {
 }
 
 fun build_list_page() (( cogito.VStack )) {
-    let vstack = build_page("List", "Lists present vertical collections and expose selection/activation callbacks.")
+    let vstack = build_page("List", "List presents vertical collections with stylized grouped rows and selection support.")
 
     let status = cogito.label("Select a row.")
     .set_class("body")
     vstack.add(status)
 
-    let list = cogito.list()
+    let list = cogito.content_list()
     .set_hexpand(true)
     .add(cogito.label("Inbox"))
     .add(cogito.label("Archive"))
@@ -837,12 +867,33 @@ fun build_fab_page() (( cogito.VStack )) {
     .set_class("body")
     vstack.add(status)
 
+    -- Section: Variant Selector
+    let variant_label = cogito.label("Variant")
+    .set_class("heading")
+    vstack.add(variant_label)
+
+    let variant_dd = cogito.dropdown()
+    .set_items(["Primary", "Secondary", "Tertiary", "Primary Container", "Secondary Container", "Tertiary Container"])
+    .set_selected(0)
+    vstack.add(variant_dd)
+
+    -- Section: Size Selector
+    let size_label = cogito.label("Size")
+    .set_class("heading")
+    vstack.add(size_label)
+
+    let size_dd = cogito.dropdown()
+    .set_items(["S", "M", "L"])
+    .set_selected(1)
+    vstack.add(size_dd)
+
     let row = cogito.hstack()
     .set_hexpand(true)
     .set_vexpand(true)
     vstack.add(row)
 
     let fab1 = cogito.fab("plus")
+    .set_size(1)
     .on_click((f = cogito.FAB) => {
         status.set_text("Compact FAB clicked.")
     })
@@ -850,10 +901,25 @@ fun build_fab_page() (( cogito.VStack )) {
 
     let fab2 = cogito.fab("sf:pencil")
     .set_extended(true, "Compose")
+    .set_size(1)
     .on_click((f = cogito.FAB) => {
         status.set_text("Extended FAB clicked.")
     })
     row.add(fab2)
+
+    variant_dd.on_change((d = cogito.Dropdown) => {
+        let ?sel = d.selected()
+        fab1.set_color(sel)
+        fab2.set_color(sel)
+        status.set_text("FAB variant changed.")
+    })
+
+    size_dd.on_change((d = cogito.Dropdown) => {
+        let ?sel = d.selected()
+        fab1.set_size(sel)
+        fab2.set_size(sel)
+        status.set_text("FAB size changed.")
+    })
 
     return vstack
 }
@@ -1634,19 +1700,6 @@ fun build_split_button_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_content_list_page() (( cogito.VStack )) {
-    let vstack = build_page("ContentList", "ContentList is a stylized list container for grouped content rows.")
-
-    let cl = cogito.content_list()
-    .set_hexpand(true)
-    .add(cogito.label("First item"))
-    .add(cogito.label("Second item"))
-    .add(cogito.label("Third item"))
-    vstack.add(cl)
-
-    return vstack
-}
-
 fun build_empty_page_widget_page() (( cogito.VStack )) {
     let vstack = build_page("EmptyPage", "EmptyPage communicates a zero-state with optional supporting action.")
 
@@ -1778,26 +1831,60 @@ fun build_view_chooser_page() (( cogito.VStack )) {
 }
 
 fun build_fabmenu_page() (( cogito.VStack )) {
-    let vstack = build_page("FabMenu", "FabMenu is a floating action button that shows a menu of actions.")
+    let vstack = build_page("FABMenu", "FABMenu combines a Floating Action Button with a menu of related actions.")
 
     let status = cogito.label("Tap a FAB.")
     .set_class("body")
     .set_wrap(true)
     vstack.add(status)
 
+    -- Section: Variant Selector
+    let variant_label = cogito.label("Variant")
+    .set_class("heading")
+    vstack.add(variant_label)
+
+    let variant_dd = cogito.dropdown()
+    .set_items(["Primary", "Secondary", "Tertiary"])
+    .set_selected(0)
+    vstack.add(variant_dd)
+
+    -- Section: Size Selector
+    let size_label = cogito.label("Size")
+    .set_class("heading")
+    vstack.add(size_label)
+
+    let size_dd = cogito.dropdown()
+    .set_items(["S", "M", "L"])
+    .set_selected(1)
+    vstack.add(size_dd)
+
     let fabmenu = cogito.fab_menu("plus")
+    .set_color(0)
+    .set_size(1)
     .set_hexpand(true)
     .set_vexpand(true)
-    .add_item("Add", (b = any) => {
-        status.set_text("Add action selected.")
+    .add_item("Info", "info", (b = any) => {
+        status.set_text("Info action selected.")
     })
-    .add_item("Edit", (b = any) => {
+    .add_item("Edit", "pencil", (b = any) => {
         status.set_text("Edit action selected.")
     })
-    .add_item("Delete", (b = any) => {
+    .add_item("Delete", "trash", (b = any) => {
         status.set_text("Delete action selected.")
     })
     vstack.add(fabmenu)
+
+    variant_dd.on_change((d = cogito.Dropdown) => {
+        let ?sel = d.selected()
+        fabmenu.set_color(sel)
+        status.set_text("FAB Menu variant changed.")
+    })
+
+    size_dd.on_change((d = cogito.Dropdown) => {
+        let ?sel = d.selected()
+        fabmenu.set_size(sel)
+        status.set_text("FAB Menu size changed.")
+    })
 
     return vstack
 }
@@ -2058,30 +2145,28 @@ fun view_id_from_index(idx = num) (( string )) {
     } elif idx == 36 {
         "menu_button"
     } elif idx == 37 {
-        "content_list"
-    } elif idx == 38 {
         "empty_page"
-    } elif idx == 39 {
+    } elif idx == 38 {
         "welcome_screen"
-    } elif idx == 40 {
+    } elif idx == 39 {
         "settings_window"
-    } elif idx == 41 {
+    } elif idx == 40 {
         "view_dual"
-    } elif idx == 42 {
+    } elif idx == 41 {
         "view_chooser"
-    } elif idx == 43 {
+    } elif idx == 42 {
         "about_window"
-    } elif idx == 44 {
+    } elif idx == 43 {
         "typography"
-    } elif idx == 45 {
+    } elif idx == 44 {
         "side_sheet"
-    } elif idx == 46 {
+    } elif idx == 45 {
         "fabmenu"
-    } elif idx == 47 {
+    } elif idx == 46 {
         "ensor"
-    } elif idx == 48 {
+    } elif idx == 47 {
         "drawing_area"
-    } elif idx == 49 {
+    } elif idx == 48 {
         "shape_gallery"
     } else {
         "button"
@@ -2164,30 +2249,28 @@ fun view_title_from_index(idx = num) (( string )) {
     } elif idx == 36 {
         "MenuButton"
     } elif idx == 37 {
-        "ContentList"
-    } elif idx == 38 {
         "EmptyPage"
-    } elif idx == 39 {
+    } elif idx == 38 {
         "WelcomeScreen"
-    } elif idx == 40 {
+    } elif idx == 39 {
         "SettingsWindow"
-    } elif idx == 41 {
+    } elif idx == 40 {
         "ViewDual"
-    } elif idx == 42 {
+    } elif idx == 41 {
         "ViewChooser"
-    } elif idx == 43 {
+    } elif idx == 42 {
         "AboutWindow"
-    } elif idx == 44 {
+    } elif idx == 43 {
         "Typography"
-    } elif idx == 45 {
+    } elif idx == 44 {
         "SideSheet"
-    } elif idx == 46 {
+    } elif idx == 45 {
         "FabMenu"
-    } elif idx == 47 {
+    } elif idx == 46 {
         "Ensor"
-    } elif idx == 48 {
+    } elif idx == 47 {
         "DrawingArea"
-    } elif idx == 49 {
+    } elif idx == 48 {
         "Shape Gallery"
     } else {
         "Button"
@@ -2272,7 +2355,6 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .add("switchbar", (vs = cogito.ViewSwitcher) => build_switchbar_page())
     .add("split_button", (vs = cogito.ViewSwitcher) => build_split_button_page())
     .add("menu_button", (vs = cogito.ViewSwitcher) => build_menu_button_page())
-    .add("content_list", (vs = cogito.ViewSwitcher) => build_content_list_page())
     .add("empty_page", (vs = cogito.ViewSwitcher) => build_empty_page_widget_page())
     .add("welcome_screen", (vs = cogito.ViewSwitcher) => build_welcome_screen_page())
     .add("settings_window", (vs = cogito.ViewSwitcher) => build_settings_window_page())
@@ -2291,8 +2373,9 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .set_vexpand(true)
     .add(sidebar_bar)
 
-    let sidebar_list = cogito.list()
+    let sidebar_list = cogito.content_list()
     .set_padding(8, 8, 8, 8)
+    .set_selected(0)
     .add(cogito.label("Button").set_padding(10,16,10,16))
     .add(cogito.label("Icon Button").set_padding(10,16,10,16))
     .add(cogito.label("TextField").set_padding(10,16,10,16))
@@ -2330,7 +2413,6 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .add(cogito.label("SwitchBar").set_padding(10,16,10,16))
     .add(cogito.label("SplitButton").set_padding(10,16,10,16))
     .add(cogito.label("MenuButton").set_padding(10,16,10,16))
-    .add(cogito.label("ContentList").set_padding(10,16,10,16))
     .add(cogito.label("EmptyPage").set_padding(10,16,10,16))
     .add(cogito.label("WelcomeScreen").set_padding(10,16,10,16))
     .add(cogito.label("SettingsWindow").set_padding(10,16,10,16))

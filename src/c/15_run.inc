@@ -629,6 +629,38 @@ static void cogito_run(YisVal appv, YisVal winv) {
       cogito_font_bold_path_active = bold_font_path;
     }
   }
+  // Medium font
+  const char* medium_font_path = getenv("COGITO_FONT_MEDIUM");
+  bool medium_from_regular = false;
+  if (!medium_font_path || !medium_font_path[
+    0
+  ]) {
+    medium_font_path = cogito_guess_medium_font_path(font_path);
+    if (!medium_font_path && font_path && font_path[
+      0
+    ]) {
+      medium_font_path = font_path;
+      medium_from_regular = true;
+    }
+  }
+  if (medium_font_path && medium_font_path[
+    0
+  ]) {
+    bool weight_applied = false;
+    int medium_weight = medium_from_regular ? cogito_font_weight_medium() : 0;
+    if (cogito_load_font_file_ex(&cogito_font_medium, medium_font_path, cogito_font_size(), medium_weight, &weight_applied)) {
+      if (medium_from_regular && !weight_applied) {
+        // Variable font weight not applied -- fall back to faux medium
+        cogito_font_medium_variable = true;
+      } else {
+        cogito_font_medium_variable = false;
+      }
+      cogito_font_medium_ready = true;
+      cogito_font_medium_loaded_size = cogito_font_size();
+      cogito_font_medium_from_env = true;
+      cogito_font_medium_path_active = medium_font_path;
+    }
+  }
   startup_t_after_fonts = cogito_startup_now();
 
   if (win->auto_size) {
@@ -2772,7 +2804,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
       if (title_y < 0) title_y = 0;
       int title_x = inspector_btn_max_x + inspector_traffic_btn + 12;
       cogito_draw_text_size_node(win, title_x, frame_y + title_y,
-        "Inspector", appbar_fg, title_size, true);
+        "Inspector", appbar_fg, title_size, true, false);
       cogito_inspector_view_x = frame_x;
       cogito_inspector_view_y = frame_y + appbar_h;
       cogito_inspector_view_w = frame_w;
@@ -2841,7 +2873,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
   if (cogito_font_bold_ready && cogito_font_bold_from_env && cogito_font_bold) {
     cogito_backend->font_unload(cogito_font_bold);
   }
-  
+  if (cogito_font_medium_ready && cogito_font_medium_from_env && cogito_font_medium) {
+    cogito_backend->font_unload(cogito_font_medium);
+  }
+
   if (inspector_window) {
     cogito_backend->window_destroy(inspector_window);
     inspector_window = NULL;

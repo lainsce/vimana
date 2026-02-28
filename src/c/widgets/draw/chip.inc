@@ -68,7 +68,7 @@ case COGITO_CHIP: {
     int lead = n->chip.selected ? (n->h + 4) : 12;
     int text_x = n->x + lead;
     int text_y = n->y + (n->h - text_h) / 2;
-    cogito_draw_text_size_node(n, text_x, text_y, n->text->data, text_color, font_size, false);
+    cogito_draw_text_size_node(n, text_x, text_y, n->text->data, text_color, font_size, false, false);
 
     // ---- Close icon ----
     if (n->chip.has_close) {

@@ -89,8 +89,8 @@ case COGITO_CAROUSEL_ITEM: {
           CogitoColor shadow = (lbl_color.r > 127)
             ? cogito_rgba(0, 0, 0, 90)
             : cogito_rgba(255, 255, 255, 90);
-          cogito_draw_text_size_node(label_child, lx + 1, ly + 1, label_child->text->data, shadow, lbl_size, lbl_bold);
-          cogito_draw_text_size_node(label_child, lx, ly, label_child->text->data, lbl_color, lbl_size, lbl_bold);
+          cogito_draw_text_size_node(label_child, lx + 1, ly + 1, label_child->text->data, shadow, lbl_size, lbl_bold, false);
+          cogito_draw_text_size_node(label_child, lx, ly, label_child->text->data, lbl_color, lbl_size, lbl_bold, false);
         }
       }
       break;

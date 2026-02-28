@@ -64,7 +64,7 @@ case COGITO_APPBAR: {
         int ty = n->appbar.title_y ? n->appbar.title_y : (n->y + 12);
         CogitoColor tcol = cogito_label_class_color(COGITO_LABEL_CLASS_TITLE, text);
         bool tbold = cogito_label_class_bold(COGITO_LABEL_CLASS_TITLE, true);
-        cogito_draw_text_size_node(n, n->x + 16, ty, n->text->data, tcol, tsz, tbold);
+        cogito_draw_text_size_node(n, n->x + 16, ty, n->text->data, tcol, tsz, tbold, false);
   }
       if (n->subtitle) {
         int tsz = cogito_label_class_font_size(COGITO_LABEL_CLASS_TITLE,
@@ -75,7 +75,7 @@ case COGITO_APPBAR: {
         int sy = n->appbar.subtitle_y ? n->appbar.subtitle_y : (n->y + 12 + t_h + 4);
         CogitoColor scol = cogito_label_class_color(COGITO_LABEL_CLASS_SUBTITLE, text);
         bool sbold = cogito_label_class_bold(COGITO_LABEL_CLASS_SUBTITLE, false);
-        cogito_draw_text_size_node(n, n->x + 16, sy, n->subtitle->data, scol, ssz, sbold);
+        cogito_draw_text_size_node(n, n->x + 16, sy, n->subtitle->data, scol, ssz, sbold, false);
   }
       for (size_t i = 0; i < n->len; i++) {
         CogitoNode* c = n->children[i

@@ -684,7 +684,7 @@ static bool cogito_kind_fit_children_background(CogitoKind kind) {
   switch (kind) {
     case COGITO_DIALOG:
     case COGITO_FIXED:
-    case COGITO_LIST:
+    case COGITO_CONTENT_LIST:
     case COGITO_POPOVER:
     case COGITO_SCROLLER:
     case COGITO_TOASTS:
@@ -909,6 +909,28 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
             } else {
               cogito_font_bold_ready = false;
               cogito_font_bold_variable = false;
+            }
+          }
+        }
+        if (cogito_backend_ready && cogito_font_medium_ready && cogito_font_medium_from_env) {
+          const char* medium_path = cogito_font_medium_path_active;
+          if (medium_path && medium_path[
+            0
+          ] && cogito_font_medium_loaded_size != sz) {
+            cogito_backend->font_unload(cogito_font_medium);
+            bool weight_applied = false;
+            if (cogito_load_font_file_ex(&cogito_font_medium, medium_path, sz, cogito_font_weight_medium(), &weight_applied)) {
+              if (cogito_font_medium_variable && !weight_applied) {
+                cogito_backend->font_unload(cogito_font_medium);
+                cogito_font_medium_ready = false;
+                cogito_font_medium_variable = false;
+              } else {
+                cogito_font_medium_ready = true;
+                cogito_font_medium_loaded_size = sz;
+              }
+            } else {
+              cogito_font_medium_ready = false;
+              cogito_font_medium_variable = false;
             }
           }
         }

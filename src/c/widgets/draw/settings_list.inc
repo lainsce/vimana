@@ -18,7 +18,7 @@ case COGITO_SETTINGS_LIST: {
     title_col.a = (uint8_t)(title_col.a * 0.6f);
     int tx = n->x + 16;
     int ty = n->y + pad_t;
-    cogito_draw_text_size_node(n, tx, ty, n->text->data, title_col, ts, true);
+    cogito_draw_text_size_node(n, tx, ty, n->text->data, title_col, ts, true, false);
   }
   // Draw children with dividers
   for (size_t i = 0; i < n->len; i++) {

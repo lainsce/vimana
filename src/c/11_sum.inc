@@ -1085,14 +1085,15 @@ static bool sum_system_accent(CogitoColor* out) {
   int v = (int)((long(*)(id, SEL))objc_msgSend)(num, sel_int);
   CogitoColor c = cogito_rgba(10, 132, 255, 255);
   switch (v) {
-    case -1: c = cogito_rgba(10, 132, 255, 255); break;   // blue
-    case 0: c = cogito_rgba(142, 142, 147, 255); break;   // graphite
-    case 1: c = cogito_rgba(191, 90, 242, 255); break;    // purple
-    case 2: c = cogito_rgba(255, 55, 95, 255); break;     // pink
-    case 3: c = cogito_rgba(255, 59, 48, 255); break;     // red
-    case 4: c = cogito_rgba(255, 159, 10, 255); break;    // orange
-    case 5: c = cogito_rgba(255, 214, 10, 255); break;    // yellow
-    case 6: c = cogito_rgba(50, 215, 75, 255); break;     // green
+    case 0: c = cogito_rgba(10, 132, 255, 255); break;    // blue
+    case 1: c = cogito_rgba(10, 132, 255, 255); break;    // blue
+    case 2: c = cogito_rgba(191, 90, 242, 255); break;    // purple
+    case 3: c = cogito_rgba(255, 55, 95, 255); break;     // pink
+    case 4: c = cogito_rgba(255, 59, 48, 255); break;     // red
+    case 5: c = cogito_rgba(255, 159, 10, 255); break;    // orange
+    case 6: c = cogito_rgba(255, 214, 10, 255); break;    // yellow
+    case 7: c = cogito_rgba(50, 215, 75, 255); break;     // green
+    case 8: c = cogito_rgba(142, 142, 147, 255); break;   // graphite
     default: break;
   }
   *out = c;

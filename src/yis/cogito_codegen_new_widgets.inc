@@ -493,6 +493,21 @@
                         out->tmp = t;
                         return true;
                     }
+                    if (str_eq_c(fname, "__cogito_content_list_set_selected")) {
+                        GenExpr list, idx;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &list, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &idx, err)) { gen_expr_free(&list); return false; }
+                        w_line(&cg->w, "__cogito_content_list_set_selected(%s, %s);", list.tmp, idx.tmp);
+                        gen_expr_release_except(cg, &list, list.tmp);
+                        gen_expr_release_except(cg, &idx, idx.tmp);
+                        gen_expr_free(&list);
+                        gen_expr_free(&idx);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
                     // --- EmptyPage ---
                     if (str_eq_c(fname, "__cogito_empty_page")) {
                         GenExpr title;

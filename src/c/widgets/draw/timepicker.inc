@@ -38,7 +38,7 @@ case COGITO_TIMEPICKER: {
 
     cogito_draw_text_size_node(n, ly.header_x,
                                ly.header_y + (ly.header_h - cogito_text_height_size(header_size)) / 2,
-                               "Select time", text, header_size, false);
+                               "Select time", text, header_size, false, false);
 
     uint8_t mode = n->timepicker.mode;
     if (mode != COGITO_TIMEPICKER_MODE_MINUTE) mode = COGITO_TIMEPICKER_MODE_HOUR;
@@ -76,16 +76,16 @@ case COGITO_TIMEPICKER: {
     cogito_draw_text_size_node(n, ly.hour_x + (ly.hour_w - htw) / 2,
                                ly.hour_y + (ly.hour_h - tth) / 2,
                                hbuf, mode == COGITO_TIMEPICKER_MODE_HOUR ? active_text : inactive_text,
-                               time_size, false);
+                               time_size, false, false);
     cogito_draw_text_size_node(n, ly.minute_x + (ly.minute_w - mtw) / 2,
                                ly.minute_y + (ly.minute_h - tth) / 2,
                                mbuf, mode == COGITO_TIMEPICKER_MODE_MINUTE ? active_text : inactive_text,
-                               time_size, false);
+                               time_size, false, false);
 
     int colon_w = cogito_text_width_size_node(n, ":", time_size);
     cogito_draw_text_size_node(n, ly.colon_x - colon_w / 2,
                                ly.colon_y - tth / 2,
-                               ":", text, time_size, true);
+                               ":", text, time_size, true, false);
 
     CogitoColor seg_border = tertiary;
     if (seg_border.a > 190) seg_border.a = 190;
@@ -103,10 +103,10 @@ case COGITO_TIMEPICKER: {
     int am_th = cogito_text_height_size(header_size + 4);
     cogito_draw_text_size_node(n, ly.ampm_x + (ly.ampm_w - am_w) / 2,
                                ly.ampm_y + (ly.ampm_split_h - am_th) / 2,
-                               "AM", !is_pm ? tertiary : inactive_text, header_size + 4, true);
+                               "AM", !is_pm ? tertiary : inactive_text, header_size + 4, true, false);
     cogito_draw_text_size_node(n, ly.ampm_x + (ly.ampm_w - pm_w) / 2,
                                ly.ampm_y + ly.ampm_split_h + ((ly.ampm_h - ly.ampm_split_h) - am_th) / 2,
-                               "PM", is_pm ? tertiary : inactive_text, header_size + 4, true);
+                               "PM", is_pm ? tertiary : inactive_text, header_size + 4, true, false);
 
     if (n->timepicker.dial_visible) {
       CogitoColor dial_bg = box_bg;
@@ -129,7 +129,7 @@ case COGITO_TIMEPICKER: {
         cogito_timepicker_panel_value_point(&ly, mode, value, &px, &py);
         int tw = cogito_text_width_size_node(n, lbuf, dial_size);
         int th = cogito_text_height_size(dial_size);
-        cogito_draw_text_size_node(n, px - tw / 2, py - th / 2, lbuf, text, dial_size, false);
+        cogito_draw_text_size_node(n, px - tw / 2, py - th / 2, lbuf, text, dial_size, false, false);
       }
 
       int selected_value = (mode == COGITO_TIMEPICKER_MODE_MINUTE)
@@ -148,7 +148,7 @@ case COGITO_TIMEPICKER: {
       else snprintf(sbuf, sizeof(sbuf), "%d", cogito_timepicker_hour12_from_24(n->timepicker.hour));
       int sw = cogito_text_width_size_node(n, sbuf, header_size + 6);
       int sh = cogito_text_height_size(header_size + 6);
-      cogito_draw_text_size_node(n, hand_x - sw / 2, hand_y - sh / 2, sbuf, cogito_on_color(sel), header_size + 6, false);
+      cogito_draw_text_size_node(n, hand_x - sw / 2, hand_y - sh / 2, sbuf, cogito_on_color(sel), header_size + 6, false, false);
     }
 
     bool over_cancel = cogito_hit_rect(mx, my, ly.cancel_x, ly.cancel_y, ly.cancel_w, ly.cancel_h);
@@ -166,10 +166,10 @@ case COGITO_TIMEPICKER: {
     int ath = cogito_text_height_size(footer_size + 2);
     cogito_draw_text_size_node(n, ly.cancel_x + (ly.cancel_w - cw) / 2,
                                ly.cancel_y + (ly.cancel_h - ath) / 2,
-                               "Cancel", action, footer_size + 2, true);
+                               "Cancel", action, footer_size + 2, true, false);
     cogito_draw_text_size_node(n, ly.ok_x + (ly.ok_w - ow) / 2,
                                ly.ok_y + (ly.ok_h - ath) / 2,
-                               "OK", action, footer_size + 2, true);
+                               "OK", action, footer_size + 2, true, false);
 
     bool over_key_toggle = cogito_hit_rect(mx, my, ly.keyboard_x, ly.keyboard_y, ly.keyboard_w, ly.keyboard_h);
     bool key_down = over_key_toggle && down;

@@ -25,7 +25,7 @@ case COGITO_WELCOME_SCREEN: {
   if (n->text && n->text->data && n->text->data[0]) {
     int ts = 22;
     int tw = cogito_text_width_size_node(n, n->text->data, ts);
-    cogito_draw_text_size_node(n, cx - tw / 2, cy, n->text->data, text_color, ts, true);
+    cogito_draw_text_size_node(n, cx - tw / 2, cy, n->text->data, text_color, ts, true, false);
     cy += cogito_text_height_size(ts) + 8;
   }
 
@@ -35,7 +35,7 @@ case COGITO_WELCOME_SCREEN: {
     CogitoColor desc_col = text_color;
     desc_col.a = (uint8_t)(desc_col.a * 0.7f);
     int dw = cogito_text_width_size_node(n, n->subtitle->data, ds);
-    cogito_draw_text_size_node(n, cx - dw / 2, cy, n->subtitle->data, desc_col, ds, false);
+    cogito_draw_text_size_node(n, cx - dw / 2, cy, n->subtitle->data, desc_col, ds, false, false);
     cy += cogito_text_height_size(ds) + 16;
   }
 
@@ -62,7 +62,7 @@ case COGITO_WELCOME_SCREEN: {
     CogitoColor btn_text = cogito_on_color(action_color);
     int tx = cx - (aw - 48) / 2;
     int ty = ay + (ah - cogito_text_height_size(as)) / 2;
-    cogito_draw_text_size_node(n, tx, ty, n->action_text->data, btn_text, as, true);
+    cogito_draw_text_size_node(n, tx, ty, n->action_text->data, btn_text, as, true, false);
   }
   break;
 }

@@ -59,7 +59,7 @@ case COGITO_TABS: {
 
         int tw = cogito_text_width_size_node(n, t, size);
         int tx = sx0 + (sw - tw) / 2;
-        cogito_draw_text_size_node(n, tx, label_y, t, item_col, size, is_sel);
+        cogito_draw_text_size_node(n, tx, label_y, t, item_col, size, is_sel, false);
 
         if (is_sel) {
           int inset = 2;

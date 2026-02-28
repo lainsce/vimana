@@ -62,7 +62,7 @@ case COGITO_TREEVIEW: {
     int text_h = cogito_text_height_size(font_size);
     int text_y = row_y + (row_h - text_h) / 2;
     if (text_y < row_y) text_y = row_y;
-    cogito_draw_text_size_node(row_node, label_x, text_y, label, row_fg, font_size, false);
+    cogito_draw_text_size_node(row_node, label_x, text_y, label, row_fg, font_size, false, false);
   }
   if (clip) cogito_backend->end_scissor();
   free(rows);

@@ -281,7 +281,7 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
     }
   }
   if (n->kind == COGITO_BUTTON || n->kind == COGITO_ICONBTN ||
-      n->kind == COGITO_LIST || n->kind == COGITO_GRID ||
+      n->kind == COGITO_CONTENT_LIST || n->kind == COGITO_GRID ||
       n->kind == COGITO_TREEVIEW ||
       n->kind == COGITO_TEXTFIELD || n->kind == COGITO_TEXTVIEW ||
       n->kind == COGITO_DROPDOWN || n->kind == COGITO_SLIDER ||

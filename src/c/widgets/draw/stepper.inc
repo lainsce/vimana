@@ -72,6 +72,6 @@ case COGITO_STEPPER: {
       int text_h = cogito_text_height_size(size);
       int tx = n->x + btn_w + (center_w - text_w) / 2;
       int ty = n->y + (n->h - text_h) / 2;
-      cogito_draw_text_size_node(n, tx, ty, val_buf, text_col, size, false);
+      cogito_draw_text_size_node(n, tx, ty, val_buf, text_col, size, false, false);
       break;
     }

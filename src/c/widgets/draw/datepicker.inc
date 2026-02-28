@@ -112,7 +112,7 @@ case COGITO_DATEPICKER: {
     int year_tx = ly.year_label_x + (ly.year_label_w - year_block_w) / 2;
     int label_ty = ly.month_label_y + (ly.month_label_h - label_th) / 2;
 
-    cogito_draw_text_size_node(n, month_tx, label_ty, month_name, month_col, header_size + 1, true);
+    cogito_draw_text_size_node(n, month_tx, label_ty, month_name, month_col, header_size + 1, true, false);
     if (month_active) {
       cogito_draw_icon_fallback(n, "sf:chevron.down",
                                 month_tx + month_tw + 6,
@@ -120,7 +120,7 @@ case COGITO_DATEPICKER: {
                                 drop_icon, month_col);
     }
 
-    cogito_draw_text_size_node(n, year_tx, label_ty, year_buf, year_col, header_size + 1, true);
+    cogito_draw_text_size_node(n, year_tx, label_ty, year_buf, year_col, header_size + 1, true, false);
     if (year_active) {
       cogito_draw_icon_fallback(n, "sf:chevron.down",
                                 year_tx + year_tw + 6,
@@ -137,7 +137,7 @@ case COGITO_DATEPICKER: {
         cogito_draw_text_size_node(n,
                                    cx + (ly.cell_w - tw) / 2,
                                    ly.week_y + (ly.week_h - th) / 2,
-                                   week_days[col], text_muted, week_size, false);
+                                   week_days[col], text_muted, week_size, false, false);
       }
 
       int today_y = 0, today_m = 0, today_d = 0;
@@ -188,7 +188,7 @@ case COGITO_DATEPICKER: {
         cogito_draw_text_size_node(n,
                                    cx + (ly.cell_w - tw) / 2,
                                    cy + (ly.cell_h - th) / 2,
-                                   day_buf, day_col, day_size, false);
+                                   day_buf, day_col, day_size, false, false);
       }
 
       bool over_cancel = cogito_hit_rect(mx, my, ly.cancel_x, ly.cancel_y, ly.cancel_w, ly.cancel_h);
@@ -212,11 +212,11 @@ case COGITO_DATEPICKER: {
       cogito_draw_text_size_node(n,
                                  ly.cancel_x + (ly.cancel_w - cw) / 2,
                                  ly.cancel_y + (ly.cancel_h - act_th) / 2,
-                                 "Cancel", sel, action_size + 1, true);
+                                 "Cancel", sel, action_size + 1, true, false);
       cogito_draw_text_size_node(n,
                                  ly.ok_x + (ly.ok_w - ow) / 2,
                                  ly.ok_y + (ly.ok_h - act_th) / 2,
-                                 "OK", sel, action_size + 1, true);
+                                 "OK", sel, action_size + 1, true, false);
     } else {
       CogitoColor sep = outline;
       cogito_draw_line(ly.selector_x,
@@ -283,7 +283,7 @@ case COGITO_DATEPICKER: {
                                    label,
                                    row_text,
                                    label_size,
-                                   false);
+                                   false, false);
       }
 
       int tx = 0, ty = 0, tw = 0, th = 0, ux = 0, uy = 0, uw = 0, uh = 0;

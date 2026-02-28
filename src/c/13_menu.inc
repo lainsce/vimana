@@ -80,7 +80,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
 
   // Minimum menu width for accessibility
   if (w < 112) w = 112;
-  
+
   // Calculate menu height with gaps and potential dividers
   int section_padding = 2; // 2px padding at top and bottom of each section
   int h = menu_pad_top;
@@ -124,7 +124,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
     }
   }
   h += menu_pad_bottom;
-  
+
   cogito_menu.open = true;
   cogito_menu.owner = n;
   cogito_menu.item_h = item_h;
@@ -136,7 +136,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
   cogito_menu.h = h;
   int x = n->x;
   int y = n->y + n->h;
-  
+
   // Get window size from backend
   int win_w = 800, win_h = 600;  // Default fallback
   if (cogito_backend && cogito_backend_ready && cogito_active_window) {
@@ -144,7 +144,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
     win_w = cogito_active_window->w;
     win_h = cogito_active_window->h;
   }
-  
+
   // Check if menu would go off right edge - try repositioning left
   if (x + w > win_w - 4) {
     int left_pos = n->x - w;
@@ -157,12 +157,12 @@ static void cogito_menu_open_for(CogitoNode* n) {
       if (x < 4) x = 4;
     }
   }
-  
+
   if (w > win_w - 8) w = win_w - 8;
   if (h > win_h - 8) h = win_h - 8;
   if (x + w > win_w - 4) x = win_w - 4 - w;
   if (x < 4) x = 4;
-  
+
   // Check if menu would go off bottom - try repositioning above
   if (y + h > win_h - 4) {
     int above = n->y - h;
@@ -188,19 +188,19 @@ static int cogito_menu_hit(const CogitoMenu* menu, int x, int y) {
   if (x < menu->x || y < menu->y || x > menu->x + menu->w || y > menu->y + menu->h) return -1;
   int rel_y = y - (menu->y + menu->pad_top);
   if (rel_y < 0) return -1;
-  
+
   // Sections use gap by default; dividers are opt-in via menu_divider flag
   bool use_section = menu->owner->menu_section_after != NULL;
   bool use_divider = menu->owner->button.menu_divider;
-  int item_gap = (menu->owner->button.menu_item_gap > 0) ? menu->owner->button.menu_item_gap : 
+  int item_gap = (menu->owner->button.menu_item_gap > 0) ? menu->owner->button.menu_item_gap :
                  (cogito_theme.menu.has_item_gap ? cogito_theme.menu.item_gap : 2);
   int section_gap = 2;
   int divider_h = use_divider ? 1 : 0;
   int section_padding = 2; // 2px padding at top and bottom of each section
-  
+
   int idx = -1;
   int current_y = use_section ? section_padding : 0;  // Start after section padding if using sections
-  
+
   for (size_t i = 0; i < menu->owner->menu_len; i++) {
     if (rel_y >= current_y && rel_y < current_y + menu->item_h) {
       idx = (int)i;
@@ -220,7 +220,7 @@ static int cogito_menu_hit(const CogitoMenu* menu, int x, int y) {
       current_y += section_padding;  // Top padding of next section
     }
   }
-  
+
   if (idx < 0 || (size_t)idx >= menu->owner->menu_len) {
     return -1;
   }
@@ -231,6 +231,7 @@ static int cogito_menu_hit(const CogitoMenu* menu, int x, int y) {
 // FAB Menu popup geometry helpers.
 // Items are M-size button pills (h=56, horizontal padding=24, gap=4) stacked
 // above the FAB.  Item 0 is the bottom-most (closest to FAB).
+// Layout: icon at 12dp from left (if present), 8dp gap, text, 16dp from right edge.
 static void cogito_fab_menu_geom(CogitoNode* n, int* out_item_w, int* out_item_x) {
   if (!n) {
     if (out_item_w) *out_item_w = 0;
@@ -238,14 +239,27 @@ static void cogito_fab_menu_geom(CogitoNode* n, int* out_item_w, int* out_item_x
     return;
   }
   int font_size = cogito_font_size();
-  int pad_x = 24; // M-size button horizontal padding
-  int max_text_w = 0;
+  int icon_size = 24; // Leading icon size
+  int icon_text_gap = 8; // Gap between icon and text
+  int pad_left_no_icon = 24; // Text starts at 16dp from left when no icon
+  int pad_left_with_icon = 24; // Icon starts at 12dp from left
+  int pad_right = 24; // Text ends 16dp from right
+  int max_content_w = 0;
   for (size_t i = 0; i < n->menu_len; i++) {
     const char* text = n->menu_labels[i] ? n->menu_labels[i]->data : "";
     int tw = cogito_text_width_size(text, font_size);
-    if (tw > max_text_w) max_text_w = tw;
+    bool has_icon = n->menu_icons && n->menu_icons[i] && n->menu_icons[i]->data[0];
+    if (has_icon) {
+      // icon(24) + gap(8) + text, with icon at 12 and text ending at 16 from right
+      int w = pad_left_with_icon + icon_size + icon_text_gap + tw + pad_right;
+      if (w > max_content_w) max_content_w = w;
+    } else {
+      // text only: 16 + text + 16
+      int w = pad_left_no_icon + tw + pad_right;
+      if (w > max_content_w) max_content_w = w;
+    }
   }
-  int item_w = max_text_w + pad_x * 2;
+  int item_w = max_content_w;
   if (item_w < n->w) item_w = n->w; // at least as wide as the FAB
   int item_x = n->x + n->w - item_w; // right-align with FAB right edge
   if (out_item_w) *out_item_w = item_w;

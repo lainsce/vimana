@@ -155,7 +155,7 @@ case COGITO_TEXTFIELD: {
           if (slen > 1000) slen = 1000;
           memcpy(sbuf, t + a2, (size_t)slen);
           sbuf[slen] = '\0';
-          cogito_draw_text_size_node(n, text_x + sx2, ty, sbuf, sel_text, size, cogito_node_bold(n));
+          cogito_draw_text_size_node(n, text_x + sx2, ty, sbuf, sel_text, size, cogito_node_bold(n), false);
         }
       }
 
@@ -198,7 +198,7 @@ case COGITO_TEXTFIELD: {
           if (left_w < 0) left_w = 0;
           cogito_draw_text_ellipsis(n, helper_x, hint_y, left_w, helper_left, hint_color, hint_size, hint_bold, 0);
           int right_x = n->x + n->w - helper_pad - right_w;
-          cogito_draw_text_size_node(n, right_x, hint_y, helper_right, hint_color, hint_size, hint_bold);
+          cogito_draw_text_size_node(n, right_x, hint_y, helper_right, hint_color, hint_size, hint_bold, false);
         } else {
           cogito_draw_text_ellipsis(n, helper_x, hint_y, helper_w, helper_left, hint_color, hint_size, hint_bold, 0);
         }

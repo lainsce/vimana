@@ -8,6 +8,7 @@ static bool cogito_val_equal(YisVal a, YisVal b) {
     case EVT_STR:
     case EVT_ARR:
     case EVT_OBJ:
+    case EVT_DICT:
     case EVT_FN:
       return a.as.p == b.as.p;
   }
@@ -239,7 +240,7 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
   n->opacity_target = 1.0f;
   // Layout widgets default to 0 gap, content widgets default to 8 for natural spacing
   bool is_layout = (kind == COGITO_VSTACK || kind == COGITO_HSTACK || kind == COGITO_ZSTACK ||
-                    kind == COGITO_FIXED || kind == COGITO_SCROLLER || kind == COGITO_LIST || kind == COGITO_GRID);
+                    kind == COGITO_FIXED || kind == COGITO_SCROLLER || kind == COGITO_GRID);
   n->gap = is_layout ? 0 : 8;
   // Kind-specific non-zero defaults
   switch (kind) {
@@ -296,7 +297,6 @@ static const char* cogito_node_default_a11y_role(CogitoKind kind) {
     case COGITO_BUTTON_GROUP:
     case COGITO_VIEW_CHOOSER:
       return "radiogroup";
-    case COGITO_LIST:
     case COGITO_CONTENT_LIST:
       return "list";
     case COGITO_GRID: return "grid";
@@ -750,7 +750,7 @@ static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
 
     case COGITO_KIND_COUNT:
       break;
-  
+
   }
   w += n->padding_left + n->padding_right;
   h += n->padding_top + n->padding_bottom;

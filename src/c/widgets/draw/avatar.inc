@@ -70,7 +70,7 @@ case COGITO_AVATAR: {
     int th = cogito_text_height_size(size);
     int tx = n->x + (n->w - tw) / 2;
     int ty = n->y + (n->h - th) / 2;
-    cogito_draw_text_size_node(n, tx, ty, initials, init_color, size, true);
+    cogito_draw_text_size_node(n, tx, ty, initials, init_color, size, true, false);
   } else {
     // Empty avatar - draw person icon
     int icon_size = n->w / 2;

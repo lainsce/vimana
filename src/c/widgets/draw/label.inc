@@ -28,7 +28,7 @@ case COGITO_LABEL: {
           int tx = content_x;
           if (align == 1) tx = content_x + (content_w - tw) / 2;
           else if (align == 2) tx = content_x + (content_w - tw);
-          cogito_draw_text_size_node(n, tx, ty, n->text->data, text, size, cogito_label_bold(n));
+          cogito_draw_text_size_node(n, tx, ty, n->text->data, text, size, cogito_label_bold(n), false);
         }
       }
       break;

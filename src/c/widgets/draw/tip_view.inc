@@ -25,7 +25,7 @@ case COGITO_TIP_VIEW: {
   // Draw title
   if (n->subtitle && n->subtitle->data && n->subtitle->data[0]) {
     int ts = cogito_node_font_size(n);
-    cogito_draw_text_size_node(n, n->x + pad, cy, n->subtitle->data, text_color, ts, true);
+    cogito_draw_text_size_node(n, n->x + pad, cy, n->subtitle->data, text_color, ts, true, false);
     cy += cogito_text_height_size(ts) + 8;
   }
 
@@ -34,7 +34,7 @@ case COGITO_TIP_VIEW: {
     int ts = cogito_node_font_size(n);
     CogitoColor body_col = text_color;
     body_col.a = (uint8_t)(body_col.a * 0.8f);
-    cogito_draw_text_size_node(n, n->x + pad, cy, n->text->data, body_col, ts, false);
+    cogito_draw_text_size_node(n, n->x + pad, cy, n->text->data, body_col, ts, false, false);
     cy += cogito_text_height_size(ts) + 8;
   }
 

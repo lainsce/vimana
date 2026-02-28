@@ -220,8 +220,8 @@ static int cogito_inspector_draw_prop_kv_row(CogitoNode* win, int x, int y, int 
   int min_value_x = key_x + key_w + 10;
   if (value_x < min_value_x) value_x = min_value_x;
 
-  cogito_draw_text_size_node(win, key_x, y + row_pad, key, key_color, text_size, false);
-  cogito_draw_text_size_node(win, value_x, y + row_pad, value, value_color, text_size, false);
+  cogito_draw_text_size_node(win, key_x, y + row_pad, key, key_color, text_size, false, false);
+  cogito_draw_text_size_node(win, value_x, y + row_pad, value, value_color, text_size, false, false);
   return y + row_h + 4;
 }
 
@@ -263,7 +263,7 @@ static int cogito_inspector_draw_geometry_state_widget(CogitoNode* win, int x, i
   int wx = box_x + (box_w - tw) / 2;
   if (wx < canvas_x) wx = canvas_x;
   if (wx + tw > canvas_x + canvas_w) wx = canvas_x + canvas_w - tw;
-  cogito_draw_text_size_node(win, wx, top_y, val, muted, label_size, false);
+  cogito_draw_text_size_node(win, wx, top_y, val, muted, label_size, false, false);
 
   CogitoColor box_bg = cogito_rgba(46, 204, 113, 50);
   CogitoColor box_border = cogito_rgba(22, 120, 66, 210);
@@ -282,7 +282,7 @@ static int cogito_inspector_draw_geometry_state_widget(CogitoNode* win, int x, i
   int hw = cogito_text_width_size_node(win, val, label_size);
   int hx = x + w - hw - 2;
   int hy = box_y + (box_h - vh) / 2;
-  cogito_draw_text_size_node(win, hx, hy, val, muted, label_size, false);
+  cogito_draw_text_size_node(win, hx, hy, val, muted, label_size, false, false);
 
   int sy = box_y + box_h + 8;
   bool any = false;
@@ -292,13 +292,13 @@ static int cogito_inspector_draw_geometry_state_widget(CogitoNode* win, int x, i
     if (!flags[i]) continue;
     any = true;
     int sw = cogito_text_width_size_node(win, states[i], label_size);
-    cogito_draw_text_size_node(win, x + (w - sw) / 2, sy, states[i], text, label_size, true);
+    cogito_draw_text_size_node(win, x + (w - sw) / 2, sy, states[i], text, label_size, true, false);
     sy += label_h + 2;
   }
   if (!any) {
     const char* none = "no active state";
     int sw = cogito_text_width_size_node(win, none, label_size);
-    cogito_draw_text_size_node(win, x + (w - sw) / 2, sy, none, muted, label_size, false);
+    cogito_draw_text_size_node(win, x + (w - sw) / 2, sy, none, muted, label_size, false, false);
     sy += label_h + 2;
   }
   return sy + 2;
@@ -335,10 +335,10 @@ static void cogito_draw_inspector_panel(CogitoNode* win) {
   cogito_draw_line(px, py + header_h, px + pw, py + header_h, border);
   cogito_draw_rect(px, status_y, pw, status_h, prop_row_bg, 0);
   cogito_draw_line(px, status_y, px + pw, status_y, border);
-  cogito_draw_text_size_node(win, px + pad, status_y + (status_h - cogito_text_height_size(12)) / 2, COGITO_USER_VERSION, muted, 12, false);
+  cogito_draw_text_size_node(win, px + pad, status_y + (status_h - cogito_text_height_size(12)) / 2, COGITO_USER_VERSION, muted, 12, false, false);
 
-  cogito_draw_text_size_node(win, px + pad, py + header_h - 16, "Widget Tree", muted, 13, false);
-  cogito_draw_text_size_node(win, px + tree_w + pad, py + header_h - 16, "Selected Node", muted, 13, false);
+  cogito_draw_text_size_node(win, px + pad, py + header_h - 16, "Widget Tree", muted, 13, false, false);
+  cogito_draw_text_size_node(win, px + tree_w + pad, py + header_h - 16, "Selected Node", muted, 13, false, false);
 
   int list_y = py + header_h + 4;
   int list_h = ph - (header_h + 8);
@@ -379,7 +379,7 @@ static void cogito_draw_inspector_panel(CogitoNode* win) {
     char label[128];
     cogito_inspector_node_label(n, label, sizeof(label));
     if (label_x > px + tree_w - 60) label_x = px + tree_w - 60;
-    cogito_draw_text_size_node(win, label_x, row_y + 2, label, text, text_size, false);
+    cogito_draw_text_size_node(win, label_x, row_y + 2, label, text, text_size, false, false);
   }
   /* Vertical scrollbar for widget tree */
   if (max_scroll > 0 && list_h > 0) {

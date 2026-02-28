@@ -56,7 +56,7 @@ case COGITO_TOAST: {
         CogitoColor action_color = sel;
         int action_x = n->x + pad_x + text_w + 24;
         int action_y = ty;
-        cogito_draw_text_size_node(n, action_x, action_y, n->action_text->data, action_color, size, false);
+        cogito_draw_text_size_node(n, action_x, action_y, n->action_text->data, action_color, size, false, false);
         n->action_button_x = action_x;
         n->action_button_y = action_y;
         n->action_button_w = action_w;

@@ -1088,7 +1088,7 @@ static void cogito_draw_icon_fallback(CogitoNode* n, const char* icon, int x, in
   int th = cogito_text_height_size(fs);
   int tx = x + (size - tw) / 2;
   int ty = y + (size - th) / 2;
-  cogito_draw_text_size_node(n, tx, ty, txt, color, fs, false);
+  cogito_draw_text_size_node(n, tx, ty, txt, color, fs, false, false);
 }
 // Window decoration (traffic lights / CSD buttons)
 #include "widgets/util/traffic_lights.inc"

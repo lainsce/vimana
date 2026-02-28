@@ -40,7 +40,7 @@ case COGITO_BANNER: {
       int aw = cogito_text_width_size_node(n, n->action_text->data, size) + 24;
       avail -= aw;
     }
-    cogito_draw_text_size_node(n, content_x, content_y, n->text->data, text_color, size, false);
+    cogito_draw_text_size_node(n, content_x, content_y, n->text->data, text_color, size, false, false);
     (void)avail;
   }
 
@@ -68,7 +68,7 @@ case COGITO_BANNER: {
                        n->action_button_w, n->action_button_h, hov, 4);
     }
 
-    cogito_draw_text_size_node(n, ax, ay, n->action_text->data, action_color, size, true);
+    cogito_draw_text_size_node(n, ax, ay, n->action_text->data, action_color, size, true, false);
   }
   break;
 }

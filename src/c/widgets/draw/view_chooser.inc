@@ -29,7 +29,7 @@ case COGITO_VIEW_CHOOSER: {
     int tx = n->x + 16;
     int ty = n->y + (n->h - th) / 2;
     // Bold for title
-    cogito_draw_text_size_node(n, tx, ty, n->tab_labels[sel]->data, text_color, ts, true);
+    cogito_draw_text_size_node(n, tx, ty, n->tab_labels[sel]->data, text_color, ts, true, false);
   }
 
   int icon_size = s.has_icon_size ? s.icon_size : 22;

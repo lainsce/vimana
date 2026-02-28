@@ -81,7 +81,7 @@ case COGITO_BOTTOM_NAV: {
       int label_w = cogito_text_width_size_node(n, n->bottom_nav.labels[i]->data, label_size);
       int label_x = item_x + (item_w - label_w) / 2;
       int label_y = n->y + 12 + icon_size + 4;
-      cogito_draw_text_size_node(n, label_x, label_y, n->bottom_nav.labels[i]->data, text_color, label_size, false);
+      cogito_draw_text_size_node(n, label_x, label_y, n->bottom_nav.labels[i]->data, text_color, label_size, false, false);
     }
   }
   if (fab) cogito_draw_node(fab);

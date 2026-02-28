@@ -56,7 +56,9 @@ case COGITO_SHAPE: {
         CogitoColor pal_primary = cogito_color(0, 0, 0, 0);
         CogitoColor pal_secondary = cogito_color(0, 0, 0, 0);
         CogitoColor pal_tertiary = cogito_color(0, 0, 0, 0);
-        cogito_theme_get_state_layer_palette(&pal_primary, &pal_secondary, NULL, &pal_tertiary, NULL, NULL,
+        cogito_theme_get_state_layer_palette(&pal_primary, NULL, NULL,
+                                             &pal_secondary, NULL, NULL,
+                                             &pal_tertiary, NULL, NULL,
                                              NULL, NULL, NULL, NULL);
         if (pal_primary.a > 0) primary = pal_primary;
         if (pal_secondary.a > 0) secondary = pal_secondary;

@@ -442,15 +442,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "fab:disabled\n  background: %s29\n  color: %s52\n", ons, ons);
   cogito_sum_append(out, cap, &off,
-  "fab.primary\n  background: %s\n  color: %s\n", pc, opc);
-  cogito_sum_append(out, cap, &off,
-  "fab.secondary\n  background: %s\n  color: %s\n", secc, osecc);
-  cogito_sum_append(out, cap, &off,
-  "fab.tertiary\n  background: %s\n  color: %s\n", tertc, otertc);
-  cogito_sum_append(out, cap, &off,
-  "fab.surface\n  background: %s\n  color: %s\n", sch, p);
-  cogito_sum_append(out, cap, &off,
-  "fab\n  background: %s\n  color: %s\n  elevation: 2\n  transition: 180 standard\n", p, op);
+  "fab\n  elevation: 2\n  transition: 180 standard\n");
   cogito_sum_append(out, cap, &off,
   "fixed\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
@@ -690,15 +682,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "switch knob:checked\n  background: %s\n", surf);
   cogito_sum_append(out, cap, &off,
-  "fab-menu\n  background: %s\n  color: %s\n", p, op);
-  cogito_sum_append(out, cap, &off,
-  "fab-menu.primary\n  background: %s\n  color: %s\n", pc, opc);
-  cogito_sum_append(out, cap, &off,
-  "fab-menu.secondary\n  background: %s\n  color: %s\n", secc, osecc);
-  cogito_sum_append(out, cap, &off,
-  "fab-menu.tertiary\n  background: %s\n  color: %s\n", tertc, otertc);
-  cogito_sum_append(out, cap, &off,
-  "fab-menu.surface\n  background: %s\n  color: %s\n", sch, p);
+  "fab-menu\n  elevation: 2\n  transition: 180 standard\n");
 
   if (profile) {
     double t_end = cogito_dynsum_now();

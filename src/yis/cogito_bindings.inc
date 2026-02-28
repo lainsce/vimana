@@ -114,8 +114,9 @@
 #undef cogito_label_set_ellipsis
 #undef cogito_label_set_text
 #undef cogito_label_set_wrap
-#undef cogito_list_on_activate
-#undef cogito_list_on_select
+#undef cogito_content_list_on_activate
+#undef cogito_content_list_on_select
+#undef cogito_content_list_set_selected
 #undef cogito_load_sum_file
 #undef cogito_menu_button_new
 #undef cogito_menu_set_icon
@@ -719,7 +720,7 @@ static YisVal __cogito_fab(YisVal iconv) {
 
 // Forward declarations for FAB Menu
 struct CogitoNode* cogito_fab_menu_new(const char* icon);
-extern void cogito_fab_menu_add_item(YisVal fab_menuv, YisVal iconv, YisVal action);
+extern void cogito_fab_menu_add_item(YisVal fab_menuv, YisVal labelv, YisVal iconv, YisVal handlerv);
 
 static void __cogito_fab_set_size(YisVal fabv, YisVal sizev) {
   cogito_node* fab = cogito_node_from_val(fabv);
@@ -733,7 +734,7 @@ static void __cogito_fab_set_color(YisVal fabv, YisVal colorv) {
   cogito_node* fab = cogito_node_from_val(fabv);
   int color = (int)yis_as_int(colorv);
   if (color < 0) color = 0;
-  if (color > 3) color = 3;
+  if (color > 5) color = 5;
   cogito_fab_set_color(fab, color);
 }
 
@@ -741,8 +742,16 @@ static void __cogito_fab_menu_set_color(YisVal fabv, YisVal colorv) {
   cogito_node* fab = cogito_node_from_val(fabv);
   int color = (int)yis_as_int(colorv);
   if (color < 0) color = 0;
-  if (color > 3) color = 3;
+  if (color > 2) color = 2;
   cogito_fab_menu_set_color(fab, color);
+}
+
+static void __cogito_fab_menu_set_size(YisVal fabv, YisVal sizev) {
+  cogito_node* fab = cogito_node_from_val(fabv);
+  int size = (int)yis_as_int(sizev);
+  if (size < 0) size = 0;
+  if (size > 2) size = 2;
+  cogito_fab_menu_set_size(fab, size);
 }
 
 static void __cogito_fab_set_extended(YisVal fabv, YisVal extendedv, YisVal labelv) {
@@ -774,9 +783,9 @@ static YisVal __cogito_fab_menu(YisVal iconv) {
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
-static void __cogito_fab_menu_add_item(YisVal fabv, YisVal iconv, YisVal actionv) {
+static void __cogito_fab_menu_add_item(YisVal fabv, YisVal labelv, YisVal iconv, YisVal handlerv) {
   cogito_node* node = cogito_node_from_val(fabv);
-  cogito_fab_menu_add_item(YV_OBJ(node), iconv, actionv);
+  cogito_fab_menu_add_item(YV_OBJ(node), labelv, iconv, handlerv);
 }
 
 static YisVal __cogito_chip(YisVal textv) {
@@ -913,7 +922,7 @@ static void __cogito_card_add_overflow(YisVal cardv, YisVal labelv, YisVal handl
   yis_release_val(YV_STR(icon_str));
   // Add to card using public API
   cogito_node_add(card, btn);
-  
+
   YisStr* label_tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &label_tmp);
   CogitoMenuHandler* mh = handler.tag == EVT_FN ? cogito_menu_handler_new(handler) : NULL;
@@ -1240,6 +1249,10 @@ static YisVal __cogito_shape_get_vertex_y(YisVal shapev, YisVal idxv) {
 static YisVal __cogito_content_list(void) {
   cogito_node* n = cogito_content_list_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+static void __cogito_content_list_set_selected(YisVal listv, YisVal idxv) {
+  cogito_node* n = cogito_node_from_val(listv);
+  cogito_content_list_set_selected(n, (int)yis_as_int(idxv));
 }
 // --- EmptyPage ---
 static YisVal __cogito_empty_page(YisVal titlev) {
@@ -2009,7 +2022,7 @@ static void __cogito_carousel_item_set_valign(YisVal itemv, YisVal alignv) {
 }
 
 static YisVal __cogito_list(void) {
-  return cogito_wrap_node(cogito_node_new(COGITO_NODE_LIST), COGITO_HANDLE_NODE);
+  return cogito_wrap_node(cogito_content_list_new(), COGITO_HANDLE_NODE);
 }
 
 static YisVal __cogito_grid(YisVal cols) {
@@ -3010,28 +3023,28 @@ static void __cogito_toast_set_action(YisVal tv, YisVal textv, YisVal handler) {
   if (tmp) yis_release_val(YV_STR(tmp));
 }
 
-static void __cogito_list_on_select(YisVal listv, YisVal handler) {
+static void __cogito_content_list_on_select(YisVal listv, YisVal handler) {
   cogito_node* list = cogito_node_from_val(listv);
   CogitoHandle* h = (CogitoHandle*)listv.as.p;
   if (handler.tag != EVT_FN) {
     cogito_set_handler(h, &h->on_select, handler);
-    cogito_list_on_select(list, NULL, NULL);
+    cogito_content_list_on_select(list, NULL, NULL);
     return;
   }
   cogito_set_handler(h, &h->on_select, handler);
-  cogito_list_on_select(list, cogito_cb_select, h);
+  cogito_content_list_on_select(list, cogito_cb_select, h);
 }
 
-static void __cogito_list_on_activate(YisVal listv, YisVal handler) {
+static void __cogito_content_list_on_activate(YisVal listv, YisVal handler) {
   cogito_node* list = cogito_node_from_val(listv);
   CogitoHandle* h = (CogitoHandle*)listv.as.p;
   if (handler.tag != EVT_FN) {
     cogito_set_handler(h, &h->on_activate, handler);
-    cogito_list_on_activate(list, NULL, NULL);
+    cogito_content_list_on_activate(list, NULL, NULL);
     return;
   }
   cogito_set_handler(h, &h->on_activate, handler);
-  cogito_list_on_activate(list, cogito_cb_activate, h);
+  cogito_content_list_on_activate(list, cogito_cb_activate, h);
 }
 
 static void __cogito_grid_on_select(YisVal gridv, YisVal handler) {
@@ -3382,8 +3395,8 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_switch_get_checked __cogito_switch_get_checked
 #define cogito_checkbox_on_change __cogito_checkbox_on_change
 #define cogito_switch_on_change __cogito_switch_on_change
-#define cogito_list_on_select __cogito_list_on_select
-#define cogito_list_on_activate __cogito_list_on_activate
+#define cogito_content_list_on_select __cogito_list_on_select
+#define cogito_content_list_on_activate __cogito_list_on_activate
 #define cogito_grid_on_select __cogito_grid_on_select
 #define cogito_grid_on_activate __cogito_grid_on_activate
 void __cogito_button_on_click(YisVal btn, YisVal handler);
@@ -3412,6 +3425,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_fab_menu_new __cogito_fab_menu
 #define cogito_fab_menu_add_item __cogito_fab_menu_add_item
 #define cogito_fab_menu_set_color __cogito_fab_menu_set_color
+#define cogito_fab_menu_set_size __cogito_fab_menu_set_size
 #define cogito_chip_new __cogito_chip
 #define cogito_chip_set_selected __cogito_chip_set_selected
 #define cogito_chip_get_selected __cogito_chip_get_selected
@@ -3481,6 +3495,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_shape_get_vertex_x __cogito_shape_get_vertex_x
 #define cogito_shape_get_vertex_y __cogito_shape_get_vertex_y
 #define cogito_content_list_new __cogito_content_list
+#define cogito_content_list_set_selected __cogito_content_list_set_selected
 #define cogito_empty_page_new __cogito_empty_page
 #define cogito_empty_page_set_description __cogito_empty_page_set_description
 #define cogito_empty_page_set_icon __cogito_empty_page_set_icon

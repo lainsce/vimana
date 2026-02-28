@@ -61,14 +61,14 @@ case COGITO_CARD: {
 
   // Title
   if (n->text && n->text->data && n->text->data[0]) {
-    cogito_draw_text_size_node(n, cx, cy, n->text->data, text_color, sz, true);
+    cogito_draw_text_size_node(n, cx, cy, n->text->data, text_color, sz, true, false);
     cy += cogito_text_height_size(sz) + n->gap;
   }
   // Subtitle (body-medium 14dp, slightly dimmed)
   if (n->subtitle && n->subtitle->data && n->subtitle->data[0]) {
     CogitoColor sub_col = text_color;
     sub_col.a = (uint8_t)(sub_col.a * 0.7f);
-    cogito_draw_text_size_node(n, cx, cy, n->subtitle->data, sub_col, 14, false);
+    cogito_draw_text_size_node(n, cx, cy, n->subtitle->data, sub_col, 14, false, false);
   }
 
   // Children (skip overflow_btn — drawn last on top)

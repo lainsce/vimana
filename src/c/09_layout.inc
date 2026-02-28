@@ -269,10 +269,6 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
       cogito_layout_hstack(n, x, y);
       break;
 
-    case COGITO_LIST:
-      cogito_layout_list(n, x, y);
-      break;
-
     case COGITO_GRID:
       cogito_layout_grid(n, x, y);
       break;

@@ -34,8 +34,44 @@ case COGITO_FAB: {
     ext_lpad = 26; ext_gap = 12;
   }
 
-  CogitoColor bg = s.has_bg ? s.bg : n->bg;
-  CogitoColor text_color = s.has_text ? s.text : n->text_color;
+  // Determine colors based on variant
+  // variant: 0=Primary, 1=Secondary, 2=Tertiary, 3=PrimaryContainer, 4=SecondaryContainer, 5=TertiaryContainer
+  CogitoColor bg, text_color;
+  if (!in_nav_rail) {
+    switch (n->fab.variant) {
+      case 0: // Primary
+        bg = cogito_cached_primary;
+        text_color = cogito_cached_on_primary;
+        break;
+      case 1: // Secondary
+        bg = cogito_cached_secondary;
+        text_color = cogito_cached_on_secondary;
+        break;
+      case 2: // Tertiary
+        bg = cogito_cached_tertiary;
+        text_color = cogito_cached_on_tertiary;
+        break;
+      case 3: // PrimaryContainer
+        bg = cogito_cached_primary_container;
+        text_color = cogito_cached_on_primary_container;
+        break;
+      case 4: // SecondaryContainer
+        bg = cogito_cached_secondary_container;
+        text_color = cogito_cached_on_secondary_container;
+        break;
+      case 5: // TertiaryContainer
+        bg = cogito_cached_tertiary_container;
+        text_color = cogito_cached_on_tertiary_container;
+        break;
+      default:
+        bg = s.has_bg ? s.bg : n->bg;
+        text_color = s.has_text ? s.text : n->text_color;
+        break;
+    }
+  } else {
+    bg = s.has_bg ? s.bg : n->bg;
+    text_color = s.has_text ? s.text : n->text_color;
+  }
   int radius = fab_radius;
   if (in_nav_rail) {
     bg = rail_style.has_selection ? rail_style.selection : n->parent->selection_color;
@@ -100,7 +136,7 @@ case COGITO_FAB: {
     int text_h = cogito_text_height_size(size);
     int label_x = n->x + ext_lpad + fab_icon + ext_gap;
     int label_y = n->y + (n->h - text_h) / 2;
-    cogito_draw_text_size_node(n, label_x, label_y, label, text_color, size, false);
+    cogito_draw_text_size_node(n, label_x, label_y, label, text_color, size, false, true);
   }
   break;
 }

@@ -64,7 +64,7 @@ case COGITO_BOTTOM_SHEET: {
     int th = cogito_text_height_size(size);
     int gap = n->gap > 0 ? n->gap : 8;
     cogito_draw_text_size_node(n, n->x + pad_l, content_y + pad_t,
-                               n->text->data, text_color, size, true);
+                               n->text->data, text_color, size, true, false);
     (void)th;
     (void)gap;
   }

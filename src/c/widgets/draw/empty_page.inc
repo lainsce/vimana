@@ -27,7 +27,7 @@ case COGITO_EMPTY_PAGE: {
     if (ts < 18) ts = 18;
     int tw = cogito_text_width_size_node(n, n->text->data, ts);
     int tx = cx - tw / 2;
-    cogito_draw_text_size_node(n, tx, cy_cursor, n->text->data, text_color, ts, true);
+    cogito_draw_text_size_node(n, tx, cy_cursor, n->text->data, text_color, ts, true, false);
     cy_cursor += cogito_text_height_size(ts) + 6;
   }
 
@@ -38,7 +38,7 @@ case COGITO_EMPTY_PAGE: {
     desc_col.a = (uint8_t)(desc_col.a * 0.7f);
     int dw = cogito_text_width_size_node(n, n->subtitle->data, ds);
     int dx = cx - dw / 2;
-    cogito_draw_text_size_node(n, dx, cy_cursor, n->subtitle->data, desc_col, ds, false);
+    cogito_draw_text_size_node(n, dx, cy_cursor, n->subtitle->data, desc_col, ds, false, false);
     cy_cursor += cogito_text_height_size(ds) + 12;
   }
 
@@ -63,7 +63,7 @@ case COGITO_EMPTY_PAGE: {
 
     int tx = cx - (aw - 32) / 2;
     int ty = ay + (ah - cogito_text_height_size(as)) / 2;
-    cogito_draw_text_size_node(n, tx, ty, n->action_text->data, action_color, as, true);
+    cogito_draw_text_size_node(n, tx, ty, n->action_text->data, action_color, as, true, false);
   }
   break;
 }

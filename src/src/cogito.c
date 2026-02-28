@@ -16,6 +16,7 @@
 
 static const char *cogito_font_path_active = NULL;
 static const char *cogito_font_bold_path_active = NULL;
+static const char *cogito_font_medium_path_active = NULL;
 
 #define yis_obj_new cogito_compat_obj_new
 #define yis_retain_val cogito_compat_retain_val
@@ -182,9 +183,6 @@ static const char *cogito_font_bold_path_active = NULL;
 #define cogito_label_set_ellipsis cogito_label_set_ellipsis_yis
 #define cogito_label_set_text cogito_label_set_text_yis
 #define cogito_label_set_wrap cogito_label_set_wrap_yis
-#define cogito_list_new cogito_list_new_yis
-#define cogito_list_on_activate cogito_list_on_activate_yis
-#define cogito_list_on_select cogito_list_on_select_yis
 #define cogito_load_sum cogito_load_sum_yis
 #define cogito_load_sum_file cogito_load_sum_file_yis
 #define cogito_nav_rail_get_selected cogito_nav_rail_get_selected_yis
@@ -314,6 +312,9 @@ static const char *cogito_font_bold_path_active = NULL;
 #define cogito_switchbar_set_checked cogito_switchbar_set_checked_yis
 #define cogito_switchbar_on_change cogito_switchbar_on_change_yis
 #define cogito_content_list_new cogito_content_list_new_yis
+#define cogito_content_list_set_selected cogito_content_list_set_selected_yis
+#define cogito_content_list_on_select cogito_content_list_on_select_yis
+#define cogito_content_list_on_activate cogito_content_list_on_activate_yis
 #define cogito_empty_page_new cogito_empty_page_new_yis
 #define cogito_empty_page_set_description cogito_empty_page_set_description_yis
 #define cogito_empty_page_set_icon cogito_empty_page_set_icon_yis
@@ -349,6 +350,7 @@ static const char *cogito_font_bold_path_active = NULL;
 #define cogito_split_button_set_variant cogito_split_button_set_variant_yis
 #define cogito_fab_menu_new cogito_fab_menu_new_yis
 #define cogito_fab_menu_set_color cogito_fab_menu_set_color_yis
+#define cogito_fab_menu_set_size cogito_fab_menu_set_size_yis
 
 
 // Internal engine (same order as previous runtime include).
@@ -519,9 +521,6 @@ static const char *cogito_font_bold_path_active = NULL;
 #undef cogito_label_set_ellipsis
 #undef cogito_label_set_text
 #undef cogito_label_set_wrap
-#undef cogito_list_new
-#undef cogito_list_on_activate
-#undef cogito_list_on_select
 #undef cogito_load_sum
 #undef cogito_load_sum_file
 #undef cogito_nav_rail_get_selected
@@ -648,6 +647,9 @@ static const char *cogito_font_bold_path_active = NULL;
 #undef cogito_switchbar_set_checked
 #undef cogito_switchbar_on_change
 #undef cogito_content_list_new
+#undef cogito_content_list_set_selected
+#undef cogito_content_list_on_select
+#undef cogito_content_list_on_activate
 #undef cogito_empty_page_new
 #undef cogito_empty_page_set_description
 #undef cogito_empty_page_set_icon
@@ -680,6 +682,7 @@ static const char *cogito_font_bold_path_active = NULL;
 #undef cogito_split_button_set_variant
 #undef cogito_fab_menu_new
 #undef cogito_fab_menu_set_color
+#undef cogito_fab_menu_set_size
 
 // Public C API implementations for node hierarchy (use internal functions)
 cogito_node *cogito_node_get_parent(cogito_node *node) {
@@ -1172,8 +1175,6 @@ static CogitoKind cogito_kind_from_public(cogito_node_kind kind) {
     return COGITO_FIXED;
   case COGITO_NODE_SCROLLER:
     return COGITO_SCROLLER;
-  case COGITO_NODE_LIST:
-    return COGITO_LIST;
   case COGITO_NODE_GRID:
     return COGITO_GRID;
   case COGITO_NODE_LABEL:
@@ -2159,10 +2160,6 @@ cogito_node *cogito_fixed_new(void) {
 
 cogito_node *cogito_scroller_new(void) {
   return cogito_from_val(cogito_scroller_new_yis());
-}
-
-cogito_node *cogito_list_new(void) {
-  return cogito_from_val(cogito_list_new_yis());
 }
 
 void cogito_label_set_class(cogito_node *label, const char *cls) {
@@ -3378,11 +3375,19 @@ void cogito_colorpicker_on_change(cogito_node *colorpicker, cogito_node_fn fn,
   yis_release_val(YV_FN(wrap));
 }
 
-void cogito_list_on_select(cogito_node *list, cogito_index_fn fn, void *user) {
+void cogito_content_list_set_selected(cogito_node *list, int idx) {
+  if (!list) return;
+  CogitoNode *n = (CogitoNode *)list;
+  if (idx < 0) idx = -1;
+  if (n->len > 0 && idx >= (int)n->len) idx = (int)n->len - 1;
+  n->selected = idx;
+}
+
+void cogito_content_list_on_select(cogito_node *list, cogito_index_fn fn, void *user) {
   if (!list)
     return;
   if (!fn) {
-    cogito_list_on_select_yis(YV_OBJ(list), YV_NULLV);
+    cogito_content_list_on_select_yis(YV_OBJ(list), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -3390,16 +3395,16 @@ void cogito_list_on_select(cogito_node *list, cogito_index_fn fn, void *user) {
   env->user = user;
   env->node = (CogitoNode *)list;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_list_on_select_yis(YV_OBJ(list), YV_FN(wrap));
+  cogito_content_list_on_select_yis(YV_OBJ(list), YV_FN(wrap));
   yis_release_val(YV_FN(wrap));
 }
 
-void cogito_list_on_activate(cogito_node *list, cogito_index_fn fn,
+void cogito_content_list_on_activate(cogito_node *list, cogito_index_fn fn,
                              void *user) {
   if (!list)
     return;
   if (!fn) {
-    cogito_list_on_activate_yis(YV_OBJ(list), YV_NULLV);
+    cogito_content_list_on_activate_yis(YV_OBJ(list), YV_NULLV);
     return;
   }
   CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
@@ -3407,7 +3412,7 @@ void cogito_list_on_activate(cogito_node *list, cogito_index_fn fn,
   env->user = user;
   env->node = (CogitoNode *)list;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
-  cogito_list_on_activate_yis(YV_OBJ(list), YV_FN(wrap));
+  cogito_content_list_on_activate_yis(YV_OBJ(list), YV_FN(wrap));
   yis_release_val(YV_FN(wrap));
 }
 
@@ -3501,6 +3506,11 @@ cogito_node *cogito_fab_menu_new(const char *icon) {
 void cogito_fab_menu_set_color(cogito_node *fabm, int color) {
   if (!fabm) return;
   cogito_fab_menu_set_color_yis(YV_OBJ(fabm), YV_INT(color));
+}
+
+void cogito_fab_menu_set_size(cogito_node *fabm, int size) {
+  if (!fabm) return;
+  cogito_fab_menu_set_size_yis(YV_OBJ(fabm), YV_INT(size));
 }
 
 void cogito_chip_set_selected(cogito_node *chip, bool selected) {

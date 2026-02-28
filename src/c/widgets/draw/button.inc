@@ -202,7 +202,7 @@ case COGITO_BUTTON: {
         int th = cogito_text_height_size(size);
         int tx = n->x + (n->w - tw) / 2;
         int ty = n->y + (n->h - th) / 2;
-        cogito_draw_text_size_node(n, tx, ty, n->text->data, text, size, cogito_node_bold(n));
+        cogito_draw_text_size_node(n, tx, ty, n->text->data, text, size, false, true);
       }
       break;
     }
