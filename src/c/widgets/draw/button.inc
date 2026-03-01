@@ -11,6 +11,7 @@ case COGITO_BUTTON: {
       bool has_custom_class = n->class_name && n->class_name->data && n->class_name->data[0];
       
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+      CogitoStyle s_base = cogito_theme_resolve_node_state(n, false, false);
       if (n->parent && n->parent->kind == COGITO_APPBAR) {
         // Use cached pointer position instead of querying backend
         int mx = 0;
@@ -31,7 +32,7 @@ case COGITO_BUTTON: {
       CogitoColor text = n->text_color;
       int border_w = n->border_width;
       int radius = n->border_radius;
-      if (s.has_bg) bg = s.bg;
+      if (s_base.has_bg) bg = s_base.bg;
       if (s.has_border) border = s.border;
       if (s.has_border_width) border_w = s.border_width;
       if (s.has_radius) radius = s.radius;
@@ -108,6 +109,8 @@ case COGITO_BUTTON: {
         }
       }
 
+      CogitoColor base_bg_for_layer = bg;
+
       // Animate colors
       cogito_anim_apply(n, &s, &bg, &text, &border, NULL);
       
@@ -159,10 +162,17 @@ case COGITO_BUTTON: {
           cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
         }
         
-        // State layer: hover=8%, active/pressed=12%.
+        // State layer: draw as an overlay between base background and content.
         if (active || hover) {
           CogitoColor state = cogito_node_state_layer_seed(n);
-          state.a = active ? 31 : 20;
+          bool has_style_layer = false;
+          if (s.has_bg && !(s.bg.r == base_bg_for_layer.r && s.bg.g == base_bg_for_layer.g && s.bg.b == base_bg_for_layer.b && s.bg.a == base_bg_for_layer.a)) {
+            state = s.bg;
+            has_style_layer = true;
+          }
+          if (!has_style_layer) {
+            state.a = active ? 28 : 20;
+          }
           if (in_buttongroup) {
             cogito_draw_rect_radii_aa(n->x, n->y, n->w, n->h, state, rtl, rtr, rbr, rbl);
           } else {

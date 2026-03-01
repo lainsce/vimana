@@ -1438,6 +1438,15 @@ shape_stroke:
   }
 }
 
+static void cogito_draw_offset_subtree(CogitoNode* n, int dx, int dy) {
+  if (!n || (dx == 0 && dy == 0)) return;
+  n->x += dx;
+  n->y += dy;
+  for (size_t i = 0; i < n->len; i++) {
+    cogito_draw_offset_subtree(n->children[i], dx, dy);
+  }
+}
+
 static void cogito_draw_node(CogitoNode* n) {
   if (!n) return;
   if (cogito_draw_count_enabled) cogito_draw_count_nodes++;

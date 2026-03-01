@@ -18,7 +18,7 @@ case COGITO_BOTTOM_SHEET: {
     if (scrim.a == 0) {
       CogitoStyle ws = cogito_theme_resolve(COGITO_WINDOW);
       scrim = ws.has_bg ? ws.bg : n->bg;
-      scrim.a = 110;
+      scrim.a = 82;
     }
     CogitoNode* win = cogito_node_window(n);
     bool window_overlay = (host->kind == COGITO_WINDOW);
@@ -29,15 +29,6 @@ case COGITO_BOTTOM_SHEET: {
     int sy = window_overlay ? 0 : host->y;
     int sw = window_overlay && win ? win->w : host->w;
     int sh = window_overlay && win ? win->h : host->h;
-    int cover_h = window_overlay && win ? win->h : host->h;
-    if (cover_h > 0) {
-      float cover = (float)n->h / (float)cover_h;
-      if (cover > 0.85f) {
-        int boosted = 110 + (int)lroundf((cover - 0.85f) / 0.15f * 90.0f);
-        if (boosted > 220) boosted = 220;
-        if (scrim.a < boosted) scrim.a = (uint8_t)boosted;
-      }
-    }
     if (sw > 0 && sh > 0) {
       cogito_draw_rect(sx, sy, sw, sh, scrim, 0);
     }

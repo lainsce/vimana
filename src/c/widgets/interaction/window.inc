@@ -101,6 +101,7 @@ static void cogito_window_set_dialog(YisVal winv, YisVal dialogv) {
   }
   cogito_dialog_slot_show(YV_OBJ(win->dialog), dialogv);
   win->dialog_open = true;
+  cogito_overlay_anim_start(dlg, 0.0f, 1.0f, 0.22);
 }
 static void cogito_window_clear_dialog(YisVal winv) {
   if (winv.tag != EVT_OBJ) yis_trap("cogito.window_clear_dialog expects window");
@@ -119,6 +120,9 @@ static void cogito_window_clear_dialog(YisVal winv) {
   }
   if (win->dialog && win->dialog->kind == COGITO_DIALOG_SLOT) {
     cogito_dialog_slot_clear(YV_OBJ(win->dialog));
+  } else if (win->dialog) {
+    float from = cogito_overlay_anim_value(win->dialog, true);
+    cogito_overlay_anim_start(win->dialog, from, 0.0f, 0.18);
   }
   win->dialog_open = false;
   cogito_overlay_focus_restore(win);
@@ -145,6 +149,8 @@ static void cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
   win->side_sheet_node = ss;
   win->side_sheet_node->parent = win;
   win->side_sheet_open = true;
+  win->side_sheet_closing = false;
+  cogito_overlay_anim_start(ss, 0.0f, 1.0f, 0.24);
   yis_retain_val(YV_OBJ(win->side_sheet_node));
   cogito_apply_style_tree(ss);
   cogito_window_relayout(win);
@@ -153,6 +159,14 @@ static void cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
 static void cogito_window_clear_side_sheet(YisVal winv) {
   if (winv.tag != EVT_OBJ) yis_trap("cogito.window_clear_side_sheet expects window");
   CogitoNode* win = (CogitoNode*)winv.as.p;
+  if (!win->side_sheet_node) {
+    win->side_sheet_open = false;
+    win->side_sheet_closing = false;
+    return;
+  }
+  float from = cogito_overlay_anim_value(win->side_sheet_node, true);
+  cogito_overlay_anim_start(win->side_sheet_node, from, 0.0f, 0.20);
   win->side_sheet_open = false;
+  win->side_sheet_closing = true;
   cogito_window_relayout(win);
 }

@@ -2,8 +2,9 @@ case COGITO_STEPPER: {
       bool hover = false, active = false;
       cogito_node_hover_state(n, &hover, &active);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+      CogitoStyle s_base = cogito_theme_resolve_node_state(n, false, false);
 
-      CogitoColor bg = s.has_bg ? s.bg : n->bg;
+      CogitoColor bg = s_base.has_bg ? s_base.bg : n->bg;
       CogitoColor text_col = s.has_text ? s.text : n->text_color;
       CogitoColor border_col = s.has_border ? s.border : n->border_color;
       int border_w = s.has_border_width ? s.border_width : 1;
@@ -15,6 +16,15 @@ case COGITO_STEPPER: {
 
       // Draw outer capsule
       cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
+      if (hover || active) {
+        CogitoColor state_layer = cogito_node_state_layer_seed(n);
+        if (s.has_bg && !(s.bg.r == bg.r && s.bg.g == bg.g && s.bg.b == bg.b && s.bg.a == bg.a)) {
+          state_layer = s.bg;
+        } else {
+          state_layer.a = active ? 28 : 20;
+        }
+        cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, state_layer, radius);
+      }
       if (border_w > 0) {
         cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, border_col, radius, border_w);
       }

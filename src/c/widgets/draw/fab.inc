@@ -2,6 +2,7 @@ case COGITO_FAB: {
   bool hover = false, active = false;
   cogito_node_hover_state(n, &hover, &active);
   CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+  CogitoStyle s_base = cogito_theme_resolve_node_state(n, false, false);
   bool in_nav_rail = (n->parent && n->parent->kind == COGITO_NAV_RAIL);
   bool nav_rail_expanded = in_nav_rail && n->parent->nav_rail.expanded;
   bool effective_extended = n->fab.extended || nav_rail_expanded;
@@ -99,10 +100,18 @@ case COGITO_FAB: {
   // Draw elevated rounded background
   cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
 
-  // State layer for hover/press
+  // State layer for hover/press (between base background and contents)
   if (hover || active) {
     CogitoColor state_layer = cogito_node_state_layer_seed(n);
-    state_layer.a = active ? 31 : 20;
+    bool has_style_layer = false;
+    CogitoColor base_style_bg = s_base.has_bg ? s_base.bg : n->bg;
+    if (s.has_bg && !(s.bg.r == base_style_bg.r && s.bg.g == base_style_bg.g && s.bg.b == base_style_bg.b && s.bg.a == base_style_bg.a)) {
+      state_layer = s.bg;
+      has_style_layer = true;
+    }
+    if (!has_style_layer) {
+      state_layer.a = active ? 28 : 20;
+    }
     cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, state_layer, radius);
   }
 

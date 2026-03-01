@@ -3,6 +3,7 @@ case COGITO_DIALOG:
       h = 200;
       {
         CogitoStyle ds = cogito_theme_resolve_node(n);
+        bool has_title = (n->text && n->text->data && n->text->data[0]);
         int pad_l = 24;
         int pad_t = 24;
         int pad_r = 24;
@@ -25,11 +26,11 @@ case COGITO_DIALOG:
           if (ds.has_padding_bottom) pad_b = ds.padding_bottom;
         }
         int title_size = 20;
-        int title_h = cogito_text_height_size(title_size);
-        int title_w = (n->text && n->text->data && n->text->data[0]) ? cogito_text_width_size_node(n, n->text->data, title_size) : 0;
+        int title_h = has_title ? cogito_text_height_size(title_size) : 0;
+        int title_w = has_title ? cogito_text_width_size_node(n, n->text->data, title_size) : 0;
         int close_box = 24;
-        int header_h = title_h > close_box ? title_h : close_box;
-        int header_gap = 16;
+        int header_h = has_title ? (title_h > close_box ? title_h : close_box) : 0;
+        int header_gap = has_title ? 16 : 0;
         int section_gap = 24;
         int cw = 0;
         int ch = 0;
@@ -43,10 +44,12 @@ case COGITO_DIALOG:
           ch += th;
           if (i + 1 < n->len) ch += section_gap;
         }
-        int min_header_total_w = 24 + title_w + 12 + close_box + 24;
-        int min_header_cw = min_header_total_w - pad_l - pad_r;
-        if (min_header_cw < 0) min_header_cw = 0;
-        if (cw < min_header_cw) cw = min_header_cw;
+        if (has_title) {
+          int min_header_total_w = 24 + title_w + 12 + close_box + 24;
+          int min_header_cw = min_header_total_w - pad_l - pad_r;
+          if (min_header_cw < 0) min_header_cw = 0;
+          if (cw < min_header_cw) cw = min_header_cw;
+        }
         w = pad_l + cw + pad_r;
         h = pad_t + header_h + header_gap + ch + pad_b;
         if (w < 280) w = 280;

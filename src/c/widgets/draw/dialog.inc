@@ -3,6 +3,7 @@ case COGITO_DIALOG: {
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+  bool has_title = (n->text && n->text->data && n->text->data[0]);
       if (s.has_bg)           { n->bg = s.bg;                       n->bg_set = true;
   }
       if (s.has_border)       { n->border_color = s.border;          n->border_color_set = true;
@@ -33,23 +34,21 @@ case COGITO_DIALOG: {
       int pad_l = COGITO_DIALOG_HEADER_INSET;
       int pad_t = COGITO_DIALOG_HEADER_INSET;
       int title_size = 20;
-      int title_h = cogito_text_height_size(title_size);
+      int title_h = has_title ? cogito_text_height_size(title_size) : 0;
       int cx = 0, cy = 0, cw = 0, ch = 0;
       cogito_dialog_close_rect(n, &cx, &cy, &cw, &ch);
-      int header_h = title_h > ch ? title_h : ch;
+      int header_h = has_title ? (title_h > ch ? title_h : ch) : 0;
       int section_pad_l = 24;
       int section_pad_r = 24;
       CogitoColor title_color = s.has_text ? s.text : n->text_color;
 
       // Draw title in header row.
-      if (n->text && n->text->data[
-    0
-  ]) {
+      if (has_title) {
         int ty = n->y + pad_t + (header_h - title_h) / 2;
         cogito_draw_text_size_node(n, n->x + pad_l, ty, n->text->data, title_color, title_size, false, false);
   }
   // Draw close button in top-right.
-      if (cw > 0 && ch > 0) {
+      if (has_title && cw > 0 && ch > 0) {
         int mx = 0, my = 0;
         bool down = false;
         (void)cogito_pointer_query(&mx, &my, &down, NULL);

@@ -8,6 +8,7 @@ case COGITO_ICONBTN: {
       bool is_selected = in_buttongroup && cogito_buttongroup_child_is_selected(n);
 
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+  CogitoStyle s_base = cogito_theme_resolve_node_state(n, false, false);
       bool has_custom_class = n->class_name && n->class_name->data && n->class_name->data[0];
       bool iconic_class = n->class_name && n->class_name->data &&
                           strstr(n->class_name->data, "iconic") != NULL;
@@ -38,7 +39,7 @@ case COGITO_ICONBTN: {
       CogitoColor icon_color = n->text_color;
       int border_w = n->border_width;
       int radius = n->border_radius;
-      if (s.has_bg) bg = s.bg;
+      if (s_base.has_bg) bg = s_base.bg;
       if (in_appbar_or_toolbar && !is_iconic_variant) {
         bool down = over && down_state;
         if (over || down) {
@@ -204,6 +205,8 @@ case COGITO_ICONBTN: {
         }
       }
 
+      CogitoColor base_bg_for_layer = bg;
+
       cogito_anim_apply(n, &s, &bg, &icon_color, &border, NULL);
 
       // Get corner radii for ButtonGroup if applicable
@@ -309,7 +312,14 @@ case COGITO_ICONBTN: {
 
       if (active || hover) {
         CogitoColor state = cogito_node_state_layer_seed(n);
-        state.a = active ? 31 : 20;
+        bool has_style_layer = false;
+        if (s.has_bg && !(s.bg.r == base_bg_for_layer.r && s.bg.g == base_bg_for_layer.g && s.bg.b == base_bg_for_layer.b && s.bg.a == base_bg_for_layer.a)) {
+          state = s.bg;
+          has_style_layer = true;
+        }
+        if (!has_style_layer) {
+          state.a = active ? 28 : 20;
+        }
         if (in_buttongroup) {
           cogito_draw_rect_radii_aa(n->x, n->y, n->w, n->h, state, rtl, rtr, rbr, rbl);
         } else {

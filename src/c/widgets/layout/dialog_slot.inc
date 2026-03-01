@@ -1,5 +1,5 @@
 case COGITO_DIALOG_SLOT:
-      if (n->dialog && n->dialog_open) {
+      if (n->dialog && (n->dialog_open || n->dialog->overlay_anim_active)) {
         if (n->dialog->kind == COGITO_WELCOME_SCREEN) {
           CogitoNode* win = cogito_node_window(n);
           if (win) {
@@ -29,8 +29,9 @@ case COGITO_DIALOG_SLOT:
         int base_y = win ? 0 : y;
         int base_w = win ? win->w : w;
         int base_h = win ? win->h : h;
+        float p = cogito_overlay_anim_value(n->dialog, n->dialog_open);
         int dx = base_x + (base_w - dw) / 2;
-        int dy = base_y + (base_h - dh) / 2;
+        int dy = base_y + (base_h - dh) / 2 - (int)lroundf((1.0f - p) * 24.0f);
         cogito_layout_node(n->dialog, dx, dy, dw, dh);
       }
       break;

@@ -1,5 +1,6 @@
 case COGITO_DIALOG: {
       CogitoStyle s = cogito_theme_resolve_node(n);
+  bool has_title = (n->text && n->text->data && n->text->data[0]);
       int pad_l = 24;
       int pad_t = 24;
       int pad_r = 24;
@@ -21,11 +22,11 @@ case COGITO_DIALOG: {
         if (s.has_padding_right) pad_r = s.padding_right;
         if (s.has_padding_bottom) pad_b = s.padding_bottom;
       }
-      int title_h = cogito_text_height_size(20);
+      int title_h = has_title ? cogito_text_height_size(20) : 0;
       int cx = 0, cy = 0, cw = 0, ch = 0;
       cogito_dialog_close_rect(n, &cx, &cy, &cw, &ch);
-      int header_h = title_h > ch ? title_h : ch;
-      int header_gap = 16;
+      int header_h = has_title ? (title_h > ch ? title_h : ch) : 0;
+      int header_gap = has_title ? 16 : 0;
       int section_gap = 24;
       int content_top = pad_t + header_h + header_gap;
       int avail_w = n->w - pad_l - pad_r;

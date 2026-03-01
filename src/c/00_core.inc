@@ -657,6 +657,7 @@ typedef struct CogitoNode {
   bool popover_open;
   struct CogitoNode* side_sheet_node;
   bool side_sheet_open;
+  bool side_sheet_closing;
 
   // Style flags
   bool margin_set;
@@ -798,6 +799,13 @@ typedef struct CogitoNode {
   float window_theme_reveal_max_radius;
   CogitoColor window_theme_reveal_old_bg;
   CogitoColor window_theme_reveal_new_bg;
+
+  // Overlay animation (dialogs/sheets)
+  bool overlay_anim_active;
+  double overlay_anim_start;
+  double overlay_anim_duration;
+  float overlay_anim_from;
+  float overlay_anim_to;
 
   // Kind-specific data (anonymous union — only one member active per node)
   union {
@@ -1110,6 +1118,47 @@ static inline double cogito_refresh_now(void) {
   else cogito_frame_now = 0.0;
   cogito_frame_now_valid = true;
   return cogito_frame_now;
+}
+
+static double cogito_anim_end_time;
+static bool cogito_prefers_reduced_motion;
+
+static float cogito_overlay_anim_value(CogitoNode* n, bool open_when_idle) {
+  if (!n) return open_when_idle ? 1.0f : 0.0f;
+  if (!n->overlay_anim_active || n->overlay_anim_duration <= 0.0) {
+    return open_when_idle ? 1.0f : 0.0f;
+  }
+  double t = (cogito_now() - n->overlay_anim_start) / n->overlay_anim_duration;
+  if (t >= 1.0) {
+    n->overlay_anim_active = false;
+    return n->overlay_anim_to;
+  }
+  if (t <= 0.0) return n->overlay_anim_from;
+  float tf = (float)t;
+  float eased = 1.0f - (1.0f - tf) * (1.0f - tf) * (1.0f - tf);
+  float value = n->overlay_anim_from + (n->overlay_anim_to - n->overlay_anim_from) * eased;
+  double end_time = cogito_now() + 0.032;
+  if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+  return value;
+}
+
+static void cogito_overlay_anim_start(CogitoNode* n, float from, float to, double duration) {
+  if (!n) return;
+  if (cogito_prefers_reduced_motion || duration <= 0.0) {
+    n->overlay_anim_active = false;
+    n->overlay_anim_from = to;
+    n->overlay_anim_to = to;
+    n->overlay_anim_duration = 0.0;
+    n->overlay_anim_start = cogito_now();
+    return;
+  }
+  n->overlay_anim_active = true;
+  n->overlay_anim_start = cogito_now();
+  n->overlay_anim_duration = duration;
+  n->overlay_anim_from = from;
+  n->overlay_anim_to = to;
+  double end_time = n->overlay_anim_start + n->overlay_anim_duration;
+  if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
 }
 // Draw-context: forced text color for selected children (propagates down render tree)
 static CogitoColor cogito_selection_text = {

@@ -7,6 +7,14 @@ static CogitoNode* cogito_dialog_new_obj(YisStr* title) {
 #define COGITO_DIALOG_CLOSE_BOX 24
 static void cogito_dialog_close_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n || n->kind != COGITO_DIALOG) return;
+  bool has_title = (n->text && n->text->data && n->text->data[0]);
+  if (!has_title) {
+    if (out_x) *out_x = 0;
+    if (out_y) *out_y = 0;
+    if (out_w) *out_w = 0;
+    if (out_h) *out_h = 0;
+    return;
+  }
   int pad_t = COGITO_DIALOG_HEADER_INSET;
   int pad_r = COGITO_DIALOG_HEADER_INSET;
   int title_size = 20;
@@ -41,6 +49,7 @@ static void cogito_dialog_slot_show(YisVal slotv, YisVal dialogv) {
   if (slot->dialog) yis_release_val(YV_OBJ(slot->dialog));
   slot->dialog = dlg;
   slot->dialog_open = true;
+  cogito_overlay_anim_start(dlg, 0.0f, 1.0f, 0.22);
   dlg->parent = slot;
   yis_retain_val(YV_OBJ(dlg));
   if (win) {
@@ -54,6 +63,10 @@ static void cogito_dialog_slot_show(YisVal slotv, YisVal dialogv) {
 static void cogito_dialog_slot_clear(YisVal slotv) {
   if (slotv.tag != EVT_OBJ) yis_trap("cogito.dialog_slot_clear expects dialog slot");
   CogitoNode* slot = (CogitoNode*)slotv.as.p;
+  if (slot->dialog) {
+    float from = cogito_overlay_anim_value(slot->dialog, true);
+    cogito_overlay_anim_start(slot->dialog, from, 0.0f, 0.18);
+  }
   slot->dialog_open = false;
   CogitoNode* win = cogito_node_window(slot);
   if (win && win->dialog == slot) {
@@ -67,6 +80,8 @@ static void cogito_dialog_close(YisVal dialogv) {
   if (dialogv.tag != EVT_OBJ) yis_trap("cogito.dialog_close expects dialog");
   CogitoNode* dlg = (CogitoNode*)dialogv.as.p;
   if (dlg->parent && dlg->parent->kind == COGITO_DIALOG_SLOT) {
+    float from = cogito_overlay_anim_value(dlg, true);
+    cogito_overlay_anim_start(dlg, from, 0.0f, 0.18);
     dlg->parent->dialog_open = false;
     CogitoNode* win = cogito_node_window(dlg->parent);
     if (win && win->dialog == dlg->parent) {
@@ -80,6 +95,8 @@ static void cogito_dialog_close(YisVal dialogv) {
   // Fallback for legacy direct-window dialogs or detached dialog objects.
   CogitoNode* win = cogito_node_window(dlg);
   if (win && win->dialog == dlg) {
+    float from = cogito_overlay_anim_value(dlg, true);
+    cogito_overlay_anim_start(dlg, from, 0.0f, 0.18);
     win->dialog_open = false;
     cogito_overlay_focus_restore(win);
     cogito_window_relayout(win);
@@ -87,6 +104,8 @@ static void cogito_dialog_close(YisVal dialogv) {
     return;
   }
   if (win && win->dialog && win->dialog->kind == COGITO_DIALOG_SLOT && win->dialog->dialog == dlg) {
+    float from = cogito_overlay_anim_value(dlg, true);
+    cogito_overlay_anim_start(dlg, from, 0.0f, 0.18);
     win->dialog->dialog_open = false;
     win->dialog_open = false;
     cogito_overlay_focus_restore(win);

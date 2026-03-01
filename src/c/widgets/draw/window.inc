@@ -52,13 +52,24 @@ case COGITO_WINDOW: {
           cogito_dialog_slot_force_draw = true;
           cogito_draw_node(n->dialog);
           cogito_dialog_slot_force_draw = false;
-        } else if (n->dialog_open) {
-          bool hover = false, active = false;
-          cogito_node_hover_state(n, &hover, &active);
-          CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-          CogitoColor scrim = s.has_bg ? s.bg : n->bg;
+        } else if (n->dialog_open || n->dialog->overlay_anim_active) {
+          float p = cogito_overlay_anim_value(n->dialog, n->dialog_open);
+          CogitoStyle slot_style = cogito_theme_resolve(COGITO_DIALOG_SLOT);
+          CogitoColor scrim = slot_style.has_bg ? slot_style.bg : n->bg;
+          if (scrim.a == 0) scrim.a = 82;
+          scrim.a = (uint8_t)lroundf((float)scrim.a * p);
           cogito_draw_rect(0, 0, n->w, n->h, scrim, 0);
-          cogito_draw_node(n->dialog);
+          if (n->dialog->kind == COGITO_WELCOME_SCREEN) {
+            cogito_draw_node(n->dialog);
+          } else {
+            int clip_h = (int)lroundf((float)n->dialog->h * p);
+            if (clip_h > 0) {
+              bool can_clip = cogito_backend && cogito_backend->begin_scissor && cogito_backend->end_scissor;
+              if (can_clip) cogito_backend->begin_scissor(n->dialog->x, n->dialog->y, n->dialog->w, clip_h);
+              cogito_draw_node(n->dialog);
+              if (can_clip) cogito_backend->end_scissor();
+            }
+          }
         }
       }
       // Draw popover on top if open
@@ -66,18 +77,25 @@ case COGITO_WINDOW: {
         cogito_draw_node(n->popover);
       }
       // Draw side sheet on top if open
-      if (n->kind == COGITO_WINDOW && n->side_sheet_open && n->side_sheet_node) {
+      if (n->kind == COGITO_WINDOW && (n->side_sheet_open || n->side_sheet_closing) && n->side_sheet_node) {
+        float p = cogito_overlay_anim_value(n->side_sheet_node, n->side_sheet_open);
         // Skip scrim for sidebar mode - it's docked next to overlay
         if (n->side_sheet_node->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR) {
             // Draw scrim for modal/inset modes
-            bool hover = false, active = false;
-            cogito_node_hover_state(n, &hover, &active);
-            CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-            CogitoColor scrim = s.has_bg ? s.bg : n->bg;
-            scrim.a = 128;
+          CogitoStyle slot_style = cogito_theme_resolve(COGITO_DIALOG_SLOT);
+          CogitoColor scrim = slot_style.has_bg ? slot_style.bg : n->bg;
+          if (scrim.a == 0) scrim.a = 82;
+          scrim.a = (uint8_t)lroundf((float)scrim.a * p);
             cogito_draw_rect(0, 0, n->w, n->h, scrim, 0);
         }
+        int slide_dx = (int)lroundf((1.0f - p) * (float)n->side_sheet_node->w);
+        if (slide_dx > 0) cogito_draw_offset_subtree(n->side_sheet_node, slide_dx, 0);
         cogito_draw_node(n->side_sheet_node);
+        if (slide_dx > 0) cogito_draw_offset_subtree(n->side_sheet_node, -slide_dx, 0);
+        if (n->side_sheet_closing && !n->side_sheet_node->overlay_anim_active) {
+          n->side_sheet_closing = false;
+          cogito_window_relayout(n);
+        }
       }
       // Draw toasts in a final overlay pass so they are never clipped by containers.
       cogito_draw_toasts_overlay(n);

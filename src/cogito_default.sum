@@ -377,27 +377,45 @@ button
   background: @primary
   color: @on-primary
 
+button:hover
+  background: alpha(@primary, 8%)
+
+button:active
+  background: alpha(@primary, 11%)
+
 button.outlined
   background: transparent
   color: @primary
   border: 1 solid @outline
 
+button.outlined:hover
+  background: alpha(@primary, 8%)
+
+button.outlined:active
+  background: alpha(@primary, 11%)
+
 button.outlined:disabled
-  color: alpha(@primary, 32%)
-  border-color: alpha(@primary, 32%)
-  background: @surface-tint
+  color: alpha(@on-surface, 32%)
+  border-color: alpha(@on-surface, 32%)
+  background: transparent
 
 button.text
   background: transparent
   color: @primary
 
+button.text:hover
+  background: alpha(@primary, 8%)
+
+button.text:active
+  background: alpha(@primary, 11%)
+
 button.text:disabled
-  color: alpha(@primary, 32%)
-  background: @surface-tint
+  color: alpha(@on-surface, 32%)
+  background: transparent
 
 button:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
 
 button:focus
   border: 2 solid @primary
@@ -411,6 +429,12 @@ button.toolbar_format
   padding: 0 8
   box-shadow: none
 
+button.toolbar_format:hover
+  background: alpha(@primary, 8%)
+
+button.toolbar_format:active
+  background: alpha(@primary, 11%)
+
 button.toolbar_format_active
   background: @primary
   color: @on-primary
@@ -419,6 +443,12 @@ button.toolbar_format_active
   min-height: 48
   padding: 0 8
   box-shadow: none
+
+button.toolbar_format_active:hover
+  background: alpha(@primary, 8%)
+
+button.toolbar_format_active:active
+  background: alpha(@primary, 11%)
 
 @when reduced-motion
   button
@@ -481,7 +511,7 @@ checkbox:checked .check
   color: @on-primary
 
 checkbox:disabled
-  color: alpha(@on-background, 32%)
+  color: alpha(@on-surface, 32%)
 
 chip
   background: transparent
@@ -491,15 +521,21 @@ chip
   padding: 0 16
   border: 1 solid @outline
 
+chip:hover
+  background: alpha(@on-surface, 8%)
+
+chip:active
+  background: alpha(@on-surface, 11%)
+
 chip:checked
   background: @primary-container
   color: @on-primary
   border: 0 none @primary-container
 
 chip:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
-  border-color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
+  border-color: alpha(@on-surface, 32%)
 
 content_list
   background: @surface-variant
@@ -546,8 +582,24 @@ dialog
     0 8 16 0 alpha(@shadow, 24%)
   ]
 
+dialog vstack
+  background: @surface-container-high
+  color: @on-surface
+
+dialog hstack
+  background: @surface-container-high
+  color: @on-surface
+
+dialog zstack
+  background: @surface-container-high
+  color: @on-surface
+
+dialog fixed
+  background: @surface-container-high
+  color: @on-surface
+
 dialogslot
-  background: alpha(@scrim, 40%)
+  background: alpha(@scrim, 32%)
   color: @on-surface
 
 divider
@@ -565,8 +617,8 @@ dropdown:hover
   background: @surface-container-high
 
 dropdown:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
 
 empty_page
   background: transparent
@@ -575,9 +627,15 @@ empty_page
 fab
   elevation: 3
 
+fab:hover
+  background: alpha(@primary, 8%)
+
+fab:active
+  background: alpha(@primary, 11%)
+
 fab:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
 
 fixed
   background: transparent
@@ -599,26 +657,60 @@ iconbtn
   background: alpha(@shadow, 5%)
   color: @on-surface
 
+iconbtn:hover
+  background: alpha(@on-surface, 8%)
+
+iconbtn:active
+  background: alpha(@on-surface, 11%)
+
 iconbtn:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
 
 iconbtn.filled
   background: @primary
   color: @on-primary
 
+iconbtn.filled:hover
+  background: alpha(@primary, 8%)
+
+iconbtn.filled:active
+  background: alpha(@primary, 11%)
+
 iconbtn.iconic
   background: transparent
-  color: @on-surface-variant
+  color: @primary
+
+iconbtn.iconic:hover
+  background: alpha(@primary, 8%)
+
+iconbtn.iconic:active
+  background: alpha(@primary, 11%)
+
+iconbtn.iconic:disabled
+  background: transparent
+  color: alpha(@on-surface, 32%)
 
 iconbtn.outlined
   background: transparent
   color: @on-surface-variant
   border: 1 solid @outline
 
+iconbtn.outlined:hover
+  background: alpha(@on-surface-variant, 8%)
+
+iconbtn.outlined:active
+  background: alpha(@on-surface-variant, 11%)
+
 iconbtn.tonal
   background: @primary-container
   color: @on-primary-container
+
+iconbtn.tonal:hover
+  background: alpha(@primary-container, 8%)
+
+iconbtn.tonal:active
+  background: alpha(@primary-container, 11%)
 
 image
   background: transparent
@@ -661,11 +753,10 @@ menu_button
   padding: 8 12
 
 menu_button:hover
-  background: @surface-variant
+  background: alpha(@on-surface, 8%)
 
 menu_button:active
-  background: @secondary-container
-  color: @on-secondary-container
+  background: alpha(@on-surface, 11%)
 
 menu_button:checked
   background: @secondary-container
@@ -735,7 +826,7 @@ radio:checked .check
   color: @on-primary
 
 radio:disabled
-  color: alpha(@on-background, 32%)
+  color: alpha(@on-surface, 32%)
 
 scroller
   background: @surface-container-low
@@ -765,8 +856,8 @@ searchfield:focus
   border: 2 solid @primary
 
 searchfield:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
 
 searchfield:selection
   background: @primary
@@ -804,11 +895,17 @@ slider
   min-width: 360
 
 slider:disabled
-  color: alpha(@on-background, 32%)
+  color: alpha(@on-surface, 32%)
 
 split_button
   background: @primary
   color: @on-primary
+
+split_button:hover
+  background: alpha(@primary, 8%)
+
+split_button:active
+  background: alpha(@primary, 11%)
 
 stepper
   background: @surface-container-low
@@ -817,9 +914,15 @@ stepper
   min-height: 32
   min-width: 96
 
+stepper:hover
+  background: alpha(@surface-container-low, 8%)
+
+stepper:active
+  background: alpha(@surface-container-low, 11%)
+
 stepper:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
 
 switch
   color: @on-surface
@@ -880,13 +983,13 @@ switch .knob:checked
   background: @surface
 
 switch:disabled
-  color: alpha(@on-background, 32%)
+  color: alpha(@on-surface, 32%)
 
 switch:disabled track
-  background: alpha(@on-background, 16%)
+  background: alpha(@on-surface, 18%)
 
 switch:disabled knob
-  background: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
 
 switchbar
   background: @surface
@@ -919,8 +1022,8 @@ textfield:focus
   border: 2 solid @primary
 
 textfield:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
 
 textfield:selection
   background: @primary
@@ -1036,6 +1139,22 @@ zstack
   background: @background
   color: @on-surface
 
+dialog vstack
+  background: @surface-container-high
+  color: @on-surface
+
+dialog hstack
+  background: @surface-container-high
+  color: @on-surface
+
+dialog zstack
+  background: @surface-container-high
+  color: @on-surface
+
+dialog fixed
+  background: @surface-container-high
+  color: @on-surface
+
 ; About window styles
 .about-window
   background: @on-secondary
@@ -1092,14 +1211,20 @@ buttongroup
   background: @secondary-container
   color: @on-secondary-container
 
+buttongroup:hover
+  background: alpha(@secondary-container, 8%)
+
+buttongroup:active
+  background: alpha(@secondary-container, 11%)
+
 buttongroup:selection
   background: @secondary-container
   color: @on-secondary-container
   border: 1 solid @secondary-container
 
 buttongroup:disabled
-  background: alpha(@on-background, 16%)
-  color: alpha(@on-background, 32%)
+  background: alpha(@on-surface, 18%)
+  color: alpha(@on-surface, 32%)
 
 ; Settings styles
 settings_list

@@ -267,17 +267,18 @@ static void cogito_layout_window(CogitoNode* win) {
   }
   if (win->dialog) {
     if (win->dialog->kind == COGITO_DIALOG_SLOT) {
-      if (win->dialog->dialog_open && win->dialog->dialog) {
+      if (win->dialog->dialog && (win->dialog->dialog_open || win->dialog->dialog->overlay_anim_active)) {
         cogito_layout_node(win->dialog, 0, 0, win->w, win->h);
       }
-    } else if (win->dialog_open) {
+    } else if (win->dialog_open || win->dialog->overlay_anim_active) {
       int dw = 0;
       int dh = 0;
       cogito_intrinsic_size(win->dialog, &dw, &dh);
       if (dw <= 0) dw = 320;
       if (dh <= 0) dh = 200;
+      float p = cogito_overlay_anim_value(win->dialog, win->dialog_open);
       int dx = (win->w - dw) / 2;
-      int dy = (win->h - dh) / 2;
+      int dy = (win->h - dh) / 2 - (int)lroundf((1.0f - p) * 24.0f);
       cogito_layout_node(win->dialog, dx, dy, dw, dh);
     }
   }
@@ -289,7 +290,7 @@ static void cogito_layout_window(CogitoNode* win) {
     if (ph <= 0) ph = 180;
     cogito_layout_node(win->popover, 0, 0, pw, ph);
   }
-  if (win->side_sheet_open && win->side_sheet_node) {
+  if ((win->side_sheet_open || win->side_sheet_closing) && win->side_sheet_node) {
     int ss_w = 0;
     int ss_h = 0;
     cogito_intrinsic_size(win->side_sheet_node, &ss_w, &ss_h);

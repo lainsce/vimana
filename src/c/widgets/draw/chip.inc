@@ -2,8 +2,9 @@ case COGITO_CHIP: {
   bool hover = false, active = false;
   cogito_node_hover_state(n, &hover, &active);
   CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+  CogitoStyle s_base = cogito_theme_resolve_node_state(n, false, false);
 
-  CogitoColor bg         = s.has_bg     ? s.bg     : n->bg;
+  CogitoColor bg         = s_base.has_bg ? s_base.bg : n->bg;
   CogitoColor text_color = s.has_text   ? s.text   : n->text_color;
   CogitoColor border_color = s.has_border ? s.border : n->border_color;
   int border_w = s.has_border_width ? s.border_width : 0;
@@ -13,11 +14,16 @@ case COGITO_CHIP: {
   // Animate colors
   cogito_anim_apply(n, &s, &bg, &text_color, &border_color, NULL);
 
-  // State layer (hover = 8%, active/pressed = 12%)
-  CogitoColor state_layer = cogito_node_state_layer_seed(n);
-  if (active) state_layer.a = (uint8_t)(bg.a > 0 ? 31 : 0);
-  else if (hover) state_layer.a = (uint8_t)(bg.a > 0 ? 20 : 0);
-  else state_layer.a = 0;
+  // State layer: draw between base background and content.
+  CogitoColor state_layer = cogito_rgba(0, 0, 0, 0);
+  if (active || hover) {
+    if (s.has_bg && !(s.bg.r == bg.r && s.bg.g == bg.g && s.bg.b == bg.b && s.bg.a == bg.a)) {
+      state_layer = s.bg;
+    } else {
+      state_layer = cogito_node_state_layer_seed(n);
+      state_layer.a = active ? 28 : 20;
+    }
+  }
 
   // Draw pill-shaped background
   cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
