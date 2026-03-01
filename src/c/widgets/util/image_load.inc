@@ -25,6 +25,23 @@ static bool cogito_path_is_absolute(const char* path) {
 #endif
 }
 
+static bool cogito_try_join_path(const char* base, const char* rel,
+                                 char* resolved, size_t resolved_cap) {
+  if (!base || !base[0] || !rel || !rel[0] || !resolved || resolved_cap == 0) return false;
+  size_t bl = strlen(base);
+  bool has_sep = bl > 0 && (base[bl - 1] == '/' || base[bl - 1] == '\\');
+  if (has_sep) snprintf(resolved, resolved_cap, "%s%s", base, rel);
+  else snprintf(resolved, resolved_cap, "%s/%s", base, rel);
+  return cogito_file_exists(resolved);
+}
+
+static const char* cogito_image_strip_legacy_prefix(const char* rel_path) {
+  if (!rel_path) return rel_path;
+  if (strncmp(rel_path, "cogito/", 7) == 0) return rel_path + 7;
+  if (strncmp(rel_path, "Cogito/", 7) == 0) return rel_path + 7;
+  return rel_path;
+}
+
 static bool cogito_image_resolve_path(const char* path, char* resolved, size_t resolved_cap) {
   if (!path || !path[0] || !resolved || resolved_cap == 0) return false;
 
@@ -40,29 +57,63 @@ static bool cogito_image_resolve_path(const char* path, char* resolved, size_t r
   // Skip leading '/' in path and treat as relative
   const char* rel_path = path;
   if (path[0] == '/') rel_path = path + 1;
+  const char* rel_legacy = cogito_image_strip_legacy_prefix(rel_path);
 
-  // Try script directory first
+  const char* candidates[2] = {rel_path, rel_legacy};
+
+  // Try script directory first (and then its parent as a project root fallback)
   if (cogito_script_dir[0]) {
-    size_t bl = strlen(cogito_script_dir);
-    bool has_sep = bl > 0 && (cogito_script_dir[bl - 1] == '/' || cogito_script_dir[bl - 1] == '\\');
-    if (has_sep) snprintf(resolved, resolved_cap, "%s%s", cogito_script_dir, rel_path);
-    else snprintf(resolved, resolved_cap, "%s/%s", cogito_script_dir, rel_path);
-    if (cogito_file_exists(resolved)) return true;
+    for (int i = 0; i < 2; i++) {
+      const char* c = candidates[i];
+      if (!c || !c[0]) continue;
+      if (i == 1 && strcmp(candidates[0], c) == 0) continue;
+      if (cogito_try_join_path(cogito_script_dir, c, resolved, resolved_cap)) return true;
+    }
+
+    char script_parent[PATH_MAX];
+    snprintf(script_parent, sizeof(script_parent), "%s", cogito_script_dir);
+    size_t sl = strlen(script_parent);
+    while (sl > 0 && (script_parent[sl - 1] == '/' || script_parent[sl - 1] == '\\')) {
+      script_parent[--sl] = 0;
+    }
+    char* slash = strrchr(script_parent, '/');
+#if defined(_WIN32)
+    char* bslash = strrchr(script_parent, '\\');
+    if (!slash || (bslash && bslash > slash)) slash = bslash;
+#endif
+    if (slash) {
+      *slash = 0;
+      if (script_parent[0]) {
+        for (int i = 0; i < 2; i++) {
+          const char* c = candidates[i];
+          if (!c || !c[0]) continue;
+          if (i == 1 && strcmp(candidates[0], c) == 0) continue;
+          if (cogito_try_join_path(script_parent, c, resolved, resolved_cap)) return true;
+        }
+      }
+    }
   }
 
   // Try current working directory
   if (getcwd(resolved, resolved_cap)) {
-    size_t cwd_len = strlen(resolved);
-    if (cwd_len + strlen(rel_path) + 2 < resolved_cap) {
-      resolved[cwd_len] = '/';
-      strcpy(resolved + cwd_len + 1, rel_path);
-      if (cogito_file_exists(resolved)) return true;
+    char cwd[PATH_MAX];
+    snprintf(cwd, sizeof(cwd), "%s", resolved);
+    for (int i = 0; i < 2; i++) {
+      const char* c = candidates[i];
+      if (!c || !c[0]) continue;
+      if (i == 1 && strcmp(candidates[0], c) == 0) continue;
+      if (cogito_try_join_path(cwd, c, resolved, resolved_cap)) return true;
     }
   }
 
   // Try as-is (relative to cwd)
   snprintf(resolved, resolved_cap, "%s", rel_path);
-  return cogito_file_exists(resolved);
+  if (cogito_file_exists(resolved)) return true;
+  if (rel_legacy && rel_legacy[0] && strcmp(rel_legacy, rel_path) != 0) {
+    snprintf(resolved, resolved_cap, "%s", rel_legacy);
+    if (cogito_file_exists(resolved)) return true;
+  }
+  return false;
 }
 
 // --- Image texture cache: deduplicate loads of the same file path ---
