@@ -726,6 +726,23 @@
                         out->tmp = t;
                         return true;
                     }
+                    if (str_eq_c(fname, "__cogito_welcome_screen_set_has_seen")) {
+                        GenExpr ws, has_seen;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &ws, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &has_seen, err)) { gen_expr_free(&ws); return false; }
+                        w_line(&cg->w, "cogito_welcome_screen_set_has_seen(%s, %s);", ws.tmp, has_seen.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", ws.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", has_seen.tmp);
+                        gen_expr_release_except(cg, &ws, ws.tmp);
+                        gen_expr_release_except(cg, &has_seen, has_seen.tmp);
+                        gen_expr_free(&ws);
+                        gen_expr_free(&has_seen);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
                     // --- ViewDual ---
                     if (str_eq_c(fname, "__cogito_view_dual")) {
                         char *t = codegen_new_tmp(cg);

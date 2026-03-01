@@ -109,7 +109,7 @@ fun __cogito_datepicker() (( DatePicker )) { }
 fun __cogito_dialog_close(dialog = Dialog) (( -- )) { }
 fun __cogito_dialog_remove(dialog = Dialog) (( -- )) { }
 fun __cogito_dialog_slot_clear(slot = DialogSlot) (( -- )) { }
-fun __cogito_dialog_slot_show(slot = DialogSlot, dialog = Dialog) (( -- )) { }
+fun __cogito_dialog_slot_show(slot = DialogSlot, dialog = any) (( -- )) { }
 fun __cogito_dialog_slot() (( DialogSlot )) { }
 fun __cogito_dialog(title = string) (( Dialog )) { }
 fun __cogito_divider(orientation = string, is_inset = bool) (( Divider )) { }
@@ -346,12 +346,13 @@ fun __cogito_vstack() (( VStack )) { }
 fun __cogito_welcome_screen_set_action(ws = WelcomeScreen, text = string, handler = any) (( -- )) { }
 fun __cogito_welcome_screen_set_description(ws = WelcomeScreen, desc = string) (( -- )) { }
 fun __cogito_welcome_screen_set_icon(ws = WelcomeScreen, icon = string) (( -- )) { }
+fun __cogito_welcome_screen_set_has_seen(ws = WelcomeScreen, has_seen = string) (( -- )) { }
 fun __cogito_welcome_screen(title = string) (( WelcomeScreen )) { }
 fun __cogito_window_clear_dialog(win = Window) (( -- )) { }
 fun __cogito_window_clear_side_sheet(win = Window) (( -- )) { }
 fun __cogito_window_set_autosize(win = Window, on = bool) (( -- )) { }
 fun __cogito_window_set_builder(win = Window, builder = any) (( -- )) { }
-fun __cogito_window_set_dialog(win = Window, dialog = Dialog) (( -- )) { }
+fun __cogito_window_set_dialog(win = Window, dialog = any) (( -- )) { }
 fun __cogito_window_set_resizable(win = Window, on = bool) (( -- )) { }
 fun __cogito_window_set_side_sheet(win = Window, side_sheet = SideSheet) (( -- )) { }
 fun __cogito_window(title = string, w = num, h = num) (( Window )) { }
@@ -435,7 +436,7 @@ pub class Window {
         __cogito_node_set_disabled(this, on)
         return this
     }
-    pub fun set_dialog(this, dialog = Dialog) (( Window )) {
+    pub fun set_dialog(this, dialog = any) (( Window )) {
         __cogito_window_set_dialog(this, dialog)
         return this
     }
@@ -670,7 +671,7 @@ pub class Dialog {
 }
 
 pub class DialogSlot {
-    pub fun show(this, dialog = Dialog) (( DialogSlot )) {
+    pub fun show(this, dialog = any) (( DialogSlot )) {
         __cogito_dialog_slot_show(this, dialog)
         return this
     }
@@ -4177,6 +4178,10 @@ pub class WelcomeScreen {
     }
     pub fun set_action(this, text = string, handler = any) (( WelcomeScreen )) {
         __cogito_welcome_screen_set_action(this, text, handler)
+        return this
+    }
+    pub fun set_has_seen(this, has_seen = string) (( WelcomeScreen )) {
+        __cogito_welcome_screen_set_has_seen(this, has_seen)
         return this
     }
     pub fun add(this, child = any) (( WelcomeScreen )) {

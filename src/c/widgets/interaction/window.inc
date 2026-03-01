@@ -67,6 +67,11 @@ static void cogito_window_set_dialog(YisVal winv, YisVal dialogv) {
   if (dialogv.tag != EVT_OBJ) yis_trap("cogito.window_set_dialog expects dialog");
   CogitoNode* win = (CogitoNode*)winv.as.p;
   CogitoNode* dlg = (CogitoNode*)dialogv.as.p;
+  if (dlg->kind == COGITO_WELCOME_SCREEN && cogito_welcome_screen_should_hide(dlg)) {
+    win->dialog_open = false;
+    cogito_window_relayout(win);
+    return;
+  }
   if (dlg->kind == COGITO_DIALOG_SLOT) {
     if (win->dialog && win->dialog != dlg) {
       yis_release_val(YV_OBJ(win->dialog));

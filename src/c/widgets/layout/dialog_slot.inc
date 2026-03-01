@@ -1,5 +1,18 @@
 case COGITO_DIALOG_SLOT:
       if (n->dialog && n->dialog_open) {
+        if (n->dialog->kind == COGITO_WELCOME_SCREEN) {
+          CogitoNode* win = cogito_node_window(n);
+          if (win) {
+            n->x = 0;
+            n->y = 0;
+            n->w = win->w;
+            n->h = win->h;
+            cogito_layout_node(n->dialog, 0, 0, win->w, win->h);
+          } else {
+            cogito_layout_node(n->dialog, x, y, w, h);
+          }
+          break;
+        }
         int dw = 0;
         int dh = 0;
         cogito_intrinsic_size(n->dialog, &dw, &dh);

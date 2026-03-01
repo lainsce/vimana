@@ -331,6 +331,7 @@ static const char *cogito_font_medium_path_active = NULL;
   cogito_welcome_screen_set_description_yis
 #define cogito_welcome_screen_set_icon cogito_welcome_screen_set_icon_yis
 #define cogito_welcome_screen_set_action cogito_welcome_screen_set_action_yis
+#define cogito_welcome_screen_set_has_seen cogito_welcome_screen_set_has_seen_yis
 #define cogito_view_dual_new cogito_view_dual_new_yis
 #define cogito_view_dual_set_ratio cogito_view_dual_set_ratio_yis
 #define cogito_view_chooser_new cogito_view_chooser_new_yis
@@ -666,6 +667,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_welcome_screen_set_description
 #undef cogito_welcome_screen_set_icon
 #undef cogito_welcome_screen_set_action
+#undef cogito_welcome_screen_set_has_seen
 #undef cogito_view_dual_new
 #undef cogito_view_dual_set_ratio
 #undef cogito_view_chooser_new
@@ -1923,6 +1925,12 @@ void cogito_welcome_screen_set_action(cogito_node *ws, const char *text,
   }
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
+}
+void cogito_welcome_screen_set_has_seen(cogito_node *ws, const char *has_seen) {
+  YisVal pv = cogito_val_from_cstr(has_seen);
+  cogito_welcome_screen_set_has_seen_yis(YV_OBJ(ws), pv);
+  if (pv.tag == EVT_STR)
+    yis_release_val(pv);
 }
 cogito_node *cogito_view_dual_new(void) {
   return cogito_from_val(cogito_view_dual_new_yis());

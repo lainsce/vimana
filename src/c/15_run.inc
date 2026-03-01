@@ -2519,12 +2519,24 @@ static void cogito_run(YisVal appv, YisVal winv) {
             ]) {
               if (hit->action_button_w > 0 && cogito_hit_rect_min48(mx, my, hit->action_button_x, hit->action_button_y,
                           hit->action_button_w, hit->action_button_h)) {
+                bool welcome_has_seen = (hit->kind == COGITO_WELCOME_SCREEN && cogito_welcome_screen_has_seen_enabled(hit));
                 if (hit->on_action) {
                   YisVal arg = YV_OBJ(hit);
                   cogito_invoke(hit->on_action,
                   1, &arg);
                 } else if (hit->kind == COGITO_ABOUT_WINDOW && cogito_backend && cogito_backend->open_url) {
                   cogito_backend->open_url(hit->action_text->data);
+                }
+                if (welcome_has_seen && hit->hint && hit->hint->data) {
+                  cogito_welcome_screen_has_seen_set(hit->hint->data, true);
+                }
+                if (hit->kind == COGITO_WELCOME_SCREEN) {
+                  CogitoNode* parent = hit->parent;
+                  if (parent && parent->kind == COGITO_DIALOG_SLOT) {
+                    cogito_dialog_slot_clear(YV_OBJ(parent));
+                  } else if (win && win->dialog_open) {
+                    cogito_window_clear_dialog(YV_OBJ(win));
+                  }
                 }
               }
             }

@@ -1821,20 +1821,27 @@ fun build_empty_page_widget_page() (( cogito.VStack )) {
 }
 
 fun build_welcome_screen_page() (( cogito.VStack )) {
-    let vstack = build_page("WelcomeScreen", "WelcomeScreen is an onboarding-friendly hero container with an optional call to action.")
+    let vstack = build_page("WelcomeScreen", "WelcomeScreen acts as a window-wide onboarding dialog with an optional call to action.")
 
-    let status = cogito.label("Ready")
+    let status = cogito.label("Open the WelcomeScreen dialog.")
     .set_class("body")
     vstack.add(status)
 
-    let ws = cogito.welcome_screen("Welcome to Cogito")
-    .set_description("Build responsive desktop interfaces with familiar declarative patterns.")
-    .set_icon("sf:sparkles")
-    .set_action("Get Started", (b = any) => {
-        status.set_text("Welcome action clicked.")
+    let slot = cogito.dialog_slot()
+    vstack.add(slot)
+
+    let show_btn = cogito.button("Show WelcomeScreen Dialog")
+    .on_click((b = any) => {
+        let ws = cogito.welcome_screen("Welcome to Cogito")
+        .set_description("Build responsive desktop interfaces with familiar declarative patterns.")
+        .set_icon("sf:sparkles")
+        .set_action("Get Started", (n = any) => {
+            status.set_text("Welcome action clicked.")
+        })
+        slot.show(ws)
+        status.set_text("WelcomeScreen dialog opened.")
     })
-    .set_hexpand(true)
-    vstack.add(ws)
+    vstack.add(show_btn)
 
     return vstack
 }

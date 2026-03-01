@@ -247,6 +247,7 @@
 #undef cogito_welcome_screen_set_action
 #undef cogito_welcome_screen_set_description
 #undef cogito_welcome_screen_set_icon
+#undef cogito_welcome_screen_set_has_seen
 #undef cogito_window_clear_dialog
 #undef cogito_window_free
 #undef cogito_window_new
@@ -1371,6 +1372,13 @@ static void __cogito_welcome_screen_set_action(YisVal wsv, YisVal textv, YisVal 
     cogito_set_handler(h, &h->on_action, handlerv);
     cogito_welcome_screen_set_action(ws, text, cogito_cb_action, h);
   }
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+static void __cogito_welcome_screen_set_has_seen(YisVal wsv, YisVal has_seenv) {
+  cogito_node* ws = cogito_node_from_val(wsv);
+  YisStr* tmp = NULL;
+  const char* has_seen = cogito_required_cstr(has_seenv, &tmp);
+  cogito_welcome_screen_set_has_seen(ws, has_seen);
   if (tmp) yis_release_val(YV_STR(tmp));
 }
 // --- ViewDual ---
@@ -3510,6 +3518,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_welcome_screen_set_description __cogito_welcome_screen_set_description
 #define cogito_welcome_screen_set_icon __cogito_welcome_screen_set_icon
 #define cogito_welcome_screen_set_action __cogito_welcome_screen_set_action
+#define cogito_welcome_screen_set_has_seen __cogito_welcome_screen_set_has_seen
 #define cogito_view_dual_new __cogito_view_dual
 #define cogito_view_dual_set_ratio __cogito_view_dual_set_ratio
 #define cogito_view_chooser_new __cogito_view_chooser

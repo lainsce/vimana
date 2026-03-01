@@ -279,6 +279,7 @@ void cogito_welcome_screen_set_description(cogito_node *ws, const char *desc);
 void cogito_welcome_screen_set_icon(cogito_node *ws, const char *icon);
 void cogito_welcome_screen_set_action(cogito_node *ws, const char *text,
                                       cogito_node_fn fn, void *user);
+void cogito_welcome_screen_set_has_seen(cogito_node *ws, const char *has_seen);
 cogito_node *cogito_view_dual_new(void);
 void cogito_view_dual_set_ratio(cogito_node *vd, double ratio);
 cogito_node *cogito_view_chooser_new(void);
