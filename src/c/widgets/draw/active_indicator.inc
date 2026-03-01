@@ -13,12 +13,12 @@ case COGITO_ACTIVE_INDICATOR: {
 
   int cx = n->x + n->w / 2;
   int cy = n->y + n->h / 2;
-  int nucleus_r = 3;
+  int nucleus_r = 4;
   int max_radius = (n->w < n->h ? n->w : n->h) / 2 - 4;
-  if (max_radius < 12) max_radius = 12;
+  if (max_radius < 16) max_radius = 16;
 
   // Draw nucleus with 4 circles (2 protons + 2 neutrons - helium-4)
-  int nucleus_offset = 3;
+  int nucleus_offset = 4;
   // Proton 1
   CogitoColor proton_color = color;
   proton_color.a = (uint8_t)(color.a * 0.95f);
@@ -45,7 +45,7 @@ case COGITO_ACTIVE_INDICATOR: {
     
     // Draw orbit path (circle)
     CogitoColor orbit_color = color;
-    orbit_color.a = (uint8_t)(color.a * 0.1f);
+    orbit_color.a = (uint8_t)(color.a * 0.12f);
     cogito_draw_rect(cx - electron_orbit_r, cy - electron_orbit_r, 
                      electron_orbit_r * 2, electron_orbit_r * 2, orbit_color, electron_orbit_r);
     
@@ -57,12 +57,6 @@ case COGITO_ACTIVE_INDICATOR: {
     float electron_x = (float)(cx + cos(electron_angle_rad) * electron_orbit_r);
     float electron_y = (float)(cy + sin(electron_angle_rad) * electron_orbit_r);
     int electron_r = 3;
-    
-    // Electron glow
-    CogitoColor glow_color = color;
-    glow_color.a = (uint8_t)(color.a * 0.1f);
-    cogito_draw_rect((int)electron_x - electron_r - 1, (int)electron_y - electron_r - 1, 
-                     electron_r * 2 + 2, electron_r * 2 + 2, glow_color, electron_r + 1);
     
     // Electron core
     CogitoColor electron_color = color;

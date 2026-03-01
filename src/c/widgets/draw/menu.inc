@@ -39,6 +39,79 @@ static void cogito_menu_section_bounds(CogitoNode* owner, int section_count, int
 static void cogito_draw_menu(void) {
   if (!cogito_menu.open || !cogito_menu.owner) return;
 
+  // ---- Quick draping animation on menu open ----
+  // Menu grows from the anchor button to its final position
+  double dt = cogito_spring_dt;
+
+  // Ensure spring is initialized on first open
+  if (!cogito_menu.draping_spring.inited) {
+    cogito_spring_snap(&cogito_menu.draping_spring, 0.0);
+  }
+
+  cogito_spring_tick(&cogito_menu.draping_spring, 1.0, 800.0, 0.75, dt);
+  float progress = (float)cogito_menu.draping_spring.x;
+  if (progress < 0.0f) progress = 0.0f;
+  if (progress > 1.0f) progress = 1.0f;
+
+  // Calculate animated position and size
+  // Start: At anchor (button), small size
+  // End: At final menu position, full size
+  int final_x = cogito_menu.x;
+  int final_y = cogito_menu.y;
+  int final_w = cogito_menu.w;
+  int final_h = cogito_menu.h;
+
+  int anchor_x = cogito_menu.anchor_x;
+  int anchor_y = cogito_menu.anchor_y;
+  int anchor_w = cogito_menu.anchor_w;
+  int anchor_h = cogito_menu.anchor_h;
+
+  // Determine anchor point based on horizontal alignment
+  bool menu_opens_left = (final_x + final_w < anchor_x + anchor_w / 2);
+  bool menu_opens_right = (final_x > anchor_x + anchor_w / 2);
+
+  // Start scale is small at the button
+  float start_scale = 0.85f;
+  float current_scale = start_scale + (1.0f - start_scale) * progress;
+
+  int animated_w = (int)(final_w * current_scale);
+  int animated_h = (int)(final_h * current_scale);
+
+  // Calculate start X based on which edge of the button to anchor from
+  int start_x;
+  if (menu_opens_left) {
+    // Menu opens to the left, anchor from button's left
+    start_x = anchor_x;
+  } else if (menu_opens_right) {
+    // Menu opens to the right, anchor from button's right
+    start_x = (anchor_x + anchor_w) - animated_w;
+  } else {
+    // Centered
+    start_x = anchor_x + (anchor_w - animated_w) / 2;
+  }
+
+  // Interpolate from start to final
+  int animated_x = start_x + (int)((final_x - start_x) * progress);
+
+  // Calculate Y: anchor from button's bottom, grow downward
+  // Start: menu's top edge at button's bottom edge
+  // End: menu at final position
+  int start_y = anchor_y + anchor_h;
+  int animated_y = start_y + (int)((final_y - start_y) * progress);
+
+  // Update draw coordinates for the menu
+  int x = animated_x;
+  int y = animated_y;
+  int w = animated_w;
+  int h = animated_h;
+
+  // Continue animation until settled
+  if (cogito_spring_active(&cogito_menu.draping_spring, 1.0)) {
+    double end_time = cogito_now() + 0.6;
+    if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+    cogito_window_relayout(cogito_node_window(cogito_menu.owner));
+  }
+
   bool vibrant = cogito_menu.owner->button.menu_vibrant;
 
   // Tertiary colors for toggled items (and vibrant mode)
@@ -74,10 +147,7 @@ static void cogito_draw_menu(void) {
   if (cogito_theme.menu.has_font_size && cogito_theme.menu.font_size > 0) {
     font_size = cogito_theme.menu.font_size;
   }
-  int x = cogito_menu.x;
-  int y = cogito_menu.y;
-  int w = cogito_menu.w;
-  int h = cogito_menu.h;
+  // x, y, w, h are already set from animated draping values above
 
   // Layout constants from design spec
   int icon_size = 20;       // Leading icon size

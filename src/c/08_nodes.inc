@@ -160,6 +160,7 @@ static void cogito_node_drop(YisObj* o) {
       free(n->nav_rail.icons);
     }
     if (n->nav_rail.badges) free(n->nav_rail.badges);
+    if (n->nav_rail.item_springs) free(n->nav_rail.item_springs);
   }
   if (n->kind == COGITO_BOTTOM_NAV && n->bottom_nav.labels) {
     for (size_t i = 0; i < n->bottom_nav.len; i++) {

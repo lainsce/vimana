@@ -21,6 +21,7 @@ static CogitoColor cogito_cached_on_surface = {0};
 static CogitoColor cogito_cached_surface_container = {0};
 static CogitoColor cogito_cached_surface_container_high = {0};
 static CogitoColor cogito_cached_on_surface_variant = {0};
+static CogitoColor cogito_cached_outline = {0};
 
 // Called from sum_build_dynamic when theme is applied
 // Stores tertiary colors for later use by widgets
@@ -43,6 +44,7 @@ static void cogito_cache_tertiary_colors(CogitoEnsorScheme* scheme) {
   cogito_cached_surface_container = scheme->surface_container;
   cogito_cached_surface_container_high = scheme->surface_container_high;
   cogito_cached_on_surface_variant = scheme->on_surface_variant;
+  cogito_cached_outline = scheme->outline;
 }
 
 // Get tertiary colors from cached values (set when theme was applied).

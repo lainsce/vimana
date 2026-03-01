@@ -122,13 +122,17 @@ static void cogito_apply_theme(bool dark, CogitoColor accent);
 #define COGITO_EASING_EMPHASIZED 5 // Spring with overshoot (in-back)
 #define COGITO_EASING_EMPHASIZED_OUT 6 // Spring decelerate (out-back)
 
-// Physics Spring Tokens — stiffness (k) and damping ratio (z)
-// Expressive: overshoot allowed, feels alive (buttons, sliders, FAB)
-#define COGITO_SPRING_K_EXPRESSIVE   750.0
-#define COGITO_SPRING_Z_EXPRESSIVE   0.5
-// Functional: critically/over-damped, no overshoot (toolbars, layout, opacity)
-#define COGITO_SPRING_K_FUNCTIONAL   1400.0
+// Physics Spring Tokens — Material Motion spec
+// Expressive: Spatial Fast (k=800, z=0.6) — small components like switches, buttons
+#define COGITO_SPRING_K_EXPRESSIVE   800.0
+#define COGITO_SPRING_Z_EXPRESSIVE   0.6
+// Functional: Effects Default (k=1600, z=1.0) — opacity, color, font-weight
+#define COGITO_SPRING_K_FUNCTIONAL   1600.0
 #define COGITO_SPRING_Z_FUNCTIONAL   1.0
+
+// Forward declaration for spring deduplication (defined later)
+extern uint64_t cogito_frame_seq;
+
 // Second-Order Spring state (one instance per animated scalar/channel)
 typedef struct {
   double x; // current value
@@ -136,19 +140,26 @@ typedef struct {
   double v; // current velocity  (preserved on target change for continuity)
   bool   inited; // has been initialized
   double target; // target value
+  uint64_t last_tick_frame; // frame counter to prevent double-ticking
 } CogitoSpring;
 
 // Advance a spring by dt seconds toward target.
 // Uses semi-implicit Euler integration (stable for large dt).
 // k = stiffness (angular frequency squared), z = damping ratio.
+// Only ticks once per frame (uses cogito_frame_seq for deduplication).
 static inline void cogito_spring_tick(CogitoSpring* s, double target, double k, double z, double dt) {
   if (!s) return;
   if (!s->inited) {
     s->x = target;
     s->v = 0.0;
     s->inited = true;
+    s->last_tick_frame = cogito_frame_seq;
     return;
   }
+  // Skip if already ticked this frame (prevents double-ticking in layout+draw)
+  if (s->last_tick_frame == cogito_frame_seq) return;
+  s->last_tick_frame = cogito_frame_seq;
+  
   if (dt <= 0.0) return;
   // Clamp dt to avoid instability on long frame gaps (e.g. first frame after resize)
   if (dt > 0.05) dt = 0.05;
@@ -175,6 +186,7 @@ static inline void cogito_spring_snap(CogitoSpring* s, double target) {
 // Per-frame dt computed from SDL_GetPerformanceCounter() — shared globally
 static double cogito_spring_dt = 0.0;
 static uint64_t cogito_spring_last_ticks = 0;
+uint64_t cogito_frame_seq = 0; // Global frame counter for spring deduplication
 
 static void cogito_spring_dt_update(void) {
   uint64_t now = SDL_GetPerformanceCounter();
@@ -593,6 +605,8 @@ typedef struct CogitoNode {
   YisStr** tab_ids;
   size_t tab_len;
   size_t tab_cap;
+  // Tab indicator animation: spring stores visual selected tab index (float)
+  float tabs_anim_target;  // Target tab index for animation
 
   // Callbacks
   YisFn* on_click;
@@ -610,6 +624,7 @@ typedef struct CogitoNode {
   bool tree_collapsed;
   bool should_close;
   bool disabled;
+  bool hidden;
   bool editable;
   bool resizable;
   bool fixed_pos_set;
@@ -680,6 +695,11 @@ typedef struct CogitoNode {
   CogitoColor track_on_color;
   CogitoColor knob_color;
   CogitoColor check_color;
+  // Switch handle inset configuration
+  int switch_inset_x_unchecked; // Horizontal inset for unchecked (default: 8)
+  int switch_inset_x_checked;   // Horizontal inset for checked (default: 4)
+  int switch_inset_y;           // Vertical inset unpressed (default: 6)
+  int switch_inset_pressed;     // Inset for pressed state (default: 2)
   int border_width;
   int border_radius;
   int font_size;
@@ -763,6 +783,10 @@ typedef struct CogitoNode {
   int ripple_y;
   float ripple_max_radius; // Pre-calculated max radius
   bool ripple_active; // Whether ripple is currently animating
+
+  // Toast auto-dismiss timer (for toasts without action)
+  double toast_show_time; // When toast was shown
+  bool toast_dismissing; // Whether toast is in dismiss animation
 
   // Window-only theme transition: radial reveal from interaction origin.
   bool window_theme_reveal_active;
@@ -875,6 +899,8 @@ typedef struct CogitoNode {
       bool expanded;
       bool show_toggle;
       bool no_label; // If true, use icon-only mode with larger indicator
+      bool show_divider; // If true, show vertical divider on right edge
+      CogitoSpring* item_springs; // Per-item animation springs (width expansion)
     } nav_rail;
 
     struct {
@@ -882,6 +908,7 @@ typedef struct CogitoNode {
       YisStr** icons;
       size_t len, cap;
       int selected;
+      bool medium_mode; // true if container width > 600dp
     } bottom_nav;
 
     struct { int count;
@@ -928,6 +955,13 @@ typedef struct CogitoNode {
     struct {
         uint8_t variant; // 0=Primary, 1=Secondary, 2=Tertiary
         uint8_t size;    // 0=S(42), 1=M(56, default), 2=L(96)
+        // Spring animation target for FAB (for detecting state changes)
+        float geom_anim_target;  // FAB progress target (0=closed, 1=open)
+        // Time-based animation for items
+        float items_anim_target; // Items progress target (0=hidden, 1=shown)
+        float items_anim_from;   // Starting progress
+        float items_t;           // Current progress
+        double items_anim_start; // Animation start time
     } fab_menu;
     struct { bool vertical, inset;
     } divider;
@@ -965,10 +999,11 @@ typedef struct CogitoNode {
     } shape;
     struct { bool has_divider_before; bool has_divider_after;
     } menu_section;
-    struct { bool vibrant; bool vertical;
+    struct { bool vibrant; bool vertical; bool docked;
     } toolbar;
     // ButtonGroup: size (0-4 for XS-XL), shape (0=round,1=square), connected (0=standard,1=connected)
     // pressed_child: index of child being pressed (-1 = none), for width expansion animation
+    // For connected mode: children use spring_h to animate corner radius (0=square, 1=fully rounded)
     struct { int size; int shape; int connected; int pressed_child;
     } buttongroup;
     struct {
@@ -998,6 +1033,11 @@ typedef struct CogitoMenu {
   int pad_y;
   int pad_top;
   int pad_bottom;
+  CogitoSpring draping_spring; // Quick draping animation on open (0.9 -> 1.0)
+  int anchor_x; // Button's X for animation origin
+  int anchor_y; // Button's Y for animation origin
+  int anchor_w; // Button's width for animation origin
+  int anchor_h; // Button's height for animation origin
 } CogitoMenu;
 
 static CogitoTheme cogito_theme;
@@ -1263,7 +1303,7 @@ static int cogito_button_pressed_radius(int size) {
   }
 }
 
-static void cogito_button_size_metrics(int size, int kind, int* out_h, int* out_pad_x, int* out_icon, int* out_gap) {
+static void cogito_button_size_metrics(CogitoNode* n, int size, int kind, int* out_h, int* out_pad_x, int* out_icon, int* out_gap) {
   // Size tiers = (XS, S, M, L, XL):
   // Heights:  XS=32, S=40, M=56, L=96, XL=136
   // Icons:    XS=20, S=24, M=24, L=32, XL=40
@@ -1273,31 +1313,37 @@ static void cogito_button_size_metrics(int size, int kind, int* out_h, int* out_
   int h = 0, pad_x = 0, icon = 0, gap = 0;
   if (clamped == COGITO_BUTTON_SIZE_XS) {
     h = 32;
+    n->min_h = 32;
     pad_x = 12;
     icon = 20;
     gap = 4;
   } else if (clamped == COGITO_BUTTON_SIZE_S) {
     h = 40;
+    n->min_h = 40;
     pad_x = 16;
     icon = 24;
     gap = 8;
   } else if (clamped == COGITO_BUTTON_SIZE_M) {
     h = 56;
+    n->min_h = 56;
     pad_x = 24;
     icon = 24;
     gap = 8;
   } else if (clamped == COGITO_BUTTON_SIZE_L) {
     h = 96;
+    n->min_h = 96;
     pad_x = 48;
     icon = 32;
     gap = 12;
   } else if (clamped == COGITO_BUTTON_SIZE_XL) {
     h = 136;
+    n->min_h = 136;
     pad_x = 64;
     icon = 40;
     gap = 16;
   } else {
     h = 56;
+    n->min_h = 56;
     pad_x = 24;
     icon = 24;
     gap = 8;

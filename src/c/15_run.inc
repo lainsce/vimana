@@ -332,7 +332,8 @@ static bool cogito_menu_keyboard_handle(void) {
 }
 
 static bool cogito_fab_menu_keyboard_handle(CogitoNode* win) {
-  if (!cogito_fab_menu_open_node || cogito_fab_menu_open_node->menu_len == 0) return false;
+  // FAB Menu requires 2-7 items to be considered open
+  if (!cogito_fab_menu_open_node || cogito_fab_menu_open_node->menu_len < 2) return false;
   int len = (int)cogito_fab_menu_open_node->menu_len;
   if (cogito_fab_menu_kbd_index < 0 || cogito_fab_menu_kbd_index >= len) cogito_fab_menu_kbd_index = 0;
 
@@ -696,9 +697,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
   const int inspector_shadow_margin = 18;
 #endif
   int inspector_traffic_btn = 14;
-  int inspector_traffic_gap = 9;
-  int inspector_traffic_pad_top = 9;
-  int inspector_traffic_pad_x = 9;
+  int inspector_traffic_gap = 10;
+  int inspector_traffic_pad_top = 15;
+  int inspector_traffic_pad_x = 15;
   cogito_appbar_button_metrics(&inspector_traffic_btn, &inspector_traffic_gap, &inspector_traffic_pad_top, &inspector_traffic_pad_x);
   if (inspector_traffic_btn < 2) inspector_traffic_btn = 2;
   if (inspector_traffic_gap < 0) inspector_traffic_gap = 0;
@@ -2388,17 +2389,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
               cogito_colorpicker_click(hit, mx, my);
             }
           } else if (hit->kind == COGITO_TOAST) {
-            int cx = 0, cy = 0, cw = 0, ch = 0;
-            cogito_toast_close_rect(hit, &cx, &cy, &cw, &ch);
-            if (cw > 0 && ch > 0 && cogito_hit_rect_min48(mx, my, cx, cy, cw, ch)) {
-              CogitoNode* parent = hit->parent;
-              if (parent) {
-                cogito_container_remove_child(parent, hit);
-                cogito_window_relayout(win);
-              }
-            } else if (hit->action_text && hit->action_button_w > 0 &&
-                      cogito_hit_rect_min48(mx, my, hit->action_button_x, hit->action_button_y,
-                                     hit->action_button_w, hit->action_button_h)) {
+            if (hit->action_text && hit->action_button_w > 0 &&
+                cogito_hit_rect_min48(mx, my, hit->action_button_x, hit->action_button_y,
+                                      hit->action_button_w, hit->action_button_h)) {
               if (hit->on_action) {
                 YisVal arg = YV_OBJ(hit);
                 cogito_invoke(hit->on_action,
@@ -2460,7 +2453,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
           } else if (hit->kind == COGITO_FAB) {
             cogito_invoke_click(hit);
           } else if (hit->kind == COGITO_FAB_MENU) {
-            if (hit->menu_len > 0) {
+            // FAB Menu requires 2 to 7 items to open
+            if (hit->menu_len >= 2 && hit->menu_len <= 7) {
               cogito_overlay_focus_snapshot();
               hit->popover_open = true;
               cogito_fab_menu_open_node = hit;
@@ -2696,6 +2690,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
     }
     cogito_draw_set_clip(use_damage_clip, damage_x, damage_y, damage_w, damage_h);
     cogito_spring_dt_update(); // Update per-frame dt for all spring integrations
+    cogito_frame_seq++; // Increment frame counter for spring deduplication
     cogito_icon_cache_frame_start(); // Evict old icon textures
     cogito_image_cache_frame_start();
 

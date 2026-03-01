@@ -184,22 +184,58 @@ case COGITO_SLIDER: {
       } else if (n->slider.mode == COGITO_SLIDER_MODE_CENTERED) {
         state_x = k0;
       }
-      if (hover || active) {
+
+      // ---- Spring animation for thumb size on hover/active ----
+      double dt = cogito_spring_dt;
+      double target_size = (hover || active || n->slider.dragging) ? 1.0 : 0.0;
+
+      if (!n->spring_h.inited) {
+        cogito_spring_snap(&n->spring_h, target_size);
+      }
+
+      bool was_expanded = (n->spring_h.target >= 0.5);
+      bool is_expanded = (hover || active || n->slider.dragging);
+      if (was_expanded != is_expanded) {
+        cogito_spring_snap(&n->spring_h, is_expanded ? 0.0 : 1.0);
+      }
+      n->spring_h.target = target_size;
+
+      // Fast spatial for thumb expansion (k=800, z=0.6)
+      cogito_spring_tick(&n->spring_h, target_size, 800.0, 0.6, dt);
+      float size_scale = (float)n->spring_h.x;
+      if (size_scale < 0.0f) size_scale = 0.0f;
+      if (size_scale > 1.5f) size_scale = 1.5f;
+
+      // Apply scale to thumb dimensions
+      int animated_thumb_w = thumb_w_active + (int)((thumb_w_active * 0.3f) * size_scale);
+      int animated_thumb_h = thumb_h + (int)((thumb_h * 0.2f) * size_scale);
+      int animated_thumb_r = animated_thumb_w / 2;
+      if (animated_thumb_r < 2) animated_thumb_r = 2;
+
+      if (hover || active || n->slider.dragging || size_scale > 0.01f) {
         CogitoColor state_layer = cogito_node_state_layer_seed(n);
         state_layer.a = active ? 31 : 20;
         const int state_pad = 6;
-        int state_x0 = state_x - thumb_w_active / 2 - state_pad;
-        int state_y0 = cy - thumb_h / 2 - state_pad;
-        int state_w = thumb_w_active + state_pad * 2;
-        int state_h = thumb_h + state_pad * 2;
-        int state_r = thumb_r + state_pad;
+        int state_x0 = state_x - animated_thumb_w / 2 - state_pad;
+        int state_y0 = cy - animated_thumb_h / 2 - state_pad;
+        int state_w = animated_thumb_w + state_pad * 2;
+        int state_h = animated_thumb_h + state_pad * 2;
+        int state_r = animated_thumb_r + state_pad;
         if (state_r > state_w / 2) state_r = state_w / 2;
         cogito_draw_rect(state_x0, state_y0, state_w, state_h, state_layer, state_r);
       }
 
-      cogito_draw_rect(k0_left, cy - thumb_h / 2, thumb_w_active, thumb_h, active_track, thumb_r);
+      int k0_anim_left = k0 - animated_thumb_w / 2;
+      cogito_draw_rect(k0_anim_left, cy - animated_thumb_h / 2, animated_thumb_w, animated_thumb_h, active_track, animated_thumb_r);
       if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
-        cogito_draw_rect(k1_left, cy - thumb_h / 2, thumb_w_active, thumb_h, active_track, thumb_r);
+        int k1_anim_left = k1 - animated_thumb_w / 2;
+        cogito_draw_rect(k1_anim_left, cy - animated_thumb_h / 2, animated_thumb_w, animated_thumb_h, active_track, animated_thumb_r);
+      }
+
+      if (cogito_spring_active(&n->spring_h, target_size)) {
+        double end_time = cogito_now() + 0.6;
+        if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+        cogito_window_relayout(cogito_node_window(n));
       }
       break;
     }

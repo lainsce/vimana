@@ -1,8 +1,8 @@
 case COGITO_APPBAR: {
       int btn_size = 12;
-      int btn_gap = 6;
-      int btn_pad_top = 9;
-      int btn_pad_right = 9;
+      int btn_gap = 10;
+      int btn_pad_top = 15;
+      int btn_pad_right = 15;
       cogito_appbar_button_metrics(&btn_size, &btn_gap, &btn_pad_top, &btn_pad_right);
       int buttons_y = y + btn_pad_top;
       n->appbar.btn_size = btn_size;

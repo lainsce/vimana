@@ -1,3 +1,25 @@
+static bool cogito_is_fab_or_docked_toolbar(CogitoNode* n) {
+  if (!n) return false;
+  if (n->kind == COGITO_FAB) return true;
+  if (n->kind == COGITO_FAB_MENU) return true;
+  // Toolbar is docked if not floating and positioned at bottom
+  if (n->kind == COGITO_TOOLBAR) {
+    bool floating = (n->class_name && n->class_name->data && strstr(n->class_name->data, "floating"));
+    return !floating && !n->toolbar.vertical;
+  }
+  return false;
+}
+
+static CogitoNode* cogito_find_fab_toolbar(CogitoNode* n) {
+  if (!n) return NULL;
+  if (cogito_is_fab_or_docked_toolbar(n)) return n;
+  for (size_t i = 0; i < n->len; i++) {
+    CogitoNode* found = cogito_find_fab_toolbar(n->children[i]);
+    if (found) return found;
+  }
+  return NULL;
+}
+
 static void cogito_layout_toasts(CogitoNode* n, int x, int y) {
   CogitoNode* win = cogito_node_window(n);
   int base_x = win ? 0 : x;
@@ -19,9 +41,27 @@ static void cogito_layout_toasts(CogitoNode* n, int x, int y) {
   if (inner_w < 0) inner_w = 0;
   if (inner_h < 0) inner_h = 0;
   int gap = n->gap > 0 ? n->gap : 6;
-  int cy = inner_y + inner_h;
-  for (size_t idx = n->len; idx-- > 0;) {
+
+  // Check for FAB, FABMenu, or docked Toolbar - position toasts above them
+  int bottom_margin = 0;
+  if (win) {
+    CogitoNode* fab_toolbar = cogito_find_fab_toolbar(win);
+    if (fab_toolbar) {
+      bottom_margin = fab_toolbar->h + 12; // 12dp clearance
+    }
+  }
+
+  int cy = inner_y + inner_h - bottom_margin;
+  // Limit to 5 visible toasts (newest first, since we iterate backwards)
+  const size_t max_toasts = 5;
+  size_t start_idx = n->len > max_toasts ? n->len - max_toasts : 0;
+  for (size_t idx = n->len; idx-- > start_idx;) {
     CogitoNode* c = n->children[idx];
+    // Hide excess toasts beyond the limit
+    if (idx < start_idx) {
+      c->hidden = true;
+      continue;
+    }
     int cw = 0;
     int ch = 0;
     cogito_intrinsic_size(c, &cw, &ch);
@@ -37,6 +77,10 @@ static void cogito_layout_toasts(CogitoNode* n, int x, int y) {
     cogito_layout_node(c, cx, cy_child, cw, ch);
     cy = cy_child - c->margin_top;
     // Add gap only between items, not before the first one (we're iterating backwards)
-    if (idx > 0) cy -= gap;
+    if (idx > start_idx) cy -= gap;
+  }
+  // Hide any excess toasts that weren't iterated
+  for (size_t i = 0; i < start_idx && i < n->len; i++) {
+    n->children[i]->hidden = true;
   }
 }

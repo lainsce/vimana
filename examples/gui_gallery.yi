@@ -100,52 +100,6 @@ fun build_button_page() (( cogito.VStack )) {
 
     vstack.add(size_dd_row)
 
-    -- Section: Button Sizes (Static Examples)
-    let sizes_label = cogito.label("Static Size Examples")
-    .set_class("heading")
-    vstack.add(sizes_label)
-
-    let sizes_row = cogito.hstack()
-    .set_gap(12)
-    .set_hexpand(true)
-
-    let xs_btn = cogito.button("XS")
-    .set_size(0)
-    .on_click((b = cogito.Button) => {
-        status.set_text("XS" !clicked_message)
-    })
-    sizes_row.add(xs_btn)
-
-    let s_btn = cogito.button("S")
-    .set_size(1)
-    .on_click((b = cogito.Button) => {
-        status.set_text("S" !clicked_message)
-    })
-    sizes_row.add(s_btn)
-
-    let m_btn = cogito.button("M")
-    .set_size(2)
-    .on_click((b = cogito.Button) => {
-        status.set_text("M" !clicked_message)
-    })
-    sizes_row.add(m_btn)
-
-    let l_btn = cogito.button("L")
-    .set_size(3)
-    .on_click((b = cogito.Button) => {
-        status.set_text("L" !clicked_message)
-    })
-    sizes_row.add(l_btn)
-
-    let xl_btn = cogito.button("XL")
-    .set_size(4)
-    .on_click((b = cogito.Button) => {
-        status.set_text("XL" !clicked_message)
-    })
-    sizes_row.add(xl_btn)
-
-    vstack.add(sizes_row)
-
     -- Section: Disabled States
     let disabled_label = cogito.label("Disabled States")
     .set_class("heading")
@@ -174,53 +128,6 @@ fun build_button_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun make_iconbtn_row(label_text = string, icon = string, color_style = num, shape = num) (( cogito.HStack )) {
-    let row = cogito.hstack()
-    .set_hexpand(true)
-    .set_gap(12)
-    .set_padding(18, 0, 18, 0)
-
-    let lbl = cogito.label(label_text)
-    .set_class("body")
-    .set_hexpand(true)
-    row.add(lbl)
-
-    -- XS
-    let xs = cogito.iconbtn(icon)
-    .set_xs()
-    .set_color_style(color_style)
-    .set_shape(shape)
-    row.add(xs)
-
-    -- S (default)
-    let s = cogito.iconbtn(icon)
-    .set_s()
-    .set_color_style(color_style)
-    .set_shape(shape)
-    row.add(s)
-
-    -- M
-    let m = cogito.iconbtn(icon)
-    .set_color_style(color_style)
-    .set_shape(shape)
-    row.add(m)
-
-    -- L
-    let l = cogito.iconbtn(icon)
-    .set_color_style(color_style)
-    .set_shape(shape)
-    .set_l()
-    row.add(l)
-
-    -- XL
-    let xl = cogito.iconbtn(icon)
-    .set_color_style(color_style)
-    .set_shape(shape)
-    .set_xl()
-    row.add(xl)
-    return row
-}
-
 fun build_iconbtn_page() (( cogito.VStack )) {
     let vstack = build_page("Icon Button", "Icon buttons come in 4 color styles (Filled, Tonal, Outlined, Iconic), 2 shapes (Circle, Rounded Square), and 3 widths (Narrow, Default, Wide).")
 
@@ -228,120 +135,107 @@ fun build_iconbtn_page() (( cogito.VStack )) {
     .set_class("body")
     vstack.add(status)
 
-    -- Section: Color Styles (circle shape, default width)
-    let sec1 = cogito.label("Color Styles")
+    -- Section: Color Style Selector
+    let color_label = cogito.label("Color Style")
     .set_class("heading")
-    vstack.add(sec1)
+    vstack.add(color_label)
 
-    -- Filled row
-    let filled_row = make_iconbtn_row("Filled", "sf:pencil", 0, 0)
-    vstack.add(filled_row)
+    let color_dd = cogito.dropdown()
+    .set_items(["Filled", "Tonal", "Outlined", "Iconic"])
+    .set_selected(0)
+    vstack.add(color_dd)
 
-    -- Tonal row
-    let tonal_row = make_iconbtn_row("Tonal", "sf:pencil", 1, 0)
-    vstack.add(tonal_row)
-
-    -- Outlined row
-    let outlined_row = make_iconbtn_row("Outlined", "sf:pencil", 2, 0)
-    vstack.add(outlined_row)
-
-    -- Iconic row
-    let iconic_row = make_iconbtn_row("Iconic", "sf:pencil", 3, 0)
-    vstack.add(iconic_row)
-
-    -- Section: Shapes
-    let sec2 = cogito.label("Shapes")
+    -- Section: Shape Selector
+    let shape_label = cogito.label("Shape")
     .set_class("heading")
-    vstack.add(sec2)
+    vstack.add(shape_label)
 
-    let shape_row = cogito.hstack()
+    let shape_dd = cogito.dropdown()
+    .set_items(["Circle", "Rounded Square"])
+    .set_selected(0)
+    vstack.add(shape_dd)
+
+    -- Section: Size Selector
+    let size_label = cogito.label("Size")
+    .set_class("heading")
+    vstack.add(size_label)
+
+    let size_dd = cogito.dropdown()
+    .set_items(["XS", "S", "M", "L", "XL"])
+    .set_selected(2)
+    vstack.add(size_dd)
+
+    -- Section: Width Selector
+    let width_label = cogito.label("Width")
+    .set_class("heading")
+    vstack.add(width_label)
+
+    let width_dd = cogito.dropdown()
+    .set_items(["Narrow", "Default", "Wide"])
+    .set_selected(1)
+    vstack.add(width_dd)
+
+    -- Interactive Icon Button
+    let preview_label = cogito.label("Interactive Preview")
+    .set_class("heading")
+    vstack.add(preview_label)
+
+    let btn_row = cogito.hstack()
+    .set_hexpand(true)
     .set_gap(12)
 
-    let circle_lbl = cogito.label("Circle")
-    .set_class("body")
-    shape_row.add(circle_lbl)
-
-    let circle_btn = cogito.iconbtn("sf:star.fill")
+    let icon_btn = cogito.iconbtn("sf:star.fill")
     .set_color_style(0)
     .set_shape(0)
-    shape_row.add(circle_btn)
-
-    let sq_lbl = cogito.label("Rounded Square")
-    .set_class("body")
-    shape_row.add(sq_lbl)
-
-    let sq_btn = cogito.iconbtn("sf:star.fill")
-    .set_color_style(0)
-    .set_shape(1)
-    shape_row.add(sq_btn)
-
-    vstack.add(shape_row)
-
-    -- Section: Widths
-    let sec3 = cogito.label("Widths")
-    .set_class("heading")
-    vstack.add(sec3)
-
-    let width_row = cogito.hstack()
-    .set_gap(12)
-
-    let narrow_lbl = cogito.label("Narrow")
-    .set_class("body")
-    width_row.add(narrow_lbl)
-
-    let narrow_btn = cogito.iconbtn("sf:pencil")
-    .set_color_style(1)
-    .set_width(0)
-    width_row.add(narrow_btn)
-
-    let default_lbl = cogito.label("Default")
-    .set_class("body")
-    width_row.add(default_lbl)
-
-    let default_btn = cogito.iconbtn("sf:pencil")
-    .set_color_style(1)
     .set_width(1)
-    width_row.add(default_btn)
-
-    let wide_lbl = cogito.label("Wide")
-    .set_class("body")
-    width_row.add(wide_lbl)
-
-    let wide_btn = cogito.iconbtn("sf:pencil")
-    .set_color_style(1)
-    .set_width(2)
-    width_row.add(wide_btn)
-
-    vstack.add(width_row)
-
-    -- Section: Toggle
-    let sec4 = cogito.label("Toggle")
-    .set_class("heading")
-    vstack.add(sec4)
-
-    let toggle_row = cogito.hstack()
-    .set_gap(12)
+    .set_size(2)
+    .on_click((b = cogito.IconButton) => {
+        status.set_text("Icon button clicked!")
+    })
+    btn_row.add(icon_btn)
 
     let toggle_btn = cogito.iconbtn("sf:heart")
     .set_color_style(0)
     .set_shape(0)
+    .set_width(1)
+    .set_size(2)
     .set_toggle(true)
     .on_click((b = cogito.IconButton) => {
         let state = if b.checked() { "on" } else { "off" }
         status.set_text("Toggle: <state>")
     })
-    toggle_row.add(toggle_btn)
+    btn_row.add(toggle_btn)
 
-    let toggle_tonal = cogito.iconbtn("sf:bookmark")
-    .set_color_style(1)
-    .set_toggle(true)
-    .on_click((b = cogito.IconButton) => {
-        let ?state = if b.checked() { "bookmarked" } else { "not bookmarked" }
-        status.set_text("Bookmark: <state>")
+    vstack.add(btn_row)
+
+    -- Update handlers
+    color_dd.on_change((d = cogito.Dropdown) => {
+        let sel = d.selected()
+        icon_btn.set_color_style(sel)
+        toggle_btn.set_color_style(sel)
+        status.set_text("Color style changed.")
     })
-    toggle_row.add(toggle_tonal)
 
-    vstack.add(toggle_row)
+    shape_dd.on_change((d = cogito.Dropdown) => {
+        let sel = d.selected()
+        icon_btn.set_shape(sel)
+        toggle_btn.set_shape(sel)
+        status.set_text("Shape changed.")
+    })
+
+    size_dd.on_change((d = cogito.Dropdown) => {
+        let sel = d.selected()
+        icon_btn.set_size(sel)
+        toggle_btn.set_size(sel)
+        status.set_text("Size changed.")
+    })
+
+    width_dd.on_change((d = cogito.Dropdown) => {
+        let sel = d.selected()
+        icon_btn.set_width(sel)
+        toggle_btn.set_width(sel)
+        status.set_text("Width changed.")
+    })
 
     return vstack
 }
@@ -455,6 +349,23 @@ fun build_checkbox_page() (( cogito.VStack )) {
     })
     vstack.add(cb2)
 
+    let divider = cogito.divider("", false)
+    vstack.add(divider)
+
+    let group = cogito.checkbox("", null) -- Grouper
+    let cb3 = cogito.checkbox("Dark mode", group)
+    let cb4 = cogito.checkbox("Light mode", group)
+    cb3.on_change((c = cogito.Checkbox) => {
+        let ?chk = c.checked()
+        status.set_text("Dark mode: <chk>")
+    })
+    cb4.on_change((c = cogito.Checkbox) => {
+        let ?chk = c.checked()
+        status.set_text("Light mode: <chk>")
+    })
+    vstack.add(cb3)
+    vstack.add(cb4)
+
     return vstack
 }
 
@@ -472,6 +383,14 @@ fun build_switch_page() (( cogito.VStack )) {
     })
     vstack.add(sw)
 
+    let sw2 = cogito.switch("Dark Mode")
+    .set_checked(true)
+    .on_change((s = cogito.Switch) => {
+        let ?on = if s.checked() { "on" } else { "off" }
+        status.set_text("Switch is <on>.")
+    })
+    vstack.add(sw2)
+
     return vstack
 }
 
@@ -482,13 +401,53 @@ fun build_slider_page() (( cogito.VStack )) {
     .set_class("body")
     vstack.add(status)
 
+    -- Standard Slider
+    let standard_label = cogito.label("Standard Slider (0-100)")
+    .set_class("heading")
+    vstack.add(standard_label)
+
     let sl = cogito.slider(0, 100, 50)
     .set_hexpand(true)
     sl.on_change((s = cogito.Slider) => {
-        let ?v = s.value()
+        let v = s.value()
         status.set_text("Value: <v>")
     })
     vstack.add(sl)
+
+    -- Range Slider
+    let range_label = cogito.label("Range Slider (10-90)")
+    .set_class("heading")
+    vstack.add(range_label)
+
+    let range_status = cogito.label("Range: 10 - 90")
+    .set_class("body")
+    vstack.add(range_status)
+
+    let range_slider = cogito.slider(0, 100, 50)
+    .set_hexpand(true)
+    .set_range(10, 90)
+    range_slider.on_change((s = cogito.Slider) => {
+        let v = s.value()
+        range_status.set_text("Range value: <v>")
+    })
+    vstack.add(range_slider)
+
+    -- Discrete Slider
+    let discrete_label = cogito.label("Discrete Slider (step 10)")
+    .set_class("heading")
+    vstack.add(discrete_label)
+
+    let discrete_status = cogito.label("Stepped value: 50")
+    .set_class("body")
+    vstack.add(discrete_status)
+
+    let discrete_slider = cogito.slider(0, 100, 50)
+    .set_hexpand(true)
+    discrete_slider.on_change((s = cogito.Slider) => {
+        let v = s.value()
+        discrete_status.set_text("Stepped value: <v>")
+    })
+    vstack.add(discrete_slider)
 
     return vstack
 }
@@ -496,11 +455,15 @@ fun build_slider_page() (( cogito.VStack )) {
 fun build_stepper_page() (( cogito.VStack )) {
     let vstack = build_page("Stepper", "Steppers provide precise incremental adjustments using +/- controls.")
 
-    let info = cogito.label("Use the steppers buttons to increment or decrement.")
+    let status = cogito.label("Value: 0")
     .set_class("body")
-    vstack.add(info)
+    vstack.add(status)
 
-    let step = cogito.stepper(0, 100, 5, 1)
+    let step = cogito.stepper(0, 100, 0, 1)
+    .on_change((s = cogito.Stepper) => {
+        let v = s.value()
+        status.set_text("Value: <v>")
+    })
     vstack.add(step)
 
     return vstack
@@ -578,18 +541,47 @@ fun build_dropdown_page() (( cogito.VStack )) {
 fun build_progress_page() (( cogito.VStack )) {
     let vstack = build_page("Progress", "Progress indicators communicate task completion and indeterminate loading states.")
 
-    let linear = cogito.progress(0.72)
+    let status = cogito.label("Adjust the progress value or toggle indeterminate mode.")
+    .set_class("body")
+    vstack.add(status)
+
+    -- Value Control
+    let value_label = cogito.label("Progress Value: 50%")
+    .set_class("heading")
+    vstack.add(value_label)
+
+    let value_slider = cogito.slider(0, 100, 50)
+    .set_hexpand(true)
+    vstack.add(value_slider)
+
+    -- Indeterminate Toggle
+    let indeterminate_switch = cogito.switch("Indeterminate Mode")
+    .set_checked(false)
+    vstack.add(indeterminate_switch)
+
+    -- Progress Indicators
+    let linear = cogito.progress(0.5)
     .set_hexpand(true)
     vstack.add(linear)
 
-    let ind = cogito.progress(0.0)
-    .set_hexpand(true)
-    .set_indeterminate(true)
-    vstack.add(ind)
-
-    let circular = cogito.progress(0.65)
+    let circular = cogito.progress(0.5)
     .set_circular(true)
     vstack.add(circular)
+
+    -- Value update handler
+    value_slider.on_change((s = cogito.Slider) => {
+        let v = s.value()
+        let progress = v / 100.0
+        value_label.set_text("Progress Value: <v>%")
+    })
+
+    -- Indeterminate toggle handler
+    indeterminate_switch.on_change((sw = cogito.Switch) => {
+        let is_indeterminate = sw.checked()
+        linear.set_indeterminate(is_indeterminate)
+        circular.set_indeterminate(is_indeterminate)
+        status.set_text("Indeterminate: <is_indeterminate>")
+    })
 
     return vstack
 }
@@ -832,30 +824,66 @@ fun build_chip_page() (( cogito.VStack )) {
     .set_class("body")
     vstack.add(status)
 
-    let row = cogito.hstack()
-    .set_gap(8)
-    vstack.add(row)
+    let interactive_label = cogito.label("Interactive Chip")
+    .set_class("heading")
+    vstack.add(interactive_label)
 
-    let filter = cogito.chip("Filter")
+    let chip_row = cogito.hstack()
+    .set_gap(12)
+    .set_hexpand(true)
+
+    let interactive_chip = cogito.chip("Chip")
     .on_click((c = cogito.Chip) => {
-        status.set_text("Filter clicked.")
+        status.set_text("Chip clicked.")
     })
-    row.add(filter)
-
-    let selected = cogito.chip("Selected")
-    .set_selected(true)
-    .on_click((c = cogito.Chip) => {
-        let ?selchip = c.selected()
-        status.set_text("Selected state: <selchip>")
-    })
-    row.add(selected)
-
-    let closeable = cogito.chip("Closable")
-    .set_closable(true)
     .on_close((c = cogito.Chip) => {
-        status.set_text("Close action triggered.")
+        status.set_text("Chip close action triggered.")
     })
-    row.add(closeable)
+    chip_row.add(interactive_chip)
+
+    vstack.add(chip_row)
+
+    let controls_label = cogito.label("State Controls").set_class("heading")
+    vstack.add(controls_label)
+
+    let selected_cb = cogito.checkbox("Selected", null)
+    selected_cb.on_change((c = cogito.Checkbox) => {
+        let ?chk = c.checked()
+        interactive_chip.set_selected(chk)
+        status.set_text("Selected: <chk>")
+    })
+    vstack.add(selected_cb)
+
+    let closable_cb = cogito.checkbox("Closable", null)
+    closable_cb.on_change((c = cogito.Checkbox) => {
+        let ?chk = c.checked()
+        interactive_chip.set_closable(chk)
+        status.set_text("Closable: <chk>")
+    })
+    vstack.add(closable_cb)
+
+    let disabled_cb = cogito.checkbox("Disabled", null)
+    disabled_cb.on_change((c = cogito.Checkbox) => {
+        let ?chk = c.checked()
+        interactive_chip.set_disabled(chk)
+        status.set_text("Disabled: <chk>")
+    })
+    vstack.add(disabled_cb)
+
+    -- Static Examples
+    let examples_label = cogito.label("Static Examples")
+    .set_class("heading")
+    vstack.add(examples_label)
+
+    let examples_row = cogito.hstack()
+    .set_gap(8)
+
+    examples_row.add(cogito.chip("Default"))
+    examples_row.add(cogito.chip("Selected").set_selected(true))
+    examples_row.add(cogito.chip("Closable").set_closable(true))
+    examples_row.add(cogito.chip("Disabled").set_disabled(true))
+
+    vstack.add(examples_row)
 
     return vstack
 }
@@ -1199,10 +1227,26 @@ fun build_treeview_page() (( cogito.VStack )) {
 }
 
 fun build_card_page() (( cogito.VStack )) {
-    let vstack = build_page("Card", "Cards group related content and actions within an elevated container.")
+    let vstack = build_page("Card", "Cards group related content and actions within an elevated container. Choose a variant to change the elevation and fill.")
 
+    let status = cogito.label("Select a card variant.")
+    .set_class("body")
+    vstack.add(status)
+
+    -- Variant Selector
+    let variant_label = cogito.label("Variant")
+    .set_class("heading")
+    vstack.add(variant_label)
+
+    let variant_dd = cogito.dropdown()
+    .set_items(["Elevated", "Filled", "Outlined"])
+    .set_selected(0)
+    vstack.add(variant_dd)
+
+    -- Interactive Card
     let card = cogito.card("Release Notes")
     .set_hexpand(true)
+    .set_class("elevated")
 
     let body = cogito.label("Version 1.0 includes improved layout, theming, and gallery structure.")
     .set_class("body")
@@ -1211,22 +1255,76 @@ fun build_card_page() (( cogito.VStack )) {
 
     let action = cogito.button("View Details")
     .set_class("outlined")
+    .on_click((b = cogito.Button) => {
+        status.set_text("Card action clicked!")
+    })
     card.add(action)
 
     vstack.add(card)
+
+    -- Variant update handler
+    variant_dd.on_change((d = cogito.Dropdown) => {
+        let sel = d.selected()
+        let class_name = if sel == 0 { "elevated" } elif sel == 1 { "filled" } else { "outlined" }
+        card.set_class(class_name)
+        status.set_text("Card variant: <class_name>")
+    })
+
     return vstack
 }
 
 fun build_avatar_page() (( cogito.VStack )) {
     let vstack = build_page("Avatar", "Avatars represent people or entities through initials, icons, or images.")
 
-    let row = cogito.hstack()
+    let status = cogito.label("Select an avatar type.")
+    .set_class("body")
+    vstack.add(status)
+
+    -- Type Selector
+    let type_label = cogito.label("Avatar Type")
+    .set_class("heading")
+    vstack.add(type_label)
+
+    let type_dd = cogito.dropdown()
+    .set_items(["Initials", "Icon", "Image"])
+    .set_selected(0)
+    vstack.add(type_dd)
+
+    -- Interactive Avatar
+    let avatar_row = cogito.hstack()
+    .set_gap(12)
+    .set_hexpand(true)
+
+    let interactive_avatar = cogito.avatar("AB")
+    avatar_row.add(interactive_avatar)
+
+    vstack.add(avatar_row)
+
+    -- Static Examples
+    let examples_label = cogito.label("Examples")
+    .set_class("heading")
+    vstack.add(examples_label)
+
+    let examples_row = cogito.hstack()
     .set_gap(12)
     .add(cogito.avatar("Alice"))
     .add(cogito.avatar("Bob"))
     .add(cogito.avatar("Charlie"))
     .add(cogito.avatar("sf:person"))
-    vstack.add(row)
+
+    vstack.add(examples_row)
+
+    -- Type update handler
+    type_dd.on_change((d = cogito.Dropdown) => {
+        let sel = d.selected()
+        if sel == 0 {
+            status.set_text("Type: Initials")
+        } elif sel == 1 {
+            status.set_text("Type: Icon")
+        } else {
+            status.set_text("Type: Image")
+        }
+    })
 
     return vstack
 }
@@ -1447,34 +1545,7 @@ fun session_apply_scaled_vertices(target = cogito.Shape, template = cogito.Shape
 }
 
 fun build_shape_gallery_page() (( cogito.VStack )) {
-    let vstack = build_page("Shape Gallery", "Burst, Flower, and Sunny presets using Primary, Secondary, and Tertiary styling.")
-
-    let row = cogito.hstack()
-    .set_hexpand(true)
-    .set_gap(18)
-
-    let burst_col = cogito.vstack()
-    .set_gap(8)
-    .add(cogito.shape(23)
-        .set_class("primary"))
-    .add(cogito.label("Burst").set_class("caption"))
-
-    let flower_col = cogito.vstack()
-    .set_gap(8)
-    .add(cogito.shape(27)
-    .set_class("secondary"))
-    .add(cogito.label("Flower").set_class("caption"))
-
-    let sunny_col = cogito.vstack()
-    .set_gap(8)
-    .add(cogito.shape(15)
-    .set_class("tertiary"))
-    .add(cogito.label("Sunny").set_class("caption"))
-
-    row.add(burst_col)
-    row.add(flower_col)
-    row.add(sunny_col)
-    vstack.add(row)
+    let vstack = build_page("Shape Gallery", "Breathing Flower Animation with 18 layers of shapes.")
 
     let section = cogito.label("Shape Breathing Animation")
     .set_class("heading")
@@ -1493,35 +1564,62 @@ fun build_shape_gallery_page() (( cogito.VStack )) {
     shape_paused = true
     shape_armed = false
     let min_multiplier = 0.6
-    let layer_count = 3.0
+    let layer_count = 18.0
     let base_size = 256.0
 
-    let layer0 = cogito.shape(15).set_size(256).set_color("#B0B5FE")
-    let layer1 = cogito.shape(15).set_size(256).set_color("#E3ED86")
-    let center = cogito.shape(27).set_size(256).set_color("#23398D")
-    let anchor = cogito.shape(15).set_size(256).set_color("transparent")
-    let layer0_base = cogito.shape(15).set_size(256)
-    let layer1_base = cogito.shape(15).set_size(256)
-    let center_base = cogito.shape(27).set_size(256)
-    let center_scale = 24.0 / 256.0
+    -- Create 18 flower layers with different colors
+    let layers = [
+        cogito.shape(27).set_size(256).set_color("#23398D"),
+        cogito.shape(27).set_size(256).set_color("#2E4A9E"),
+        cogito.shape(27).set_size(256).set_color("#3A5BAF"),
+        cogito.shape(27).set_size(256).set_color("#466CC0"),
+        cogito.shape(27).set_size(256).set_color("#527DD1"),
+        cogito.shape(27).set_size(256).set_color("#5E8EE2"),
+        cogito.shape(27).set_size(256).set_color("#6A9FF3"),
+        cogito.shape(27).set_size(256).set_color("#76B0FF"),
+        cogito.shape(27).set_size(256).set_color("#82C1FF"),
+        cogito.shape(27).set_size(256).set_color("#8ED2FF"),
+        cogito.shape(27).set_size(256).set_color("#9AE3FF"),
+        cogito.shape(27).set_size(256).set_color("#A6F4FF"),
+        cogito.shape(27).set_size(256).set_color("#B0B5FE"),
+        cogito.shape(27).set_size(256).set_color("#C0C5FF"),
+        cogito.shape(27).set_size(256).set_color("#D0D5FF"),
+        cogito.shape(27).set_size(256).set_color("#E0E5FF"),
+        cogito.shape(27).set_size(256).set_color("#E3ED86"),
+        cogito.shape(27).set_size(256).set_color("#F0F5A0")
+    ]
+    let layer_bases = [
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256),
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256),
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256),
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256),
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256),
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256),
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256),
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256),
+        cogito.shape(27).set_size(256), cogito.shape(27).set_size(256)
+    ]
+
+    let anchor = cogito.shape(27).set_size(256).set_color("transparent")
 
     let render = () => {
-        let ?wrapped = shape_phase
+        let wrapped = shape_phase
 
-        let ?progress = session_phase_progress(wrapped)
-        let ?second = session_countdown5(progress)
-        let ?instruction_text = session_phase_label(wrapped)
-        let ?next_instruction = "<second> - <instruction_text>"
+        let progress = session_phase_progress(wrapped)
+        let second = session_countdown5(progress)
+        let instruction_text = session_phase_label(wrapped)
+        let next_instruction = "<second> - <instruction_text>"
         if next_instruction != shape_instruction_text {
             shape_instruction_text = next_instruction
             instruction.set_text(next_instruction)
         }
 
-        let ?scale0 = session_layer_size(base_size, wrapped, min_multiplier, 0.0, layer_count) / base_size
-        let ?scale1 = session_layer_size(base_size, wrapped, min_multiplier, 1.0, layer_count) / base_size
-        session_apply_scaled_vertices(layer0, layer0_base, scale0)
-        session_apply_scaled_vertices(layer1, layer1_base, scale1)
-        session_apply_scaled_vertices(center, center_base, center_scale)
+        for (let ?i = 0; i < 18; i += 1) {
+            let layer = layers[i] ?? anchor
+            let base = layer_bases[i] ?? anchor
+            let scale = session_layer_size(base_size, wrapped, min_multiplier, i * 1.0, layer_count) / base_size
+            session_apply_scaled_vertices(layer, base, scale)
+        }
     }
 
     let tick = () => {
@@ -1537,7 +1635,7 @@ fun build_shape_gallery_page() (( cogito.VStack )) {
     }
     let start_timer = () => {
         if shape_timer_id == 0 && shape_armed && !shape_paused {
-            shape_timer_id = cogito.set_interval_for(center, 50, () => {
+            shape_timer_id = cogito.set_interval_for(anchor, 50, () => {
                 tick()
             })
         }
@@ -1547,9 +1645,12 @@ fun build_shape_gallery_page() (( cogito.VStack )) {
     .set_align(4)
     .set_hexpand(true)
     .add(anchor)
-    .add(layer0)
-    .add(layer1)
-    .add(center)
+
+    -- Add all 18 layers to the stack (innermost first)
+    for (let ?i = 0; i < 18; i += 1) {
+        let layer = layers[i] ?? anchor
+        stack.add(layer)
+    }
 
     render()
     vstack.add(stack)

@@ -494,7 +494,6 @@ static void cogito_node_hover_state(CogitoNode* n, bool* out_hover, bool* out_ac
 }
 
 static bool cogito_node_disabled(const CogitoNode* n);
-static void cogito_toast_close_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h);
 
 static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hover, bool active) {
   CogitoStyle s = cogito_theme_resolve_node(n);

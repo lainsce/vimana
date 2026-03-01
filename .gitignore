@@ -24,3 +24,6 @@ run.exe
 *.app
 .opencode
 .claude
+
+.mcp.json
+INSTRUCTIONS.md

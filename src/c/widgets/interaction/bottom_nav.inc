@@ -17,6 +17,16 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
   if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_set_items expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
 
+  // Parse labels array
+  if (labelsv.tag != EVT_ARR) yis_trap("cogito.bottom_nav_set_items expects array of labels");
+  YisArr* labels = (YisArr*)labelsv.as.p;
+  size_t count = labels->len;
+
+  // Validate: BottomNav must have 3 to 7 items
+  if (count < 3 || count > 7) {
+    yis_trap("cogito.bottom_nav_set_items expects 3 to 7 items");
+  }
+
   // Clear existing items
   if (n->bottom_nav.labels) {
     for (size_t i = 0; i < n->bottom_nav.len; i++) {
@@ -26,11 +36,6 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
     free(n->bottom_nav.labels);
     free(n->bottom_nav.icons);
   }
-
-  // Parse labels array
-  if (labelsv.tag != EVT_ARR) yis_trap("cogito.bottom_nav_set_items expects array of labels");
-  YisArr* labels = (YisArr*)labelsv.as.p;
-  size_t count = labels->len;
 
   n->bottom_nav.len = count;
   n->bottom_nav.cap = count;

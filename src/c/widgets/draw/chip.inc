@@ -42,13 +42,34 @@ case COGITO_CHIP: {
   if (border_w > 0) {
     cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, border_color, radius, border_w);
   }
-  // ---- Leading check icon for selected chips ----
-  // Cogito: 18dp icon zone at leading edge (8dp gap + check icon)
-  if (n->chip.selected) {
+  // ---- Leading check icon for selected chips with spring animation ----
+  // Use spring_h for checkmark scale animation
+  double dt = cogito_spring_dt;
+  double target_scale = n->chip.selected ? 1.0 : 0.0;
+
+  if (!n->spring_h.inited) {
+    cogito_spring_snap(&n->spring_h, target_scale);
+  }
+
+  // On state change, snap to starting position
+  bool was_selected = (n->spring_h.target >= 0.5);
+  if (was_selected != n->chip.selected) {
+    cogito_spring_snap(&n->spring_h, n->chip.selected ? 0.0 : 1.0);
+  }
+  n->spring_h.target = target_scale;
+
+  // Tick spring: Fast spatial for checkmark (k=800, z=0.6)
+  cogito_spring_tick(&n->spring_h, target_scale, 800.0, 0.6, dt);
+
+  float check_scale = (float)n->spring_h.x;
+  if (check_scale < 0.0f) check_scale = 0.0f;
+  if (check_scale > 1.5f) check_scale = 1.5f;
+
+  if (check_scale > 0.01f) {
     // Draws a proper checkmark: start→mid→end, proportional to chip h
     int icon_zone  = n->h; // square icon slot at left edge
-    int check_size = (n->h * 7) / 16; // ~7dp for 16dp tall chip (scales)
-    if (check_size < 6) check_size = 6;
+    int check_size = (int)(((n->h * 7) / 16) * check_scale); // ~7dp for 16dp tall chip (scales)
+    if (check_size < 2) check_size = 2;
     int check_cx = n->x + icon_zone / 2;
     int check_cy = n->y + n->h / 2;
     int sx  = check_cx - check_size / 2;
@@ -59,6 +80,12 @@ case COGITO_CHIP: {
     int ey  = check_cy - check_size * 3 / 8;
     cogito_draw_line(sx, sy, mx, my, text_color);
     cogito_draw_line(mx, my, ex, ey, text_color);
+  }
+
+  if (cogito_spring_active(&n->spring_h, target_scale)) {
+    double end_time = cogito_now() + 0.6;
+    if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+    cogito_window_relayout(cogito_node_window(n));
   }
   // ---- Label ----
   if (n->text) {

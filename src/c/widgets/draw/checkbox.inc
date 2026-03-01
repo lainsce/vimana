@@ -54,6 +54,47 @@ case COGITO_CHECKBOX: {
       CogitoColor check = check_style.has_check ? check_style.check : (n->checked ? cogito_on_color(check_base) : resolved_text);
       cogito_anim_apply(n, &box_style, &box_bg, &check, &box_border, NULL);
 
+      // ---- Glyph overshoot animation using spring_h ----
+      // Animate from 0 to 1 with overshoot on check, smooth shrink on uncheck
+      double dt = cogito_spring_dt;
+      double target_scale = n->checked ? 1.0 : 0.0;
+
+      // Track checked state changes (stored in spring_h.target as last known target)
+      bool was_checked = (n->spring_h.target == 1.0);
+      bool state_changed = (was_checked != n->checked);
+
+      // Initialize spring on first draw
+      if (!n->spring_h.inited) {
+        cogito_spring_snap(&n->spring_h, target_scale);
+      }
+
+      // On state change, snap to starting position for animation
+      // Checking: start from 0, grow with overshoot
+      // Unchecking: start from 1, shrink smoothly
+      if (state_changed) {
+        cogito_spring_snap(&n->spring_h, n->checked ? 0.0 : 1.0);
+      }
+
+      // Update stored target for next frame comparison
+      n->spring_h.target = target_scale;
+
+      // Tick spring: Fast spatial for glyph (k=800, z=0.6)
+      double k = 800.0;
+      double z = 0.6;
+      cogito_spring_tick(&n->spring_h, target_scale, k, z, dt);
+
+      // Get current scale
+      float glyph_scale = (float)n->spring_h.x;
+      if (glyph_scale < 0.0f) glyph_scale = 0.0f;
+      if (glyph_scale > 2.0f) glyph_scale = 2.0f; // Clamp overshoot
+
+      // Schedule more frames if animation is active
+      if (cogito_spring_active(&n->spring_h, target_scale)) {
+        double end_time = cogito_now() + 0.6;
+        if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+        cogito_window_relayout(cogito_node_window(n));
+      }
+
 	      if (is_radio) {
 	        int box_r = box_style.has_radius ? box_style.radius : (box / 2);
 	        if (box_r < 1) box_r = 1;
@@ -67,16 +108,26 @@ case COGITO_CHECKBOX: {
 	        if (box_border_w > 0) {
 	          cogito_draw_rect_lines(n->x, cy, box, box, box_border, box_r, box_border_w);
     }
-    // Draw inner dot when checked
-	        if (n->checked) {
+    // Draw inner dot with overshoot animation
+	        if (glyph_scale > 0.05f) {
 	          int r = box / 4;
 	          if (r < 3) r = 3;
-	          int dot_size = r * 2;
-	          int dot_x = n->x + box / 2 - r;
-	          int dot_y = cy + box / 2 - r;
-	          int dot_r = r;
-	          if (dot_r < 1) dot_r = 1;
-	          cogito_draw_rect(dot_x, dot_y, dot_size, dot_size, check, dot_r);
+	          // Apply scale for overshoot effect
+	          float dot_size_f = r * 2 * glyph_scale;
+	          int dot_size = (int)(dot_size_f + 0.5f); // Round to nearest int
+	          if (dot_size >= 2) {
+	            // Fixed center point of box (scale from center, not corner)
+	            int center_x = n->x + box / 2;
+	            int center_y = cy + box / 2;
+	            // Proper rounding for offset: x.5 rounds to nearest even, favor center
+	            float half_size_f = dot_size_f / 2.0f;
+	            int offset = (int)(half_size_f + 0.5f);
+	            int dot_x = center_x - offset;
+	            int dot_y = center_y - offset;
+	            // Radius is half size for perfect circle
+	            int dot_r = dot_size / 2;
+	            cogito_draw_rect(dot_x, dot_y, dot_size, dot_size, check, dot_r);
+	          }
     }
   } else {
     // Checkbox
@@ -90,22 +141,30 @@ case COGITO_CHECKBOX: {
         if (box_border_w > 0) {
           cogito_draw_rect_lines(n->x, cy, box, box, box_border, box_radius, box_border_w);
     }
-    // Checkmark: cleaner Cogito geometry — left tick + right stroke
-        if (n->checked) {
+    // Checkmark with overshoot animation — left tick + right stroke
+        if (glyph_scale > 0.05f) {
           int mark = box - 2;
           if (mark < 6) mark = 6;
-          int x0 = n->x + (box - mark) / 2;
-          int y0 = cy + (box - mark) / 2;
-          // Start → mid (lower-left to center-bottom)  
-          int sx = x0 + (mark * 2) / 16;
-          int sy = y0 + (mark * 8) / 16;
-          int mx = x0 + (mark * 6) / 16;
-          int my = y0 + (mark * 12) / 16;
-          // mid → end (center-bottom to upper-right)
-          int ex = x0 + (mark * 14) / 16;
-          int ey = y0 + (mark * 3) / 16;
-          cogito_draw_line(sx, sy, mx, my, check);
-          cogito_draw_line(mx, my, ex, ey, check);
+          // Apply scale for overshoot effect
+          int scaled_mark = (int)(mark * glyph_scale);
+          if (scaled_mark >= 4) {
+            // Fixed center of box (scale from center, not corner)
+            int center_x = n->x + box / 2;
+            int center_y = cy + box / 2;
+            // Offset from center (can be negative during overshoot)
+            int offset_x = center_x - scaled_mark / 2;
+            int offset_y = center_y - scaled_mark / 2;
+            // Start → mid (lower-left to center-bottom)
+            int sx = offset_x + (scaled_mark * 2) / 16;
+            int sy = offset_y + (scaled_mark * 8) / 16;
+            int mx = offset_x + (scaled_mark * 6) / 16;
+            int my = offset_y + (scaled_mark * 12) / 16;
+            // mid → end (center-bottom to upper-right)
+            int ex = offset_x + (scaled_mark * 14) / 16;
+            int ey = offset_y + (scaled_mark * 3) / 16;
+            cogito_draw_line(sx, sy, mx, my, check);
+            cogito_draw_line(mx, my, ex, ey, check);
+          }
     }
   }
       if (n->text) {

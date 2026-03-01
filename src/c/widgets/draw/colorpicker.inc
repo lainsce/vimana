@@ -49,10 +49,11 @@ case COGITO_COLORPICKER: {
           int fox = 0, foy = 0, fow = 0, foh = 0;
           cogito_colorpicker_panel_footer_layout(n, &fcx, &fcy, &fcw, &fch, &fox, &foy, &fow, &foh);
 
-          int footer_y = n->y + n->h - COGITO_COLORPICKER_PANEL_FOOTER_H;
+          int footer_y = n->y + n->h - COGITO_COLORPICKER_PANEL_BOTTOM - COGITO_COLORPICKER_PANEL_FOOTER_H;
           CogitoColor sep_col = text_col;
           sep_col.a = 40;
-          cogito_draw_line(n->x + 16, footer_y, n->x + n->w - 16, footer_y, sep_col);
+          cogito_draw_line(n->x + COGITO_COLORPICKER_PANEL_PAD, footer_y - COGITO_COLORPICKER_PANEL_FOOTER_GAP,
+                           n->x + n->w - COGITO_COLORPICKER_PANEL_PAD, footer_y - COGITO_COLORPICKER_PANEL_FOOTER_GAP, sep_col);
 
           bool over_cancel = cogito_hit_rect(mx, my, fcx, fcy, fcw, fch);
           bool over_ok = cogito_hit_rect(mx, my, fox, foy, fow, foh);

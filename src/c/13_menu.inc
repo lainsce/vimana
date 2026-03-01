@@ -3,6 +3,9 @@ static void cogito_menu_close(void) {
   cogito_menu.open = false;
   cogito_menu.owner = NULL;
   cogito_menu_kbd_index = -1;
+  // Reset draping spring
+  cogito_spring_snap(&cogito_menu.draping_spring, 0.0);
+  cogito_menu.draping_spring.inited = false;
   if (owner) {
     CogitoNode* win = cogito_node_window(owner);
     if (win) cogito_overlay_focus_restore(win);
@@ -134,6 +137,18 @@ static void cogito_menu_open_for(CogitoNode* n) {
   cogito_menu.pad_bottom = menu_pad_bottom;
   cogito_menu.w = w;
   cogito_menu.h = h;
+  cogito_menu.x = n->x;
+  cogito_menu.y = n->y;
+
+  // Store anchor point (the button) for draping animation origin
+  cogito_menu.anchor_x = n->x;
+  cogito_menu.anchor_y = n->y;
+  cogito_menu.anchor_w = n->w;
+  cogito_menu.anchor_h = n->h;
+
+  // Initialize draping spring: start at 0.0 (at button), animate to 1.0 (final position)
+  cogito_spring_snap(&cogito_menu.draping_spring, 0.0);
+
   int x = n->x;
   int y = n->y + n->h;
 

@@ -1,13 +1,15 @@
 case COGITO_FAB_MENU: {
   // When the popup is open, skip the regular pass and let the overlay handle
   // drawing so the menu items float above all other content.
-  if (!cogito_fab_menu_force_draw && n->popover_open && n->menu_len > 0) {
+  // FAB Menu requires 2-7 items to be considered open
+  if (!cogito_fab_menu_force_draw && n->popover_open && n->menu_len >= 2) {
     if (cogito_node_window(n)) break;
   }
   bool hover = false, active = false;
   cogito_node_hover_state(n, &hover, &active);
   CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-  bool menu_open = n->popover_open && n->menu_len > 0;
+  // FAB Menu requires 2-7 items
+  bool menu_open = n->popover_open && n->menu_len >= 2 && n->menu_len <= 7;
 
   // Determine color variant based on fab_menu.variant
   // variant: 0=Primary, 1=Secondary, 2=Tertiary
@@ -52,22 +54,57 @@ case COGITO_FAB_MENU: {
 
   // When menu is open, the button becomes 56x56 and positions at top-right of the original area
   // The close button (X) is 24px and positioned at top-right of the 56x56 button
-  int draw_x, draw_y, draw_w, draw_h, draw_radius;
-  if (menu_open) {
-    // Fixed 56x56 size at top-right of the original FAB area
-    draw_w = 56;
-    draw_h = 56;
-    draw_x = n->x + n->w - draw_w;  // Right-align
-    draw_y = n->y;                   // Top-align
-    draw_radius = draw_w / 2;       // Circle when open
+  // Use spring-based progress animation (stores 0.0-1.0 progress, like time-based)
+  // Closed size based on fab_menu.size (not n->w which may include menu items)
+  int closed_w, closed_h;
+  if (size == 0) {
+    closed_w = 56; closed_h = 56;
+  } else if (size == 2) {
+    closed_w = 96; closed_h = 96;
   } else {
-    // Normal closed state uses the configured size
-    draw_x = n->x;
-    draw_y = n->y;
-    draw_w = n->w;
-    draw_h = n->h;
-    draw_radius = fab_radius;
+    closed_w = 80; closed_h = 80;
   }
+
+  // Spring for progress value: 0.0 = closed, 1.0 = open
+  // Use spring_x to store the progress (semantic value like time-based)
+  double target_progress = menu_open ? 1.0 : 0.0;
+  double dt = cogito_spring_dt;
+
+  // On state change, snap spring to current visual state, then animate to target
+  bool state_changed = (n->fab_menu.geom_anim_target != (float)target_progress);
+  if (state_changed) {
+    // Snap to opposite of target (current visual state)
+    cogito_spring_snap(&n->spring_x, menu_open ? 0.0 : 1.0);
+    n->fab_menu.geom_anim_target = (float)target_progress;
+  }
+
+  // Tick spring: Spatial Fast for FAB menu (k=800, z=0.6)
+  cogito_spring_tick(&n->spring_x, target_progress, 800.0, 0.6, dt);
+
+  // Use spring position as progress t (clamped 0-1)
+  float t = (float)n->spring_x.x;
+  if (t < 0.0f) t = 0.0f;
+  if (t > 1.0f) t = 1.0f;
+
+  // Schedule more frames if spring is still moving
+  if (cogito_spring_active(&n->spring_x, target_progress)) {
+    double end_time = cogito_now() + 0.6;
+    if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+  }
+
+  // Interpolate geometry: t=0 (closed), t=1 (open)
+  // Open state: 56x56 at top-right of closed position
+  int open_x = n->x + closed_w - 56;
+  int open_y = n->y;
+  int open_w = 56, open_h = 56;
+
+  int draw_x = (int)(n->x + t * (open_x - n->x) + 0.5f);
+  int draw_y = (int)(n->y + t * (open_y - n->y) + 0.5f);
+  int draw_w = (int)(closed_w + t * (open_w - closed_w) + 0.5f);
+  int draw_h = (int)(closed_h + t * (open_h - closed_h) + 0.5f);
+
+  // Derive corner radius from animated width: t=0 -> fab_radius, t=1 -> 28 (circle)
+  int draw_radius = (int)(fab_radius + t * (28.0f - fab_radius) + 0.5f);
 
   // Animate colors
   cogito_anim_apply(n, &s, &bg, &text_color, NULL, NULL);
@@ -92,85 +129,185 @@ case COGITO_FAB_MENU: {
     if (r_radius > 0 && r_alpha > 0) {
       CogitoColor ripple_color = text_color;
       ripple_color.a = (uint8_t)(255 * r_alpha);
-      // Adjust ripple center for the new position when menu is open
-      int cx = menu_open ? draw_x + n->ripple_x - (n->x + n->w - draw_w) : n->x + n->ripple_x;
-      int cy = menu_open ? draw_y + n->ripple_y : n->y + n->ripple_y;
+      // Ripple center is relative to the node's current animated position
+      int cx = draw_x + n->ripple_x;
+      int cy = draw_y + n->ripple_y;
       cogito_draw_circle_clipped_node(n, &s, draw_radius, cx, cy, r_radius, ripple_color);
     }
   }
 
   // Draw FAB icon: X (close) when menu open, original icon when closed
-  // When menu is open, the close button is 24px and aligned to top-right of the 56x56 button
+  // Use crossfade with alpha blending for smooth icon transition
   {
-    int icon_size = menu_open ? 24 : fab_icon;
-    int icon_x, icon_y;
-    if (menu_open) {
-      // Close button: fixed size 24px, aligned to top-right corner of the 56x56 button with 16px padding
-      icon_x = draw_x + draw_w - 16 - icon_size;
-      icon_y = draw_y + 16;
+    // Icon size: interpolate between fab_icon (closed) and 24 (open)
+    int icon_size_closed = fab_icon;
+    int icon_size_open = 24;
+    int icon_size = (int)(icon_size_closed + t * (icon_size_open - icon_size_closed) + 0.5f);
+
+    // Position: interpolate between centered (closed) and top-right (open)
+    int icon_x_closed = draw_x + (draw_w - icon_size) / 2;
+    int icon_y_closed = draw_y + (draw_h - icon_size) / 2;
+    int icon_x_open = draw_x + draw_w - 16 - icon_size;
+    int icon_y_open = draw_y + 16;
+
+    int icon_x = (int)(icon_x_closed + t * (icon_x_open - icon_x_closed) + 0.5f);
+    int icon_y = (int)(icon_y_closed + t * (icon_y_open - icon_y_closed) + 0.5f);
+
+    const char* icon_open = "close";
+    const char* icon_closed = (n->text && n->text->data[0]) ? n->text->data : "add";
+
+    // Crossfade: blend between icons during transition (t=0.35 to t=0.65)
+    float fade_start = 0.35f;
+    float fade_end = 0.65f;
+    float open_alpha = 0.0f;
+    if (t <= fade_start) {
+      open_alpha = 0.0f;
+    } else if (t >= fade_end) {
+      open_alpha = 1.0f;
     } else {
-      // Normal state: centered
-      icon_x = draw_x + (draw_w - icon_size) / 2;
-      icon_y = draw_y + (draw_h - icon_size) / 2;
+      open_alpha = (t - fade_start) / (fade_end - fade_start);
     }
-    const char* icon = menu_open ? "close"
-                     : (n->text && n->text->data[0] ? n->text->data : "add");
-    cogito_draw_icon_fallback(n, icon, icon_x, icon_y, icon_size, text_color);
+    float closed_alpha = 1.0f - open_alpha;
+
+    // Draw closed icon (fading out)
+    if (closed_alpha > 0.01f) {
+      CogitoColor closed_color = text_color;
+      closed_color.a = (uint8_t)(text_color.a * closed_alpha);
+      cogito_draw_icon_fallback(n, icon_closed, icon_x, icon_y, icon_size, closed_color);
+    }
+
+    // Draw open icon (fading in)
+    if (open_alpha > 0.01f) {
+      CogitoColor open_color = text_color;
+      open_color.a = (uint8_t)(text_color.a * open_alpha);
+      cogito_draw_icon_fallback(n, icon_open, icon_x, icon_y, icon_size, open_color);
+    }
   }
 
   // Draw menu items as M-size button pills stacked above the FAB
-  if (menu_open) {
+  // Animate items fanning out from FAB's top-right position when opening
+  if (n->menu_len > 0) {
     int item_h = 56;  // M-size button height
     int item_gap = 4; // 4px vertical gap between items
     int font_size = cogito_font_size();
-    int item_w = 0, item_x = 0;
-    cogito_fab_menu_geom(n, &item_w, &item_x);
+    int final_item_w = 0, final_item_x = 0;
+    cogito_fab_menu_geom(n, &final_item_w, &final_item_x);
     int item_radius = item_h / 2; // fully rounded pill
     int icon_size = 24; // Leading icon size
     int icon_text_gap = 8; // Gap between icon and text
+    int pad_left = 24;
 
     // Get mouse position for item hover highlight
     int mx = 0, my = 0;
     (void)cogito_pointer_query(&mx, &my, NULL, NULL);
 
-    // Draw items from top (index n-1) to bottom (index 0) so closer items
-    // are rendered on top when they overlap.
-    // Items stack above the 56x56 button at top-right
+    // Items animation: time-based progress triggered when FAB is nearly open (t > 0.6)
+    float items_target_t = (t > 0.6f) ? 1.0f : 0.0f;
+    const double items_dur_s = 0.400; // 400ms to match FAB spring timing
+    double now = cogito_now();
+
+    if (n->fab_menu.items_anim_target != items_target_t) {
+      n->fab_menu.items_anim_from = n->fab_menu.items_t;
+      n->fab_menu.items_anim_target = items_target_t;
+      n->fab_menu.items_anim_start = now;
+    }
+
+    float items_t = n->fab_menu.items_anim_target;
+    if (items_dur_s > 0.0) {
+      double elapsed = (now - n->fab_menu.items_anim_start) / items_dur_s;
+      if (elapsed < 0.0) elapsed = 0.0;
+      if (elapsed >= 1.0) {
+        items_t = n->fab_menu.items_anim_target;
+      } else {
+        double eased = 1.0 - pow(1.0 - elapsed, 3.0); // ease-out cubic
+        items_t = (float)(n->fab_menu.items_anim_from +
+                          (n->fab_menu.items_anim_target - n->fab_menu.items_anim_from) * eased);
+        double end_time = n->fab_menu.items_anim_start + items_dur_s;
+        if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+      }
+    }
+    if (items_t < 0.0f) items_t = 0.0f;
+    if (items_t > 1.0f) items_t = 1.0f;
+    n->fab_menu.items_t = items_t;
+
+    // All items start from the same right-edge position (FAB's right edge)
+    int start_x = draw_x + draw_w;
+
+    // Draw items from top (index n-1) to bottom (index 0)
     for (int i = (int)n->menu_len - 1; i >= 0; i--) {
-      // Item 0: bottom = draw_y - 8 (8px gap above FAB top)
-      int iy_top = draw_y - 8 - (i + 1) * item_h - i * item_gap;
-      bool item_hover = cogito_hit_rect(mx, my, item_x, iy_top, item_w, item_h);
+      // Final position for this item (stacked vertically above FAB)
+      int final_y = draw_y - 8 - (i + 1) * item_h - i * item_gap;
 
-      // Background (same color as FAB)
-      cogito_draw_rect(item_x, iy_top, item_w, item_h, item_bg, item_radius);
+      // Per-item stagger based on vertical position
+      // Opening: bottom items (i=0) animate first, top items animate last
+      // Closing: reverse - top items hide first
+      float item_index = (float)i; // 0 = bottom, menu_len-1 = top
+      float stagger_amount = 0.15f; // 15% overlap - snappier feel
+      float item_t;
 
-      // State layer on hover
-      if (item_hover) {
-        CogitoColor state = cogito_node_state_layer_seed(n);
-        state.a = 20;
-        cogito_draw_rect(item_x, iy_top, item_w, item_h, state, item_radius);
+      if (items_target_t > 0.5f) {
+        // Opening: stagger from bottom to top
+        float stagger_offset = (item_index / (float)n->menu_len) * stagger_amount;
+        item_t = (items_t - stagger_offset) / (1.0f - stagger_amount);
+      } else {
+        // Closing: stagger from top to bottom (reverse)
+        float reverse_index = (float)(n->menu_len - 1 - i);
+        float stagger_offset = (reverse_index / (float)n->menu_len) * stagger_amount;
+        item_t = (items_t - stagger_offset) / (1.0f - stagger_amount);
       }
+      if (item_t < 0.0f) item_t = 0.0f;
+      if (item_t > 1.0f) item_t = 1.0f;
 
-      // Label and icon
-      const char* text = n->menu_labels[i] ? n->menu_labels[i]->data : "";
-      const char* icon = (n->menu_icons && n->menu_icons[i] && n->menu_icons[i]->data[0]) ? n->menu_icons[i]->data : NULL;
-      int th = cogito_text_height_size(font_size);
-      int ty = iy_top + (item_h - th) / 2;
+      // Ease-out for smooth motion
+      float item_eased = 1.0f - powf(1.0f - item_t, 3.0f);
 
-      // Layout: icon at 24dp from left (if present), 8dp gap, text, 24dp from right
-      int pad_left_no_icon = 24;
-      int pad_left_with_icon = 24;
+      // Each item animates from the right (FAB's right edge) to its final x position
+      int item_x = (int)(start_x + item_eased * (final_item_x - start_x));
+      int item_y = final_y; // Y is always at final position (no vertical animation)
 
-      // Draw leading icon if present
-      if (icon) {
-        int icon_x = item_x + pad_left_with_icon;
-        int icon_y = iy_top + (item_h - icon_size) / 2;
-        cogito_draw_icon_fallback(n, icon, icon_x, icon_y, icon_size, item_text_color);
+      // Width animates from 0 (hidden) to full width
+      int item_w = (int)(item_eased * final_item_w);
+      if (item_w < 0) item_w = 0;
+
+      // Only draw if visible
+      if (item_w > 4 && item_t > 0.01f) {
+        bool item_hover = cogito_hit_rect(mx, my, item_x, item_y, item_w, item_h);
+
+        // Background
+        cogito_draw_rect(item_x, item_y, item_w, item_h, item_bg, item_radius);
+
+        // State layer on hover
+        if (item_hover) {
+          CogitoColor state = cogito_node_state_layer_seed(n);
+          state.a = 20;
+          cogito_draw_rect(item_x, item_y, item_w, item_h, state, item_radius);
+        }
+
+        // Label and icon (draw text when item is wide enough)
+        if (item_w > 40) {
+          const char* text = n->menu_labels[i] ? n->menu_labels[i]->data : "";
+          const char* icon = (n->menu_icons && n->menu_icons[i] && n->menu_icons[i]->data[0]) ? n->menu_icons[i]->data : NULL;
+          int th = cogito_text_height_size(font_size);
+          int ty = item_y + (item_h - th) / 2;
+
+          // Calculate content positions relative to item
+          int content_x = item_x + pad_left;
+
+          // Draw leading icon if present
+          if (icon) {
+            int icon_x = content_x;
+            int icon_y = item_y + (item_h - icon_size) / 2;
+            cogito_draw_icon_fallback(n, icon, icon_x, icon_y, icon_size, item_text_color);
+            content_x += icon_size + icon_text_gap;
+          }
+
+          // Draw label text (when there's enough space)
+          int max_text_w = item_w - (content_x - item_x) - 24; // 24dp right padding
+          if (max_text_w > 20) {
+            cogito_draw_text_size_node(n, content_x, ty, text, item_text_color, font_size, false, true);
+          }
+        }
       }
-
-      // Draw label text
-      int tx = icon ? item_x + pad_left_with_icon + icon_size + icon_text_gap : item_x + pad_left_no_icon;
-      cogito_draw_text_size_node(n, tx, ty, text, item_text_color, font_size, false, true);
     }
   }
   break;

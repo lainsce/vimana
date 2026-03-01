@@ -1,10 +1,12 @@
-// ColorPicker sizing constants
+// ColorPicker sizing constants - centralized to match DatePicker
 enum {
   COGITO_COLORPICKER_FIELD_MIN_WIDTH = 220,
   COGITO_COLORPICKER_FIELD_HEIGHT    = 56,
   COGITO_COLORPICKER_PANEL_W         = 360,
-  COGITO_COLORPICKER_PANEL_PAD       = 16,
-  COGITO_COLORPICKER_PANEL_FOOTER_H  = 48,
+  COGITO_COLORPICKER_PANEL_PAD       = 12,  // Match DATEPICKER_POP_SIDE
+  COGITO_COLORPICKER_PANEL_FOOTER_H  = 36,  // Match DATEPICKER_POP_FOOTER_H
+  COGITO_COLORPICKER_PANEL_FOOTER_GAP = 8,  // Match DATEPICKER_POP_FOOTER_GAP
+  COGITO_COLORPICKER_PANEL_BOTTOM    = 12,  // Match DATEPICKER_POP_BOTTOM
 };
 
 static double cogito_colorpicker_clamp(double v, double lo, double hi) {

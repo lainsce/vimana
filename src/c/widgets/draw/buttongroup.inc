@@ -1,6 +1,6 @@
 case COGITO_BUTTON_GROUP: {
       if (n->len == 0) break;
-      
+
       // ---- Press animation: tick springs and trigger relayout ----
       // Detect which child is being pressed
       int pressed_idx = -1;
@@ -16,16 +16,16 @@ case COGITO_BUTTON_GROUP: {
           }
         }
       }
-      
+
       // Update pressed child tracking
       n->buttongroup.pressed_child = pressed_idx;
-      
-      // Spring animation for width expansion (k=1400, z=0.9)
+
+      // Spring animation for width expansion (Fast spatial: k=800, z=0.6)
       double dt = cogito_spring_dt;
-      double k_spring = 1400.0;
-      double z_spring = 0.9;
+      double k_spring = 800.0;
+      double z_spring = 0.6;
       bool any_anim_active = false;
-      
+
       for (size_t i = 0; i < n->len; i++) {
         CogitoNode* c = n->children[i];
         double target_mult = 1.0;
@@ -41,22 +41,25 @@ case COGITO_BUTTON_GROUP: {
             target_mult = 1.0 - (0.15 / num_adjacent);
           }
         }
-        
-        // Initialize spring to 1.0 (neutral) if not yet initialized
-        // This ensures animation starts from neutral position, not target
-        if (!c->spring_w.inited) {
-          cogito_spring_snap(&c->spring_w, 1.0);
-        }
-        
-        // Tick spring animation
-        cogito_spring_tick(&c->spring_w, target_mult, k_spring, z_spring, dt);
-        
-        // Check if animation is active
-        if (cogito_spring_active(&c->spring_w, target_mult)) {
-          any_anim_active = true;
+
+        // Only process springs if we have a valid press or springs are already active
+        // This prevents initializing springs to neutral when unfocused (causes glitch on focus)
+        if (c->spring_w.inited || pressed_idx >= 0) {
+          // Initialize spring to target on first valid press
+          if (!c->spring_w.inited) {
+            cogito_spring_snap(&c->spring_w, target_mult);
+          }
+
+          // Tick spring animation toward target
+          cogito_spring_tick(&c->spring_w, target_mult, k_spring, z_spring, dt);
+
+          // Check if animation is active
+          if (cogito_spring_active(&c->spring_w, target_mult)) {
+            any_anim_active = true;
+          }
         }
       }
-      
+
       // If animation is active, extend animation time and trigger relayout
       if (any_anim_active) {
         double end_time = cogito_now() + 0.6;
@@ -64,7 +67,7 @@ case COGITO_BUTTON_GROUP: {
         // Trigger relayout for next frame
         cogito_window_relayout(cogito_node_window(n));
       }
-      
+
       // Draw children
       for (size_t i = 0; i < n->len; i++) {
         cogito_draw_node(n->children[i]);

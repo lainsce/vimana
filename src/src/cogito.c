@@ -194,6 +194,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_nav_rail_set_selected cogito_nav_rail_set_selected_yis
 #define cogito_nav_rail_set_no_label cogito_nav_rail_set_no_label_yis
 #define cogito_nav_rail_get_no_label cogito_nav_rail_get_no_label_yis
+#define __cogito_nav_rail_set_divider __cogito_nav_rail_set_divider_yis
 #define cogito_node_get_editable cogito_node_get_editable_yis
 #define cogito_node_new cogito_node_new_yis
 #define cogito_node_parent cogito_node_parent_yis
@@ -532,6 +533,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_nav_rail_set_selected
 #undef cogito_nav_rail_set_no_label
 #undef cogito_nav_rail_get_no_label
+#undef __cogito_nav_rail_set_divider
 #undef cogito_node_get_editable
 #undef cogito_node_new
 #undef cogito_node_parent

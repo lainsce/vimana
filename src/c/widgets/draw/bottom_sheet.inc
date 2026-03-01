@@ -46,14 +46,45 @@ case COGITO_BOTTOM_SHEET: {
   // Draw docked sheet surface.
   cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
 
-  // Draw drag handle
-  int handle_w = n->bottom_sheet.dragging ? 44 : 32;
-  int handle_h = n->bottom_sheet.dragging ? 6 : (n->bottom_sheet.expanded ? 5 : 4);
+  // ---- Drag handle animation using spring_w ----
+  double dt = cogito_spring_dt;
+  double target_expand = (n->bottom_sheet.dragging || n->bottom_sheet.expanded) ? 1.0 : 0.0;
+
+  if (!n->spring_w.inited) {
+    cogito_spring_snap(&n->spring_w, target_expand);
+  }
+
+  bool was_expanded = (n->spring_w.target >= 0.5);
+  bool is_expanded = (n->bottom_sheet.dragging || n->bottom_sheet.expanded);
+  if (was_expanded != is_expanded) {
+    cogito_spring_snap(&n->spring_w, is_expanded ? target_expand : n->spring_w.x);
+  }
+  n->spring_w.target = target_expand;
+
+  // Default spatial for handle (k=360, z=0.8)
+  cogito_spring_tick(&n->spring_w, target_expand, 360.0, 0.8, dt);
+  float expand_scale = (float)n->spring_w.x;
+  if (expand_scale < 0.0f) expand_scale = 0.0f;
+  if (expand_scale > 1.5f) expand_scale = 1.5f;
+
+  // Animate handle width from 32 to 44 based on state
+  int base_handle_w = 32;
+  int expanded_handle_w = 44;
+  int handle_w = base_handle_w + (int)((expanded_handle_w - base_handle_w) * expand_scale);
+  int handle_h = 4 + (int)(2 * expand_scale); // 4 to 6
+  if (n->bottom_sheet.dragging && handle_h < 6) handle_h = 6;
+
   int handle_x = n->x + (n->w - handle_w) / 2;
   int handle_y = n->y + 12;
   CogitoColor handle_color = text_color;
   handle_color.a = 100;
   cogito_draw_rect(handle_x, handle_y, handle_w, handle_h, handle_color, handle_h / 2);
+
+  if (cogito_spring_active(&n->spring_w, target_expand)) {
+    double end_time = cogito_now() + 0.6;
+    if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+    cogito_window_relayout(cogito_node_window(n));
+  }
 
   // Draw title
   int content_y = n->y + 28;

@@ -1,4 +1,12 @@
 case COGITO_SWITCH: {
+      // ---- Configurable insets for switch handle ----
+      // These control the distance of the handle from track edges
+      int INSET_X_UNCHECKED = 8;    // Distance from left when unchecked
+      int INSET_X_CHECKED = 4;      // Distance from right when checked
+      int INSET_Y_UNCHECKED = 8;    // Distance from top/bottom when unchecked
+      int INSET_Y_CHECKED = 4;      // Distance from top/bottom when checked
+      int INSET_PRESSED = 2;        // Distance from all sides when pressed
+
       bool hover = false;
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
@@ -31,13 +39,20 @@ case COGITO_SWITCH: {
 
       CogitoColor track_off = n->track_set ? n->track_color : (track_s.has_track ? track_s.track : n->bg);
       CogitoColor track_on  = n->track_on_set ? n->track_on_color : (track_s.has_track ? track_s.track : n->bg);
-      if (track_s.has_bg) { track_off = track_s.bg; track_on = track_s.bg;
-  }
+      if (track_s.has_bg) { track_off = track_s.bg; track_on = track_s.bg; }
       if (track_s.has_track_on) track_on = track_s.track_on;
       CogitoColor track = n->checked ? track_on : track_off;
-      CogitoColor knob_col = n->knob_set ? n->knob_color
-                           : (knob_s.has_knob ? knob_s.knob
-                           : (knob_s.has_bg ? knob_s.bg : n->knob_color));
+      // Knob color: Outline for unchecked, On Primary for checked
+      CogitoColor knob_col;
+      if (n->knob_set) {
+        knob_col = n->knob_color;
+      } else if (n->checked) {
+        // Checked: use On Primary (white/light on primary track)
+        knob_col = cogito_cached_on_primary;
+      } else {
+        // Unchecked: use Outline color token
+        knob_col = cogito_cached_outline;
+      }
 
       // Animate track color via spring
       cogito_anim_apply(n, &track_s, &track, &knob_col, NULL, NULL);
@@ -46,27 +61,33 @@ case COGITO_SWITCH: {
       cogito_draw_rect(cx, cy, w, h, track, h / 2);
       if (track_s.has_border_width && track_s.border_width > 0 && track_s.has_border && track_s.border.a > 0) {
         cogito_draw_rect_lines(cx, cy, w, h, track_s.border, h / 2, track_s.border_width);
-  }
-  // ---- Knob layout targets ----
-  // Cogito: knob is 16dp at rest, fills to 32dp on hover/press (capped to track interior)
-      int knob_w_target = 32;
-      int knob_h_rest   = knob_s.has_min_h ? knob_s.min_h : 24;
-      int knob_h_hover  = h - 4;
-      if (knob_h_rest < 4) knob_h_rest = 4;
-      if (knob_h_hover < knob_h_rest) knob_h_hover = knob_h_rest;
-      int knob_h_target = (over || down) ? knob_h_hover : knob_h_rest;
-      if (knob_s.has_max_h && knob_s.max_h > 0 && knob_h_target > knob_s.max_h) knob_h_target = knob_s.max_h;
-      if (knob_w_target < 4) knob_w_target = 4;
-      if (knob_h_target < 4) knob_h_target = 4;
+      }
+      // ---- Knob layout targets ----
+      // Switch handle sizing:
+      // - Unchecked, unpressed: 26dp width
+      // - Checked, unpressed: 32dp width
+      // - Both, pressed: 34dp width
+      int knob_w_unchecked = 26;
+      int knob_w_checked = 32;
+      int knob_w_pressed = 34;
+      int knob_h_normal = n->checked ? 24 : 16;  // Height stays as before
+      int knob_h_pressed = 28;
+      int knob_w_target = down ? knob_w_pressed : (n->checked ? knob_w_checked : knob_w_unchecked);
+      int knob_h_target = down ? knob_h_pressed : knob_h_normal;
       if (knob_w_target > w - 4) knob_w_target = w - 4;
       if (knob_h_target > h - 4) knob_h_target = h - 4;
 
+      // Calculate handle position using configured insets
       int track_cy = cy + h / 2;
-      int edge_inset_x = 2;
-      if (knob_w_target + edge_inset_x * 2 > w) edge_inset_x = 0;
-      int off_x = cx + edge_inset_x;
-      int on_x  = cx + w - knob_w_target - edge_inset_x;
+
+      // When pressed, both states use INSET_PRESSED
+      int inset_x = down ? INSET_PRESSED : (n->checked ? INSET_X_CHECKED : INSET_X_UNCHECKED);
+      int inset_y = down ? INSET_PRESSED : (n->checked ? INSET_Y_CHECKED : INSET_Y_UNCHECKED);
+
+      int off_x = cx + inset_x;
+      int on_x = cx + w - knob_w_target - inset_x;
       if (on_x < off_x) on_x = off_x;
+
       int center_target = (n->checked ? on_x : off_x) + knob_w_target / 2;
       (void)(track_cy - knob_h_target / 2); // ky_target not used; ky derived from spring
 
@@ -86,7 +107,11 @@ case COGITO_SWITCH: {
       if (knob_h < 4)  knob_h = 4;
       if (knob_h > h)  knob_h = h;
       int kx = center_x - knob_w / 2;
-      int ky = track_cy - knob_h / 2;
+
+      // Calculate Y position respecting top/bottom insets
+      int ky = cy + inset_y;
+
+      // Clamp to track bounds
       if (kx < cx) kx = cx;
       int max_kx = cx + w - knob_w;
       if (max_kx < cx) max_kx = cx;

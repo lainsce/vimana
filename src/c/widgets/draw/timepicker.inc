@@ -151,6 +151,12 @@ case COGITO_TIMEPICKER: {
       cogito_draw_text_size_node(n, hand_x - sw / 2, hand_y - sh / 2, sbuf, cogito_on_color(sel), header_size + 6, false, false);
     }
 
+    // Footer separator line (match DatePicker style)
+    CogitoColor sep_col = text;
+    sep_col.a = 40;
+    cogito_draw_line(ly.footer_x, ly.footer_y - COGITO_TIMEPICKER_POP_FOOTER_GAP,
+                     ly.footer_x + ly.footer_w, ly.footer_y - COGITO_TIMEPICKER_POP_FOOTER_GAP, sep_col);
+
     bool over_cancel = cogito_hit_rect(mx, my, ly.cancel_x, ly.cancel_y, ly.cancel_w, ly.cancel_h);
     bool over_ok = cogito_hit_rect(mx, my, ly.ok_x, ly.ok_y, ly.ok_w, ly.ok_h);
     if (over_cancel || over_ok) {

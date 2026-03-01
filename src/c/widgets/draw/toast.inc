@@ -2,6 +2,45 @@ case COGITO_TOAST: {
       bool hover = false;
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
+
+      // ---- Auto-dismiss for toasts without action ----
+      bool has_action = (n->action_text && n->action_text->data[0]);
+      if (!has_action && !hover) {
+        // Initialize show time on first draw
+        if (n->toast_show_time == 0.0) {
+          n->toast_show_time = cogito_now();
+        }
+
+        // Check if 3500ms has passed
+        double elapsed = cogito_now() - n->toast_show_time;
+        if (elapsed >= 3.5 && !n->toast_dismissing) {
+          n->toast_dismissing = true;
+          cogito_spring_snap(&n->spring_opacity, 1.0);
+        }
+      } else {
+        // Reset timer if hovered or has action
+        n->toast_show_time = cogito_now();
+        n->toast_dismissing = false;
+      }
+
+      // Handle dismiss animation
+      float opacity_mult = 1.0f;
+      if (n->toast_dismissing) {
+        double dt = cogito_spring_dt;
+        cogito_spring_tick(&n->spring_opacity, 0.0, 800.0, 0.75, dt);
+        opacity_mult = (float)n->spring_opacity.x;
+        if (opacity_mult < 0.0f) opacity_mult = 0.0f;
+
+        if (cogito_spring_active(&n->spring_opacity, 0.0)) {
+          double end_time = cogito_now() + 0.6;
+          if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+          cogito_window_relayout(cogito_node_window(n));
+        } else if (opacity_mult <= 0.01f) {
+          // Animation complete, hide the toast
+          n->hidden = true;
+        }
+      }
+
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
       CogitoColor bg = n->bg;
       CogitoColor border = n->border_color;
@@ -15,13 +54,19 @@ case COGITO_TOAST: {
       if (s.has_radius) radius = s.radius;
       // Cogito Snackbar: Full radius (h/2) as floor when not set by theme
       if (radius < n->h / 2) radius = n->h / 2;
+
+      // Apply opacity multiplier for dismiss animation
+      bg.a = (uint8_t)(bg.a * opacity_mult);
+      border.a = (uint8_t)(border.a * opacity_mult);
+      text.a = (uint8_t)(text.a * opacity_mult);
+
       cogito_anim_apply(n, &s, &bg, &text, &border, &sel);
       if (n->bg_set || s.has_bg) {
         cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
         if (border_w > 0) {
           cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, border, radius, border_w);
-    }
-  }
+        }
+      }
       int size = cogito_node_font_size(n);
       CogitoColor text_bg = bg;
       text = s.has_text ? text : cogito_on_color(text_bg);
@@ -29,29 +74,21 @@ case COGITO_TOAST: {
       int bg_l = cogito_luma(text_bg);
       if (abs(text_l - bg_l) < 80) {
         text = cogito_on_color(text_bg);
-  }
+      }
       const char* t = n->text ? n->text->data : "";
       int th = cogito_text_height_size(size);
       int ty = n->y + (n->h - th) / 2;
       int pad_x = 16; // Cogito: Snackbar 16dp horizontal padding
-      int cx = 0;
-      int cy = 0;
-      int cw = 0;
-      int ch = 0;
-      cogito_toast_close_rect(n, &cx, &cy, &cw, &ch);
       int action_w = 0;
-      if (n->action_text && n->action_text->data[
-    0
-  ]) {
+      if (n->action_text && n->action_text->data[0]) {
         action_w = cogito_text_width_size_node(n, n->action_text->data, size);
-  }
-      int text_w = (cw > 0) ? (cx - (n->x + pad_x) - 6) : (n->w - pad_x * 2);
+      }
+      int text_w = n->w - pad_x * 2;
       if (action_w > 0) {
         text_w -= (action_w + 24);
-  }
+      }
       if (text_w < 0) text_w = 0;
-      cogito_draw_text_ellipsis(n, n->x + pad_x, ty, text_w, t, text, size, cogito_node_bold(n),
-  0);
+      cogito_draw_text_ellipsis(n, n->x + pad_x, ty, text_w, t, text, size, cogito_node_bold(n), 0);
       if (action_w > 0) {
         CogitoColor action_color = sel;
         int action_x = n->x + pad_x + text_w + 24;
@@ -61,33 +98,6 @@ case COGITO_TOAST: {
         n->action_button_y = action_y;
         n->action_button_w = action_w;
         n->action_button_h = th;
-  }
-      if (cw > 0 && ch > 0) {
-        int icon_size = s.has_icon_size ? s.icon_size : 12;
-        if (icon_size < 8) icon_size = 8;
-        int ix = cx + (cw - icon_size) / 2;
-        int iy = cy + (ch - icon_size) / 2;
-        CogitoColor tint = s.has_icon_color ? s.icon_color : text;
-        if (cogito_backend && cogito_backend->draw_texture) {
-          CogitoTexture* tex = NULL;
-          int tw = 0;
-          int th_i = 0;
-          if (cogito_icon_load_texture("x", icon_size, &tex, &tw, &th_i) && tex) {
-            CogitoRect src = (CogitoRect){
-          0,
-          0, tw, th_i
-        };
-            CogitoRect dst = (CogitoRect){ix, iy, icon_size, icon_size
-        };
-            cogito_backend->draw_texture(tex, src, dst, tint);
-      } else {
-            cogito_draw_line(ix, iy, ix + icon_size, iy + icon_size, tint);
-            cogito_draw_line(ix + icon_size, iy, ix, iy + icon_size, tint);
       }
-    } else {
-          cogito_draw_line(ix, iy, ix + icon_size, iy + icon_size, tint);
-          cogito_draw_line(ix + icon_size, iy, ix, iy + icon_size, tint);
-    }
-  }
       break;
-}
+    }

@@ -211,6 +211,7 @@ fun __cogito_nav_rail_set_badges(rail = NavRail, badges = [any]) (( -- )) { }
 fun __cogito_nav_rail_set_items(rail = NavRail, labels = [any], icons = [any]) (( -- )) { }
 fun __cogito_nav_rail_set_selected(rail = NavRail, idx = num) (( -- )) { }
 fun __cogito_nav_rail_set_toggle(rail = NavRail, on = bool) (( -- )) { }
+fun __cogito_nav_rail_set_divider(rail = NavRail, on = bool) (( -- )) { }
 fun __cogito_nav_rail() (( NavRail )) { }
 fun __cogito_node_get_editable(node = any) (( bool )) { }
 fun __cogito_node_set_a11y_label(node = any, label = string) (( -- )) { }
@@ -279,6 +280,9 @@ fun __cogito_slider_set_range(sl = Slider, start = num, end = num) (( -- )) { }
 fun __cogito_slider_set_size(sl = Slider, size = num) (( -- )) { }
 fun __cogito_slider_set_value(sl = Slider, value = num) (( -- )) { }
 fun __cogito_slider(min = num, max = num, value = num) (( Slider )) { }
+fun __cogito_stepper_get_value(st = Stepper) (( num )) { }
+fun __cogito_stepper_on_change(st = Stepper, handler = any) (( -- )) { }
+fun __cogito_stepper_set_value(st = Stepper, value = num) (( -- )) { }
 fun __cogito_split_button_add_menu(btn = SplitButton, label = string, handler = any) (( -- )) { }
 fun __cogito_split_button_add_menu_section(btn = SplitButton, label = string, handler = any) (( -- )) { }
 fun __cogito_split_button_set_size(btn = SplitButton, size = num) (( -- )) { }
@@ -1977,9 +1981,17 @@ pub class Stepper {
         __cogito_container_set_valign(this, align)
         return this
     }
-    pub fun set_value(this, value = num) (( Stepper )) { }
-    pub fun value(this) (( num )) { }
-    pub fun on_change(this, handler = any) (( Stepper )) { }
+    pub fun set_value(this, value = num) (( Stepper )) {
+        __cogito_stepper_set_value(this, value)
+        return this
+    }
+    pub fun value(this) (( num )) {
+        return __cogito_stepper_get_value(this)
+    }
+    pub fun on_change(this, handler = any) (( Stepper )) {
+        __cogito_stepper_on_change(this, handler)
+        return this
+    }
     pub fun set_hexpand(this, expand = bool) (( Stepper )) {
         __cogito_container_set_hexpand(this, expand)
         return this

@@ -3,6 +3,7 @@ static CogitoNode* cogito_nav_rail_new_obj(void) {
   n->nav_rail.labels = NULL;
   n->nav_rail.icons = NULL;
   n->nav_rail.badges = NULL;
+  n->nav_rail.item_springs = NULL;
   n->nav_rail.len = 0;
   n->nav_rail.cap = 0;
   n->nav_rail.selected = 0;
@@ -21,6 +22,16 @@ static void cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal icons
   if (railv.tag != EVT_OBJ) yis_trap("cogito.nav_rail_set_items expects nav_rail");
   CogitoNode* n = (CogitoNode*)railv.as.p;
 
+  // Parse labels array
+  if (labelsv.tag != EVT_ARR) yis_trap("cogito.nav_rail_set_items expects array of labels");
+  YisArr* labels = (YisArr*)labelsv.as.p;
+  size_t count = labels->len;
+
+  // Validate: NavRail must have 3 to 7 items
+  if (count < 3 || count > 7) {
+    yis_trap("cogito.nav_rail_set_items expects 3 to 7 items");
+  }
+
   // Clear existing items
   if (n->nav_rail.labels || n->nav_rail.badges) {
     for (size_t i = 0; i < n->nav_rail.len; i++) {
@@ -30,18 +41,22 @@ static void cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal icons
     free(n->nav_rail.labels);
     free(n->nav_rail.icons);
     free(n->nav_rail.badges);
+    if (n->nav_rail.item_springs) free(n->nav_rail.item_springs);
   }
-
-  // Parse labels array
-  if (labelsv.tag != EVT_ARR) yis_trap("cogito.nav_rail_set_items expects array of labels");
-  YisArr* labels = (YisArr*)labelsv.as.p;
-  size_t count = labels->len;
 
   n->nav_rail.len = count;
   n->nav_rail.cap = count;
   n->nav_rail.labels = (YisStr**)calloc(count, sizeof(YisStr*));
   n->nav_rail.icons = (YisStr**)calloc(count, sizeof(YisStr*));
   n->nav_rail.badges = (int*)calloc(count, sizeof(int));
+  n->nav_rail.item_springs = (CogitoSpring*)calloc(count, sizeof(CogitoSpring));
+  // Initialize springs: selected item starts at 1.0, others at 0.0
+  if (n->nav_rail.item_springs) {
+    for (size_t i = 0; i < count; i++) {
+      double initial = ((int)i == n->nav_rail.selected) ? 1.0 : 0.0;
+      cogito_spring_snap(&n->nav_rail.item_springs[i], initial);
+    }
+  }
 
   for (size_t i = 0; i < count; i++) {
     YisVal lv = labels->items[i];
@@ -250,6 +265,14 @@ static inline CogitoNode* cogito_find_nav_rail_hit(CogitoNode* n, int x, int y, 
     if (hit) return hit;
   }
   return NULL;
+}
+
+static void __cogito_nav_rail_set_divider(YisVal railv, YisVal onv) {
+  if (railv.tag != EVT_OBJ) yis_trap("cogito.nav_rail_set_divider expects nav_rail");
+  CogitoNode* n = (CogitoNode*)railv.as.p;
+  if (n->kind != COGITO_NAV_RAIL) yis_trap("cogito.nav_rail_set_divider expects nav_rail");
+  n->nav_rail.show_divider = yis_as_bool(onv);
+  cogito_window_relayout(cogito_node_window(n));
 }
 
 static void cogito_handle_nav_rail_select(CogitoNode* rail, int idx) {

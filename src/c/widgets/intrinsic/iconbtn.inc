@@ -8,52 +8,54 @@ case COGITO_ICONBTN:
         // Directly set dimensions to ensure they're correct
         if (n->button.size == COGITO_BUTTON_SIZE_XS) {
           h = 32;
+          n->min_h = 32;
         } else if (n->button.size == COGITO_BUTTON_SIZE_S) {
           h = 40;
+          n->min_h = 40;
         } else if (n->button.size == COGITO_BUTTON_SIZE_M) {
           h = 56;
+          n->min_h = 56;
         } else if (n->button.size == COGITO_BUTTON_SIZE_L) {
           h = 96;
+          n->min_h = 96;
         } else if (n->button.size == COGITO_BUTTON_SIZE_XL) {
           h = 136;
+          n->min_h = 136;
         } else {
           h = 56; // Default to M size
-        }
-        
-        // Ensure icon buttons have a minimum height constraint to prevent them from being shrunk
-        if (!n->min_h_set) {
-          n->min_h = h;
-          n->min_h_set = true;
-        }
-        
-        if (n->button.icon_width == 0) {
-          // Narrow: width is narrower than height
-          if (h == 32) w = 28;
-          else if (h == 40) w = 32;
-          else if (h == 56) w = 48;
-          else if (h == 96) w = 64;
-          else if (h == 136) w = 104;
-          else w = h;
-        } else if (n->button.icon_width == 2) {
-          // Wide: width is wider than height
-          if (h == 32) w = 40;
-          else if (h == 40) w = 52;
-          else if (h == 56) w = 72;
-          else if (h == 96) w = 128;
-          else if (h == 136) w = 184;
-          else w = h;
-        } else if (n->button.icon_width == 1) {
-          // Default (1): square
-          w = h;
-        } else {
-          w = h;
+          n->min_h = 56;
         }
 
-        // Ensure icon buttons have a minimum width constraint to prevent them from being shrunk
-        if (!n->min_w_set) {
-          n->min_w = w;
+        if (n->button.icon_width == 0) {
+          // Narrow: width is narrower than height
+          if (h == 32) { w = 28; n->min_w = 28; }
+          else if (h == 40) { w = 32; n->min_w = 32; }
+          else if (h == 56) { w = 48; n->min_w = 48; }
+          else if (h == 96) { w = 64; n->min_w = 64; }
+          else if (h == 136) { w = 104; n->min_w = 104; }
+          else { w = h; n->min_w = h; }
+        } else if (n->button.icon_width == 2) {
+          // Wide: width is wider than height
+          if (h == 32) { w = 40; n->min_w = 40; }
+          else if (h == 40) { w = 52; n->min_w = 52; }
+          else if (h == 56) { w = 72; n->min_w = 72; }
+          else if (h == 96) { w = 128; n->min_w = 128; }
+          else if (h == 136) { w = 184; n->min_w = 184; }
+          else { w = h; n->min_w = h; }
+        } else if (n->button.icon_width == 1) {
+          // Default (1): square
+          w = h; n->min_w = h;
+        } else {
+          w = h; n->min_w = h;
+        }
+
+
+        // Ensure icon buttons have a minimum constraint to prevent them from being shrunk
+        if (!n->min_h_set || !n->min_w_set) {
+          n->min_h = 32;
+          n->min_h_set = true;
+          n->min_w = 32;
           n->min_w_set = true;
         }
       }
       break;
-    

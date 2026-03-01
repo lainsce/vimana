@@ -21,9 +21,42 @@ case COGITO_CARD: {
 
   cogito_anim_apply(n, &s, &bg, &text_color, &border_color, NULL);
 
+  // ---- Shadow elevation animation using spring_h ----
+  double dt = cogito_spring_dt;
+  double target_elev = (hover || active) ? 1.0 : 0.0;
+
+  if (!n->spring_h.inited) {
+    cogito_spring_snap(&n->spring_h, target_elev);
+  }
+
+  bool was_elevated = (n->spring_h.target >= 0.5);
+  bool is_elevated = (hover || active);
+  if (was_elevated != is_elevated) {
+    cogito_spring_snap(&n->spring_h, is_elevated ? 0.0 : 1.0);
+  }
+  n->spring_h.target = target_elev;
+
+  // Slow spatial for shadow (k=200, z=0.8) - smooth elevation change
+  cogito_spring_tick(&n->spring_h, target_elev, 200.0, 0.8, dt);
+  float elev_scale = (float)n->spring_h.x;
+  if (elev_scale < 0.0f) elev_scale = 0.0f;
+  if (elev_scale > 1.5f) elev_scale = 1.5f;
+
+  // Calculate animated shadow level
+  int base_shadow = shadow;
+  int hover_shadow = shadow + 2;
+  if (hover_shadow > 5) hover_shadow = 5;
+  int animated_shadow = base_shadow + (int)((hover_shadow - base_shadow) * elev_scale);
+
   // Shadow
-  if (shadow > 0) {
-    cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, shadow);
+  if (animated_shadow > 0) {
+    cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, animated_shadow);
+  }
+
+  if (cogito_spring_active(&n->spring_h, target_elev)) {
+    double end_time = cogito_now() + 0.6;
+    if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+    cogito_window_relayout(cogito_node_window(n));
   }
   // Background
   cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);

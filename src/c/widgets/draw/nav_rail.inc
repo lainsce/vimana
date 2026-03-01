@@ -82,6 +82,45 @@ case COGITO_NAV_RAIL: {
   int expanded_lane_x = n->x + (rail_w - expanded_lane_w) / 2;
   int expanded_content_x = expanded_lane_x + COGITO_NAV_RAIL_EXPANDED_CONTENT_INSET;
 
+  // ---- Selection indicator animation using per-item springs ----
+  // Selected item: expand by 15% (to 1.15) then settle to 1.0
+  // Deselected item: go straight to 0 while vanishing
+  double dt = cogito_spring_dt;
+  bool any_anim_active = false;
+
+  for (size_t i = 0; i < n->nav_rail.len; i++) {
+    if (!n->nav_rail.item_springs) break;
+    bool selected = (int)i == n->nav_rail.selected;
+    // Target: 1.0 for selected (normal width)
+    // Target: 0.0 for deselected (vanished)
+    double target = selected ? 1.0 : 0.0;
+    CogitoSpring* spring = &n->nav_rail.item_springs[i];
+
+    // On selection change, snap to starting position for animation
+    bool was_selected = (spring->target >= 0.5);
+    if (was_selected != selected) {
+      // Selected: start at 1.15 (15% expansion), animate to 1.0
+      // Deselected: start at 1.0 (normal), animate to 0.0
+      cogito_spring_snap(spring, selected ? 1.15 : 1.0);
+    }
+    spring->target = target;
+
+    // Tick spring: Default spatial for nav rail indicator (k=360, z=0.8)
+    double k = 360.0;
+    double z = 0.8;
+    cogito_spring_tick(spring, target, k, z, dt);
+
+    if (cogito_spring_active(spring, target)) {
+      any_anim_active = true;
+    }
+  }
+
+  if (any_anim_active) {
+    double end_time = cogito_now() + 0.6;
+    if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+    cogito_window_relayout(cogito_node_window(n));
+  }
+
   for (size_t i = 0; i < n->nav_rail.len; i++) {
     bool selected = (int)i == n->nav_rail.selected;
     bool hover = cogito_hit_rect(mx, my, n->x, item_y, rail_w, item_step);
@@ -122,10 +161,25 @@ case COGITO_NAV_RAIL: {
         indicator_w = COGITO_NAV_RAIL_EXPANDED_INDICATOR_MIN_WIDTH;
       }
       if (indicator_w > expanded_lane_w) indicator_w = expanded_lane_w;
-      int bg_x = expanded_lane_x;
-      if (selected || hover) {
-        cogito_draw_rect(bg_x, bg_y, indicator_w, indicator_h, item_bg,
-        99);
+
+      // Apply spring animation to indicator width
+      float scale = n->nav_rail.item_springs ? (float)n->nav_rail.item_springs[i].x : (selected ? 1.0f : 0.0f);
+      if (scale < 0.0f) scale = 0.0f;
+      if (scale > 1.5f) scale = 1.5f;
+
+      // Scale width: spring value is the scale multiplier
+      int animated_w = (int)(indicator_w * scale + 0.5f);
+      if (animated_w < 0) animated_w = 0;
+      int bg_x = expanded_lane_x + (indicator_w - animated_w) / 2; // Center the expanded indicator
+
+      if (scale > 0.01f || selected || hover) {
+        // Fade out opacity as it shrinks below 0.85
+        uint8_t alpha = (uint8_t)(255 * (scale < 0.85f ? scale / 0.85f : 1.0f));
+        CogitoColor animated_bg = item_bg;
+        animated_bg.a = (uint8_t)(animated_bg.a * alpha / 255);
+        if (animated_bg.a > 10) {
+          cogito_draw_rect(bg_x, bg_y, animated_w, indicator_h, animated_bg, 99);
+        }
       }
       int content_x = expanded_content_x;
       if (has_icon) {
@@ -183,18 +237,35 @@ case COGITO_NAV_RAIL: {
       item_y += item_step;
     } else {
       int icon_x = n->x + (rail_w - icon_size) / 2;
-      int icon_y = item_y + COGITO_NAV_RAIL_COLLAPSED_ICON_Y_OFFSET;
-      int bg_x = n->x + (rail_w - COGITO_NAV_RAIL_COLLAPSED_INDICATOR_WIDTH) / 2;
-      int bg_y = item_y;
-      if (selected || hover) {
-        cogito_draw_rect(
-          bg_x,
-          bg_y,
-          COGITO_NAV_RAIL_COLLAPSED_INDICATOR_WIDTH,
-          COGITO_NAV_RAIL_COLLAPSED_INDICATOR_HEIGHT,
-          item_bg,
-        99
-        );
+      int icon_y = item_y + (n->nav_rail.no_label ? COGITO_NAV_RAIL_COLLAPSED_ICON_Y_OFFSET_NO_LABEL : COGITO_NAV_RAIL_COLLAPSED_ICON_Y_OFFSET);
+
+      // Apply spring animation to collapsed indicator
+      float scale = n->nav_rail.item_springs ? (float)n->nav_rail.item_springs[i].x : (selected ? 1.0f : 0.0f);
+      if (scale < 0.0f) scale = 0.0f;
+      if (scale > 1.5f) scale = 1.5f;
+
+      int base_indicator_w = COGITO_NAV_RAIL_COLLAPSED_INDICATOR_WIDTH;
+      int base_indicator_h = n->nav_rail.no_label ? COGITO_NAV_RAIL_COLLAPSED_INDICATOR_NO_LABEL_HEIGHT : COGITO_NAV_RAIL_COLLAPSED_INDICATOR_HEIGHT;
+
+      // Scale: spring value is the scale multiplier
+      int animated_w = (int)(base_indicator_w * scale);
+      int animated_h = (int)(base_indicator_h * scale);
+      if (animated_w < 0) animated_w = 0;
+      if (animated_h < 0) animated_h = 0;
+
+      int bg_x = n->x + (rail_w - animated_w) / 2;
+      int bg_y = item_y + (base_indicator_h - animated_h) / 2;
+
+      if (scale > 0.01f || selected || hover) {
+        // Fade out opacity as it shrinks below 0.85
+        uint8_t alpha = (uint8_t)(255 * (scale < 0.85f ? scale / 0.85f : 1.0f));
+        CogitoColor animated_bg = item_bg;
+        animated_bg.a = (uint8_t)(animated_bg.a * alpha / 255);
+        if (animated_bg.a > 10) {
+          int radius = animated_h / 2;
+          if (radius < 1) radius = 1;
+          cogito_draw_rect(bg_x, bg_y, animated_w, animated_h, animated_bg, radius);
+        }
       }
       if (n->nav_rail.icons && n->nav_rail.icons[i
       ]) {
@@ -255,6 +326,16 @@ case COGITO_NAV_RAIL: {
 
       item_y += item_step;
     }
+  }
+  // Draw vertical divider on right edge if enabled
+  if (n->nav_rail.show_divider) {
+    CogitoColor divider_color = s.has_border ? s.border : n->border_color;
+    if (divider_color.a == 0) {
+      // Fallback to theme outline color
+      divider_color = cogito_rgba(128, 128, 128, 255);
+    }
+    int divider_x = n->x + rail_w - 1;
+    cogito_draw_line(divider_x, n->y, divider_x, n->y + n->h, divider_color);
   }
   if (fab) cogito_draw_node(fab);
   break;

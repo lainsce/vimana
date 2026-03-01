@@ -1,17 +1,3 @@
-static void cogito_toast_close_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
-  if (!n || n->kind != COGITO_TOAST) return;
-  CogitoStyle s = cogito_theme_resolve_node(n);
-  int icon = s.has_icon_size ? s.icon_size : 12;
-  if (icon < 8) icon = 8;
-  int box = icon + 8;
-  int pad_x = 12;
-  int x = n->x + n->w - pad_x - box;
-  int y = n->y + (n->h - box) / 2;
-  if (out_x) *out_x = x;
-  if (out_y) *out_y = y;
-  if (out_w) *out_w = box;
-  if (out_h) *out_h = box;
-}
 static CogitoNode* cogito_toast_new_obj(YisStr* text) {
   CogitoNode* t = cogito_node_new(COGITO_TOAST);
   t->text = text;

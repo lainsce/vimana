@@ -20,6 +20,12 @@ static YisVal cogito_fab_menu_new(YisVal icon) {
 void cogito_fab_menu_add_item(YisVal fab_menuv, YisVal labelv, YisVal iconv, YisVal handlerv) {
   if (fab_menuv.tag != EVT_OBJ) yis_trap("cogito.fab_menu_add_item expects fab_menu");
   CogitoNode* n = (CogitoNode*)fab_menuv.as.p;
+
+  // Validate: FAB Menu must have 2 to 7 items
+  if (n->menu_len >= 7) {
+    yis_trap("cogito.fab_menu_add_item: FAB Menu can have at most 7 items");
+  }
+
   YisStr* label = stdr_to_string(labelv);
   YisFn* fn = (handlerv.tag == EVT_FN) ? (YisFn*)handlerv.as.p : NULL;
   cogito_node_add_menu(n, label, fn);

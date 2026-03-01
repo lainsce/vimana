@@ -1490,7 +1490,10 @@ case COGITO_TOASTS:
           CogitoNode* win = cogito_node_window(n);
           if (win) break;
       }
-      for (size_t i = 0; i < n->len; i++) {
+      // Limit to 5 visible toasts
+      const size_t max_toasts = 5;
+      size_t start = n->len > max_toasts ? n->len - max_toasts : 0;
+      for (size_t i = start; i < n->len; i++) {
           cogito_draw_node(n->children[i]);
       }
       break;
