@@ -4,7 +4,7 @@ case COGITO_DIVIDER: {
         n->opacity_set = true;
         n->opacity = s.opacity;
       }
-      CogitoColor line = s.has_border ? s.border : (s.has_text ? s.text : n->text_color);
+      CogitoColor line = s.has_bg ? s.bg : (s.has_border ? s.border : (s.has_text ? s.text : n->text_color));
       int thickness = s.has_border_width ? s.border_width : 1;
       if (thickness < 1) thickness = 1;
       int inset = n->divider.inset ? 18 : 0;

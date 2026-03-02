@@ -1,8 +1,16 @@
 static void cogito_draw_tooltip(CogitoNode* win, CogitoNode* target) {
   if (!win || !target || !target->tooltip || !target->tooltip->data) return;
   CogitoStyle s = cogito_theme_resolve(COGITO_TOOLTIP);
-  CogitoColor bg = s.has_bg ? s.bg : cogito_rgba(30, 30, 30, 240);
-  CogitoColor text = s.has_text ? s.text : cogito_rgba(255, 255, 255, 255);
+  CogitoColor bg = s.has_bg
+    ? s.bg
+    : (cogito_cached_inverse_surface.a
+      ? cogito_cached_inverse_surface
+      : (cogito_cached_surface_container_high.a ? cogito_cached_surface_container_high : cogito_cached_surface));
+  CogitoColor text = s.has_text
+    ? s.text
+    : (cogito_cached_inverse_on_surface.a
+      ? cogito_cached_inverse_on_surface
+      : (cogito_cached_on_surface.a ? cogito_cached_on_surface : cogito_on_color(bg)));
   int text_l = cogito_luma(text);
   int bg_l = cogito_luma(bg);
   if (abs(text_l - bg_l) < 80) {

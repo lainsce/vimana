@@ -682,7 +682,7 @@ label
 label.carousel-item-label
   font-size: 21
   font-weight: bold
-  color: #ffffff
+  color: @on-secondary
 
 list
   background: transparent

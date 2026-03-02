@@ -516,7 +516,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "image\n  background: transparent\n");
   cogito_sum_append(out, cap, &off,
-  "label.carousel-item-label\n  font-size: 21\n  font-weight: bold\n  color: #ffffff\n");
+  "label.carousel-item-label\n  font-size: 21\n  font-weight: bold\n  color: %s\n", osec);
   cogito_sum_append(out, cap, &off,
   "label\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
@@ -676,7 +676,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "textfield:selection, .textfield:selection\n  background: %s\n", p);
   cogito_sum_append(out, cap, &off,
-  "textfield\n  background: %s\n  color: %s\n  border-radius: 4 4 0 0\n  border: 0 none #000000\n  min-height: 56\n  padding: 8 16\n  transition: 180 standard\n", sc, ons);
+  "textfield\n  background: %s\n  color: %s\n  border-radius: 4 4 0 0\n  border: 0 none transparent\n  min-height: 56\n  padding: 8 16\n  transition: 180 standard\n", sc, ons);
   cogito_sum_append(out, cap, &off,
   "textview:focus\n  border: 2 solid %s\n", p);
   cogito_sum_append(out, cap, &off,

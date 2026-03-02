@@ -20,6 +20,17 @@ case COGITO_NAV_RAIL: {
   }
 
   CogitoColor base_color = s.has_text ? s.text : n->text_color;
+  CogitoStyle badge_style = cogito_theme_resolve(COGITO_BADGE);
+  CogitoColor badge_bg = badge_style.has_bg
+    ? badge_style.bg
+    : (cogito_cached_error.a
+      ? cogito_cached_error
+      : (s.has_selection ? s.selection : n->selection_color));
+  CogitoColor badge_fg = badge_style.has_text
+    ? badge_style.text
+    : (cogito_cached_on_error.a
+      ? cogito_cached_on_error
+      : cogito_on_color(badge_bg));
   if (n->nav_rail.show_toggle) {
     int tx = 0, ty = 0, tw = 0, th = 0;
     cogito_nav_rail_toggle_rect(n, &tx, &ty, &tw, &th);
@@ -185,14 +196,6 @@ case COGITO_NAV_RAIL: {
       if (has_icon) {
         int badge_value = (n->nav_rail.badges ? n->nav_rail.badges[i
         ] : 0);
-        CogitoColor badge_bg = cogito_rgba(220,
-        38,
-        38,
-        255);
-        CogitoColor badge_fg = cogito_rgba(255,
-        255,
-        255,
-        255);
         int icon_y = bg_y + (indicator_h - icon_size) / 2;
         int icon_x = content_x;
         cogito_draw_icon_fallback(n, n->nav_rail.icons[i
@@ -271,14 +274,6 @@ case COGITO_NAV_RAIL: {
       ]) {
         int badge_value = (n->nav_rail.badges ? n->nav_rail.badges[i
         ] : 0);
-        CogitoColor badge_bg = cogito_rgba(220,
-        38,
-        38,
-        255);
-        CogitoColor badge_fg = cogito_rgba(255,
-        255,
-        255,
-        255);
         cogito_draw_icon_fallback(n, n->nav_rail.icons[i
         ]->data, icon_x, icon_y, icon_size, content_color);
         if (badge_value != 0) {
@@ -329,11 +324,11 @@ case COGITO_NAV_RAIL: {
   }
   // Draw vertical divider on right edge if enabled
   if (n->nav_rail.show_divider) {
-    CogitoColor divider_color = s.has_border ? s.border : n->border_color;
-    if (divider_color.a == 0) {
-      // Fallback to theme outline color
-      divider_color = cogito_rgba(128, 128, 128, 255);
-    }
+    CogitoColor divider_color = s.has_border
+      ? s.border
+      : (cogito_cached_outline_variant.a
+        ? cogito_cached_outline_variant
+        : (cogito_cached_outline.a ? cogito_cached_outline : n->border_color));
     int divider_x = n->x + rail_w - 1;
     cogito_draw_line(divider_x, n->y, divider_x, n->y + n->h, divider_color);
   }

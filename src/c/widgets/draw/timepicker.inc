@@ -47,9 +47,7 @@ case COGITO_TIMEPICKER: {
 
     CogitoColor tertiary = {0}, tertiary_container = {0};
     cogito_theme_get_tertiary(&tertiary, NULL, &tertiary_container, NULL);
-    CogitoColor box_bg = cogito_theme_dark
-      ? cogito_mix(bg, cogito_rgba(255, 255, 255, 255), 0.10f)
-      : cogito_mix(bg, cogito_rgba(0, 0, 0, 255), 0.06f);
+    CogitoColor box_bg = cogito_mix(bg, cogito_on_color(bg), cogito_theme_dark ? 0.10f : 0.06f);
     box_bg.a = 255;
     CogitoColor box_active_bg = cogito_mix(box_bg, sel, 0.30f);
     box_active_bg.a = 255;

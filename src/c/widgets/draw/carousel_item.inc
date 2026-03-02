@@ -75,20 +75,16 @@ case COGITO_CAROUSEL_ITEM: {
           }
         }
         if (label_in_bounds && tw + lbl_pad * 2 <= n->w) {
-          // Pick white or black based on the underlying image luminance.
           CogitoColor lbl_color;
           if (image_child && image_child->image.loaded) {
             lbl_color = (image_child->image.avg_lum < 0.55f)
-              ? cogito_rgba(255, 255, 255, 255)
-              : cogito_rgba(0, 0, 0, 255);
+              ? (cogito_cached_inverse_on_surface.a ? cogito_cached_inverse_on_surface : cogito_on_color(bg))
+              : (cogito_cached_on_surface.a ? cogito_cached_on_surface : cogito_on_color(bg));
           } else {
-            // No image — fall back to theme text color
-            lbl_color = (s.has_text) ? s.text : cogito_rgba(255, 255, 255, 255);
+            lbl_color = (s.has_text) ? s.text : n->text_color;
           }
-          // Subtle shadow for legibility over varied image content
-          CogitoColor shadow = (lbl_color.r > 127)
-            ? cogito_rgba(0, 0, 0, 90)
-            : cogito_rgba(255, 255, 255, 90);
+          CogitoColor shadow = cogito_on_color(lbl_color);
+          shadow.a = 90;
           cogito_draw_text_size_node(label_child, lx + 1, ly + 1, label_child->text->data, shadow, lbl_size, lbl_bold, false);
           cogito_draw_text_size_node(label_child, lx, ly, label_child->text->data, lbl_color, lbl_size, lbl_bold, false);
         }

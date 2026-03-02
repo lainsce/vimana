@@ -20,7 +20,7 @@ case COGITO_APPBAR:
   // Animate bg/text/border with spring (e.g. dark-mode toggle, theme switch)
   cogito_anim_apply(n, &s, &bg, &text, &border, NULL);
   bool bottom_sheet_active = cogito_appbar_bottom_sheet_active(n);
-  CogitoColor force_black = cogito_rgba(0, 0, 0, 255);
+  CogitoColor force_black = s.has_bg ? s.bg : bg;
   if (bottom_sheet_active)
   {
     bg = force_black;
