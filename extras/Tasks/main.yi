@@ -12,6 +12,7 @@ def ?tasks = []: [string]
 def ?completed = []: [bool]
 def sheet_open_state = cogito.state(false)
 def ?draft_task = ""
+def ?draft_task_detail = ""
 def TASKS_STATE_PATH = ".tasks_state.json"
 
 fun save_state() (( -- )) {
@@ -109,16 +110,22 @@ fun open_create_sheet() (( -- )) {
 
 fun close_create_sheet() (( -- )) {
     draft_task = ""
+    draft_task_detail = ""
     sheet_open_state.set(false)
 }
 
 fun add_task_from_sheet() (( -- )) {
     let text = trim_text(draft_task)
+    let detail = trim_text(draft_task_detail)
     if len(text) == 0 {
         return
     }
     completed[len(completed)] = false
-    tasks[len(tasks)] = text
+    let ?task_value = text
+    if len(detail) > 0 {
+        task_value = "<task_value> — <detail>"
+    }
+    tasks[len(tasks)] = task_value
     close_create_sheet()
     save_state()
 }
@@ -208,15 +215,24 @@ fun build_task_sheet() (( cogito.BottomSheet )) {
     let sheet = cogito.bottom_sheet("Create Task")
     .set_gap(12)
 
-    let input = cogito.textfield("Task Title and Details")
+    let input = cogito.textfield("Task Title")
     .set_class("outline")
     .set_hexpand(true)
     .set_text(draft_task)
-    .set_hint_text("Enter task details, like what, when, and how often.")
     input.on_change((tf = cogito.TextField) => {
         draft_task = tf.text()
     })
     sheet.add(input)
+
+    let input2 = cogito.textfield("Task Details")
+    .set_class("outline")
+    .set_hexpand(true)
+    .set_text(draft_task_detail)
+    .set_hint_text("Enter task details, like what, when, and how often")
+    input2.on_change((tf = cogito.TextField) => {
+        draft_task_detail = tf.text()
+    })
+    sheet.add(input2)
 
     let actions = cogito.hstack()
     .set_id("bottom-sheet-action")

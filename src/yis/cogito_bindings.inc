@@ -164,6 +164,7 @@
 #undef cogito_progress_set_wavy
 #undef cogito_rebuild_active_window
 #undef cogito_scroller_set_axes
+#undef cogito_scroller_set_sync
 #undef cogito_searchfield_get_text
 #undef cogito_searchfield_new
 #undef cogito_searchfield_on_change
@@ -2112,6 +2113,15 @@ static void __cogito_scroller_set_axes(YisVal scv, YisVal hv, YisVal vv) {
   cogito_scroller_set_axes(sc, h, v);
 }
 
+static void __cogito_scroller_set_sync(YisVal scv, YisVal otherv) {
+  cogito_node* sc = cogito_node_from_val(scv);
+  cogito_node* other = NULL;
+  if (otherv.tag == EVT_OBJ && otherv.as.p) {
+    other = cogito_node_from_val(otherv);
+  }
+  cogito_scroller_set_sync(sc, other);
+}
+
 static void __cogito_grid_set_gap(YisVal gridv, YisVal xv, YisVal yv) {
   cogito_node* grid = cogito_node_from_val(gridv);
   cogito_grid_set_gap(grid, (int)yis_as_int(xv), (int)yis_as_int(yv));
@@ -3305,6 +3315,7 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_container_set_padding __cogito_container_set_padding
 #define cogito_fixed_set_pos __cogito_fixed_set_pos
 #define cogito_scroller_set_axes __cogito_scroller_set_axes
+#define cogito_scroller_set_sync __cogito_scroller_set_sync
 #define cogito_grid_set_gap __cogito_grid_set_gap
 #define cogito_grid_set_span __cogito_grid_set_span
 #define cogito_grid_set_align __cogito_grid_set_align

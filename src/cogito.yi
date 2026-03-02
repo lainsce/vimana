@@ -246,6 +246,7 @@ fun __cogito_timer_cancel(timer_id = num) (( bool )) { }
 fun __cogito_timer_cancel_for(node = any) (( -- )) { }
 fun __cogito_timer_cancel_all() (( -- )) { }
 fun __cogito_scroller_set_axes(scroller = Scroller, h = bool, v = bool) (( -- )) { }
+fun __cogito_scroller_set_sync(scroller = Scroller, other = any) (( -- )) { }
 fun __cogito_scroller() (( Scroller )) { }
 fun __cogito_searchfield_get_text(sf = SearchField) (( string )) { }
 fun __cogito_searchfield_on_change(sf = SearchField, handler = any) (( -- )) { }
@@ -954,6 +955,10 @@ pub class Scroller {
     }
     pub fun set_axes(this, h = bool, v = bool) (( Scroller )) {
         __cogito_scroller_set_axes(this, h, v)
+        return this
+    }
+    pub fun set_sync(this, other = any) (( Scroller )) {
+        __cogito_scroller_set_sync(this, other)
         return this
     }
     pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Scroller )) {

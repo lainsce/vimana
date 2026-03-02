@@ -161,8 +161,9 @@ case COGITO_TEXTFIELD: {
         int py_float = is_outlined ? (n->y - (ph_h_cur / 2)) : (n->y + field_pad_y);
         int py = (int)lround((double)py_inline + ((double)py_float - (double)py_inline) * (double)label_t);
 
-        if (is_outlined && label_t > 0.0f && border_w > 0) {
-          int label_w = cogito_text_width_size_node(n, placeholder, ph_size);
+        if (is_outlined && n->tf_label_anim_target > 0.0f && border_w > 0) {
+          int notch_label_size = hint_size;
+          int label_w = cogito_text_width_size_node(n, placeholder, notch_label_size);
           if (label_w < 0) label_w = 0;
           int notch_pad = 4;
           int notch_x = text_x - notch_pad;

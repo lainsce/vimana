@@ -11,6 +11,20 @@ static void cogito_scroller_set_axes(YisVal scv, YisVal horzv, YisVal vertv) {
   sc->scroller.vert = yis_as_bool(vertv);
   cogito_window_relayout(cogito_node_window(sc));
 }
+static void cogito_scroller_set_sync(YisVal scv, YisVal other) {
+  if (scv.tag != EVT_OBJ) yis_trap("cogito.scroller_set_sync expects scroller");
+  CogitoNode* sc = (CogitoNode*)scv.as.p;
+  if (other.tag == EVT_NULL) {
+    sc->scroller.sync_with = NULL;
+    cogito_window_relayout(cogito_node_window(sc));
+    return;
+  }
+  if (other.tag != EVT_OBJ) yis_trap("cogito.scroller_set_sync expects scroller or null");
+  CogitoNode* peer = (CogitoNode*)other.as.p;
+  if (!peer || peer->kind != COGITO_SCROLLER) yis_trap("cogito.scroller_set_sync expects scroller or null");
+  sc->scroller.sync_with = (peer == sc) ? NULL : peer;
+  cogito_window_relayout(cogito_node_window(sc));
+}
 static CogitoNode* cogito_find_scroller(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
   if (n->kind == COGITO_SCROLLER && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;

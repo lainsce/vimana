@@ -813,6 +813,7 @@ typedef struct CogitoNode {
       int scroll_x, scroll_y;
       int content_w, content_h;
       bool horz, vert;
+      struct CogitoNode* sync_with;
       bool bar_hovered;
       bool bar_in_use;  /* true while user is interacting (thumb drag or track click until release) */
       uint8_t bar_alpha;

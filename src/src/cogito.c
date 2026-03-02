@@ -227,6 +227,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_run cogito_run_yis
 #define cogito_scroller_new cogito_scroller_new_yis
 #define cogito_scroller_set_axes cogito_scroller_set_axes_yis
+#define cogito_scroller_set_sync cogito_scroller_set_sync_yis
 #define cogito_carousel_new cogito_carousel_new_yis
 #define cogito_carousel_set_active_index cogito_carousel_set_active_index_yis
 #define cogito_carousel_get_active_index cogito_carousel_get_active_index_yis
@@ -566,6 +567,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_run
 #undef cogito_scroller_new
 #undef cogito_scroller_set_axes
+#undef cogito_scroller_set_sync
 #undef cogito_searchfield_get_text
 #undef cogito_searchfield_new
 #undef cogito_searchfield_on_change
@@ -2939,6 +2941,13 @@ void cogito_scroller_set_axes(cogito_node *scroller, bool h, bool v) {
   if (!scroller)
     return;
   cogito_scroller_set_axes_yis(YV_OBJ(scroller), YV_BOOL(h), YV_BOOL(v));
+}
+
+void cogito_scroller_set_sync(cogito_node *scroller, cogito_node *other) {
+  if (!scroller)
+    return;
+  YisVal ov = other ? YV_OBJ(other) : YV_NULLV;
+  cogito_scroller_set_sync_yis(YV_OBJ(scroller), ov);
 }
 
 void cogito_grid_set_gap(cogito_node *grid, int x, int y) {

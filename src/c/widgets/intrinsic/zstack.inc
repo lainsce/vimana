@@ -3,11 +3,15 @@ case COGITO_ZSTACK: {
       int max_w = 0;
       int max_h = 0;
       for (size_t i = 0; i < n->len; i++) {
+        CogitoNode* c = n->children[i];
+        if (c->kind == COGITO_BOTTOM_SHEET || c->kind == COGITO_SIDE_SHEET) {
+          continue;
+        }
         int iw = 0;
         int ih = 0;
-        cogito_intrinsic_size(n->children[i], &iw, &ih);
-        int tw = iw + n->children[i]->margin_left + n->children[i]->margin_right;
-        int th = ih + n->children[i]->margin_top + n->children[i]->margin_bottom;
+        cogito_intrinsic_size(c, &iw, &ih);
+        int tw = iw + c->margin_left + c->margin_right;
+        int th = ih + c->margin_top + c->margin_bottom;
         if (tw > max_w) max_w = tw;
         if (th > max_h) max_h = th;
       }

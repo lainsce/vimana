@@ -42,6 +42,13 @@ case COGITO_CARD: {
     content_count++;
   }
 
+  if (content_count > 0) {
+    int body_size = cogito_label_class_font_size(COGITO_LABEL_CLASS_CONTENT_SUBTITLE, 14);
+    int body_line_h = cogito_text_height_size(body_size);
+    int max_body_h = body_line_h * 5;
+    if (content_h > max_body_h) content_h = max_body_h;
+  }
+
   int action_h = 0;
   bool has_actions = false;
   for (size_t i = 0; i < n->len; i++) {

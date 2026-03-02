@@ -498,6 +498,7 @@ void cogito_window_clear_side_sheet(cogito_window *window);
 // Containers and layout helpers
 void cogito_fixed_set_pos(cogito_node *fixed, cogito_node *child, int x, int y);
 void cogito_scroller_set_axes(cogito_node *scroller, bool h, bool v);
+void cogito_scroller_set_sync(cogito_node *scroller, cogito_node *other);
 void cogito_carousel_set_active_index(cogito_node *carousel, int idx);
 int cogito_carousel_get_active_index(cogito_node *carousel);
 void cogito_grid_set_gap(cogito_node *grid, int x, int y);
