@@ -10,7 +10,7 @@ case COGITO_ABOUT_WINDOW: {
   int shadow = s.has_shadow ? s.shadow_level : n->shadow_level;
 
   cogito_anim_apply(n, &s, &bg, &text_color, &border_color, NULL);
-  if (shadow > 0) {
+  if (shadow >= 0) {
     cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, shadow);
   }
   cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);

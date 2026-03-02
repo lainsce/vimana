@@ -8,9 +8,9 @@ static void cogito_appbar_button_metrics(int* size, int* gap, int* pad_top, int*
     else if (s.has_min_h) *size = s.min_h;
     else *size = 12;
   }
-  if (gap) *gap = 9;
-  if (pad_top) *pad_top = 9;
-  if (pad_right) *pad_right = 9;
+  if (gap) *gap = 10;
+  if (pad_top) *pad_top = 14;
+  if (pad_right) *pad_right = 14;
 }
 
 static bool cogito_tree_has_visible_bottom_sheet_above_y(const CogitoNode* n, int y_limit) {
@@ -34,9 +34,9 @@ static bool cogito_appbar_bottom_sheet_active(const CogitoNode* appbar) {
 
 static int cogito_appbar_titlebar_inset(void) {
   int btn_size = 12;
-  int btn_gap = 9;
-  int btn_pad_top = 9;
-  int btn_pad_right = 9;
+  int btn_gap = 10;
+  int btn_pad_top = 14;
+  int btn_pad_right = 14;
   cogito_appbar_button_metrics(&btn_size, &btn_gap, &btn_pad_top, &btn_pad_right);
   if (btn_size < 2) btn_size = 2;
   if (btn_pad_top < 0) btn_pad_top = 0;

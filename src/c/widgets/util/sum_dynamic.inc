@@ -161,7 +161,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   ".surface\n  background: %s\n  color: %s\n", surf, ons);
   cogito_sum_append(out, cap, &off,
-  ".surface-container-high\n  background: %s\n  color: %s\n", sc, ons);
+  ".surface-container-high\n  background: %s\n  color: %s\n", sch, ons);
   cogito_sum_append(out, cap, &off,
   ".surface-container-highest\n  background: %s\n  color: %s\n", schi, ons);
   cogito_sum_append(out, cap, &off,
@@ -713,6 +713,8 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   "textview:selection, .textview:selection\n  background: %s\n", p);
   cogito_sum_append(out, cap, &off,
   "textview\n  background: %s\n  color: %s\n  border-radius: 8\n  min-height: 96\n  transition: 180 standard\n", sc, ons);
+  cogito_sum_append(out, cap, &off,
+  "webview\n  background: %s\n  color: %s\n  border-radius: 8\n  padding: 8\n  transition: 180 standard\n", sclo, ons);
   cogito_sum_append(out, cap, &off,
   "timepicker:hover\n  background: %s\n", surfvar);
   cogito_sum_append(out, cap, &off,

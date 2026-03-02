@@ -272,7 +272,7 @@ case COGITO_ICONBTN: {
 
       bool iconbtn_has_bg = n->bg_set || s.has_bg || (bg.a > 0);
       if (iconbtn_has_bg || border_w > 0) {
-        if (n->shadow_set && n->shadow_level > 0) {
+        if (n->shadow_set && n->shadow_level >= 0) {
           cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, n->shadow_level);
         }
 

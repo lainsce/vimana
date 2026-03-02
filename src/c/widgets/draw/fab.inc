@@ -89,7 +89,7 @@ case COGITO_FAB: {
   if (!in_nav_rail) {
     if (s.has_box_shadow && s.box_shadow.blur > 0) {
       cogito_draw_shadow_node_box(n, &s, n->x, n->y, n->w, n->h, radius, &s.box_shadow);
-    } else if (n->shadow_set && n->shadow_level > 0) {
+    } else if (n->shadow_set && n->shadow_level >= 0) {
       cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, n->shadow_level);
     } else {
       // Default FAB elevation

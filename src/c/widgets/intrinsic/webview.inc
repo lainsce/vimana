@@ -2,7 +2,7 @@ case COGITO_WEBVIEW: {
       int pad_h = n->padding_left + n->padding_right;
       int pad_v = n->padding_top + n->padding_bottom;
       int base_w = n->min_w_set ? n->min_w : 360;
-      int content_w = base_w - pad_h;
+      int content_w = base_w + pad_h;
       if (content_w < 20) content_w = 20;
 
       const char* html = (n->icon && n->icon->data) ? n->icon->data : "";

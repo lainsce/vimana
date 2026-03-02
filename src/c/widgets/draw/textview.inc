@@ -16,8 +16,44 @@ case COGITO_TEXTVIEW: {
         if (cogito_cached_on_surface.a) text = cogito_cached_on_surface;
         else text = cogito_rgba(30, 30, 30, 255);
       }
+      /* Compute visible rect: when inside a scroller, clamp to the
+       * scroller's viewport so the background corners stay at the
+       * visible edges and text outside the viewport is clipped. */
+      int vis_x = n->x;
+      int vis_y = n->y;
+      int vis_w = n->w;
+      int vis_h = n->h;
+      bool tv_in_scroller = false;
+      {
+        CogitoNode* p = n->parent;
+        while (p && p->kind != COGITO_SCROLLER) p = p->parent;
+        if (p) {
+          tv_in_scroller = true;
+          int sv_l = p->x + p->padding_left;
+          int sv_t = p->y + p->padding_top;
+          int sv_r = p->x + p->w - p->padding_right;
+          int sv_b = p->y + p->h - p->padding_bottom;
+          if (vis_x < sv_l) { vis_w -= (sv_l - vis_x); vis_x = sv_l; }
+          if (vis_y < sv_t) { vis_h -= (sv_t - vis_y); vis_y = sv_t; }
+          if (vis_x + vis_w > sv_r) vis_w = sv_r - vis_x;
+          if (vis_y + vis_h > sv_b) vis_h = sv_b - vis_y;
+          if (vis_w < 0) vis_w = 0;
+          if (vis_h < 0) vis_h = 0;
+        }
+      }
       if (n->bg_set) {
-        cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
+        int bg_tl = radius, bg_tr = radius, bg_br = radius, bg_bl = radius;
+        cogito_resolve_node_radii(n, &s, radius, vis_w, vis_h, &bg_tl, &bg_tr, &bg_br, &bg_bl);
+        if (tv_in_scroller) {
+          /* Square the corners at clipped edges. */
+          if (vis_y > n->y) { bg_tl = 0; bg_tr = 0; }
+          if (vis_y + vis_h < n->y + n->h) { bg_br = 0; bg_bl = 0; }
+        }
+        cogito_draw_rect_radii_aa(vis_x, vis_y, vis_w, vis_h, bg, bg_tl, bg_tr, bg_br, bg_bl);
+      }
+      /* Scissor: clip text/selection/caret to the visible area. */
+      if (tv_in_scroller && cogito_backend && cogito_backend->begin_scissor) {
+        cogito_backend->begin_scissor(vis_x, vis_y, vis_w, vis_h);
       }
       int pad = 8;
       int size = cogito_node_font_size(n);
@@ -209,6 +245,9 @@ case COGITO_TEXTVIEW: {
         }
         double end_time = now + 0.12;
         if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
+      }
+      if (tv_in_scroller && cogito_backend && cogito_backend->end_scissor) {
+        cogito_backend->end_scissor();
       }
       break;
     }

@@ -114,6 +114,77 @@ static void cogito_scroller_state_store(const CogitoNode* n) {
   slot->stamp = cogito_scroller_state_tick++;
 }
 
+/* Measure the natural content height of a node given a fixed width.
+ * Used by scroller to determine overflow when the child uses vexpand. */
+static int cogito_scroller_measure_child_h(CogitoNode* n, int width) {
+  if (!n) return 0;
+  switch (n->kind) {
+    case COGITO_TEXTVIEW: {
+      int pad = 8; /* matches the hardcoded internal pad in textview draw */
+      int avail_w = width - pad * 2;
+      if (avail_w < 1) avail_w = 1;
+      const char* t = n->text ? n->text->data : "";
+      if (!t[0]) return pad * 2;
+      int size = cogito_node_font_size(n);
+      CogitoColor dummy = {0, 0, 0, 0};
+      int text_h = cogito_draw_text_wrapped(n, 0, 0, avail_w, t, dummy, size,
+                                            cogito_node_bold(n), false, 0, false);
+      return text_h + pad * 2;
+    }
+    case COGITO_WEBVIEW: {
+      const char* html = (n->icon && n->icon->data) ? n->icon->data : "";
+      int pad_h = n->padding_left + n->padding_right;
+      int pad_v = n->padding_top + n->padding_bottom;
+      if (!html[0]) return pad_v;
+      int avail_w = width - pad_h;
+      if (avail_w < 1) avail_w = 1;
+      CogitoColor dummy = {0, 0, 0, 255};
+      int content_h = cogito_webview_measure_content(n, html, avail_w, dummy);
+      return content_h + pad_v;
+    }
+    case COGITO_VSTACK: {
+      int inner_w = width - n->padding_left - n->padding_right;
+      if (inner_w < 0) inner_w = 0;
+      int total = n->padding_top + n->padding_bottom;
+      for (size_t i = 0; i < n->len; i++) {
+        CogitoNode* child = n->children[i];
+        int slot_w = inner_w - child->margin_left - child->margin_right;
+        if (slot_w < 0) slot_w = 0;
+        int child_w = child->hexpand ? slot_w : slot_w;
+        int ch = cogito_scroller_measure_child_h(child, child_w);
+        total += ch + child->margin_top + child->margin_bottom;
+        if (i > 0) total += n->gap;
+      }
+      return total;
+    }
+    case COGITO_HSTACK: {
+      int inner_w = width - n->padding_left - n->padding_right;
+      if (inner_w < 0) inner_w = 0;
+      int max_h = 0;
+      for (size_t i = 0; i < n->len; i++) {
+        int ch = cogito_scroller_measure_child_h(n->children[i], inner_w);
+        if (ch > max_h) max_h = ch;
+      }
+      return max_h + n->padding_top + n->padding_bottom;
+    }
+    case COGITO_ZSTACK: {
+      int inner_w = width - n->padding_left - n->padding_right;
+      if (inner_w < 0) inner_w = 0;
+      int max_h = 0;
+      for (size_t i = 0; i < n->len; i++) {
+        int ch = cogito_scroller_measure_child_h(n->children[i], inner_w);
+        if (ch > max_h) max_h = ch;
+      }
+      return max_h + n->padding_top + n->padding_bottom;
+    }
+    default: {
+      int cw = 0, ch = 0;
+      cogito_intrinsic_size(n, &cw, &ch);
+      return ch;
+    }
+  }
+}
+
 static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
   int inner_x = x + n->padding_left;
   int inner_y = y + n->padding_top;
@@ -130,6 +201,13 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
     cw = inner_w;
   } else if (cw < inner_w) {
     cw = inner_w;
+  }
+  /* Re-measure content height given the actual width.
+   * This lets text-wrapping nodes (textview, webview) report their natural
+   * content height so the scroller knows when to show the scrollbar. */
+  if (n->scroller.vert) {
+    int measured_h = cogito_scroller_measure_child_h(c, cw);
+    if (measured_h > ch) ch = measured_h;
   }
   if (!n->scroller.vert) {
     ch = inner_h;

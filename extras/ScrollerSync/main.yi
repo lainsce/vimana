@@ -169,6 +169,11 @@ fun build_window(win = cogito.Window) (( -- )) {
     .set_hexpand(true)
     .set_vexpand(true)
 
+    let editor_scroller = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(0, 0, 0, 0)
+
     let editor_title = cogito.label("Markdown")
     .set_class("title")
     editor_pane.add(editor_title)
@@ -176,7 +181,8 @@ fun build_window(win = cogito.Window) (( -- )) {
     let editor = cogito.textview(markdown_text)
     .set_hexpand(true)
     .set_vexpand(true)
-    editor_pane.add(editor)
+    editor_scroller.add(editor)
+    editor_pane.add(editor_scroller)
 
     let preview_pane = cogito.vstack()
     .set_gap(8)
@@ -190,15 +196,16 @@ fun build_window(win = cogito.Window) (( -- )) {
     let preview_scroller = cogito.scroller()
     .set_hexpand(true)
     .set_vexpand(true)
+    .set_padding(0, 16, 0, 0)
 
     let preview_container = cogito.vstack()
     .set_gap(8)
     .set_hexpand(true)
-    .set_padding(12, 12, 12, 12)
+    .set_vexpand(true)
 
     let preview_html = cogito.webview(html_preview)
     .set_hexpand(true)
-    .set_class("body")
+    .set_vexpand(true)
     preview_container.add(preview_html)
 
     preview_scroller.add(preview_container)

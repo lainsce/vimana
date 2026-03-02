@@ -49,7 +49,7 @@ case COGITO_CARD: {
   int animated_shadow = base_shadow + (int)((hover_shadow - base_shadow) * elev_scale);
 
   // Shadow
-  if (animated_shadow > 0) {
+  if (animated_shadow >= 0) {
     cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, animated_shadow);
   }
 

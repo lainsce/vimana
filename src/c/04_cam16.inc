@@ -234,8 +234,8 @@ static bool cogito_find_hct_color(double h, double c, double t, CogitoColor* out
 }
 
 static CogitoColor cogito_hct_to_rgb(double h, double c, double t) {
-  if (t <= 0.0) t = 0.0;
-  if (t >= 100.0) t = 100.0;
+  if (t <= 0.0) return (CogitoColor){0, 0, 0, 255};
+  if (t >= 100.0) return (CogitoColor){255, 255, 255, 255};
   if (c < 1e-4) {
     double y = cogito_y_from_lstar(t);
     CogitoColor gray = {0, 0, 0, 255};

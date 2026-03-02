@@ -154,7 +154,7 @@ case COGITO_BUTTON: {
       }
       
       if (n->bg_set || border_w > 0) {
-        if (n->shadow_set && n->shadow_level > 0) {
+        if (n->shadow_set && n->shadow_level >= 0) {
           cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, n->shadow_level);
         }
         

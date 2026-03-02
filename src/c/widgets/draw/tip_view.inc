@@ -7,7 +7,7 @@ case COGITO_TIP_VIEW: {
   int pad = 16;
 
   // Draw shadow
-  if (shadow > 0) {
+  if (shadow >= 0) {
     cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, shadow);
   }
 

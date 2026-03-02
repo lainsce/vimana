@@ -212,7 +212,7 @@ static void cogito_draw_menu(void) {
   int item_sel_radius = 12; // Radius for hover/toggled corners at menu edges
 
   // Draw single shadow for entire menu
-  if (shadow_level > 0 && section_count > 0) {
+  if (shadow_level >= 0 && section_count > 0) {
     cogito_draw_shadow_radii_level(x, y + cogito_menu.pad_top, w, h - cogito_menu.pad_top - cogito_menu.pad_bottom, outer_radius, outer_radius, outer_radius, outer_radius, shadow_level);
   }
   // Draw section backgrounds

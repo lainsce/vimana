@@ -10,7 +10,7 @@
 
 // Versioning: numeric for build/config, user-visible string for titles and UI
 #define COGITO_VERSION "1.0"
-#define COGITO_USER_VERSION "1.0 \"B-17 Bomber\""
+#define COGITO_USER_VERSION "1.0 \"Ibirapuera\""
 
 static bool sum_system_is_dark(void);
 static bool sum_system_accent(CogitoColor* out);

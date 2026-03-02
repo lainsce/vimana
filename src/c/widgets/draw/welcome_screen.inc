@@ -6,7 +6,7 @@ case COGITO_WELCOME_SCREEN: {
 
   // Draw background
   int shadow = s.has_shadow ? s.shadow_level : 3;
-  if (shadow > 0) {
+  if (shadow >= 0) {
     cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, shadow);
   }
   cogito_draw_rect(n->x, n->y, n->w, n->h, bg, radius);

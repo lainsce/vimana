@@ -16,7 +16,7 @@ case COGITO_HSTACK: {
 			if (s.has_border_width) { n->border_width = s.border_width; n->border_width_set = true; }
 			if (s.has_radius) n->border_radius = s.radius;
 			if (n->bg_set || n->border_width > 0) {
-				if (n->shadow_set && n->shadow_level > 0) {
+				if (n->shadow_set && n->shadow_level >= 0) {
 					cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, n->border_radius, n->shadow_level);
 				}
 				if (n->bg_set) {

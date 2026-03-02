@@ -2473,19 +2473,33 @@ static void sdl3_begin_scissor(int x, int y, int w, int h) {
   sdl3_rect_batch_flush();
 
   // Save current scissor to stack for nested clipping
-  SDL_Rect current_clip;
-  bool has_current = SDL_GetRenderClipRect(g_current_renderer, &current_clip);
-
-  // Push current scissor to stack if it exists
-  if (has_current && scissor_stack_count < MAX_SCISSOR_STACK) {
-    scissor_stack[scissor_stack_count++] = current_clip;
-  } else if (!has_current && scissor_stack_count < MAX_SCISSOR_STACK) {
-    // No current scissor - push a "null" sentinel (width=0 means no clipping)
-    scissor_stack[scissor_stack_count++] = (SDL_Rect){0, 0, 0, 0};
+  bool clip_enabled = SDL_RenderClipEnabled(g_current_renderer);
+  SDL_Rect current_clip = {0, 0, 0, 0};
+  if (clip_enabled) {
+    SDL_GetRenderClipRect(g_current_renderer, &current_clip);
   }
 
-  // Set new scissor
+  // Push current state (sentinel {0,0,0,0} when no clip was active)
+  if (scissor_stack_count < MAX_SCISSOR_STACK) {
+    scissor_stack[scissor_stack_count++] = clip_enabled ? current_clip : (SDL_Rect){0, 0, 0, 0};
+  }
+
+  // Compute new scissor, intersecting with parent clip when active
   SDL_Rect r = {x, y, w, h};
+  if (clip_enabled) {
+    int cx2 = current_clip.x + current_clip.w;
+    int cy2 = current_clip.y + current_clip.h;
+    int rx2 = r.x + r.w;
+    int ry2 = r.y + r.h;
+    int ix1 = r.x > current_clip.x ? r.x : current_clip.x;
+    int iy1 = r.y > current_clip.y ? r.y : current_clip.y;
+    int ix2 = rx2 < cx2 ? rx2 : cx2;
+    int iy2 = ry2 < cy2 ? ry2 : cy2;
+    r.x = ix1;
+    r.y = iy1;
+    r.w = ix2 > ix1 ? ix2 - ix1 : 0;
+    r.h = iy2 > iy1 ? iy2 - iy1 : 0;
+  }
   SDL_SetRenderClipRect(g_current_renderer, &r);
 }
 

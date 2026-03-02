@@ -41,7 +41,7 @@ case COGITO_IMAGE: {
       
       // Draw background and shadow
       if (has_bg || border_w > 0) {
-        if (n->shadow_set && n->shadow_level > 0) {
+        if (n->shadow_set && n->shadow_level >= 0) {
           cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, n->shadow_level);
         }
         cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);

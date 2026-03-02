@@ -30,12 +30,12 @@ case COGITO_TOOLBAR: {
       }
       if (n->bg_set) {
         int shadow_level = 0;
-        if (n->shadow_set && n->shadow_level > 0) {
+        if (n->shadow_set && n->shadow_level >= 0) {
           shadow_level = n->shadow_level;
         } else if (floating) {
           shadow_level = 1;
         }
-        if (shadow_level > 0) {
+        if (n->shadow_set || shadow_level > 0) {
           cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, n->border_radius, shadow_level);
         }
         cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, n->bg, n->border_radius);
