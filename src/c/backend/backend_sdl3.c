@@ -224,6 +224,7 @@ static double start_time = 0.0;
 
 typedef struct CogitoTextCacheKey {
   char text[COGITO_TEXT_CACHE_MAX_LEN];
+  uint16_t text_len;
   TTF_Font *font;
 } CogitoTextCacheKey;
 
@@ -242,18 +243,25 @@ static CogitoTextCacheEntry g_text_cache[COGITO_TEXT_CACHE_SIZE];
 static uint64_t g_text_cache_frame = 0;
 static size_t g_text_cache_bytes = 0;
 
-static uint32_t cogito_text_cache_hash(const CogitoTextCacheKey *key) {
+#if (COGITO_TEXT_CACHE_SIZE & (COGITO_TEXT_CACHE_SIZE - 1)) != 0
+#error "COGITO_TEXT_CACHE_SIZE must be a power of two"
+#endif
+
+static uint32_t cogito_text_cache_hash(TTF_Font *font, const char *text,
+                                       size_t text_len) {
   uint32_t h = 5381;
-  for (const char *p = key->text; *p; p++) {
-    h = ((h << 5) + h) ^ (uint8_t)*p;
+  for (size_t i = 0; i < text_len; i++) {
+    h = ((h << 5) + h) ^ (uint8_t)text[i];
   }
-  h ^= (uint32_t)(uintptr_t)key->font;
+  h ^= (uint32_t)(uintptr_t)font;
+  h ^= (uint32_t)text_len;
   return h;
 }
 
 static bool cogito_text_cache_key_eq(const CogitoTextCacheKey *a,
                                      const CogitoTextCacheKey *b) {
-  return a->font == b->font && strcmp(a->text, b->text) == 0;
+  return a->font == b->font && a->text_len == b->text_len &&
+         memcmp(a->text, b->text, a->text_len) == 0;
 }
 
 static void cogito_text_cache_drop_entry(CogitoTextCacheEntry *e) {
@@ -307,14 +315,15 @@ cogito_text_cache_lookup(TTF_Font *font, const char *text, size_t text_len) {
     memcpy(key.text, text, text_len);
   }
   key.text[text_len] = '\0';
+  key.text_len = (uint16_t)text_len;
   key.font = font;
 
-  uint32_t hash = cogito_text_cache_hash(&key);
-  int idx = hash % COGITO_TEXT_CACHE_SIZE;
+  uint32_t hash = cogito_text_cache_hash(font, key.text, text_len);
+  int idx = (int)(hash & (COGITO_TEXT_CACHE_SIZE - 1));
 
   // Linear probing
-  for (int i = 0; i < COGITO_TEXT_CACHE_SIZE; i++) {
-    int probe = (idx + i) % COGITO_TEXT_CACHE_SIZE;
+  for (int i = 0, probe = idx; i < COGITO_TEXT_CACHE_SIZE;
+       i++, probe = (probe + 1) & (COGITO_TEXT_CACHE_SIZE - 1)) {
     CogitoTextCacheEntry *e = &g_text_cache[probe];
 
     if (!e->valid) {
@@ -2186,10 +2195,17 @@ static bool sdl3_font_set_variation(CogitoFont *font, uint32_t axis_tag,
     return false;
   }
 
-  FT_Fixed *coords = (FT_Fixed *)malloc(sizeof(FT_Fixed) * mm->num_axis);
-  if (!coords) {
-    FT_Done_MM_Var(lib, mm);
-    return false;
+#define COGITO_FONT_VARIATION_STACK_AXES 16
+  FT_Fixed stack_coords[COGITO_FONT_VARIATION_STACK_AXES];
+  FT_Fixed *coords = stack_coords;
+  bool coords_heap = false;
+  if (mm->num_axis > COGITO_FONT_VARIATION_STACK_AXES) {
+    coords = (FT_Fixed *)malloc(sizeof(FT_Fixed) * mm->num_axis);
+    if (!coords) {
+      FT_Done_MM_Var(lib, mm);
+      return false;
+    }
+    coords_heap = true;
   }
   for (FT_UInt i = 0; i < mm->num_axis; i++)
     coords[i] = mm->axis[i].def;
@@ -2205,7 +2221,8 @@ static bool sdl3_font_set_variation(CogitoFont *font, uint32_t axis_tag,
   coords[axis_index] = desired;
 
   bool ok = (FT_Set_Var_Design_Coordinates(face, mm->num_axis, coords) == 0);
-  free(coords);
+  if (coords_heap)
+    free(coords);
   FT_Done_MM_Var(lib, mm);
   return ok;
 }

@@ -112,16 +112,19 @@ YisStr* cogito_compat_to_string(YisVal v) {
   if (v.tag == EVT_STR) return (YisStr*)v.as.p;
   if (v.tag == EVT_NULL) return NULL;
   char buf[64];
+  int written = 0;
   if (v.tag == EVT_INT) {
-    snprintf(buf, sizeof(buf), "%lld", (long long)v.as.i);
+    written = snprintf(buf, sizeof(buf), "%lld", (long long)v.as.i);
   } else if (v.tag == EVT_FLOAT) {
-    snprintf(buf, sizeof(buf), "%g", v.as.f);
+    written = snprintf(buf, sizeof(buf), "%g", v.as.f);
   } else if (v.tag == EVT_BOOL) {
-    snprintf(buf, sizeof(buf), "%s", v.as.b ? "true" : "false");
+    written = snprintf(buf, sizeof(buf), "%s", v.as.b ? "true" : "false");
   } else {
-    snprintf(buf, sizeof(buf), "");
+    written = snprintf(buf, sizeof(buf), "");
   }
-  return cogito_compat_str_from_slice(buf, strlen(buf));
+  if (written < 0) written = 0;
+  size_t out_len = (written < (int)sizeof(buf)) ? (size_t)written : sizeof(buf) - 1;
+  return cogito_compat_str_from_slice(buf, out_len);
 }
 
 YisArr* cogito_compat_arr_new(size_t len) {
