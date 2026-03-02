@@ -73,7 +73,7 @@ case COGITO_SIDE_SHEET: {
     if (max_title_w > 0) {
       cogito_draw_text_ellipsis(n, title_x, r_y + pad_t + 12,
                                 max_title_w, n->text->data, text_color, size,
-      true,
+      true, false,
       0);
     }
   }

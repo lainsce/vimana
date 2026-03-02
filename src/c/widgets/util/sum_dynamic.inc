@@ -700,6 +700,14 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "textfield\n  background: %s\n  color: %s\n  border-radius: 4 4 0 0\n  border: 0 none transparent\n  min-height: 56\n  padding: 8 16\n  transition: 180 standard\n", sc, ons);
   cogito_sum_append(out, cap, &off,
+  "textfield.outline\n  background: transparent\n  color: %s\n  border: 1 solid %s\n  border-radius: 4\n  min-height: 56\n  padding: 8 16\n", ons, outl);
+  cogito_sum_append(out, cap, &off,
+  "textfield.outline:hover\n  background: transparent\n  border-color: %s\n", ons);
+  cogito_sum_append(out, cap, &off,
+  "textfield.outline:focus\n  background: transparent\n  border: 2 solid %s\n", p);
+  cogito_sum_append(out, cap, &off,
+  "textfield.outline:disabled\n  background: transparent\n  color: %s52\n  border-color: %s52\n", ons, ons);
+  cogito_sum_append(out, cap, &off,
   "textview:focus\n  border: 2 solid %s\n", p);
   cogito_sum_append(out, cap, &off,
   "textview:selection, .textview:selection\n  background: %s\n", p);

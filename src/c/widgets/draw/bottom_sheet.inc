@@ -1,7 +1,5 @@
 case COGITO_BOTTOM_SHEET: {
-  bool hover = false, active = false;
-  cogito_node_hover_state(n, &hover, &active);
-  CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+  CogitoStyle s = cogito_theme_resolve_node(n);
 
   CogitoColor bg = s.has_bg ? s.bg : n->bg;
   CogitoColor text_color = s.has_text ? s.text : n->text_color;
@@ -14,10 +12,12 @@ case COGITO_BOTTOM_SHEET: {
   if (host && host->kind != COGITO_DIALOG_SLOT &&
       (host->kind == COGITO_ZSTACK || host->kind == COGITO_WINDOW)) {
     CogitoStyle slot_style = cogito_theme_resolve(COGITO_DIALOG_SLOT);
-    CogitoColor scrim = slot_style.has_bg ? slot_style.bg : n->bg;
+    CogitoColor scrim = slot_style.has_bg ? slot_style.bg : cogito_cached_surface;
     if (scrim.a == 0) {
       CogitoStyle ws = cogito_theme_resolve(COGITO_WINDOW);
-      scrim = ws.has_bg ? ws.bg : n->bg;
+      if (ws.has_bg) scrim = ws.bg;
+      else if (cogito_cached_surface.a) scrim = cogito_cached_surface;
+      else scrim = cogito_rgba(0, 0, 0, 255);
       scrim.a = 82;
     }
     CogitoNode* win = cogito_node_window(n);

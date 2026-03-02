@@ -177,7 +177,7 @@ case COGITO_CHECKBOX: {
         int text_avail = use_w - (text_x - n->x);
         if (text_avail > 0) {
           cogito_draw_text_ellipsis(n, text_x, ty, text_avail, n->text->data, label_text, cogito_node_font_size(n),
-      false,
+      false, false,
       0);
     }
   }

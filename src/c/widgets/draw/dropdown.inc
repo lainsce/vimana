@@ -33,7 +33,7 @@ case COGITO_DROPDOWN: {
       if (icon_size < 8) icon_size = 8;
       int icon_box = icon_size + 4;
       int text_w = n->w - pad * 2 - icon_box;
-      cogito_draw_text_ellipsis(n, n->x + pad, ty, text_w, label, text, size, cogito_node_bold(n), 0);
+      cogito_draw_text_ellipsis(n, n->x + pad, ty, text_w, label, text, size, cogito_node_bold(n), false, 0);
       int ix = n->x + n->w - pad - icon_box + (icon_box - icon_size) / 2;
       int iy = n->y + (n->h - icon_size) / 2;
       CogitoColor icon_color = s.has_icon_color ? s.icon_color : text;

@@ -7,6 +7,3 @@ vstack
 hstack
 zstack
   background: transparent
-
-label.task-item-done
-  color: alpha(#000000, 52%)

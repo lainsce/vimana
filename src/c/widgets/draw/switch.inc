@@ -35,7 +35,6 @@ case COGITO_SWITCH: {
       bool down = active;
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
       CogitoStyle track_s = cogito_switch_track_style(n->checked, over, down);
-      CogitoStyle knob_s = cogito_switch_knob_style(n->checked, over, down);
 
       CogitoColor track_off = n->track_set ? n->track_color : (track_s.has_track ? track_s.track : n->bg);
       CogitoColor track_on  = n->track_on_set ? n->track_on_color : (track_s.has_track ? track_s.track : n->bg);
@@ -144,7 +143,7 @@ case COGITO_SWITCH: {
         int text_avail = use_w - (text_x - n->x);
         if (text_avail > 0) {
           cogito_draw_text_ellipsis(n, text_x, ty, text_avail, n->text->data, label_text, cogito_node_font_size(n),
-      false,
+      false, false,
       0);
     }
   }

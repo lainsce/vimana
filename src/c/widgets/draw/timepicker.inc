@@ -229,11 +229,11 @@ case COGITO_TIMEPICKER: {
   int text_w = n->w - pad_x * 2 - icon_box_w;
   if (text_w < 24) text_w = 24;
 
-  cogito_draw_text_ellipsis(n, n->x + pad_x, n->y + 8, text_w, label, label_col, label_size, false, 0);
+  cogito_draw_text_ellipsis(n, n->x + pad_x, n->y + 8, text_w, label, label_col, label_size, false, false, 0);
 
   int vth = cogito_text_height_size(value_size);
   int value_y = n->y + n->h - vth - 8;
-  cogito_draw_text_ellipsis(n, n->x + pad_x, value_y, text_w, value, text, value_size, false, 0);
+  cogito_draw_text_ellipsis(n, n->x + pad_x, value_y, text_w, value, text, value_size, false, false, 0);
 
   int icon_x = n->x + n->w - pad_x - icon_sz;
   int icon_y = n->y + (n->h - icon_sz) / 2;

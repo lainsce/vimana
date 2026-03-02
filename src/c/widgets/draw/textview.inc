@@ -72,7 +72,7 @@ case COGITO_TEXTVIEW: {
           cy += line_h;
         }
       }
-      cogito_draw_text_wrapped(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), 0, true);
+      cogito_draw_text_wrapped(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), false, 0, false);
       if (n->text_input.sel_start != n->text_input.sel_end) {
         int a2 = n->text_input.sel_start;
         int b2 = n->text_input.sel_end;

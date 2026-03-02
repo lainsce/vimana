@@ -267,6 +267,7 @@
 #undef cogito_card_set_header_image
 #undef cogito_card_add_action
 #undef cogito_card_add_overflow
+#undef cogito_bottom_sheet_add_action
 
 #ifndef COGITO_DEFINED_COGITO_DEBUG_ENABLED
 static bool cogito_debug_enabled(void) {
@@ -1016,6 +1017,17 @@ static YisVal __cogito_bottom_sheet(YisVal titlev) {
   cogito_node* n = cogito_bottom_sheet_new(title);
   if (tmp) yis_release_val(YV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+
+static void __cogito_bottom_sheet_add_action(YisVal sheetv, YisVal childv) {
+  cogito_node* sheet = cogito_node_from_val(sheetv);
+  if (childv.tag != EVT_OBJ) return;
+  cogito_node* child = cogito_node_from_val(childv);
+  cogito_node_set_class(child, "text");
+  cogito_node_set_id(child, "bottom-sheet-action");
+  cogito_node_set_hexpand(child, true);
+  cogito_node_add(sheet, child);
+  cogito_window_relayout(cogito_node_window(sheet));
 }
 
 static YisVal __cogito_side_sheet(YisVal titlev) {
@@ -2846,6 +2858,11 @@ static void __cogito_nav_rail_set_toggle(YisVal railv, YisVal onv) {
   cogito_nav_rail_set_toggle(rail, yis_as_bool(onv));
 }
 
+static void __cogito_nav_rail_set_divider(YisVal railv, YisVal onv) {
+  cogito_node* rail = cogito_node_from_val(railv);
+  cogito_nav_rail_set_divider(rail, yis_as_bool(onv));
+}
+
 static void __cogito_nav_rail_set_selected(YisVal railv, YisVal idxv) {
   cogito_node* rail = cogito_node_from_val(railv);
   cogito_nav_rail_set_selected(rail, (int)yis_as_int(idxv));
@@ -3356,6 +3373,7 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_nav_rail_set_items __cogito_nav_rail_set_items
 #define cogito_nav_rail_set_badges __cogito_nav_rail_set_badges
 #define cogito_nav_rail_set_toggle __cogito_nav_rail_set_toggle
+#define cogito_nav_rail_set_divider __cogito_nav_rail_set_divider
 #define cogito_nav_rail_set_selected __cogito_nav_rail_set_selected
 #define cogito_nav_rail_get_selected __cogito_nav_rail_get_selected
 #define cogito_nav_rail_on_change __cogito_nav_rail_on_change
@@ -3554,4 +3572,5 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_card_set_header_image __cogito_card_set_header_image
 #define cogito_card_add_action __cogito_card_add_action
 #define cogito_card_add_overflow __cogito_card_add_overflow
+#define cogito_bottom_sheet_add_action __cogito_bottom_sheet_add_action
 // cogito_set_script_dir is provided by the cogito library

@@ -44,6 +44,7 @@ fun __cogito_bottom_nav_set_items(nav = BottomNav, labels = [any], icons = [any]
 fun __cogito_bottom_nav_set_selected(nav = BottomNav, idx = num) (( -- )) { }
 fun __cogito_bottom_nav() (( BottomNav )) { }
 fun __cogito_bottom_sheet(title = any) (( BottomSheet )) { }
+fun __cogito_bottom_sheet_add_action(sheet = BottomSheet, child = any) (( -- )) { }
 fun __cogito_side_sheet(title = any) (( SideSheet )) { }
 fun __cogito_side_sheet_set_mode(sheet = SideSheet, mode = num) (( -- )) { }
 fun __cogito_build(node = any, builder = any) (( -- )) { }
@@ -1924,8 +1925,9 @@ pub class DatePicker {
         __cogito_container_set_valign(this, align)
         return this
     }
-    pub fun set_date(this, y = num, m = num, d = num) (( DatePicker )) { }
-    pub fun date(this) (( [any] )) { }
+    pub fun set_date(this, y = num, m = num, d = num) (( DatePicker )) { return this }
+    pub fun date(this) (( [any] )) { return this }
+
     pub fun on_change(this, handler = any) (( DatePicker )) {
         __cogito_datepicker_on_change(this, handler)
         return this
@@ -2314,9 +2316,9 @@ pub class ButtonGroup {
         __cogito_buttongroup_set_connected(this, connected)
         return this
     }
-    pub fun set_items(this, items = [any]) (( ButtonGroup )) { }
-    pub fun set_selected(this, idx = num) (( ButtonGroup )) { }
-    pub fun selected(this) (( num )) { }
+    pub fun set_items(this, items = [any]) (( ButtonGroup )) { return this }
+    pub fun set_selected(this, idx = num) (( ButtonGroup )) { return this }
+    pub fun selected(this) (( num )) { return 0 }
     pub fun on_select(this, handler = any) (( ButtonGroup )) {
         __cogito_buttongroup_on_select(this, handler)
         return this
@@ -2711,6 +2713,10 @@ pub class Banner {
 pub class BottomSheet {
     pub fun add(this, child = any) (( BottomSheet )) {
         __cogito_container_add(this, child)
+        return this
+    }
+    pub fun add_action(this, child = any) (( BottomSheet )) {
+        __cogito_bottom_sheet_add_action(this, child)
         return this
     }
     pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( BottomSheet )) {
@@ -3247,6 +3253,10 @@ pub class NavRail {
     }
     pub fun set_toggle(this, on = bool) (( NavRail )) {
         __cogito_nav_rail_set_toggle(this, on)
+        return this
+    }
+    pub fun set_divider(this, on = bool) (( NavRail )) {
+        __cogito_nav_rail_set_divider(this, on)
         return this
     }
     pub fun set_selected(this, idx = num) (( NavRail )) {

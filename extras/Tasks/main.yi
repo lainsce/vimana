@@ -206,11 +206,10 @@ fun build_task_card(index = num, text = string, checked = bool) (( cogito.Card )
 
 fun build_task_sheet() (( cogito.BottomSheet )) {
     let sheet = cogito.bottom_sheet("Create Task")
-    .set_class("task-sheet")
-    .set_gap(10)
+    .set_gap(12)
 
     let input = cogito.textfield(draft_task)
-    .set_class("sheet-input")
+    .set_class("outline")
     .set_hexpand(true)
     .set_hint_text("Enter task details, like what, when, and how often.")
     input.on_change((tf = cogito.TextField) => {
@@ -219,7 +218,8 @@ fun build_task_sheet() (( cogito.BottomSheet )) {
     sheet.add(input)
 
     let actions = cogito.hstack()
-    .set_gap(8)
+    .set_id("bottom-sheet-action")
+    .set_gap(12)
     .set_hexpand(true)
 
     let cancel_btn = cogito.button("Cancel")
@@ -245,7 +245,7 @@ fun build_main_content() (( cogito.VStack )) {
     let total = len(tasks)
 
     let content = cogito.vstack()
-    .set_gap(10)
+    .set_gap(12)
     .set_hexpand(true)
     .set_vexpand(true)
     .set_padding(14, 14, 90, 14)
@@ -269,7 +269,7 @@ fun build_main_content() (( cogito.VStack )) {
     .set_class("task-list")
 
     let list = cogito.vstack()
-    .set_gap(10)
+    .set_gap(12)
     .set_hexpand(true)
 
     let done_len = len(completed)
@@ -331,7 +331,7 @@ entry() (( -- )) {
 
     cogito.load_sum("tasks.sum")
 
-    let win = cogito.window_size("Tasks", 460, 720)
+    let win = cogito.window_size("Tasks", 400, 720)
     .set_resizable(true)
     .build((w = cogito.Window) => {
         build_window(w)

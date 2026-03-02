@@ -142,7 +142,7 @@ case COGITO_COLORPICKER: {
           if (x1 > x0) cogito_draw_rect(x0, ty, x1 - x0, th, accent, 2);
         }
 
-        cogito_draw_text_ellipsis(n, hx + pad, ty, hw - pad * 2, hex, text_col, size, false, 0);
+        cogito_draw_text_ellipsis(n, hx + pad, ty, hw - pad * 2, hex, text_col, size, false, false, 0);
 
         if (cogito_focused == n && n->colorpicker.hex_editing) {
           int caret = n->text_input.caret;

@@ -1070,6 +1070,27 @@ textfield:disabled
 textfield:selection
   background: @primary
 
+textfield.outlined
+  background: transparent
+  color: @on-surface
+  border: 1 solid @outline
+  border-radius: 4
+  min-height: 56
+  padding: 8 16
+
+textfield.outlined:hover
+  background: transparent
+  border-color: @on-surface
+
+textfield.outlined:focus
+  background: transparent
+  border: 2 solid @primary
+
+textfield.outlined:disabled
+  background: transparent
+  color: alpha(@on-surface, 32%)
+  border-color: alpha(@on-surface, 32%)
+
 textview
   background: @surface-container-low
   color: @on-surface

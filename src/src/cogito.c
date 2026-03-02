@@ -3751,6 +3751,12 @@ void cogito_nav_rail_set_toggle(cogito_node *rail, bool visible) {
   cogito_nav_rail_set_toggle_yis(YV_OBJ(rail), YV_BOOL(visible));
 }
 
+void cogito_nav_rail_set_divider(cogito_node *rail, bool visible) {
+  if (!rail)
+    return;
+  __cogito_nav_rail_set_divider_yis(YV_OBJ(rail), YV_BOOL(visible));
+}
+
 int cogito_nav_rail_get_selected(cogito_node *rail) {
   if (!rail)
     return -1;

@@ -16,11 +16,11 @@ case COGITO_LABEL: {
         if (content_w < 0) content_w = 0;
         if (content_h < 0) content_h = 0;
         if (n->text_wrap) {
-          cogito_draw_text_wrapped(n, content_x, content_y, content_w, n->text->data, text, size, cogito_label_bold(n), align, true);
+          cogito_draw_text_wrapped(n, content_x, content_y, content_w, n->text->data, text, size, cogito_label_bold(n), false, align, true);
         } else if (n->text_ellipsis) {
           int th = cogito_text_height_size(size);
           int ty = content_y + (content_h - th) / 2;
-          cogito_draw_text_ellipsis(n, content_x, ty, content_w, n->text->data, text, size, cogito_label_bold(n), align);
+          cogito_draw_text_ellipsis(n, content_x, ty, content_w, n->text->data, text, size, cogito_label_bold(n), false, align);
         } else {
           int tw = cogito_text_width_size_node(n, n->text->data, size);
           int th = cogito_text_height_size(size);

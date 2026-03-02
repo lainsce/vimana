@@ -339,13 +339,13 @@ case COGITO_DATEPICKER: {
   int text_w = box_w - pad_x * 2 - icon_box - 8;
   if (text_w < 24) text_w = 24;
 
-  cogito_draw_text_ellipsis(n, box_x + pad_x, box_y + 6, text_w, label, label_col, label_size, false, 0);
+  cogito_draw_text_ellipsis(n, box_x + pad_x, box_y + 6, text_w, label, label_col, label_size, false, false, 0);
 
   int vth = cogito_text_height_size(value_size);
   int value_y = box_y + box_h - vth - 10;
   int min_value_y = box_y + 8 + cogito_text_height_size(label_size);
   if (value_y < min_value_y) value_y = min_value_y;
-  cogito_draw_text_ellipsis(n, box_x + pad_x, value_y, text_w, value, text, value_size, false, 0);
+  cogito_draw_text_ellipsis(n, box_x + pad_x, value_y, text_w, value, text, value_size, false, false, 0);
 
   int icon_box_x = box_x + box_w - pad_x - icon_box;
   int icon_box_y = box_y + (box_h - icon_box) / 2;

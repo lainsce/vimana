@@ -88,7 +88,7 @@ case COGITO_TOAST: {
         text_w -= (action_w + 24);
       }
       if (text_w < 0) text_w = 0;
-      cogito_draw_text_ellipsis(n, n->x + pad_x, ty, text_w, t, text, size, cogito_node_bold(n), 0);
+      cogito_draw_text_ellipsis(n, n->x + pad_x, ty, text_w, t, text, size, cogito_node_bold(n), false, 0);
       if (action_w > 0) {
         CogitoColor action_color = sel;
         int action_x = n->x + pad_x + text_w + 24;

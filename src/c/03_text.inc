@@ -1006,7 +1006,7 @@ static void cogito_draw_text_node(const CogitoNode* n, int x, int y, const char*
   cogito_draw_text_size_node(n, x, y, text, color, size, bold, false);
 }
 
-static void cogito_draw_text_ellipsis(const CogitoNode* n, int x, int y, int w, const char* text, CogitoColor color, int size, bool bold, int align) {
+static void cogito_draw_text_ellipsis(const CogitoNode* n, int x, int y, int w, const char* text, CogitoColor color, int size, bool bold, bool medium, int align) {
   if (!text || w <= 0) return;
   if (size <= 0) size = cogito_font_size();
   int len = 0;
@@ -1016,7 +1016,7 @@ static void cogito_draw_text_ellipsis(const CogitoNode* n, int x, int y, int w, 
     int tx = x;
     if (align == 1) tx = x + (w - full_w) / 2;
     else if (align == 2) tx = x + (w - full_w);
-    cogito_draw_text_size_node(n, tx, y, text, color, size, bold, false);
+    cogito_draw_text_size_node(n, tx, y, text, color, size, bold, medium);
     return;
   }
   const char* dots = "...";
@@ -1045,8 +1045,8 @@ static void cogito_draw_text_ellipsis(const CogitoNode* n, int x, int y, int w, 
   int tx = x;
   if (align == 1) tx = x + (w - line_w) / 2;
   else if (align == 2) tx = x + (w - line_w);
-  cogito_draw_text_size_node(n, tx, y, buf, color, size, bold, false);
-  cogito_draw_text_size_node(n, tx + cogito_text_width_size_node(n, buf, size), y, dots, color, size, bold, false);
+  cogito_draw_text_size_node(n, tx, y, buf, color, size, bold, medium);
+  cogito_draw_text_size_node(n, tx + cogito_text_width_size_node(n, buf, size), y, dots, color, size, bold, medium);
 }
 
 static void cogito_draw_text_tabular(CogitoFont* f, const char* text, int x, int y, int size, CogitoColor color) {
@@ -1107,7 +1107,7 @@ static void cogito_draw_text_tabular(CogitoFont* f, const char* text, int x, int
   }
 }
 
-static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, const char* text, CogitoColor color, int size, bool bold, int align, bool draw) {
+static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, const char* text, CogitoColor color, int size, bool bold, bool medium, int align, bool draw) {
   if (!text || w <= 0) return 0;
   if (size <= 0) size = cogito_font_size();
   int line_h = cogito_text_height_size(size);
@@ -1151,7 +1151,7 @@ static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, co
         if (len_n > 1000) len_n = 1000;
         memcpy(buf, start, (size_t)len_n);
         buf[len_n] = '\0';
-        cogito_draw_text_size_node(n, tx, y + lines * line_h, buf, color, size, bold, false);
+        cogito_draw_text_size_node(n, tx, y + lines * line_h, buf, color, size, bold, medium);
       }
     }
     if (*p == '\n') p++;

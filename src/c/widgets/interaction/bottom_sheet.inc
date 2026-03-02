@@ -10,13 +10,28 @@ static int cogito_bottom_sheet_min_height(CogitoNode* n) {
     title_h = cogito_text_height_size(ts) + gap;
   }
   int content_h = 0;
+  int action_h = 0;
+  int action_count = 0;
+  int content_count = 0;
   for (size_t i = 0; i < n->len; i++) {
+    CogitoNode* c = n->children[i];
+    bool is_action = c->view_id && c->view_id->data && strcmp(c->view_id->data, "bottom-sheet-action") == 0;
     int cw = 0, ch = 0;
-    cogito_intrinsic_size(n->children[i], &cw, &ch);
-    content_h += ch + n->children[i]->margin_top + n->children[i]->margin_bottom;
-    if (i > 0) content_h += gap;
+    cogito_intrinsic_size(c, &cw, &ch);
+    if (is_action) {
+      action_h += ch + c->margin_top + c->margin_bottom;
+      if (action_count > 0) action_h += gap;
+      action_count++;
+    } else {
+      content_h += ch + c->margin_top + c->margin_bottom;
+      if (content_count > 0) content_h += gap;
+      content_count++;
+    }
   }
   int h = handle_h + title_h + pad_t + content_h + pad_b;
+  if (action_count > 0) {
+    h += gap + action_h;
+  }
   if (h < 100) h = 100;
   return h;
 }

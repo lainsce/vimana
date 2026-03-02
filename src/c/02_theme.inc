@@ -1089,11 +1089,19 @@ static int cogito_label_class_font_size(int cls, int fallback) {
   return fallback;
 }
 
+static bool cogito_label_class_medium(int cls, bool fallback) {
+  cogito_theme_init();
+  if (cls > COGITO_LABEL_CLASS_NONE && cls < COGITO_LABEL_CLASS_COUNT) {
+    CogitoStyle* s = &cogito_theme.label_class[cls];
+    if (s->has_font_weight) return s->font_weight >= 500;
+  }
+  return fallback;
+}
+
 static bool cogito_label_class_bold(int cls, bool fallback) {
   cogito_theme_init();
   if (cls > COGITO_LABEL_CLASS_NONE && cls < COGITO_LABEL_CLASS_COUNT) {
-    CogitoStyle* s = &cogito_theme.label_class[cls
-    ];
+    CogitoStyle* s = &cogito_theme.label_class[cls];
     if (s->has_font_weight) return s->font_weight >= 600;
   }
   return fallback;

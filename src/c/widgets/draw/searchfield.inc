@@ -2,13 +2,18 @@ case COGITO_SEARCHFIELD: {
   bool hover = false, active = false;
   cogito_node_hover_state(n, &hover, &active);
   bool focused           = (cogito_focused == n && !n->disabled && n->editable);
-  bool focus_from_keyboard = focused && !active;
-  CogitoStyle s = cogito_theme_resolve_node_state(n, hover || focus_from_keyboard, false);
+  bool state_hover = hover && !focused;
+  bool state_active = active && !focused;
+  CogitoStyle base = cogito_theme_resolve_node(n);
+  CogitoStyle s = cogito_theme_resolve_node_state(n, state_hover, state_active);
 
   // Cogito Search Bar: Full radius (h/2), leading 16dp, 24dp icon, 8dp gap to text
-  CogitoColor bg         = s.has_bg   ? s.bg   : n->bg;
-  CogitoColor text_color = s.has_text ? s.text : n->text_color;
-  int radius = s.has_radius ? s.radius : (n->h / 2);
+  CogitoColor bg         = base.has_bg ? base.bg : n->bg;
+  CogitoColor text_color = base.has_text ? base.text : n->text_color;
+  int radius = base.has_radius ? base.radius : (n->h / 2);
+  if (s.has_bg) bg = s.bg;
+  if (s.has_text) text_color = s.text;
+  if (s.has_radius) radius = s.radius;
 
   cogito_anim_apply(n, &s, &bg, &text_color, NULL, NULL);
 
@@ -50,7 +55,7 @@ case COGITO_SEARCHFIELD: {
     CogitoColor ph = text_color;
     ph.a = 120;
     cogito_draw_text_ellipsis(n, text_x, text_y, text_avail, placeholder, ph, size,
-    false,
+    false, false,
     0);
   }
   // Selection highlight
@@ -70,7 +75,7 @@ case COGITO_SEARCHFIELD: {
   }
   if (has_text) {
     cogito_draw_text_ellipsis(n, text_x, text_y, text_avail, txt, text_color, size,
-    false,
+    false, false,
     0);
   }
   // Caret

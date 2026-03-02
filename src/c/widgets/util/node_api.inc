@@ -1,10 +1,55 @@
 // Node binding API
 // Property setters and container operations called from the Yis runtime.
 
+static bool cogito_class_has_token_local(const char* class_name, const char* token) {
+  if (!class_name || !token || !token[0]) return false;
+  size_t token_len = strlen(token);
+  const char* p = class_name;
+  while (*p) {
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+    if (!*p) break;
+    const char* start = p;
+    while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r') p++;
+    size_t len = (size_t)(p - start);
+    if (len == token_len && strncmp(start, token, token_len) == 0) return true;
+  }
+  return false;
+}
+
+static void cogito_node_force_class_token(CogitoNode* n, const char* token) {
+  if (!n || !token || !token[0]) return;
+  const char* existing = (n->class_name && n->class_name->data) ? n->class_name->data : NULL;
+  if (existing && cogito_class_has_token_local(existing, token)) return;
+
+  if (!existing || !existing[0]) {
+    if (n->class_name) {
+      yis_release_val(YV_STR(n->class_name));
+      n->class_name = NULL;
+    }
+    n->class_name = stdr_str_lit(token);
+    return;
+  }
+
+  size_t need = strlen(existing) + 1 + strlen(token) + 1;
+  char* merged = (char*)calloc(need, 1);
+  if (!merged) return;
+  snprintf(merged, need, "%s %s", existing, token);
+  YisStr* cls = stdr_str_lit(merged);
+  free(merged);
+  if (n->class_name) yis_release_val(YV_STR(n->class_name));
+  n->class_name = cls;
+}
+
 static void cogito_container_add(YisVal parentv, YisVal childv) {
   if (parentv.tag != EVT_OBJ || childv.tag != EVT_OBJ) yis_trap("cogito.container_add expects objects");
   CogitoNode* parent = (CogitoNode*)parentv.as.p;
   CogitoNode* child = (CogitoNode*)childv.as.p;
+
+  if ((parent->kind == COGITO_BOTTOM_SHEET || parent->kind == COGITO_SIDE_SHEET) &&
+      child->kind == COGITO_TEXTFIELD) {
+    cogito_node_force_class_token(child, "outline");
+  }
+
   cogito_children_add(parent, child);
   cogito_apply_style_tree(child);
   if (cogito_backend_ready) {
