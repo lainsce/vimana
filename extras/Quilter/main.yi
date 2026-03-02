@@ -153,7 +153,7 @@ fun markdown_to_html(md = string) (( string )) {
 fun build_window(win = cogito.Window) (( -- )) {
     html_preview = markdown_to_html(markdown_text)
 
-    let bar = cogito.appbar("Markdown Editor", "")
+    let bar = cogito.appbar("Quilter", "")
     .set_hexpand(true)
     win.add(bar)
 
@@ -174,10 +174,6 @@ fun build_window(win = cogito.Window) (( -- )) {
     .set_vexpand(true)
     .set_padding(0, 0, 0, 0)
 
-    let editor_title = cogito.label("Markdown")
-    .set_class("title")
-    editor_pane.add(editor_title)
-
     let editor = cogito.textview(markdown_text)
     .set_hexpand(true)
     .set_vexpand(true)
@@ -188,10 +184,6 @@ fun build_window(win = cogito.Window) (( -- )) {
     .set_gap(8)
     .set_hexpand(true)
     .set_vexpand(true)
-
-    let preview_title = cogito.label("HTML Preview")
-    .set_class("title")
-    preview_pane.add(preview_title)
 
     let preview_scroller = cogito.scroller()
     .set_hexpand(true)
@@ -224,10 +216,10 @@ fun build_window(win = cogito.Window) (( -- )) {
 
 entry() (( -- )) {
     let app = cogito.app()
-    .set_appid("com.fyralabs.MarkdownPreviewDemo")
-    .set_app_name("Markdown Preview Demo")
+    .set_appid("io.github.lainsce.Quilter")
+    .set_app_name("Quilter")
 
-    let win = cogito.window_size("Markdown Editor", 980, 760)
+    let win = cogito.window_size("Quilter", 980, 760)
     .set_resizable(true)
     .build((w = cogito.Window) => {
         build_window(w)
