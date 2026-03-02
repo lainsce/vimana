@@ -1420,6 +1420,17 @@ void cogito_card_set_variant(cogito_node *card, int variant) {
     return;
   CogitoNode *n = (CogitoNode *)card;
   n->card.variant = (uint8_t)(variant < 0 ? 0 : variant > 2 ? 2 : variant);
+  const char *variant_class =
+      (n->card.variant == 1) ? "filled" : (n->card.variant == 2) ? "outlined" : "elevated";
+  const char *existing_class =
+      (n->class_name && n->class_name->data) ? n->class_name->data : "";
+  bool existing_is_variant_class =
+      strcmp(existing_class, "elevated") == 0 ||
+      strcmp(existing_class, "filled") == 0 ||
+      strcmp(existing_class, "outlined") == 0;
+  if (!existing_class[0] || existing_is_variant_class) {
+    cogito_node_set_class(card, variant_class);
+  }
   // Update shadow level based on variant
   if (!n->shadow_set) {
     n->shadow_level = (n->card.variant == 0) ? 1 : 0;

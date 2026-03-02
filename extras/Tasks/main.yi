@@ -56,12 +56,12 @@ fun load_state() (( -- )) {
     completed = []: [bool]
 
     for (let ?i = 0; i < len(loaded_tasks); i += 1) {
-        tasks.add(str(loaded_tasks[i] ?? ""))
+        tasks[len(tasks)] = str(loaded_tasks[i] ?? "")
     }
 
     for (let ?i = 0; i < len(tasks); i += 1) {
         let v = if i < len(loaded_completed) { loaded_completed[i] } else { false }
-        completed.add(v == true)
+        completed[len(completed)] = (v == true)
     }
 }
 
@@ -117,8 +117,8 @@ fun add_task_from_sheet() (( -- )) {
     if len(text) == 0 {
         return
     }
-    completed.add(false)
-    tasks.add(text)
+    completed[len(completed)] = false
+    tasks[len(tasks)] = text
     close_create_sheet()
     save_state()
 }
@@ -137,10 +137,22 @@ fun remove_task(index = num) (( -- )) {
         return
     }
 
-    tasks.remove(index)
-    if index >= 0 && index < len(completed) {
-        completed.remove(index)
+    let ?next_tasks = []: [string]
+    let ?next_completed = []: [bool]
+
+    for (let ?i = 0; i < len(tasks); i += 1) {
+        if i == index {
+            continue
+        }
+
+        next_tasks[len(next_tasks)] = tasks[i] ?? ""
+
+        let done_value = if i < len(completed) { completed[i] } else { false }
+        next_completed[len(next_completed)] = done_value
     }
+
+    tasks = next_tasks
+    completed = next_completed
 
     request_rebuild()
     save_state()
@@ -156,8 +168,40 @@ fun completed_count() (( num )) {
     return count
 }
 
-fun task_label(text = string, checked = bool) (( string )) {
-    return if checked { "(x) <text>" } else { "( ) <text>" }
+fun build_task_card(index = num, text = string, checked = bool) (( cogito.Card )) {
+    let card = cogito.card("Task")
+    .set_hexpand(true)
+    .set_gap(8)
+    .set_variant(if checked { cogito.CARD_FILLED() } else { cogito.CARD_OUTLINED() })
+    .set_class("task-card")
+    .set_subtitle(if checked { "Completed" } else { "Pending" })
+
+    let task_text = cogito.label(text)
+    .set_vexpand(true)
+    .set_class(if checked { "task-item-done" } else { "task-item" })
+    card.add(task_text)
+
+    let toggle_btn = cogito.button(if checked { "Mark Undone" } else { "Mark Done" })
+    .set_class("text")
+    .on_click((b = cogito.Button) => {
+        set_task_done(index, !checked)
+    })
+
+    let remove_btn = cogito.button("Delete")
+    .set_class("text")
+    .on_click((b = cogito.Button) => {
+        remove_task(index)
+    })
+
+    let actions = cogito.hstack()
+    .set_id("card-action")
+    .set_gap(6)
+    actions.add(toggle_btn)
+    actions.add(remove_btn)
+
+    card.add(actions)
+
+    return card
 }
 
 fun build_task_sheet() (( cogito.BottomSheet )) {
@@ -199,7 +243,6 @@ fun build_task_sheet() (( cogito.BottomSheet )) {
 
 fun build_main_content() (( cogito.VStack )) {
     let total = len(tasks)
-    let done = completed_count()
 
     let content = cogito.vstack()
     .set_gap(10)
@@ -220,31 +263,24 @@ fun build_main_content() (( cogito.VStack )) {
         return content
     }
 
-    let list = cogito.list()
+    let scroller = cogito.scroller()
     .set_hexpand(true)
     .set_vexpand(true)
     .set_class("task-list")
+
+    let list = cogito.vstack()
+    .set_gap(10)
+    .set_hexpand(true)
 
     let done_len = len(completed)
     for (let ?i = 0; i < total; i += 1) {
         let checked = if i < done_len { completed[i] } else { false }
         let text = tasks[i] ?? ""
-        let item = cogito.label(task_label(text, checked))
-        .set_wrap(true)
-        .set_class(if checked { "task-item-done" } else { "task-item" })
-        list.add(item)
+        list.add(build_task_card(i, text, checked))
     }
-    list.on_select((idx = num) => {
-        if idx >= 0 && idx < len(tasks) {
-            let was_done = if idx < len(completed) { completed[idx] } else { false }
-            set_task_done(idx, !was_done)
-        }
-    })
-    list.on_activate((idx = num) => {
-        remove_task(idx)
-    })
 
-    content.add(list)
+    scroller.add(list)
+    content.add(scroller)
     return content
 }
 

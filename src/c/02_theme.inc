@@ -81,6 +81,23 @@ static int cogito_label_class_from_name(const char* s) {
   return COGITO_LABEL_CLASS_NONE;
 }
 
+static bool cogito_class_has_token(const char* classes, const char* token) {
+  if (!classes || !token || !token[0]) return false;
+  if (strcmp(classes, token) == 0) return true;
+
+  const char* p = classes;
+  size_t token_len = strlen(token);
+  while (*p) {
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+    if (!*p) break;
+    const char* start = p;
+    while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r') p++;
+    size_t len = (size_t)(p - start);
+    if (len == token_len && strncmp(start, token, len) == 0) return true;
+  }
+  return false;
+}
+
 static void cogito_theme_set_defaults(void) {
   cogito_style_clear(&cogito_theme.base);
   for (int i = 0; i < COGITO_KIND_COUNT; i++) {
@@ -381,8 +398,8 @@ static CogitoStyle cogito_theme_resolve_node(const CogitoNode* n) {
     bool saved_has_bg = s.has_bg;
     for (int i = 0; i < cogito_theme.custom_class_count; i++) {
       // Match class name and widget kind; COGITO_KIND_COUNT means universal (any kind)
-      if (strcmp(cogito_theme.custom_classes[i
-      ].name, n->class_name->data) == 0 &&
+        if (cogito_class_has_token(n->class_name->data, cogito_theme.custom_classes[i
+        ].name) &&
           (cogito_theme.custom_classes[i
       ].kind == n->kind ||
            cogito_theme.custom_classes[i
@@ -513,10 +530,10 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
   ]) {
     // Check if the class is one of the built-in icon button styles
     const char* class_name = n->class_name->data;
-    iconbtn_class_is_filled = strcmp(class_name, "filled") == 0;
-    iconbtn_class_is_tonal = strcmp(class_name, "tonal") == 0;
-    iconbtn_class_is_outlined = strcmp(class_name, "outlined") == 0;
-    iconbtn_class_is_iconic = strcmp(class_name, "iconic") == 0;
+    iconbtn_class_is_filled = cogito_class_has_token(class_name, "filled");
+    iconbtn_class_is_tonal = cogito_class_has_token(class_name, "tonal");
+    iconbtn_class_is_outlined = cogito_class_has_token(class_name, "outlined");
+    iconbtn_class_is_iconic = cogito_class_has_token(class_name, "iconic");
     iconbtn_has_custom_class = !iconbtn_class_is_filled && !iconbtn_class_is_tonal && 
                                !iconbtn_class_is_outlined && !iconbtn_class_is_iconic;
   }
@@ -653,8 +670,8 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
   // Apply custom class state variants
   if (n->class_name && n->class_name->data && n->class_name->len > 0) {
     for (int i = 0; i < cogito_theme.custom_class_count; i++) {
-      if (strcmp(cogito_theme.custom_classes[i
-      ].name, n->class_name->data) == 0 &&
+        if (cogito_class_has_token(n->class_name->data, cogito_theme.custom_classes[i
+        ].name) &&
           (cogito_theme.custom_classes[i
       ].kind == n->kind ||
            cogito_theme.custom_classes[i

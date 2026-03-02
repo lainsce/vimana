@@ -8,8 +8,5 @@ hstack
 zstack
   background: transparent
 
-label.summary
-  font-size: 12
-
 label.task-item-done
   color: alpha(#000000, 52%)

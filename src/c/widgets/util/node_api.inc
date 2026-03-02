@@ -175,43 +175,107 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
     }
   }
   if (n->kind == COGITO_LABEL) n->label.cls = COGITO_LABEL_CLASS_NONE;
-  if (s && s[
-    0
-  ]) {
-    int label_cls = COGITO_LABEL_CLASS_NONE;
-    if (n->kind == COGITO_LABEL) {
-      label_cls = cogito_label_class_from_name(s);
+  if (s && s[0]) {
+    bool has_ws = false;
+    for (const char* q = s; *q; q++) {
+      if (*q == ' ' || *q == '\t' || *q == '\n' || *q == '\r') {
+        has_ws = true;
+        break;
+      }
     }
-    if (label_cls != COGITO_LABEL_CLASS_NONE) {
-      n->label.cls = label_cls;
-    } else if (strcmp(s,
-    "monospace") == 0 || strcmp(s,
-    "mono") == 0) {
-      n->font_mono = true;
-    } else if (strcmp(s,
-    "tabular") == 0 || strcmp(s,
-    "tnum") == 0 || strcmp(s,
-    "tabular-nums") == 0) {
-      n->font_tabular = true;
-    } else if (is_button && strcmp(s,
-    "outlined") == 0) {
-      n->button.outlined = true;
-    } else if (is_button && strcmp(s,
-    "text") == 0) {
-      n->button.text_style = true;
-    } else {
-      // Store custom class name
-      if (cs) {
+
+    if (has_ws) {
+      bool has_custom_token = false;
+      const char* p = s;
+      while (*p) {
+        while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+        if (!*p) break;
+
+        const char* start = p;
+        while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r') p++;
+        size_t tlen = (size_t)(p - start);
+        if (tlen == 0) continue;
+
+        char tok[64];
+        size_t copy_len = tlen >= sizeof(tok) ? (sizeof(tok) - 1) : tlen;
+        memcpy(tok, start, copy_len);
+        tok[copy_len] = 0;
+
+        bool recognized = false;
+
+        if (n->kind == COGITO_LABEL) {
+          int label_cls = cogito_label_class_from_name(tok);
+          if (label_cls != COGITO_LABEL_CLASS_NONE) {
+            n->label.cls = label_cls;
+            recognized = true;
+          }
+        }
+
+        if (!recognized && (strcmp(tok, "monospace") == 0 || strcmp(tok, "mono") == 0)) {
+          n->font_mono = true;
+          recognized = true;
+        }
+        if (!recognized && (strcmp(tok, "tabular") == 0 || strcmp(tok, "tnum") == 0 || strcmp(tok, "tabular-nums") == 0)) {
+          n->font_tabular = true;
+          recognized = true;
+        }
+        if (!recognized && is_button && strcmp(tok, "outlined") == 0) {
+          n->button.outlined = true;
+          recognized = true;
+        }
+        if (!recognized && is_button && strcmp(tok, "text") == 0) {
+          n->button.text_style = true;
+          recognized = true;
+        }
+
+        if (!recognized) has_custom_token = true;
+      }
+
+      if (cs && (has_custom_token || n->kind == COGITO_ICONBTN)) {
         if (temp) {
-          // stdr_to_string created this string (refcount 1).
-          // Transfer ownership directly to the node -- no retain needed,
-          // and suppress the temp release at the end.
           n->class_name = cs;
           temp = false;
         } else {
-          // String owned by caller -- retain a separate reference for the node.
           n->class_name = cs;
           yis_retain_val(YV_STR(cs));
+        }
+      }
+    } else {
+      int label_cls = COGITO_LABEL_CLASS_NONE;
+      if (n->kind == COGITO_LABEL) {
+        label_cls = cogito_label_class_from_name(s);
+      }
+      if (label_cls != COGITO_LABEL_CLASS_NONE) {
+        n->label.cls = label_cls;
+      } else if (strcmp(s,
+      "monospace") == 0 || strcmp(s,
+      "mono") == 0) {
+        n->font_mono = true;
+      } else if (strcmp(s,
+      "tabular") == 0 || strcmp(s,
+      "tnum") == 0 || strcmp(s,
+      "tabular-nums") == 0) {
+        n->font_tabular = true;
+      } else if (is_button && strcmp(s,
+      "outlined") == 0) {
+        n->button.outlined = true;
+      } else if (is_button && strcmp(s,
+      "text") == 0) {
+        n->button.text_style = true;
+      } else {
+        // Store custom class name
+        if (cs) {
+          if (temp) {
+            // stdr_to_string created this string (refcount 1).
+            // Transfer ownership directly to the node -- no retain needed,
+            // and suppress the temp release at the end.
+            n->class_name = cs;
+            temp = false;
+          } else {
+            // String owned by caller -- retain a separate reference for the node.
+            n->class_name = cs;
+            yis_retain_val(YV_STR(cs));
+          }
         }
       }
     }

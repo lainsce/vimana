@@ -10,13 +10,14 @@ case COGITO_CARD: {
 
   int title_h = 0;
   if (n->text && n->text->data && n->text->data[0]) {
-    int ts = cogito_node_font_size(n);
+    int ts = cogito_label_class_font_size(COGITO_LABEL_CLASS_CONTENT_TITLE, 16);
     title_h = cogito_text_height_size(ts) + gap;
   }
 
   int subtitle_h = 0;
   if (n->subtitle && n->subtitle->data && n->subtitle->data[0]) {
-    subtitle_h = cogito_text_height_size(14) + gap;
+    int ss = cogito_label_class_font_size(COGITO_LABEL_CLASS_CONTENT_SUBTITLE, 14);
+    subtitle_h = cogito_text_height_size(ss) + gap;
   }
 
   int content_h = 0;
@@ -29,6 +30,9 @@ case COGITO_CARD: {
     for (size_t j = 0; j < n->card.action_len; j++) {
       if (n->card.actions[j] == c) { is_action = true; break; }
     }
+    if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
+      is_action = true;
+    }
     if (is_action) continue;
     int cw = 0, ch = 0;
     cogito_intrinsic_size(c, &cw, &ch);
@@ -39,11 +43,37 @@ case COGITO_CARD: {
   }
 
   int action_h = 0;
-  if (n->card.action_len > 0) {
-    int row_h = 0;
+  bool has_actions = false;
+  for (size_t i = 0; i < n->len; i++) {
+    CogitoNode* c = n->children[i];
+    if (c == n->card.overflow_btn) continue;
+    bool is_action = false;
     for (size_t j = 0; j < n->card.action_len; j++) {
+      if (n->card.actions[j] == c) { is_action = true; break; }
+    }
+    if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
+      is_action = true;
+    }
+    if (is_action) {
+      has_actions = true;
+      break;
+    }
+  }
+  if (has_actions) {
+    int row_h = 0;
+    for (size_t i = 0; i < n->len; i++) {
+      CogitoNode* c = n->children[i];
+      if (c == n->card.overflow_btn) continue;
+      bool is_action = false;
+      for (size_t j = 0; j < n->card.action_len; j++) {
+        if (n->card.actions[j] == c) { is_action = true; break; }
+      }
+      if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
+        is_action = true;
+      }
+      if (!is_action) continue;
       int aw = 0, ah = 0;
-      cogito_intrinsic_size(n->card.actions[j], &aw, &ah);
+      cogito_intrinsic_size(c, &aw, &ah);
       if (ah > row_h) row_h = ah;
     }
     action_h = row_h + gap;

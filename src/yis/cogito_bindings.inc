@@ -908,7 +908,10 @@ static void __cogito_card_add_action(YisVal cardv, YisVal btnv) {
   cogito_node* card = cogito_node_from_val(cardv);
   if (btnv.tag != EVT_OBJ) return;
   cogito_node* btn = cogito_node_from_val(btnv);
-  // Use public API to add the button to the card
+  cogito_node_set_class(btn, "text");
+  cogito_node_set_id(btn, "card-action");
+
+  // Add as card child; layout/intrinsic treat .card-action children as action row items
   cogito_node_add(card, btn);
   cogito_window_relayout(cogito_node_window(card));
 }

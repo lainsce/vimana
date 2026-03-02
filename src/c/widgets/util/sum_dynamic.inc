@@ -376,6 +376,22 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "button.text\n  background: transparent\n  color: %s\n  transition: 150 standard\n", p);
   cogito_sum_append(out, cap, &off,
+  "button.error\n  color: %s\n  border-color: %s\n", err, err);
+  cogito_sum_append(out, cap, &off,
+  "button.error:hover\n  background: %s14\n", err);
+  cogito_sum_append(out, cap, &off,
+  "button.error:active\n  background: %s1c\n", err);
+  cogito_sum_append(out, cap, &off,
+  "button.error:disabled\n  background: transparent\n  color: %s52\n  border-color: %s52\n", ons, ons);
+  cogito_sum_append(out, cap, &off,
+  "button.card-action:disabled\n  background: transparent\n  color: %s52\n", ons, ons);
+  cogito_sum_append(out, cap, &off,
+  "button.card-action:hover\n  background: %s14\n", p);
+  cogito_sum_append(out, cap, &off,
+  "button.card-action:active\n  background: %s1c\n", p);
+  cogito_sum_append(out, cap, &off,
+  "button.card-action\n  background: transparent\n  color: %s\n  transition: 150 standard\n", p);
+  cogito_sum_append(out, cap, &off,
   "button.toolbar_format_active\n  background: %s\n  color: %s\n  min-width: 56\n  min-height: 56\n  padding: 0 16\n  box-shadow: none\n", p, op);
   cogito_sum_append(out, cap, &off,
   "button.toolbar_format_active:hover\n  background: %s14\n", p);
@@ -393,6 +409,12 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   "card:hover\n  elevation: 2\n");
   cogito_sum_append(out, cap, &off,
   "card\n  background: %s\n  color: %s\n  border-radius: 16\n  padding: 16\n  transition: 200 standard\n", scl, ons);
+  cogito_sum_append(out, cap, &off,
+  "card.elevated\n  background: %s\n  elevation: 1\n", scl);
+  cogito_sum_append(out, cap, &off,
+  "card.filled\n  background: %s\n  elevation: 0\n", schi);
+  cogito_sum_append(out, cap, &off,
+  "card.outlined\n  background: %s\n  border: 1 solid %s\n  elevation: 0\n", surf, outl);
   cogito_sum_append(out, cap, &off,
   "carousel_item\n  background: %s\n  color: %s\n  border-radius: 26\n  padding: 16\n", sc, ons);
   cogito_sum_append(out, cap, &off,

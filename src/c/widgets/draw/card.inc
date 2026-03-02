@@ -88,20 +88,23 @@ case COGITO_CARD: {
   CogitoStyle ts = cogito_theme_resolve_node(n);
   int pad_l = ts.has_padding_left ? ts.padding_left : 16;
   int pad_t = ts.has_padding_top  ? ts.padding_top  : 16;
-  int sz    = cogito_node_font_size(n);
   int cx    = n->x + pad_l;
   int cy    = n->y + img_h + pad_t;
 
   // Title
   if (n->text && n->text->data && n->text->data[0]) {
-    cogito_draw_text_size_node(n, cx, cy, n->text->data, text_color, sz, true, false);
-    cy += cogito_text_height_size(sz) + n->gap;
+    int tsz = cogito_label_class_font_size(COGITO_LABEL_CLASS_CONTENT_TITLE, 16);
+    CogitoColor tcol = cogito_label_class_color(COGITO_LABEL_CLASS_CONTENT_TITLE, text_color);
+    bool tbold = cogito_label_class_bold(COGITO_LABEL_CLASS_CONTENT_TITLE, true);
+    cogito_draw_text_size_node(n, cx, cy, n->text->data, tcol, tsz, tbold, false);
+    cy += cogito_text_height_size(tsz) + n->gap;
   }
-  // Subtitle (body-medium 14dp, slightly dimmed)
+  // Subtitle
   if (n->subtitle && n->subtitle->data && n->subtitle->data[0]) {
-    CogitoColor sub_col = text_color;
-    sub_col.a = (uint8_t)(sub_col.a * 0.7f);
-    cogito_draw_text_size_node(n, cx, cy, n->subtitle->data, sub_col, 14, false, false);
+    int ssz = cogito_label_class_font_size(COGITO_LABEL_CLASS_CONTENT_SUBTITLE, 14);
+    CogitoColor scol = cogito_label_class_color(COGITO_LABEL_CLASS_CONTENT_SUBTITLE, text_color);
+    bool sbold = cogito_label_class_bold(COGITO_LABEL_CLASS_CONTENT_SUBTITLE, false);
+    cogito_draw_text_size_node(n, cx, cy, n->subtitle->data, scol, ssz, sbold, false);
   }
 
   // Children (skip overflow_btn — drawn last on top)

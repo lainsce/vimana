@@ -623,19 +623,19 @@ static bool cogito_sum_selector_kind(const char* sel, CogitoKind* out_kind, bool
     } else if (strcmp(class_part, "tabular") == 0 || strcmp(class_part, "tnum") == 0 || strcmp(class_part, "tabular-nums") == 0) {
       if (out_class) *out_class = COGITO_STYLE_CLASS_TABULAR;
       found_special_class = true;
-    } else if (strcmp(class_part, "outlined") == 0) {
+    } else if (strcmp(class_part, "outlined") == 0 && (s[0] == 0 || strcmp(s, "button") == 0 || strcmp(s, "iconbtn") == 0)) {
       if (out_class) *out_class = COGITO_STYLE_CLASS_OUTLINED;
       found_special_class = true;
-    } else if (strcmp(class_part, "text") == 0) {
+    } else if (strcmp(class_part, "text") == 0 && (s[0] == 0 || strcmp(s, "button") == 0)) {
       if (out_class) *out_class = COGITO_STYLE_CLASS_TEXT;
       found_special_class = true;
-    } else if (strcmp(class_part, "filled") == 0) {
+    } else if (strcmp(class_part, "filled") == 0 && (s[0] == 0 || strcmp(s, "iconbtn") == 0)) {
       if (out_class) *out_class = COGITO_STYLE_CLASS_FILLED;
       found_special_class = true;
-    } else if (strcmp(class_part, "tonal") == 0) {
+    } else if (strcmp(class_part, "tonal") == 0 && (s[0] == 0 || strcmp(s, "iconbtn") == 0)) {
       if (out_class) *out_class = COGITO_STYLE_CLASS_TONAL;
       found_special_class = true;
-    } else if (strcmp(class_part, "iconic") == 0) {
+    } else if (strcmp(class_part, "iconic") == 0 && (s[0] == 0 || strcmp(s, "iconbtn") == 0)) {
       if (out_class) *out_class = COGITO_STYLE_CLASS_ICONIC;
       found_special_class = true;
     }

@@ -413,6 +413,35 @@ button.text:disabled
   color: alpha(@on-surface, 32%)
   background: transparent
 
+button.error
+  color: @error
+  border-color: @error
+
+button.error:hover
+  background: alpha(@error, 8%)
+
+button.error:active
+  background: alpha(@error, 11%)
+
+button.error:disabled
+  color: alpha(@on-surface, 32%)
+  border-color: alpha(@on-surface, 32%)
+  background: transparent
+
+button.card-action
+  background: transparent
+  color: @primary
+
+button.card-action:hover
+  background: alpha(@primary, 8%)
+
+button.card-action:active
+  background: alpha(@primary, 11%)
+
+button.card-action:disabled
+  color: alpha(@on-surface, 32%)
+  background: transparent
+
 button:disabled
   background: alpha(@on-surface, 18%)
   color: alpha(@on-surface, 32%)
@@ -461,6 +490,19 @@ card
   color: @on-surface
   border-radius: 16
   padding: 16
+
+card.elevated
+  background: @surface-container-low
+  elevation: 1
+
+card.filled
+  background: @surface-container-highest
+  elevation: 0
+
+card.outlined
+  background: @surface
+  border: 1 solid @outline
+  elevation: 0
 
 carousel
   background: transparent
