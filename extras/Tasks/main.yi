@@ -2,6 +2,7 @@ cask main
 
 bring stdr
 bring cogito
+bring json
 
 macro is_blank_char() (( bool )) {
     this == " " || this == "\t" || this == "\n" || this == "\r"
@@ -11,6 +12,58 @@ def ?tasks = []: [string]
 def ?completed = []: [bool]
 def sheet_open_state = cogito.state(false)
 def ?draft_task = ""
+def TASKS_STATE_PATH = ".tasks_state.json"
+
+fun save_state() (( -- )) {
+    let ?payload = "{\"tasks\":["
+    for (let ?i = 0; i < len(tasks); i += 1) {
+        if i > 0 {
+            payload = "<payload>,"
+        }
+        let t = tasks[i] ?? ""
+        let esc = json.escape(t)
+        payload = "<payload>\"<esc>\""
+    }
+
+    payload = "<payload>],\"completed\":["
+    for (let ?i = 0; i < len(completed); i += 1) {
+        if i > 0 {
+            payload = "<payload>,"
+        }
+        payload = if completed[i] { "<payload>true" } else { "<payload>false" }
+    }
+
+    payload = "<payload>]}"
+    stdr.write_text_file(TASKS_STATE_PATH, payload)
+}
+
+fun load_state() (( -- )) {
+    let raw = stdr.read_text_file(TASKS_STATE_PATH)
+    if is_null(raw) {
+        return
+    }
+
+    let parsed = json.parse_result(str(raw))
+    if !(parsed["ok"] ?? false) {
+        return
+    }
+
+    let root = parsed["value"]
+    let loaded_tasks = json.get(root, "tasks", []: [any])
+    let loaded_completed = json.get(root, "completed", []: [any])
+
+    tasks = []: [string]
+    completed = []: [bool]
+
+    for (let ?i = 0; i < len(loaded_tasks); i += 1) {
+        tasks.add(str(loaded_tasks[i] ?? ""))
+    }
+
+    for (let ?i = 0; i < len(tasks); i += 1) {
+        let v = if i < len(loaded_completed) { loaded_completed[i] } else { false }
+        completed.add(v == true)
+    }
+}
 
 fun trim_text(text = string) (( string )) {
     let n = len(text)
@@ -67,6 +120,7 @@ fun add_task_from_sheet() (( -- )) {
     completed.add(false)
     tasks.add(text)
     close_create_sheet()
+    save_state()
 }
 
 fun set_task_done(index = num, checked = bool) (( -- )) {
@@ -75,6 +129,7 @@ fun set_task_done(index = num, checked = bool) (( -- )) {
     }
     completed[index] = checked
     request_rebuild()
+    save_state()
 }
 
 fun remove_task(index = num) (( -- )) {
@@ -88,6 +143,7 @@ fun remove_task(index = num) (( -- )) {
     }
 
     request_rebuild()
+    save_state()
 }
 
 fun completed_count() (( num )) {
@@ -230,6 +286,8 @@ fun build_window(win = cogito.Window) (( -- )) {
 }
 
 entry() (( -- )) {
+    load_state()
+
     let app = cogito.app()
     .set_appid("com.fyralabs.Tasks")
     .set_app_name("Tasks")

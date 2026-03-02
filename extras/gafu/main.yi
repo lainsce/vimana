@@ -2,6 +2,7 @@ cask main
 
 bring stdr
 bring cogito
+bring json
 
 def gafu_app = cogito.app()
 def source_picker = cogito.colorpicker().set_hex("#65558F")
@@ -17,6 +18,83 @@ def mode_base = cogito.iconbtn("sf:sun.max")
 def mode_bright = cogito.iconbtn("sf:sun.lefthalf.filled")
 def mode_brightest = cogito.iconbtn("sf:sun.max.fill")
 def dark_switch = cogito.switchbar("Dark Mode")
+def ?mode_idx = 1
+def GAFU_STATE_PATH = ".gafu_state.json"
+
+fun save_state() (( -- )) {
+    let source_hex_esc = json.escape(source_hex)
+    let selected_image_path_esc = json.escape(selected_image_path)
+    let ?payload = "{"
+    payload = "<payload>\"source_hex\":\"<source_hex_esc>\","
+    payload = "<payload>\"selected_image_path\":\"<selected_image_path_esc>\","
+    payload = "<payload>\"scheme_checked\":"
+    payload = if scheme_switch.checked() { "<payload>true," } else { "<payload>false," }
+    payload = "<payload>\"dark_mode\":"
+    payload = if dark_switch.get_checked() { "<payload>true," } else { "<payload>false," }
+    payload = "<payload>\"mode_idx\":<mode_idx>"
+    payload = "<payload>}"
+    stdr.write_text_file(GAFU_STATE_PATH, payload)
+}
+
+fun apply_mode(idx = num) (( -- )) {
+    mode_idx = idx
+    set_mode_selection(mode_idx, mode_moon, mode_base, mode_bright, mode_brightest)
+    if mode_idx == 0 {
+        gafu_app.set_contrast(-1)
+    } elif mode_idx == 1 {
+        gafu_app.set_contrast(0)
+    } elif mode_idx == 2 {
+        gafu_app.set_contrast(0.5)
+    } else {
+        gafu_app.set_contrast(1)
+    }
+}
+
+fun load_state() (( -- )) {
+    let raw = stdr.read_text_file(GAFU_STATE_PATH)
+    if is_null(raw) {
+        return
+    }
+
+    let parsed = json.parse_result(str(raw))
+    if !(parsed["ok"] ?? false) {
+        return
+    }
+
+    let root = parsed["value"]
+
+    source_hex = str(json.get(root, "source_hex", source_hex))
+    selected_image_path = str(json.get(root, "selected_image_path", ""))
+    let scheme_checked = json.get(root, "scheme_checked", false) == true
+    let dark_mode = json.get(root, "dark_mode", false) == true
+    mode_idx = json.get(root, "mode_idx", 1)
+
+    apply_source_color(source_hex)
+
+    if len(selected_image_path) > 0 {
+        upload_hint.set_text("Image Selected.")
+        selected_image_preview.set_source(selected_image_path)
+        selected_image_preview.set_size(320, 180)
+        selected_image_preview.set_radius(26)
+        scheme_switch.set_disabled(false)
+    } else {
+        upload_hint.set_text("Choose File Or Drag & Drop Here…")
+        selected_image_preview.set_source("")
+        selected_image_preview.set_size(0, 0)
+        scheme_switch.set_disabled(true)
+    }
+
+    scheme_switch.set_checked(scheme_checked)
+    if scheme_checked {
+        gafu_app.set_ensor_variant(ENSOR_CONTENT)
+    } else {
+        gafu_app.set_ensor_variant(ENSOR_DEFAULT)
+    }
+
+    apply_mode(mode_idx)
+    dark_switch.set_checked(dark_mode)
+    gafu_app.set_dark_mode(dark_mode, false)
+}
 
 fun apply_source_color(hex = string) (( -- )) {
     if len(hex) == 0 {
@@ -25,6 +103,7 @@ fun apply_source_color(hex = string) (( -- )) {
     source_hex = hex
     source_picker.set_hex(source_hex)
     gafu_app.set_accent_color(source_hex, false)
+    save_state()
 }
 
 fun choose_source_image() (( -- )) {
@@ -47,6 +126,8 @@ fun choose_source_image() (( -- )) {
     let seeded = gafu_app.set_accent_from_image(selected_image_path, false)
     if seeded != "" {
         apply_source_color(seeded)
+    } else {
+        save_state()
     }
 }
 
@@ -66,6 +147,8 @@ fun reset_everything() (( -- )) {
 
     dark_switch.set_checked(false)
     gafu_app.set_dark_mode(false, false)
+    mode_idx = 1
+    save_state()
 }
 
 fun swatch(text = string, cls = string) (( cogito.Button )) {
@@ -109,6 +192,7 @@ fun set_mode_selection(
     bright = cogito.IconButton,
     brightest = cogito.IconButton
 ) (( -- )) {
+    mode_idx = active
     moon.set_checked(active == 0)
     base.set_checked(active == 1)
     bright.set_checked(active == 2)
@@ -248,6 +332,7 @@ fun build_right_panel() (( cogito.VStack )) {
         } else {
             gafu_app.set_ensor_variant(ENSOR_DEFAULT)
         }
+        save_state()
     }))
     tools.add(cogito.image("sf:photo").set_class("gafu-tool"))
 
@@ -277,23 +362,23 @@ fun build_right_panel() (( cogito.VStack )) {
     .set_class("tonal")
 
     mode_moon.on_click((b = cogito.IconButton) => {
-        set_mode_selection(0, mode_moon, mode_base, mode_bright, mode_brightest)
-        gafu_app.set_contrast(-1)
+        apply_mode(0)
+        save_state()
     })
 
     mode_base.on_click((b = cogito.IconButton) => {
-        set_mode_selection(1, mode_moon, mode_base, mode_bright, mode_brightest)
-        gafu_app.set_contrast(0)
+        apply_mode(1)
+        save_state()
     })
 
     mode_bright.on_click((b = cogito.IconButton) => {
-        set_mode_selection(2, mode_moon, mode_base, mode_bright, mode_brightest)
-        gafu_app.set_contrast(0.5)
+        apply_mode(2)
+        save_state()
     })
 
     mode_brightest.on_click((b = cogito.IconButton) => {
-        set_mode_selection(3, mode_moon, mode_base, mode_bright, mode_brightest)
-        gafu_app.set_contrast(1)
+        apply_mode(3)
+        save_state()
     })
 
     modes.add(mode_moon)
@@ -333,6 +418,7 @@ fun build_right_panel() (( cogito.VStack )) {
     .set_class("surface-container-high")
     .on_change((sw = cogito.SwitchBar) => {
         gafu_app.set_dark_mode(sw.get_checked(), false)
+        save_state()
     })
 
     panel.add(upload)
@@ -383,5 +469,7 @@ entry() (( -- )) {
 
     win.add(root)
     .set_resizable(true)
+
+    load_state()
     app.run(win)
 }

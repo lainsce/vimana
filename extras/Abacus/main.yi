@@ -2,6 +2,7 @@ cask main
 
 bring stdr
 bring cogito
+bring json
 
 macro append_digit(d = num) (( num )) {
     this * 10 + d
@@ -19,11 +20,98 @@ def conv_input = cogito.textfield("From")
 def conv_output = cogito.textfield("To")
 def ?conv_from_idx = 0
 def ?conv_to_idx = 1
+def conv_category_dd = cogito.dropdown()
 def conv_from_dd = cogito.dropdown()
 def conv_to_dd = cogito.dropdown()
 def ?conv_category = 0
+def ?conv_input_state = "1"
+def ?state_loaded = false
+def ABACUS_STATE_PATH = ".abacus_state.json"
 def ABOUT_MORE_INFO_URL = "https://github.com/lainsce/yis"
 def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
+
+fun save_state() (( -- )) {
+    let pending_op_esc = json.escape(pending_op)
+    let conv_input_esc = json.escape(conv_input.text())
+    let ?payload = "{"
+    payload = "<payload>\"current_value\":<current_value>,"
+    payload = "<payload>\"stored_value\":<stored_value>,"
+    payload = "<payload>\"pending_op\":\"<pending_op_esc>\","
+    payload = "<payload>\"reset_input\":"
+    payload = if reset_input { "<payload>true," } else { "<payload>false," }
+    payload = "<payload>\"has_error\":"
+    payload = if has_error { "<payload>true," } else { "<payload>false," }
+    payload = "<payload>\"showing_converter\":"
+    payload = if showing_converter { "<payload>true," } else { "<payload>false," }
+    payload = "<payload>\"conv_from_idx\":<conv_from_idx>,"
+    payload = "<payload>\"conv_to_idx\":<conv_to_idx>,"
+    payload = "<payload>\"conv_category\":<conv_category>,"
+    payload = "<payload>\"conv_input\":\"<conv_input_esc>\""
+    payload = "<payload>}"
+    stdr.write_text_file(ABACUS_STATE_PATH, payload)
+}
+
+fun load_state() (( -- )) {
+    let raw = stdr.read_text_file(ABACUS_STATE_PATH)
+    if is_null(raw) {
+        return
+    }
+
+    let parsed = json.parse_result(str(raw))
+    if !(parsed["ok"] ?? false) {
+        return
+    }
+
+    let root = parsed["value"]
+    current_value = json.get(root, "current_value", 0.0)
+    stored_value = json.get(root, "stored_value", 0.0)
+    pending_op = str(json.get(root, "pending_op", ""))
+    reset_input = json.get(root, "reset_input", true) == true
+    has_error = json.get(root, "has_error", false) == true
+    showing_converter = json.get(root, "showing_converter", false) == true
+    conv_from_idx = json.get(root, "conv_from_idx", 0)
+    conv_to_idx = json.get(root, "conv_to_idx", 1)
+    conv_category = json.get(root, "conv_category", 0)
+    conv_input_state = str(json.get(root, "conv_input", "1"))
+    state_loaded = true
+}
+
+fun apply_loaded_state(view_switcher = cogito.ViewSwitcher) (( -- )) {
+    if has_error {
+        clear_expression()
+        update_display_value("Error")
+    } elif pending_op != "" {
+        let rhs = if reset_input { "" } else { str(current_value) }
+        set_expression(str(stored_value), pending_op, rhs, false)
+        update_display_value(str(current_value))
+    } else {
+        clear_expression()
+        update_display_value(str(current_value))
+    }
+
+    let names = conv_unit_names()
+    let count = len(names)
+    if conv_from_idx < 0 || conv_from_idx >= count {
+        conv_from_idx = 0
+    }
+    if conv_to_idx < 0 || conv_to_idx >= count {
+        conv_to_idx = if count > 1 { 1 } else { 0 }
+    }
+
+    conv_category_dd.set_selected(conv_category)
+    conv_from_dd.set_items(names)
+    conv_to_dd.set_items(names)
+    conv_from_dd.set_selected(conv_from_idx)
+    conv_to_dd.set_selected(conv_to_idx)
+    conv_input.set_text(conv_input_state)
+    do_convert()
+
+    if showing_converter {
+        view_switcher.set_active("converter")
+    } else {
+        view_switcher.set_active("calculator")
+    }
+}
 
 fun update_display_value(text = string) (( -- )) {
     display_working.set_text(text)
@@ -50,6 +138,7 @@ fun clear_all() (( -- )) {
     has_error = false
     clear_expression()
     update_display_value("0")
+    save_state()
 }
 
 fun commit_pending(show_equals = bool) (( -- )) {
@@ -109,6 +198,7 @@ fun input_digit(d = num) (( -- )) {
         clear_expression()
     }
     update_display_value(str(next))
+    save_state()
 }
 
 fun choose_operator(op = string) (( -- )) {
@@ -129,6 +219,7 @@ fun choose_operator(op = string) (( -- )) {
     reset_input = true
     set_expression(str(stored_value), pending_op, "", false)
     update_display_value(str(current_value))
+    save_state()
 }
 
 fun evaluate() (( -- )) {
@@ -147,6 +238,7 @@ fun evaluate() (( -- )) {
 
     pending_op = ""
     reset_input = true
+    save_state()
 }
 
 fun digit_button(d = num) (( cogito.Button )) {
@@ -313,6 +405,7 @@ fun conv_from_base(value = num, idx = num) (( num )) {
 
 fun do_convert() (( -- )) {
     let input_text = conv_input.text()
+    conv_input_state = input_text
     let input_val = aton(input_text)
     let base = conv_to_base(input_val, conv_from_idx)
     let result = conv_from_base(base, conv_to_idx)
@@ -330,6 +423,8 @@ fun swap_conv() (( -- )) {
     let old_output = conv_output.text()
     conv_input.set_text(old_output)
     conv_output.set_text(old_input)
+    conv_input_state = conv_input.text()
+    save_state()
 }
 
 fun refresh_conv_units() (( -- )) {
@@ -341,7 +436,9 @@ fun refresh_conv_units() (( -- )) {
     conv_from_dd.set_selected(0)
     conv_to_dd.set_selected(1)
     conv_input.set_text("1")
+    conv_input_state = "1"
     do_convert()
+    save_state()
 }
 
 fun build_converter_ui() (( cogito.VStack )) {
@@ -351,33 +448,44 @@ fun build_converter_ui() (( cogito.VStack )) {
     panel.set_gap(12)
     cogito.set_class(panel, "conv-panel")
 
-    let cat_dd = cogito.dropdown()
+    conv_category_dd
     .set_items(["Length", "Weight", "Temperature", "Volume"])
-    .set_selected(0)
+    .set_selected(conv_category)
     .set_hexpand(true)
     .set_class("conv-category")
     .on_change((dd = cogito.Dropdown) => {
         conv_category = dd.selected()
         refresh_conv_units()
     })
-    panel.add(cat_dd)
+    panel.add(conv_category_dd)
 
     let from_row = cogito.hstack()
     .set_hexpand(true)
     .set_gap(6)
 
     let names = conv_unit_names()
+    let unit_count = len(names)
+    if conv_from_idx < 0 || conv_from_idx >= unit_count {
+        conv_from_idx = 0
+    }
+    if conv_to_idx < 0 || conv_to_idx >= unit_count {
+        conv_to_idx = if unit_count > 1 { 1 } else { 0 }
+    }
+
     conv_from_dd.set_items(names)
-    .set_selected(0)
+    .set_selected(conv_from_idx)
     .on_change((dd = cogito.Dropdown) => {
         conv_from_idx = dd.selected()
         do_convert()
+        save_state()
     })
 
     conv_input.set_hexpand(true)
     cogito.set_class(conv_input, "conv-input")
+    conv_input.set_text(conv_input_state)
     conv_input.on_change((tf = cogito.TextField) => {
         do_convert()
+        save_state()
     })
 
     from_row.add(conv_input)
@@ -399,10 +507,11 @@ fun build_converter_ui() (( cogito.VStack )) {
     .set_gap(6)
 
     conv_to_dd.set_items(names)
-    .set_selected(1)
+    .set_selected(conv_to_idx)
     .on_change((dd = cogito.Dropdown) => {
         conv_to_idx = dd.selected()
         do_convert()
+        save_state()
     })
 
     conv_output.set_hexpand(true)
@@ -453,6 +562,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
         } else {
             switcher.set_active("calculator")
         }
+        save_state()
     })
     cogito.set_tooltip(toggle_btn, "Unit Converter")
     root.add(bar)
@@ -527,11 +637,15 @@ fun build_ui(win = cogito.Window) (( -- )) {
 
     root.add(switcher)
     win.add(root)
-
-    clear_all()
+    if state_loaded {
+        apply_loaded_state(switcher)
+    } else {
+        clear_all()
+    }
 }
 
 entry () (( -- )) {
+    load_state()
     cogito.load_sum("calc.sum")
     let app = cogito.app()
     .set_accent_color("#8C56BF", false)
