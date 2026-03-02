@@ -942,3 +942,86 @@
                         out->tmp = t;
                         return true;
                     }
+                    // --- WebView ---
+                    if (str_eq_c(fname, "__cogito_webview")) {
+                        GenExpr url;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &url, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_webview_new(%s);", t, url.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", url.tmp);
+                        gen_expr_release_except(cg, &url, url.tmp);
+                        gen_expr_free(&url);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_webview_set_url")) {
+                        GenExpr wv, url;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &wv, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &url, err)) { gen_expr_free(&wv); return false; }
+                        w_line(&cg->w, "cogito_webview_set_url(%s, %s);", wv.tmp, url.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", url.tmp);
+                        gen_expr_release_except(cg, &wv, wv.tmp);
+                        gen_expr_release_except(cg, &url, url.tmp);
+                        gen_expr_free(&wv);
+                        gen_expr_free(&url);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_webview_get_url")) {
+                        GenExpr wv;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &wv, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_webview_get_url(%s);", t, wv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
+                        gen_expr_release_except(cg, &wv, wv.tmp);
+                        gen_expr_free(&wv);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_webview_set_open_external_on_click")) {
+                        GenExpr wv, on;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &wv, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &on, err)) { gen_expr_free(&wv); return false; }
+                        w_line(&cg->w, "cogito_webview_set_open_external_on_click(%s, %s);", wv.tmp, on.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", on.tmp);
+                        gen_expr_release_except(cg, &wv, wv.tmp);
+                        gen_expr_release_except(cg, &on, on.tmp);
+                        gen_expr_free(&wv);
+                        gen_expr_free(&on);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_webview_get_open_external_on_click")) {
+                        GenExpr wv;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &wv, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_webview_get_open_external_on_click(%s);", t, wv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
+                        gen_expr_release_except(cg, &wv, wv.tmp);
+                        gen_expr_free(&wv);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_webview_open")) {
+                        GenExpr wv;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &wv, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_webview_open(%s);", t, wv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
+                        gen_expr_release_except(cg, &wv, wv.tmp);
+                        gen_expr_free(&wv);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }

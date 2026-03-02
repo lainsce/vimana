@@ -1,0 +1,230 @@
+cask main
+
+bring stdr
+bring cogito
+
+def SAMPLE_MD = "# Markdown Editor\n\nType markdown on the left.\n\n## Features\n- Live preview\n- HTML output\n- ViewDual layout\n\n### Notes\nThis preview is a lightweight markdown-to-HTML converter."
+def ?markdown_text = SAMPLE_MD
+def ?html_preview = ""
+
+macro is_blank_char() (( bool )) {
+    this == " " || this == "\t" || this == "\n" || this == "\r"
+}
+
+fun trim_text(text = string) (( string )) {
+    let n = len(text)
+    if n == 0 {
+        return ""
+    }
+
+    let ?start = 0
+    for (; start < n; start += 1) {
+        let ch = text[start]
+        if !(ch !is_blank_char) {
+            break
+        }
+    }
+    if start >= n {
+        return ""
+    }
+
+    let ?end = n - 1
+    for (; end >= start; end -= 1) {
+        let ch = text[end]
+        if !(ch !is_blank_char) {
+            break
+        }
+    }
+
+    let ?out = ""
+    for (let ?i = start; i <= end; i += 1) {
+        let c = text[i]
+        out = "<out><c>"
+    }
+    return out
+}
+
+fun starts_with(text = string, prefix = string) (( bool )) {
+    if len(prefix) > len(text) {
+        return false
+    }
+    for (let ?i = 0; i < len(prefix); i += 1) {
+        if text[i] != prefix[i] {
+            return false
+        }
+    }
+    return true
+}
+
+fun slice_from(text = string, from = num) (( string )) {
+    let n = len(text)
+    if from >= n {
+        return ""
+    }
+    let ?out = ""
+    for (let ?i = from; i < n; i += 1) {
+        let c = text[i]
+        out = "<out><c>"
+    }
+    return out
+}
+
+fun escape_html(text = string) (( string )) {
+    let ?out = ""
+    for (let ?i = 0; i < len(text); i += 1) {
+        let ch = text[i]
+        if ch == "&" {
+            out = "<out>&amp;"
+        } else {
+            out = "<out><ch>"
+        }
+    }
+    return out
+}
+
+fun markdown_to_html(md = string) (( string )) {
+    let ?out = ""
+    let ?line = ""
+    let ?in_list = false
+
+    for (let ?i = 0; i <= len(md); i += 1) {
+        let ch = if i < len(md) { md[i] } else { "\n" }
+        if ch != "\n" {
+            line = "<line><ch>"
+            continue
+        }
+
+        let raw = trim_text(line)
+        line = ""
+
+        if len(raw) == 0 {
+            if in_list {
+                out = "<out>[/ul]\n"
+                in_list = false
+            }
+            continue
+        }
+
+        if starts_with(raw, "### ") {
+            if in_list {
+                out = "<out>[/ul]\n"
+                in_list = false
+            }
+            let content = escape_html(slice_from(raw, 4))
+            out = "<out>[h3]<content>[/h3]\n"
+        } elif starts_with(raw, "## ") {
+            if in_list {
+                out = "<out>[/ul]\n"
+                in_list = false
+            }
+            let content = escape_html(slice_from(raw, 3))
+            out = "<out>[h2]<content>[/h2]\n"
+        } elif starts_with(raw, "# ") {
+            if in_list {
+                out = "<out>[/ul]\n"
+                in_list = false
+            }
+            let content = escape_html(slice_from(raw, 2))
+            out = "<out>[h1]<content>[/h1]\n"
+        } elif starts_with(raw, "- ") {
+            if !in_list {
+                out = "<out>[ul]\n"
+                in_list = true
+            }
+            let content = escape_html(slice_from(raw, 2))
+            out = "<out>[li]<content>[/li]\n"
+        } else {
+            if in_list {
+                out = "<out>[/ul]\n"
+                in_list = false
+            }
+            let content = escape_html(raw)
+            out = "<out>[p]<content>[/p]\n"
+        }
+    }
+
+    if in_list {
+        out = "<out>[/ul]\n"
+    }
+
+    return out
+}
+
+fun build_window(win = cogito.Window) (( -- )) {
+    html_preview = markdown_to_html(markdown_text)
+
+    let bar = cogito.appbar("Markdown Editor", "")
+    .set_hexpand(true)
+    win.add(bar)
+
+    let body = cogito.view_dual()
+    .set_ratio(0.5)
+    .set_padding(16, 0, 16, 16)
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let editor_pane = cogito.vstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let editor_title = cogito.label("Markdown")
+    .set_class("title")
+    editor_pane.add(editor_title)
+
+    let editor = cogito.textview(markdown_text)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    editor_pane.add(editor)
+
+    let preview_pane = cogito.vstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let preview_title = cogito.label("HTML Preview")
+    .set_class("title")
+    preview_pane.add(preview_title)
+
+    let preview_scroller = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let preview_container = cogito.vstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_padding(12, 12, 12, 12)
+
+    let preview_html = cogito.webview(html_preview)
+    .set_hexpand(true)
+    .set_class("body")
+    preview_container.add(preview_html)
+
+    preview_scroller.add(preview_container)
+    preview_pane.add(preview_scroller)
+
+    editor.on_change((tv = cogito.TextView) => {
+        markdown_text = tv.text()
+        html_preview = markdown_to_html(markdown_text)
+        preview_html.set_source(html_preview)
+    })
+
+    body.add(editor_pane)
+    body.add(preview_pane)
+    win.add(body)
+}
+
+entry() (( -- )) {
+    let app = cogito.app()
+    .set_appid("com.fyralabs.MarkdownPreviewDemo")
+    .set_app_name("Markdown Preview Demo")
+
+    let win = cogito.window_size("Markdown Editor", 980, 760)
+    .set_resizable(true)
+    .build((w = cogito.Window) => {
+        build_window(w)
+    })
+
+    app.run(win)
+}

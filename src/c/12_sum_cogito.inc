@@ -716,6 +716,7 @@ static bool cogito_sum_selector_kind(const char* sel, CogitoKind* out_kind, bool
   if (strcmp(s, "list") == 0) { if (out_kind) *out_kind = COGITO_CONTENT_LIST; return true; }
   if (strcmp(s, "menu") == 0) { if (out_menu) *out_menu = true; return true; }
   if (strcmp(s, "menu-section") == 0 || strcmp(s, "menu_section") == 0 || strcmp(s, "menusection") == 0) { if (out_kind) *out_kind = COGITO_MENU_SECTION; return true; }
+  if (strcmp(s, "webview") == 0 || strcmp(s, "web-view") == 0 || strcmp(s, "web_view") == 0) { if (out_kind) *out_kind = COGITO_WEBVIEW; return true; }
   if (strcmp(s, "nav-rail") == 0) { if (out_kind) *out_kind = COGITO_NAV_RAIL; return true; }
   if (strcmp(s, "popover") == 0) { if (out_kind) *out_kind = COGITO_POPOVER; return true; }
   if (strcmp(s, "progress") == 0) { if (out_kind) *out_kind = COGITO_PROGRESS; return true; }

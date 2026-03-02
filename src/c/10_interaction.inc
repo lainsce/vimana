@@ -128,6 +128,7 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
 #include "widgets/interaction/shape.inc"
 #include "widgets/interaction/menu_button.inc"
 #include "widgets/interaction/menu_section.inc"
+#include "widgets/interaction/webview.inc"
 #include "widgets/interaction/fab.inc"
 #include "widgets/interaction/fab_menu.inc"
 #include "widgets/interaction/fixed.inc"
@@ -296,6 +297,7 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
       n->kind == COGITO_BOTTOM_SHEET || n->kind == COGITO_SIDE_SHEET ||
       n->kind == COGITO_SWITCHBAR || n->kind == COGITO_SPLIT_BUTTON ||
       n->kind == COGITO_DRAWING_AREA ||
+      n->kind == COGITO_WEBVIEW ||
       n->kind == COGITO_VIEW_CHOOSER || n->kind == COGITO_VIEW_DUAL ||
       n->kind == COGITO_SETTINGS_WINDOW ||
       n->kind == COGITO_EMPTY_PAGE || n->kind == COGITO_WELCOME_SCREEN ||

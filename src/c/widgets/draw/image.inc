@@ -155,7 +155,13 @@ case COGITO_IMAGE: {
         }
       } else if (n->icon && n->icon->data) {
         // Fallback to icon rendering if image failed to load
-        CogitoColor icon_color = cogito_has_selection_text ? cogito_selection_text : (s.has_text ? s.text : cogito_on_color(n->selection_color));
+        CogitoColor icon_color;
+        if (cogito_has_selection_text) {
+          icon_color = cogito_selection_text;
+          if (icon_color.a < 8) icon_color = s.has_text ? s.text : cogito_on_color(n->selection_color);
+        } else {
+          icon_color = s.has_text ? s.text : cogito_on_color(n->selection_color);
+        }
         int target = s.has_icon_size ? s.icon_size : (n->w < n->h ? n->w : n->h);
         if (target <= 0) target = 16;
         int min_dim = n->w < n->h ? n->w : n->h;

@@ -170,6 +170,12 @@ fun __cogito_image_set_radius(img = Image, radius = num) (( -- )) { }
 fun __cogito_image_set_size(img = Image, w = num, h = num) (( -- )) { }
 fun __cogito_image_set_source(img = Image, source = string) (( -- )) { }
 fun __cogito_image(icon = string) (( Image )) { }
+fun __cogito_webview_set_url(wv = WebView, url = string) (( -- )) { }
+fun __cogito_webview_get_url(wv = WebView) (( string )) { }
+fun __cogito_webview_set_open_external_on_click(wv = WebView, on = bool) (( -- )) { }
+fun __cogito_webview_get_open_external_on_click(wv = WebView) (( bool )) { }
+fun __cogito_webview_open(wv = WebView) (( bool )) { }
+fun __cogito_webview(url = string) (( WebView )) { }
 fun __cogito_drawing_area() (( DrawingArea )) { }
 fun __cogito_drawing_area_on_press(area = DrawingArea, handler = any) (( -- )) { }
 fun __cogito_drawing_area_on_drag(area = DrawingArea, handler = any) (( -- )) { }
@@ -616,6 +622,82 @@ pub class Image {
         return this
     }
     pub fun set_id(this, id = string) (( Image )) {
+        __cogito_node_set_id(this, id)
+        return this
+    }
+}
+
+pub class WebView {
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( WebView )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( WebView )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_align(this, align = num) (( WebView )) {
+        __cogito_container_set_align(this, align)
+        return this
+    }
+    pub fun halign(this, align = num) (( WebView )) {
+        __cogito_container_set_halign(this, align)
+        return this
+    }
+    pub fun valign(this, align = num) (( WebView )) {
+        __cogito_container_set_valign(this, align)
+        return this
+    }
+    pub fun set_halign(this, align = num) (( WebView )) {
+        __cogito_container_set_halign(this, align)
+        return this
+    }
+    pub fun set_valign(this, align = num) (( WebView )) {
+        __cogito_container_set_valign(this, align)
+        return this
+    }
+    pub fun set_url(this, url = string) (( WebView )) {
+        __cogito_webview_set_url(this, url)
+        return this
+    }
+    pub fun set_source(this, source = string) (( WebView )) {
+        __cogito_webview_set_url(this, source)
+        return this
+    }
+    pub fun set_html(this, html = string) (( WebView )) {
+        __cogito_webview_set_url(this, html)
+        return this
+    }
+    pub fun get_url(this) (( string )) {
+        return __cogito_webview_get_url(this)
+    }
+    pub fun set_open_external_on_click(this, on = bool) (( WebView )) {
+        __cogito_webview_set_open_external_on_click(this, on)
+        return this
+    }
+    pub fun get_open_external_on_click(this) (( bool )) {
+        return __cogito_webview_get_open_external_on_click(this)
+    }
+    pub fun open(this) (( bool )) {
+        return __cogito_webview_open(this)
+    }
+    pub fun set_hexpand(this, expand = bool) (( WebView )) {
+        __cogito_container_set_hexpand(this, expand)
+        return this
+    }
+    pub fun set_vexpand(this, expand = bool) (( WebView )) {
+        __cogito_container_set_vexpand(this, expand)
+        return this
+    }
+    pub fun set_disabled(this, on = bool) (( WebView )) {
+        __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_class(this, cls = string) (( WebView )) {
+        __cogito_node_set_class(this, cls)
+        return this
+    }
+    pub fun set_id(this, id = string) (( WebView )) {
         __cogito_node_set_id(this, id)
         return this
     }
@@ -2529,12 +2611,12 @@ pub class Card {
         __cogito_container_add(this, child)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( Card )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Card )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( Card )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Card )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_align(this, align = num) (( Card )) {
@@ -2604,12 +2686,12 @@ pub class Card {
 }
 
 pub class Avatar {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( Avatar )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Avatar )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( Avatar )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Avatar )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_halign(this, align = num) (( Avatar )) {
@@ -2643,8 +2725,12 @@ pub class Avatar {
 }
 
 pub class Badge {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( Badge )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Badge )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Badge )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_halign(this, align = num) (( Badge )) {
@@ -2673,12 +2759,12 @@ pub class Badge {
 }
 
 pub class Banner {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( Banner )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Banner )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( Banner )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Banner )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_halign(this, align = num) (( Banner )) {
@@ -2724,12 +2810,12 @@ pub class BottomSheet {
         __cogito_bottom_sheet_add_action(this, child)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( BottomSheet )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( BottomSheet )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( BottomSheet )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( BottomSheet )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_gap(this, gap = num) (( BottomSheet )) {
@@ -2763,12 +2849,12 @@ pub class SideSheet {
         __cogito_container_add(this, child)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( SideSheet )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( SideSheet )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( SideSheet )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( SideSheet )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_gap(this, gap = num) (( SideSheet )) {
@@ -2802,12 +2888,12 @@ pub class SideSheet {
 }
 
 pub class TimePicker {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( TimePicker )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( TimePicker )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( TimePicker )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( TimePicker )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_halign(this, align = num) (( TimePicker )) {
@@ -2859,12 +2945,12 @@ pub class TreeView {
         __cogito_container_add(this, child)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( TreeView )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( TreeView )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( TreeView )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( TreeView )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_align(this, align = num) (( TreeView )) {
@@ -2899,12 +2985,12 @@ pub class TreeView {
 }
 
 pub class ColorPicker {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( ColorPicker )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( ColorPicker )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( ColorPicker )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( ColorPicker )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_align(this, align = num) (( ColorPicker )) {
@@ -2966,12 +3052,12 @@ pub class Toasts {
         __cogito_container_add(this, child)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( Toasts )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Toasts )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( Toasts )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Toasts )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_align(this, align = num) (( Toasts )) {
@@ -3006,12 +3092,12 @@ pub class Toasts {
 }
 
 pub class Toast {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( Toast )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Toast )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( Toast )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Toast )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_align(this, align = num) (( Toast )) {
@@ -3095,12 +3181,12 @@ pub class Toolbar {
 }
 
 pub class Chip {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( Chip )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Chip )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( Chip )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Chip )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_align(this, align = num) (( Chip )) {
@@ -3157,12 +3243,12 @@ pub class Chip {
 }
 
 pub class FAB {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( FAB )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( FAB )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( FAB )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( FAB )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_align(this, align = num) (( FAB )) {
@@ -3228,12 +3314,12 @@ pub class FAB {
 }
 
 pub class NavRail {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( NavRail )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( NavRail )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( NavRail )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( NavRail )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( NavRail )) {
@@ -3290,12 +3376,12 @@ pub class NavRail {
 }
 
 pub class BottomNav {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( BottomNav )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( BottomNav )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
         return this
     }
-    pub fun set_padding(this, left = num, top = num, right = num, bottom = num) (( BottomNav )) {
-        __cogito_container_set_padding(this, left, top, right, bottom)
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( BottomNav )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( BottomNav )) {
@@ -3495,6 +3581,10 @@ pub fun label(text = string) (( Label )) {
 
 pub fun image(icon = string) (( Image )) {
     return __cogito_image(icon)
+}
+
+pub fun webview(url = string) (( WebView )) {
+    return __cogito_webview(url)
 }
 
 pub fun dialog(title = string) (( Dialog )) {
@@ -3724,8 +3814,12 @@ pub fun fab_menu(icon = string) (( FABMenu )) {
 -- --- New Widget Classes ---
 
 pub class ActiveIndicator {
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( ActiveIndicator )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( ActiveIndicator )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( ActiveIndicator )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_class(this, cls = string) (( ActiveIndicator )) {
@@ -3758,8 +3852,12 @@ pub class SwitchBar {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( SwitchBar )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( SwitchBar )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( SwitchBar )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( SwitchBar )) {
@@ -3826,8 +3924,12 @@ pub class DrawingArea {
         __cogito_canvas_fill_rect(this, x, y, w, h)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( DrawingArea )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( DrawingArea )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( DrawingArea )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( DrawingArea )) {
@@ -3907,8 +4009,12 @@ pub class Shape {
     pub fun get_vertex_y(this, index = num) (( num )) {
         return __cogito_shape_get_vertex_y(this, index)
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( Shape )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Shape )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Shape )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_class(this, cls = string) (( Shape )) {
@@ -4021,8 +4127,12 @@ pub class EmptyPage {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( EmptyPage )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( EmptyPage )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( EmptyPage )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( EmptyPage )) {
@@ -4048,8 +4158,12 @@ pub class TipView {
         __cogito_tip_view_set_title(this, title)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( TipView )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( TipView )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( TipView )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( TipView )) {
@@ -4075,8 +4189,12 @@ pub class SettingsWindow {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( SettingsWindow )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( SettingsWindow )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( SettingsWindow )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( SettingsWindow )) {
@@ -4106,8 +4224,12 @@ pub class SettingsPage {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( SettingsPage )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( SettingsPage )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( SettingsPage )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_gap(this, gap = num) (( SettingsPage )) {
@@ -4137,8 +4259,12 @@ pub class SettingsList {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( SettingsList )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( SettingsList )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( SettingsList )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( SettingsList )) {
@@ -4164,8 +4290,12 @@ pub class SettingsRow {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( SettingsRow )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( SettingsRow )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( SettingsRow )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( SettingsRow )) {
@@ -4207,8 +4337,12 @@ pub class WelcomeScreen {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( WelcomeScreen )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( WelcomeScreen )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( WelcomeScreen )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( WelcomeScreen )) {
@@ -4242,8 +4376,16 @@ pub class ViewDual {
         __cogito_build(this, builder)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( ViewDual )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( ViewDual )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( ViewDual )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_gap(this, gap = num) (( ViewDual )) {
+        __cogito_container_set_gap(this, gap)
         return this
     }
     pub fun set_hexpand(this, expand = bool) (( ViewDual )) {
@@ -4273,8 +4415,12 @@ pub class ViewChooser {
         __cogito_view_chooser_bind(this, vs)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( ViewChooser )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( ViewChooser )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( ViewChooser )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_class(this, cls = string) (( ViewChooser )) {
@@ -4304,8 +4450,12 @@ pub class AboutWindow {
         __cogito_about_window_set_issue_url(this, url)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( AboutWindow )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( AboutWindow )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( AboutWindow )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_class(this, cls = string) (( AboutWindow )) {
@@ -4347,8 +4497,12 @@ pub class SplitButton {
         __cogito_button_on_click(this, handler)
         return this
     }
-    pub fun set_margins(this, left = num, top = num, right = num, bottom = num) (( SplitButton )) {
-        __cogito_container_set_margins(this, left, top, right, bottom)
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( SplitButton )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( SplitButton )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
     pub fun set_class(this, cls = string) (( SplitButton )) {

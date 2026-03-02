@@ -181,7 +181,9 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
 
     #include "widgets/layout/divider.inc"
 
-#include "widgets/layout/menu_section.inc"
+    #include "widgets/layout/menu_section.inc"
+
+    #include "widgets/layout/webview.inc"
 
     #include "widgets/layout/card.inc"
 

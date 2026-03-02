@@ -80,7 +80,10 @@ case COGITO_TEXTFIELD: {
       if (s.has_border) border = s.border;
       if (s.has_border_width) border_w = s.border_width;
       if (s.has_radius) radius = s.radius;
-      if (cogito_has_selection_text) text = cogito_selection_text;
+      if (cogito_has_selection_text) {
+        text = cogito_selection_text;
+        if (text.a < 8) text = s.has_text ? s.text : n->text_color;
+      }
       cogito_anim_apply(n, &s, NULL, &text, &border, NULL);
 
       cogito_draw_rect_node(n, &s, n->x, n->y, n->w, field_h, bg, radius);

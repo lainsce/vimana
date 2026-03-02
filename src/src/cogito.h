@@ -103,6 +103,7 @@ typedef enum {
   COGITO_NODE_FAB_MENU,
   COGITO_NODE_DRAWING_AREA,
   COGITO_NODE_SHAPE,
+  COGITO_NODE_WEBVIEW,
 } cogito_node_kind;
 
 // App / window lifecycle
@@ -253,6 +254,7 @@ cogito_node *cogito_appbar_new(const char *title, const char *subtitle);
 void cogito_appbar_set_title(cogito_node *appbar, const char *title);
 void cogito_appbar_set_subtitle(cogito_node *appbar, const char *subtitle);
 cogito_node *cogito_image_new(const char *icon);
+cogito_node *cogito_webview_new(const char *url);
 cogito_node *cogito_drawing_area_new(void);
 cogito_node *cogito_shape_new(int preset);
 
@@ -451,6 +453,11 @@ void cogito_image_set_source(cogito_node *image, const char *source);
 void cogito_image_set_size(cogito_node *image, int w, int h);
 void cogito_image_set_radius(cogito_node *image, int radius);
 void cogito_image_set_alt_text(cogito_node *image, const char *alt_text);
+void cogito_webview_set_url(cogito_node *webview, const char *url);
+const char *cogito_webview_get_url(cogito_node *webview);
+void cogito_webview_set_open_external_on_click(cogito_node *webview, bool on);
+bool cogito_webview_get_open_external_on_click(cogito_node *webview);
+bool cogito_webview_open(cogito_node *webview);
 void cogito_drawing_area_on_press(cogito_node *area, cogito_node_fn fn,
                                   void *user);
 void cogito_drawing_area_on_drag(cogito_node *area, cogito_node_fn fn,

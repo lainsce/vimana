@@ -39,7 +39,12 @@ case COGITO_GRID: {
     ]->h, n->x, n->y, n->w, n->h)) continue;
         if (has_selection && (size_t)n->selected == i) {
           cogito_has_selection_text = true;
-          cogito_selection_text = cogito_on_color(sel_bg);
+          CogitoColor sel_text = cogito_on_color(sel_bg);
+          if (sel_text.a < 8) {
+            if (cogito_cached_on_surface.a >= 8) sel_text = cogito_cached_on_surface;
+            else sel_text = cogito_rgba(30, 30, 30, 255);
+          }
+          cogito_selection_text = sel_text;
           cogito_draw_node(n->children[i
       ]);
           cogito_has_selection_text = false;

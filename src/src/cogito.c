@@ -155,6 +155,14 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_image_set_size cogito_image_set_size_yis
 #define cogito_image_set_radius cogito_image_set_radius_yis
 #define cogito_image_set_alt_text cogito_image_set_alt_text_yis
+#define cogito_webview_new cogito_webview_new_yis
+#define cogito_webview_set_url cogito_webview_set_url_yis
+#define cogito_webview_get_url cogito_webview_get_url_yis
+#define cogito_webview_set_open_external_on_click                            \
+  cogito_webview_set_open_external_on_click_yis
+#define cogito_webview_get_open_external_on_click                            \
+  cogito_webview_get_open_external_on_click_yis
+#define cogito_webview_open cogito_webview_open_yis
 #define cogito_drawing_area_new cogito_drawing_area_new_yis
 #define cogito_drawing_area_get_x cogito_drawing_area_get_x_yis
 #define cogito_drawing_area_get_y cogito_drawing_area_get_y_yis
@@ -496,6 +504,12 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_image_set_size
 #undef cogito_image_set_radius
 #undef cogito_image_set_alt_text
+#undef cogito_webview_new
+#undef cogito_webview_set_url
+#undef cogito_webview_get_url
+#undef cogito_webview_set_open_external_on_click
+#undef cogito_webview_get_open_external_on_click
+#undef cogito_webview_open
 #undef cogito_drawing_area_new
 #undef cogito_drawing_area_get_x
 #undef cogito_drawing_area_get_y
@@ -1631,6 +1645,13 @@ cogito_node *cogito_image_new(const char *icon) {
   YisVal v = cogito_image_new_yis(iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
+  return cogito_from_val(v);
+}
+cogito_node *cogito_webview_new(const char *url) {
+  YisVal uv = cogito_val_from_cstr(url);
+  YisVal v = cogito_webview_new_yis(uv);
+  if (uv.tag == EVT_STR)
+    yis_release_val(uv);
   return cogito_from_val(v);
 }
 cogito_node *cogito_drawing_area_new(void) {
@@ -2843,6 +2864,42 @@ void cogito_image_set_alt_text(cogito_node *image, const char *alt_text) {
   cogito_image_set_alt_text_yis(YV_OBJ(image), av);
   if (av.tag == EVT_STR)
     yis_release_val(av);
+}
+
+void cogito_webview_set_url(cogito_node *webview, const char *url) {
+  if (!webview)
+    return;
+  YisVal uv = cogito_val_from_cstr(url);
+  cogito_webview_set_url_yis(YV_OBJ(webview), uv);
+  if (uv.tag == EVT_STR)
+    yis_release_val(uv);
+}
+
+const char *cogito_webview_get_url(cogito_node *webview) {
+  if (!webview)
+    return NULL;
+  YisVal v = cogito_webview_get_url_yis(YV_OBJ(webview));
+  return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
+}
+
+void cogito_webview_set_open_external_on_click(cogito_node *webview, bool on) {
+  if (!webview)
+    return;
+  cogito_webview_set_open_external_on_click_yis(YV_OBJ(webview), YV_BOOL(on));
+}
+
+bool cogito_webview_get_open_external_on_click(cogito_node *webview) {
+  if (!webview)
+    return false;
+  YisVal v = cogito_webview_get_open_external_on_click_yis(YV_OBJ(webview));
+  return yis_as_bool(v);
+}
+
+bool cogito_webview_open(cogito_node *webview) {
+  if (!webview)
+    return false;
+  YisVal v = cogito_webview_open_yis(YV_OBJ(webview));
+  return yis_as_bool(v);
 }
 
 cogito_node *cogito_appbar_add_button(cogito_node *appbar, const char *icon,

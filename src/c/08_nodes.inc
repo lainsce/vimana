@@ -312,6 +312,8 @@ static const char* cogito_node_default_a11y_role(CogitoKind kind) {
     case COGITO_IMAGE:
     case COGITO_AVATAR:
       return "img";
+    case COGITO_WEBVIEW:
+      return "document";
     case COGITO_DIVIDER: return "separator";
     case COGITO_TOAST:
     case COGITO_TOASTS:
@@ -602,6 +604,9 @@ void cogito_node_add_menu_section(CogitoNode* n, YisStr* label, YisFn* handler) 
   cogito_node_add_menu(n, label, handler);
 }
 
+// WebView content renderer (needed by intrinsic sizing below and by draw)
+#include "widgets/util/webview_render.inc"
+
 static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
   int text_w = 0;
   int text_h = cogito_text_height();
@@ -666,6 +671,8 @@ static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
     #include "widgets/intrinsic/divider.inc"
 
     #include "widgets/intrinsic/menu_section.inc"
+
+    #include "widgets/intrinsic/webview.inc"
 
     #include "widgets/intrinsic/card.inc"
 

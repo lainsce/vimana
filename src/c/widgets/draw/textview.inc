@@ -2,16 +2,20 @@ case COGITO_TEXTVIEW: {
       bool hover = false;
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
-      // Only apply focus styling when focused via keyboard (tab), not mouse click
+      // Resolve base style first, then state overrides (hover only for now).
+      CogitoStyle base = cogito_theme_resolve_node(n);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, false);
-      CogitoColor bg = n->bg;
-      CogitoColor text = n->text_color;
-      int radius = n->border_radius;
+      CogitoColor bg = base.has_bg ? base.bg : n->bg;
+      CogitoColor text = base.has_text ? base.text : n->text_color;
+      int radius = base.has_radius ? base.radius : n->border_radius;
       if (s.has_bg) bg = s.bg;
       if (s.has_radius) radius = s.radius;
-      if (cogito_has_selection_text) text = cogito_selection_text;
-      else if (s.has_text) text = s.text;
+      if (s.has_text) text = s.text;
       cogito_anim_apply(n, &s, &bg, &text, NULL, NULL);
+      if (text.a < 8) {
+        if (cogito_cached_on_surface.a) text = cogito_cached_on_surface;
+        else text = cogito_rgba(30, 30, 30, 255);
+      }
       if (n->bg_set) {
         cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
       }
@@ -72,7 +76,7 @@ case COGITO_TEXTVIEW: {
           cy += line_h;
         }
       }
-      cogito_draw_text_wrapped(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), false, 0, false);
+      cogito_draw_text_wrapped(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), false, 0, true);
       if (n->text_input.sel_start != n->text_input.sel_end) {
         int a2 = n->text_input.sel_start;
         int b2 = n->text_input.sel_end;

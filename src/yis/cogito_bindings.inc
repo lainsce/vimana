@@ -73,6 +73,12 @@
 #undef cogito_iconbtn_new
 #undef cogito_image_new
 #undef cogito_image_set_icon
+#undef cogito_webview_new
+#undef cogito_webview_set_url
+#undef cogito_webview_get_url
+#undef cogito_webview_set_open_external_on_click
+#undef cogito_webview_get_open_external_on_click
+#undef cogito_webview_open
 #undef cogito_drawing_area_new
 #undef cogito_drawing_area_on_press
 #undef cogito_drawing_area_on_drag
@@ -1579,6 +1585,43 @@ static void __cogito_image_set_alt_text(YisVal imgv, YisVal altv) {
   const char* alt = cogito_optional_cstr(altv, &tmp);
   if (alt) cogito_image_set_alt_text(n, alt);
   if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static YisVal __cogito_webview(YisVal urlv) {
+  YisStr* tmp = NULL;
+  const char* url = cogito_required_cstr(urlv, &tmp);
+  cogito_node* n = cogito_webview_new(url);
+  if (tmp) yis_release_val(YV_STR(tmp));
+  return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+
+static void __cogito_webview_set_url(YisVal wvv, YisVal urlv) {
+  cogito_node* n = cogito_node_from_val(wvv);
+  YisStr* tmp = NULL;
+  const char* url = cogito_required_cstr(urlv, &tmp);
+  cogito_webview_set_url(n, url);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static YisVal __cogito_webview_get_url(YisVal wvv) {
+  cogito_node* n = cogito_node_from_val(wvv);
+  const char* url = cogito_webview_get_url(n);
+  return YV_STR(stdr_str_lit(url ? url : ""));
+}
+
+static void __cogito_webview_set_open_external_on_click(YisVal wvv, YisVal onv) {
+  cogito_node* n = cogito_node_from_val(wvv);
+  cogito_webview_set_open_external_on_click(n, yis_as_bool(onv));
+}
+
+static YisVal __cogito_webview_get_open_external_on_click(YisVal wvv) {
+  cogito_node* n = cogito_node_from_val(wvv);
+  return YV_BOOL(cogito_webview_get_open_external_on_click(n));
+}
+
+static YisVal __cogito_webview_open(YisVal wvv) {
+  cogito_node* n = cogito_node_from_val(wvv);
+  return YV_BOOL(cogito_webview_open(n));
 }
 
 static YisVal __cogito_appbar(YisVal titlev, YisVal subtitlev) {
@@ -3264,6 +3307,7 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_dialog_new __cogito_dialog
 #define cogito_dialog_slot_new __cogito_dialog_slot
 #define cogito_image_new __cogito_image
+#define cogito_webview_new __cogito_webview
 #define cogito_checkbox_new __cogito_checkbox
 #define cogito_switch_new __cogito_switch
 #define cogito_textfield_new __cogito_textfield
@@ -3426,6 +3470,13 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_button_set_size __cogito_button_set_size
 #define cogito_button_get_size __cogito_button_get_size
 #define cogito_image_set_icon __cogito_image_set_icon
+#define cogito_webview_set_url __cogito_webview_set_url
+#define cogito_webview_get_url __cogito_webview_get_url
+#define cogito_webview_set_open_external_on_click                            \
+  __cogito_webview_set_open_external_on_click
+#define cogito_webview_get_open_external_on_click                            \
+  __cogito_webview_get_open_external_on_click
+#define cogito_webview_open __cogito_webview_open
 #define cogito_image_set_size __cogito_image_set_size
 #define cogito_image_set_radius __cogito_image_set_radius
 #define cogito_image_set_alt_text __cogito_image_set_alt_text

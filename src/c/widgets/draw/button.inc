@@ -49,7 +49,10 @@ case COGITO_BUTTON: {
       }
       
       if (s.has_text) text = s.text;
-      else if (cogito_has_selection_text) text = cogito_selection_text;
+      else if (cogito_has_selection_text) {
+        text = cogito_selection_text;
+        if (text.a < 8) text = n->text_color;
+      }
 
       // ButtonGroup color handling: only apply if no explicit class is set
       // Check if button has an explicit class (filled, tonal, outlined, text)

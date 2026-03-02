@@ -7,13 +7,22 @@ case COGITO_VIEW_DUAL: {
   float ratio = n->view_dual.ratio;
   if (ratio <= 0.0f) ratio = 0.5f;
   if (ratio > 1.0f) ratio = 1.0f;
+
+  int content_x = n->x + n->padding_left;
+  int content_y = n->y + n->padding_top;
+  int content_w = n->w - n->padding_left - n->padding_right;
+  int content_h = n->h - n->padding_top - n->padding_bottom;
+  if (content_w < 0) content_w = 0;
+  if (content_h < 0) content_h = 0;
   
   // Calculate handle position
+  int gap = n->gap > 0 ? n->gap : 8;
   int handle_w = 4;
+  int split_w = gap * 2 + handle_w;
   const int min_item_w = 218;
-  int available_w = n->w - handle_w;
+  int available_w = content_w - split_w;
   if (available_w < 0) available_w = 0;
-  int left_w = (int)(n->w * ratio) - handle_w / 2;
+  int left_w = (int)(content_w * ratio) - split_w / 2;
   if (available_w >= min_item_w * 2) {
     int max_left = available_w - min_item_w;
     if (left_w < min_item_w) left_w = min_item_w;
@@ -24,10 +33,10 @@ case COGITO_VIEW_DUAL: {
   if (left_w < 0) left_w = 0;
   if (left_w > available_w) left_w = available_w;
   int handle_h = 64;
-  if (handle_h > n->h) handle_h = n->h;
+  if (handle_h > content_h) handle_h = content_h;
   if (handle_h < 1) handle_h = 1;
-  int handle_x = n->x + left_w;
-  int handle_y = n->y + (n->h - handle_h) / 2;
+  int handle_x = content_x + left_w + gap;
+  int handle_y = content_y + (content_h - handle_h) / 2;
 
   // Draw children (panels on either side of handle)
   for (size_t i = 0; i < n->len && i < 2; i++) {

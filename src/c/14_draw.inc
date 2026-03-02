@@ -1493,6 +1493,7 @@ static void cogito_draw_node(CogitoNode* n) {
     #include "widgets/draw/view_switcher.inc"
     #include "widgets/draw/drawing_area.inc"
     #include "widgets/draw/shape.inc"
+    #include "widgets/draw/webview.inc"
 
 case COGITO_TOASTS:
       if (!cogito_toasts_force_draw) {

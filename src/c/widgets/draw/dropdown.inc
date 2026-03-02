@@ -12,7 +12,10 @@ case COGITO_DROPDOWN: {
       if (s.has_border) border = s.border;
       if (s.has_border_width) border_w = s.border_width;
       if (s.has_radius) radius = s.radius;
-      if (cogito_has_selection_text) text = cogito_selection_text;
+      if (cogito_has_selection_text) {
+        text = cogito_selection_text;
+        if (text.a < 8) text = s.has_text ? s.text : n->text_color;
+      }
       else if (s.has_text) text = s.text;
       cogito_anim_apply(n, &s, &bg, &text, &border, NULL);
       if (n->bg_set || border_w > 0) {

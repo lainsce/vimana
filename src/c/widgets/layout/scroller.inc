@@ -180,13 +180,14 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
     }
   }
 
-  if (n->scroller.scroll_x == 0 && n->scroller.scroll_y == 0) {
+  if (!n->scroller.state_restored) {
     int saved_x = 0;
     int saved_y = 0;
     if (cogito_scroller_state_load(n, &saved_x, &saved_y)) {
       n->scroller.scroll_x = saved_x;
       n->scroller.scroll_y = saved_y;
     }
+    n->scroller.state_restored = true;
   }
   if (n->scroller.scroll_x < 0) n->scroller.scroll_x = 0;
   if (n->scroller.scroll_y < 0) n->scroller.scroll_y = 0;

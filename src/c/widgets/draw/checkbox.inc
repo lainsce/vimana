@@ -171,7 +171,10 @@ case COGITO_CHECKBOX: {
         int th = cogito_text_height();
         int ty = n->y + (draw_h - th) / 2;
         CogitoColor label_text = n->text_color;
-        if (cogito_has_selection_text) label_text = cogito_selection_text;
+        if (cogito_has_selection_text) {
+          label_text = cogito_selection_text;
+          if (label_text.a < 8) label_text = s.has_text ? s.text : n->text_color;
+        }
         else if (s.has_text) label_text = s.text;
         int text_x = n->x + box + 6;
         int text_avail = use_w - (text_x - n->x);

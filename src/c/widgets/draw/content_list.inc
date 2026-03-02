@@ -73,7 +73,14 @@ case COGITO_CONTENT_LIST: {
         CogitoColor sel_bg = cogito_cached_secondary_container;
         cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, sel_bg, sr, sr, sr, sr);
         cogito_has_selection_text = true;
-        cogito_selection_text = cogito_cached_on_secondary_container;
+        CogitoColor sel_text = cogito_cached_on_secondary_container;
+        if (sel_text.a == 0) {
+          sel_text = cogito_cached_on_surface;
+          if (sel_text.a == 0) {
+            sel_text = cogito_on_color(sel_bg);
+          }
+        }
+        cogito_selection_text = sel_text;
         cogito_draw_node(child);
         cogito_has_selection_text = false;
     } else {

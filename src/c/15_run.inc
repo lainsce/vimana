@@ -1177,7 +1177,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
                                                  !scroller->scroller.vert);
           if (horiz) scroller->scroller.scroll_x -= delta;
           else scroller->scroller.scroll_y -= delta;
+          CogitoNode* synced = cogito_scroller_sync_from(scroller);
           cogito_relayout_subtree(scroller);
+          if (synced) cogito_relayout_subtree(synced);
         } else {
           // Check if mouse is over a carousel — scroll it horizontally
           CogitoNode* carousel = cogito_find_carousel(root, mx, my);
@@ -1739,13 +1741,18 @@ static void cogito_run(YisVal appv, YisVal winv) {
     if (cogito_pointer_capture && cogito_pointer_capture->kind == COGITO_VIEW_DUAL) {
       CogitoNode* vd = cogito_pointer_capture;
       if (left_down) {
+        int gap = vd->gap > 0 ? vd->gap : 8;
         int handle_w = 4;
+        int split_w = gap * 2 + handle_w;
         const int min_item_w = 218;
         if (vd->w > 0) {
-          int available_w = vd->w - handle_w;
+          int content_x = vd->x + vd->padding_left;
+          int content_w = vd->w - vd->padding_left - vd->padding_right;
+          if (content_w < 0) content_w = 0;
+          int available_w = content_w - split_w;
           if (available_w < 0) available_w = 0;
           int new_handle_x = mx - vd->view_dual.drag_offset;
-          int new_left_w = new_handle_x - vd->x;
+          int new_left_w = new_handle_x - content_x - gap;
           if (available_w >= min_item_w * 2) {
             int max_left = available_w - min_item_w;
             if (new_left_w < min_item_w) new_left_w = min_item_w;
@@ -1755,7 +1762,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
           }
           if (new_left_w < 0) new_left_w = 0;
           if (new_left_w > available_w) new_left_w = available_w;
-          float new_ratio = (float)(new_left_w + handle_w / 2) / (float)vd->w;
+          float new_ratio = content_w > 0
+            ? (float)(new_left_w + split_w / 2) / (float)content_w
+            : 0.5f;
           if (new_ratio < 0.0f) new_ratio = 0.0f;
           if (new_ratio > 1.0f) new_ratio = 1.0f;
           if (new_ratio != vd->view_dual.ratio) {
@@ -1826,7 +1835,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
         if (new_scroll > cogito_scrollbar_drag_max) new_scroll = cogito_scrollbar_drag_max;
         if (cogito_scrollbar_drag_vert) sc->scroller.scroll_y = new_scroll;
         else sc->scroller.scroll_x = new_scroll;
+        CogitoNode* synced = cogito_scroller_sync_from(sc);
         cogito_relayout_subtree(sc);
+        if (synced) cogito_relayout_subtree(synced);
         cogito_queue_draw(win);
       }
     } else if (left_pressed && route_main_pointer) {
@@ -1887,7 +1898,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
               sc->scroller.scroll_y = cogito_scroller_track_to_scroll(my, vty, vth, vuh, max_s);
               if (sc->scroller.scroll_y < 0) sc->scroller.scroll_y = 0;
               if (sc->scroller.scroll_y > max_s) sc->scroller.scroll_y = max_s;
+              CogitoNode* synced = cogito_scroller_sync_from(sc);
               cogito_relayout_subtree(sc);
+              if (synced) cogito_relayout_subtree(synced);
               cogito_queue_draw(win);
               click = false;
             }
@@ -1902,7 +1915,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
               sc->scroller.scroll_x = cogito_scroller_track_to_scroll(mx, htx, htw, huw, max_s);
               if (sc->scroller.scroll_x < 0) sc->scroller.scroll_x = 0;
               if (sc->scroller.scroll_x > max_s) sc->scroller.scroll_x = max_s;
+              CogitoNode* synced = cogito_scroller_sync_from(sc);
               cogito_relayout_subtree(sc);
+              if (synced) cogito_relayout_subtree(synced);
               cogito_queue_draw(win);
               click = false;
             }
@@ -2542,15 +2557,30 @@ static void cogito_run(YisVal appv, YisVal winv) {
             }
           } else if (hit->kind == COGITO_CARD) {
             cogito_invoke_click(hit);
+          } else if (hit->kind == COGITO_WEBVIEW) {
+            cogito_invoke_click(hit);
+            if (hit->webview.open_external_on_click &&
+                hit->icon && hit->icon->data && hit->icon->data[0] &&
+                cogito_backend && cogito_backend->open_url) {
+              cogito_backend->open_url(hit->icon->data);
+            }
           } else if (hit->kind == COGITO_VIEW_DUAL) {
             float ratio = hit->view_dual.ratio;
             if (ratio <= 0.0f) ratio = 0.5f;
             if (ratio > 1.0f) ratio = 1.0f;
+            int gap = hit->gap > 0 ? hit->gap : 8;
             int handle_w = 4;
+            int split_w = gap * 2 + handle_w;
             const int min_item_w = 218;
-            int available_w = hit->w - handle_w;
+            int content_x = hit->x + hit->padding_left;
+            int content_y = hit->y + hit->padding_top;
+            int content_w = hit->w - hit->padding_left - hit->padding_right;
+            int content_h = hit->h - hit->padding_top - hit->padding_bottom;
+            if (content_w < 0) content_w = 0;
+            if (content_h < 0) content_h = 0;
+            int available_w = content_w - split_w;
             if (available_w < 0) available_w = 0;
-            int left_w = (int)(hit->w * ratio) - handle_w / 2;
+            int left_w = (int)(content_w * ratio) - split_w / 2;
             if (available_w >= min_item_w * 2) {
               int max_left = available_w - min_item_w;
               if (left_w < min_item_w) left_w = min_item_w;
@@ -2560,8 +2590,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
             }
             if (left_w < 0) left_w = 0;
             if (left_w > available_w) left_w = available_w;
-            int handle_x = hit->x + left_w;
-            if (cogito_hit_rect_min48(mx, my, handle_x - 4, hit->y, handle_w + 8, hit->h)) {
+            int handle_x = content_x + left_w + gap;
+            if (cogito_hit_rect_min48(mx, my, handle_x - 4, content_y, handle_w + 8, content_h)) {
               hit->view_dual.dragging = true;
               hit->view_dual.drag_offset = mx - handle_x;
               cogito_pointer_capture = hit;

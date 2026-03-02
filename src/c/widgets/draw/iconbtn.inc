@@ -138,7 +138,10 @@ case COGITO_ICONBTN: {
         }
       }
       if (s.has_text) icon_color = s.text;
-      else if (cogito_has_selection_text) icon_color = cogito_selection_text;
+      else if (cogito_has_selection_text) {
+        icon_color = cogito_selection_text;
+        if (icon_color.a < 8) icon_color = n->text_color;
+      }
 
       // AppBar idle state: keep icons on primary for stronger affordance.
       if (in_appbar) {

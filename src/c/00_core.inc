@@ -293,6 +293,7 @@ typedef enum {
   COGITO_DRAWING_AREA,
   COGITO_SHAPE,
   COGITO_MENU_SECTION,
+  COGITO_WEBVIEW,
   COGITO_SIDE_SHEET,
   COGITO_KIND_COUNT
 } CogitoKind;
@@ -814,6 +815,7 @@ typedef struct CogitoNode {
       int content_w, content_h;
       bool horz, vert;
       struct CogitoNode* sync_with;
+      bool state_restored;
       bool bar_hovered;
       bool bar_in_use;  /* true while user is interacting (thumb drag or track click until release) */
       uint8_t bar_alpha;
@@ -996,6 +998,9 @@ typedef struct CogitoNode {
       CogitoColor canvas_color;
       int canvas_line_width;
     } drawing_area;
+    struct {
+      bool open_external_on_click;
+    } webview;
     struct {
       int preset;
       int size_dp;
@@ -2112,6 +2117,13 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
     }
   }
   if (text) {
+    if (text->a < 8) {
+      if (text->r == 0 && text->g == 0 && text->b == 0) {
+        *text = cogito_rgba(30, 30, 30, 255);
+      } else {
+        text->a = 255;
+      }
+    }
     *text = cogito_spring_color_tick(
         &n->spring_txt_r, &n->spring_txt_g, &n->spring_txt_b, &n->spring_txt_a,
         *text, k_color, z_color, dt);

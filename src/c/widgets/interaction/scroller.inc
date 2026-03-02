@@ -25,6 +25,63 @@ static void cogito_scroller_set_sync(YisVal scv, YisVal other) {
   sc->scroller.sync_with = (peer == sc) ? NULL : peer;
   cogito_window_relayout(cogito_node_window(sc));
 }
+
+static CogitoNode* cogito_scroller_sync_from(CogitoNode* src) {
+  if (!src || src->kind != COGITO_SCROLLER) return NULL;
+  CogitoNode* dst = src->scroller.sync_with;
+  if (!dst || dst == src || dst->kind != COGITO_SCROLLER) return NULL;
+
+  CogitoNode* src_win = cogito_node_window(src);
+  CogitoNode* dst_win = cogito_node_window(dst);
+  if (!src_win || !dst_win || src_win != dst_win) return NULL;
+
+  int src_inner_w = src->w - src->padding_left - src->padding_right;
+  int src_inner_h = src->h - src->padding_top - src->padding_bottom;
+  int dst_inner_w = dst->w - dst->padding_left - dst->padding_right;
+  int dst_inner_h = dst->h - dst->padding_top - dst->padding_bottom;
+  if (src_inner_w < 0) src_inner_w = 0;
+  if (src_inner_h < 0) src_inner_h = 0;
+  if (dst_inner_w < 0) dst_inner_w = 0;
+  if (dst_inner_h < 0) dst_inner_h = 0;
+
+  int src_max_x = src->scroller.content_w - src_inner_w;
+  int src_max_y = src->scroller.content_h - src_inner_h;
+  int dst_max_x = dst->scroller.content_w - dst_inner_w;
+  int dst_max_y = dst->scroller.content_h - dst_inner_h;
+  if (src_max_x < 0) src_max_x = 0;
+  if (src_max_y < 0) src_max_y = 0;
+  if (dst_max_x < 0) dst_max_x = 0;
+  if (dst_max_y < 0) dst_max_y = 0;
+
+  if (src->scroller.horz && dst->scroller.horz) {
+    if (src_max_x > 0 && dst_max_x > 0) {
+      double p = (double)src->scroller.scroll_x / (double)src_max_x;
+      if (p < 0.0) p = 0.0;
+      if (p > 1.0) p = 1.0;
+      dst->scroller.scroll_x = (int)lround(p * (double)dst_max_x);
+    } else {
+      dst->scroller.scroll_x = 0;
+    }
+  }
+
+  if (src->scroller.vert && dst->scroller.vert) {
+    if (src_max_y > 0 && dst_max_y > 0) {
+      double p = (double)src->scroller.scroll_y / (double)src_max_y;
+      if (p < 0.0) p = 0.0;
+      if (p > 1.0) p = 1.0;
+      dst->scroller.scroll_y = (int)lround(p * (double)dst_max_y);
+    } else {
+      dst->scroller.scroll_y = 0;
+    }
+  }
+
+  double now = cogito_now();
+  if (dst->scroller.bar_alpha < 200) dst->scroller.bar_alpha = 200;
+  dst->scroller.bar_hover_until = now + 0.35;
+
+  return dst;
+}
+
 static CogitoNode* cogito_find_scroller(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
   if (n->kind == COGITO_SCROLLER && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;

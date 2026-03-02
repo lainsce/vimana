@@ -6,7 +6,10 @@ case COGITO_LABEL: {
         int size = cogito_label_font_size(n);
         CogitoColor text = n->text_color;
         CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-        if (cogito_has_selection_text) text = cogito_selection_text;
+        if (cogito_has_selection_text) {
+          text = cogito_selection_text;
+          if (text.a < 8) text = s.has_text ? s.text : n->text_color;
+        }
         else if (s.has_text) text = s.text;
         int align = n->text_align;
         int content_x = n->x + n->padding_left;
