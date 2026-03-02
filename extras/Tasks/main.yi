@@ -208,9 +208,10 @@ fun build_task_sheet() (( cogito.BottomSheet )) {
     let sheet = cogito.bottom_sheet("Create Task")
     .set_gap(12)
 
-    let input = cogito.textfield(draft_task)
+    let input = cogito.textfield("Task Title and Details")
     .set_class("outline")
     .set_hexpand(true)
+    .set_text(draft_task)
     .set_hint_text("Enter task details, like what, when, and how often.")
     input.on_change((tf = cogito.TextField) => {
         draft_task = tf.text()

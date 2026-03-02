@@ -129,6 +129,22 @@ case COGITO_TEXTVIEW: {
         }
       }
       if (cogito_focused == n && !n->disabled && n->editable) {
+        double now = cogito_now();
+        const double pulse_period = 0.800;
+        double phase = fmod(now, pulse_period) / pulse_period;
+        double alpha_scale = 0.0;
+        if (phase < 0.5) {
+          double u = phase * 2.0;
+          alpha_scale = cogito_ease_cubic_bezier(u, 0.4, 0.0, 0.6, 1.0);
+        } else {
+          double u = (phase - 0.5) * 2.0;
+          alpha_scale = 1.0 - cogito_ease_cubic_bezier(u, 0.4, 0.0, 0.6, 1.0);
+        }
+        CogitoColor caret_col = text;
+        int ca = (int)lround((double)caret_col.a * alpha_scale);
+        if (ca < 0) ca = 0;
+        if (ca > 255) ca = 255;
+        caret_col.a = (uint8_t)ca;
         int max_w = n->w - pad * 2;
         if (max_w < 1) max_w = 1;
         int len = (int)strlen(t);
@@ -172,7 +188,7 @@ case COGITO_TEXTVIEW: {
             int cx = n->x + pad + cogito_text_width_size_n_node(n, t + line_start, local, size);
             int max_x = n->x + n->w - pad;
             if (cx > max_x) cx = max_x;
-            cogito_draw_line(cx, cy, cx, cy + line_h, text);
+            cogito_draw_line(cx, cy, cx, cy + line_h, caret_col);
             break;
           }
           cy += line_h;
@@ -182,11 +198,13 @@ case COGITO_TEXTVIEW: {
               int cx = n->x + pad;
               int max_x = n->x + n->w - pad;
               if (cx > max_x) cx = max_x;
-              cogito_draw_line(cx, cy, cx, cy + line_h, text);
+              cogito_draw_line(cx, cy, cx, cy + line_h, caret_col);
             }
             break;
           }
         }
+        double end_time = now + 0.12;
+        if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
       }
       break;
     }

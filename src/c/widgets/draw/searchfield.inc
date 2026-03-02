@@ -85,10 +85,25 @@ case COGITO_SEARCHFIELD: {
     int tw    = cogito_text_width_size_n_node(n, txt, caret, size);
     int car_x = text_x + tw;
     if (car_x > text_x + text_avail) car_x = text_x + text_avail;
-    double tm = cogito_now();
-    if ((int)(tm * 2.0) % 2 == 0) {
-      cogito_draw_line(car_x, text_y, car_x, text_y + text_h, text_color);
+    double now = cogito_now();
+    const double pulse_period = 0.800;
+    double phase = fmod(now, pulse_period) / pulse_period;
+    double alpha_scale = 0.0;
+    if (phase < 0.5) {
+      double u = phase * 2.0;
+      alpha_scale = cogito_ease_cubic_bezier(u, 0.4, 0.0, 0.6, 1.0);
+    } else {
+      double u = (phase - 0.5) * 2.0;
+      alpha_scale = 1.0 - cogito_ease_cubic_bezier(u, 0.4, 0.0, 0.6, 1.0);
     }
+    CogitoColor caret_col = text_color;
+    int ca = (int)lround((double)caret_col.a * alpha_scale);
+    if (ca < 0) ca = 0;
+    if (ca > 255) ca = 255;
+    caret_col.a = (uint8_t)ca;
+    cogito_draw_line(car_x, text_y, car_x, text_y + text_h, caret_col);
+    double end_time = now + 0.12;
+    if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
   }
   break;
 }
