@@ -191,6 +191,7 @@
 #undef cogito_settings_row_new
 #undef cogito_settings_window_new
 #undef cogito_slider_get_centered
+#undef cogito_slider_get_end_dots
 #undef cogito_slider_get_step
 #undef cogito_slider_get_step_dots
 #undef cogito_slider_get_range_end
@@ -201,6 +202,7 @@
 #undef cogito_slider_on_change
 #undef cogito_slider_range_new
 #undef cogito_slider_set_centered
+#undef cogito_slider_set_end_dots
 #undef cogito_slider_set_step
 #undef cogito_slider_set_step_dots
 #undef cogito_slider_set_icon
@@ -2669,6 +2671,16 @@ static YisVal __cogito_slider_get_centered(YisVal slv) {
   return YV_BOOL(cogito_slider_get_centered(sl));
 }
 
+static void __cogito_slider_set_end_dots(YisVal slv, YisVal onv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  cogito_slider_set_end_dots(sl, yis_as_bool(onv));
+}
+
+static YisVal __cogito_slider_get_end_dots(YisVal slv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  return YV_BOOL(cogito_slider_get_end_dots(sl));
+}
+
 static void __cogito_slider_set_step(YisVal slv, YisVal stepv) {
   cogito_node* sl = cogito_node_from_val(slv);
   cogito_slider_set_step(sl, yis_as_float(stepv));
@@ -3470,6 +3482,8 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_slider_set_icon __cogito_slider_set_icon
 #define cogito_slider_set_centered __cogito_slider_set_centered
 #define cogito_slider_get_centered __cogito_slider_get_centered
+#define cogito_slider_set_end_dots __cogito_slider_set_end_dots
+#define cogito_slider_get_end_dots __cogito_slider_get_end_dots
 #define cogito_slider_set_step __cogito_slider_set_step
 #define cogito_slider_get_step __cogito_slider_get_step
 #define cogito_slider_set_step_dots __cogito_slider_set_step_dots

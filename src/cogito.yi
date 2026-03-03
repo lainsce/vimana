@@ -275,6 +275,7 @@ fun __cogito_settings_page(title = string) (( SettingsPage )) { }
 fun __cogito_settings_row(label = string) (( SettingsRow )) { }
 fun __cogito_settings_window(title = string) (( SettingsWindow )) { }
 fun __cogito_slider_get_centered(sl = Slider) (( bool )) { }
+fun __cogito_slider_get_end_dots(sl = Slider) (( bool )) { }
 fun __cogito_slider_get_step(sl = Slider) (( num )) { }
 fun __cogito_slider_get_step_dots(sl = Slider) (( bool )) { }
 fun __cogito_slider_get_range_end(sl = Slider) (( num )) { }
@@ -284,6 +285,7 @@ fun __cogito_slider_get_value(sl = Slider) (( num )) { }
 fun __cogito_slider_on_change(sl = Slider, handler = any) (( -- )) { }
 fun __cogito_slider_range(min = num, max = num, start = num, end = num) (( Slider )) { }
 fun __cogito_slider_set_centered(sl = Slider, on = bool) (( -- )) { }
+fun __cogito_slider_set_end_dots(sl = Slider, on = bool) (( -- )) { }
 fun __cogito_slider_set_step(sl = Slider, step = num) (( -- )) { }
 fun __cogito_slider_set_step_dots(sl = Slider, on = bool) (( -- )) { }
 fun __cogito_slider_set_icon(sl = Slider, icon = any) (( -- )) { }
@@ -2346,6 +2348,13 @@ pub class Slider {
     }
     pub fun centered(this) (( bool )) {
         return __cogito_slider_get_centered(this)
+    }
+    pub fun set_end_dots(this, on = bool) (( Slider )) {
+        __cogito_slider_set_end_dots(this, on)
+        return this
+    }
+    pub fun end_dots(this) (( bool )) {
+        return __cogito_slider_get_end_dots(this)
     }
     pub fun set_step(this, step = num) (( Slider )) {
         __cogito_slider_set_step(this, step)

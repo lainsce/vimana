@@ -63,6 +63,7 @@ static CogitoNode* cogito_slider_new_obj(double min, double max, double value) {
       ? COGITO_SLIDER_MODE_CENTERED
       : COGITO_SLIDER_MODE_NORMAL;
   sl->slider.show_step_dots = false;
+  sl->slider.show_end_dots = true;
   sl->slider.active_handle = 0;
   sl->slider.size = COGITO_SLIDER_SIZE_XS;
   return sl;
@@ -77,6 +78,7 @@ static CogitoNode* cogito_slider_range_new_obj(double min, double max, double st
   sl->slider.step = 0.0;
   sl->slider.mode = COGITO_SLIDER_MODE_RANGE;
   sl->slider.show_step_dots = false;
+  sl->slider.show_end_dots = true;
   sl->slider.active_handle = 1;
   sl->slider.size = COGITO_SLIDER_SIZE_XS;
   cogito_slider_normalize_range(sl);
@@ -227,6 +229,19 @@ static YisVal cogito_slider_get_step_dots(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_step_dots expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return YV_BOOL(n->slider.show_step_dots);
+}
+
+static void cogito_slider_set_end_dots(YisVal nodev, YisVal onv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_end_dots expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  n->slider.show_end_dots = yis_as_bool(onv);
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static YisVal cogito_slider_get_end_dots(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_end_dots expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  return YV_BOOL(n->slider.show_end_dots);
 }
 
 static void cogito_slider_set_size(YisVal nodev, YisVal sizev) {

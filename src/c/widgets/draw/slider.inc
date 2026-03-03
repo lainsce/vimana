@@ -253,31 +253,71 @@ case COGITO_SLIDER: {
       }
 
       bool draw_step_markers = false;
+      bool draw_left_end_dot = false;
+      bool draw_right_end_dot = false;
+      if (n->slider.show_end_dots) {
+        if (n->slider.mode == COGITO_SLIDER_MODE_NORMAL) {
+          // Normal slider starts from the left side, so only show the opposite
+          // endpoint marker on the right.
+          draw_right_end_dot = true;
+        } else {
+          // Range and centered sliders keep both endpoint markers visible.
+          draw_left_end_dot = true;
+          draw_right_end_dot = true;
+        }
+
+        // Hide endpoint dots when a handle is already essentially on top of
+        // that endpoint (outer 2% zones).
+        const double end_dot_hide_t = 0.02;
+        double left_handle_t = t0;
+        double right_handle_t = t0;
+        if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
+          left_handle_t = t0;
+          right_handle_t = t1;
+          if (right_handle_t < left_handle_t) {
+            double tmp = left_handle_t;
+            left_handle_t = right_handle_t;
+            right_handle_t = tmp;
+          }
+        }
+        if (draw_left_end_dot && left_handle_t <= end_dot_hide_t) {
+          draw_left_end_dot = false;
+        }
+        if (draw_right_end_dot && right_handle_t >= (1.0 - end_dot_hide_t)) {
+          draw_right_end_dot = false;
+        }
+      }
+
       if (!cp_panel_slider && span > 0.0 && n->slider.show_step_dots) {
         double step = cogito_slider_step_normalized(n->slider.step);
         if (step > 0.000001) {
           int step_count = (int)floor(span / step + 0.5);
           if (step_count >= 1 && step_count <= 256) {
             draw_step_markers = true;
-            int marker_d = (rail_h >= 40) ? 8 : 6;
-            if (marker_d < 4) marker_d = 4;
-            if (marker_d > rail_h - 4) marker_d = rail_h - 4;
+            int marker_d = dot_d;
             CogitoColor marker_col = active_track;
-            if (marker_col.a < 190) marker_col.a = 190;
+            marker_col.a = marker_col.a > 170 ? marker_col.a : 170;
+            int center_x = x0 + (x1 - x0) / 2;
             bool have_prev = false;
             int prev_x = 0;
             for (int i = 0; i <= step_count; i++) {
+              if (i == 0 && !draw_left_end_dot) continue;
+              if (i == step_count && !draw_right_end_dot) continue;
               double sv = n->slider.min + (double)i * step;
               if (i == step_count || sv > n->slider.max) sv = n->slider.max;
               double tu = (sv - n->slider.min) / span;
               if (tu < 0.0) tu = 0.0;
               if (tu > 1.0) tu = 1.0;
               int sx = x0 + (int)lround((double)(x1 - x0) * tu);
+              if (n->slider.mode == COGITO_SLIDER_MODE_CENTERED &&
+                  i != 0 && i != step_count && abs(sx - center_x) <= 1) {
+                continue;
+              }
               if (have_prev && abs(sx - prev_x) < 2) continue;
               prev_x = sx;
               have_prev = true;
-              cogito_draw_rect_lines(sx - marker_d / 2, cy - marker_d / 2,
-                                     marker_d, marker_d, marker_col, marker_d / 2, 1);
+              cogito_draw_rect(sx - marker_d / 2, cy - marker_d / 2,
+                               marker_d, marker_d, marker_col, marker_d / 2);
             }
           }
         }
@@ -303,8 +343,10 @@ case COGITO_SLIDER: {
       if (!cp_panel_slider && !draw_step_markers) {
         CogitoColor endpoint_dot = active_track;
         endpoint_dot.a = endpoint_dot.a > 170 ? endpoint_dot.a : 170;
-        cogito_draw_rect(x0 - dot_d / 2, cy - dot_d / 2, dot_d, dot_d, endpoint_dot, dot_d / 2);
-        if (x1 != x0) {
+        if (draw_left_end_dot) {
+          cogito_draw_rect(x0 - dot_d / 2, cy - dot_d / 2, dot_d, dot_d, endpoint_dot, dot_d / 2);
+        }
+        if (draw_right_end_dot && x1 != x0) {
           cogito_draw_rect(x1 - dot_d / 2, cy - dot_d / 2, dot_d, dot_d, endpoint_dot, dot_d / 2);
         }
       }

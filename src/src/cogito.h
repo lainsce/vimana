@@ -384,6 +384,8 @@ int cogito_slider_get_size(cogito_node *slider);
 void cogito_slider_set_icon(cogito_node *slider, const char *icon);
 void cogito_slider_set_centered(cogito_node *slider, bool on);
 bool cogito_slider_get_centered(cogito_node *slider);
+void cogito_slider_set_end_dots(cogito_node *slider, bool on);
+bool cogito_slider_get_end_dots(cogito_node *slider);
 void cogito_slider_set_step(cogito_node *slider, double step);
 double cogito_slider_get_step(cogito_node *slider);
 void cogito_slider_set_step_dots(cogito_node *slider, bool on);
