@@ -2,6 +2,13 @@
 
 static CogitoNode* cogito_find_stepper_hit(CogitoNode* n, int x, int y);
 
+static const int COGITO_VIEW_DUAL_DRAG_COMMIT_DP = 8;
+static const int COGITO_VIEW_DUAL_MIN_ITEM_W = 360;
+static const int COGITO_VIEW_DUAL_DETENTE_W_1 = 360;
+static const int COGITO_VIEW_DUAL_DETENTE_W_2 = 412;
+static const int COGITO_VIEW_DUAL_DETENTE_TOLERANCE = 24;
+static const int COGITO_VIEW_DUAL_HIDE_INTENT_FROM_DETENTE = 72;
+
 #include "widgets/util/text_editing.inc"
 
 static bool cogito_about_window_is_actions_row(const CogitoNode* n) {
@@ -48,6 +55,87 @@ static bool cogito_focus_is_text_editing(CogitoNode* n) {
     return true;
   }
   return n->kind == COGITO_COLORPICKER && n->colorpicker.hex_editing;
+}
+
+static bool cogito_point_hits_preferred_handle(CogitoNode* n, int mx, int my) {
+  if (!n) return false;
+
+  if (n->kind == COGITO_DIALOG_SLOT) {
+    if (n->dialog && n->dialog_open) {
+      if (cogito_point_hits_preferred_handle(n->dialog, mx, my)) return true;
+    }
+  } else if (n->kind == COGITO_VIEWSWITCHER) {
+    CogitoNode* active = cogito_view_switcher_active_child(n);
+    if (active && cogito_point_hits_preferred_handle(active, mx, my)) return true;
+  } else if (!(n->kind == COGITO_REVEALER && !n->revealer_show_children)) {
+    for (size_t i = 0; i < n->len; i++) {
+      if (cogito_point_hits_preferred_handle(n->children[i], mx, my)) return true;
+    }
+  }
+
+  if (n->kind == COGITO_VIEW_DUAL) {
+    float ratio = n->view_dual.animating ? n->view_dual.anim_ratio : n->view_dual.ratio;
+    if (ratio < 0.0f) ratio = 0.0f;
+    if (ratio > 1.0f) ratio = 1.0f;
+    const float edge_ratio_zone = 0.05f;
+
+    int gap = n->gap > 0 ? n->gap : 8;
+    int handle_w = 4;
+    int split_w = gap * 2 + handle_w;
+    const int min_item_w = COGITO_VIEW_DUAL_MIN_ITEM_W;
+
+    int content_x = n->x + n->padding_left;
+    int content_y = n->y + n->padding_top;
+    int content_w = n->w - n->padding_left - n->padding_right;
+    int content_h = n->h - n->padding_top - n->padding_bottom;
+    if (content_w < 0) content_w = 0;
+    if (content_h < 0) content_h = 0;
+
+    int available_w = content_w - split_w;
+    if (available_w < 0) available_w = 0;
+
+    int handle_x = content_x + 4;
+    if (ratio >= (1.0f - edge_ratio_zone)) {
+      handle_x = content_x + content_w - handle_w - 4;
+    } else if (ratio > edge_ratio_zone) {
+      int left_w = (int)(content_w * ratio) - split_w / 2;
+      if (available_w >= min_item_w * 2) {
+        int max_left = available_w - min_item_w;
+        if (left_w < min_item_w) left_w = min_item_w;
+        if (left_w > max_left) left_w = max_left;
+      } else {
+        left_w = available_w / 2;
+      }
+      if (left_w < 0) left_w = 0;
+      if (left_w > available_w) left_w = available_w;
+      handle_x = content_x + left_w + gap;
+    }
+    int handle_min_x = content_x + 4;
+    int handle_max_x = content_x + content_w - 4 - handle_w;
+    if (handle_x < handle_min_x) handle_x = handle_min_x;
+    if (handle_x > handle_max_x) handle_x = handle_max_x;
+
+    int intent_w = 16;
+    if (intent_w < handle_w) intent_w = handle_w;
+    int intent_x = handle_x - (intent_w - handle_w) / 2;
+    if (cogito_hit_rect(mx, my, intent_x, content_y, intent_w, content_h)) {
+      return true;
+    }
+  }
+
+  if (n->kind == COGITO_BOTTOM_SHEET) {
+    int hx = 0, hy = 0, hw = 0, hh = 0;
+    cogito_bottom_sheet_handle_rect(n, &hx, &hy, &hw, &hh);
+    if (cogito_hit_rect(mx, my, hx, hy, hw, hh)) return true;
+  }
+
+  if (n->kind == COGITO_SIDE_SHEET) {
+    int hx = 0, hy = 0, hw = 0, hh = 0;
+    cogito_side_sheet_handle_rect(n, &hx, &hy, &hw, &hh);
+    if (cogito_hit_rect(mx, my, hx, hy, hw, hh)) return true;
+  }
+
+  return false;
 }
 
 static bool cogito_keyboard_toggle_focus(CogitoNode* n) {
@@ -951,7 +1039,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
     }
     bool click = left_pressed; // Left button
     if (cogito_pointer_capture && left_released &&
-        cogito_pointer_capture->kind != COGITO_DRAWING_AREA) {
+        cogito_pointer_capture->kind != COGITO_DRAWING_AREA &&
+        cogito_pointer_capture->kind != COGITO_VIEW_DUAL) {
       cogito_pointer_capture = NULL;
     }
 
@@ -1736,40 +1825,153 @@ static void cogito_run(YisVal appv, YisVal winv) {
     // ViewDual drag handling
     if (cogito_pointer_capture && cogito_pointer_capture->kind == COGITO_VIEW_DUAL) {
       CogitoNode* vd = cogito_pointer_capture;
+      const float edge_ratio_zone = 0.05f;
       if (left_down) {
+        int drag_delta_x = mx - vd->view_dual.drag_start_mouse_x;
+        if (drag_delta_x < 0) drag_delta_x = -drag_delta_x;
+        if (!vd->view_dual.drag_committed && drag_delta_x >= COGITO_VIEW_DUAL_DRAG_COMMIT_DP) {
+          vd->view_dual.drag_committed = true;
+        }
+        if (!vd->view_dual.drag_committed) {
+          // Click-without-drag on the handle should not reveal a hidden pane.
+        } else {
         int gap = vd->gap > 0 ? vd->gap : 8;
         int handle_w = 4;
         int split_w = gap * 2 + handle_w;
-        const int min_item_w = 218;
+        const int min_item_w = COGITO_VIEW_DUAL_MIN_ITEM_W;
         if (vd->w > 0) {
           int content_x = vd->x + vd->padding_left;
           int content_w = vd->w - vd->padding_left - vd->padding_right;
           if (content_w < 0) content_w = 0;
           int available_w = content_w - split_w;
           if (available_w < 0) available_w = 0;
+          int edge_left_x = content_x + 4;
+          int edge_right_x = content_x + content_w - handle_w - 4;
           int new_handle_x = mx - vd->view_dual.drag_offset;
-          int new_left_w = new_handle_x - content_x - gap;
-          if (available_w >= min_item_w * 2) {
-            int max_left = available_w - min_item_w;
-            if (new_left_w < min_item_w) new_left_w = min_item_w;
-            if (new_left_w > max_left) new_left_w = max_left;
+          float new_ratio = vd->view_dual.ratio;
+          vd->view_dual.edge_snap = 0;
+          if (new_handle_x <= edge_left_x) {
+            new_ratio = 0.0f;
+            vd->view_dual.edge_snap = -1;
+          } else if (new_handle_x >= edge_right_x) {
+            new_ratio = 1.0f;
+            vd->view_dual.edge_snap = 1;
           } else {
-            new_left_w = available_w / 2;
+            int raw_left_w = new_handle_x - content_x - gap;
+            const int min_detente_w = COGITO_VIEW_DUAL_DETENTE_TOLERANCE;
+            int new_left_w = raw_left_w;
+            float raw_ratio = content_w > 0
+              ? (float)(raw_left_w + split_w / 2) / (float)content_w
+              : 0.5f;
+            if (raw_ratio <= edge_ratio_zone) {
+              new_ratio = 0.0f;
+              vd->view_dual.edge_snap = -1;
+            } else if (raw_ratio >= (1.0f - edge_ratio_zone)) {
+              new_ratio = 1.0f;
+              vd->view_dual.edge_snap = 1;
+            } else if (available_w >= min_item_w * 2) {
+              int max_left = available_w - min_item_w;
+              int hide_left_threshold = min_item_w - COGITO_VIEW_DUAL_HIDE_INTENT_FROM_DETENTE;
+              int hide_right_threshold = max_left + COGITO_VIEW_DUAL_HIDE_INTENT_FROM_DETENTE;
+              if (raw_left_w <= hide_left_threshold) {
+                new_ratio = 0.0f;
+                vd->view_dual.edge_snap = -1;
+              } else if (raw_left_w >= hide_right_threshold) {
+                new_ratio = 1.0f;
+                vd->view_dual.edge_snap = 1;
+              } else {
+                if (new_left_w < min_item_w) new_left_w = min_item_w;
+                if (new_left_w > max_left) new_left_w = max_left;
+                new_ratio = content_w > 0
+                  ? (float)(new_left_w + split_w / 2) / (float)content_w
+                  : 0.5f;
+              }
+            } else {
+              if (raw_left_w <= -min_detente_w) {
+                new_ratio = 0.0f;
+                vd->view_dual.edge_snap = -1;
+              } else if (raw_left_w >= (available_w + min_detente_w)) {
+                new_ratio = 1.0f;
+                vd->view_dual.edge_snap = 1;
+              } else {
+                new_left_w = available_w / 2;
+                new_ratio = content_w > 0
+                  ? (float)(new_left_w + split_w / 2) / (float)content_w
+                  : 0.5f;
+              }
+            }
+            if (vd->view_dual.edge_snap == 0) {
+              int min_left = 0;
+              int max_left = available_w;
+              if (available_w >= min_item_w * 2) {
+                min_left = min_item_w;
+                max_left = available_w - min_item_w;
+              }
+              if (new_left_w < 0) new_left_w = 0;
+              if (new_left_w > available_w) new_left_w = available_w;
+
+              int best_left = new_left_w;
+              int best_dist = COGITO_VIEW_DUAL_DETENTE_TOLERANCE + 1;
+
+              int d360 = new_left_w - COGITO_VIEW_DUAL_DETENTE_W_1;
+              if (d360 < 0) d360 = -d360;
+              if (COGITO_VIEW_DUAL_DETENTE_W_1 >= min_left && COGITO_VIEW_DUAL_DETENTE_W_1 <= max_left &&
+                  d360 <= COGITO_VIEW_DUAL_DETENTE_TOLERANCE && d360 < best_dist) {
+                best_left = COGITO_VIEW_DUAL_DETENTE_W_1;
+                best_dist = d360;
+              }
+
+              int d412 = new_left_w - COGITO_VIEW_DUAL_DETENTE_W_2;
+              if (d412 < 0) d412 = -d412;
+              if (COGITO_VIEW_DUAL_DETENTE_W_2 >= min_left && COGITO_VIEW_DUAL_DETENTE_W_2 <= max_left &&
+                  d412 <= COGITO_VIEW_DUAL_DETENTE_TOLERANCE && d412 < best_dist) {
+                best_left = COGITO_VIEW_DUAL_DETENTE_W_2;
+                best_dist = d412;
+              }
+
+              int center_left = available_w / 2;
+              int dcenter = new_left_w - center_left;
+              if (dcenter < 0) dcenter = -dcenter;
+              if (center_left >= min_left && center_left <= max_left &&
+                  dcenter <= COGITO_VIEW_DUAL_DETENTE_TOLERANCE && dcenter < best_dist) {
+                best_left = center_left;
+                best_dist = dcenter;
+              }
+
+              if (best_dist <= COGITO_VIEW_DUAL_DETENTE_TOLERANCE) {
+                new_left_w = best_left;
+                new_ratio = content_w > 0
+                  ? (float)(new_left_w + split_w / 2) / (float)content_w
+                  : 0.5f;
+              }
+            }
           }
-          if (new_left_w < 0) new_left_w = 0;
-          if (new_left_w > available_w) new_left_w = available_w;
-          float new_ratio = content_w > 0
-            ? (float)(new_left_w + split_w / 2) / (float)content_w
-            : 0.5f;
           if (new_ratio < 0.0f) new_ratio = 0.0f;
           if (new_ratio > 1.0f) new_ratio = 1.0f;
+          if (new_ratio <= edge_ratio_zone) {
+            new_ratio = 0.0f;
+            vd->view_dual.edge_snap = -1;
+          } else if (new_ratio >= (1.0f - edge_ratio_zone)) {
+            new_ratio = 1.0f;
+            vd->view_dual.edge_snap = 1;
+          }
           if (new_ratio != vd->view_dual.ratio) {
-            vd->view_dual.ratio = new_ratio;
+            cogito_view_dual_set_ratio_target(vd, new_ratio, false);
             cogito_window_relayout(win);
           }
         }
+        }
       } else {
+        if (vd->view_dual.edge_snap < 0 || vd->view_dual.ratio <= edge_ratio_zone) {
+          cogito_view_dual_set_ratio_target(vd, 0.0f, true);
+          cogito_window_relayout(win);
+        } else if (vd->view_dual.edge_snap > 0 || vd->view_dual.ratio >= (1.0f - edge_ratio_zone)) {
+          cogito_view_dual_set_ratio_target(vd, 1.0f, true);
+          cogito_window_relayout(win);
+        }
+        vd->view_dual.edge_snap = 0;
         vd->view_dual.dragging = false;
+        vd->view_dual.drag_committed = false;
         cogito_pointer_capture = NULL;
       }
     }
@@ -1841,7 +2043,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
         ? win->dialog
         : cogito_find_dialog_slot(win);
       CogitoNode* root = (slot && slot->dialog) ? slot->dialog : win;
-      CogitoNode* sc = cogito_find_scroller(root, mx, my);
+      bool prefer_handle_hit = cogito_point_hits_preferred_handle(root, mx, my);
+      CogitoNode* sc = prefer_handle_hit ? NULL : cogito_find_scroller(root, mx, my);
       if (sc) {
         CogitoScrollbarHit hit = cogito_scroller_hit_scrollbar(sc, mx, my, COGITO_SCROLLBAR_WIDTH_WIDE, COGITO_SCROLLBAR_WIDTH_WIDE);
         /* If the deepest scroller has no scrollbar under the point, the click may be on an outer scroller's bar. Walk up to find the outermost ancestor scroller whose scrollbar is under the point. */
@@ -2551,13 +2754,23 @@ static void cogito_run(YisVal appv, YisVal winv) {
               cogito_backend->open_url(hit->icon->data);
             }
           } else if (hit->kind == COGITO_VIEW_DUAL) {
-            float ratio = hit->view_dual.ratio;
-            if (ratio <= 0.0f) ratio = 0.5f;
+            float ratio = hit->view_dual.animating ? hit->view_dual.anim_ratio : hit->view_dual.ratio;
+            if (ratio < 0.0f) ratio = 0.0f;
             if (ratio > 1.0f) ratio = 1.0f;
+            const float edge_ratio_zone = 0.05f;
+            if (hit->view_dual.ratio <= edge_ratio_zone && hit->view_dual.ratio > 0.0f) {
+              cogito_view_dual_set_ratio_target(hit, 0.0f, false);
+              ratio = 0.0f;
+              cogito_window_relayout(win);
+            } else if (hit->view_dual.ratio >= (1.0f - edge_ratio_zone) && hit->view_dual.ratio < 1.0f) {
+              cogito_view_dual_set_ratio_target(hit, 1.0f, false);
+              ratio = 1.0f;
+              cogito_window_relayout(win);
+            }
             int gap = hit->gap > 0 ? hit->gap : 8;
             int handle_w = 4;
             int split_w = gap * 2 + handle_w;
-            const int min_item_w = 218;
+            const int min_item_w = COGITO_VIEW_DUAL_MIN_ITEM_W;
             int content_x = hit->x + hit->padding_left;
             int content_y = hit->y + hit->padding_top;
             int content_w = hit->w - hit->padding_left - hit->padding_right;
@@ -2566,19 +2779,33 @@ static void cogito_run(YisVal appv, YisVal winv) {
             if (content_h < 0) content_h = 0;
             int available_w = content_w - split_w;
             if (available_w < 0) available_w = 0;
-            int left_w = (int)(content_w * ratio) - split_w / 2;
-            if (available_w >= min_item_w * 2) {
-              int max_left = available_w - min_item_w;
-              if (left_w < min_item_w) left_w = min_item_w;
-              if (left_w > max_left) left_w = max_left;
-            } else {
-              left_w = available_w / 2;
+            int handle_x = content_x + 4;
+            if (ratio >= (1.0f - edge_ratio_zone)) {
+              handle_x = content_x + content_w - handle_w - 4;
+            } else if (ratio > edge_ratio_zone) {
+              int left_w = (int)(content_w * ratio) - split_w / 2;
+              if (available_w >= min_item_w * 2) {
+                int max_left = available_w - min_item_w;
+                if (left_w < min_item_w) left_w = min_item_w;
+                if (left_w > max_left) left_w = max_left;
+              } else {
+                left_w = available_w / 2;
+              }
+              if (left_w < 0) left_w = 0;
+              if (left_w > available_w) left_w = available_w;
+              handle_x = content_x + left_w + gap;
             }
-            if (left_w < 0) left_w = 0;
-            if (left_w > available_w) left_w = available_w;
-            int handle_x = content_x + left_w + gap;
-            if (cogito_hit_rect_min48(mx, my, handle_x - 4, content_y, handle_w + 8, content_h)) {
+            int handle_min_x = content_x + 4;
+            int handle_max_x = content_x + content_w - 4 - handle_w;
+            if (handle_x < handle_min_x) handle_x = handle_min_x;
+            if (handle_x > handle_max_x) handle_x = handle_max_x;
+            int intent_w = 16;
+            if (intent_w < handle_w) intent_w = handle_w;
+            int intent_x = handle_x - (intent_w - handle_w) / 2;
+            if (cogito_hit_rect(mx, my, intent_x, content_y, intent_w, content_h)) {
               hit->view_dual.dragging = true;
+              hit->view_dual.drag_committed = false;
+              hit->view_dual.drag_start_mouse_x = mx;
               hit->view_dual.drag_offset = mx - handle_x;
               cogito_pointer_capture = hit;
             }
@@ -2604,7 +2831,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
     // Only traverse the tree when at least one carousel is animating.
     if (cogito_carousel_animating_count > 0) {
       CogitoNode* _stk[
-        64
+        1024
       ];
       int _sp = 0;
       _stk[_sp++
@@ -2635,7 +2862,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
             _carousel_did_relayout = true;
           }
         }
-        for (size_t _ci = 0; _ci < _cn->len && _sp < 63; _ci++) {
+        for (size_t _ci = 0; _ci < _cn->len && _sp < 1023; _ci++) {
           _stk[_sp++
           ] = _cn->children[_ci
           ];
@@ -2646,6 +2873,57 @@ static void cogito_run(YisVal appv, YisVal winv) {
       }
       // Safety: clamp to zero if counter drifted
       if (cogito_carousel_animating_count < 0) cogito_carousel_animating_count = 0;
+    }
+
+    // --- ViewDual edge-hide animation tick ---
+    {
+      CogitoNode* _stk[
+        1024
+      ];
+      int _sp = 0;
+      _stk[_sp++
+      ] = win;
+      bool _view_dual_did_relayout = false;
+      bool _view_dual_anim_running = false;
+      double _now = cogito_now();
+      const double _dur = 0.20;
+      while (_sp > 0) {
+        CogitoNode* _cn = _stk[--_sp
+        ];
+        if (!_cn) continue;
+        if (_cn->kind == COGITO_VIEW_DUAL && _cn->view_dual.animating) {
+          double t = 1.0;
+          if (_dur > 0.0) t = (_now - _cn->view_dual.anim_start) / _dur;
+          if (t >= 1.0) {
+            t = 1.0;
+            _cn->view_dual.animating = false;
+          } else {
+            _view_dual_anim_running = true;
+          }
+          double et = t * (2.0 - t);
+          float prev = _cn->view_dual.anim_ratio;
+          _cn->view_dual.anim_ratio = _cn->view_dual.anim_from +
+            (float)((double)(_cn->view_dual.anim_to - _cn->view_dual.anim_from) * et);
+          if (!_cn->view_dual.animating) {
+            _cn->view_dual.anim_ratio = _cn->view_dual.anim_to;
+          }
+          if (fabsf(prev - _cn->view_dual.anim_ratio) > 0.0005f) {
+            _view_dual_did_relayout = true;
+          }
+        }
+        for (size_t _ci = 0; _ci < _cn->len && _sp < 1023; _ci++) {
+          _stk[_sp++
+          ] = _cn->children[_ci
+          ];
+        }
+      }
+      if (_view_dual_did_relayout) {
+        cogito_window_relayout(win);
+      }
+      if (_view_dual_anim_running) {
+        double _end = _now + 0.22;
+        if (_end > cogito_anim_end_time) cogito_anim_end_time = _end;
+      }
     }
     // Only redraw when something requested it (queue_draw) or continuous updates needed.
     // Do not redraw during window drag — we only move the window; no present() needed, so we wait for events and avoid CPU spike.

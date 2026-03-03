@@ -988,7 +988,18 @@ typedef struct CogitoNode {
     } label;
     struct { double angle; double last_time;
     } indicator;
-    struct { float ratio; bool dragging; int drag_offset;
+    struct {
+      float ratio;
+      float anim_ratio;
+      float anim_from;
+      float anim_to;
+      double anim_start;
+      bool animating;
+      int edge_snap;
+      bool dragging;
+      bool drag_committed;
+      int drag_start_mouse_x;
+      int drag_offset;
     } view_dual;
     struct { int arrow_x; uint8_t size; // 0=XS..4=XL, same as button
       bool outlined, text_style;

@@ -252,7 +252,14 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
     case COGITO_SCROLLER: n->scroller.vert = true; break;
     case COGITO_STEPPER: n->stepper.max = 100.0; n->stepper.step = 1.0; break;
     case COGITO_IMAGE: case COGITO_AVATAR: n->image.avg_lum = 0.5f; break;
-    case COGITO_VIEW_DUAL: n->view_dual.ratio = 0.5f; break;
+    case COGITO_VIEW_DUAL:
+      n->view_dual.ratio = 0.5f;
+      n->view_dual.anim_ratio = 0.5f;
+      n->view_dual.anim_from = 0.5f;
+      n->view_dual.anim_to = 0.5f;
+      n->view_dual.animating = false;
+      n->view_dual.edge_snap = 0;
+      break;
     default: break;
   }
   cogito_apply_style_to_node(n);
