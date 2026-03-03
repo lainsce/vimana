@@ -508,6 +508,33 @@
                         out->tmp = t;
                         return true;
                     }
+                    if (str_eq_c(fname, "__cogito_content_list_remove_at")) {
+                        GenExpr list, idx;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &list, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &idx, err)) { gen_expr_free(&list); return false; }
+                        w_line(&cg->w, "__cogito_content_list_remove_at(%s, %s);", list.tmp, idx.tmp);
+                        gen_expr_release_except(cg, &list, list.tmp);
+                        gen_expr_release_except(cg, &idx, idx.tmp);
+                        gen_expr_free(&list);
+                        gen_expr_free(&idx);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_content_list_clear")) {
+                        GenExpr list;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &list, err)) return false;
+                        w_line(&cg->w, "__cogito_content_list_clear(%s);", list.tmp);
+                        gen_expr_release_except(cg, &list, list.tmp);
+                        gen_expr_free(&list);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
                     // --- EmptyPage ---
                     if (str_eq_c(fname, "__cogito_empty_page")) {
                         GenExpr title;
@@ -764,6 +791,35 @@
                         gen_expr_free(&ratio);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_view_dual_set_show_handle")) {
+                        GenExpr vd, showv;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &vd, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &showv, err)) { gen_expr_free(&vd); return false; }
+                        w_line(&cg->w, "cogito_view_dual_set_show_handle(%s, %s);", vd.tmp, showv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", vd.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", showv.tmp);
+                        gen_expr_release_except(cg, &vd, vd.tmp);
+                        gen_expr_release_except(cg, &showv, showv.tmp);
+                        gen_expr_free(&vd);
+                        gen_expr_free(&showv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_view_dual_get_show_handle")) {
+                        GenExpr vd;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &vd, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_view_dual_get_show_handle(%s);", t, vd.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", vd.tmp);
+                        gen_expr_release_except(cg, &vd, vd.tmp);
+                        gen_expr_free(&vd);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;

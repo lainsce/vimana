@@ -151,6 +151,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
 
   int x = n->x;
   int y = n->y + n->h;
+  const int edge_inset = 16;
 
   // Get window size from backend
   int win_w = 800, win_h = 600;  // Default fallback
@@ -160,36 +161,50 @@ static void cogito_menu_open_for(CogitoNode* n) {
     win_h = cogito_active_window->h;
   }
 
-  // Check if menu would go off right edge - try repositioning left
-  if (x + w > win_w - 4) {
-    int left_pos = n->x - w;
-    if (left_pos >= 4) {
-      // There's room on the left, use it
-      x = left_pos;
-    } else {
-      // Not enough room on either side, clamp to window
-      x = win_w - 4 - w;
-      if (x < 4) x = 4;
-    }
+  int max_w = win_w - edge_inset * 2;
+  int max_h = win_h - edge_inset * 2;
+  if (max_w < 1) max_w = win_w > 0 ? win_w : 1;
+  if (max_h < 1) max_h = win_h > 0 ? win_h : 1;
+  if (w > max_w) w = max_w;
+  if (h > max_h) h = max_h;
+
+  // Horizontal placement:
+  // 1) Prefer anchor-left alignment.
+  // 2) If it overflows right, align menu right edge to anchor right edge.
+  // 3) Clamp to edge inset bounds.
+  int right_aligned = n->x + n->w - w;
+  if (x + w > win_w - edge_inset) {
+    x = right_aligned;
   }
 
-  if (w > win_w - 8) w = win_w - 8;
-  if (h > win_h - 8) h = win_h - 8;
-  if (x + w > win_w - 4) x = win_w - 4 - w;
-  if (x < 4) x = 4;
-
-  // Check if menu would go off bottom - try repositioning above
-  if (y + h > win_h - 4) {
-    int above = n->y - h;
-    if (above >= 4) {
-      y = above;
-    } else {
-      // Not enough room above or below, clamp to window
-      y = win_h - 4 - h;
-      if (y < 4) y = 4;
-    }
+  int min_x = edge_inset;
+  int max_x = win_w - edge_inset - w;
+  if (max_x < min_x) {
+    min_x = 0;
+    max_x = win_w - w;
   }
-  if (y < 4) y = 4;
+  if (x < min_x) x = min_x;
+  if (x > max_x) x = max_x;
+
+  // Vertical placement: prefer below anchor, then above, then clamp.
+  int below = n->y + n->h;
+  int above = n->y - h;
+  if (below + h <= win_h - edge_inset) {
+    y = below;
+  } else if (above >= edge_inset) {
+    y = above;
+  } else {
+    y = win_h - edge_inset - h;
+  }
+
+  int min_y = edge_inset;
+  int max_y = win_h - edge_inset - h;
+  if (max_y < min_y) {
+    min_y = 0;
+    max_y = win_h - h;
+  }
+  if (y < min_y) y = min_y;
+  if (y > max_y) y = max_y;
   cogito_menu.w = w;
   cogito_menu.h = h;
   cogito_menu.x = x;

@@ -8,8 +8,9 @@ case COGITO_VIEW_DUAL: {
   bool edge_left = (ratio <= edge_ratio_zone) || anim_to_left_edge;
   bool edge_right = (ratio >= (1.0f - edge_ratio_zone)) || anim_to_right_edge;
   int gap = n->gap > 0 ? n->gap : 8;
-  int handle_w = 4;
-  int split_w = gap * 2 + handle_w;
+  int hidden_gap_w = n->view_dual.show_handle ? 0 : 16;
+  int handle_w = n->view_dual.show_handle ? 4 : 0;
+  int split_w = n->view_dual.show_handle ? (gap * 2 + handle_w) : hidden_gap_w;
   const int min_item_w = 360;
 
   int content_x = x + n->padding_left;
@@ -24,10 +25,12 @@ case COGITO_VIEW_DUAL: {
   int right_w = content_w;
   if (edge_left) {
     left_w = 0;
-    right_x = content_x;
-    right_w = content_w;
+    right_x = content_x + hidden_gap_w;
+    right_w = content_w - hidden_gap_w;
+    if (right_w < 0) right_w = 0;
   } else if (edge_right) {
-    left_w = content_w;
+    left_w = content_w - hidden_gap_w;
+    if (left_w < 0) left_w = 0;
     right_x = content_x + content_w;
     right_w = 0;
   } else {

@@ -2,6 +2,11 @@ cask main
 
 bring stdr
 bring cogito
+bring json
+bring quilter_text
+bring quilter_markdown
+bring quilter_state
+bring quilter_ui
 
 def SAMPLE_MD = "# New Document\n\nFocus on your writing.\n\n## Quick Notes\n- Use **Open…** to load Markdown\n- Use **Save** to persist edits\n- Use the sidebar to jump between files\n\n### Quilter\nA focused Markdown writing experience."
 
@@ -9,27 +14,44 @@ def ?markdown_text = SAMPLE_MD
 def ?current_path = ""
 def ?dirty = false
 def ?suspend_change = false
+def ?suspend_file_select = false
 
 def ?open_paths = []: [string]
+def ?active_open_index = 0
+
+def STATE_PATH = ".quilter_state.json"
 
 def ?show_sidebar = true
 def ?show_searchbar = false
 def ?show_statusbar = true
 def ?focus_mode = false
+def ?autosave_session = true
+def ?confirm_on_switch = true
+def ?open_links_external = false
 
 def ?preview_type = "half" -- half | full | edit
 
 def ?search_cursor = 0
 
-def bar = cogito.appbar("Quilter", "Focus on your writing.").set_medium()
+fun is_valid_preview_mode(mode = string) (( bool )) {
+    return mode == "half" || mode == "full" || mode == "edit"
+}
+
+def bar = cogito.appbar("Quilter", "Focus on your writing.").set_small()
+def title_label = cogito.label("Not Saved Yet").set_class("title")
+def dirty_badge = cogito.badge_dot()
+def dirty_badge_revealer = cogito.revealer().add(dirty_badge).set_show_children(false)
+def title_row = cogito.hstack().set_gap(8).set_hexpand(true).add(title_label).add(dirty_badge_revealer)
 def editor = cogito.textview("")
 def preview = cogito.webview("")
 def files_list = cogito.content_list()
+def files_hint = cogito.label("")
 def outline_text = cogito.textview("")
 def root_dual = cogito.view_dual()
 def editor_preview = cogito.view_dual()
-def search_host = cogito.view_switcher()
-def status_host = cogito.view_switcher()
+def main_pane = cogito.vstack()
+def search_revealer = cogito.revealer()
+def status_revealer = cogito.revealer()
 
 def search_row = cogito.hstack()
 def status_row = cogito.hstack()
@@ -42,105 +64,32 @@ def track_type = cogito.dropdown().set_items(["Words", "Sentences", "Reading Tim
 def track_value = cogito.label("Words: 0")
 def status_hint = cogito.label("Tracks words, sentences or reading time here")
 
-macro is_blank_char() (( bool )) {
-    this == " " || this == "\t" || this == "\n" || this == "\r"
-}
-
 fun trim_text(text = string) (( string )) {
-    let n = len(text)
-    if n == 0 {
-        return ""
-    }
-
-    let ?start = 0
-    for (; start < n; start += 1) {
-        if !(text[start] !is_blank_char) {
-            break
-        }
-    }
-    if start >= n {
-        return ""
-    }
-
-    let ?end = n - 1
-    for (; end >= start; end -= 1) {
-        if !(text[end] !is_blank_char) {
-            break
-        }
-    }
-
-    let ?out = ""
-    for (let ?i = start; i <= end; i += 1) {
-        out = "<out><text[i]>"
-    }
-    return out
+    return quilter_text.trim_text(text)
 }
 
 fun starts_with(text = string, prefix = string) (( bool )) {
-    if len(prefix) > len(text) {
-        return false
-    }
-    for (let ?i = 0; i < len(prefix); i += 1) {
-        if text[i] != prefix[i] {
-            return false
-        }
-    }
-    return true
+    return quilter_text.starts_with(text, prefix)
 }
 
 fun slice_between(text = string, start = num, end = num) (( string )) {
-    let n = len(text)
-    if start < 0 {
-        start = 0
-    }
-    if end > n {
-        end = n
-    }
-    if end <= start {
-        return ""
-    }
-
-    let ?out = ""
-    for (let ?i = start; i < end; i += 1) {
-        out = "<out><text[i]>"
-    }
-    return out
+    return quilter_text.slice_between(text, start, end)
 }
 
 fun slice_from(text = string, from = num) (( string )) {
-    return slice_between(text, from, len(text))
+    return quilter_text.slice_from(text, from)
 }
 
 fun basename(path = string) (( string )) {
-    let n = len(path)
-    let ?last = -1
-    for (let ?i = 0; i < n; i += 1) {
-        let ch = path[i]
-        if ch == "/" || ch == "\\" {
-            last = i
-        }
-    }
-    if last < 0 {
-        return path
-    }
-    return slice_between(path, last + 1, n)
+    return quilter_text.basename(path)
 }
 
 fun ends_with_md(path = string) (( bool )) {
-    let n = len(path)
-    if n < 3 || path[n - 3] != "." {
-        return false
-    }
-    let c1 = path[n - 2]
-    let c2 = path[n - 1]
-    return (c1 == "m" || c1 == "M") && (c2 == "d" || c2 == "D")
+    return quilter_text.ends_with_md(path)
 }
 
 fun ensure_md(path = string) (( string )) {
-    if ends_with_md(path) {
-        return path
-    }
-    return "<path>.md"
+    return quilter_text.ensure_md(path)
 }
 
 fun default_name() (( string )) {
@@ -150,207 +99,266 @@ fun default_name() (( string )) {
     return "New Document.md"
 }
 
-fun escape_html(text = string) (( string )) {
-    let ?out = ""
-    for (let ?i = 0; i < len(text); i += 1) {
-        let ch = text[i]
-        if ch == "&" {
-            out = "<out>&amp;"
-        } else {
-            out = "<out><ch>"
-        }
-    }
-    return out
-}
-
-fun markdown_to_html(md = string) (( string )) {
-    let ?out = ""
-    let ?line = ""
-    let ?in_list = false
-
-    for (let ?i = 0; i <= len(md); i += 1) {
-        let ch = if i < len(md) { md[i] } else { "\n" }
-        if ch != "\n" {
-            line = "<line><ch>"
-            continue
-        }
-
-        let raw = trim_text(line)
-        line = ""
-
-        if len(raw) == 0 {
-            if in_list {
-                out = "<out>[/ul]\n"
-                in_list = false
-            }
-            continue
-        }
-
-        if starts_with(raw, "### ") {
-            if in_list {
-                out = "<out>[/ul]\n"
-                in_list = false
-            }
-            let part = slice_from(raw, 4)
-            let esc = escape_html(part)
-            out = "<out>[h3]<esc>[/h3]\n"
-        } elif starts_with(raw, "## ") {
-            if in_list {
-                out = "<out>[/ul]\n"
-                in_list = false
-            }
-            let part = slice_from(raw, 3)
-            let esc = escape_html(part)
-            out = "<out>[h2]<esc>[/h2]\n"
-        } elif starts_with(raw, "# ") {
-            if in_list {
-                out = "<out>[/ul]\n"
-                in_list = false
-            }
-            let part = slice_from(raw, 2)
-            let esc = escape_html(part)
-            out = "<out>[h1]<esc>[/h1]\n"
-        } elif starts_with(raw, "- ") {
-            if !in_list {
-                out = "<out>[ul]\n"
-                in_list = true
-            }
-            let part = slice_from(raw, 2)
-            let esc = escape_html(part)
-            out = "<out>[li]<esc>[/li]\n"
-        } else {
-            if in_list {
-                out = "<out>[/ul]\n"
-                in_list = false
-            }
-            let esc = escape_html(raw)
-            out = "<out>[p]<esc>[/p]\n"
-        }
-    }
-
-    if in_list {
-        out = "<out>[/ul]\n"
-    }
-
-    return out
-}
-
-fun outline_from_markdown(md = string) (( string )) {
-    let ?out = ""
-    let ?line = ""
-
-    for (let ?i = 0; i <= len(md); i += 1) {
-        let ch = if i < len(md) { md[i] } else { "\n" }
-        if ch != "\n" {
-            line = "<line><ch>"
-            continue
-        }
-
-        let raw = trim_text(line)
-        line = ""
-
-        if starts_with(raw, "# ") {
-            let t = slice_from(raw, 2)
-            out = "<out># <t>\n"
-        } elif starts_with(raw, "## ") {
-            let t = slice_from(raw, 3)
-            out = "<out>  ## <t>\n"
-        } elif starts_with(raw, "### ") {
-            let t = slice_from(raw, 4)
-            out = "<out>    ### <t>\n"
-        }
-    }
-
-    if len(out) == 0 {
-        return "No headings yet"
-    }
-    return out
-}
-
-fun count_words(text = string) (( num )) {
-    let ?count = 0
-    let ?in_word = false
-
-    for (let ?i = 0; i < len(text); i += 1) {
-        let ch = text[i]
-        if ch !is_blank_char {
-            if in_word {
-                in_word = false
-            }
-        } else {
-            if !in_word {
-                in_word = true
-                count += 1
-            }
-        }
-    }
-    return count
-}
-
-fun count_sentences(text = string) (( num )) {
-    let ?count = 0
-    for (let ?i = 0; i < len(text); i += 1) {
-        let ch = text[i]
-        if ch == "." || ch == "!" || ch == "?" {
-            count += 1
-        }
-    }
-    return count
-}
-
-fun find_from(haystack = string, needle = string, from = num) (( num )) {
-    let n = len(haystack)
-    let m = len(needle)
-
-    if m == 0 || m > n {
-        return -1
-    }
-    if from < 0 {
-        from = 0
-    }
-    if from > n - m {
-        return -1
-    }
-
-    for (let ?i = from; i <= n - m; i += 1) {
-        let ?ok = true
-        for (let ?j = 0; j < m; j += 1) {
-            if haystack[i + j] != needle[j] {
-                ok = false
-                break
-            }
-        }
-        if ok {
+fun open_path_index(path = string) (( num )) {
+    for (let ?i = 0; i < len(open_paths); i += 1) {
+        if open_paths[i] == path {
             return i
         }
     }
-
     return -1
 }
 
-fun count_matches(haystack = string, needle = string) (( num )) {
-    if len(needle) == 0 {
-        return 0
+fun file_label(path = string) (( string )) {
+    if len(path) > 0 {
+        return basename(path)
+    }
+    return "Not Saved Yet"
+}
+
+fun sync_active_open_index() (( -- )) {
+    if len(open_paths) == 0 {
+        open_paths[0] = ""
+        active_open_index = 0
+        return
     }
 
-    let ?count = 0
-    let ?pos = 0
-    for (; pos < len(haystack);) {
-        let i = find_from(haystack, needle, pos)
-        if i < 0 {
-            break
+    let target = current_path
+    if len(target) == 0 {
+        let blank_idx = open_path_index("")
+        if blank_idx >= 0 {
+            active_open_index = blank_idx
+            return
         }
-        count += 1
-        pos = i + len(needle)
+        open_paths[len(open_paths)] = ""
+        active_open_index = len(open_paths) - 1
+        return
     }
 
-    return count
+    let idx = open_path_index(target)
+    if idx >= 0 {
+        active_open_index = idx
+        return
+    }
+
+    open_paths[len(open_paths)] = target
+    active_open_index = len(open_paths) - 1
+}
+
+fun sync_file_selection() (( -- )) {
+    if len(open_paths) == 0 {
+        return
+    }
+
+    if active_open_index < 0 {
+        active_open_index = 0
+    }
+    if active_open_index >= len(open_paths) {
+        active_open_index = len(open_paths) - 1
+    }
+
+    suspend_file_select = true
+    files_list.set_selected(active_open_index)
+    suspend_file_select = false
+}
+
+fun refresh_files_hint() (( -- )) {
+    if len(open_paths) == 0 {
+        files_hint.set_text("No documents in session")
+    } elif len(open_paths) == 1 && len(open_paths[0] ?? "") == 0 {
+        files_hint.set_text("1 unsaved draft")
+    } else {
+        let count = len(open_paths)
+        files_hint.set_text("$$count$$ documents in session")
+    }
+}
+
+fun refresh_open_files_ui(win = cogito.Window) (( -- )) {
+    files_list.clear()
+    for (let ?i = 0; i < len(open_paths); i += 1) {
+        files_list.add(cogito.label(file_label(open_paths[i] ?? "")).set_padding(8, 10, 8, 10).set_ellipsis(true))
+    }
+
+    refresh_files_hint()
+    sync_file_selection()
+}
+
+fun populate_open_files_ui(win = cogito.Window) (( -- )) {
+    refresh_open_files_ui(win)
+}
+
+fun remove_open_index(idx = num) (( -- )) {
+    if idx < 0 || idx >= len(open_paths) {
+        return
+    }
+
+    let ?next = []: [string]
+    for (let ?i = 0; i < len(open_paths); i += 1) {
+        if i != idx {
+            next[len(next)] = open_paths[i] ?? ""
+        }
+    }
+    open_paths = next
+}
+
+fun move_current_document(delta = num, win = cogito.Window) (( -- )) {
+    if len(open_paths) < 2 {
+        set_status("Need at least two documents to reorder")
+        return
+    }
+
+    let from = active_open_index
+    let to = from + delta
+    if to < 0 || to >= len(open_paths) {
+        set_status("Cannot move document further")
+        return
+    }
+
+    let temp = open_paths[from] ?? ""
+    open_paths[from] = open_paths[to] ?? ""
+    open_paths[to] = temp
+    active_open_index = to
+
+    refresh_open_files_ui(win)
+    save_session_state()
+
+    if delta < 0 {
+        set_status("Moved document up")
+    } else {
+        set_status("Moved document down")
+    }
+}
+
+fun close_current_document_now(win = cogito.Window) (( -- )) {
+    if len(open_paths) <= 1 {
+        current_path = ""
+        dirty = false
+        markdown_text = SAMPLE_MD
+
+        suspend_change = true
+        editor.set_text(markdown_text)
+        suspend_change = false
+
+        open_paths = [""]
+        active_open_index = 0
+        refresh_open_files_ui(win)
+        refresh_title()
+        refresh_preview_outline_stats()
+        set_status("Started a fresh document")
+        save_session_state()
+        return
+    }
+
+    let ?idx = active_open_index
+    remove_open_index(idx)
+    files_list.remove_at(idx)
+    if len(open_paths) == 0 {
+        open_paths[0] = ""
+    }
+    if idx >= len(open_paths) {
+        idx = len(open_paths) - 1
+    }
+
+    let next_path = open_paths[idx] ?? ""
+    if len(next_path) > 0 {
+        open_path_now(next_path, win)
+    } else {
+        new_document_now(win)
+    }
+
+    refresh_open_files_ui(win)
+    save_session_state()
+    set_status("Closed document")
+}
+
+fun save_session_state() (( -- )) {
+    quilter_state.save(
+        STATE_PATH,
+        current_path,
+        dirty,
+        markdown_text,
+        show_sidebar,
+        show_searchbar,
+        show_statusbar,
+        focus_mode,
+        autosave_session,
+        confirm_on_switch,
+        open_links_external,
+        preview_type,
+        active_open_index,
+        open_paths
+    )
+}
+
+fun load_session_state() (( -- )) {
+    let root = quilter_state.load(STATE_PATH)
+    if is_null(root) {
+        open_paths[0] = ""
+        active_open_index = 0
+        return
+    }
+
+    current_path = str(json.get(root, "current_path", ""))
+    dirty = json.get(root, "dirty", false) == true
+    markdown_text = str(json.get(root, "markdown_text", markdown_text))
+
+    show_sidebar = json.get(root, "show_sidebar", show_sidebar) == true
+    show_searchbar = json.get(root, "show_searchbar", show_searchbar) == true
+    show_statusbar = json.get(root, "show_statusbar", show_statusbar) == true
+    focus_mode = json.get(root, "focus_mode", focus_mode) == true
+    autosave_session = json.get(root, "autosave_session", autosave_session) == true
+    confirm_on_switch = json.get(root, "confirm_on_switch", confirm_on_switch) == true
+    open_links_external = json.get(root, "open_links_external", open_links_external) == true
+
+    let restored_mode = str(json.get(root, "preview_type", preview_type))
+    if restored_mode !is_valid_preview_mode {
+        preview_type = restored_mode
+    }
+
+    open_paths = []: [string]
+    let restored_paths = json.get(root, "open_paths", []: [any])
+    for (let ?i = 0; i < len(restored_paths); i += 1) {
+        let p = str(restored_paths[i] ?? "")
+        open_paths[len(open_paths)] = p
+    }
+
+    active_open_index = json.get(root, "active_open_index", 0)
+    sync_active_open_index()
+}
+
+fun escape_html(text = string) (( string )) {
+    return quilter_markdown.escape_html(text)
+}
+
+fun markdown_to_html(md = string) (( string )) {
+    return quilter_markdown.markdown_to_html(md)
+}
+
+fun markdown_to_preview(md = string) (( string )) {
+    return quilter_markdown.markdown_to_preview(md)
+}
+
+fun outline_from_markdown(md = string) (( string )) {
+    return quilter_markdown.outline_from_markdown(md)
+}
+
+fun count_words(text = string) (( num )) {
+    return quilter_text.count_words(text)
+}
+
+fun count_sentences(text = string) (( num )) {
+    return quilter_text.count_sentences(text)
+}
+
+fun find_from(haystack = string, needle = string, from = num) (( num )) {
+    return quilter_text.find_from(haystack, needle, from)
+}
+
+fun count_matches(haystack = string, needle = string) (( num )) {
+    return quilter_text.count_matches(haystack, needle)
 }
 
 fun replace_at(text = string, at = num, old_len = num, replacement = string) (( string )) {
-    let left = slice_between(text, 0, at)
-    let right = slice_between(text, at + old_len, len(text))
-    return "<left><replacement><right>"
+    return quilter_text.replace_at(text, at, old_len, replacement)
 }
 
 fun set_status(text = string) (( -- )) {
@@ -360,8 +368,9 @@ fun set_status(text = string) (( -- )) {
 
 fun refresh_title() (( -- )) {
     let base = if len(current_path) > 0 { basename(current_path) } else { "Not Saved Yet" }
-    let shown = if dirty { "<base> *" } else { base }
-    bar.set_title(shown)
+    bar.set_title(base)
+    title_label.set_text(base)
+    dirty_badge_revealer.set_show_children(dirty)
 }
 
 fun refresh_tracker() (( -- )) {
@@ -370,9 +379,9 @@ fun refresh_tracker() (( -- )) {
     let sentences = count_sentences(markdown_text)
 
     if mode == 0 {
-        track_value.set_text("Words: <words>")
+        track_value.set_text("Words: $$words$$")
     } elif mode == 1 {
-        track_value.set_text("Sentences: <sentences>")
+        track_value.set_text("Sentences: $$sentences$$")
     } else {
         let ?minutes = 1
         if words > 264 {
@@ -381,18 +390,18 @@ fun refresh_tracker() (( -- )) {
                 minutes += 1
             }
         }
-        track_value.set_text("Reading Time: <minutes> min")
+        track_value.set_text("Reading Time: $$minutes$$ min")
     }
 }
 
 fun refresh_search_state() (( -- )) {
     let q = trim_text(search_find.text())
     let hits = count_matches(markdown_text, q)
-    search_state.set_text("<hits> matches")
+    search_state.set_text("$$hits$$ matches")
 }
 
 fun refresh_preview_outline_stats() (( -- )) {
-    preview.set_html(markdown_to_html(markdown_text))
+    preview.set_html(markdown_to_preview(markdown_text))
     outline_text.set_text(outline_from_markdown(markdown_text))
     refresh_tracker()
     refresh_search_state()
@@ -409,39 +418,44 @@ fun apply_preview_mode() (( -- )) {
 }
 
 fun apply_visibility_states() (( -- )) {
-    if show_sidebar && !focus_mode {
+    let sidebar_visible = show_sidebar && !focus_mode
+
+    if sidebar_visible {
         root_dual.set_ratio(0.24)
+        root_dual.set_padding(0, 0, 12, 12)
+        main_pane.set_padding(0, 16, 0, 16)
     } else {
         root_dual.set_ratio(0.0)
+        root_dual.set_padding(0, 0, 12, 0)
+        main_pane.set_padding(0, 16, 0, 0)
     }
+    root_dual.set_show_handle(sidebar_visible)
 
     if show_searchbar && !focus_mode {
-        search_host.set_active("shown")
+        search_revealer.set_show_children(true)
     } else {
-        search_host.set_active("hidden")
+        search_revealer.set_show_children(false)
     }
 
     if show_statusbar && !focus_mode {
-        status_host.set_active("shown")
+        status_revealer.set_show_children(true)
     } else {
-        status_host.set_active("hidden")
+        status_revealer.set_show_children(false)
     }
 }
 
-fun add_open_file(path = string) (( -- )) {
+fun add_open_file(path = string) (( num )) {
     for (let ?i = 0; i < len(open_paths); i += 1) {
         if open_paths[i] == path {
-            return
+            return i
         }
     }
 
     open_paths[len(open_paths)] = path
-
-    let label = if len(path) > 0 { basename(path) } else { "Not Saved Yet" }
-    files_list.add(cogito.label(label).set_padding(8, 10, 8, 10).set_ellipsis(true))
+    return len(open_paths) - 1
 }
 
-fun new_document() (( -- )) {
+fun new_document_now(win = cogito.Window) (( -- )) {
     current_path = ""
     dirty = false
     markdown_text = SAMPLE_MD
@@ -450,17 +464,19 @@ fun new_document() (( -- )) {
     editor.set_text(markdown_text)
     suspend_change = false
 
-    add_open_file("")
+    active_open_index = add_open_file("")
+    refresh_open_files_ui(win)
     refresh_title()
     refresh_preview_outline_stats()
     set_status("New Document")
+    save_session_state()
 }
 
-fun open_path(path = string) (( -- )) {
+fun open_path_now(path = string, win = cogito.Window) (( bool )) {
     let raw = stdr.read_text_file(path)
     if is_null(raw) {
         set_status("Open failed")
-        return
+        return false
     }
 
     suspend_change = true
@@ -471,24 +487,86 @@ fun open_path(path = string) (( -- )) {
     current_path = path
     dirty = false
 
-    add_open_file(path)
+    active_open_index = add_open_file(path)
+    refresh_open_files_ui(win)
     refresh_title()
     refresh_preview_outline_stats()
 
     let base = basename(path)
-    set_status("Opened <base>")
+    set_status("Opened $$base$$")
+    save_session_state()
+    return true
 }
 
-fun open_dialog() (( -- )) {
+fun confirm_discard_changes(win = cogito.Window, action_name = string, on_continue = any, on_cancel = any) (( -- )) {
+    if !dirty || !confirm_on_switch {
+        on_continue(null)
+        return
+    }
+
+    let dlg = cogito.dialog("Unsaved Changes")
+    let box = cogito.vstack()
+    .set_gap(10)
+    .set_padding(12, 12, 12, 12)
+    .set_hexpand(true)
+
+    box.add(cogito.label("You have unsaved changes in this document.").set_wrap(true))
+    box.add(cogito.label("Discard changes and $$action_name$$?").set_wrap(true).set_class("caption"))
+
+    let actions = cogito.hstack().set_gap(8)
+    actions.add(cogito.button("Cancel").set_class("text").on_click((b = cogito.Button) => {
+        dlg.close()
+        on_cancel(null)
+    }))
+    actions.add(cogito.button("Discard Changes").on_click((b = cogito.Button) => {
+        dlg.close()
+        on_continue(null)
+    }))
+
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+}
+
+fun close_current_document(win = cogito.Window) (( -- )) {
+    confirm_discard_changes(win, "close this document", (x = any) => {
+        close_current_document_now(win)
+    }, (x = any) => {
+        sync_file_selection()
+        set_status("Kept current document")
+    })
+}
+
+fun new_document(win = cogito.Window) (( -- )) {
+    confirm_discard_changes(win, "create a new document", (x = any) => {
+        new_document_now(win)
+    }, (x = any) => {
+        set_status("Kept current document")
+    })
+}
+
+fun open_dialog(win = cogito.Window) (( -- )) {
     let picked = stdr.open_file_dialog("Open Markdown File", "md")
     if is_null(picked) {
         set_status("Open canceled")
         return
     }
-    open_path(str(picked))
+
+    let path = str(picked)
+    if current_path == path {
+        set_status("Already open")
+        return
+    }
+
+    confirm_discard_changes(win, "open another file", (x = any) => {
+        open_path_now(path, win)
+    }, (x = any) => {
+        sync_file_selection()
+        set_status("Kept current document")
+    })
 }
 
-fun save_as() (( bool )) {
+fun save_as(win = cogito.Window) (( bool )) {
     let picked = stdr.save_file_dialog("Save As…", default_name(), "md")
     if is_null(picked) {
         set_status("Save canceled")
@@ -504,17 +582,19 @@ fun save_as() (( bool )) {
 
     current_path = path
     dirty = false
-    add_open_file(path)
+    active_open_index = add_open_file(path)
+    refresh_open_files_ui(win)
     refresh_title()
 
     let base = basename(path)
-    set_status("Saved <base>")
+    set_status("Saved $$base$$")
+    save_session_state()
     return true
 }
 
-fun save_current() (( -- )) {
+fun save_current(win = cogito.Window) (( -- )) {
     if len(current_path) == 0 {
-        save_as()
+        save_as(win)
         return
     }
 
@@ -527,14 +607,15 @@ fun save_current() (( -- )) {
     dirty = false
     refresh_title()
     let base = basename(current_path)
-    set_status("Saved <base>")
+    set_status("Saved $$base$$")
+    save_session_state()
 }
 
 fun export_html() (( -- )) {
     let fallback = if len(current_path) > 0 { basename(current_path) } else { "document.md" }
     let stem = if ends_with_md(fallback) { slice_between(fallback, 0, len(fallback) - 3) } else { fallback }
 
-    let picked = stdr.save_file_dialog("Export HTML…", "<stem>.html", "html")
+    let picked = stdr.save_file_dialog("Export HTML…", "$$stem$$.html", "html")
     if is_null(picked) {
         set_status("Export canceled")
         return
@@ -564,7 +645,7 @@ fun search_next() (( -- )) {
 
     search_cursor = i + len(q)
     let p = i + 1
-    set_status("Search next: match at <p>")
+    set_status("Search next: match at $$p$$")
 }
 
 fun search_previous() (( -- )) {
@@ -607,7 +688,7 @@ fun search_previous() (( -- )) {
 
     search_cursor = last
     let p = last + 1
-    set_status("Search previous: match at <p>")
+    set_status("Search previous: match at $$p$$")
 }
 
 fun replace_next() (( -- )) {
@@ -636,6 +717,7 @@ fun replace_next() (( -- )) {
     refresh_title()
     refresh_preview_outline_stats()
     set_status("Replaced one match")
+    save_session_state()
 }
 
 fun replace_all() (( -- )) {
@@ -672,7 +754,37 @@ fun replace_all() (( -- )) {
     dirty = true
     refresh_title()
     refresh_preview_outline_stats()
-    set_status("Replaced <count> matches")
+    set_status("Replaced $$count$$ matches")
+    save_session_state()
+}
+
+fun set_editor_markdown(next_text = string, status = string) (( -- )) {
+    markdown_text = next_text
+
+    suspend_change = true
+    editor.set_text(markdown_text)
+    suspend_change = false
+
+    dirty = true
+    refresh_title()
+    refresh_preview_outline_stats()
+    set_status(status)
+    save_session_state()
+}
+
+fun insert_markdown_snippet(snippet = string, status = string) (( -- )) {
+    let sep = if len(markdown_text) > 0 { "\n\n" } else { "" }
+    set_editor_markdown("$$markdown_text$$$$sep$$$$snippet$$", status)
+}
+
+fun insert_heading(level = num) (( -- )) {
+    if level <= 1 {
+        insert_markdown_snippet("# Heading", "Inserted H1 heading")
+    } elif level == 2 {
+        insert_markdown_snippet("## Heading", "Inserted H2 heading")
+    } else {
+        insert_markdown_snippet("### Heading", "Inserted H3 heading")
+    }
 }
 
 fun toggle_focus_mode() (( -- )) {
@@ -683,6 +795,7 @@ fun toggle_focus_mode() (( -- )) {
     } else {
         set_status("Exit focus mode")
     }
+    save_session_state()
 }
 
 fun set_preview_mode(mode = string) (( -- )) {
@@ -695,89 +808,193 @@ fun set_preview_mode(mode = string) (( -- )) {
     } else {
         set_status("Half-Width")
     }
+    save_session_state()
 }
 
 fun show_preferences(win = cogito.Window) (( -- )) {
     let dlg = cogito.dialog("Preferences")
 
-    let box = cogito.vstack()
-    .set_gap(8)
+    let settings = cogito.settings_window("Quilter Preferences")
     .set_padding(12, 12, 12, 12)
     .set_hexpand(true)
 
-    box.add(cogito.label("Preferences").set_class("heading"))
+    let page = cogito.settings_page("Writing Workspace")
+    .set_gap(10)
+    .set_hexpand(true)
 
-    let sw_sidebar = cogito.switch("Show Sidebar")
+    let interface_list = cogito.settings_list("Interface")
+
+    let row_sidebar = cogito.settings_row("Show Sidebar")
+    let sw_sidebar = cogito.switch("")
     .set_checked(show_sidebar)
     sw_sidebar.on_change((sw = cogito.Switch) => {
         show_sidebar = sw.checked()
         apply_visibility_states()
+        save_session_state()
     })
-    box.add(sw_sidebar)
+    row_sidebar.add(sw_sidebar)
+    interface_list.add(row_sidebar)
 
-    let sw_search = cogito.switch("Show Searchbar")
+    let row_search = cogito.settings_row("Show Searchbar")
+    let sw_search = cogito.switch("")
     .set_checked(show_searchbar)
     sw_search.on_change((sw = cogito.Switch) => {
         show_searchbar = sw.checked()
         apply_visibility_states()
+        save_session_state()
     })
-    box.add(sw_search)
+    row_search.add(sw_search)
+    interface_list.add(row_search)
 
-    let sw_status = cogito.switch("Show Statusbar")
+    let row_status = cogito.settings_row("Show Statusbar")
+    let sw_status = cogito.switch("")
     .set_checked(show_statusbar)
     sw_status.on_change((sw = cogito.Switch) => {
         show_statusbar = sw.checked()
         apply_visibility_states()
+        save_session_state()
     })
-    box.add(sw_status)
+    row_status.add(sw_status)
+    interface_list.add(row_status)
 
-    let sw_focus = cogito.switch("Focus Mode")
+    let row_focus = cogito.settings_row("Focus Mode")
+    let sw_focus = cogito.switch("")
     .set_checked(focus_mode)
     sw_focus.on_change((sw = cogito.Switch) => {
         focus_mode = sw.checked()
         apply_visibility_states()
+        save_session_state()
     })
-    box.add(sw_focus)
+    row_focus.add(sw_focus)
+    interface_list.add(row_focus)
 
-    dlg.add(box)
+    let behavior_list = cogito.settings_list("Behavior")
+
+    let row_autosave = cogito.settings_row("Autosave Session")
+    let sw_autosave = cogito.switch("")
+    .set_checked(autosave_session)
+    sw_autosave.on_change((sw = cogito.Switch) => {
+        autosave_session = sw.checked()
+        save_session_state()
+    })
+    row_autosave.add(sw_autosave)
+    behavior_list.add(row_autosave)
+
+    let row_confirm = cogito.settings_row("Confirm Before Switching")
+    let sw_confirm = cogito.switch("")
+    .set_checked(confirm_on_switch)
+    sw_confirm.on_change((sw = cogito.Switch) => {
+        confirm_on_switch = sw.checked()
+        save_session_state()
+    })
+    row_confirm.add(sw_confirm)
+    behavior_list.add(row_confirm)
+
+    let row_links = cogito.settings_row("Open Preview Links Externally")
+    let sw_links = cogito.switch("")
+    .set_checked(open_links_external)
+    sw_links.on_change((sw = cogito.Switch) => {
+        open_links_external = sw.checked()
+        preview.set_open_external_on_click(open_links_external)
+        save_session_state()
+    })
+    row_links.add(sw_links)
+    behavior_list.add(row_links)
+
+    let row_mode = cogito.settings_row("Default Preview Mode")
+    let mode_dd = cogito.dropdown()
+    .set_items(["Half-Width", "Full-Width", "Edit"])
+    .set_selected(if preview_type == "full" { 1 } elif preview_type == "edit" { 2 } else { 0 })
+    mode_dd.on_change((d = cogito.Dropdown) => {
+        let idx = d.selected()
+        if idx == 1 {
+            set_preview_mode("full")
+        } elif idx == 2 {
+            set_preview_mode("edit")
+        } else {
+            set_preview_mode("half")
+        }
+    })
+    row_mode.add(mode_dd)
+    behavior_list.add(row_mode)
+
+    let docs_list = cogito.settings_list("Documents")
+    let docs_scroller = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(docs_list)
+
+    let row_close = cogito.settings_row("Close Current Document")
+    row_close.add(cogito.button("Close").set_class("text").on_click((b = cogito.Button) => {
+        close_current_document(win)
+    }))
+    docs_list.add(row_close)
+
+    let row_move_up = cogito.settings_row("Move Current Document Up")
+    row_move_up.add(cogito.button("Move Up").set_class("text").on_click((b = cogito.Button) => {
+        move_current_document(-1, win)
+    }))
+    docs_list.add(row_move_up)
+
+    let row_move_down = cogito.settings_row("Move Current Document Down")
+    row_move_down.add(cogito.button("Move Down").set_class("text").on_click((b = cogito.Button) => {
+        move_current_document(1, win)
+    }))
+    docs_list.add(row_move_down)
+
+    page.add(interface_list)
+    page.add(behavior_list)
+    page.add(docs_scroller)
+    settings.add(page)
+
+    dlg.add(settings)
     win.set_dialog(dlg)
 }
 
 fun show_about(win = cogito.Window) (( -- )) {
-    let dlg = cogito.dialog("")
-    let about = cogito.about_window("Quilter", "io.github.lainsce.Quilter")
-    .set_icon("sf:doc.text")
-    .set_website("https://github.com/lainsce/quilter")
-    .set_issue_url("https://github.com/lainsce/quilter/issues")
-    .set_description("Focus on your writing.")
-    dlg.add(about)
-    win.set_dialog(dlg)
+    quilter_ui.show_about(win)
 }
 
 fun show_cheatsheet(win = cogito.Window) (( -- )) {
-    let dlg = cogito.dialog("Markdown Cheatsheet")
-    let tips = cogito.tip_view("**Bold text**\n*Italicized text*\n`Code line`\n- [ ] Empty\n- [x] Checked\n\n# Heading\n## Subheading\n### Section\n\n[Link](https://example.com)\n/Folder/Document.md :file\n/Folder/Image.png :image")
-    .set_title("Markdown Cheatsheet")
-    .set_padding(12, 12, 12, 12)
-    dlg.add(tips)
-    win.set_dialog(dlg)
+    quilter_ui.show_cheatsheet(win)
 }
 
 fun build_window(win = cogito.Window) (( -- )) {
     bar.set_hexpand(true)
+    bar.set_title_widget(title_row)
+
+    let more_btn = bar.add_trailing_button("sf:gearshape", (b = cogito.Button) => {})
+    more_btn.add_menu("Markdown Cheatsheet", (b = any) => {
+        show_cheatsheet(win)
+    })
+    more_btn.add_menu("Preferences", (b = any) => {
+        show_preferences(win)
+    })
+    more_btn.add_menu("About Quilter", (b = any) => {
+        show_about(win)
+    })
 
     let doc_btn = bar.add_trailing_button("sf:doc", (b = cogito.Button) => {})
     doc_btn.add_menu("New", (b = any) => {
-        new_document()
+        new_document(win)
     })
     doc_btn.add_menu("Open…", (b = any) => {
-        open_dialog()
+        open_dialog(win)
     })
     doc_btn.add_menu("Save", (b = any) => {
-        save_current()
+        save_current(win)
     })
     doc_btn.add_menu("Save As…", (b = any) => {
-        save_as()
+        save_as(win)
+    })
+    doc_btn.add_menu("Close Current", (b = any) => {
+        close_current_document(win)
+    })
+    doc_btn.add_menu("Move Current Up", (b = any) => {
+        move_current_document(-1, win)
+    })
+    doc_btn.add_menu("Move Current Down", (b = any) => {
+        move_current_document(1, win)
     })
     doc_btn.add_menu("Export HTML…", (b = any) => {
         export_html()
@@ -790,10 +1007,12 @@ fun build_window(win = cogito.Window) (( -- )) {
     view_btn.add_menu("Show/Hide Sidebar", (b = any) => {
         show_sidebar = !show_sidebar
         apply_visibility_states()
+        save_session_state()
     })
     view_btn.add_menu("Find and Replace…", (b = any) => {
         show_searchbar = true
         apply_visibility_states()
+        save_session_state()
     })
     view_btn.add_menu("Focus Mode", (b = any) => {
         toggle_focus_mode()
@@ -808,23 +1027,12 @@ fun build_window(win = cogito.Window) (( -- )) {
         set_preview_mode("edit")
     })
 
-    let more_btn = bar.add_trailing_button("sf:ellipsis", (b = cogito.Button) => {})
-    more_btn.add_menu("Markdown Cheatsheet", (b = any) => {
-        show_cheatsheet(win)
-    })
-    more_btn.add_menu("Preferences", (b = any) => {
-        show_preferences(win)
-    })
-    more_btn.add_menu("About Quilter", (b = any) => {
-        show_about(win)
-    })
-
     win.add(bar)
 
     let sidebar = cogito.vstack()
     .set_hexpand(true)
     .set_vexpand(true)
-    .set_padding(12, 12, 0, 0)
+    .set_padding(0, 0, 0, 0)
     .set_gap(8)
 
     let side_tabs = cogito.tabs()
@@ -834,16 +1042,33 @@ fun build_window(win = cogito.Window) (( -- )) {
     .set_hexpand(true)
     sidebar.add(side_tabs)
 
+    files_hint
+    .set_class("caption")
+    .set_hexpand(true)
+    .set_padding(0, 4, 0, 4)
+    sidebar.add(files_hint)
+
     files_list
     .set_hexpand(true)
     .set_vexpand(true)
     .set_padding(8, 8, 8, 8)
 
     files_list.on_select((idx) => {
-        if idx >= 0 && idx < len(open_paths) {
+        if !suspend_file_select && idx >= 0 && idx < len(open_paths) {
             let p = open_paths[idx] ?? ""
-            if len(p) > 0 {
-                open_path(p)
+            if idx != active_open_index {
+                confirm_discard_changes(win, "switch documents", (x = any) => {
+                    if len(p) > 0 {
+                        if !open_path_now(p, win) {
+                            sync_file_selection()
+                        }
+                    } else {
+                        new_document_now(win)
+                    }
+                }, (x = any) => {
+                    sync_file_selection()
+                    set_status("Kept current document")
+                })
             }
         }
     })
@@ -868,10 +1093,10 @@ fun build_window(win = cogito.Window) (( -- )) {
     side_tabs.bind(side_views)
     sidebar.add(side_views)
 
-    let main = cogito.vstack()
+    main_pane
     .set_hexpand(true)
     .set_vexpand(true)
-    .set_padding(12, 0, 0, 12)
+    .set_padding(0, 16, 0, 16)
     .set_gap(8)
 
     search_row
@@ -903,20 +1128,21 @@ fun build_window(win = cogito.Window) (( -- )) {
     search_row.add(cogito.button("Close").set_class("text").on_click((b = cogito.Button) => {
         show_searchbar = false
         apply_visibility_states()
+        save_session_state()
     }))
 
     search_state
     .set_class("caption")
-    .set_padding(8, 0, 0, 0)
+    .set_padding(0, 0, 0, 0)
     search_row.add(search_state)
 
-    search_host
+    search_revealer
     .set_hexpand(true)
-    .add("hidden", (vs = cogito.ViewSwitcher) => cogito.label(""))
-    .add("shown", (vs = cogito.ViewSwitcher) => search_row)
-    .set_active("hidden")
+    .set_padding(0, 0, 0, 0)
+    .add(search_row)
+    .set_show_children(false)
 
-    main.add(search_host)
+    main_pane.add(search_revealer)
 
     editor_preview
     .set_hexpand(true)
@@ -934,6 +1160,64 @@ fun build_window(win = cogito.Window) (( -- )) {
 
     edit_scroller.add(editor)
 
+    let format_toolbar = cogito.toolbar()
+    .set_vibrant(true)
+    .set_class("floating")
+    .set_vertical(false)
+    .set_hexpand(true)
+    .set_vexpand(false)
+
+    format_toolbar.add(cogito.button("B").set_class("text").on_click((b = cogito.Button) => {
+        insert_markdown_snippet("**bold text**", "Inserted bold markup")
+    }))
+
+    format_toolbar.add(cogito.button("I").set_class("text").on_click((b = cogito.Button) => {
+        insert_markdown_snippet("*italic text*", "Inserted italic markup")
+    }))
+
+    format_toolbar.add(cogito.button("H1").set_class("text").on_click((b = cogito.Button) => {
+        insert_heading(1)
+    }))
+
+    format_toolbar.add(cogito.button("H2").set_class("text").on_click((b = cogito.Button) => {
+        insert_heading(2)
+    }))
+
+    format_toolbar.add(cogito.button("H3").set_class("text").on_click((b = cogito.Button) => {
+        insert_heading(3)
+    }))
+
+    format_toolbar.add(cogito.button("Link").set_class("text").on_click((b = cogito.Button) => {
+        insert_markdown_snippet("[label](https://example.com)", "Inserted link markup")
+    }))
+
+    format_toolbar.add(cogito.button("Code").set_class("text").on_click((b = cogito.Button) => {
+        insert_markdown_snippet("`inline code`", "Inserted code markup")
+    }))
+
+    format_toolbar.add(cogito.button("Quote").set_class("text").on_click((b = cogito.Button) => {
+        insert_markdown_snippet("> quote", "Inserted block quote")
+    }))
+
+    format_toolbar.add(cogito.button("List").set_class("text").on_click((b = cogito.Button) => {
+        insert_markdown_snippet("- item", "Inserted list item")
+    }))
+
+    let toolbar_row = cogito.hstack()
+    .set_hexpand(true)
+    .set_vexpand(false)
+    .set_padding(10, 10, 0, 10)
+    .halign(0)
+    .valign(0)
+    .add(format_toolbar)
+
+    let editor_pane = cogito.vstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_gap(8)
+    .add(edit_scroller)
+    .add(toolbar_row)
+
     let preview_scroller = cogito.scroller()
     .set_hexpand(true)
     .set_vexpand(true)
@@ -941,16 +1225,17 @@ fun build_window(win = cogito.Window) (( -- )) {
     preview
     .set_hexpand(true)
     .set_vexpand(true)
+    .set_open_external_on_click(open_links_external)
     preview_scroller.add(preview)
 
-    editor_preview.add(edit_scroller)
+    editor_preview.add(editor_pane)
     editor_preview.add(preview_scroller)
-    main.add(editor_preview)
+    main_pane.add(editor_preview)
 
     status_row
     .set_hexpand(true)
     .set_gap(10)
-    .set_padding(6, 6, 6, 6)
+    .set_padding(0, 0, 0, 0)
 
     track_type.set_hexpand(false)
     status_row.add(track_type)
@@ -965,13 +1250,13 @@ fun build_window(win = cogito.Window) (( -- )) {
     .set_hexpand(true)
     status_row.add(status_hint)
 
-    status_host
+    status_revealer
     .set_hexpand(true)
-    .add("hidden", (vs = cogito.ViewSwitcher) => cogito.label(""))
-    .add("shown", (vs = cogito.ViewSwitcher) => status_row)
-    .set_active("shown")
+    .set_padding(0, 0, 0, 0)
+    .add(status_row)
+    .set_show_children(true)
 
-    main.add(status_host)
+    main_pane.add(status_revealer)
 
     root_dual
     .set_hexpand(true)
@@ -980,7 +1265,7 @@ fun build_window(win = cogito.Window) (( -- )) {
     .set_padding(0, 0, 12, 12)
 
     root_dual.add(sidebar)
-    root_dual.add(main)
+    root_dual.add(main_pane)
     win.add(root_dual)
 
     track_type.on_change((d = cogito.Dropdown) => {
@@ -998,10 +1283,18 @@ fun build_window(win = cogito.Window) (( -- )) {
             dirty = true
             refresh_title()
             refresh_preview_outline_stats()
+            if autosave_session {
+                save_session_state()
+            }
         }
     })
 
-    add_open_file("")
+    if len(open_paths) == 0 {
+        open_paths[0] = ""
+    }
+    sync_active_open_index()
+    populate_open_files_ui(win)
+
     apply_preview_mode()
     apply_visibility_states()
     refresh_title()
@@ -1010,6 +1303,8 @@ fun build_window(win = cogito.Window) (( -- )) {
 }
 
 entry() (( -- )) {
+    load_session_state()
+
     let app = cogito.app()
     .set_appid("io.github.lainsce.Quilter")
     .set_app_name("Quilter")

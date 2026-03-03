@@ -5,7 +5,7 @@ bring cogito
 bring json
 
 macro with_ext(ext = string) (( string )) {
-    "<this><ext>"
+    "$$this$$$$ext$$"
 }
 
 def editor = cogito.textview("")
@@ -22,9 +22,9 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 fun save_session_state() (( -- )) {
     let path_esc = json.escape(current_path)
     let text_esc = json.escape(editor.text())
-    let ?payload = "{\"path\":\"<path_esc>\",\"dirty\":"
-    payload = if is_dirty { "<payload> true" } else { "<payload> false" }
-    payload = "<payload>,\"text\":\"<text_esc>\"}"
+    let ?payload = "{\"path\":\"$$path_esc$$\",\"dirty\":"
+    payload = if is_dirty { "$$payload$$ true" } else { "$$payload$$ false" }
+    payload = "$$payload$$,\"text\":\"$$text_esc$$\"}"
     stdr.write_text_file(STATE_PATH, payload)
 }
 
@@ -78,7 +78,7 @@ fun basename(path = string) (( string )) {
 
     let ?name = ""
     for (let ?i = last_sep + 1; i < n; i += 1) {
-        name = "<name><path[i]>"
+        name = "$$name$$$$path[i]$$"
     }
     return name
 }
@@ -90,7 +90,7 @@ fun set_status(text = string) (( -- )) {
 
 fun refresh_header() (( -- )) {
     let name = if current_path != "" { basename(current_path) } else { "Untitled.txt" }
-    title_text = if is_dirty { "<name> *" } else { name }
+    title_text = if is_dirty { "$$name$$ *" } else { name }
     bar.set_title(title_text)
 }
 
@@ -131,7 +131,7 @@ fun show_open_dialog() (( -- )) {
         is_dirty = false
         refresh_header()
         let base = basename(path)
-        set_status("Opened <base>")
+        set_status("Opened $$base$$")
         save_session_state()
     }
 }
@@ -156,7 +156,7 @@ fun show_save_dialog() (( -- )) {
         is_dirty = false
         refresh_header()
         let base = basename(path)
-        set_status("Saved <base>")
+        set_status("Saved $$base$$")
         save_session_state()
     }
 }

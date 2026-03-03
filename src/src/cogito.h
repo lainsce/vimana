@@ -286,6 +286,8 @@ void cogito_welcome_screen_set_action(cogito_node *ws, const char *text,
 void cogito_welcome_screen_set_has_seen(cogito_node *ws, const char *has_seen);
 cogito_node *cogito_view_dual_new(void);
 void cogito_view_dual_set_ratio(cogito_node *vd, double ratio);
+void cogito_view_dual_set_show_handle(cogito_node *vd, bool show_handle);
+bool cogito_view_dual_get_show_handle(cogito_node *vd);
 cogito_node *cogito_view_chooser_new(void);
 void cogito_view_chooser_set_items(cogito_node *vc, const char **items,
                                    size_t count);
@@ -585,6 +587,8 @@ void cogito_colorpicker_set_hex(cogito_node *colorpicker, const char *hex);
 const char *cogito_colorpicker_get_hex(cogito_node *colorpicker);
 
 void cogito_content_list_set_selected(cogito_node *list, int idx);
+void cogito_content_list_remove_at(cogito_node *list, int idx);
+void cogito_content_list_clear(cogito_node *list);
 void cogito_content_list_on_select(cogito_node *list, cogito_index_fn fn, void *user);
 void cogito_content_list_on_activate(cogito_node *list, cogito_index_fn fn, void *user);
 void cogito_grid_on_select(cogito_node *grid, cogito_index_fn fn, void *user);

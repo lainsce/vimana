@@ -3,50 +3,48 @@ case COGITO_POPOVER: {
       CogitoNode* win = cogito_node_window(n);
       if (win && win->popover_anchor) {
         CogitoNode* anchor = win->popover_anchor;
-        int win_x = win->x + 8;  // Minimum padding from window edge
-        int win_y = win->y + 8;
-        int win_w = win->w - 16;   // Account for padding
-        int win_h = win->h - 16;
+        const int edge_inset = 16;
+        const int anchor_gap = 8;
+
+        int min_x = win->x + edge_inset;
+        int min_y = win->y + edge_inset;
+        int max_x = win->x + win->w - edge_inset;
+        int max_y = win->y + win->h - edge_inset;
+
+        // Tiny-window fallback: keep placement valid even when insets overlap.
+        if (max_x < min_x) {
+          min_x = win->x;
+          max_x = win->x + win->w;
+        }
+        if (max_y < min_y) {
+          min_y = win->y;
+          max_y = win->y + win->h;
+        }
         
         // Default: position popover below anchor
         int pop_x = anchor->x;
-        int pop_y = anchor->y + anchor->h + 8;
-        
-        // Check if popover fits to the right of anchor
-        bool fits_right = (pop_x + n->w <= win_x + win_w);
-        
-        // Check if popover fits to the left of anchor
-        bool fits_left = (anchor->x - n->w >= win_x);
-        
-        // Check if popover fits below anchor
-        bool fits_below = (pop_y + n->h <= win_y + win_h);
-        
-        // Check if popover fits above anchor
-        bool fits_above = (anchor->y - n->h - 8 >= win_y);
-        
-        // Determine best horizontal position
-        if (fits_right) {
-          // Default position - right side, no change needed
-        } else if (fits_left) {
-          // Move to left side of anchor
-          pop_x = anchor->x - n->w;
-        } else {
-          // Can't fit on either side, clamp to window
-          pop_x = win_x + win_w - n->w;
-          if (pop_x < win_x) pop_x = win_x;
+        int pop_y = anchor->y + anchor->h + anchor_gap;
+
+        // Horizontal placement:
+        // 1) Prefer anchor-left alignment.
+        // 2) If overflowing right, align popover right edge to anchor right edge.
+        // 3) Clamp to inset bounds.
+        if (pop_x + n->w > max_x) {
+          pop_x = anchor->x + anchor->w - n->w;
         }
-        
-        // Determine best vertical position
-        if (fits_below) {
-          // Default position - below anchor, no change needed
-        } else if (fits_above) {
-          // Position above anchor
-          pop_y = anchor->y - n->h - 8;
-        } else if (pop_y + n->h > win_y + win_h) {
-          // Can't fit below, clamp to window bottom
-          pop_y = win_y + win_h - n->h;
-          if (pop_y < win_y) pop_y = win_y;
+        if (pop_x < min_x) pop_x = min_x;
+        if (pop_x + n->w > max_x) pop_x = max_x - n->w;
+
+        // Vertical placement: prefer below anchor, then above, then clamp.
+        if (pop_y + n->h > max_y) {
+          int above = anchor->y - n->h - anchor_gap;
+          if (above >= min_y) {
+            pop_y = above;
+          } else {
+            pop_y = max_y - n->h;
+          }
         }
+        if (pop_y < min_y) pop_y = min_y;
 
         if (n->x != pop_x || n->y != pop_y) {
           n->x = pop_x;

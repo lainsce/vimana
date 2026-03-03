@@ -1286,6 +1286,14 @@ static void __cogito_content_list_set_selected(YisVal listv, YisVal idxv) {
   cogito_node* n = cogito_node_from_val(listv);
   cogito_content_list_set_selected(n, (int)yis_as_int(idxv));
 }
+static void __cogito_content_list_remove_at(YisVal listv, YisVal idxv) {
+  cogito_node* n = cogito_node_from_val(listv);
+  cogito_content_list_remove_at(n, (int)yis_as_int(idxv));
+}
+static void __cogito_content_list_clear(YisVal listv) {
+  cogito_node* n = cogito_node_from_val(listv);
+  cogito_content_list_clear(n);
+}
 // --- EmptyPage ---
 static YisVal __cogito_empty_page(YisVal titlev) {
   YisStr* tmp = NULL;
@@ -1421,6 +1429,14 @@ static void __cogito_view_dual_set_ratio(YisVal vdv, YisVal ratiov) {
   cogito_node* n = cogito_node_from_val(vdv);
   double ratio = yis_as_float(ratiov);
   cogito_view_dual_set_ratio(n, ratio);
+}
+static void __cogito_view_dual_set_show_handle(YisVal vdv, YisVal showv) {
+  cogito_node* n = cogito_node_from_val(vdv);
+  cogito_view_dual_set_show_handle(n, yis_as_bool(showv));
+}
+static YisVal __cogito_view_dual_get_show_handle(YisVal vdv) {
+  cogito_node* n = cogito_node_from_val(vdv);
+  return YV_BOOL(cogito_view_dual_get_show_handle(n));
 }
 // --- ViewChooser ---
 static YisVal __cogito_view_chooser(void) {
@@ -3664,6 +3680,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_shape_get_vertex_y __cogito_shape_get_vertex_y
 #define cogito_content_list_new __cogito_content_list
 #define cogito_content_list_set_selected __cogito_content_list_set_selected
+#define cogito_content_list_remove_at __cogito_content_list_remove_at
+#define cogito_content_list_clear __cogito_content_list_clear
 #define cogito_empty_page_new __cogito_empty_page
 #define cogito_empty_page_set_description __cogito_empty_page_set_description
 #define cogito_empty_page_set_icon __cogito_empty_page_set_icon
@@ -3681,6 +3699,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_welcome_screen_set_has_seen __cogito_welcome_screen_set_has_seen
 #define cogito_view_dual_new __cogito_view_dual
 #define cogito_view_dual_set_ratio __cogito_view_dual_set_ratio
+#define cogito_view_dual_set_show_handle __cogito_view_dual_set_show_handle
+#define cogito_view_dual_get_show_handle __cogito_view_dual_get_show_handle
 #define cogito_view_chooser_new __cogito_view_chooser
 #define cogito_view_chooser_set_items __cogito_view_chooser_set_items
 #define cogito_view_chooser_bind __cogito_view_chooser_bind

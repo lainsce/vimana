@@ -2,6 +2,10 @@ case COGITO_BUTTON: {
       bool hover = false;
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
+  // Keep menu trigger buttons visually engaged while their menu is open.
+  if (cogito_menu.open && cogito_menu.owner == n) {
+    active = true;
+  }
       
       // Check if this button is in a ButtonGroup
       bool in_buttongroup = n->parent && n->parent->kind == COGITO_BUTTON_GROUP;

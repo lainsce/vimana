@@ -96,7 +96,7 @@ fun build_button_page() (( cogito.VStack )) {
     size_dd.on_change((d = cogito.Dropdown) => {
         let ?sel = d.selected()
         sized_btn.set_size(sel)
-        status.set_text("Button size changed to: <sel>")
+        status.set_text("Button size changed to: $$sel$$")
     })
 
     vstack.add(size_dd_row)
@@ -203,7 +203,7 @@ fun build_iconbtn_page() (( cogito.VStack )) {
     .set_toggle(true)
     .on_click((b = cogito.IconButton) => {
         let state = if b.checked() { "on" } else { "off" }
-        status.set_text("Toggle: <state>")
+        status.set_text("Toggle: $$state$$")
     })
     btn_row.add(toggle_btn)
 
@@ -253,7 +253,7 @@ fun build_textfield_page() (( cogito.VStack )) {
     .set_hint("Supporting text")
     tf.on_change((field = cogito.TextField) => {
         let txt = field.text()
-        status.set_text("Current value: <txt>")
+        status.set_text("Current value: $$txt$$")
     })
     vstack.add(tf)
 
@@ -269,8 +269,8 @@ fun build_textfield_page() (( cogito.VStack )) {
         let ?n = len(field.text())
         let ?shown = if n > 20 { 20 } else { n }
         let txt = field.text()
-        field.set_hint("<shown> / 20")
-        status.set_text("Current value: <txt>")
+        field.set_hint("$$shown$$ / 20")
+        status.set_text("Current value: $$txt$$")
     })
     vstack.add(counter)
 
@@ -307,7 +307,7 @@ fun build_searchfield_page() (( cogito.VStack )) {
     .set_hexpand(true)
     sf.on_change((field = cogito.SearchField) => {
         let txt = field.text()
-        status.set_text("Query: <txt>")
+        status.set_text("Query: $$txt$$")
     })
     vstack.add(sf)
 
@@ -343,14 +343,14 @@ fun build_checkbox_page() (( cogito.VStack )) {
     let cb1 = cogito.checkbox("Enable notifications", null)
     cb1.on_change((c = cogito.Checkbox) => {
         let ?chk = c.checked()
-        status.set_text("Enable notifications: <chk>")
+        status.set_text("Enable notifications: $$chk$$")
     })
     vstack.add(cb1)
 
     let cb2 = cogito.checkbox("Sync in background", null)
     cb2.on_change((c = cogito.Checkbox) => {
         let ?chk = c.checked()
-        status.set_text("Sync in background: <chk>")
+        status.set_text("Sync in background: $$chk$$")
     })
     vstack.add(cb2)
 
@@ -362,11 +362,11 @@ fun build_checkbox_page() (( cogito.VStack )) {
     let cb4 = cogito.checkbox("Light mode", group)
     cb3.on_change((c = cogito.Checkbox) => {
         let ?chk = c.checked()
-        status.set_text("Dark mode: <chk>")
+        status.set_text("Dark mode: $$chk$$")
     })
     cb4.on_change((c = cogito.Checkbox) => {
         let ?chk = c.checked()
-        status.set_text("Light mode: <chk>")
+        status.set_text("Light mode: $$chk$$")
     })
     vstack.add(cb3)
     vstack.add(cb4)
@@ -384,7 +384,7 @@ fun build_switch_page() (( cogito.VStack )) {
     let sw = cogito.switch("Airplane Mode")
     .on_change((s = cogito.Switch) => {
         let ?on = if s.checked() { "on" } else { "off" }
-        status.set_text("Switch is <on>.")
+        status.set_text("Switch is $$on$$.")
     })
     vstack.add(sw)
 
@@ -392,7 +392,7 @@ fun build_switch_page() (( cogito.VStack )) {
     .set_checked(true)
     .on_change((s = cogito.Switch) => {
         let ?on = if s.checked() { "on" } else { "off" }
-        status.set_text("Switch is <on>.")
+        status.set_text("Switch is $$on$$.")
     })
     vstack.add(sw2)
 
@@ -415,7 +415,7 @@ fun build_slider_page() (( cogito.VStack )) {
     .set_hexpand(true)
     sl.on_change((s = cogito.Slider) => {
         let v = s.value()
-        status.set_text("Value: <v>")
+        status.set_text("Value: $$v$$")
     })
     vstack.add(sl)
 
@@ -434,7 +434,7 @@ fun build_slider_page() (( cogito.VStack )) {
     range_slider.on_change((s = cogito.Slider) => {
         let start = s.range_start()
         let end = s.range_end()
-        range_status.set_text("Range: <start> - <end>")
+        range_status.set_text("Range: $$start$$ - $$end$$")
     })
     vstack.add(range_slider)
 
@@ -454,7 +454,7 @@ fun build_slider_page() (( cogito.VStack )) {
     .set_step_dots(true)
     discrete_slider.on_change((s = cogito.Slider) => {
         let v = s.value()
-        discrete_status.set_text("Centered value: <v>")
+        discrete_status.set_text("Centered value: $$v$$")
     })
     vstack.add(discrete_slider)
 
@@ -471,7 +471,7 @@ fun build_stepper_page() (( cogito.VStack )) {
     let step = cogito.stepper(0, 100, 0, 1)
     .on_change((s = cogito.Stepper) => {
         let v = s.value()
-        status.set_text("Value: <v>")
+        status.set_text("Value: $$v$$")
     })
     vstack.add(step)
 
@@ -521,7 +521,7 @@ fun build_timepicker_page() (( cogito.VStack )) {
     .on_change((picker = cogito.TimePicker) => {
         let ?hour = picker.hour()
         let ?minute = picker.minute()
-        status.set_text("Selected: <hour>∶<minute>")
+        status.set_text("Selected: $$hour$$∶$$minute$$")
     })
     vstack.add(tp)
 
@@ -540,7 +540,7 @@ fun build_dropdown_page() (( cogito.VStack )) {
     .set_selected(0)
     dd.on_change((d = cogito.Dropdown) => {
         let ?dds = d.selected()
-        status.set_text("Selected index: <dds>")
+        status.set_text("Selected index: $$dds$$")
     })
     vstack.add(dd)
 
@@ -581,7 +581,7 @@ fun build_progress_page() (( cogito.VStack )) {
     value_slider.on_change((s = cogito.Slider) => {
         let v = s.value()
         let progress = v / 100.0
-        value_label.set_text("Progress Value: <v>%")
+        value_label.set_text("Progress Value: $$v$$%")
     })
 
     -- Indeterminate toggle handler
@@ -589,7 +589,7 @@ fun build_progress_page() (( cogito.VStack )) {
         let is_indeterminate = sw.checked()
         linear.set_indeterminate(is_indeterminate)
         circular.set_indeterminate(is_indeterminate)
-        status.set_text("Indeterminate: <is_indeterminate>")
+        status.set_text("Indeterminate: $$is_indeterminate$$")
     })
 
     return vstack
@@ -608,10 +608,10 @@ fun build_list_page() (( cogito.VStack )) {
     .add(cogito.label("Archive"))
     .add(cogito.label("Trash"))
     .on_select((idx) => {
-        status.set_text("Selected row: <idx>")
+        status.set_text("Selected row: $$idx$$")
     })
     .on_activate((idx = num) => {
-        status.set_text("Activated row: <idx>")
+        status.set_text("Activated row: $$idx$$")
     })
     vstack.add(list)
 
@@ -635,7 +635,7 @@ fun build_grid_page() (( cogito.VStack )) {
     .add(cogito.label("B2"))
     .add(cogito.label("B3"))
     .on_select((idx) => {
-        status.set_text("Selected cell: <idx>")
+        status.set_text("Selected cell: $$idx$$")
     })
     vstack.add(grid)
 
@@ -666,7 +666,7 @@ fun build_tabs_page() (( cogito.VStack )) {
 
     tabs.on_change((idx = any) => {
         let current = tabs.selected()
-        status.set_text("Selected tab index: <current>")
+        status.set_text("Selected tab index: $$current$$")
         let id = if current == 0 { "overview" } elif current == 1 { "details" } elif current == 2 { "history" } else { "misc" }
         tab_views.set_active(id)
     })
@@ -696,7 +696,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     .add(cogito.button("Year"))
     .on_select((idx) => {
         let ?opt = if idx == 0 { "Day" } elif idx == 1 { "Week" } elif idx == 2 { "Month" } else { "Year" }
-        status.set_text("Selected: <opt>")
+        status.set_text("Selected: $$opt$$")
     })
     vstack.add(seg)
 
@@ -719,7 +719,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     .add(cogito.button("XS"))
     .set_size(0)
     .on_select((idx) => {
-        status.set_text("XS size selected, index: <idx>")
+        status.set_text("XS size selected, index: $$idx$$")
     })
     sizes_row.add(xs_bg)
 
@@ -727,7 +727,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     .add(cogito.button("S"))
     .set_size(1)
     .on_select((idx) => {
-        status.set_text("S size selected, index: <idx>")
+        status.set_text("S size selected, index: $$idx$$")
     })
     sizes_row.add(s_bg)
 
@@ -735,7 +735,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     .add(cogito.button("M"))
     .set_size(2)
     .on_select((idx) => {
-        status.set_text("M size selected, index: <idx>")
+        status.set_text("M size selected, index: $$idx$$")
     })
     sizes_row.add(m_bg)
 
@@ -766,7 +766,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     .add(cogito.button("C"))
     .set_shape(0)
     .on_select((idx) => {
-        status.set_text("Round shape selected, index: <idx>")
+        status.set_text("Round shape selected, index: $$idx$$")
     })
     shapes_row.add(round_bg)
 
@@ -780,7 +780,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     .add(cogito.button("C"))
     .set_shape(1)
     .on_select((idx) => {
-        status.set_text("Square shape selected, index: <idx>")
+        status.set_text("Square shape selected, index: $$idx$$")
     })
     shapes_row.add(square_bg)
 
@@ -811,7 +811,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     .add(cogito.button("Three"))
     .set_connected(false)
     .on_select((idx) => {
-        status.set_text("Disconnected mode, index: <idx>")
+        status.set_text("Disconnected mode, index: $$idx$$")
     })
     connected_row.add(disconnected_bg)
 
@@ -825,7 +825,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     .add(cogito.button("Three"))
     .set_connected(true)
     .on_select((idx) => {
-        status.set_text("Connected mode, index: <idx>")
+        status.set_text("Connected mode, index: $$idx$$")
     })
     connected_row.add(connected_bg)
 
@@ -867,7 +867,7 @@ fun build_chip_page() (( cogito.VStack )) {
     selected_cb.on_change((c = cogito.Checkbox) => {
         let ?chk = c.checked()
         interactive_chip.set_selected(chk)
-        status.set_text("Selected: <chk>")
+        status.set_text("Selected: $$chk$$")
     })
     vstack.add(selected_cb)
 
@@ -875,7 +875,7 @@ fun build_chip_page() (( cogito.VStack )) {
     closable_cb.on_change((c = cogito.Checkbox) => {
         let ?chk = c.checked()
         interactive_chip.set_closable(chk)
-        status.set_text("Closable: <chk>")
+        status.set_text("Closable: $$chk$$")
     })
     vstack.add(closable_cb)
 
@@ -883,7 +883,7 @@ fun build_chip_page() (( cogito.VStack )) {
     disabled_cb.on_change((c = cogito.Checkbox) => {
         let ?chk = c.checked()
         interactive_chip.set_disabled(chk)
-        status.set_text("Disabled: <chk>")
+        status.set_text("Disabled: $$chk$$")
     })
     vstack.add(disabled_cb)
 
@@ -1030,7 +1030,7 @@ fun build_carousel_page() (( cogito.VStack )) {
         let ?cur = carousel.active_index()
         let ?next = if cur >= 2 { 0 } else { cur + 1 }
         carousel.set_active_index(next)
-        status.set_text("Active item: <next>")
+        status.set_text("Active item: $$next$$")
     })
     vstack.add(next_btn)
 
@@ -1051,7 +1051,7 @@ fun build_nav_rail_page() (( cogito.VStack )) {
     .set_selected(0)
     .on_change((idx) => {
         let ?item = if idx == 0 { "Home" } elif idx == 1 { "Search" } else { "Profile" }
-        status.set_text("Selected: <item>")
+        status.set_text("Selected: $$item$$")
     })
     vstack.add(rail)
 
@@ -1071,7 +1071,7 @@ fun build_bottom_nav_page() (( cogito.VStack )) {
     .set_selected(0)
     .on_change((idx) => {
         let ?item = if idx == 0 { "Home" } elif idx == 1 { "Search" } else { "Library" }
-        status.set_text("Selected: <item>")
+        status.set_text("Selected: $$item$$")
     })
     vstack.add(nav)
 
@@ -1315,7 +1315,7 @@ fun build_card_page() (( cogito.VStack )) {
         let sel = d.selected()
         let class_name = if sel == 0 { "elevated" } elif sel == 1 { "filled" } else { "outlined" }
         card.set_class(class_name)
-        status.set_text("Card variant: <class_name>")
+        status.set_text("Card variant: $$class_name$$")
     })
 
     return vstack
@@ -1485,19 +1485,19 @@ fun build_drawing_area_page() (( cogito.VStack )) {
         let tool = drawing_tool
         let ?x = a.get_x()
         let ?y = a.get_y()
-        status.set_text("Tool - <tool> | Event - Press | Pointer - ( <x>, <y> )")
+        status.set_text("Tool - $$tool$$ | Event - Press | Pointer - ( $$x$$, $$y$$ )")
     })
     .on_drag((a = cogito.DrawingArea) => {
         let tool = drawing_tool
         let ?x = a.get_x()
         let ?y = a.get_y()
-        status.set_text("Tool - <tool> | Event - Drag | Pointer - ( <x>, <y> )")
+        status.set_text("Tool - $$tool$$ | Event - Drag | Pointer - ( $$x$$, $$y$$ )")
     })
     .on_release((a = cogito.DrawingArea) => {
         let tool = drawing_tool
         let ?x = a.get_x()
         let ?y = a.get_y()
-        status.set_text("Tool - <tool> | Event - Release | Pointer - ( <x>, <y> )")
+        status.set_text("Tool - $$tool$$ | Event - Release | Pointer - ( $$x$$, $$y$$ )")
     })
     area_row.add(area)
 
@@ -1656,7 +1656,7 @@ fun build_shape_gallery_page() (( cogito.VStack )) {
         let progress = session_phase_progress(wrapped)
         let second = session_countdown5(progress)
         let instruction_text = session_phase_label(wrapped)
-        let next_instruction = "<second> - <instruction_text>"
+        let next_instruction = "$$second$$ - $$instruction_text$$"
         if next_instruction != shape_instruction_text {
             shape_instruction_text = next_instruction
             instruction.set_text(next_instruction)
@@ -1776,7 +1776,7 @@ fun build_switchbar_page() (( cogito.VStack )) {
     .set_hexpand(true)
     .on_change((s = cogito.SwitchBar) => {
         let ?on = if s.get_checked() { "enabled" } else { "disabled" }
-        status.set_text("Notifications <on>.")
+        status.set_text("Notifications $$on$$.")
     })
     vstack.add(sb)
 
@@ -2293,7 +2293,7 @@ fun build_bin_page() (( cogito.VStack )) {
     let bin_switch = cogito.switch("Bin switch")
     .on_change((s = cogito.Switch) => {
         let on = if s.checked() { "on" } else { "off" }
-        bin_status.set_text("Bin switch is <on>.")
+        bin_status.set_text("Bin switch is $$on$$.")
     })
 
     let bin_controls = cogito.hstack()

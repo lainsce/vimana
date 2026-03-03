@@ -25,14 +25,14 @@ fun save_state() (( -- )) {
     let source_hex_esc = json.escape(source_hex)
     let selected_image_path_esc = json.escape(selected_image_path)
     let ?payload = "{"
-    payload = "<payload>\"source_hex\":\"<source_hex_esc>\","
-    payload = "<payload>\"selected_image_path\":\"<selected_image_path_esc>\","
-    payload = "<payload>\"scheme_checked\":"
-    payload = if scheme_switch.checked() { "<payload>true," } else { "<payload>false," }
-    payload = "<payload>\"dark_mode\":"
-    payload = if dark_switch.get_checked() { "<payload>true," } else { "<payload>false," }
-    payload = "<payload>\"mode_idx\":<mode_idx>"
-    payload = "<payload>}"
+    payload = "$$payload$$\"source_hex\":\"$$source_hex_esc$$\","
+    payload = "$$payload$$\"selected_image_path\":\"$$selected_image_path_esc$$\","
+    payload = "$$payload$$\"scheme_checked\":"
+    payload = if scheme_switch.checked() { "$$payload$$true," } else { "$$payload$$false," }
+    payload = "$$payload$$\"dark_mode\":"
+    payload = if dark_switch.get_checked() { "$$payload$$true," } else { "$$payload$$false," }
+    payload = "$$payload$$\"mode_idx\":$$mode_idx$$"
+    payload = "$$payload$$}"
     stdr.write_text_file(GAFU_STATE_PATH, payload)
 }
 

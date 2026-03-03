@@ -351,6 +351,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_welcome_screen_set_has_seen cogito_welcome_screen_set_has_seen_yis
 #define cogito_view_dual_new cogito_view_dual_new_yis
 #define cogito_view_dual_set_ratio cogito_view_dual_set_ratio_yis
+#define cogito_view_dual_set_show_handle cogito_view_dual_set_show_handle_yis
+#define cogito_view_dual_get_show_handle cogito_view_dual_get_show_handle_yis
 #define cogito_view_chooser_new cogito_view_chooser_new_yis
 #define cogito_view_chooser_set_items cogito_view_chooser_set_items_yis
 #define cogito_view_chooser_bind cogito_view_chooser_bind_yis
@@ -702,6 +704,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_welcome_screen_set_has_seen
 #undef cogito_view_dual_new
 #undef cogito_view_dual_set_ratio
+#undef cogito_view_dual_set_show_handle
+#undef cogito_view_dual_get_show_handle
 #undef cogito_view_chooser_new
 #undef cogito_view_chooser_set_items
 #undef cogito_view_chooser_bind
@@ -1991,6 +1995,13 @@ cogito_node *cogito_view_dual_new(void) {
 }
 void cogito_view_dual_set_ratio(cogito_node *vd, double ratio) {
   cogito_view_dual_set_ratio_yis(YV_OBJ(vd), YV_FLOAT(ratio));
+}
+void cogito_view_dual_set_show_handle(cogito_node *vd, bool show_handle) {
+  cogito_view_dual_set_show_handle_yis(YV_OBJ(vd), YV_BOOL(show_handle));
+}
+bool cogito_view_dual_get_show_handle(cogito_node *vd) {
+  YisVal v = cogito_view_dual_get_show_handle_yis(YV_OBJ(vd));
+  return yis_as_bool(v);
 }
 cogito_node *cogito_view_chooser_new(void) {
   return cogito_from_val(cogito_view_chooser_new_yis());
@@ -3623,6 +3634,31 @@ void cogito_content_list_set_selected(cogito_node *list, int idx) {
   if (idx < 0) idx = -1;
   if (n->len > 0 && idx >= (int)n->len) idx = (int)n->len - 1;
   n->selected = idx;
+}
+
+void cogito_content_list_remove_at(cogito_node *list, int idx) {
+  if (!list) return;
+  CogitoNode *n = (CogitoNode *)list;
+  if (idx < 0 || idx >= (int)n->len) return;
+
+  CogitoNode *child = n->children[idx];
+  cogito_container_remove_child(n, child);
+
+  if (n->len == 0) {
+    n->selected = -1;
+  } else if (n->selected > idx) {
+    n->selected -= 1;
+  } else if (n->selected >= (int)n->len) {
+    n->selected = (int)n->len - 1;
+  }
+}
+
+void cogito_content_list_clear(cogito_node *list) {
+  if (!list) return;
+  CogitoNode *n = (CogitoNode *)list;
+
+  cogito_clear_children(n);
+  n->selected = -1;
 }
 
 void cogito_content_list_on_select(cogito_node *list, cogito_index_fn fn, void *user) {

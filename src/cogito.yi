@@ -106,6 +106,8 @@ fun __cogito_container_set_valign(node = any, align = num) (( -- )) { }
 fun __cogito_container_set_vexpand(node = any, expand = bool) (( -- )) { }
 fun __cogito_content_list() (( ContentList )) { }
 fun __cogito_content_list_set_selected(list = ContentList, idx = num) (( -- )) { }
+fun __cogito_content_list_remove_at(list = ContentList, idx = num) (( -- )) { }
+fun __cogito_content_list_clear(list = ContentList) (( -- )) { }
 fun __cogito_datepicker_on_change(dp = DatePicker, handler = any) (( -- )) { }
 fun __cogito_datepicker() (( DatePicker )) { }
 fun __cogito_dialog_close(dialog = Dialog) (( -- )) { }
@@ -353,6 +355,8 @@ fun __cogito_view_chooser_bind(vc = ViewChooser, vs = ViewSwitcher) (( -- )) { }
 fun __cogito_view_chooser_set_items(vc = ViewChooser, items = [string]) (( -- )) { }
 fun __cogito_view_chooser() (( ViewChooser )) { }
 fun __cogito_view_dual_set_ratio(vd = ViewDual, ratio = num) (( -- )) { }
+fun __cogito_view_dual_set_show_handle(vd = ViewDual, show_handle = bool) (( -- )) { }
+fun __cogito_view_dual_get_show_handle(vd = ViewDual) (( bool )) { }
 fun __cogito_view_dual() (( ViewDual )) { }
 fun __cogito_view_switcher_add_lazy(vs = ViewSwitcher, id = string, builder = any) (( -- )) { }
 fun __cogito_view_switcher_set_active(view = ViewSwitcher, id = string) (( -- )) { }
@@ -4235,6 +4239,14 @@ pub class ContentList {
         __cogito_content_list_set_selected(this, idx)
         return this
     }
+    pub fun remove_at(this, idx = num) (( ContentList )) {
+        __cogito_content_list_remove_at(this, idx)
+        return this
+    }
+    pub fun clear(this) (( ContentList )) {
+        __cogito_content_list_clear(this)
+        return this
+    }
     pub fun on_select(this, handler = any) (( ContentList )) {
         __cogito_content_list_on_select(this, handler)
         return this
@@ -4530,6 +4542,13 @@ pub class ViewDual {
     pub fun set_ratio(this, ratio = num) (( ViewDual )) {
         __cogito_view_dual_set_ratio(this, ratio)
         return this
+    }
+    pub fun set_show_handle(this, show_handle = bool) (( ViewDual )) {
+        __cogito_view_dual_set_show_handle(this, show_handle)
+        return this
+    }
+    pub fun get_show_handle(this) (( bool )) {
+        return __cogito_view_dual_get_show_handle(this)
     }
     pub fun build(this, builder = any) (( ViewDual )) {
         __cogito_build(this, builder)

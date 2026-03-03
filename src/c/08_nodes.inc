@@ -264,6 +264,7 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
       n->view_dual.anim_from = 0.5f;
       n->view_dual.anim_to = 0.5f;
       n->view_dual.animating = false;
+      n->view_dual.show_handle = true;
       n->view_dual.edge_snap = 0;
       break;
     default: break;

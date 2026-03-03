@@ -1,0 +1,179 @@
+cask quilter_ui
+
+bring cogito
+
+fun show_preferences(
+    win = cogito.Window,
+    show_sidebar = bool,
+    show_searchbar = bool,
+    show_statusbar = bool,
+    focus_mode = bool,
+    autosave_session = bool,
+    confirm_on_switch = bool,
+    open_links_external = bool,
+    preview_type = string,
+    on_sidebar = any,
+    on_search = any,
+    on_status = any,
+    on_focus = any,
+    on_autosave = any,
+    on_confirm = any,
+    on_links = any,
+    on_mode = any,
+    on_close_doc = any,
+    on_move_up = any,
+    on_move_down = any
+) (( -- )) {
+    let dlg = cogito.dialog("Preferences")
+
+    let settings = cogito.settings_window("Quilter Preferences")
+    .set_padding(12, 12, 12, 12)
+    .set_hexpand(true)
+
+    let page = cogito.settings_page("Writing Workspace")
+    .set_gap(10)
+    .set_hexpand(true)
+
+    let interface_list = cogito.settings_list("Interface")
+
+    let row_sidebar = cogito.settings_row("Show Sidebar")
+    let sw_sidebar = cogito.switch("")
+    .set_checked(show_sidebar)
+    sw_sidebar.on_change((sw = cogito.Switch) => {
+        on_sidebar(sw.checked())
+    })
+    row_sidebar.add(sw_sidebar)
+    interface_list.add(row_sidebar)
+
+    let row_search = cogito.settings_row("Show Searchbar")
+    let sw_search = cogito.switch("")
+    .set_checked(show_searchbar)
+    sw_search.on_change((sw = cogito.Switch) => {
+        on_search(sw.checked())
+    })
+    row_search.add(sw_search)
+    interface_list.add(row_search)
+
+    let row_status = cogito.settings_row("Show Statusbar")
+    let sw_status = cogito.switch("")
+    .set_checked(show_statusbar)
+    sw_status.on_change((sw = cogito.Switch) => {
+        on_status(sw.checked())
+    })
+    row_status.add(sw_status)
+    interface_list.add(row_status)
+
+    let row_focus = cogito.settings_row("Focus Mode")
+    let sw_focus = cogito.switch("")
+    .set_checked(focus_mode)
+    sw_focus.on_change((sw = cogito.Switch) => {
+        on_focus(sw.checked())
+    })
+    row_focus.add(sw_focus)
+    interface_list.add(row_focus)
+
+    let behavior_list = cogito.settings_list("Behavior")
+
+    let row_autosave = cogito.settings_row("Autosave Session")
+    let sw_autosave = cogito.switch("")
+    .set_checked(autosave_session)
+    sw_autosave.on_change((sw = cogito.Switch) => {
+        on_autosave(sw.checked())
+    })
+    row_autosave.add(sw_autosave)
+    behavior_list.add(row_autosave)
+
+    let row_confirm = cogito.settings_row("Confirm Before Switching")
+    let sw_confirm = cogito.switch("")
+    .set_checked(confirm_on_switch)
+    sw_confirm.on_change((sw = cogito.Switch) => {
+        on_confirm(sw.checked())
+    })
+    row_confirm.add(sw_confirm)
+    behavior_list.add(row_confirm)
+
+    let row_links = cogito.settings_row("Open Preview Links Externally")
+    let sw_links = cogito.switch("")
+    .set_checked(open_links_external)
+    sw_links.on_change((sw = cogito.Switch) => {
+        on_links(sw.checked())
+    })
+    row_links.add(sw_links)
+    behavior_list.add(row_links)
+
+    let row_mode = cogito.settings_row("Default Preview Mode")
+    let mode_dd = cogito.dropdown()
+    .set_items(["Half-Width", "Full-Width", "Edit"])
+    .set_selected(if preview_type == "full" { 1 } elif preview_type == "edit" { 2 } else { 0 })
+    mode_dd.on_change((d = cogito.Dropdown) => {
+        let idx = d.selected()
+        if idx == 1 {
+            on_mode("full")
+        } elif idx == 2 {
+            on_mode("edit")
+        } else {
+            on_mode("half")
+        }
+    })
+    row_mode.add(mode_dd)
+    behavior_list.add(row_mode)
+
+    let docs_list = cogito.settings_list("Documents")
+
+    let row_close = cogito.settings_row("Close Current Document")
+    row_close.add(cogito.button("Close").set_class("text").on_click((b = cogito.Button) => {
+        on_close_doc(null)
+    }))
+    docs_list.add(row_close)
+
+    let row_move_up = cogito.settings_row("Move Current Document Up")
+    row_move_up.add(cogito.button("Move Up").set_class("text").on_click((b = cogito.Button) => {
+        on_move_up(null)
+    }))
+    docs_list.add(row_move_up)
+
+    let row_move_down = cogito.settings_row("Move Current Document Down")
+    row_move_down.add(cogito.button("Move Down").set_class("text").on_click((b = cogito.Button) => {
+        on_move_down(null)
+    }))
+    docs_list.add(row_move_down)
+
+    page.add(interface_list)
+    page.add(behavior_list)
+    page.add(docs_list)
+    settings.add(page)
+
+    dlg.add(settings)
+    win.set_dialog(dlg)
+}
+
+fun show_about(win = cogito.Window) (( -- )) {
+    let dlg = cogito.dialog("")
+    let about = cogito.about_window("Quilter", "io.github.lainsce.Quilter")
+    .set_icon("sf:doc.text")
+    .set_website("https://github.com/lainsce/quilter")
+    .set_issue_url("https://github.com/lainsce/quilter/issues")
+    .set_description("Focus on your writing.")
+    dlg.add(about)
+    win.set_dialog(dlg)
+}
+
+fun show_cheatsheet(win = cogito.Window) (( -- )) {
+    let dlg = cogito.dialog("Markdown Cheatsheet")
+
+    let content = cogito.textview("# Headings\n# Heading\n## Subheading\n### Section\n\n# Emphasis\n**Bold text**\n*Italicized text*\n`Code line`\n\n# Lists\n- [ ] Empty\n- [x] Checked\n\n# Links and Assets\n[Link](https://example.com)\n/Folder/Document.md :file\n/Folder/Image.png :image")
+    .set_editable(false)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(12, 12, 12, 12)
+
+    let scroll = cogito.scroller()
+    .set_axes(false, true)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(0, 0, 0, 0)
+    .add(content)
+
+    dlg.add(scroll)
+    win.set_dialog(dlg)
+}

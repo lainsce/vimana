@@ -1001,6 +1001,7 @@ typedef struct CogitoNode {
       float anim_to;
       double anim_start;
       bool animating;
+      bool show_handle;
       int edge_snap;
       bool dragging;
       bool drag_committed;

@@ -34,20 +34,20 @@ fun save_state() (( -- )) {
     let pending_op_esc = json.escape(pending_op)
     let conv_input_esc = json.escape(conv_input.text())
     let ?payload = "{"
-    payload = "<payload>\"current_value\":<current_value>,"
-    payload = "<payload>\"stored_value\":<stored_value>,"
-    payload = "<payload>\"pending_op\":\"<pending_op_esc>\","
-    payload = "<payload>\"reset_input\":"
-    payload = if reset_input { "<payload>true," } else { "<payload>false," }
-    payload = "<payload>\"has_error\":"
-    payload = if has_error { "<payload>true," } else { "<payload>false," }
-    payload = "<payload>\"showing_converter\":"
-    payload = if showing_converter { "<payload>true," } else { "<payload>false," }
-    payload = "<payload>\"conv_from_idx\":<conv_from_idx>,"
-    payload = "<payload>\"conv_to_idx\":<conv_to_idx>,"
-    payload = "<payload>\"conv_category\":<conv_category>,"
-    payload = "<payload>\"conv_input\":\"<conv_input_esc>\""
-    payload = "<payload>}"
+    payload = "$$payload$$\"current_value\":$$current_value$$,"
+    payload = "$$payload$$\"stored_value\":$$stored_value$$,"
+    payload = "$$payload$$\"pending_op\":\"$$pending_op_esc$$\","
+    payload = "$$payload$$\"reset_input\":"
+    payload = if reset_input { "$$payload$$true," } else { "$$payload$$false," }
+    payload = "$$payload$$\"has_error\":"
+    payload = if has_error { "$$payload$$true," } else { "$$payload$$false," }
+    payload = "$$payload$$\"showing_converter\":"
+    payload = if showing_converter { "$$payload$$true," } else { "$$payload$$false," }
+    payload = "$$payload$$\"conv_from_idx\":$$conv_from_idx$$,"
+    payload = "$$payload$$\"conv_to_idx\":$$conv_to_idx$$,"
+    payload = "$$payload$$\"conv_category\":$$conv_category$$,"
+    payload = "$$payload$$\"conv_input\":\"$$conv_input_esc$$\""
+    payload = "$$payload$$}"
     stdr.write_text_file(ABACUS_STATE_PATH, payload)
 }
 
@@ -124,9 +124,9 @@ fun clear_expression() (( -- )) {
 
 fun set_expression(lhs_text = string, op_text = string, rhs_text = string, show_equals = bool) (( -- )) {
     let text = if rhs_text == "" {
-        if show_equals { "<lhs_text> <op_text> =" } else { "<lhs_text> <op_text>" }
+        if show_equals { "$$lhs_text$$ $$op_text$$ =" } else { "$$lhs_text$$ $$op_text$$" }
     } else {
-        if show_equals { "<lhs_text> <op_text> <rhs_text> =" } else { "<lhs_text> <op_text> <rhs_text>" }
+        if show_equals { "$$lhs_text$$ $$op_text$$ $$rhs_text$$ =" } else { "$$lhs_text$$ $$op_text$$ $$rhs_text$$" }
     }
     display_expression.set_text(text)
 }

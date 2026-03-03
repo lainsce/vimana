@@ -74,51 +74,8 @@ static bool cogito_point_hits_preferred_handle(CogitoNode* n, int mx, int my) {
   }
 
   if (n->kind == COGITO_VIEW_DUAL) {
-    float ratio = n->view_dual.animating ? n->view_dual.anim_ratio : n->view_dual.ratio;
-    if (ratio < 0.0f) ratio = 0.0f;
-    if (ratio > 1.0f) ratio = 1.0f;
-    const float edge_ratio_zone = 0.05f;
-
-    int gap = n->gap > 0 ? n->gap : 8;
-    int handle_w = 4;
-    int split_w = gap * 2 + handle_w;
-    const int min_item_w = COGITO_VIEW_DUAL_MIN_ITEM_W;
-
-    int content_x = n->x + n->padding_left;
-    int content_y = n->y + n->padding_top;
-    int content_w = n->w - n->padding_left - n->padding_right;
-    int content_h = n->h - n->padding_top - n->padding_bottom;
-    if (content_w < 0) content_w = 0;
-    if (content_h < 0) content_h = 0;
-
-    int available_w = content_w - split_w;
-    if (available_w < 0) available_w = 0;
-
-    int handle_x = content_x + 4;
-    if (ratio >= (1.0f - edge_ratio_zone)) {
-      handle_x = content_x + content_w - handle_w - 4;
-    } else if (ratio > edge_ratio_zone) {
-      int left_w = (int)(content_w * ratio) - split_w / 2;
-      if (available_w >= min_item_w * 2) {
-        int max_left = available_w - min_item_w;
-        if (left_w < min_item_w) left_w = min_item_w;
-        if (left_w > max_left) left_w = max_left;
-      } else {
-        left_w = available_w / 2;
-      }
-      if (left_w < 0) left_w = 0;
-      if (left_w > available_w) left_w = available_w;
-      handle_x = content_x + left_w + gap;
-    }
-    int handle_min_x = content_x + 4;
-    int handle_max_x = content_x + content_w - 4 - handle_w;
-    if (handle_x < handle_min_x) handle_x = handle_min_x;
-    if (handle_x > handle_max_x) handle_x = handle_max_x;
-
-    int intent_w = 16;
-    if (intent_w < handle_w) intent_w = handle_w;
-    int intent_x = handle_x - (intent_w - handle_w) / 2;
-    if (cogito_hit_rect(mx, my, intent_x, content_y, intent_w, content_h)) {
+    float ratio = cogito_view_dual_current_ratio(n);
+    if (cogito_view_dual_hit_handle_intent_for_ratio(n, ratio, mx, my)) {
       return true;
     }
   }
@@ -2758,58 +2715,37 @@ static void cogito_run(YisVal appv, YisVal winv) {
             if (hit->webview.open_external_on_click &&
                 hit->icon && hit->icon->data && hit->icon->data[0] &&
                 cogito_backend && cogito_backend->open_url) {
-              cogito_backend->open_url(hit->icon->data);
+              const char* src = hit->icon->data;
+              char href[2048];
+              href[0] = '\0';
+              if (cogito_wv_extract_first_href(src, href, (int)sizeof(href))) {
+                cogito_backend->open_url(href);
+              } else if (cogito_wv_is_probably_url(src)) {
+                cogito_backend->open_url(src);
+              }
             }
           } else if (hit->kind == COGITO_VIEW_DUAL) {
-            float ratio = hit->view_dual.animating ? hit->view_dual.anim_ratio : hit->view_dual.ratio;
-            if (ratio < 0.0f) ratio = 0.0f;
-            if (ratio > 1.0f) ratio = 1.0f;
-            const float edge_ratio_zone = 0.05f;
-            if (hit->view_dual.ratio <= edge_ratio_zone && hit->view_dual.ratio > 0.0f) {
+            float ratio = cogito_view_dual_current_ratio(hit);
+            if (hit->view_dual.ratio <= COGITO_VIEW_DUAL_EDGE_RATIO_ZONE && hit->view_dual.ratio > 0.0f) {
               cogito_view_dual_set_ratio_target(hit, 0.0f, false);
               ratio = 0.0f;
               cogito_window_relayout(win);
-            } else if (hit->view_dual.ratio >= (1.0f - edge_ratio_zone) && hit->view_dual.ratio < 1.0f) {
+            } else if (hit->view_dual.ratio >= (1.0f - COGITO_VIEW_DUAL_EDGE_RATIO_ZONE) && hit->view_dual.ratio < 1.0f) {
               cogito_view_dual_set_ratio_target(hit, 1.0f, false);
               ratio = 1.0f;
               cogito_window_relayout(win);
             }
-            int gap = hit->gap > 0 ? hit->gap : 8;
-            int handle_w = 4;
-            int split_w = gap * 2 + handle_w;
-            const int min_item_w = COGITO_VIEW_DUAL_MIN_ITEM_W;
-            int content_x = hit->x + hit->padding_left;
-            int content_y = hit->y + hit->padding_top;
-            int content_w = hit->w - hit->padding_left - hit->padding_right;
-            int content_h = hit->h - hit->padding_top - hit->padding_bottom;
-            if (content_w < 0) content_w = 0;
-            if (content_h < 0) content_h = 0;
-            int available_w = content_w - split_w;
-            if (available_w < 0) available_w = 0;
-            int handle_x = content_x + 4;
-            if (ratio >= (1.0f - edge_ratio_zone)) {
-              handle_x = content_x + content_w - handle_w - 4;
-            } else if (ratio > edge_ratio_zone) {
-              int left_w = (int)(content_w * ratio) - split_w / 2;
-              if (available_w >= min_item_w * 2) {
-                int max_left = available_w - min_item_w;
-                if (left_w < min_item_w) left_w = min_item_w;
-                if (left_w > max_left) left_w = max_left;
-              } else {
-                left_w = available_w / 2;
-              }
-              if (left_w < 0) left_w = 0;
-              if (left_w > available_w) left_w = available_w;
-              handle_x = content_x + left_w + gap;
-            }
-            int handle_min_x = content_x + 4;
-            int handle_max_x = content_x + content_w - 4 - handle_w;
-            if (handle_x < handle_min_x) handle_x = handle_min_x;
-            if (handle_x > handle_max_x) handle_x = handle_max_x;
-            int intent_w = 16;
-            if (intent_w < handle_w) intent_w = handle_w;
-            int intent_x = handle_x - (intent_w - handle_w) / 2;
-            if (cogito_hit_rect(mx, my, intent_x, content_y, intent_w, content_h)) {
+            int handle_x = 0;
+            int handle_w = 0;
+            int intent_x = 0;
+            int intent_y = 0;
+            int intent_w = 0;
+            int intent_h = 0;
+            cogito_view_dual_handle_targets_for_ratio(hit, ratio,
+                                                      &handle_x, &handle_w,
+                                                      &intent_x, &intent_y,
+                                                      &intent_w, &intent_h);
+            if (hit->view_dual.show_handle && cogito_hit_rect(mx, my, intent_x, intent_y, intent_w, intent_h)) {
               hit->view_dual.dragging = true;
               hit->view_dual.drag_committed = false;
               hit->view_dual.drag_start_mouse_x = mx;
