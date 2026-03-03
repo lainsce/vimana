@@ -9,6 +9,7 @@ static bool cogito_debug_style_enabled_internal(void) {
 static const char* cogito_kind_name(CogitoKind kind) {
   switch (kind) {
     case COGITO_APPBAR: return "appbar";
+    case COGITO_BIN: return "bin";
     case COGITO_BOTTOM_NAV: return "bottom-nav";
     case COGITO_BUTTON: return "button";
     case COGITO_CAROUSEL: return "carousel";
@@ -34,6 +35,7 @@ static const char* cogito_kind_name(CogitoKind kind) {
     case COGITO_PROGRESS: return "progress";
     case COGITO_SCROLLER: return "scroller";
     case COGITO_SEARCHFIELD: return "searchfield";
+    case COGITO_REVEALER: return "revealer";
     case COGITO_BUTTON_GROUP: return "buttongroup";
     case COGITO_SLIDER: return "slider";
     case COGITO_STEPPER: return "stepper";

@@ -1097,6 +1097,148 @@ static void cogito_draw_icon_fallback(CogitoNode* n, const char* icon, int x, in
 // Scrollbar geometry and hit-test (overlay scrollbars)
 #include "widgets/util/scrollbar.inc"
 
+typedef struct CogitoBinOverlayScopeState {
+  bool had_scope;
+  CogitoBinScopePalette prev_from;
+  CogitoBinScopePalette prev_to;
+  int pushed;
+} CogitoBinOverlayScopeState;
+
+static void cogito_bin_scope_palette_from_cached(CogitoBinScopePalette* out) {
+  if (!out) return;
+  out->primary = cogito_cached_primary;
+  out->on_primary = cogito_cached_on_primary;
+  out->primary_container = cogito_cached_primary_container;
+  out->on_primary_container = cogito_cached_on_primary_container;
+  out->secondary = cogito_cached_secondary;
+  out->on_secondary = cogito_cached_on_secondary;
+  out->secondary_container = cogito_cached_secondary_container;
+  out->on_secondary_container = cogito_cached_on_secondary_container;
+  out->tertiary = cogito_cached_tertiary;
+  out->on_tertiary = cogito_cached_on_tertiary;
+  out->tertiary_container = cogito_cached_tertiary_container;
+  out->on_tertiary_container = cogito_cached_on_tertiary_container;
+  out->error = cogito_cached_error;
+  out->on_error = cogito_cached_on_error;
+  out->error_container = cogito_cached_error;
+  out->on_error_container = cogito_cached_on_error;
+  out->background = cogito_cached_surface;
+  out->on_background = cogito_cached_on_surface;
+  out->surface = cogito_cached_surface;
+  out->on_surface = cogito_cached_on_surface;
+  out->surface_tint = cogito_cached_primary;
+  out->surface_container_lowest = cogito_cached_surface;
+  out->surface_container_low = cogito_cached_surface;
+  out->surface_container = cogito_cached_surface_container;
+  out->surface_container_high = cogito_cached_surface_container_high;
+  out->surface_container_highest = cogito_cached_surface_container_high;
+  out->inverse_surface = cogito_cached_inverse_surface;
+  out->inverse_on_surface = cogito_cached_inverse_on_surface;
+  out->inverse_primary = cogito_cached_primary;
+  out->outline = cogito_cached_outline;
+  out->outline_variant = cogito_cached_outline_variant;
+  out->surface_variant = cogito_cached_surface_container_high;
+  out->on_surface_variant = cogito_cached_on_surface_variant;
+}
+
+static void cogito_bin_scope_palette_from_scheme(CogitoBinScopePalette* out, const CogitoEnsorScheme* scheme) {
+  if (!out || !scheme) return;
+  out->primary = scheme->primary;
+  out->on_primary = scheme->on_primary;
+  out->primary_container = scheme->primary_container;
+  out->on_primary_container = scheme->on_primary_container;
+  out->secondary = scheme->secondary;
+  out->on_secondary = scheme->on_secondary;
+  out->secondary_container = scheme->secondary_container;
+  out->on_secondary_container = scheme->on_secondary_container;
+  out->tertiary = scheme->tertiary;
+  out->on_tertiary = scheme->on_tertiary;
+  out->tertiary_container = scheme->tertiary_container;
+  out->on_tertiary_container = scheme->on_tertiary_container;
+  out->error = scheme->error;
+  out->on_error = scheme->on_error;
+  out->error_container = scheme->error_container;
+  out->on_error_container = scheme->on_error_container;
+  out->background = scheme->background;
+  out->on_background = scheme->on_background;
+  out->surface = scheme->surface;
+  out->on_surface = scheme->on_surface;
+  out->surface_tint = scheme->surface_tint;
+  out->surface_container_lowest = scheme->surface_container_lowest;
+  out->surface_container_low = scheme->surface_container_low;
+  out->surface_container = scheme->surface_container;
+  out->surface_container_high = scheme->surface_container_high;
+  out->surface_container_highest = scheme->surface_container_highest;
+  out->inverse_surface = scheme->inverse_surface;
+  out->inverse_on_surface = scheme->inverse_on_surface;
+  out->inverse_primary = scheme->inverse_primary;
+  out->outline = scheme->outline;
+  out->outline_variant = scheme->outline_variant;
+  out->surface_variant = scheme->surface_variant;
+  out->on_surface_variant = scheme->on_surface_variant;
+}
+
+static int cogito_bin_scope_begin_for_node(const CogitoNode* node, CogitoBinOverlayScopeState* state) {
+  if (!node || !state) return 0;
+  state->had_scope = cogito_bin_scope_active;
+  state->prev_from = cogito_bin_scope_from_scheme;
+  state->prev_to = cogito_bin_scope_to_scheme;
+  state->pushed = 0;
+
+  const CogitoNode* chain[16];
+  int chain_len = 0;
+  for (const CogitoNode* p = node; p; p = p->parent) {
+    if (p->kind == COGITO_BIN && p->bin_accent_set) {
+      if (chain_len < (int)(sizeof(chain) / sizeof(chain[0]))) {
+        chain[chain_len++] = p;
+      }
+    }
+  }
+  if (chain_len == 0) return 0;
+
+  for (int i = chain_len - 1; i >= 0; i--) {
+    const CogitoNode* bin = chain[i];
+    double h = 0.0, c = 0.0, t = 0.0;
+    cogito_rgb_to_hct(bin->bin_accent_color, &h, &c, &t);
+    int variant = cogito_theme_ensor_variant;
+    if (variant < COGITO_ENSOR_DEFAULT || variant > COGITO_ENSOR_CONTENT) {
+      variant = COGITO_ENSOR_DEFAULT;
+    }
+    CogitoEnsorScheme local_scheme = cogito_ensor_build_dynamic_scheme(
+      cogito_theme_dark,
+      h,
+      c,
+      t,
+      (CogitoEnsorVariant)variant,
+      cogito_theme_contrast
+    );
+
+    CogitoBinScopePalette from_palette = {0};
+    CogitoBinScopePalette to_palette = {0};
+    cogito_bin_scope_palette_from_cached(&from_palette);
+    cogito_bin_scope_palette_from_scheme(&to_palette, &local_scheme);
+
+    cogito_bin_scope_active = true;
+    cogito_bin_scope_from_scheme = from_palette;
+    cogito_bin_scope_to_scheme = to_palette;
+    if (cogito_theme_palette_scope_push_scheme(&local_scheme)) {
+      state->pushed++;
+    }
+  }
+
+  return state->pushed;
+}
+
+static void cogito_bin_scope_end_for_node(const CogitoBinOverlayScopeState* state) {
+  if (!state) return;
+  for (int i = 0; i < state->pushed; i++) {
+    cogito_theme_palette_scope_pop();
+  }
+  cogito_bin_scope_active = state->had_scope;
+  cogito_bin_scope_from_scheme = state->prev_from;
+  cogito_bin_scope_to_scheme = state->prev_to;
+}
+
 static void cogito_draw_node(CogitoNode* n);
 
 #include "widgets/draw/toasts.inc"
@@ -1494,8 +1636,7 @@ static void cogito_draw_node(CogitoNode* n) {
     #include "widgets/draw/drawing_area.inc"
     #include "widgets/draw/shape.inc"
     #include "widgets/draw/webview.inc"
-
-case COGITO_TOASTS:
+    case COGITO_TOASTS:
       if (!cogito_toasts_force_draw) {
           CogitoNode* win = cogito_node_window(n);
           if (win) break;
@@ -1510,6 +1651,8 @@ case COGITO_TOASTS:
     #include "widgets/draw/vstack.inc"
     #include "widgets/draw/hstack.inc"
     #include "widgets/draw/zstack.inc"
+    #include "widgets/draw/revealer.inc"
+    #include "widgets/draw/bin.inc"
     #include "widgets/draw/fixed.inc"
     #include "widgets/draw/window.inc"
     #include "widgets/draw/scroller.inc"

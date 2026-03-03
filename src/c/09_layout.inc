@@ -110,6 +110,8 @@ static void cogito_distribute_axis_sizes(size_t count, const int* min_sizes, con
 #include "widgets/layout/list.inc"
 #include "widgets/layout/grid.inc"
 #include "widgets/layout/window.inc"
+#include "widgets/layout/revealer.inc"
+#include "widgets/layout/bin.inc"
 
 static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
   bool changed = (n->x != x || n->y != y || n->w != w || n->h != h);
@@ -273,6 +275,14 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
 
     case COGITO_GRID:
       cogito_layout_grid(n, x, y);
+      break;
+
+    case COGITO_REVEALER:
+      cogito_layout_revealer(n, x, y);
+      break;
+
+    case COGITO_BIN:
+      cogito_layout_bin(n, x, y);
       break;
 
     case COGITO_WINDOW:

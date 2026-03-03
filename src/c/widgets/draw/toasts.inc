@@ -1,9 +1,12 @@
 static void cogito_draw_toasts_overlay(CogitoNode* n) {
   if (!n) return;
   if (n->kind == COGITO_TOASTS) {
+    CogitoBinOverlayScopeState bin_scope_state = {0};
+    cogito_bin_scope_begin_for_node(n, &bin_scope_state);
     cogito_toasts_force_draw = true;
     cogito_draw_node(n);
     cogito_toasts_force_draw = false;
+    cogito_bin_scope_end_for_node(&bin_scope_state);
     return;
   }
   for (size_t i = 0; i < n->len; i++) {
@@ -22,9 +25,12 @@ static void cogito_draw_fab_overlay(CogitoNode* n) {
     // all content. When closed, the FAB draws normally in the regular pass
     // (which is correctly gated by ViewSwitcher, avoiding ghost draws).
     if (n->popover_open && n->menu_len > 0) {
+      CogitoBinOverlayScopeState bin_scope_state = {0};
+      cogito_bin_scope_begin_for_node(n, &bin_scope_state);
       cogito_fab_menu_force_draw = true;
       cogito_draw_node(n);
       cogito_fab_menu_force_draw = false;
+      cogito_bin_scope_end_for_node(&bin_scope_state);
     }
     return;
   }

@@ -241,8 +241,12 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
   n->opacity_target = 1.0f;
   // Layout widgets default to 0 gap, content widgets default to 8 for natural spacing
   bool is_layout = (kind == COGITO_VSTACK || kind == COGITO_HSTACK || kind == COGITO_ZSTACK ||
-                    kind == COGITO_FIXED || kind == COGITO_SCROLLER || kind == COGITO_GRID);
+                    kind == COGITO_FIXED || kind == COGITO_SCROLLER || kind == COGITO_GRID ||
+                    kind == COGITO_REVEALER || kind == COGITO_BIN);
   n->gap = is_layout ? 0 : 8;
+  n->revealer_show_children = true;
+  n->bin_accent_set = false;
+  n->bin_accent_color = cogito_rgba(0, 0, 0, 0);
   // Kind-specific non-zero defaults
   switch (kind) {
     case COGITO_SCROLLER: n->scroller.vert = true; break;
@@ -325,6 +329,8 @@ static const char* cogito_node_default_a11y_role(CogitoKind kind) {
     case COGITO_VSTACK:
     case COGITO_HSTACK:
     case COGITO_ZSTACK:
+    case COGITO_REVEALER:
+    case COGITO_BIN:
     case COGITO_FIXED:
     case COGITO_SCROLLER:
     case COGITO_CARD:
@@ -719,6 +725,10 @@ static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
     #include "widgets/intrinsic/drawing_area.inc"
 
     #include "widgets/intrinsic/shape.inc"
+
+    #include "widgets/intrinsic/revealer.inc"
+
+    #include "widgets/intrinsic/bin.inc"
 
     #include "widgets/intrinsic/treeview.inc"
 

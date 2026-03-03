@@ -351,6 +351,10 @@ fun __cogito_view_dual() (( ViewDual )) { }
 fun __cogito_view_switcher_add_lazy(vs = ViewSwitcher, id = string, builder = any) (( -- )) { }
 fun __cogito_view_switcher_set_active(view = ViewSwitcher, id = string) (( -- )) { }
 fun __cogito_view_switcher() (( ViewSwitcher )) { }
+fun __cogito_revealer() (( Revealer )) { }
+fun __cogito_revealer_set_show_children(revealer = Revealer, show_children = bool) (( -- )) { }
+fun __cogito_bin() (( Bin )) { }
+fun __cogito_bin_set_accent_color(bin = Bin, accent_color = string) (( -- )) { }
 fun __cogito_vstack() (( VStack )) { }
 fun __cogito_welcome_screen_set_action(ws = WelcomeScreen, text = string, handler = any) (( -- )) { }
 fun __cogito_welcome_screen_set_description(ws = WelcomeScreen, desc = string) (( -- )) { }
@@ -881,6 +885,92 @@ pub class VStack {
         return this
     }
     pub fun set_id(this, id = string) (( VStack )) {
+        __cogito_node_set_id(this, id)
+        return this
+    }
+}
+
+pub class Revealer {
+    pub fun add(this, child = any) (( Revealer )) {
+        __cogito_container_add(this, child)
+        return this
+    }
+    pub fun set_show_children(this, show_children = bool) (( Revealer )) {
+        __cogito_revealer_set_show_children(this, show_children)
+        return this
+    }
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Revealer )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Revealer )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_align(this, align = num) (( Revealer )) {
+        __cogito_container_set_align(this, align)
+        return this
+    }
+    pub fun set_hexpand(this, expand = bool) (( Revealer )) {
+        __cogito_container_set_hexpand(this, expand)
+        return this
+    }
+    pub fun set_vexpand(this, expand = bool) (( Revealer )) {
+        __cogito_container_set_vexpand(this, expand)
+        return this
+    }
+    pub fun set_disabled(this, on = bool) (( Revealer )) {
+        __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_class(this, cls = string) (( Revealer )) {
+        __cogito_node_set_class(this, cls)
+        return this
+    }
+    pub fun set_id(this, id = string) (( Revealer )) {
+        __cogito_node_set_id(this, id)
+        return this
+    }
+}
+
+pub class Bin {
+    pub fun add(this, child = any) (( Bin )) {
+        __cogito_container_add(this, child)
+        return this
+    }
+    pub fun set_accent_color(this, accent_color = string) (( Bin )) {
+        __cogito_bin_set_accent_color(this, accent_color)
+        return this
+    }
+    pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Bin )) {
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Bin )) {
+        __cogito_container_set_padding(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_align(this, align = num) (( Bin )) {
+        __cogito_container_set_align(this, align)
+        return this
+    }
+    pub fun set_hexpand(this, expand = bool) (( Bin )) {
+        __cogito_container_set_hexpand(this, expand)
+        return this
+    }
+    pub fun set_vexpand(this, expand = bool) (( Bin )) {
+        __cogito_container_set_vexpand(this, expand)
+        return this
+    }
+    pub fun set_disabled(this, on = bool) (( Bin )) {
+        __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_class(this, cls = string) (( Bin )) {
+        __cogito_node_set_class(this, cls)
+        return this
+    }
+    pub fun set_id(this, id = string) (( Bin )) {
         __cogito_node_set_id(this, id)
         return this
     }
@@ -3555,6 +3645,14 @@ pub fun hstack() (( HStack )) {
 
 pub fun zstack() (( ZStack )) {
     return __cogito_zstack()
+}
+
+pub fun revealer() (( Revealer )) {
+    return __cogito_revealer()
+}
+
+pub fun bin() (( Bin )) {
+    return __cogito_bin()
 }
 
 pub fun fixed() (( Fixed )) {

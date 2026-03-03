@@ -38,6 +38,8 @@ static void cogito_menu_section_bounds(CogitoNode* owner, int section_count, int
 
 static void cogito_draw_menu(void) {
   if (!cogito_menu.open || !cogito_menu.owner) return;
+  CogitoBinOverlayScopeState bin_scope_state = {0};
+  cogito_bin_scope_begin_for_node(cogito_menu.owner, &bin_scope_state);
 
   // ---- Quick draping animation on menu open ----
   // Menu grows from the anchor button to its final position
@@ -118,13 +120,17 @@ static void cogito_draw_menu(void) {
   CogitoColor tertiary = {0}, tertiary_container = {0}, on_tertiary_container = {0}, on_tertiary = {0};
   cogito_menu_theme_tertiary(&tertiary, &tertiary_container, &on_tertiary_container, &on_tertiary);
 
-  // Derive surface/on-surface/outline from theme accent via HCT
-  double h_acc = 0.0, c_acc = 0.0, t_acc = 0.0;
-  cogito_rgb_to_hct(cogito_theme_accent, &h_acc, &c_acc, &t_acc);
-  double surf_chroma = c_acc > 4.0 ? 4.0 : c_acc;
-  CogitoColor md3_surface   = cogito_hct_to_rgb(h_acc, surf_chroma, cogito_theme_dark ? 22.0 : 94.0);
-  CogitoColor md3_on_surf   = cogito_hct_to_rgb(h_acc, surf_chroma, cogito_theme_dark ? 90.0 : 10.0);
-  CogitoColor md3_outline   = cogito_hct_to_rgb(h_acc, 6.0, cogito_theme_dark ? 60.0 : 50.0);
+  // Derive surface/on-surface/outline from semantic palette (scope-aware)
+  CogitoColor pal_surface = {0}, pal_surface_container = {0}, pal_on_surface = {0};
+  cogito_theme_get_state_layer_palette(NULL, NULL, NULL,
+                                       NULL, NULL, NULL,
+                                       NULL, NULL, NULL,
+                                       &pal_surface, &pal_surface_container, &pal_on_surface, NULL);
+  CogitoColor md3_surface = pal_surface_container.a ? pal_surface_container :
+                            (pal_surface.a ? pal_surface : cogito_rgba(32, 32, 32, 255));
+  CogitoColor md3_on_surf = pal_on_surface.a ? pal_on_surface : cogito_on_color(md3_surface);
+  CogitoColor md3_outline = cogito_cached_outline.a ? cogito_cached_outline : cogito_on_color(md3_surface);
+  md3_outline.a = 255;
 
   CogitoColor bg         = cogito_theme.menu.has_bg        ? cogito_theme.menu.bg        : md3_surface;
   CogitoColor border     = cogito_theme.menu.has_border    ? cogito_theme.menu.border    : md3_outline;
@@ -387,4 +393,5 @@ static void cogito_draw_menu(void) {
   free(last_item_of_section);
   free(section_y);
   free(section_h_arr);
+  cogito_bin_scope_end_for_node(&bin_scope_state);
 }

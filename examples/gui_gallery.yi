@@ -25,6 +25,7 @@ fun build_page(title = string, blurb = string) (( cogito.VStack )) {
     let info = cogito.label(blurb)
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     .set_padding(0, 0, 24, 0)
     vstack.add(info)
 
@@ -37,6 +38,7 @@ fun build_button_page() (( cogito.VStack )) {
     let status = cogito.label("Tap a button to update this status.")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(status)
 
     -- Section: Button Styles
@@ -318,6 +320,7 @@ fun build_textview_page() (( cogito.VStack )) {
     let status = cogito.label("Edit the text view to trigger change notifications.")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(status)
 
     let tv = cogito.textview("Multi-line text view")
@@ -701,6 +704,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     let sizes_info = cogito.label("ButtonGroup supports 5 sizes: XS(0), S(1), M(2), L(3), XL(4)")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(sizes_info)
 
     let sizes_row = cogito.hstack()
@@ -741,6 +745,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     let shapes_info = cogito.label("Two shapes: Round(0) and Square(1)")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(shapes_info)
 
     let shapes_row = cogito.hstack()
@@ -785,6 +790,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     let connected_info = cogito.label("Connected mode removes internal spacing between segments")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(connected_info)
 
     let connected_row = cogito.hstack()
@@ -1149,6 +1155,7 @@ fun build_dialog_page() (( cogito.VStack )) {
     let status = cogito.label("Open the dialog to continue.")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(status)
 
     let show_btn = cogito.button("Show Dialog")
@@ -1217,6 +1224,7 @@ fun build_toast_page() (( cogito.VStack )) {
     let status = cogito.label("Show a toast notification.")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(status)
 
     let btn = cogito.button("Show Toast")
@@ -1286,6 +1294,7 @@ fun build_card_page() (( cogito.VStack )) {
     let body = cogito.label("Version 1.0 includes improved layout, theming, and gallery structure.")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     card.add(body)
 
     let action = cogito.button("View Details")
@@ -1987,6 +1996,7 @@ fun build_fabmenu_page() (( cogito.VStack )) {
     let status = cogito.label("Tap a FAB.")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(status)
 
     -- Section: Variant Selector
@@ -2046,6 +2056,7 @@ fun build_about_window_page() (( cogito.VStack )) {
     let status = cogito.label("Open the about dialog.")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(status)
 
     let show_btn = cogito.button("Show About Dialog")
@@ -2170,6 +2181,7 @@ fun build_side_sheet_page() (( cogito.VStack )) {
     let status = cogito.label("Click the button to open a side sheet.")
     .set_class("body")
     .set_wrap(true)
+    .set_hexpand(true)
     vstack.add(status)
 
     let button_row = cogito.hstack().set_gap(12)
@@ -2220,215 +2232,349 @@ fun build_side_sheet_page() (( cogito.VStack )) {
     return vstack
 }
 
+fun build_revealer_page() (( cogito.VStack )) {
+    let vstack = build_page("Revealer", "Revealer toggles visibility of its children programmatically.")
+
+    let status = cogito.label("Revealer children are visible.")
+    .set_class("body")
+    .set_wrap(true)
+    .set_hexpand(true)
+    vstack.add(status)
+
+    let reveal_toggle = cogito.switch("Show revealer children")
+    .set_checked(true)
+    vstack.add(reveal_toggle)
+
+    let revealer_content = cogito.vstack()
+    .set_gap(8)
+    .add(cogito.label("This content is inside a Revealer."))
+    .add(cogito.button("Child button").on_click((b = cogito.Button) => {
+        status.set_text("Revealer child button clicked.")
+    }))
+
+    let revealer = cogito.revealer()
+    .set_padding(12, 12, 12, 12)
+    .set_class("card")
+    .add(revealer_content)
+    vstack.add(revealer)
+
+    reveal_toggle.on_change((s = cogito.Switch) => {
+        let shown = s.checked()
+        revealer.set_show_children(shown)
+        if shown {
+            status.set_text("Revealer children are visible.")
+        } else {
+            status.set_text("Revealer children are hidden.")
+        }
+    })
+
+    return vstack
+}
+
+fun build_bin_page() (( cogito.VStack )) {
+    let vstack = build_page("Bin", "Bin applies a local Ensor accent to itself and descendants without changing app-wide accent.")
+
+    let status = cogito.label("Bin accent is #72DEC2.")
+    .set_class("body")
+    .set_wrap(true)
+    .set_hexpand(true)
+    vstack.add(status)
+
+    let accent_title = cogito.label("Bin local accent")
+    .set_class("heading")
+    vstack.add(accent_title)
+
+    let bin_status = cogito.label("Interact with controls inside this Bin.")
+    .set_wrap(true)
+
+    let bin_switch = cogito.switch("Bin switch")
+    .on_change((s = cogito.Switch) => {
+        let on = if s.checked() { "on" } else { "off" }
+        bin_status.set_text("Bin switch is <on>.")
+    })
+
+    let bin_controls = cogito.hstack()
+    .set_gap(8)
+    .add(cogito.button("Bin button").on_click((b = cogito.Button) => {
+        bin_status.set_text("Bin button clicked.")
+    }))
+    .add(cogito.iconbtn("sf:star.fill")
+        .set_color_style(1)
+        .on_click((ib = cogito.IconButton) => {
+            bin_status.set_text("Tonal icon button clicked.")
+    }))
+
+    let bin_controls2 = cogito.hstack()
+    .set_gap(8)
+    .add(cogito.textfield("").set_class("outline"))
+    .add(cogito.checkbox("Bin checkbox", null))
+
+    let bin_content = cogito.vstack()
+    .set_gap(8)
+    .add(cogito.label("This Bin uses its own accent-derived surface."))
+    .add(cogito.label("Changing it does not alter app-wide accent."))
+    .set_hexpand(true)
+    .add(bin_switch)
+    .add(bin_controls)
+    .add(bin_controls2)
+    .add(bin_status)
+
+    let bin = cogito.bin()
+    .set_padding(24, 24, 24, 24)
+    .set_accent_color("#72DEC2")
+    .set_hexpand(true)
+    .add(bin_content)
+    vstack.add(bin)
+
+    let accent_row = cogito.buttongroup()
+    .set_connected(true)
+    .set_hexpand(true)
+    .add(cogito.button("Teal").on_click((b = cogito.Button) => {
+        bin.set_accent_color("#72DEC2")
+        status.set_text("Bin accent set to #72DEC2.")
+    }))
+    .add(cogito.button("Blue").on_click((b = cogito.Button) => {
+        bin.set_accent_color("#4F8CFF")
+        status.set_text("Bin accent set to #4F8CFF.")
+    }))
+    .add(cogito.button("Pink").on_click((b = cogito.Button) => {
+        bin.set_accent_color("#E65AB8")
+        status.set_text("Bin accent set to #E65AB8.")
+    }))
+    .add(cogito.button("Green").on_click((b = cogito.Button) => {
+        bin.set_accent_color("#4ea93e")
+        status.set_text("Bin accent set to #4ea93e.")
+    }))
+    .add(cogito.button("Yellow").on_click((b = cogito.Button) => {
+        bin.set_accent_color("#FFD700")
+        status.set_text("Bin accent set to #FFD700.")
+    }))
+    .add(cogito.button("Red").on_click((b = cogito.Button) => {
+        bin.set_accent_color("#ff3c00")
+        status.set_text("Bin accent set to #FF3C00.")
+    }))
+    vstack.add(accent_row)
+
+    return vstack
+}
+
 fun view_id_from_index(idx = num) (( string )) {
     return if idx == 0 {
-        "button"
-    } elif idx == 1 {
-        "iconbtn"
-    } elif idx == 2 {
-        "textfield"
-    } elif idx == 3 {
-        "searchfield"
-    } elif idx == 4 {
-        "textview"
-    } elif idx == 5 {
-        "checkbox"
-    } elif idx == 6 {
-        "switch"
-    } elif idx == 7 {
-        "slider"
-    } elif idx == 8 {
-        "stepper"
-    } elif idx == 9 {
-        "datepicker"
-    } elif idx == 10 {
-        "colorpicker"
-    } elif idx == 11 {
-        "timepicker"
-    } elif idx == 12 {
-        "dropdown"
-    } elif idx == 13 {
-        "progress"
-    } elif idx == 14 {
-        "list"
-    } elif idx == 15 {
-        "grid"
-    } elif idx == 16 {
-        "tabs"
-    } elif idx == 17 {
-        "buttongroup"
-    } elif idx == 18 {
-        "chip"
-    } elif idx == 19 {
-        "fab"
-    } elif idx == 20 {
-        "carousel"
-    } elif idx == 21 {
-        "nav_rail"
-    } elif idx == 22 {
-        "bottom_nav"
-    } elif idx == 23 {
-        "toolbar"
-    } elif idx == 24 {
-        "dialog"
-    } elif idx == 25 {
-        "toast"
-    } elif idx == 26 {
-        "treeview"
-    } elif idx == 27 {
-        "card"
-    } elif idx == 28 {
-        "avatar"
-    } elif idx == 29 {
-        "badge"
-    } elif idx == 30 {
-        "banner"
-    } elif idx == 31 {
-        "divider"
-    } elif idx == 32 {
-        "image"
-    } elif idx == 33 {
-        "active_indicator"
-    } elif idx == 34 {
-        "switchbar"
-     } elif idx == 35 {
-        "split_button"
-    } elif idx == 36 {
-        "menu_button"
-    } elif idx == 37 {
-        "empty_page"
-    } elif idx == 38 {
-        "welcome_screen"
-    } elif idx == 39 {
-        "settings_window"
-    } elif idx == 40 {
-        "view_dual"
-    } elif idx == 41 {
-        "view_chooser"
-    } elif idx == 42 {
-        "about_window"
-    } elif idx == 43 {
-        "typography"
-    } elif idx == 44 {
-        "side_sheet"
-    } elif idx == 45 {
-        "fabmenu"
-    } elif idx == 46 {
-        "ensor"
-    } elif idx == 47 {
-        "drawing_area"
-    } elif idx == 48 {
-        "shape_gallery"
-    } elif idx == 49 {
         "appbar"
-    } else {
+    } elif idx == 1 {
         "button"
+    } elif idx == 2 {
+        "iconbtn"
+    } elif idx == 3 {
+        "textfield"
+    } elif idx == 4 {
+        "searchfield"
+    } elif idx == 5 {
+        "textview"
+    } elif idx == 6 {
+        "checkbox"
+    } elif idx == 7 {
+        "switch"
+    } elif idx == 8 {
+        "slider"
+    } elif idx == 9 {
+        "stepper"
+    } elif idx == 10 {
+        "datepicker"
+    } elif idx == 11 {
+        "colorpicker"
+    } elif idx == 12 {
+        "timepicker"
+    } elif idx == 13 {
+        "dropdown"
+    } elif idx == 14 {
+        "progress"
+    } elif idx == 15 {
+        "list"
+    } elif idx == 16 {
+        "grid"
+    } elif idx == 17 {
+        "tabs"
+    } elif idx == 18 {
+        "buttongroup"
+    } elif idx == 19 {
+        "chip"
+    } elif idx == 20 {
+        "fab"
+    } elif idx == 21 {
+        "carousel"
+    } elif idx == 22 {
+        "nav_rail"
+    } elif idx == 23 {
+        "bottom_nav"
+    } elif idx == 24 {
+        "toolbar"
+    } elif idx == 25 {
+        "dialog"
+    } elif idx == 26 {
+        "toast"
+    } elif idx == 27 {
+        "treeview"
+    } elif idx == 28 {
+        "card"
+    } elif idx == 29 {
+        "avatar"
+    } elif idx == 30 {
+        "badge"
+    } elif idx == 31 {
+        "banner"
+    } elif idx == 32 {
+        "divider"
+    } elif idx == 33 {
+        "image"
+    } elif idx == 34 {
+        "active_indicator"
+    } elif idx == 35 {
+        "switchbar"
+     } elif idx == 36 {
+        "split_button"
+    } elif idx == 37 {
+        "menu_button"
+    } elif idx == 38 {
+        "empty_page"
+    } elif idx == 39 {
+        "welcome_screen"
+    } elif idx == 40 {
+        "settings_window"
+    } elif idx == 41 {
+        "view_dual"
+    } elif idx == 42 {
+        "view_chooser"
+    } elif idx == 43 {
+        "about_window"
+    } elif idx == 44 {
+        "typography"
+    } elif idx == 45 {
+        "side_sheet"
+    } elif idx == 46 {
+        "fabmenu"
+    } elif idx == 47 {
+        "ensor"
+    } elif idx == 48 {
+        "revealer"
+    } elif idx == 49 {
+        "bin"
+    } elif idx == 50 {
+        "drawing_area"
+    } elif idx == 51 {
+        "shape_gallery"
+    } else {
+        "appbar"
     }
 }
 
 fun view_title_from_index(idx = num) (( string )) {
     return if idx == 0 {
-        "Button"
-    } elif idx == 1 {
-        "Icon Button"
-    } elif idx == 2 {
-        "TextField"
-    } elif idx == 3 {
-        "SearchField"
-    } elif idx == 4 {
-        "TextView"
-    } elif idx == 5 {
-        "Checkbox"
-    } elif idx == 6 {
-        "Switch"
-    } elif idx == 7 {
-        "Slider"
-    } elif idx == 8 {
-        "Stepper"
-    } elif idx == 9 {
-        "DatePicker"
-    } elif idx == 10 {
-        "ColorPicker"
-    } elif idx == 11 {
-        "TimePicker"
-    } elif idx == 12 {
-        "Dropdown"
-    } elif idx == 13 {
-        "Progress"
-    } elif idx == 14 {
-        "List"
-    } elif idx == 15 {
-        "Grid"
-    } elif idx == 16 {
-        "Tabs"
-    } elif idx == 17 {
-        "ButtonGroups"
-    } elif idx == 18 {
-        "Chip"
-    } elif idx == 19 {
-        "FAB"
-    } elif idx == 20 {
-        "Carousel"
-    } elif idx == 21 {
-        "Nav Rail"
-    } elif idx == 22 {
-        "BottomNav"
-    } elif idx == 23 {
-        "Toolbar"
-    } elif idx == 24 {
-        "Dialog"
-    } elif idx == 25 {
-        "Toast"
-    } elif idx == 26 {
-        "TreeView"
-    } elif idx == 27 {
-        "Card"
-    } elif idx == 28 {
-        "Avatar"
-    } elif idx == 29 {
-        "Badge"
-    } elif idx == 30 {
-        "Banner"
-    } elif idx == 31 {
-        "Divider"
-    } elif idx == 32 {
-        "Image"
-    } elif idx == 33 {
-        "ActiveIndicator"
-    } elif idx == 34 {
-        "SwitchBar"
-     } elif idx == 35 {
-        "SplitButton"
-    } elif idx == 36 {
-        "MenuButton"
-    } elif idx == 37 {
-        "EmptyPage"
-    } elif idx == 38 {
-        "WelcomeScreen"
-    } elif idx == 39 {
-        "SettingsWindow"
-    } elif idx == 40 {
-        "ViewDual"
-    } elif idx == 41 {
-        "ViewChooser"
-    } elif idx == 42 {
-        "AboutWindow"
-    } elif idx == 43 {
-        "Typography"
-    } elif idx == 44 {
-        "SideSheet"
-    } elif idx == 45 {
-        "FabMenu"
-    } elif idx == 46 {
-        "Ensor"
-    } elif idx == 47 {
-        "DrawingArea"
-    } elif idx == 48 {
-        "Shape Gallery"
-    } elif idx == 49 {
         "AppBar"
-    } else {
+    } elif idx == 1 {
         "Button"
+    } elif idx == 2 {
+        "Icon Button"
+    } elif idx == 3 {
+        "TextField"
+    } elif idx == 4 {
+        "SearchField"
+    } elif idx == 5 {
+        "TextView"
+    } elif idx == 6 {
+        "Checkbox"
+    } elif idx == 7 {
+        "Switch"
+    } elif idx == 8 {
+        "Slider"
+    } elif idx == 9 {
+        "Stepper"
+    } elif idx == 10 {
+        "DatePicker"
+    } elif idx == 11 {
+        "ColorPicker"
+    } elif idx == 12 {
+        "TimePicker"
+    } elif idx == 13 {
+        "Dropdown"
+    } elif idx == 14 {
+        "Progress"
+    } elif idx == 15 {
+        "List"
+    } elif idx == 16 {
+        "Grid"
+    } elif idx == 17 {
+        "Tabs"
+    } elif idx == 18 {
+        "ButtonGroups"
+    } elif idx == 19 {
+        "Chip"
+    } elif idx == 20 {
+        "FAB"
+    } elif idx == 21 {
+        "Carousel"
+    } elif idx == 22 {
+        "Nav Rail"
+    } elif idx == 23 {
+        "BottomNav"
+    } elif idx == 24 {
+        "Toolbar"
+    } elif idx == 25 {
+        "Dialog"
+    } elif idx == 26 {
+        "Toast"
+    } elif idx == 27 {
+        "TreeView"
+    } elif idx == 28 {
+        "Card"
+    } elif idx == 29 {
+        "Avatar"
+    } elif idx == 30 {
+        "Badge"
+    } elif idx == 31 {
+        "Banner"
+    } elif idx == 32 {
+        "Divider"
+    } elif idx == 33 {
+        "Image"
+    } elif idx == 34 {
+        "ActiveIndicator"
+    } elif idx == 35 {
+        "SwitchBar"
+     } elif idx == 36 {
+        "SplitButton"
+    } elif idx == 37 {
+        "MenuButton"
+    } elif idx == 38 {
+        "EmptyPage"
+    } elif idx == 39 {
+        "WelcomeScreen"
+    } elif idx == 40 {
+        "SettingsWindow"
+    } elif idx == 41 {
+        "ViewDual"
+    } elif idx == 42 {
+        "ViewChooser"
+    } elif idx == 43 {
+        "AboutWindow"
+    } elif idx == 44 {
+        "Typography"
+    } elif idx == 45 {
+        "SideSheet"
+    } elif idx == 46 {
+        "FabMenu"
+    } elif idx == 47 {
+        "Ensor"
+    } elif idx == 48 {
+        "Revealer"
+    } elif idx == 49 {
+        "Bin"
+    } elif idx == 50 {
+        "DrawingArea"
+    } elif idx == 51 {
+        "Shape Gallery"
+    } else {
+        "AppBar"
     }
 }
 
@@ -2527,7 +2673,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     let sidebar_bar = cogito.appbar("Widgets", "")
     .set_class("sidebar small")
     .set_hexpand(false)
-    let content_bar = cogito.appbar("Button", "")
+    let content_bar = cogito.appbar("AppBar", "")
     .set_small()
 
     let root = cogito.hstack()
@@ -2537,6 +2683,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     let views = cogito.view_switcher()
     .set_hexpand(true)
     .set_vexpand(true)
+    .add("appbar", (vs = cogito.ViewSwitcher) => build_appbar_page())
     .add("button", (vs = cogito.ViewSwitcher) => build_button_page())
     .add("iconbtn", (vs = cogito.ViewSwitcher) => build_iconbtn_page())
     .add("textfield", (vs = cogito.ViewSwitcher) => build_textfield_page())
@@ -2584,9 +2731,10 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .add("side_sheet", (vs = cogito.ViewSwitcher) => build_side_sheet_page())
     .add("fabmenu", (vs = cogito.ViewSwitcher) => build_fabmenu_page())
     .add("ensor", (vs = cogito.ViewSwitcher) => build_ensor_page())
+    .add("revealer", (vs = cogito.ViewSwitcher) => build_revealer_page())
+    .add("bin", (vs = cogito.ViewSwitcher) => build_bin_page())
     .add("drawing_area", (vs = cogito.ViewSwitcher) => build_drawing_area_page())
     .add("shape_gallery", (vs = cogito.ViewSwitcher) => build_shape_gallery_page())
-    .add("appbar", (vs = cogito.ViewSwitcher) => build_appbar_page())
 
     let sidebar = cogito.vstack()
     .set_class("sidebar")
@@ -2596,6 +2744,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     let sidebar_list = cogito.content_list()
     .set_padding(8, 8, 8, 8)
     .set_selected(0)
+    .add(cogito.label("AppBar").set_padding(10,16,10,16))
     .add(cogito.label("Button").set_padding(10,16,10,16))
     .add(cogito.label("Icon Button").set_padding(10,16,10,16))
     .add(cogito.label("TextField").set_padding(10,16,10,16))
@@ -2643,9 +2792,10 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .add(cogito.label("SideSheet").set_padding(10,16,10,16))
     .add(cogito.label("FAB Menu").set_padding(10,16,10,16))
     .add(cogito.label("Ensor").set_padding(10,16,10,16))
+    .add(cogito.label("Revealer").set_padding(10,16,10,16))
+    .add(cogito.label("Bin").set_padding(10,16,10,16))
     .add(cogito.label("DrawingArea").set_padding(10,16,10,16))
     .add(cogito.label("Shape Gallery").set_padding(10,16,10,16))
-    .add(cogito.label("AppBar").set_padding(10,16,10,16))
     .on_select((idx) => {
         let vid = view_id_from_index(idx)
         views.set_active(vid)

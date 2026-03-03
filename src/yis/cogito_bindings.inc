@@ -69,6 +69,8 @@
 #undef cogito_grid_set_align
 #undef cogito_grid_set_gap
 #undef cogito_grid_set_span
+#undef cogito_revealer_set_show_children
+#undef cogito_bin_set_accent_color
 #undef cogito_iconbtn_add_menu
 #undef cogito_iconbtn_add_menu_section
 #undef cogito_iconbtn_new
@@ -2050,6 +2052,27 @@ static YisVal __cogito_zstack(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_ZSTACK), COGITO_HANDLE_NODE);
 }
 
+static YisVal __cogito_revealer(void) {
+  return cogito_wrap_node(cogito_node_new(COGITO_NODE_REVEALER), COGITO_HANDLE_NODE);
+}
+
+static void __cogito_revealer_set_show_children(YisVal revealerv, YisVal showv) {
+  cogito_node* revealer = cogito_node_from_val(revealerv);
+  cogito_revealer_set_show_children(revealer, yis_as_bool(showv));
+}
+
+static YisVal __cogito_bin(void) {
+  return cogito_wrap_node(cogito_node_new(COGITO_NODE_BIN), COGITO_HANDLE_NODE);
+}
+
+static void __cogito_bin_set_accent_color(YisVal binv, YisVal colorv) {
+  cogito_node* bin = cogito_node_from_val(binv);
+  YisStr* tmp = NULL;
+  const char* color = cogito_optional_cstr(colorv, &tmp);
+  cogito_bin_set_accent_color(bin, color && color[0] ? color : NULL);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
 static YisVal __cogito_fixed(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_FIXED), COGITO_HANDLE_NODE);
 }
@@ -3342,6 +3365,10 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_vstack_new __cogito_vstack
 #define cogito_hstack_new __cogito_hstack
 #define cogito_zstack_new __cogito_zstack
+#define cogito_revealer_new __cogito_revealer
+#define cogito_revealer_set_show_children __cogito_revealer_set_show_children
+#define cogito_bin_new __cogito_bin
+#define cogito_bin_set_accent_color __cogito_bin_set_accent_color
 #define cogito_fixed_new __cogito_fixed
 #define cogito_scroller_new __cogito_scroller
 #define cogito_carousel_new __cogito_carousel

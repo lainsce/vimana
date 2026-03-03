@@ -35,9 +35,12 @@ case COGITO_SWITCH: {
       bool down = active;
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
       CogitoStyle track_s = cogito_switch_track_style(n->checked, over, down);
+      CogitoStyle knob_s = cogito_switch_knob_style(n->checked, over, down);
 
-      CogitoColor track_off = n->track_set ? n->track_color : (track_s.has_track ? track_s.track : n->bg);
-      CogitoColor track_on  = n->track_on_set ? n->track_on_color : (track_s.has_track ? track_s.track : n->bg);
+      CogitoColor track_off = track_s.has_track ? track_s.track : (n->track_set ? n->track_color : n->bg);
+      CogitoColor track_on  = track_s.has_track_on
+        ? track_s.track_on
+        : (track_s.has_track ? track_s.track : (n->track_on_set ? n->track_on_color : (n->track_set ? n->track_color : n->bg)));
       if (track_s.has_bg) { track_off = track_s.bg; track_on = track_s.bg; }
       if (track_s.has_track_on) track_on = track_s.track_on;
       CogitoColor track = n->checked ? track_on : track_off;
@@ -45,6 +48,10 @@ case COGITO_SWITCH: {
       CogitoColor knob_col;
       if (n->knob_set) {
         knob_col = n->knob_color;
+      } else if (knob_s.has_knob) {
+        knob_col = knob_s.knob;
+      } else if (knob_s.has_bg) {
+        knob_col = knob_s.bg;
       } else if (n->checked) {
         // Checked: use On Primary (white/light on primary track)
         knob_col = cogito_cached_on_primary;
@@ -55,6 +62,13 @@ case COGITO_SWITCH: {
 
       // Animate track color via spring
       cogito_anim_apply(n, &track_s, &track, &knob_col, NULL, NULL);
+
+      // State layer on track (hover/press) so feedback is always visible.
+      if (over || down) {
+        CogitoColor state_layer = cogito_on_color(track);
+        state_layer.a = down ? 28 : 20;
+        track = cogito_color_blend(track, state_layer);
+      }
 
       // Draw pill-shaped track
       cogito_draw_rect(cx, cy, w, h, track, h / 2);

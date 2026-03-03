@@ -590,6 +590,78 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_revealer")) {
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_revealer_new();", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_revealer_set_show_children")) {
+                        GenExpr revealer, show;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &revealer, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &show, err)) { gen_expr_free(&revealer); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_revealer_set_show_children(%s, %s);", revealer.tmp, show.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", revealer.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", show.tmp);
+                        gen_expr_release_except(cg, &revealer, revealer.tmp);
+                        gen_expr_release_except(cg, &show, show.tmp);
+                        gen_expr_free(&revealer);
+                        gen_expr_free(&show);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_bin")) {
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_bin_new();", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_bin_set_accent_color")) {
+                        GenExpr bin, color;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &bin, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &color, err)) { gen_expr_free(&bin); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_bin_set_accent_color(%s, %s);", bin.tmp, color.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", bin.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", color.tmp);
+                        gen_expr_release_except(cg, &bin, bin.tmp);
+                        gen_expr_release_except(cg, &color, color.tmp);
+                        gen_expr_free(&bin);
+                        gen_expr_free(&color);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_fixed")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,

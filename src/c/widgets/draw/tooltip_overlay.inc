@@ -1,5 +1,7 @@
 static void cogito_draw_tooltip(CogitoNode* win, CogitoNode* target) {
   if (!win || !target || !target->tooltip || !target->tooltip->data) return;
+  CogitoBinOverlayScopeState bin_scope_state = {0};
+  cogito_bin_scope_begin_for_node(target, &bin_scope_state);
   CogitoStyle s = cogito_theme_resolve(COGITO_TOOLTIP);
   CogitoColor bg = s.has_bg
     ? s.bg
@@ -43,4 +45,5 @@ static void cogito_draw_tooltip(CogitoNode* win, CogitoNode* target) {
     cogito_draw_rect_lines(x, y, w, h, border, radius, border_w);
   }
   cogito_draw_text_size_node(target, x + pad_x, y + pad_y, t, text, font_size, false, false);
+  cogito_bin_scope_end_for_node(&bin_scope_state);
 }

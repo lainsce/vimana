@@ -129,6 +129,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_grid_set_gap cogito_grid_set_gap_yis
 #define cogito_grid_set_span cogito_grid_set_span_yis
 #define cogito_hstack_new cogito_hstack_new_yis
+#define cogito_revealer_set_show_children cogito_revealer_set_show_children_yis
+#define cogito_bin_set_accent_color cogito_bin_set_accent_color_yis
 #define cogito_iconbtn_add_menu cogito_iconbtn_add_menu_yis
 #define cogito_iconbtn_new cogito_iconbtn_new_yis
 #define cogito_iconbtn_set_shape cogito_iconbtn_set_shape_yis
@@ -472,6 +474,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_grid_set_gap
 #undef cogito_grid_set_span
 #undef cogito_hstack_new
+#undef cogito_revealer_set_show_children
+#undef cogito_bin_set_accent_color
 #undef cogito_iconbtn_add_menu
 #undef cogito_iconbtn_new
 #undef cogito_iconbtn_set_shape
@@ -1191,6 +1195,10 @@ static CogitoKind cogito_kind_from_public(cogito_node_kind kind) {
     return COGITO_HSTACK;
   case COGITO_NODE_ZSTACK:
     return COGITO_ZSTACK;
+  case COGITO_NODE_REVEALER:
+    return COGITO_REVEALER;
+  case COGITO_NODE_BIN:
+    return COGITO_BIN;
   case COGITO_NODE_FIXED:
     return COGITO_FIXED;
   case COGITO_NODE_SCROLLER:
@@ -2280,6 +2288,23 @@ void cogito_node_set_tooltip(cogito_node *node, const char *text) {
   cogito_node_set_tooltip_yis((CogitoNode *)node, ts);
   if (tv.tag == EVT_STR)
     yis_release_val(tv);
+}
+
+void cogito_revealer_set_show_children(cogito_node *revealer,
+                                       bool show_children) {
+  if (!revealer)
+    return;
+  cogito_revealer_set_show_children_yis(YV_OBJ(revealer),
+                                        YV_BOOL(show_children));
+}
+
+void cogito_bin_set_accent_color(cogito_node *bin, const char *hex) {
+  if (!bin)
+    return;
+  YisVal hv = hex ? cogito_val_from_cstr(hex) : YV_NULLV;
+  cogito_bin_set_accent_color_yis(YV_OBJ(bin), hv);
+  if (hv.tag == EVT_STR)
+    yis_release_val(hv);
 }
 
 void cogito_node_on_click(cogito_node *node, cogito_node_fn fn, void *user) {

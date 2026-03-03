@@ -44,6 +44,8 @@ typedef enum {
   COGITO_NODE_VSTACK,
   COGITO_NODE_HSTACK,
   COGITO_NODE_ZSTACK,
+  COGITO_NODE_REVEALER,
+  COGITO_NODE_BIN,
   COGITO_NODE_FIXED,
   COGITO_NODE_SCROLLER,
   COGITO_NODE_GRID,
@@ -330,6 +332,9 @@ void cogito_node_set_class(cogito_node *node, const char *cls);
 void cogito_node_set_a11y_label(cogito_node *node, const char *label);
 void cogito_node_set_a11y_role(cogito_node *node, const char *role);
 void cogito_node_set_tooltip(cogito_node *node, const char *text);
+void cogito_revealer_set_show_children(cogito_node *revealer,
+                                       bool show_children);
+void cogito_bin_set_accent_color(cogito_node *bin, const char *hex);
 void cogito_node_build(cogito_node *node, cogito_node_fn builder, void *user);
 void cogito_pointer_capture(cogito_node *node);
 void cogito_pointer_release(void);

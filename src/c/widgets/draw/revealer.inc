@@ -1,4 +1,5 @@
-case COGITO_ZSTACK: {
+case COGITO_REVEALER: {
+			if (!n->revealer_show_children) break;
 			bool hover = false;
 			bool active = false;
 			cogito_node_hover_state(n, &hover, &active);
@@ -27,4 +28,3 @@ case COGITO_ZSTACK: {
 			}
 			break;
 		}
-

@@ -229,6 +229,7 @@ typedef enum {
 
 typedef enum {
   COGITO_APPBAR,
+  COGITO_BIN,
   COGITO_BOTTOM_NAV,
   COGITO_BUTTON,
   COGITO_CAROUSEL,
@@ -253,6 +254,7 @@ typedef enum {
   COGITO_PROGRESS,
   COGITO_SCROLLER,
   COGITO_SEARCHFIELD,
+  COGITO_REVEALER,
   COGITO_BUTTON_GROUP,
   COGITO_SLIDER,
   COGITO_STEPPER,
@@ -626,6 +628,8 @@ typedef struct CogitoNode {
   bool should_close;
   bool disabled;
   bool hidden;
+  bool revealer_show_children;
+  bool bin_accent_set;
   bool editable;
   bool resizable;
   bool fixed_pos_set;
@@ -690,6 +694,7 @@ typedef struct CogitoNode {
 
   // Style values
   CogitoColor bg;
+  CogitoColor bin_accent_color;
   CogitoColor text_color;
   CogitoColor border_color;
   CogitoColor selection_color;
@@ -1174,6 +1179,45 @@ static CogitoColor cogito_selection_text = {
   0
 };
 static bool cogito_has_selection_text = false;
+typedef struct CogitoBinScopePalette {
+  CogitoColor primary;
+  CogitoColor on_primary;
+  CogitoColor primary_container;
+  CogitoColor on_primary_container;
+  CogitoColor secondary;
+  CogitoColor on_secondary;
+  CogitoColor secondary_container;
+  CogitoColor on_secondary_container;
+  CogitoColor tertiary;
+  CogitoColor on_tertiary;
+  CogitoColor tertiary_container;
+  CogitoColor on_tertiary_container;
+  CogitoColor error;
+  CogitoColor on_error;
+  CogitoColor error_container;
+  CogitoColor on_error_container;
+  CogitoColor background;
+  CogitoColor on_background;
+  CogitoColor surface;
+  CogitoColor on_surface;
+  CogitoColor surface_tint;
+  CogitoColor surface_container_lowest;
+  CogitoColor surface_container_low;
+  CogitoColor surface_container;
+  CogitoColor surface_container_high;
+  CogitoColor surface_container_highest;
+  CogitoColor inverse_surface;
+  CogitoColor inverse_on_surface;
+  CogitoColor inverse_primary;
+  CogitoColor outline;
+  CogitoColor outline_variant;
+  CogitoColor surface_variant;
+  CogitoColor on_surface_variant;
+} CogitoBinScopePalette;
+
+static bool cogito_bin_scope_active = false;
+static CogitoBinScopePalette cogito_bin_scope_from_scheme = {0};
+static CogitoBinScopePalette cogito_bin_scope_to_scheme = {0};
 static bool cogito_dialog_slot_force_draw = false;
 static bool cogito_toasts_force_draw = false;
 static bool cogito_fab_menu_force_draw = false;

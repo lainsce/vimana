@@ -51,14 +51,22 @@ case COGITO_SWITCHBAR: {
     CogitoStyle knob_s = cogito_switch_knob_style(n->checked, hover, active);
 
     // Resolve track colors - exact switch.inc pattern
-    CogitoColor track_off = n->track_set ? n->track_color : (track_s.has_track ? track_s.track : n->bg);
-    CogitoColor track_on = n->track_on_set ? n->track_on_color : (track_s.has_track_on ? track_s.track_on : (track_s.has_track ? track_s.track : n->bg));
+    CogitoColor track_off = track_s.has_track ? track_s.track : (n->track_set ? n->track_color : n->bg);
+    CogitoColor track_on = track_s.has_track_on
+      ? track_s.track_on
+      : (track_s.has_track ? track_s.track : (n->track_on_set ? n->track_on_color : (n->track_set ? n->track_color : n->bg)));
     if (track_s.has_bg) {
       track_off = track_s.bg;
       track_on = track_s.bg;
     }
     if (track_s.has_track_on) track_on = track_s.track_on;
     CogitoColor track = n->checked ? track_on : track_off;
+
+    if (hover || active) {
+      CogitoColor state_layer = cogito_on_color(track);
+      state_layer.a = active ? 28 : 20;
+      track = cogito_color_blend(track, state_layer);
+    }
 
     // Draw track
     cogito_draw_rect(sw_x, sw_y, sw_w, sw_h, track, sw_h / 2);

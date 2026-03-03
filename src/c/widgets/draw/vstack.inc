@@ -12,10 +12,6 @@ case COGITO_VSTACK: {
 			}
 			n->bg_set = false;
 			if (!inside_appbar && s.has_bg) { n->bg = s.bg; n->bg_set = true; }
-			if (n->parent && n->parent->kind == COGITO_DIALOG && n->parent->bg_set) {
-				n->bg = n->parent->bg;
-				n->bg_set = true;
-			}
 			n->border_color_set = false;
 			if (s.has_border) { n->border_color = s.border; n->border_color_set = true; }
 			n->border_width = 0;

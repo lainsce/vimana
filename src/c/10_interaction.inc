@@ -159,6 +159,8 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
 #include "widgets/interaction/vstack.inc"
 #include "widgets/interaction/window.inc"
 #include "widgets/interaction/zstack.inc"
+#include "widgets/interaction/revealer.inc"
+#include "widgets/interaction/bin.inc"
 #include "widgets/interaction/appbar.inc"
 
 static void cogito_state_drop(YisObj* o) {
@@ -275,6 +277,8 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
       CogitoNode* child = cogito_find_clickable(active, x, y);
       if (child) return child;
     }
+  } else if (n->kind == COGITO_REVEALER && !n->revealer_show_children) {
+    // Hidden revealer children are intentionally non-interactive.
   } else {
     for (size_t i = n->len; i > 0; i--) {
       CogitoNode* child = cogito_find_clickable(n->children[i - 1], x, y);
@@ -327,6 +331,8 @@ static CogitoNode* cogito_find_overlay_toast(CogitoNode* n, int x, int y) {
   if (n->kind == COGITO_VIEWSWITCHER) {
     CogitoNode* active = cogito_view_switcher_active_child(n);
     if (active) return cogito_find_overlay_toast(active, x, y);
+  } else if (n->kind == COGITO_REVEALER && !n->revealer_show_children) {
+    // Hidden revealer children are intentionally non-interactive.
   } else {
     for (size_t i = n->len; i > 0; i--) {
       CogitoNode* child = cogito_find_overlay_toast(n->children[i - 1], x, y);
@@ -380,6 +386,8 @@ static CogitoNode* cogito_focus_next(CogitoNode* n, CogitoNode* current, bool* f
       CogitoNode* hit = cogito_focus_next(active, current, found_current);
       if (hit) return hit;
     }
+  } else if (n->kind == COGITO_REVEALER && !n->revealer_show_children) {
+    // Hidden revealer children are intentionally non-focusable.
   } else {
     for (size_t i = 0; i < n->len; i++) {
       CogitoNode* hit = cogito_focus_next(n->children[i], current, found_current);
@@ -397,6 +405,8 @@ static CogitoNode* cogito_focus_prev(CogitoNode* n, CogitoNode* current, bool* f
       CogitoNode* hit = cogito_focus_prev(active, current, found_current);
       if (hit) return hit;
     }
+  } else if (n->kind == COGITO_REVEALER && !n->revealer_show_children) {
+    // Hidden revealer children are intentionally non-focusable.
   } else {
     for (size_t i = n->len; i > 0; i--) {
       CogitoNode* hit = cogito_focus_prev(n->children[i - 1], current, found_current);
@@ -417,6 +427,8 @@ static CogitoNode* cogito_focus_first(CogitoNode* n) {
   if (n->kind == COGITO_VIEWSWITCHER) {
     CogitoNode* active = cogito_view_switcher_active_child(n);
     if (active) return cogito_focus_first(active);
+  } else if (n->kind == COGITO_REVEALER && !n->revealer_show_children) {
+    return NULL;
   } else {
     for (size_t i = 0; i < n->len; i++) {
       CogitoNode* hit = cogito_focus_first(n->children[i]);
@@ -431,6 +443,8 @@ static CogitoNode* cogito_focus_last(CogitoNode* n) {
   if (n->kind == COGITO_VIEWSWITCHER) {
     CogitoNode* active = cogito_view_switcher_active_child(n);
     if (active) return cogito_focus_last(active);
+  } else if (n->kind == COGITO_REVEALER && !n->revealer_show_children) {
+    return NULL;
   } else {
     for (size_t i = n->len; i > 0; i--) {
       CogitoNode* hit = cogito_focus_last(n->children[i - 1]);

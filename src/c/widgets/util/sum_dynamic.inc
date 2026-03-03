@@ -500,7 +500,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "grid\n  background: %s\n  color: %s\n", sc, ons);
   cogito_sum_append(out, cap, &off,
-  "hstack\n  background: %s\n  color: %s\n", bg, ons);
+  "hstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
   "iconbtn\n  background: transparent\n  color: %s\n  transition: 150 standard\n", osurfvar);
   cogito_sum_append(out, cap, &off,
@@ -668,7 +668,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "switch track:active\n  background: %s\n", p);
   cogito_sum_append(out, cap, &off,
-  "switch track:hover\n  background: %s\n", schi);
+  "switch track:hover\n  background: %s\n", outl);
   cogito_sum_append(out, cap, &off,
   "switch track\n  background: %s\n  border: 2 solid %s\n", schi, outl);
   cogito_sum_append(out, cap, &off,
@@ -748,31 +748,31 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "viewswitcher\n  background: %s\n  color: %s\n", surf, ons);
   cogito_sum_append(out, cap, &off,
-  "dialog vstack\n  background: %s\n  color: %s\n", sch, ons);
+  "dialog vstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
-  "dialog hstack\n  background: %s\n  color: %s\n", sch, ons);
+  "dialog hstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
-  "dialog zstack\n  background: %s\n  color: %s\n", sch, ons);
+  "dialog zstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
-  "dialog fixed\n  background: %s\n  color: %s\n", sch, ons);
+  "dialog fixed\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
   "vstack.sidebar\n  background: %s\n  color: %s\n", sc, ons);
   cogito_sum_append(out, cap, &off,
-  "vstack\n  background: %s\n  color: %s\n", bg, ons);
+  "vstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
   "welcome_screen\n  background: %s\n  color: %s\n", bg, ons);
   cogito_sum_append(out, cap, &off,
   "window\n  background: %s\n", surf);
   cogito_sum_append(out, cap, &off,
-  "zstack\n  background: %s\n  color: %s\n", bg, ons);
+  "zstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
-  "dialog vstack\n  background: %s\n  color: %s\n", sch, ons);
+  "dialog vstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
-  "dialog hstack\n  background: %s\n  color: %s\n", sch, ons);
+  "dialog hstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
-  "dialog zstack\n  background: %s\n  color: %s\n", sch, ons);
+  "dialog zstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
-  "dialog fixed\n  background: %s\n  color: %s\n", sch, ons);
+  "dialog fixed\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
   ".about-window\n  background: %s\n  color: %s\n", sch, ons);
   cogito_sum_append(out, cap, &off,
