@@ -119,17 +119,8 @@ static bool cogito_keyboard_move_indexed_selection(CogitoNode* n, int dir) {
       if (next < 0) next = 0;
       if (next >= (int)n->tab_len) next = (int)n->tab_len - 1;
       if (next == prev) return false;
-      n->selected = next;
-      if (n->view_switcher && n->tab_ids && (size_t)next < n->tab_len) {
-        CogitoNode* vs = n->view_switcher;
-        YisStr* id = n->tab_ids[next];
-        if (id) {
-          if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
-          vs->view_active_id = id;
-          yis_retain_val(YV_STR(vs->view_active_id));
-        }
-      }
-      cogito_invoke_change(n);
+      cogito_tabs_set_selected(YV_OBJ(n), YV_INT(next));
+      cogito_invoke_select(n, next, false);
       return true;
     }
     case COGITO_NAV_RAIL: {
@@ -822,6 +813,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
   bool prev_inspector_mouse_inside = false;
   bool prev_inspector_mouse_in_frame = false;
   CogitoNode* prev_hover_node = NULL;
+  bool appbar_drag_swallow = false;
 
   // Main event loop
   while (!cogito_backend->window_should_close(window) && !win->should_close) {
@@ -954,6 +946,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
     bool left_down = cogito_backend->is_mouse_button_down(0);
     bool left_pressed = cogito_backend->is_mouse_button_pressed(0);
     bool left_released = cogito_backend->is_mouse_button_released(0);
+    if (!left_down) {
+      appbar_drag_swallow = false;
+    }
     bool click = left_pressed; // Left button
     if (cogito_pointer_capture && left_released &&
         cogito_pointer_capture->kind != COGITO_DRAWING_AREA) {
@@ -985,7 +980,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
       imy >= inspector_frame_y &&
       imx < inspector_frame_x + inspector_frame_w &&
       imy < inspector_frame_y + inspector_frame_h;
-    bool route_main_pointer = main_mouse_inside && !inspector_mouse_in_frame;
+    bool appbar_drag_capture = cogito_drag_active || cogito_drag_pending || appbar_drag_swallow;
+    bool route_main_pointer = main_mouse_inside && !inspector_mouse_in_frame && !appbar_drag_capture;
     cogito_main_pointer_x = mx;
     cogito_main_pointer_y = my;
     cogito_main_pointer_valid = main_mouse_inside;
@@ -2092,6 +2088,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
         if (!handled && !active_dialog && !appbar_blocked_by_bottom_sheet) {
           CogitoNode* clicked_appbar = cogito_find_appbar_at_point(win, mx, my);
           if (clicked_appbar && !cogito_point_over_appbar_buttons(clicked_appbar, mx, my)) {
+            appbar_drag_swallow = true;
 #if defined(__APPLE__)
             cogito_macos_drag_window();
 #else
@@ -2367,19 +2364,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
           } else if (hit->kind == COGITO_TABS) {
             int idx = cogito_tabs_hit_index(hit, mx, my);
             if (idx >= 0) {
-              hit->selected = idx;
-              if (hit->view_switcher && hit->tab_ids && (size_t)idx < hit->tab_len) {
-                CogitoNode* vs = hit->view_switcher;
-                YisStr* id = hit->tab_ids[idx
-                ];
-                if (id) {
-                  if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
-                  vs->view_active_id = id;
-                  yis_retain_val(YV_STR(vs->view_active_id));
-                }
-              }
-              cogito_invoke_change(hit);
-              cogito_window_relayout(win);
+              cogito_tabs_set_selected(YV_OBJ(hit), YV_INT(idx));
+              cogito_invoke_select(hit, idx, false);
             }
           } else if (hit->kind == COGITO_DATEPICKER) {
             cogito_datepicker_click(hit, mx, my);

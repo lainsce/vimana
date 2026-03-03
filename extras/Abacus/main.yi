@@ -89,8 +89,10 @@ fun apply_loaded_state(view_switcher = cogito.ViewSwitcher) (( -- )) {
         update_display_value(str(current_value))
     }
 
-    let names = conv_unit_names()
-    let count = len(names)
+    if conv_category < 0 || conv_category > 3 {
+        conv_category = 0
+    }
+    let count = conv_unit_count()
     if conv_from_idx < 0 || conv_from_idx >= count {
         conv_from_idx = 0
     }
@@ -99,8 +101,7 @@ fun apply_loaded_state(view_switcher = cogito.ViewSwitcher) (( -- )) {
     }
 
     conv_category_dd.set_selected(conv_category)
-    conv_from_dd.set_items(names)
-    conv_to_dd.set_items(names)
+    conv_apply_unit_items()
     conv_from_dd.set_selected(conv_from_idx)
     conv_to_dd.set_selected(conv_to_idx)
     conv_input.set_text(conv_input_state)
@@ -329,7 +330,7 @@ fun aton(s = string) (( num )) {
     return result
 }
 
-fun conv_unit_names() (( [string] )) {
+fun conv_unit_names() (( [any] )) {
     if conv_category == 0 {
         return ["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"]
     } elif conv_category == 1 {
@@ -338,6 +339,33 @@ fun conv_unit_names() (( [string] )) {
         return ["Celsius", "Fahrenheit", "Kelvin"]
     } else {
         return ["Liter", "Milliliter", "Gallon", "Quart", "Cup", "Fluid Oz"]
+    }
+}
+
+fun conv_unit_count() (( num )) {
+    if conv_category == 0 {
+        return 8
+    } elif conv_category == 1 {
+        return 6
+    } elif conv_category == 2 {
+        return 3
+    }
+    return 6
+}
+
+fun conv_apply_unit_items() (( -- )) {
+    if conv_category == 0 {
+        conv_from_dd.set_items(["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"])
+        conv_to_dd.set_items(["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"])
+    } elif conv_category == 1 {
+        conv_from_dd.set_items(["Kilogram", "Gram", "Milligram", "Pound", "Ounce", "Ton"])
+        conv_to_dd.set_items(["Kilogram", "Gram", "Milligram", "Pound", "Ounce", "Ton"])
+    } elif conv_category == 2 {
+        conv_from_dd.set_items(["Celsius", "Fahrenheit", "Kelvin"])
+        conv_to_dd.set_items(["Celsius", "Fahrenheit", "Kelvin"])
+    } else {
+        conv_from_dd.set_items(["Liter", "Milliliter", "Gallon", "Quart", "Cup", "Fluid Oz"])
+        conv_to_dd.set_items(["Liter", "Milliliter", "Gallon", "Quart", "Cup", "Fluid Oz"])
     }
 }
 
@@ -428,9 +456,10 @@ fun swap_conv() (( -- )) {
 }
 
 fun refresh_conv_units() (( -- )) {
-    let names = conv_unit_names()
-    conv_from_dd.set_items(names)
-    conv_to_dd.set_items(names)
+    if conv_category < 0 || conv_category > 3 {
+        conv_category = 0
+    }
+    conv_apply_unit_items()
     conv_from_idx = 0
     conv_to_idx = 1
     conv_from_dd.set_selected(0)
@@ -463,8 +492,7 @@ fun build_converter_ui() (( cogito.VStack )) {
     .set_hexpand(true)
     .set_gap(6)
 
-    let names = conv_unit_names()
-    let unit_count = len(names)
+    let unit_count = conv_unit_count()
     if conv_from_idx < 0 || conv_from_idx >= unit_count {
         conv_from_idx = 0
     }
@@ -472,8 +500,9 @@ fun build_converter_ui() (( cogito.VStack )) {
         conv_to_idx = if unit_count > 1 { 1 } else { 0 }
     }
 
-    conv_from_dd.set_items(names)
-    .set_selected(conv_from_idx)
+    conv_apply_unit_items()
+
+    conv_from_dd.set_selected(conv_from_idx)
     .on_change((dd = cogito.Dropdown) => {
         conv_from_idx = dd.selected()
         do_convert()
@@ -506,8 +535,7 @@ fun build_converter_ui() (( cogito.VStack )) {
     .set_hexpand(true)
     .set_gap(6)
 
-    conv_to_dd.set_items(names)
-    .set_selected(conv_to_idx)
+    conv_to_dd.set_selected(conv_to_idx)
     .on_change((dd = cogito.Dropdown) => {
         conv_to_idx = dd.selected()
         do_convert()
@@ -550,12 +578,13 @@ fun build_ui(win = cogito.Window) (( -- )) {
     let switcher = cogito.view_switcher()
 
     let bar = cogito.appbar("", "")
+    .set_small()
     .set_hexpand(true)
-    let about_btn = bar.add_button("sf:questionmark", (b = cogito.Button) => {
+    let about_btn = bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         show_about_window(win)
     })
     cogito.set_tooltip(about_btn, "About YisCalc")
-    let toggle_btn = bar.add_button("sf:arrow.left.arrow.right", (b = cogito.Button) => {
+    let toggle_btn = bar.add_trailing_button("sf:arrow.left.arrow.right", (b = cogito.Button) => {
         showing_converter = !showing_converter
         if showing_converter {
             switcher.set_active("converter")

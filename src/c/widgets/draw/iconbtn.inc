@@ -13,8 +13,19 @@ case COGITO_ICONBTN: {
       bool iconic_class = n->class_name && n->class_name->data &&
                           strstr(n->class_name->data, "iconic") != NULL;
       bool is_iconic_variant = (n->button.icon_color_style == 3) || iconic_class;
-      bool in_appbar = n->parent && n->parent->kind == COGITO_APPBAR;
-      bool in_appbar_or_toolbar = n->parent && (n->parent->kind == COGITO_APPBAR || n->parent->kind == COGITO_TOOLBAR);
+      bool in_appbar = false;
+      bool in_appbar_or_toolbar = false;
+      for (CogitoNode* p = n->parent; p; p = p->parent) {
+        if (p->kind == COGITO_APPBAR) {
+          in_appbar = true;
+          in_appbar_or_toolbar = true;
+          break;
+        }
+        if (p->kind == COGITO_TOOLBAR) {
+          in_appbar_or_toolbar = true;
+          break;
+        }
+      }
       int mx = 0;
       int my = 0;
       bool down_state = false;

@@ -14,7 +14,8 @@ case COGITO_TABS: {
   }
       if (n->tab_len == 0) break;
 
-      const int slot_count = 4;
+      int slot_count = (int)n->tab_len;
+      if (slot_count < 1) slot_count = 1;
       const int icon_size  = 24;
       const int icon_gap   = 4;
       // Cogito: active indicator — 3dp height, Full (1.5dp = 2dp) radius

@@ -5,12 +5,11 @@ bring cogito
 
 def app = cogito.app()
 def ?drawing_tool = "Pen"
-def ?shape_phase = 0.0
-def ?shape_paused = true
-def ?shape_armed = false
-def ?shape_timer_id = 0
-def ?shape_instruction_text = "5 - Inhale"
-def ?field_text = ""
+def shape_phase = 0.0
+def shape_paused = true
+def shape_armed = false
+def shape_timer_id = 0
+def shape_instruction_text = "5 - Inhale"
 
 macro clicked_message() (( string )) {
     "Button clicked."
@@ -251,7 +250,8 @@ fun build_textfield_page() (( cogito.VStack )) {
     .set_hexpand(true)
     .set_hint("Supporting text")
     tf.on_change((field = cogito.TextField) => {
-        status.set_text("Current value: <field_text>")
+        let txt = field.text()
+        status.set_text("Current value: <txt>")
     })
     vstack.add(tf)
 
@@ -266,8 +266,9 @@ fun build_textfield_page() (( cogito.VStack )) {
     counter.on_change((field = cogito.TextField) => {
         let ?n = len(field.text())
         let ?shown = if n > 20 { 20 } else { n }
+        let txt = field.text()
         field.set_hint("<shown> / 20")
-        status.set_text("Current value: <field_text>")
+        status.set_text("Current value: <txt>")
     })
     vstack.add(counter)
 
@@ -303,7 +304,8 @@ fun build_searchfield_page() (( cogito.VStack )) {
     let sf = cogito.searchfield("Search…")
     .set_hexpand(true)
     sf.on_change((field = cogito.SearchField) => {
-        status.set_text("Query: <field_text>")
+        let txt = field.text()
+        status.set_text("Query: <txt>")
     })
     vstack.add(sf)
 
@@ -601,7 +603,7 @@ fun build_list_page() (( cogito.VStack )) {
     .on_select((idx) => {
         status.set_text("Selected row: <idx>")
     })
-    .on_activate((idx) => {
+    .on_activate((idx = num) => {
         status.set_text("Activated row: <idx>")
     })
     vstack.add(list)
@@ -645,9 +647,6 @@ fun build_tabs_page() (( cogito.VStack )) {
     .set_ids(["overview", "details", "history", "misc"])
     .set_selected(0)
     .set_hexpand(true)
-    .on_change((idx) => {
-        status.set_text("Selected tab index: <idx>")
-    })
     vstack.add(tabs)
 
     let tab_views = cogito.view_switcher()
@@ -657,6 +656,14 @@ fun build_tabs_page() (( cogito.VStack )) {
     .add("history", (vs = cogito.ViewSwitcher) => cogito.label("History content"))
     .add("misc", (vs = cogito.ViewSwitcher) => cogito.label("Misc content"))
     .set_active("overview")
+
+    tabs.on_change((idx = any) => {
+        let current = tabs.selected()
+        status.set_text("Selected tab index: <current>")
+        let id = if current == 0 { "overview" } elif current == 1 { "details" } elif current == 2 { "history" } else { "misc" }
+        tab_views.set_active(id)
+    })
+
     tabs.bind(tab_views)
     vstack.add(tab_views)
 
@@ -1631,7 +1638,7 @@ fun build_shape_gallery_page() (( cogito.VStack )) {
     let anchor = cogito.shape(27).set_size(256).set_color("transparent")
 
     let render = () => {
-        let wrapped = shape_phase
+        let wrapped = session_wrap_phase(shape_phase)
 
         let progress = session_phase_progress(wrapped)
         let second = session_countdown5(progress)
@@ -1643,9 +1650,17 @@ fun build_shape_gallery_page() (( cogito.VStack )) {
         }
 
         for (let ?i = 0; i < 18; i += 1) {
-            let layer = layers[i] ?? anchor
-            let base = layer_bases[i] ?? anchor
-            let scale = session_layer_size(base_size, wrapped, min_multiplier, i * 1.0, layer_count) / base_size
+            let layer = layers[i]
+            let base = layer_bases[i]
+            let idx = i * 1.0
+            let lag = idx * 0.015
+            let shifted = if wrapped >= lag { wrapped - lag } else { wrapped - lag + 1.0 }
+            let phase01 = if shifted < 0.5 { shifted * 2.0 } else { (1.0 - shifted) * 2.0 }
+            let mult = min_multiplier + phase01 * (1.0 - min_multiplier)
+            let radius_factor = 1.0 - (0.9 * idx / (layer_count - 1.0))
+            let layer_size = base_size * radius_factor * mult
+            if layer_size < 24.0 { layer_size = 24.0 }
+            let scale = layer_size / base_size
             session_apply_scaled_vertices(layer, base, scale)
         }
     }
@@ -1676,7 +1691,7 @@ fun build_shape_gallery_page() (( cogito.VStack )) {
 
     -- Add all 18 layers to the stack (innermost first)
     for (let ?i = 0; i < 18; i += 1) {
-        let layer = layers[i] ?? anchor
+        let layer = layers[i]
         stack.add(layer)
     }
 
@@ -2304,6 +2319,8 @@ fun view_id_from_index(idx = num) (( string )) {
         "drawing_area"
     } elif idx == 48 {
         "shape_gallery"
+    } elif idx == 49 {
+        "appbar"
     } else {
         "button"
     }
@@ -2408,6 +2425,8 @@ fun view_title_from_index(idx = num) (( string )) {
         "DrawingArea"
     } elif idx == 48 {
         "Shape Gallery"
+    } elif idx == 49 {
+        "AppBar"
     } else {
         "Button"
     }
@@ -2441,11 +2460,75 @@ fun build_ensor_page() (( cogito.VStack )) {
     return vstack
 }
 
+fun build_appbar_page() (( cogito.VStack )) {
+    let vstack = build_page("AppBar", "AppBar has 4 variants: Search, Small, Medium (default), and Large.")
+
+    let search_label = cogito.label("Search")
+    .set_class("heading")
+    vstack.add(search_label)
+
+    let search_bar = cogito.appbar("", "")
+    .set_class("sidebar search")
+    .set_window_controls("")
+    .set_hexpand(true)
+
+    let search_title_row = cogito.hstack()
+    .set_gap(10)
+    .set_hexpand(true)
+    .add(cogito.searchfield("Search News").set_hexpand(true))
+
+    search_bar.add_leading_button("sf:line.3.horizontal", null)
+    search_bar.add_trailing_button("sf:person.circle.fill", null)
+    search_bar.set_title_widget(search_title_row)
+    vstack.add(search_bar)
+
+    let small_label = cogito.label("Small")
+    .set_class("heading")
+    .set_padding(12, 0, 0, 0)
+    vstack.add(small_label)
+
+    let small_bar = cogito.appbar("Image editor", "Refine your photo")
+    .set_class("sidebar small")
+    .set_window_controls("")
+    .set_hexpand(true)
+
+    small_bar.add_trailing_button("sf:checkmark", null)
+    vstack.add(small_bar)
+
+    let medium_label = cogito.label("Medium (default)")
+    .set_class("heading")
+    .set_padding(12, 0, 0, 0)
+    vstack.add(medium_label)
+
+    let medium_bar = cogito.appbar("Daily activities", "Record new fitness goals")
+    .set_class("sidebar medium")
+    .set_window_controls("")
+    .set_hexpand(true)
+
+    medium_bar.add_trailing_button("sf:plus", null)
+    vstack.add(medium_bar)
+
+    let large_label = cogito.label("Large")
+    .set_class("heading")
+    .set_padding(12, 0, 0, 0)
+    vstack.add(large_label)
+
+    let large_bar = cogito.appbar("Top 10 hiking trails", "Discover popular trails")
+    .set_class("sidebar large")
+    .set_window_controls("")
+    .set_hexpand(true)
+    large_bar.add_trailing_button("sf:bookmark.fill", null)
+    vstack.add(large_bar)
+
+    return vstack
+}
+
 fun build_ui(win = cogito.Window) (( -- )) {
     let sidebar_bar = cogito.appbar("Widgets", "")
-    .set_class("sidebar")
+    .set_class("sidebar small")
     .set_hexpand(false)
     let content_bar = cogito.appbar("Button", "")
+    .set_small()
 
     let root = cogito.hstack()
     .set_vexpand(true)
@@ -2503,6 +2586,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .add("ensor", (vs = cogito.ViewSwitcher) => build_ensor_page())
     .add("drawing_area", (vs = cogito.ViewSwitcher) => build_drawing_area_page())
     .add("shape_gallery", (vs = cogito.ViewSwitcher) => build_shape_gallery_page())
+    .add("appbar", (vs = cogito.ViewSwitcher) => build_appbar_page())
 
     let sidebar = cogito.vstack()
     .set_class("sidebar")
@@ -2561,6 +2645,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .add(cogito.label("Ensor").set_padding(10,16,10,16))
     .add(cogito.label("DrawingArea").set_padding(10,16,10,16))
     .add(cogito.label("Shape Gallery").set_padding(10,16,10,16))
+    .add(cogito.label("AppBar").set_padding(10,16,10,16))
     .on_select((idx) => {
         let vid = view_id_from_index(idx)
         views.set_active(vid)
@@ -2579,6 +2664,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .set_vexpand(true)
     .set_hexpand(false)
 
+    sidebar_bar.pair_with_scroller(sidebar_scroller)
     sidebar.add(sidebar_scroller)
     root.add(sidebar)
 
@@ -2592,6 +2678,7 @@ fun build_ui(win = cogito.Window) (( -- )) {
     .set_vexpand(true)
     .set_hexpand(true)
     .add(views)
+    content_bar.pair_with_scroller(content_scroller)
     content.add(content_scroller)
 
     root.add(content)

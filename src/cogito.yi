@@ -26,6 +26,7 @@ fun __cogito_app_set_contrast(app = App, contrast = num) (( -- )) { }
 fun __cogito_app_set_icon(app = App, path = string) (( -- )) { }
 fun __cogito_app() (( App )) { }
 fun __cogito_appbar_add_button(appbar = AppBar, icon = string, handler = any) (( Button )) { }
+fun __cogito_appbar_pair_scroller(appbar = AppBar, scroller = Scroller) (( -- )) { }
 fun __cogito_appbar_set_controls(appbar = AppBar, layout = string) (( -- )) { }
 fun __cogito_appbar_set_subtitle(appbar = AppBar, subtitle = string) (( -- )) { }
 fun __cogito_appbar_set_title(appbar = AppBar, title = string) (( -- )) { }
@@ -476,8 +477,41 @@ pub class Window {
 }
 
 pub class AppBar {
-    pub fun add_button(this, icon = string, handler = any) (( Button )) {
+    pub fun add_leading_button(this, icon = string, handler = any) (( Button )) {
+        let b = __cogito_appbar_add_button(this, icon, handler)
+        __cogito_node_set_class(b, "appbar-leading iconic")
+        return b
+    }
+    pub fun set_type(this, appbar_type = num) (( AppBar )) {
+        if appbar_type == 0 {
+            __cogito_node_set_class(this, "search")
+        } elif appbar_type == 1 {
+            __cogito_node_set_class(this, "small")
+        } elif appbar_type == 3 {
+            __cogito_node_set_class(this, "large")
+        } else {
+            __cogito_node_set_class(this, "medium")
+        }
+        return this
+    }
+    pub fun set_search(this) (( AppBar )) {
+        return this.set_type(0)
+    }
+    pub fun set_small(this) (( AppBar )) {
+        return this.set_type(1)
+    }
+    pub fun set_medium(this) (( AppBar )) {
+        return this.set_type(2)
+    }
+    pub fun set_large(this) (( AppBar )) {
+        return this.set_type(3)
+    }
+    pub fun add_trailing_button(this, icon = string, handler = any) (( Button )) {
         return __cogito_appbar_add_button(this, icon, handler)
+    }
+    pub fun pair_with_scroller(this, scroller = Scroller) (( AppBar )) {
+        __cogito_appbar_pair_scroller(this, scroller)
+        return this
     }
     pub fun set_window_controls(this, layout = string) (( AppBar )) {
         __cogito_appbar_set_controls(this, layout)

@@ -3,8 +3,15 @@ case COGITO_HSTACK: {
 			bool active = false;
 			cogito_node_hover_state(n, &hover, &active);
 			CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+			bool inside_appbar = false;
+			for (CogitoNode* p = n->parent; p; p = p->parent) {
+				if (p->kind == COGITO_APPBAR) {
+					inside_appbar = true;
+					break;
+				}
+			}
 			n->bg_set = false;
-			if (s.has_bg) { n->bg = s.bg; n->bg_set = true; }
+			if (!inside_appbar && s.has_bg) { n->bg = s.bg; n->bg_set = true; }
 			if (n->parent && n->parent->kind == COGITO_DIALOG && n->parent->bg_set) {
 				n->bg = n->parent->bg;
 				n->bg_set = true;
@@ -14,6 +21,10 @@ case COGITO_HSTACK: {
 			n->border_width = 0;
 			n->border_width_set = false;
 			if (s.has_border_width) { n->border_width = s.border_width; n->border_width_set = true; }
+			if (inside_appbar) {
+				n->border_width = 0;
+				n->border_width_set = false;
+			}
 			if (s.has_radius) n->border_radius = s.radius;
 			if (n->bg_set || n->border_width > 0) {
 				if (n->shadow_set && n->shadow_level >= 0) {

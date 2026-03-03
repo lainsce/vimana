@@ -22,6 +22,7 @@
 #undef cogito_app_set_icon
 #undef cogito_appbar_add_button
 #undef cogito_appbar_new
+#undef cogito_appbar_pair_scroller
 #undef cogito_appbar_set_controls
 #undef cogito_appbar_set_subtitle
 #undef cogito_appbar_set_title
@@ -1652,6 +1653,12 @@ static void __cogito_appbar_set_controls(YisVal appbarv, YisVal layoutv) {
   const char* layout = cogito_optional_cstr(layoutv, &tmp);
   if (layout) cogito_appbar_set_controls(appbar, layout);
   if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_appbar_pair_scroller(YisVal appbarv, YisVal scrollerv) {
+  cogito_node* appbar = cogito_node_from_val(appbarv);
+  cogito_node* scroller = cogito_node_from_val(scrollerv);
+  cogito_appbar_pair_scroller(appbar, scroller);
 }
 
 static void __cogito_appbar_set_title(YisVal appbarv, YisVal titlev) {
@@ -3541,6 +3548,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_timepicker_get_minute __cogito_timepicker_get_minute
 #define cogito_timepicker_set_time __cogito_timepicker_set_time
 #define cogito_appbar_add_button __cogito_appbar_add_button
+#define cogito_appbar_pair_scroller __cogito_appbar_pair_scroller
 #define cogito_appbar_set_controls __cogito_appbar_set_controls
 #define cogito_appbar_set_title __cogito_appbar_set_title
 #define cogito_appbar_set_subtitle __cogito_appbar_set_subtitle

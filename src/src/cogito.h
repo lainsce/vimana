@@ -490,6 +490,7 @@ float cogito_shape_get_vertex_y(cogito_node *shape, int index);
 cogito_node *cogito_appbar_add_button(cogito_node *appbar, const char *icon,
                                       cogito_node_fn fn, void *user);
 void cogito_appbar_set_controls(cogito_node *appbar, const char *layout);
+void cogito_appbar_pair_scroller(cogito_node *appbar, cogito_node *scroller);
 
 // Dialog helpers
 void cogito_dialog_slot_show(cogito_node *slot, cogito_node *dialog);

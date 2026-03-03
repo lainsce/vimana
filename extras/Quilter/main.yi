@@ -21,7 +21,7 @@ def ?preview_type = "half" -- half | full | edit
 
 def ?search_cursor = 0
 
-def bar = cogito.appbar("Quilter", "Focus on your writing.")
+def bar = cogito.appbar("Quilter", "Focus on your writing.").set_medium()
 def editor = cogito.textview("")
 def preview = cogito.webview("")
 def files_list = cogito.content_list()
@@ -766,7 +766,7 @@ fun show_cheatsheet(win = cogito.Window) (( -- )) {
 fun build_window(win = cogito.Window) (( -- )) {
     bar.set_hexpand(true)
 
-    let doc_btn = bar.add_button("sf:doc", (b = cogito.Button) => {})
+    let doc_btn = bar.add_trailing_button("sf:doc", (b = cogito.Button) => {})
     doc_btn.add_menu("New", (b = any) => {
         new_document()
     })
@@ -786,7 +786,7 @@ fun build_window(win = cogito.Window) (( -- )) {
         set_status("PDF export is not available in this sample")
     })
 
-    let view_btn = bar.add_button("sf:rectangle.split.2x1", (b = cogito.Button) => {})
+    let view_btn = bar.add_trailing_button("sf:rectangle.split.2x1", (b = cogito.Button) => {})
     view_btn.add_menu("Show/Hide Sidebar", (b = any) => {
         show_sidebar = !show_sidebar
         apply_visibility_states()
@@ -808,7 +808,7 @@ fun build_window(win = cogito.Window) (( -- )) {
         set_preview_mode("edit")
     })
 
-    let more_btn = bar.add_button("sf:ellipsis", (b = cogito.Button) => {})
+    let more_btn = bar.add_trailing_button("sf:ellipsis", (b = cogito.Button) => {})
     more_btn.add_menu("Markdown Cheatsheet", (b = any) => {
         show_cheatsheet(win)
     })

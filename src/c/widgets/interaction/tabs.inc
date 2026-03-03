@@ -1,8 +1,19 @@
+static void cogito_view_switcher_set_active(YisVal vsv, YisVal idv);
+
+static void cogito_tabs_sync_bound_view(CogitoNode* tabs, int idx) {
+  if (!tabs || !tabs->view_switcher || !tabs->tab_ids) return;
+  if (idx < 0 || (size_t)idx >= tabs->tab_len) return;
+  YisStr* id = tabs->tab_ids[idx];
+  if (!id) return;
+  cogito_view_switcher_set_active(YV_OBJ(tabs->view_switcher), YV_STR(id));
+}
+
 static int cogito_tabs_hit_index(CogitoNode* n, int x, int y) {
   if (!n || n->kind != COGITO_TABS) return -1;
   if (!cogito_hit_node(n, x, y)) return -1;
   if (n->w <= 0 || n->tab_len == 0) return -1;
-  const int slot_count = 4;
+  int slot_count = (int)n->tab_len;
+  if (slot_count < 1) slot_count = 1;
   int slot_w = n->w / slot_count;
   if (slot_w < 1) slot_w = 1;
   for (int i = 0; i < slot_count; i++) {
@@ -78,15 +89,7 @@ static void cogito_tabs_set_items(YisVal tabsv, YisVal arrv) {
   }
   if (n->selected < 0 && n->tab_len > 0) n->selected = 0;
   if (n->selected >= (int)n->tab_len) n->selected = (int)n->tab_len - 1;
-  if (n->view_switcher && n->tab_ids && n->selected >= 0 && (size_t)n->selected < n->tab_len) {
-    CogitoNode* vs = n->view_switcher;
-    YisStr* id = n->tab_ids[n->selected];
-    if (id) {
-      if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
-      vs->view_active_id = id;
-      yis_retain_val(YV_STR(vs->view_active_id));
-    }
-  }
+  cogito_tabs_sync_bound_view(n, n->selected);
   cogito_window_relayout(cogito_node_window(n));
 }
 static void cogito_tabs_set_ids(YisVal tabsv, YisVal arrv) {
@@ -121,15 +124,7 @@ static void cogito_tabs_set_ids(YisVal tabsv, YisVal arrv) {
       if (s) yis_retain_val(YV_STR(s));
     }
   }
-  if (n->view_switcher && n->selected >= 0 && (size_t)n->selected < n->tab_len) {
-    CogitoNode* vs = n->view_switcher;
-    YisStr* id = n->tab_ids[n->selected];
-    if (id) {
-      if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
-      vs->view_active_id = id;
-      yis_retain_val(YV_STR(vs->view_active_id));
-    }
-  }
+  cogito_tabs_sync_bound_view(n, n->selected);
   cogito_window_relayout(cogito_node_window(n));
 }
 static void cogito_tabs_set_selected(YisVal tabsv, YisVal idxv) {
@@ -139,15 +134,7 @@ static void cogito_tabs_set_selected(YisVal tabsv, YisVal idxv) {
   if (idx < 0) idx = -1;
   if (n->tab_len > 0 && idx >= (int)n->tab_len) idx = (int)n->tab_len - 1;
   n->selected = idx;
-  if (n->view_switcher && n->tab_ids && idx >= 0 && (size_t)idx < n->tab_len) {
-    CogitoNode* vs = n->view_switcher;
-    YisStr* id = n->tab_ids[idx];
-    if (id) {
-      if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
-      vs->view_active_id = id;
-      yis_retain_val(YV_STR(vs->view_active_id));
-    }
-  }
+  cogito_tabs_sync_bound_view(n, idx);
   cogito_window_relayout(cogito_node_window(n));
 }
 static YisVal cogito_tabs_get_selected(YisVal tabsv) {
@@ -159,9 +146,9 @@ static void cogito_tabs_on_change(YisVal tabsv, YisVal handler) {
   if (tabsv.tag != EVT_OBJ) yis_trap("cogito.tabs_on_change expects tabs");
   if (handler.tag != EVT_FN) yis_trap("cogito.tabs_on_change expects function");
   CogitoNode* n = (CogitoNode*)tabsv.as.p;
-  if (n->on_change) yis_release_val(YV_FN(n->on_change));
-  n->on_change = (YisFn*)handler.as.p;
-  yis_retain_val(YV_FN(n->on_change));
+  if (n->on_select) yis_release_val(YV_FN(n->on_select));
+  n->on_select = (YisFn*)handler.as.p;
+  yis_retain_val(YV_FN(n->on_select));
 }
 static void cogito_tabs_bind(YisVal tabsv, YisVal vsv) {
   if (tabsv.tag != EVT_OBJ) yis_trap("cogito.tabs_bind expects tabs");
@@ -170,12 +157,5 @@ static void cogito_tabs_bind(YisVal tabsv, YisVal vsv) {
   CogitoNode* vs = (CogitoNode*)vsv.as.p;
   if (vs->kind != COGITO_VIEWSWITCHER) yis_trap("cogito.tabs_bind expects view_switcher");
   t->view_switcher = vs;
-  if (t->tab_ids && t->selected >= 0 && (size_t)t->selected < t->tab_len) {
-    YisStr* id = t->tab_ids[t->selected];
-    if (id) {
-      if (vs->view_active_id) yis_release_val(YV_STR(vs->view_active_id));
-      vs->view_active_id = id;
-      yis_retain_val(YV_STR(vs->view_active_id));
-    }
-  }
+  cogito_tabs_sync_bound_view(t, t->selected);
 }

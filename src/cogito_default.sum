@@ -322,7 +322,7 @@ appbar .window-min:active
   background: @outline
 
 appbar.sidebar
-  background: @surface
+  background: @surface-container-high
   color: @on-surface
 
 appbar.view
@@ -876,7 +876,7 @@ scroller
   padding: 0
 
 scroller.sidebar
-  background: @surface-container-low
+  background: @surface-container-high
   color: @on-surface
 
 searchfield
@@ -923,7 +923,7 @@ side-sheet.inset
   padding: 16 24 24 24
 
 side-sheet.sidebar
-  background: @surface-container-low
+  background: @surface-container-high
   color: @on-surface
   border-radius: 0
   border: 1 solid @outline
@@ -1188,7 +1188,7 @@ vstack
   color: @on-surface
 
 vstack.sidebar
-  background: @surface-container
+  background: @surface-container-high
   color: @on-surface
 
 welcome_screen

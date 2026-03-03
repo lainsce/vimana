@@ -2932,6 +2932,85 @@ void cogito_appbar_set_controls(cogito_node *appbar, const char *layout) {
     yis_release_val(lv);
 }
 
+static bool cogito_is_space_char_local(char c) {
+  return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
+static int cogito_surface_level_from_token(const char *token) {
+  if (!token || !token[0])
+    return -1;
+  if (strcmp(token, "surface-container-lowest") == 0)
+    return 0;
+  if (strcmp(token, "surface-container-low") == 0)
+    return 1;
+  if (strcmp(token, "surface-container") == 0)
+    return 2;
+  if (strcmp(token, "surface-container-high") == 0)
+    return 3;
+  if (strcmp(token, "surface-container-highest") == 0)
+    return 4;
+  return -1;
+}
+
+static int cogito_surface_level_from_classes(const char *classes) {
+  if (!classes || !classes[0])
+    return -1;
+  const char *p = classes;
+  while (*p) {
+    while (*p && cogito_is_space_char_local(*p))
+      p++;
+    if (!*p)
+      break;
+    const char *start = p;
+    while (*p && !cogito_is_space_char_local(*p))
+      p++;
+    size_t len = (size_t)(p - start);
+    if (len == 0)
+      continue;
+    char tok[64];
+    size_t copy = len < sizeof(tok) - 1 ? len : (sizeof(tok) - 1);
+    memcpy(tok, start, copy);
+    tok[copy] = 0;
+    int level = cogito_surface_level_from_token(tok);
+    if (level >= 0)
+      return level;
+  }
+  return -1;
+}
+
+void cogito_appbar_pair_scroller(cogito_node *appbar, cogito_node *scroller) {
+  if (!appbar || !scroller)
+    return;
+  if (appbar->kind != COGITO_APPBAR || scroller->kind != COGITO_SCROLLER)
+    return;
+
+  appbar->appbar.paired_scroller = scroller;
+
+  const char *ab_cls = (appbar->class_name && appbar->class_name->data)
+                           ? appbar->class_name->data
+                           : "";
+  strncpy(appbar->appbar.pair_base_class, ab_cls,
+          sizeof(appbar->appbar.pair_base_class) - 1);
+  appbar->appbar.pair_base_class[sizeof(appbar->appbar.pair_base_class) - 1] = 0;
+
+  const char *sc_cls = (scroller->class_name && scroller->class_name->data)
+                           ? scroller->class_name->data
+                           : "";
+  int sc_level = cogito_surface_level_from_classes(sc_cls);
+  bool sidebar_pair = cogito_class_has_token(ab_cls, "sidebar") ||
+                      cogito_class_has_token(sc_cls, "sidebar");
+  if (sidebar_pair && sc_level < 3)
+    sc_level = 3;
+  int target_level = (sc_level >= 0) ? (sc_level + 1) : 2;
+  if (sidebar_pair && target_level < 3)
+    target_level = 3;
+  if (target_level > 4)
+    target_level = 4;
+  appbar->appbar.paired_surface_level = target_level;
+
+  cogito_appbar_apply_paired_surface(appbar);
+}
+
 void cogito_appbar_set_title(cogito_node *appbar, const char *title) {
   if (!appbar)
     return;

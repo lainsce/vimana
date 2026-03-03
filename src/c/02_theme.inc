@@ -98,6 +98,15 @@ static bool cogito_class_has_token(const char* classes, const char* token) {
   return false;
 }
 
+static bool cogito_class_has_surface_container_token(const char* classes) {
+  if (!classes || !classes[0]) return false;
+  return cogito_class_has_token(classes, "surface-container-lowest") ||
+         cogito_class_has_token(classes, "surface-container-low") ||
+         cogito_class_has_token(classes, "surface-container") ||
+         cogito_class_has_token(classes, "surface-container-high") ||
+         cogito_class_has_token(classes, "surface-container-highest");
+}
+
 static void cogito_theme_set_defaults(void) {
   cogito_style_clear(&cogito_theme.base);
   for (int i = 0; i < COGITO_KIND_COUNT; i++) {
@@ -397,6 +406,11 @@ static CogitoStyle cogito_theme_resolve_node(const CogitoNode* n) {
     CogitoColor saved_bg = s.bg;
     bool saved_has_bg = s.has_bg;
     for (int i = 0; i < cogito_theme.custom_class_count; i++) {
+      if (n->kind == COGITO_APPBAR &&
+          strcmp(cogito_theme.custom_classes[i].name, "sidebar") == 0 &&
+          cogito_class_has_surface_container_token(n->class_name->data)) {
+        continue;
+      }
       // Match class name and widget kind; COGITO_KIND_COUNT means universal (any kind)
         if (cogito_class_has_token(n->class_name->data, cogito_theme.custom_classes[i
         ].name) &&
@@ -670,6 +684,11 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
   // Apply custom class state variants
   if (n->class_name && n->class_name->data && n->class_name->len > 0) {
     for (int i = 0; i < cogito_theme.custom_class_count; i++) {
+      if (n->kind == COGITO_APPBAR &&
+          strcmp(cogito_theme.custom_classes[i].name, "sidebar") == 0 &&
+          cogito_class_has_surface_container_token(n->class_name->data)) {
+        continue;
+      }
         if (cogito_class_has_token(n->class_name->data, cogito_theme.custom_classes[i
         ].name) &&
           (cogito_theme.custom_classes[i
@@ -1103,6 +1122,15 @@ static bool cogito_label_class_bold(int cls, bool fallback) {
   if (cls > COGITO_LABEL_CLASS_NONE && cls < COGITO_LABEL_CLASS_COUNT) {
     CogitoStyle* s = &cogito_theme.label_class[cls];
     if (s->has_font_weight) return s->font_weight >= 600;
+  }
+  return fallback;
+}
+
+static bool cogito_label_class_font_family_serif(int cls, bool fallback) {
+  cogito_theme_init();
+  if (cls > COGITO_LABEL_CLASS_NONE && cls < COGITO_LABEL_CLASS_COUNT) {
+    CogitoStyle* s = &cogito_theme.label_class[cls];
+    if (s->has_font_family) return cogito_font_family_eq(s->font_family, "serif");
   }
   return fallback;
 }

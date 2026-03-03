@@ -9,7 +9,7 @@ macro with_ext(ext = string) (( string )) {
 }
 
 def editor = cogito.textview("")
-def bar = cogito.appbar("Untitled.txt", "Ready")
+def bar = cogito.appbar("Untitled.txt", "Ready").set_medium()
 def ?title_text = "Untitled.txt"
 def ?subtitle_text = "Ready"
 def ?current_path = ""
@@ -197,7 +197,7 @@ entry() (( -- )) {
     bar.set_subtitle(subtitle_text)
     bar.set_hexpand(true)
 
-    let file_btn = bar.add_button("sf:gearshape", (b = cogito.Button) => {
+    let file_btn = bar.add_trailing_button("sf:gearshape", (b = cogito.Button) => {
     })
     file_btn.add_menu("New", (b = any) => {
         new_document()
@@ -209,7 +209,7 @@ entry() (( -- )) {
         show_save_dialog()
     })
 
-    let about_btn = bar.add_button("sf:questionmark", (b = cogito.Button) => {
+    let about_btn = bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         show_about_window(win)
     })
 

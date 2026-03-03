@@ -307,6 +307,7 @@ fun build_window(win = cogito.Window) (( -- )) {
     let is_sheet_open = sheet_open_state.get() == true
 
     let bar = cogito.appbar("YisTask", "<done> of <total> Done")
+    .set_medium()
     .set_hexpand(true)
     win.add(bar)
 

@@ -449,7 +449,7 @@ entry() (( -- )) {
 
     let left = cogito.vstack()
     .set_hexpand(true)
-    .add(cogito.appbar("Palette", "").set_class("gafu-left-bar"))
+    .add(cogito.appbar("Palette", "").set_class("gafu-left-bar small"))
     .add(build_palette_grid())
 
     root.add(left)
@@ -458,8 +458,8 @@ entry() (( -- )) {
     .set_vexpand(true)
 
     let bar = cogito.appbar("Source Color", "")
-    .set_class("surface-container")
-    bar.add_button("sf:arrow.clockwise", (b = cogito.Button) => {
+    .set_class("surface-container small")
+    bar.add_trailing_button("sf:arrow.clockwise", (b = cogito.Button) => {
         reset_everything()
     })
 

@@ -36,6 +36,9 @@ static CogitoNode* cogito_appbar_new_obj(YisStr* title, YisStr* subtitle) {
   ab->appbar.btn_close_x = -1;
   ab->appbar.btn_min_x = -1;
   ab->appbar.btn_max_x = -1;
+  ab->appbar.paired_scroller = NULL;
+  ab->appbar.paired_surface_level = 2;
+  ab->appbar.pair_base_class[0] = 0;
   strncpy(ab->appbar.controls, "CIM|", sizeof(ab->appbar.controls) - 1);
   ab->appbar.controls[sizeof(ab->appbar.controls) - 1] = 0;
   return ab;

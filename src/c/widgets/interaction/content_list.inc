@@ -1,7 +1,30 @@
+static bool cogito_list_point_visible(CogitoNode* list, int x, int y) {
+  if (!list) return false;
+  if (!cogito_hit_rect(x, y, list->x, list->y, list->w, list->h)) return false;
+  CogitoNode* p = list->parent;
+  while (p) {
+    if (p->kind == COGITO_SCROLLER && !cogito_hit_rect(x, y, p->x, p->y, p->w, p->h)) return false;
+    if (p->kind == COGITO_DIALOG && !cogito_hit_rect(x, y, p->x, p->y, p->w, p->h)) return false;
+    p = p->parent;
+  }
+  return true;
+}
+
+static bool cogito_rect_visible_local(int cx, int cy, int cw, int ch,
+                                      int vx, int vy, int vw, int vh) {
+  if (cw <= 0 || ch <= 0 || vw <= 0 || vh <= 0) return false;
+  if (cx + cw <= vx) return false;
+  if (cy + ch <= vy) return false;
+  if (cx >= vx + vw) return false;
+  if (cy >= vy + vh) return false;
+  return true;
+}
+
 static int cogito_content_list_hit_index(CogitoNode* list, int x, int y) {
-  if (!cogito_hit_node(list, x, y)) return -1;
+  if (!cogito_list_point_visible(list, x, y)) return -1;
   for (size_t i = 0; i < list->len; i++) {
     CogitoNode* item = list->children[i];
+    if (!cogito_rect_visible_local(item->x, item->y, item->w, item->h, list->x, list->y, list->w, list->h)) continue;
     if (cogito_hit_node(item, x, y)) return (int)i;
   }
   return -1;
@@ -32,6 +55,8 @@ static void cogito_content_list_on_activate(YisVal listv, YisVal handler) {
 }
 static CogitoNode* cogito_find_list_grid_hit(CogitoNode* n, int x, int y, int* out_idx) {
   if (!n) return NULL;
+  if (n->kind == COGITO_DIALOG && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;
+  if (n->kind == COGITO_SCROLLER && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;
   if (n->kind == COGITO_VIEWSWITCHER) {
     CogitoNode* active = cogito_view_switcher_active_child(n);
     if (active) {

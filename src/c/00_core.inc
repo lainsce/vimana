@@ -865,7 +865,10 @@ typedef struct CogitoNode {
     struct {
       int btn_close_x, btn_min_x, btn_max_x;
       int btn_y, btn_size;
-      int title_y, subtitle_y;
+      int title_x, title_y, subtitle_y;
+      struct CogitoNode* paired_scroller;
+      int paired_surface_level;
+      char pair_base_class[128];
       char controls[
         16
       ];
