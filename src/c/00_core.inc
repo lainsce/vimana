@@ -2334,7 +2334,7 @@ static CogitoColor cogito_node_state_layer_seed(const CogitoNode* n) {
   if (cls && strstr(cls, "secondary") != NULL) return secondary;
   if (cls && strstr(cls, "tertiary") != NULL) return tertiary;
   if (cls && strstr(cls, "surface") != NULL) return on_surface;
-  if (iconic_iconbtn) return on_surface;
+  if (iconic_iconbtn) return primary;
   return on_surface;
 }
 

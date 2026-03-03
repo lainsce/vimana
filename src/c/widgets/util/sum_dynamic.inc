@@ -502,13 +502,13 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "hstack\n  background: transparent\n  color: %s\n", ons);
   cogito_sum_append(out, cap, &off,
-  "iconbtn\n  background: transparent\n  color: %s\n  transition: 150 standard\n", osurfvar);
+  "iconbtn\n  background: transparent\n  color: %s\n  transition: 150 standard\n", ons);
   cogito_sum_append(out, cap, &off,
   "iconbtn:disabled\n  background: %s2e\n  color: %s52\n", ons, ons);
   cogito_sum_append(out, cap, &off,
-  "iconbtn:hover\n  background: %s14\n", osurfvar);
+  "iconbtn:hover\n  background: %s14\n", ons);
   cogito_sum_append(out, cap, &off,
-  "iconbtn:active\n  background: %s1c\n", osurfvar);
+  "iconbtn:active\n  background: %s1c\n", ons);
   cogito_sum_append(out, cap, &off,
   "iconbtn.filled\n  background: %s\n  color: %s\n  transition: 150 standard\n", p, op);
   cogito_sum_append(out, cap, &off,

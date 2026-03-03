@@ -151,7 +151,9 @@ case COGITO_ICONBTN: {
         }
       }
       if (s.has_text) icon_color = s.text;
-      else if (cogito_has_selection_text) {
+      else if (is_iconic_variant) {
+        icon_color = cogito_theme.iconbtn_filled.bg;
+      } else if (cogito_has_selection_text) {
         icon_color = cogito_selection_text;
         if (icon_color.a < 8) icon_color = n->text_color;
       }
