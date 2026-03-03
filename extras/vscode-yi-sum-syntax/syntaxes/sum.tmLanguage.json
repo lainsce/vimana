@@ -62,15 +62,34 @@
         },
         {
           "name": "meta.directive.when.sum",
-          "match": "^(\\s*)(@when)\\b(?:\\s+([^;\\n]+))?",
-          "captures": {
+          "begin": "^(\\s*)(@when)\\b(?:\\s+)?",
+          "beginCaptures": {
             "2": {
               "name": "keyword.control.conditional.sum"
-            },
-            "3": {
-              "name": "meta.condition.sum"
             }
-          }
+          },
+          "end": "(?=\\s*(?:;.*)?$)",
+          "patterns": [
+            {
+              "include": "#conditions"
+            }
+          ]
+        }
+      ]
+    },
+    "conditions": {
+      "patterns": [
+        {
+          "name": "keyword.operator.logical.sum",
+          "match": "\\bnot\\b|!"
+        },
+        {
+          "name": "constant.language.condition.sum",
+          "match": "\\b(?:dark|light|high-contrast|reduced-motion)\\b"
+        },
+        {
+          "name": "variable.other.theme-token.sum",
+          "match": "@[A-Za-z_][A-Za-z0-9_-]*\\b"
         }
       ]
     },
@@ -97,6 +116,18 @@
             {
               "name": "entity.name.class.sum",
               "match": "\\.[A-Za-z_][A-Za-z0-9_-]*"
+            },
+            {
+              "name": "entity.name.id.sum",
+              "match": "#[A-Za-z_][A-Za-z0-9_-]*"
+            },
+            {
+              "name": "punctuation.separator.position-selector.sum",
+              "match": "="
+            },
+            {
+              "name": "constant.language.position-selector.sum",
+              "match": "(?<=\\=)(?:first|last|middle|single)\\b"
             },
             {
               "name": "entity.name.tag.sum",
@@ -146,7 +177,7 @@
       "patterns": [
         {
           "name": "support.function.color.sum",
-          "match": "\\b(?:alpha|mix)\\s*(?=\\()"
+          "match": "\\b(?:alpha|mix|rgb|rgba)\\s*(?=\\()"
         },
         {
           "name": "variable.other.theme-token.sum",
@@ -169,15 +200,23 @@
         },
         {
           "name": "constant.other.color.rgb-value.sum",
-          "match": "#(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})\\b"
+          "match": "#(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})\\b"
+        },
+        {
+          "name": "constant.numeric.unit.sum",
+          "match": "\\b-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:sp|px|ms|s)\\b"
+        },
+        {
+          "name": "constant.numeric.percentage.sum",
+          "match": "\\b-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)%"
         },
         {
           "name": "constant.numeric.sum",
-          "match": "\\b-?\\d+(?:\\.\\d+)?(?:sp)?\\b"
+          "match": "\\b-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)\\b"
         },
         {
           "name": "constant.language.sum",
-          "match": "\\b(?:transparent|none|solid|dashed|bold|normal|standard|warn|strict|light|dark|high-contrast|reduced-motion)\\b"
+          "match": "\\b(?:transparent|white|black|none|solid|dashed|dotted|bold|normal|standard|off|warn|strict|light|dark|high-contrast|reduced-motion|inset)\\b"
         },
         {
           "name": "variable.other.state.sum",

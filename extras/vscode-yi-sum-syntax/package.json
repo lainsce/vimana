@@ -2,7 +2,7 @@
   "name": "yis-syntax",
   "displayName": "Yis + SUM Language Support",
   "description": "Syntax highlighting and basic editor support for Yis and SUM.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "local",
   "engines": {
     "vscode": "^1.70.0"

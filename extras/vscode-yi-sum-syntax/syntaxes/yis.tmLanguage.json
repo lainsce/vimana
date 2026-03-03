@@ -34,6 +34,9 @@
       "include": "#types"
     },
     {
+      "include": "#memberFunctionCalls"
+    },
+    {
       "include": "#memberAccess"
     },
     {
@@ -226,6 +229,25 @@
         }
       ]
     },
+    "memberFunctionCalls": {
+      "patterns": [
+        {
+          "name": "meta.function-call.member.yi",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\b\\s*(\\.)\\s*([A-Za-z_][A-Za-z0-9_]*)\\b\\s*(?=\\()",
+          "captures": {
+            "1": {
+              "name": "variable.other.object.yi"
+            },
+            "2": {
+              "name": "punctuation.accessor.dot.yi"
+            },
+            "3": {
+              "name": "support.function.call.yi"
+            }
+          }
+        }
+      ]
+    },
     "functionCalls": {
       "patterns": [
         {
@@ -258,7 +280,7 @@
         },
         {
           "name": "keyword.operator.other.yi",
-          "match": "(?:\\?|\\||is)"
+          "match": "(?:\\?|\\||\\bis\\b)"
         }
       ]
     },
