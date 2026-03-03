@@ -1,2 +1,2 @@
 case COGITO_COLORPICKER:
-      return true;
+      return !n->colorpicker.popover_panel;

@@ -186,6 +186,63 @@ static bool cogito_keyboard_adjust_slider(CogitoNode* n, int dir) {
   return true;
 }
 
+static int cogito_slider_rail_h_for_size(uint8_t size) {
+  int rail_h = 16;
+  if (size == COGITO_SLIDER_SIZE_S) rail_h = 24;
+  if (size == COGITO_SLIDER_SIZE_M) rail_h = 40;
+  if (size == COGITO_SLIDER_SIZE_L) rail_h = 56;
+  if (size == COGITO_SLIDER_SIZE_XL) rail_h = 96;
+  return rail_h;
+}
+
+static uint8_t cogito_slider_pick_range_handle(CogitoNode* sld, int mx, int my) {
+  if (!sld || sld->kind != COGITO_SLIDER || sld->slider.mode != COGITO_SLIDER_MODE_RANGE) {
+    return 0;
+  }
+
+  double span = sld->slider.max - sld->slider.min;
+  int rail_h = cogito_slider_rail_h_for_size(sld->slider.size);
+  int pad = rail_h / 2 + 7;
+  int x0 = sld->x + pad;
+  int x1 = sld->x + sld->w - pad;
+  if (x1 < x0) x1 = x0;
+  int cy = sld->y + sld->h / 2;
+
+  double t0 = 0.0;
+  double t1 = 0.0;
+  if (span > 0.0) {
+    t0 = (sld->slider.value - sld->slider.min) / span;
+    t1 = (sld->slider.value2 - sld->slider.min) / span;
+  }
+  if (t0 < 0.0) t0 = 0.0;
+  if (t0 > 1.0) t0 = 1.0;
+  if (t1 < 0.0) t1 = 0.0;
+  if (t1 > 1.0) t1 = 1.0;
+
+  int k0 = x0 + (int)lround((double)(x1 - x0) * t0);
+  int k1 = x0 + (int)lround((double)(x1 - x0) * t1);
+  int d0 = abs(mx - k0);
+  int d1 = abs(mx - k1);
+
+  int hit_half_w = rail_h / 2;
+  if (hit_half_w < 12) hit_half_w = 12;
+  int hit_half_h = rail_h / 2 + 8;
+  bool hit0 = (abs(mx - k0) <= hit_half_w) && (abs(my - cy) <= hit_half_h);
+  bool hit1 = (abs(mx - k1) <= hit_half_w) && (abs(my - cy) <= hit_half_h);
+
+  if (hit0 && !hit1) return 1;
+  if (hit1 && !hit0) return 2;
+
+  if (d1 < d0) return 2;
+  if (d0 < d1) return 1;
+
+  if (k0 == k1) {
+    // When both thumbs overlap, alternate so either handle can be pulled apart.
+    return (sld->slider.active_handle == 2) ? 1 : 2;
+  }
+  return (mx >= (k0 + k1) / 2) ? 2 : 1;
+}
+
 static bool cogito_keyboard_adjust_stepper(CogitoNode* n, int dir) {
   if (!n || n->kind != COGITO_STEPPER || n->disabled || dir == 0) return false;
   double prev = n->stepper.value;
@@ -1418,16 +1475,16 @@ static void cogito_run(YisVal appv, YisVal winv) {
           bool ok = (c == '#') || isxdigit((unsigned char)c);
           size_t len = cogito_focused->text ? cogito_focused->text->len : 0;
           size_t sel = 0;
-          if (cogito_focused->text_input.sel_start != cogito_focused->text_input.sel_end) {
-            int a = cogito_focused->text_input.sel_start;
-            int b = cogito_focused->text_input.sel_end;
+          if (cogito_focused->colorpicker.sel_start != cogito_focused->colorpicker.sel_end) {
+            int a = cogito_focused->colorpicker.sel_start;
+            int b = cogito_focused->colorpicker.sel_end;
             if (a > b) { int tmp = a; a = b; b = tmp;
             }
             sel = (size_t)(b - a);
           }
           size_t new_len = len - sel + 1;
           if (ok && new_len <= 7) {
-            if (c == '#' && cogito_focused->text_input.caret != 0) ok = false;
+            if (c == '#' && cogito_focused->colorpicker.caret != 0) ok = false;
             if (ok) {
               cogito_text_append_codepoint(cogito_focused, ch);
               changed = true;
@@ -1489,38 +1546,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
           cogito_pointer_capture = slider_hit;
           slider_hit->slider.dragging = true;
           if (slider_hit->slider.mode == COGITO_SLIDER_MODE_RANGE) {
-            // Determine which handle is closer to the click position
-            double span = slider_hit->slider.max - slider_hit->slider.min;
-            int rail_h = 16;
-            if (slider_hit->slider.size == COGITO_SLIDER_SIZE_S) rail_h = 24;
-            if (slider_hit->slider.size == COGITO_SLIDER_SIZE_M) rail_h = 40;
-            if (slider_hit->slider.size == COGITO_SLIDER_SIZE_L) rail_h = 56;
-            if (slider_hit->slider.size == COGITO_SLIDER_SIZE_XL) rail_h = 96;
-            int pad = rail_h / 2 + 7;
-            int x0 = slider_hit->x + pad;
-            int x1 = slider_hit->x + slider_hit->w - pad;
-            if (x1 < x0) x1 = x0;
-            double t0 = 0.0;
-            double t1 = 0.0;
-            if (span > 0.0) {
-              t0 = (slider_hit->slider.value - slider_hit->slider.min) / span;
-              t1 = (slider_hit->slider.value2 - slider_hit->slider.min) / span;
-            }
-            if (t0 < 0.0) t0 = 0.0;
-            if (t0 > 1.0) t0 = 1.0;
-            if (t1 < 0.0) t1 = 0.0;
-            if (t1 > 1.0) t1 = 1.0;
-            int k0 = x0 + (int)lround((double)(x1 - x0) * t0);
-            int k1 = x0 + (int)lround((double)(x1 - x0) * t1);
-            int d0 = abs(mx - k0);
-            int d1 = abs(mx - k1);
-            if (d1 < d0) {
-              slider_hit->slider.active_handle = 2;
-            } else if (d0 < d1) {
-              slider_hit->slider.active_handle = 1;
-            } else {
-              slider_hit->slider.active_handle = (mx >= (k0 + k1) / 2) ? 2 : 1;
-            }
+            slider_hit->slider.active_handle = cogito_slider_pick_range_handle(slider_hit, mx, my);
           } else {
             slider_hit->slider.active_handle = 0;
           }
@@ -1977,7 +2003,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
     }
     // Text selection handling
     if (cogito_focused && !cogito_focused->disabled && (focused_text_editable || focused_color_hex_edit)) {
-      if (left_down && cogito_focused->text_input.selecting) {
+      bool selecting = (cogito_focused->kind == COGITO_COLORPICKER)
+        ? cogito_focused->colorpicker.selecting
+        : cogito_focused->text_input.selecting;
+      if (left_down && selecting) {
         int pad = 8;
         int size = cogito_node_font_size(cogito_focused);
         const char* t = cogito_focused->text ? cogito_focused->text->data : "";
@@ -2007,13 +2036,17 @@ static void cogito_run(YisVal appv, YisVal winv) {
             int rel_x = mx - (hx + pad);
             if (rel_x < 0) rel_x = 0;
             int idx = cogito_text_index_from_x(cogito_focused, t, size, rel_x);
-            cogito_focused->text_input.sel_end = idx;
-            cogito_focused->text_input.caret = idx;
+            cogito_focused->colorpicker.sel_end = idx;
+            cogito_focused->colorpicker.caret = idx;
           }
         }
       }
       if (left_released) {
-        cogito_focused->text_input.selecting = false;
+        if (cogito_focused->kind == COGITO_COLORPICKER) {
+          cogito_focused->colorpicker.selecting = false;
+        } else {
+          cogito_focused->text_input.selecting = false;
+        }
       }
     }
     /* Scrollbar thumb drag and track click (overlay scrollbars) */
@@ -2399,10 +2432,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
             focus_hit->colorpicker.hex_editing = cogito_hit_rect_min48(mx, my, hx, hy, hw, hh);
             int rel_x = mx - (hx + pad);
             if (rel_x < 0) rel_x = 0;
-            focus_hit->text_input.caret = cogito_text_index_from_x(focus_hit, t, size, rel_x);
-            focus_hit->text_input.sel_start = focus_hit->text_input.caret;
-            focus_hit->text_input.sel_end = focus_hit->text_input.caret;
-            focus_hit->text_input.selecting = true;
+            focus_hit->colorpicker.caret = cogito_text_index_from_x(focus_hit, t, size, rel_x);
+            focus_hit->colorpicker.sel_start = focus_hit->colorpicker.caret;
+            focus_hit->colorpicker.sel_end = focus_hit->colorpicker.caret;
+            focus_hit->colorpicker.selecting = true;
           }
         } else if (hit && cogito_node_focusable(hit)) {
           if (cogito_focused && cogito_focused != hit && cogito_focused->kind == COGITO_COLORPICKER) {
@@ -2480,37 +2513,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
               cogito_pointer_capture = hit;
               hit->slider.dragging = true;
               if (hit->slider.mode == COGITO_SLIDER_MODE_RANGE) {
-                double span = hit->slider.max - hit->slider.min;
-                int rail_h = 16;
-                if (hit->slider.size == COGITO_SLIDER_SIZE_S) rail_h = 24;
-                if (hit->slider.size == COGITO_SLIDER_SIZE_M) rail_h = 40;
-                if (hit->slider.size == COGITO_SLIDER_SIZE_L) rail_h = 56;
-                if (hit->slider.size == COGITO_SLIDER_SIZE_XL) rail_h = 96;
-                int pad = rail_h / 2 + 7;
-                int x0 = hit->x + pad;
-                int x1 = hit->x + hit->w - pad;
-                if (x1 < x0) x1 = x0;
-                double t0 = 0.0;
-                double t1 = 0.0;
-                if (span > 0.0) {
-                  t0 = (hit->slider.value - hit->slider.min) / span;
-                  t1 = (hit->slider.value2 - hit->slider.min) / span;
-                }
-                if (t0 < 0.0) t0 = 0.0;
-                if (t0 > 1.0) t0 = 1.0;
-                if (t1 < 0.0) t1 = 0.0;
-                if (t1 > 1.0) t1 = 1.0;
-                int k0 = x0 + (int)lround((double)(x1 - x0) * t0);
-                int k1 = x0 + (int)lround((double)(x1 - x0) * t1);
-                int d0 = abs(mx - k0);
-                int d1 = abs(mx - k1);
-                if (d1 < d0) {
-                  hit->slider.active_handle = 2;
-                } else if (d0 < d1) {
-                  hit->slider.active_handle = 1;
-                } else {
-                  hit->slider.active_handle = (mx >= (k0 + k1) / 2) ? 2 : 1;
-                }
+                hit->slider.active_handle = cogito_slider_pick_range_handle(hit, mx, my);
               } else {
                 hit->slider.active_handle = 0;
               }

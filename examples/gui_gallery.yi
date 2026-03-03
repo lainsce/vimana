@@ -432,25 +432,27 @@ fun build_slider_page() (( cogito.VStack )) {
     .set_hexpand(true)
     .set_range(10, 90)
     range_slider.on_change((s = cogito.Slider) => {
-        let v = s.value()
-        range_status.set_text("Range value: <v>")
+        let start = s.range_start()
+        let end = s.range_end()
+        range_status.set_text("Range: <start> - <end>")
     })
     vstack.add(range_slider)
 
     -- Discrete Slider
-    let discrete_label = cogito.label("Discrete Slider (step 10)")
+    let discrete_label = cogito.label("Discrete Slider (centered at 0)")
     .set_class("heading")
     vstack.add(discrete_label)
 
-    let discrete_status = cogito.label("Stepped value: 50")
+    let discrete_status = cogito.label("Centered value: 0")
     .set_class("body")
     vstack.add(discrete_status)
 
-    let discrete_slider = cogito.slider(0, 100, 50)
+    let discrete_slider = cogito.slider(-100, 100, 0)
     .set_hexpand(true)
+    .set_centered(true)
     discrete_slider.on_change((s = cogito.Slider) => {
         let v = s.value()
-        discrete_status.set_text("Stepped value: <v>")
+        discrete_status.set_text("Centered value: <v>")
     })
     vstack.add(discrete_slider)
 

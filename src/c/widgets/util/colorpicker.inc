@@ -4,10 +4,25 @@ enum {
   COGITO_COLORPICKER_FIELD_HEIGHT    = 56,
   COGITO_COLORPICKER_PANEL_W         = 360,
   COGITO_COLORPICKER_PANEL_PAD       = 12,  // Match DATEPICKER_POP_SIDE
+  COGITO_COLORPICKER_PANEL_TOP       = 20,  // Match DATEPICKER_POP_TOP
+  COGITO_COLORPICKER_PANEL_HEADER_H  = 24,  // Match DATEPICKER_POP_HEADER_H
+  COGITO_COLORPICKER_PANEL_HEADER_TO_ROWS_GAP = 24,
+  COGITO_COLORPICKER_PANEL_LABEL_W   = 36,
+  COGITO_COLORPICKER_PANEL_LABEL_GAP = 8,
+  COGITO_COLORPICKER_PANEL_SLIDER_H  = 88,
+  COGITO_COLORPICKER_PANEL_ROW_GAP   = 12,
+  COGITO_COLORPICKER_PANEL_VALUE_GAP = 8,
+  COGITO_COLORPICKER_PANEL_VALUE_W   = 36,
   COGITO_COLORPICKER_PANEL_FOOTER_H  = 36,  // Match DATEPICKER_POP_FOOTER_H
-  COGITO_COLORPICKER_PANEL_FOOTER_GAP = 8,  // Match DATEPICKER_POP_FOOTER_GAP
+  COGITO_COLORPICKER_PANEL_FOOTER_GAP = 24,
   COGITO_COLORPICKER_PANEL_BOTTOM    = 12,  // Match DATEPICKER_POP_BOTTOM
 };
+
+static int cogito_colorpicker_panel_rows_top(const CogitoNode* n) {
+  if (!n) return 0;
+  return n->y + COGITO_COLORPICKER_PANEL_TOP + COGITO_COLORPICKER_PANEL_HEADER_H +
+         COGITO_COLORPICKER_PANEL_HEADER_TO_ROWS_GAP;
+}
 
 static double cogito_colorpicker_clamp(double v, double lo, double hi) {
   if (v < lo) return lo;
@@ -29,39 +44,6 @@ static void cogito_colorpicker_sync_hex(CogitoNode* n) {
   char buf[8];
   cogito_color_to_hex(c, buf);
   cogito_text_set_from_buf(n, buf, strlen(buf));
-}
-
-static void cogito_colorpicker_layout(CogitoNode* n, int* out_pad_l, int* out_pad_t, int* out_pad_r, int* out_pad_b,
-                                      int* out_label_w, int* out_row_h, int* out_slider_h, int* out_gap,
-                                      int* out_hex_x, int* out_hex_y, int* out_hex_w, int* out_hex_h) {
-  CogitoStyle s = cogito_theme_resolve_node(n);
-  int pad_l = s.has_padding_left ? s.padding_left : 10;
-  int pad_t = s.has_padding_top ? s.padding_top : 10;
-  int pad_r = s.has_padding_right ? s.padding_right : pad_l;
-  int pad_b = s.has_padding_bottom ? s.padding_bottom : pad_t;
-  int size = cogito_node_font_size(n);
-  int row_h = size + 10;
-  int slider_h = 6;
-  int gap = 8;
-  int label_w = 12;
-  int preview_w = row_h;
-  int preview_gap = 8;
-  int hex_x = n->x + pad_l + preview_w + preview_gap;
-  int hex_y = n->y + pad_t + (row_h + gap) * 3;
-  int hex_w = n->w - pad_l - pad_r - preview_w - preview_gap;
-  int hex_h = row_h;
-  if (out_pad_l) *out_pad_l = pad_l;
-  if (out_pad_t) *out_pad_t = pad_t;
-  if (out_pad_r) *out_pad_r = pad_r;
-  if (out_pad_b) *out_pad_b = pad_b;
-  if (out_label_w) *out_label_w = label_w;
-  if (out_row_h) *out_row_h = row_h;
-  if (out_slider_h) *out_slider_h = slider_h;
-  if (out_gap) *out_gap = gap;
-  if (out_hex_x) *out_hex_x = hex_x;
-  if (out_hex_y) *out_hex_y = hex_y;
-  if (out_hex_w) *out_hex_w = hex_w;
-  if (out_hex_h) *out_hex_h = hex_h;
 }
 
 // Trigger field layout: [swatch 28x28] [hex text] [icon button 44xh]
@@ -100,21 +82,21 @@ static void cogito_colorpicker_panel_footer_layout(
     int* cancel_x, int* cancel_y, int* cancel_w, int* cancel_h,
     int* ok_x, int* ok_y, int* ok_w, int* ok_h) {
   int footer_h = COGITO_COLORPICKER_PANEL_FOOTER_H;
-  int fy = n->y + n->h - footer_h;
-  int btn_w = 80;
-  int btn_h = 36;
-  int btn_pad_r = 12;
-  int gap = 8;
+  int fy = n->y + n->h - COGITO_COLORPICKER_PANEL_BOTTOM - footer_h;
+  int okbw = 44;
+  int cxbw = 84;
+  int btn_h = 32;
+  int gap = 16;
   int bty = fy + (footer_h - btn_h) / 2;
-  int ox = n->x + n->w - btn_pad_r - btn_w;
-  int cx = ox - gap - btn_w;
+  int ox = n->x + n->w - COGITO_COLORPICKER_PANEL_PAD - okbw;
+  int cx = ox - gap - cxbw;
   if (cancel_x) *cancel_x = cx;
   if (cancel_y) *cancel_y = bty;
-  if (cancel_w) *cancel_w = btn_w;
+  if (cancel_w) *cancel_w = cxbw;
   if (cancel_h) *cancel_h = btn_h;
   if (ok_x) *ok_x = ox;
   if (ok_y) *ok_y = bty;
-  if (ok_w) *ok_w = btn_w;
+  if (ok_w) *ok_w = okbw;
   if (ok_h) *ok_h = btn_h;
 }
 
@@ -135,11 +117,13 @@ static void cogito_colorpicker_slider_rect(CogitoNode* n, int idx, int* out_x, i
     }
   }
 
-  int pad_l = 0, pad_t = 0, pad_r = 0, label_w = 0, row_h = 0, slider_h = 0, gap = 0;
-  cogito_colorpicker_layout(n, &pad_l, &pad_t, &pad_r, NULL, &label_w, &row_h, &slider_h, &gap, NULL, NULL, NULL, NULL);
-  int row_y = n->y + pad_t + idx * (row_h + gap);
-  int x = n->x + pad_l + label_w + 6;
-  int w = n->w - pad_l - pad_r - label_w - 6;
+  int row_h = COGITO_COLORPICKER_PANEL_SLIDER_H;
+  int slider_h = COGITO_COLORPICKER_PANEL_SLIDER_H;
+  int row_y = cogito_colorpicker_panel_rows_top(n) + idx * (row_h + COGITO_COLORPICKER_PANEL_ROW_GAP);
+  int x = n->x + COGITO_COLORPICKER_PANEL_PAD + COGITO_COLORPICKER_PANEL_LABEL_W + COGITO_COLORPICKER_PANEL_LABEL_GAP;
+    int w = n->w - COGITO_COLORPICKER_PANEL_PAD * 2 -
+      COGITO_COLORPICKER_PANEL_LABEL_W - COGITO_COLORPICKER_PANEL_LABEL_GAP -
+      COGITO_COLORPICKER_PANEL_VALUE_GAP - COGITO_COLORPICKER_PANEL_VALUE_W;
   int y = row_y + (row_h - slider_h) / 2;
   if (w < 1) w = 1;
   if (out_x) *out_x = x;
@@ -256,12 +240,11 @@ static int cogito_colorpicker_panel_hit_channel(CogitoNode* panel, int mx, int m
 static bool cogito_colorpicker_hex_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n) return false;
   if (n->colorpicker.popover_panel) {
-    int hx = 0, hy = 0, hw = 0, hh = 0;
-    cogito_colorpicker_layout(n, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &hx, &hy, &hw, &hh);
-    if (out_x) *out_x = hx;
-    if (out_y) *out_y = hy;
-    if (out_w) *out_w = hw;
-    if (out_h) *out_h = hh;
+    if (out_x) *out_x = 0;
+    if (out_y) *out_y = 0;
+    if (out_w) *out_w = 0;
+    if (out_h) *out_h = 0;
+    return false;
   } else {
     int hx = 0, hw = 0, hh = 0;
     cogito_colorpicker_field_layout(n, NULL, NULL, NULL, NULL, &hx, NULL, &hw, &hh, NULL, NULL, NULL, NULL);

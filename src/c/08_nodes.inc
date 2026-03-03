@@ -251,6 +251,12 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
   switch (kind) {
     case COGITO_SCROLLER: n->scroller.vert = true; break;
     case COGITO_STEPPER: n->stepper.max = 100.0; n->stepper.step = 1.0; break;
+    case COGITO_COLORPICKER:
+      n->colorpicker.h = 236.0;
+      n->colorpicker.c = 41.0;
+      n->colorpicker.t = 40.0;
+      cogito_colorpicker_sync_hex(n);
+      break;
     case COGITO_IMAGE: case COGITO_AVATAR: n->image.avg_lum = 0.5f; break;
     case COGITO_VIEW_DUAL:
       n->view_dual.ratio = 0.5f;
@@ -496,11 +502,15 @@ static void cogito_node_set_text(CogitoNode* n, YisStr* s) {
   if (n->text) yis_release_val(YV_STR(n->text));
   n->text = s;
   int len = n->text ? (int)n->text->len : 0;
-  // Only update text_input if node kind actually uses it (to avoid overwriting union fields)
-  if (n->kind == COGITO_TEXTFIELD || n->kind == COGITO_TEXTVIEW || n->kind == COGITO_COLORPICKER) {
+  // Only update text_input for widgets that store editing state in text_input.
+  if (n->kind == COGITO_TEXTFIELD || n->kind == COGITO_TEXTVIEW || n->kind == COGITO_SEARCHFIELD) {
     if (n->text_input.caret > len) n->text_input.caret = len;
     if (n->text_input.sel_start > len) n->text_input.sel_start = len;
     if (n->text_input.sel_end > len) n->text_input.sel_end = len;
+  } else if (n->kind == COGITO_COLORPICKER) {
+    if (n->colorpicker.caret > len) n->colorpicker.caret = len;
+    if (n->colorpicker.sel_start > len) n->colorpicker.sel_start = len;
+    if (n->colorpicker.sel_end > len) n->colorpicker.sel_end = len;
   }
 }
 

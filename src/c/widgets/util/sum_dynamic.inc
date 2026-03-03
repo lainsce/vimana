@@ -608,7 +608,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "searchfield\n  background: %s\n  color: %s\n  border-radius: 999\n  min-height: 56\n  min-width: 240\n  padding: 6 16\n  transition: 180 standard\n", sch, ons);
   cogito_sum_append(out, cap, &off,
-  "colorpicker\n  background: %s\n  color: %s\n  border-radius: 12\n  transition: 180 standard\n", sch, ons);
+  "colorpicker\n  background: %s\n  color: %s\n  border: 1 solid %s\n  border-radius: 8\n  min-height: 56\n  min-width: 220\n  transition: 180 standard\n", sch, ons, outl);
   cogito_sum_append(out, cap, &off,
   "colorpicker:selection\n  background: %s\n", p);
   cogito_sum_append(out, cap, &off,

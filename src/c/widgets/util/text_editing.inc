@@ -22,27 +22,38 @@ static bool cogito_text_move_caret_h(CogitoNode* n, int dir) {
   if (!n) return false;
   const char* text = n->text ? n->text->data : "";
   int len = (int)(n->text ? n->text->len : 0);
-  int old_caret = n->text_input.caret;
+  int* caret = &n->text_input.caret;
+  int* sel_start = &n->text_input.sel_start;
+  int* sel_end = &n->text_input.sel_end;
+  bool* selecting = &n->text_input.selecting;
+  if (n->kind == COGITO_COLORPICKER) {
+    caret = &n->colorpicker.caret;
+    sel_start = &n->colorpicker.sel_start;
+    sel_end = &n->colorpicker.sel_end;
+    selecting = &n->colorpicker.selecting;
+  }
+
+  int old_caret = *caret;
   if (old_caret < 0) old_caret = 0;
   if (old_caret > len) old_caret = len;
 
-  if (n->text_input.sel_start != n->text_input.sel_end) {
-    int a = n->text_input.sel_start;
-    int b = n->text_input.sel_end;
+  if (*sel_start != *sel_end) {
+    int a = *sel_start;
+    int b = *sel_end;
     if (a > b) { int t = a; a = b; b = t; }
-    n->text_input.caret = (dir < 0) ? a : b;
+    *caret = (dir < 0) ? a : b;
   } else {
-    n->text_input.caret = (dir < 0)
+    *caret = (dir < 0)
       ? cogito_utf8_prev_index(text, len, old_caret)
       : cogito_utf8_next_index(text, len, old_caret);
   }
 
-  if (n->text_input.caret < 0) n->text_input.caret = 0;
-  if (n->text_input.caret > len) n->text_input.caret = len;
-  n->text_input.sel_start = n->text_input.caret;
-  n->text_input.sel_end = n->text_input.caret;
-  n->text_input.selecting = false;
-  return n->text_input.caret != old_caret;
+  if (*caret < 0) *caret = 0;
+  if (*caret > len) *caret = len;
+  *sel_start = *caret;
+  *sel_end = *caret;
+  *selecting = false;
+  return *caret != old_caret;
 }
 
 static bool cogito_textview_move_caret_v(CogitoNode* n, int dir) {

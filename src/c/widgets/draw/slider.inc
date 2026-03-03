@@ -13,6 +13,15 @@ case COGITO_SLIDER: {
       CogitoColor active_track = s.has_text ? s.text : (s.has_knob ? s.knob : n->text_color);
       cogito_anim_apply(n, &s, &inactive_track, &active_track, NULL, NULL);
 
+      bool cp_panel_slider = false;
+      int cp_slider_channel = -1;
+      CogitoNode* cp_panel = NULL;
+      if (n->parent && n->parent->kind == COGITO_COLORPICKER && n->parent->colorpicker.popover_panel) {
+        cp_panel = n->parent;
+        cp_slider_channel = cogito_colorpicker_panel_slider_channel(cp_panel, n);
+        cp_panel_slider = (cp_slider_channel >= 0);
+      }
+
       int slider_size = (int)n->slider.size;
       if (slider_size < COGITO_SLIDER_SIZE_XS || slider_size > COGITO_SLIDER_SIZE_XL) {
         slider_size = COGITO_SLIDER_SIZE_XS;
@@ -138,20 +147,109 @@ case COGITO_SLIDER: {
         draw_active = active_end > active_start;
       }
 
-      if (inactive_left_end > rx0) {
-        int seg_w = inactive_left_end - rx0;
-        cogito_draw_rect_radii_aa(rx0, cy - rail_h / 2, seg_w, rail_h, inactive_track,
-                                  inactive_left_rl, inactive_left_rr, inactive_left_rr, inactive_left_rl);
-      }
-      if (inactive_right_start < rx1) {
-        int seg_w = rx1 - inactive_right_start;
-        cogito_draw_rect_radii_aa(inactive_right_start, cy - rail_h / 2, seg_w, rail_h, inactive_track,
-                                  inactive_right_rl, inactive_right_rr, inactive_right_rr, inactive_right_rl);
-      }
-      if (draw_active) {
-        int seg_w = active_end - active_start;
-        cogito_draw_rect_radii_aa(active_start, cy - rail_h / 2, seg_w, rail_h, active_track,
-                                  active_rl, active_rr, active_rr, active_rl);
+      if (cp_panel_slider) {
+        int gy = cy - rail_h / 2;
+        int gh = rail_h;
+        int gw = rx1 - rx0;
+        // Keep hue strip positions aligned to the reference image while
+        // generating colors in HCT instead of interpolating fixed RGBA stops.
+        const double hue_track_max_deg = 300.0; // red -> ... -> magenta
+        const double hue_track_chroma = 100.0;
+        const double hue_track_tone = 50.0;
+        double hue = cp_panel->colorpicker.h;
+        double tone = cp_panel->colorpicker.t;
+        if (tone < 0.0) tone = 0.0;
+        if (tone > 100.0) tone = 100.0;
+        CogitoColor chroma_gray = cogito_hct_to_rgb(hue, 0.0, tone);
+        CogitoColor chroma_full = cogito_hct_to_rgb(hue, 100.0, tone);
+
+        int seg_x[2] = {rx0, inactive_right_start};
+        int seg_w[2] = {inactive_left_end - rx0, rx1 - inactive_right_start};
+        int seg_tl[2] = {inactive_left_rl, inactive_right_rl};
+        int seg_tr[2] = {inactive_left_rr, inactive_right_rr};
+        int seg_br[2] = {inactive_left_rr, inactive_right_rr};
+        int seg_bl[2] = {inactive_left_rl, inactive_right_rl};
+
+        for (int seg = 0; seg < 2; seg++) {
+          if (seg_w[seg] <= 0 || gh <= 0 || gw <= 0) continue;
+          int sx = seg_x[seg];
+          int sw = seg_w[seg];
+          int tl = seg_tl[seg];
+          int tr = seg_tr[seg];
+          int br = seg_br[seg];
+          int bl = seg_bl[seg];
+          int bands = sw;
+          if (bands < 1) bands = 1;
+
+          for (int bi = 0; bi < bands; bi++) {
+            int bx0 = sx + (bi * sw) / bands;
+            int bx1 = sx + ((bi + 1) * sw) / bands;
+            int bw = bx1 - bx0;
+            if (bw <= 0) continue;
+
+            double center_x = (double)bx0 + (double)bw * 0.5;
+            double u = (gw > 1) ? ((center_x - (double)rx0) / (double)(gw - 1)) : 0.0;
+            if (u < 0.0) u = 0.0;
+            if (u > 1.0) u = 1.0;
+
+            double u_l = (gw > 0) ? ((double)(bx0 - rx0) / (double)gw) : u;
+            double u_r = (gw > 0) ? ((double)(bx1 - rx0) / (double)gw) : u;
+            if (u_l < 0.0) u_l = 0.0;
+            if (u_l > 1.0) u_l = 1.0;
+            if (u_r < 0.0) u_r = 0.0;
+            if (u_r > 1.0) u_r = 1.0;
+
+            CogitoColor grad = inactive_track;
+            if (cp_slider_channel == 0) {
+              // Average neighboring hue samples per column to reduce visible
+              // stepping from integer RGB quantization.
+              double hue_deg_l = u_l * hue_track_max_deg;
+              double hue_deg_r = u_r * hue_track_max_deg;
+              if (hue_deg_l < 0.0) hue_deg_l = 0.0;
+              if (hue_deg_l > hue_track_max_deg) hue_deg_l = hue_track_max_deg;
+              if (hue_deg_r < 0.0) hue_deg_r = 0.0;
+              if (hue_deg_r > hue_track_max_deg) hue_deg_r = hue_track_max_deg;
+              CogitoColor grad_l = cogito_hct_to_rgb(hue_deg_l, hue_track_chroma, hue_track_tone);
+              CogitoColor grad_r = cogito_hct_to_rgb(hue_deg_r, hue_track_chroma, hue_track_tone);
+              grad = cogito_mix(grad_l, grad_r, 0.5f);
+            } else if (cp_slider_channel == 1) {
+              grad = cogito_mix(chroma_gray, chroma_full, (float)u);
+            } else if (cp_slider_channel == 2) {
+              CogitoColor black = {0, 0, 0, 255};
+              CogitoColor white = {255, 255, 255, 255};
+              grad = cogito_mix(black, white, (float)u);
+            }
+
+            int bt_l = (bi == 0) ? tl : 0;
+            int bt_t = (bi == bands - 1) ? tr : 0;
+            int bt_b = (bi == bands - 1) ? br : 0;
+            int bt_bl = (bi == 0) ? bl : 0;
+            cogito_draw_rect_radii_aa(bx0, gy, bw, gh, grad, bt_l, bt_t, bt_b, bt_bl);
+          }
+        }
+
+        if (draw_active) {
+          CogitoColor active_overlay = {255, 255, 255, 20}; // 8% white
+          int seg_w = active_end - active_start;
+          cogito_draw_rect_radii_aa(active_start, gy, seg_w, gh, active_overlay,
+                                    active_rl, active_rr, active_rr, active_rl);
+        }
+      } else {
+        if (inactive_left_end > rx0) {
+          int seg_w = inactive_left_end - rx0;
+          cogito_draw_rect_radii_aa(rx0, cy - rail_h / 2, seg_w, rail_h, inactive_track,
+                                    inactive_left_rl, inactive_left_rr, inactive_left_rr, inactive_left_rl);
+        }
+        if (inactive_right_start < rx1) {
+          int seg_w = rx1 - inactive_right_start;
+          cogito_draw_rect_radii_aa(inactive_right_start, cy - rail_h / 2, seg_w, rail_h, inactive_track,
+                                    inactive_right_rl, inactive_right_rr, inactive_right_rr, inactive_right_rl);
+        }
+        if (draw_active) {
+          int seg_w = active_end - active_start;
+          cogito_draw_rect_radii_aa(active_start, cy - rail_h / 2, seg_w, rail_h, active_track,
+                                    active_rl, active_rr, active_rr, active_rl);
+        }
       }
 
       if (n->slider.mode == COGITO_SLIDER_MODE_NORMAL &&
@@ -171,11 +269,13 @@ case COGITO_SLIDER: {
         }
       }
 
-      CogitoColor endpoint_dot = active_track;
-      endpoint_dot.a = endpoint_dot.a > 170 ? endpoint_dot.a : 170;
-      cogito_draw_rect(x0 - dot_d / 2, cy - dot_d / 2, dot_d, dot_d, endpoint_dot, dot_d / 2);
-      if (x1 != x0) {
-        cogito_draw_rect(x1 - dot_d / 2, cy - dot_d / 2, dot_d, dot_d, endpoint_dot, dot_d / 2);
+      if (!cp_panel_slider) {
+        CogitoColor endpoint_dot = active_track;
+        endpoint_dot.a = endpoint_dot.a > 170 ? endpoint_dot.a : 170;
+        cogito_draw_rect(x0 - dot_d / 2, cy - dot_d / 2, dot_d, dot_d, endpoint_dot, dot_d / 2);
+        if (x1 != x0) {
+          cogito_draw_rect(x1 - dot_d / 2, cy - dot_d / 2, dot_d, dot_d, endpoint_dot, dot_d / 2);
+        }
       }
 
       int state_x = k0;

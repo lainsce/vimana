@@ -32,6 +32,9 @@ static CogitoNode* cogito_slider_new_obj(double min, double max, double value);
 // Creates a popover containing a colorpicker panel node with 3 slider children.
 static CogitoNode* cogito_colorpicker_open_panel(CogitoNode* owner) {
   if (!owner || owner->kind != COGITO_COLORPICKER) return NULL;
+  if (!owner->text || !owner->text->data || !owner->text->data[0]) {
+    cogito_colorpicker_sync_hex(owner);
+  }
 
   CogitoNode* pop = cogito_popover_new_obj();
   pop->padding_set = true;
@@ -44,6 +47,7 @@ static CogitoNode* cogito_colorpicker_open_panel(CogitoNode* owner) {
   pop->border_radius = 20;
 
   CogitoNode* panel = cogito_node_new(COGITO_COLORPICKER);
+  panel->editable = false;
   panel->colorpicker.popover_panel = true;
   panel->colorpicker.owner = owner;
   panel->colorpicker.h = owner->colorpicker.h;

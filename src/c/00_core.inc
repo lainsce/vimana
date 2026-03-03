@@ -851,6 +851,9 @@ typedef struct CogitoNode {
     } datepicker;
 
     struct {
+      int caret;
+      int sel_start, sel_end;
+      bool selecting;
       double h, c, t;
       bool hex_editing;
       bool popover_panel;
