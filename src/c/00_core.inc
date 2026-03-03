@@ -830,7 +830,9 @@ typedef struct CogitoNode {
     struct {
       double min, max, value;
       double value2;
+      double step;
       bool dragging;
+      bool show_step_dots;
       uint8_t mode;
       uint8_t active_handle;
       uint8_t size;

@@ -2438,6 +2438,94 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_slider_set_step")) {
+                        GenExpr node, stepv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &stepv, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_slider_set_step(%s, %s);", node.tmp, stepv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", stepv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &stepv, stepv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&stepv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_get_step")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_slider_get_step(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_set_step_dots")) {
+                        GenExpr node, onv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &onv, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_slider_set_step_dots(%s, %s);", node.tmp, onv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", onv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &onv, onv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&onv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_get_step_dots")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_slider_get_step_dots(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_slider_set_range")) {
                         GenExpr node, startv, endv;
                         if (!gen_expr(cg, path, e->as.call.args[

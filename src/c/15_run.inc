@@ -164,21 +164,24 @@ static bool cogito_keyboard_toggle_focus(CogitoNode* n) {
 static bool cogito_keyboard_adjust_slider(CogitoNode* n, int dir) {
   if (!n || n->kind != COGITO_SLIDER || n->disabled || dir == 0) return false;
   double span = n->slider.max - n->slider.min;
-  double step = span / 20.0;
-  if (step < 0.000001) step = 1.0;
+  double step = cogito_slider_step_normalized(n->slider.step);
+  if (step < 0.000001) {
+    step = span / 20.0;
+    if (step < 0.000001) step = 1.0;
+  }
   double prev0 = n->slider.value;
   double prev1 = n->slider.value2;
   if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
     if (n->slider.active_handle == 2) {
-      n->slider.value2 = cogito_slider_clamp(n->slider.value2 + (double)dir * step, n->slider.min, n->slider.max);
+      n->slider.value2 = cogito_slider_snap_to_step(n, n->slider.value2 + (double)dir * step);
       if (n->slider.value2 < n->slider.value) n->slider.value = n->slider.value2;
     } else {
       n->slider.active_handle = 1;
-      n->slider.value = cogito_slider_clamp(n->slider.value + (double)dir * step, n->slider.min, n->slider.max);
+      n->slider.value = cogito_slider_snap_to_step(n, n->slider.value + (double)dir * step);
       if (n->slider.value > n->slider.value2) n->slider.value2 = n->slider.value;
     }
   } else {
-    n->slider.value = cogito_slider_clamp(n->slider.value + (double)dir * step, n->slider.min, n->slider.max);
+    n->slider.value = cogito_slider_snap_to_step(n, n->slider.value + (double)dir * step);
     n->slider.value2 = n->slider.value;
   }
   if (n->slider.value == prev0 && n->slider.value2 == prev1) return false;
@@ -1569,6 +1572,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
         if (t < 0.0) t = 0.0;
         if (t > 1.0) t = 1.0;
         double v = sld->slider.min + t * (sld->slider.max - sld->slider.min);
+        v = cogito_slider_snap_to_step(sld, v);
         bool changed = false;
         if (sld->slider.mode == COGITO_SLIDER_MODE_RANGE) {
           double prev0 = sld->slider.value;

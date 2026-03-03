@@ -439,7 +439,7 @@ fun build_slider_page() (( cogito.VStack )) {
     vstack.add(range_slider)
 
     -- Discrete Slider
-    let discrete_label = cogito.label("Discrete Slider (centered at 0)")
+    let discrete_label = cogito.label("Discrete Slider (step 10, centered at 0)")
     .set_class("heading")
     vstack.add(discrete_label)
 
@@ -450,6 +450,8 @@ fun build_slider_page() (( cogito.VStack )) {
     let discrete_slider = cogito.slider(-100, 100, 0)
     .set_hexpand(true)
     .set_centered(true)
+    .set_step(10)
+    .set_step_dots(true)
     discrete_slider.on_change((s = cogito.Slider) => {
         let v = s.value()
         discrete_status.set_text("Centered value: <v>")

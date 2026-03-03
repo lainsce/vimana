@@ -262,6 +262,10 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_slider_range_new cogito_slider_range_new_yis
 #define cogito_slider_on_change cogito_slider_on_change_yis
 #define cogito_slider_set_centered cogito_slider_set_centered_yis
+#define cogito_slider_set_step cogito_slider_set_step_yis
+#define cogito_slider_get_step cogito_slider_get_step_yis
+#define cogito_slider_set_step_dots cogito_slider_set_step_dots_yis
+#define cogito_slider_get_step_dots cogito_slider_get_step_dots_yis
 #define cogito_slider_set_icon cogito_slider_set_icon_yis
 #define cogito_slider_set_range cogito_slider_set_range_yis
 #define cogito_slider_set_range_end cogito_slider_set_range_end_yis
@@ -604,6 +608,10 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_slider_on_change
 #undef cogito_slider_set_centered
 #undef cogito_slider_get_centered
+#undef cogito_slider_set_step
+#undef cogito_slider_get_step
+#undef cogito_slider_set_step_dots
+#undef cogito_slider_get_step_dots
 #undef cogito_slider_set_icon
 #undef cogito_slider_set_range
 #undef cogito_slider_set_range_start
@@ -2495,6 +2503,32 @@ bool cogito_slider_get_centered(cogito_node *slider) {
   if (!slider)
     return false;
   YisVal v = cogito_slider_get_centered_yis(YV_OBJ(slider));
+  return yis_as_bool(v);
+}
+
+void cogito_slider_set_step(cogito_node *slider, double step) {
+  if (!slider)
+    return;
+  cogito_slider_set_step_yis(YV_OBJ(slider), YV_FLOAT(step));
+}
+
+double cogito_slider_get_step(cogito_node *slider) {
+  if (!slider)
+    return 0.0;
+  YisVal v = cogito_slider_get_step_yis(YV_OBJ(slider));
+  return yis_as_float(v);
+}
+
+void cogito_slider_set_step_dots(cogito_node *slider, bool on) {
+  if (!slider)
+    return;
+  cogito_slider_set_step_dots_yis(YV_OBJ(slider), YV_BOOL(on));
+}
+
+bool cogito_slider_get_step_dots(cogito_node *slider) {
+  if (!slider)
+    return false;
+  YisVal v = cogito_slider_get_step_dots_yis(YV_OBJ(slider));
   return yis_as_bool(v);
 }
 

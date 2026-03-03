@@ -191,6 +191,8 @@
 #undef cogito_settings_row_new
 #undef cogito_settings_window_new
 #undef cogito_slider_get_centered
+#undef cogito_slider_get_step
+#undef cogito_slider_get_step_dots
 #undef cogito_slider_get_range_end
 #undef cogito_slider_get_range_start
 #undef cogito_slider_get_size
@@ -199,6 +201,8 @@
 #undef cogito_slider_on_change
 #undef cogito_slider_range_new
 #undef cogito_slider_set_centered
+#undef cogito_slider_set_step
+#undef cogito_slider_set_step_dots
 #undef cogito_slider_set_icon
 #undef cogito_slider_set_range
 #undef cogito_slider_set_range_end
@@ -2665,6 +2669,26 @@ static YisVal __cogito_slider_get_centered(YisVal slv) {
   return YV_BOOL(cogito_slider_get_centered(sl));
 }
 
+static void __cogito_slider_set_step(YisVal slv, YisVal stepv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  cogito_slider_set_step(sl, yis_as_float(stepv));
+}
+
+static YisVal __cogito_slider_get_step(YisVal slv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  return YV_FLOAT(cogito_slider_get_step(sl));
+}
+
+static void __cogito_slider_set_step_dots(YisVal slv, YisVal onv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  cogito_slider_set_step_dots(sl, yis_as_bool(onv));
+}
+
+static YisVal __cogito_slider_get_step_dots(YisVal slv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  return YV_BOOL(cogito_slider_get_step_dots(sl));
+}
+
 static void __cogito_slider_set_range(YisVal slv, YisVal startv, YisVal endv) {
   cogito_node* sl = cogito_node_from_val(slv);
   cogito_slider_set_range(sl, yis_as_float(startv), yis_as_float(endv));
@@ -3446,6 +3470,10 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_slider_set_icon __cogito_slider_set_icon
 #define cogito_slider_set_centered __cogito_slider_set_centered
 #define cogito_slider_get_centered __cogito_slider_get_centered
+#define cogito_slider_set_step __cogito_slider_set_step
+#define cogito_slider_get_step __cogito_slider_get_step
+#define cogito_slider_set_step_dots __cogito_slider_set_step_dots
+#define cogito_slider_get_step_dots __cogito_slider_get_step_dots
 #define cogito_slider_set_range __cogito_slider_set_range
 #define cogito_slider_set_range_start __cogito_slider_set_range_start
 #define cogito_slider_set_range_end __cogito_slider_set_range_end
