@@ -29,12 +29,15 @@
 // Forward Declarations
 // ============================================================================
 
+typedef struct CogitoSDL3Window CogitoSDL3Window;
+
 static void *sdl3_window_get_native_handle(CogitoWindow *window);
 static SDL_HitTestResult sdl3_csd_hit_test_callback(SDL_Window *sdl_win,
                                                     const SDL_Point *point,
                                                     void *data);
 static SDL_Renderer *sdl3_active_renderer(void);
 static SDL_Renderer *sdl3_create_renderer_for_window(SDL_Window *window);
+static void sdl3_sync_logical_presentation(CogitoSDL3Window *win);
 static void sdl3_get_mouse_position_in_window(CogitoWindow *window, int *x,
                                               int *y);
 static void sdl3_free_geometry_buffers(void);
@@ -225,6 +228,7 @@ static double start_time = 0.0;
 typedef struct CogitoTextCacheKey {
   char text[COGITO_TEXT_CACHE_MAX_LEN];
   uint16_t text_len;
+  uint16_t raster_size_q64;
   TTF_Font *font;
 } CogitoTextCacheKey;
 
@@ -248,13 +252,15 @@ static size_t g_text_cache_bytes = 0;
 #endif
 
 static uint32_t cogito_text_cache_hash(TTF_Font *font, const char *text,
-                                       size_t text_len) {
+                                       size_t text_len,
+                                       uint16_t raster_size_q64) {
   uint32_t h = 5381;
   for (size_t i = 0; i < text_len; i++) {
     h = ((h << 5) + h) ^ (uint8_t)text[i];
   }
   h ^= (uint32_t)(uintptr_t)font;
   h ^= (uint32_t)text_len;
+  h ^= ((uint32_t)raster_size_q64 << 1);
   return h;
 }
 
@@ -306,7 +312,8 @@ static void cogito_text_cache_trim(size_t max_bytes,
 }
 
 static CogitoTextCacheEntry *
-cogito_text_cache_lookup(TTF_Font *font, const char *text, size_t text_len) {
+cogito_text_cache_lookup(TTF_Font *font, const char *text, size_t text_len,
+                         uint16_t raster_size_q64) {
   CogitoTextCacheKey key = {0};
   if (text_len >= (size_t)COGITO_TEXT_CACHE_MAX_LEN) {
     text_len = (size_t)COGITO_TEXT_CACHE_MAX_LEN - 1;
@@ -316,9 +323,11 @@ cogito_text_cache_lookup(TTF_Font *font, const char *text, size_t text_len) {
   }
   key.text[text_len] = '\0';
   key.text_len = (uint16_t)text_len;
+  key.raster_size_q64 = raster_size_q64;
   key.font = font;
 
-  uint32_t hash = cogito_text_cache_hash(font, key.text, text_len);
+  uint32_t hash =
+      cogito_text_cache_hash(font, key.text, text_len, raster_size_q64);
   int idx = (int)(hash & (COGITO_TEXT_CACHE_SIZE - 1));
 
   // Linear probing
@@ -576,6 +585,32 @@ static SDL_Renderer *sdl3_create_renderer_for_window(SDL_Window *window) {
   return renderer;
 }
 
+static void sdl3_sync_logical_presentation(CogitoSDL3Window *win) {
+  if (!win || !win->sdl_window || !win->renderer)
+    return;
+
+  int logical_w = 0;
+  int logical_h = 0;
+  SDL_GetWindowSize(win->sdl_window, &logical_w, &logical_h);
+  if (logical_w <= 0 || logical_h <= 0)
+    return;
+
+  int current_w = 0;
+  int current_h = 0;
+  SDL_RendererLogicalPresentation current_mode =
+      SDL_LOGICAL_PRESENTATION_DISABLED;
+
+  bool have_current = SDL_GetRenderLogicalPresentation(
+      win->renderer, &current_w, &current_h, &current_mode);
+  if (have_current && current_w == logical_w && current_h == logical_h &&
+      current_mode == SDL_LOGICAL_PRESENTATION_INTEGER_SCALE) {
+    return;
+  }
+
+  SDL_SetRenderLogicalPresentation(win->renderer, logical_w, logical_h,
+                                   SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+}
+
 // ============================================================================
 // Window Management
 // ============================================================================
@@ -629,6 +664,7 @@ static CogitoWindow *sdl3_window_create(const char *title, int w, int h,
   }
   SDL_SetRenderDrawBlendMode(win->renderer, SDL_BLENDMODE_BLEND);
   SDL_SetDefaultTextureScaleMode(win->renderer, SDL_SCALEMODE_LINEAR);
+  sdl3_sync_logical_presentation(win);
   SDL_StartTextInput(win->sdl_window);
 
   // Initialize CSD for borderless windows with appbar
@@ -886,6 +922,7 @@ static void sdl3_begin_frame(CogitoWindow *window) {
     win->width = w;
     win->height = h;
   }
+  sdl3_sync_logical_presentation(win);
 
   g_current_renderer = win->renderer;
   g_current_window = win;
@@ -2269,13 +2306,40 @@ static int sdl3_text_measure_height(CogitoFont *font, int size) {
   return TTF_GetFontHeight(f->ttf_font);
 }
 
+static float sdl3_text_render_density(void) {
+  if (!g_current_window || !g_current_window->sdl_window)
+    return 1.0f;
+
+  float density = SDL_GetWindowPixelDensity(g_current_window->sdl_window);
+  if (density <= 0.0f)
+    density = SDL_GetWindowDisplayScale(g_current_window->sdl_window);
+  if (density <= 0.0f)
+    density = 1.0f;
+
+  if (density < 1.0f)
+    density = 1.0f;
+  if (density > 4.0f)
+    density = 4.0f;
+  return density;
+}
+
 static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
                            int size, CogitoColor color) {
   CogitoSDL3Font *f = (CogitoSDL3Font *)font;
   if (!g_current_renderer || !f || !f->ttf_font || !text || !text[0])
     return;
   sdl3_rect_batch_flush();
-  (void)size;
+
+  float logical_pt = (float)(size > 0 ? size : f->size);
+  if (logical_pt <= 0.0f)
+    logical_pt = (float)(f->size > 0 ? f->size : 12);
+  float density = sdl3_text_render_density();
+  float raster_pt = logical_pt * density;
+  uint16_t raster_size_q64 = (uint16_t)SDL_clamp((int)lroundf(raster_pt * 64.0f),
+                                                 1, 65535);
+  float draw_scale = raster_pt / logical_pt;
+  if (draw_scale <= 0.0f)
+    draw_scale = 1.0f;
 
   size_t text_len = strnlen(text, COGITO_TEXT_CACHE_MAX_LEN);
   bool cacheable = text_len < COGITO_TEXT_CACHE_MAX_LEN;
@@ -2283,15 +2347,30 @@ static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
 
   if (cacheable) {
     // Look up in cache
-    entry = cogito_text_cache_lookup(f->ttf_font, text, text_len);
+    entry =
+        cogito_text_cache_lookup(f->ttf_font, text, text_len, raster_size_q64);
     if (entry->valid && entry->texture) {
       // Cache hit - use existing texture
-      SDL_FRect dst = {(float)x, (float)y, (float)entry->width,
-                       (float)entry->height};
+      SDL_FRect dst = {(float)x,
+                       (float)y,
+                       (float)entry->width / draw_scale,
+                       (float)entry->height / draw_scale};
       SDL_SetTextureColorMod(entry->texture, color.r, color.g, color.b);
       SDL_SetTextureAlphaMod(entry->texture, color.a);
       SDL_RenderTexture(g_current_renderer, entry->texture, NULL, &dst);
       return;
+    }
+  }
+
+  float prev_pt = TTF_GetFontSize(f->ttf_font);
+  bool font_size_changed = fabsf(prev_pt - raster_pt) > 0.01f;
+  if (font_size_changed) {
+    if (!TTF_SetFontSize(f->ttf_font, raster_pt)) {
+      font_size_changed = false;
+      raster_pt = prev_pt;
+      draw_scale = raster_pt / logical_pt;
+      if (draw_scale <= 0.0f)
+        draw_scale = 1.0f;
     }
   }
 
@@ -2300,21 +2379,33 @@ static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
   SDL_Color sdl_color = {255, 255, 255, 255};
   SDL_Surface *surface =
       TTF_RenderText_Blended(f->ttf_font, text, 0, sdl_color);
-  if (!surface)
+  if (!surface) {
+    if (font_size_changed) {
+      TTF_SetFontSize(f->ttf_font, prev_pt);
+    }
     return;
+  }
 
   SDL_Texture *tex = SDL_CreateTextureFromSurface(g_current_renderer, surface);
   if (!tex) {
     SDL_DestroySurface(surface);
+    if (font_size_changed) {
+      TTF_SetFontSize(f->ttf_font, prev_pt);
+    }
     return;
   }
   SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
   SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_LINEAR);
 
-  SDL_FRect dst = {(float)x, (float)y, (float)surface->w, (float)surface->h};
+  SDL_FRect dst = {(float)x, (float)y, (float)surface->w / draw_scale,
+                   (float)surface->h / draw_scale};
   SDL_SetTextureColorMod(tex, color.r, color.g, color.b);
   SDL_SetTextureAlphaMod(tex, color.a);
   SDL_RenderTexture(g_current_renderer, tex, NULL, &dst);
+
+  if (font_size_changed) {
+    TTF_SetFontSize(f->ttf_font, prev_pt);
+  }
 
   if (cacheable && entry) {
     // Store in cache
