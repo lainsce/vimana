@@ -233,6 +233,19 @@ fun __cogito_node_set_id(node = any, id = string) (( -- )) { }
 fun __cogito_node_set_tooltip(node = any, text = string) (( -- )) { }
 fun __cogito_node_window(node = any) (( Window )) { }
 fun __cogito_open_url(url = string) (( bool )) { }
+fun __cogito_gst_init() (( bool )) { }
+fun __cogito_gst_shutdown() (( -- )) { }
+fun __cogito_gst_load(path_or_uri = string) (( bool )) { }
+fun __cogito_gst_play() (( bool )) { }
+fun __cogito_gst_pause() (( bool )) { }
+fun __cogito_gst_stop() (( bool )) { }
+fun __cogito_gst_seek_ms(position_ms = num) (( bool )) { }
+fun __cogito_gst_get_position_ms() (( num )) { }
+fun __cogito_gst_get_duration_ms() (( num )) { }
+fun __cogito_gst_set_volume(value = num) (( bool )) { }
+fun __cogito_gst_get_volume() (( num )) { }
+fun __cogito_gst_poll_event() (( num )) { }
+fun __cogito_gst_last_error() (( string )) { }
 fun __cogito_pointer_capture(node = any) (( -- )) { }
 fun __cogito_pointer_release() (( -- )) { }
 fun __cogito_progress_get_circular(p = Progress) (( bool )) { }
@@ -3598,6 +3611,45 @@ pub fun set_script_dir(dir = string) (( -- )) {
 }
 pub fun open_url(url = string) (( bool )) {
     return __cogito_open_url(url)
+}
+pub fun gst_init() (( bool )) {
+    return __cogito_gst_init()
+}
+pub fun gst_shutdown() (( -- )) {
+    __cogito_gst_shutdown()
+}
+pub fun gst_load(path_or_uri = string) (( bool )) {
+    return __cogito_gst_load(path_or_uri)
+}
+pub fun gst_play() (( bool )) {
+    return __cogito_gst_play()
+}
+pub fun gst_pause() (( bool )) {
+    return __cogito_gst_pause()
+}
+pub fun gst_stop() (( bool )) {
+    return __cogito_gst_stop()
+}
+pub fun gst_seek_ms(position_ms = num) (( bool )) {
+    return __cogito_gst_seek_ms(position_ms)
+}
+pub fun gst_position_ms() (( num )) {
+    return __cogito_gst_get_position_ms()
+}
+pub fun gst_duration_ms() (( num )) {
+    return __cogito_gst_get_duration_ms()
+}
+pub fun gst_set_volume(value = num) (( bool )) {
+    return __cogito_gst_set_volume(value)
+}
+pub fun gst_volume() (( num )) {
+    return __cogito_gst_get_volume()
+}
+pub fun gst_poll_event() (( num )) {
+    return __cogito_gst_poll_event()
+}
+pub fun gst_last_error() (( string )) {
+    return __cogito_gst_last_error()
 }
 pub fun set_timeout(ms = num, handler = any) (( num )) {
     return __cogito_timer_timeout(ms, handler)

@@ -133,6 +133,23 @@ void cogito_app_set_icon(cogito_app *app, const char *path);
 const char *cogito_app_get_icon(cogito_app *app);
 bool cogito_open_url(const char *url);
 bool cogito_app_copy_to_clipboard(cogito_app *app, const char *text);
+
+// GStreamer playback API (single global player instance)
+bool cogito_gst_init(void);
+void cogito_gst_shutdown(void);
+bool cogito_gst_load(const char *path_or_uri);
+bool cogito_gst_play(void);
+bool cogito_gst_pause(void);
+bool cogito_gst_stop(void);
+bool cogito_gst_seek_ms(int64_t position_ms);
+int64_t cogito_gst_get_position_ms(void);
+int64_t cogito_gst_get_duration_ms(void);
+bool cogito_gst_set_volume(double value_0_to_1);
+double cogito_gst_get_volume(void);
+// Returns: 0=none, 1=eos, 2=error
+int cogito_gst_poll_event(void);
+const char *cogito_gst_last_error(void);
+
 cogito_timer_id cogito_timer_set_timeout(uint32_t delay_ms,
                                          cogito_timer_fn fn, void *user);
 cogito_timer_id cogito_timer_set_interval(uint32_t interval_ms,

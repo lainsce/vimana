@@ -1,0 +1,29 @@
+@diagnostics: warn
+
+vstack
+hstack
+zstack
+scroller
+  background: transparent
+
+card.victrola-player
+  background: #131b19
+  border-radius: 18
+  padding: 16
+
+hstack.victrola-seek-row
+hstack.victrola-duration
+hstack.victrola-main-controls
+hstack.victrola-secondary-controls
+  min-width: 335
+  max-width: 335
+  background: transparent
+
+slider.victrola-seek
+  min-width: 335
+  max-width: 335
+
+textview.victrola-lyrics
+  background: #131b19
+  border-radius: 12
+  padding: 10 12

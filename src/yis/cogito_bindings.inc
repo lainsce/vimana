@@ -158,6 +158,19 @@
 #undef cogito_node_set_valign
 #undef cogito_node_window
 #undef cogito_open_url
+#undef cogito_gst_init
+#undef cogito_gst_shutdown
+#undef cogito_gst_load
+#undef cogito_gst_play
+#undef cogito_gst_pause
+#undef cogito_gst_stop
+#undef cogito_gst_seek_ms
+#undef cogito_gst_get_position_ms
+#undef cogito_gst_get_duration_ms
+#undef cogito_gst_set_volume
+#undef cogito_gst_get_volume
+#undef cogito_gst_poll_event
+#undef cogito_gst_last_error
 #undef cogito_pointer_capture
 #undef cogito_pointer_release
 #undef cogito_progress_get_circular
@@ -3365,6 +3378,61 @@ static YisVal __cogito_open_url(YisVal urlv) {
   if (tmp) yis_release_val(YV_STR(tmp));
   return YV_BOOL(ok);
 }
+
+static YisVal __cogito_gst_init(void) {
+  return YV_BOOL(cogito_gst_init());
+}
+
+static void __cogito_gst_shutdown(void) {
+  cogito_gst_shutdown();
+}
+
+static YisVal __cogito_gst_load(YisVal path_or_uri_v) {
+  YisStr* tmp = NULL;
+  const char* path_or_uri = cogito_optional_cstr(path_or_uri_v, &tmp);
+  bool ok = false;
+  if (path_or_uri && path_or_uri[0]) ok = cogito_gst_load(path_or_uri);
+  if (tmp) yis_release_val(YV_STR(tmp));
+  return YV_BOOL(ok);
+}
+
+static YisVal __cogito_gst_play(void) { return YV_BOOL(cogito_gst_play()); }
+
+static YisVal __cogito_gst_pause(void) { return YV_BOOL(cogito_gst_pause()); }
+
+static YisVal __cogito_gst_stop(void) { return YV_BOOL(cogito_gst_stop()); }
+
+static YisVal __cogito_gst_seek_ms(YisVal position_ms_v) {
+  int64_t position_ms = yis_as_int(position_ms_v);
+  return YV_BOOL(cogito_gst_seek_ms(position_ms));
+}
+
+static YisVal __cogito_gst_get_position_ms(void) {
+  return YV_INT(cogito_gst_get_position_ms());
+}
+
+static YisVal __cogito_gst_get_duration_ms(void) {
+  return YV_INT(cogito_gst_get_duration_ms());
+}
+
+static YisVal __cogito_gst_set_volume(YisVal value_v) {
+  double value = yis_as_float(value_v);
+  return YV_BOOL(cogito_gst_set_volume(value));
+}
+
+static YisVal __cogito_gst_get_volume(void) {
+  return YV_FLOAT(cogito_gst_get_volume());
+}
+
+static YisVal __cogito_gst_poll_event(void) {
+  return YV_INT((int64_t)cogito_gst_poll_event());
+}
+
+static YisVal __cogito_gst_last_error(void) {
+  const char* err = cogito_gst_last_error();
+  if (!err || !err[0]) return YV_STR(stdr_str_lit(""));
+  return YV_STR(stdr_str_lit(err));
+}
 // ---- Codegen aliases ----
 #define cogito_app_new __cogito_app
 #define cogito_app_set_appid __cogito_app_set_appid
@@ -3377,6 +3445,19 @@ static YisVal __cogito_open_url(YisVal urlv) {
 #define cogito_app_set_icon __cogito_app_set_icon
 #define cogito_app_get_icon __cogito_app_get_icon
 #define cogito_open_url __cogito_open_url
+#define cogito_gst_init __cogito_gst_init
+#define cogito_gst_shutdown __cogito_gst_shutdown
+#define cogito_gst_load __cogito_gst_load
+#define cogito_gst_play __cogito_gst_play
+#define cogito_gst_pause __cogito_gst_pause
+#define cogito_gst_stop __cogito_gst_stop
+#define cogito_gst_seek_ms __cogito_gst_seek_ms
+#define cogito_gst_get_position_ms __cogito_gst_get_position_ms
+#define cogito_gst_get_duration_ms __cogito_gst_get_duration_ms
+#define cogito_gst_set_volume __cogito_gst_set_volume
+#define cogito_gst_get_volume __cogito_gst_get_volume
+#define cogito_gst_poll_event __cogito_gst_poll_event
+#define cogito_gst_last_error __cogito_gst_last_error
 #define cogito_window_new __cogito_window
 #define cogito_window_set_resizable __cogito_window_set_resizable
 #define cogito_window_set_autosize __cogito_window_set_autosize

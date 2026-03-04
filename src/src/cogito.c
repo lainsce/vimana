@@ -14,6 +14,10 @@
 #include <CoreGraphics/CoreGraphics.h>
 #endif
 
+#if defined(COGITO_HAS_GSTREAMER)
+#include <gst/gst.h>
+#endif
+
 static const char *cogito_font_path_active = NULL;
 static const char *cogito_font_bold_path_active = NULL;
 static const char *cogito_font_medium_path_active = NULL;
@@ -1011,6 +1015,300 @@ bool cogito_app_copy_to_clipboard(cogito_app *app, const char *text) {
   if (!cogito_backend || !cogito_backend->set_clipboard_text)
     return false;
   return cogito_backend->set_clipboard_text(text);
+}
+
+#if defined(COGITO_HAS_GSTREAMER)
+static GstElement *cogito_gst_player = NULL;
+static GstBus *cogito_gst_bus = NULL;
+static bool cogito_gst_ready = false;
+static int cogito_gst_pending_event = 0;
+static char cogito_gst_error_msg[512] = "";
+
+static void cogito_gst_set_error_msg(const char *msg) {
+  if (!msg)
+    msg = "";
+  snprintf(cogito_gst_error_msg, sizeof(cogito_gst_error_msg), "%s", msg);
+}
+
+static bool cogito_gst_ensure_player(void) {
+  if (!cogito_gst_ready) {
+    if (!cogito_gst_init())
+      return false;
+  }
+  if (cogito_gst_player)
+    return true;
+  cogito_gst_player = gst_element_factory_make("playbin", "cogito-playbin");
+  if (!cogito_gst_player) {
+    cogito_gst_set_error_msg("failed to create gstreamer playbin");
+    return false;
+  }
+  cogito_gst_bus = gst_element_get_bus(cogito_gst_player);
+  if (!cogito_gst_bus) {
+    cogito_gst_set_error_msg("failed to acquire gstreamer bus");
+    gst_object_unref(cogito_gst_player);
+    cogito_gst_player = NULL;
+    return false;
+  }
+  cogito_gst_pending_event = 0;
+  cogito_gst_set_error_msg("");
+  return true;
+}
+
+static gchar *cogito_gst_to_uri(const char *path_or_uri) {
+  if (!path_or_uri || !path_or_uri[0])
+    return NULL;
+  if (strstr(path_or_uri, "://") != NULL)
+    return g_strdup(path_or_uri);
+
+  gchar *abs = g_canonicalize_filename(path_or_uri, NULL);
+  if (!abs)
+    return NULL;
+  GError *err = NULL;
+  gchar *uri = gst_filename_to_uri(abs, &err);
+  if (!uri) {
+    if (err && err->message)
+      cogito_gst_set_error_msg(err->message);
+    else
+      cogito_gst_set_error_msg("failed to convert path to file:// URI");
+  }
+  if (err)
+    g_error_free(err);
+  g_free(abs);
+  return uri;
+}
+#endif
+
+bool cogito_gst_init(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (cogito_gst_ready)
+    return true;
+  GError *err = NULL;
+  if (!gst_init_check(NULL, NULL, &err)) {
+    if (err && err->message)
+      cogito_gst_set_error_msg(err->message);
+    else
+      cogito_gst_set_error_msg("gst_init_check failed");
+    if (err)
+      g_error_free(err);
+    return false;
+  }
+  cogito_gst_ready = true;
+  cogito_gst_set_error_msg("");
+  return true;
+#else
+  return false;
+#endif
+}
+
+void cogito_gst_shutdown(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (cogito_gst_player) {
+    gst_element_set_state(cogito_gst_player, GST_STATE_NULL);
+  }
+  if (cogito_gst_bus) {
+    gst_object_unref(cogito_gst_bus);
+    cogito_gst_bus = NULL;
+  }
+  if (cogito_gst_player) {
+    gst_object_unref(cogito_gst_player);
+    cogito_gst_player = NULL;
+  }
+  cogito_gst_pending_event = 0;
+  cogito_gst_set_error_msg("");
+#endif
+}
+
+bool cogito_gst_load(const char *path_or_uri) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_ensure_player())
+    return false;
+  gchar *uri = cogito_gst_to_uri(path_or_uri);
+  if (!uri)
+    return false;
+  g_object_set(cogito_gst_player, "uri", uri, NULL);
+  g_free(uri);
+  cogito_gst_pending_event = 0;
+  return true;
+#else
+  (void)path_or_uri;
+  return false;
+#endif
+}
+
+bool cogito_gst_play(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_ensure_player())
+    return false;
+  GstStateChangeReturn rc = gst_element_set_state(cogito_gst_player, GST_STATE_PLAYING);
+  if (rc == GST_STATE_CHANGE_FAILURE) {
+    cogito_gst_set_error_msg("failed to set GStreamer state to PLAYING");
+    return false;
+  }
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool cogito_gst_pause(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_ensure_player())
+    return false;
+  GstStateChangeReturn rc = gst_element_set_state(cogito_gst_player, GST_STATE_PAUSED);
+  if (rc == GST_STATE_CHANGE_FAILURE) {
+    cogito_gst_set_error_msg("failed to set GStreamer state to PAUSED");
+    return false;
+  }
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool cogito_gst_stop(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_player)
+    return false;
+  GstStateChangeReturn rc = gst_element_set_state(cogito_gst_player, GST_STATE_NULL);
+  if (rc == GST_STATE_CHANGE_FAILURE) {
+    cogito_gst_set_error_msg("failed to set GStreamer state to NULL");
+    return false;
+  }
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool cogito_gst_seek_ms(int64_t position_ms) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_player)
+    return false;
+  if (position_ms < 0)
+    position_ms = 0;
+  gint64 target = ((gint64)position_ms) * GST_MSECOND;
+  bool ok = gst_element_seek_simple(cogito_gst_player, GST_FORMAT_TIME,
+                                    GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT,
+                                    target);
+  if (!ok)
+    cogito_gst_set_error_msg("failed to seek stream");
+  return ok;
+#else
+  (void)position_ms;
+  return false;
+#endif
+}
+
+int64_t cogito_gst_get_position_ms(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_player)
+    return -1;
+  gint64 pos = GST_CLOCK_TIME_NONE;
+  if (!gst_element_query_position(cogito_gst_player, GST_FORMAT_TIME, &pos))
+    return -1;
+  if (pos < 0)
+    return -1;
+  return (int64_t)(pos / GST_MSECOND);
+#else
+  return -1;
+#endif
+}
+
+int64_t cogito_gst_get_duration_ms(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_player)
+    return -1;
+  gint64 dur = GST_CLOCK_TIME_NONE;
+  if (!gst_element_query_duration(cogito_gst_player, GST_FORMAT_TIME, &dur))
+    return -1;
+  if (dur < 0)
+    return -1;
+  return (int64_t)(dur / GST_MSECOND);
+#else
+  return -1;
+#endif
+}
+
+bool cogito_gst_set_volume(double value_0_to_1) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_ensure_player())
+    return false;
+  if (value_0_to_1 < 0.0)
+    value_0_to_1 = 0.0;
+  if (value_0_to_1 > 1.0)
+    value_0_to_1 = 1.0;
+  g_object_set(cogito_gst_player, "volume", value_0_to_1, NULL);
+  return true;
+#else
+  (void)value_0_to_1;
+  return false;
+#endif
+}
+
+double cogito_gst_get_volume(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_gst_player)
+    return 1.0;
+  gdouble value = 1.0;
+  g_object_get(cogito_gst_player, "volume", &value, NULL);
+  return (double)value;
+#else
+  return 1.0;
+#endif
+}
+
+int cogito_gst_poll_event(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (cogito_gst_pending_event != 0) {
+    int ev = cogito_gst_pending_event;
+    cogito_gst_pending_event = 0;
+    return ev;
+  }
+  if (!cogito_gst_bus)
+    return 0;
+
+  for (;;) {
+    GstMessage *msg = gst_bus_pop(cogito_gst_bus);
+    if (!msg)
+      return 0;
+    int ev = 0;
+    switch (GST_MESSAGE_TYPE(msg)) {
+    case GST_MESSAGE_EOS:
+      ev = 1;
+      break;
+    case GST_MESSAGE_ERROR: {
+      GError *err = NULL;
+      gchar *debug = NULL;
+      gst_message_parse_error(msg, &err, &debug);
+      if (err && err->message)
+        cogito_gst_set_error_msg(err->message);
+      else
+        cogito_gst_set_error_msg("gstreamer playback error");
+      if (err)
+        g_error_free(err);
+      if (debug)
+        g_free(debug);
+      ev = 2;
+      break;
+    }
+    default:
+      break;
+    }
+    gst_message_unref(msg);
+    if (ev != 0)
+      return ev;
+  }
+#else
+  return 0;
+#endif
+}
+
+const char *cogito_gst_last_error(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  return cogito_gst_error_msg;
+#else
+  return "gstreamer is not enabled in this Cogito build";
+#endif
 }
 
 cogito_timer_id cogito_timer_set_timeout(uint32_t delay_ms, cogito_timer_fn fn,
