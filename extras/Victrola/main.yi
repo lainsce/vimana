@@ -797,7 +797,6 @@ fun refresh_library_list() (( -- )) {
 
     let songs_view = mode == 0 || (mode == 2 && album_detail_open)
     set_library_view_shows_groups(!songs_view)
-    let library_bar = cogito.appbar("Titles", "").set_hexpand(true).set_class("small victrola-library-bar")
 
     if songs_view {
         for (let ?i = 0; i < len(tracks); i = i + 1) {
@@ -1292,7 +1291,7 @@ entry() (( -- )) {
     root.add(sidebar)
 
     let center = cogito.vstack().set_gap(8).set_hexpand(true).set_vexpand(true)
-    let library_bar = cogito.appbar("Titles", "").set_hexpand(true).set_class("victrola-library-bar").set_small()
+    let library_bar = cogito.appbar("Titles", "").set_hexpand(true).set_class("small victrola-library-bar")
     library_bar.add_trailing_button("sf:folder.badge.gearshape", (b = any) => {
         if ui_ready && !is_null(b) {
             choose_and_scan()
@@ -1347,7 +1346,6 @@ entry() (( -- )) {
     player_tint_bin = player_tint
     player_tint.add(player_panel)
 
-    let player_bar = cogito.appbar("Now Playing", "").set_hexpand(true).set_class("victrola-player-bar").set_small()
     let player_bar = cogito.appbar("Now Playing", "").set_hexpand(true).set_class("small victrola-player-bar")
 
     let now_revealer = cogito.revealer().set_show_children(true).set_hexpand(true).set_vexpand(true).set_visible(true)
@@ -1433,7 +1431,6 @@ entry() (( -- )) {
     now_page.add(player_controls)
     now_revealer.add(now_page)
 
-    let lyrics_page = cogito.vstack().set_gap(0).set_hexpand(true).set_vexpand(true).set_padding(10, 12, 12, 12)
     let lyrics_page = cogito.vstack().set_gap(0).set_hexpand(true).set_vexpand(true).set_padding(10, 12, 12, 12).set_class("victrola-lyrics-page")
     let lyrics_scroll = cogito.scroller().set_hexpand(true).set_vexpand(true).set_min_content_width(320).set_min_content_height(220).set_class("victrola-lyrics-scroll")
     lyrics_scroll.add(lyrics_text)

@@ -15,6 +15,7 @@ appbar.victrola-library-bar
 
 appbar.victrola-player-bar
   background: transparent
+  border-width: 0
 
 grid.victrola-group-grid
   background: transparent
@@ -46,4 +47,16 @@ vstack.victrola-song-row
   background: transparent
 
 textview.victrola-lyrics
+  background: #211827
+  color: #f2e8ff
+  border-width: 1
+  border-color: #3f2d4a
   border-radius: 18
+  padding: 12
+
+vstack.victrola-lyrics-page
+  background: transparent
+
+scroller.victrola-lyrics-scroll
+  background: transparent
+  padding: 0
