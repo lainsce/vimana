@@ -1104,6 +1104,28 @@ typedef struct CogitoBinOverlayScopeState {
   int pushed;
 } CogitoBinOverlayScopeState;
 
+static void cogito_bin_scope_safe_seed_hct(CogitoColor seed, double* out_h,
+                                           double* out_c, double* out_t) {
+  double h = 0.0;
+  double c = 0.0;
+  double t = 0.0;
+  cogito_rgb_to_hct(seed, &h, &c, &t);
+
+  // Keep local Bin themes in a stable, non-strobing range.
+  if (c < 12.0) c = 12.0;
+  double c_max = cogito_theme_dark ? 44.0 : 52.0;
+  if (c > c_max) c = c_max;
+
+  double t_min = cogito_theme_dark ? 40.0 : 34.0;
+  double t_max = cogito_theme_dark ? 70.0 : 66.0;
+  if (t < t_min) t = t_min;
+  if (t > t_max) t = t_max;
+
+  if (out_h) *out_h = h;
+  if (out_c) *out_c = c;
+  if (out_t) *out_t = t;
+}
+
 static void cogito_bin_scope_palette_from_cached(CogitoBinScopePalette* out) {
   if (!out) return;
   out->primary = cogito_cached_primary;
@@ -1199,7 +1221,7 @@ static int cogito_bin_scope_begin_for_node(const CogitoNode* node, CogitoBinOver
   for (int i = chain_len - 1; i >= 0; i--) {
     const CogitoNode* bin = chain[i];
     double h = 0.0, c = 0.0, t = 0.0;
-    cogito_rgb_to_hct(bin->bin_accent_color, &h, &c, &t);
+    cogito_bin_scope_safe_seed_hct(bin->bin_accent_color, &h, &c, &t);
     int variant = cogito_theme_ensor_variant;
     if (variant < COGITO_ENSOR_DEFAULT || variant > COGITO_ENSOR_CONTENT) {
       variant = COGITO_ENSOR_DEFAULT;
@@ -1591,6 +1613,7 @@ static void cogito_draw_offset_subtree(CogitoNode* n, int dx, int dy) {
 
 static void cogito_draw_node(CogitoNode* n) {
   if (!n) return;
+  if (n->hidden) return;
   if (cogito_draw_count_enabled) cogito_draw_count_nodes++;
   // Use the cached main pointer position (set once per frame in the event loop)
   // instead of calling get_mouse_position per-node which is a backend API call.

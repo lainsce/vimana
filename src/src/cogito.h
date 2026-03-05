@@ -146,9 +146,11 @@ int64_t cogito_gst_get_position_ms(void);
 int64_t cogito_gst_get_duration_ms(void);
 bool cogito_gst_set_volume(double value_0_to_1);
 double cogito_gst_get_volume(void);
-// Returns: 0=none, 1=eos, 2=error
+// Returns: 0=none, 1=eos, 2=error, 3=tag (metadata/art update)
 int cogito_gst_poll_event(void);
 const char *cogito_gst_last_error(void);
+// Absolute filesystem path to latest extracted embedded cover art, or "".
+const char *cogito_gst_last_cover_path(void);
 
 cogito_timer_id cogito_timer_set_timeout(uint32_t delay_ms,
                                          cogito_timer_fn fn, void *user);
@@ -337,6 +339,8 @@ void cogito_node_set_halign(cogito_node *node, int align);
 void cogito_node_set_valign(cogito_node *node, int align);
 void cogito_node_set_hexpand(cogito_node *node, bool expand);
 void cogito_node_set_vexpand(cogito_node *node, bool expand);
+void cogito_node_set_hexpand_set(cogito_node *node, bool set);
+void cogito_node_set_vexpand_set(cogito_node *node, bool set);
 void cogito_node_set_gap(cogito_node *node, int gap);
 void cogito_node_set_id(cogito_node *node, const char *id);
 
@@ -345,6 +349,8 @@ void cogito_node_set_text(cogito_node *node, const char *text);
 const char *cogito_node_get_text(cogito_node *node);
 void cogito_node_set_subtitle(cogito_node *node, const char *text);
 void cogito_node_set_disabled(cogito_node *node, bool on);
+void cogito_node_set_visible(cogito_node *node, bool on);
+bool cogito_node_get_visible(cogito_node *node);
 void cogito_node_set_editable(cogito_node *node, bool on);
 bool cogito_node_get_editable(cogito_node *node);
 void cogito_node_set_class(cogito_node *node, const char *cls);
@@ -474,6 +480,7 @@ void cogito_style_dump_button_demo(void);
 // Label helpers
 void cogito_label_set_text(cogito_node *label, const char *text);
 void cogito_label_set_wrap(cogito_node *label, bool on);
+void cogito_label_set_max_width_chars(cogito_node *label, int max_chars);
 void cogito_label_set_ellipsis(cogito_node *label, bool on);
 void cogito_label_set_align(cogito_node *label, int align);
 
@@ -537,8 +544,13 @@ void cogito_window_clear_side_sheet(cogito_window *window);
 void cogito_fixed_set_pos(cogito_node *fixed, cogito_node *child, int x, int y);
 void cogito_scroller_set_axes(cogito_node *scroller, bool h, bool v);
 void cogito_scroller_set_sync(cogito_node *scroller, cogito_node *other);
+void cogito_scroller_set_min_content_width(cogito_node *scroller, int w);
+void cogito_scroller_set_min_content_height(cogito_node *scroller, int h);
 void cogito_carousel_set_active_index(cogito_node *carousel, int idx);
 int cogito_carousel_get_active_index(cogito_node *carousel);
+void cogito_grid_set_cols(cogito_node *grid, int cols);
+void cogito_grid_add(cogito_node *grid, cogito_node *child, int col, int row,
+                     int col_span, int row_span);
 void cogito_grid_set_gap(cogito_node *grid, int x, int y);
 void cogito_grid_set_span(cogito_node *child, int col_span, int row_span);
 void cogito_grid_set_align(cogito_node *child, int halign, int valign);
@@ -608,6 +620,7 @@ void cogito_content_list_remove_at(cogito_node *list, int idx);
 void cogito_content_list_clear(cogito_node *list);
 void cogito_content_list_on_select(cogito_node *list, cogito_index_fn fn, void *user);
 void cogito_content_list_on_activate(cogito_node *list, cogito_index_fn fn, void *user);
+void cogito_grid_clear(cogito_node *grid);
 void cogito_grid_on_select(cogito_node *grid, cogito_index_fn fn, void *user);
 void cogito_grid_on_activate(cogito_node *grid, cogito_index_fn fn, void *user);
 

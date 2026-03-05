@@ -43,9 +43,13 @@ case COGITO_ICONBTN: {
       if (in_appbar_or_toolbar && !is_iconic_variant) {
         bool down = over && down_state;
         if (down) {
-          cogito_style_merge_into(&s, &cogito_theme.appbar_child_iconbtn_active, &s);
+          CogitoStyle appbar_active = cogito_theme.appbar_child_iconbtn_active;
+          cogito_apply_bin_scope_to_style(&appbar_active);
+          cogito_style_merge_into(&s, &appbar_active, &s);
         } else if (over) {
-          cogito_style_merge_into(&s, &cogito_theme.appbar_child_iconbtn_hover, &s);
+          CogitoStyle appbar_hover = cogito_theme.appbar_child_iconbtn_hover;
+          cogito_apply_bin_scope_to_style(&appbar_hover);
+          cogito_style_merge_into(&s, &appbar_hover, &s);
         }
       }
 
@@ -154,9 +158,14 @@ case COGITO_ICONBTN: {
           }
         }
       }
-      if (s.has_text) icon_color = s.text;
+      if (s.has_icon_color) icon_color = s.icon_color;
+      else if (s.has_text) icon_color = s.text;
       else if (is_iconic_variant) {
-        icon_color = cogito_theme.iconbtn_filled.bg;
+        CogitoStyle iconic_fallback = cogito_theme.iconbtn_iconic;
+        cogito_apply_bin_scope_to_style(&iconic_fallback);
+        if (iconic_fallback.has_icon_color) icon_color = iconic_fallback.icon_color;
+        else if (iconic_fallback.has_text) icon_color = iconic_fallback.text;
+        else icon_color = cogito_bin_scope_remap_color(cogito_theme.iconbtn_filled.bg);
       } else if (cogito_has_selection_text) {
         icon_color = cogito_selection_text;
         if (icon_color.a < 8) icon_color = n->text_color;
@@ -166,8 +175,13 @@ case COGITO_ICONBTN: {
       if (in_appbar) {
         bool down = over && down_state;
         if (!hover && !active && !over && !down) {
-          icon_color = cogito_theme.iconbtn_filled.bg;
+          icon_color = cogito_bin_scope_remap_color(cogito_theme.iconbtn_filled.bg);
         }
+      }
+
+      if (is_iconic_variant && !in_appbar) {
+        CogitoColor on_surface_icon = cogito_cached_on_surface.a ? cogito_cached_on_surface : n->text_color;
+        icon_color = cogito_bin_scope_remap_color(on_surface_icon);
       }
 
       // ButtonGroup color handling: only apply if no explicit class is set
@@ -194,12 +208,14 @@ case COGITO_ICONBTN: {
           } else {
             // Use the iconbtn's checked style which should have secondary colors
             CogitoStyle checked_s = cogito_theme.per_kind_checked[COGITO_ICONBTN];
+            cogito_apply_bin_scope_to_style(&checked_s);
             if (checked_s.has_bg) {
               bg = checked_s.bg;
               icon_color = checked_s.has_text ? checked_s.text : cogito_on_color(bg);
             } else {
               // Fallback: try to use per_kind style
               CogitoStyle iconbtn_s = cogito_theme.per_kind[COGITO_ICONBTN];
+              cogito_apply_bin_scope_to_style(&iconbtn_s);
               bg = iconbtn_s.has_bg ? iconbtn_s.bg : cogito_rgba(0, 0, 0, 0);
               icon_color = iconbtn_s.has_text ? iconbtn_s.text : bg_node->text_color;
             }
@@ -215,6 +231,7 @@ case COGITO_ICONBTN: {
             // For secondary container, we need a lighter color
             // Use the iconbtn's hover style which often has container-like colors
             CogitoStyle hover_s = cogito_theme.per_kind_hover[COGITO_ICONBTN];
+            cogito_apply_bin_scope_to_style(&hover_s);
             if (hover_s.has_bg) {
               bg = hover_s.bg;
               icon_color = hover_s.has_text ? hover_s.text : bg_node->text_color;
@@ -227,9 +244,16 @@ case COGITO_ICONBTN: {
         }
       }
 
+      bg = cogito_bin_scope_remap_color(bg);
+      border = cogito_bin_scope_remap_color(border);
+      icon_color = cogito_bin_scope_remap_color(icon_color);
+
       CogitoColor base_bg_for_layer = bg;
 
       cogito_anim_apply(n, &s, &bg, &icon_color, &border, NULL);
+      bg = cogito_bin_scope_remap_color(bg);
+      border = cogito_bin_scope_remap_color(border);
+      icon_color = cogito_bin_scope_remap_color(icon_color);
 
       // Get corner radii for ButtonGroup if applicable
       // Also apply buttongroup size/shape to radius if in buttongroup

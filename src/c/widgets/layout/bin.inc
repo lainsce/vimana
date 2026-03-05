@@ -23,6 +23,8 @@ static void cogito_layout_bin(CogitoNode* n, int x, int y) {
     if (avail_h < 0) avail_h = 0;
 
     cogito_intrinsic_size(c, &cw, &ch);
+    if (c->hexpand) cw = avail_w;
+    if (c->vexpand) ch = avail_h;
 
     if (col == 1) ox = (avail_w - cw) / 2;
     else if (col == 2) ox = avail_w - cw;

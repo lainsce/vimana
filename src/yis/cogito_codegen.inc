@@ -1035,6 +1035,33 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_container_set_hexpand_set")) {
+                        GenExpr node, setv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &setv, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_container_set_hexpand_set(%s, %s);", node.tmp, setv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", setv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &setv, setv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&setv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_container_set_vexpand")) {
                         GenExpr node, expand;
                         if (!gen_expr(cg, path, e->as.call.args[
@@ -1054,6 +1081,33 @@
                         gen_expr_release_except(cg, &expand, expand.tmp);
                         gen_expr_free(&node);
                         gen_expr_free(&expand);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_container_set_vexpand_set")) {
+                        GenExpr node, setv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &setv, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_container_set_vexpand_set(%s, %s);", node.tmp, setv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", setv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &setv, setv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&setv);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
                         "YisVal %s = YV_NULLV;", t);
@@ -1291,6 +1345,60 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_scroller_set_min_content_width")) {
+                        GenExpr sc, w;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &sc, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &w, err)) { gen_expr_free(&sc); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_scroller_set_min_content_width(%s, %s);", sc.tmp, w.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", sc.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", w.tmp);
+                        gen_expr_release_except(cg, &sc, sc.tmp);
+                        gen_expr_release_except(cg, &w, w.tmp);
+                        gen_expr_free(&sc);
+                        gen_expr_free(&w);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_scroller_set_min_content_height")) {
+                        GenExpr sc, h;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &sc, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &h, err)) { gen_expr_free(&sc); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_scroller_set_min_content_height(%s, %s);", sc.tmp, h.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", sc.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", h.tmp);
+                        gen_expr_release_except(cg, &sc, sc.tmp);
+                        gen_expr_release_except(cg, &h, h.tmp);
+                        gen_expr_free(&sc);
+                        gen_expr_free(&h);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_grid_set_gap")) {
                         GenExpr grid, x, y;
                         if (!gen_expr(cg, path, e->as.call.args[
@@ -1318,6 +1426,65 @@
                         gen_expr_free(&grid);
                         gen_expr_free(&x);
                         gen_expr_free(&y);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_grid_add")) {
+                        GenExpr grid, child, col, row, wspan, hspan;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &grid, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &child, err)) { gen_expr_free(&grid); return false;
+                        }
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            2
+                        ], &col, err)) { gen_expr_free(&grid); gen_expr_free(&child); return false;
+                        }
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            3
+                        ], &row, err)) { gen_expr_free(&grid); gen_expr_free(&child); gen_expr_free(&col); return false;
+                        }
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            4
+                        ], &wspan, err)) { gen_expr_free(&grid); gen_expr_free(&child); gen_expr_free(&col); gen_expr_free(&row); return false;
+                        }
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            5
+                        ], &hspan, err)) { gen_expr_free(&grid); gen_expr_free(&child); gen_expr_free(&col); gen_expr_free(&row); gen_expr_free(&wspan); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_grid_add(%s, %s, %s, %s, %s, %s);", grid.tmp, child.tmp, col.tmp, row.tmp, wspan.tmp, hspan.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", grid.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", child.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", col.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", row.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", wspan.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", hspan.tmp);
+                        gen_expr_release_except(cg, &grid, grid.tmp);
+                        gen_expr_release_except(cg, &child, child.tmp);
+                        gen_expr_release_except(cg, &col, col.tmp);
+                        gen_expr_release_except(cg, &row, row.tmp);
+                        gen_expr_release_except(cg, &wspan, wspan.tmp);
+                        gen_expr_release_except(cg, &hspan, hspan.tmp);
+                        gen_expr_free(&grid);
+                        gen_expr_free(&child);
+                        gen_expr_free(&col);
+                        gen_expr_free(&row);
+                        gen_expr_free(&wspan);
+                        gen_expr_free(&hspan);
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
                         "YisVal %s = YV_NULLV;", t);
@@ -1531,6 +1698,33 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_label_set_max_width_chars")) {
+                        GenExpr label, maxv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &label, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &maxv, err)) { gen_expr_free(&label); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_label_set_max_width_chars(%s, %s);", label.tmp, maxv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", label.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", maxv.tmp);
+                        gen_expr_release_except(cg, &label, label.tmp);
+                        gen_expr_release_except(cg, &maxv, maxv.tmp);
+                        gen_expr_free(&label);
+                        gen_expr_free(&maxv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_node_set_disabled")) {
                         GenExpr node, onv;
                         if (!gen_expr(cg, path, e->as.call.args[
@@ -1542,6 +1736,33 @@
                         }
                         w_line(&cg->w,
                         "cogito_node_set_disabled(%s, %s);", node.tmp, onv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", onv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &onv, onv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&onv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_node_set_visible")) {
+                        GenExpr node, onv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &onv, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_node_set_visible(%s, %s);", node.tmp, onv.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", node.tmp);
                         w_line(&cg->w,
@@ -1593,6 +1814,23 @@
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
                         "YisVal %s = cogito_node_get_editable(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_node_get_visible")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_node_get_visible(%s);", t, node.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);

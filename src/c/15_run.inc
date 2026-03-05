@@ -520,8 +520,9 @@ static bool cogito_apply_window_icon(CogitoWindow* window, CogitoApp* app) {
 static void cogito_run(YisVal appv, YisVal winv) {
   if (appv.tag != EVT_OBJ) yis_trap("cogito.run expects app");
   if (winv.tag != EVT_OBJ) yis_trap("cogito.run expects window");
-  // Timers are scoped to a single run lifecycle.
-  cogito_timer_clear_all_internal();
+  // Keep timers created before app.run() so startup polling/animation loops
+  // begin immediately when the main loop starts.
+  cogito_timer_collect();
   CogitoApp* app = (CogitoApp*)appv.as.p;
   CogitoNode* win = (CogitoNode*)winv.as.p;
   bool startup_profile = cogito_env_enabled("COGITO_STARTUP_PROFILE");
@@ -3086,12 +3087,29 @@ static void cogito_run(YisVal appv, YisVal winv) {
       // SDL_WaitEventTimeout on macOS/Metal may not truly block (compositor
       // events wake it immediately), so always follow with a short sleep.
       uint32_t wait_ms = cogito_timer_next_wait_ms(100);
+#if defined(__APPLE__)
+      // On macOS we avoid SDL_WaitEventTimeout in idle path because it can
+      // intermittently starve timer-driven callbacks. Keep the loop ticking
+      // with a short bounded sleep and let the next iteration poll events.
+      uint32_t idle_sleep_ms = wait_ms > 8 ? 8 : wait_ms;
+      if (idle_sleep_ms == 0) idle_sleep_ms = 1;
+      if (cogito_backend && cogito_backend->sleep) {
+        cogito_backend->sleep(idle_sleep_ms);
+      } else {
+        struct timespec ts = {
+          0,
+          (long)idle_sleep_ms * 1000000L
+        };
+        nanosleep(&ts, NULL);
+      }
+#else
       cogito_backend->wait_event_timeout(wait_ms);
       struct timespec ts = {
         0,
         wait_ms <= 8 ? 1000000 : 8000000
       }; // 1-8ms sleep to avoid busy spin while keeping timer latency reasonable
       nanosleep(&ts, NULL);
+#endif
     }
     cogito_relayout_defer_end();
 #if defined(__APPLE__)

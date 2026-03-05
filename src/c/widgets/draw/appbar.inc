@@ -20,6 +20,9 @@ case COGITO_APPBAR:
     radius = s.radius;
   // Animate bg/text/border with spring (e.g. dark-mode toggle, theme switch)
   cogito_anim_apply(n, &s, &bg, &text, &border, NULL);
+  bg = cogito_bin_scope_remap_color(bg);
+  text = cogito_bin_scope_remap_color(text);
+  border = cogito_bin_scope_remap_color(border);
   bool bottom_sheet_active = cogito_appbar_bottom_sheet_active(n);
   CogitoColor force_black = s.has_bg ? s.bg : bg;
   if (bottom_sheet_active)
@@ -53,6 +56,7 @@ case COGITO_APPBAR:
       mx, my, down, &lights);
 
   CogitoColor fallback_btn = s.has_selection ? s.selection : n->selection_color;
+  fallback_btn = cogito_bin_scope_remap_color(fallback_btn);
   CogitoColor fallback_border = border;
   if (!s.has_border)
     fallback_border = text;

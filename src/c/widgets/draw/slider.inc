@@ -9,9 +9,15 @@ case COGITO_SLIDER: {
         cogito_node_hover_state(n, &hover, &active);
       }
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-      CogitoColor inactive_track = s.has_bg ? s.bg : (s.has_track ? s.track : n->bg);
+      CogitoColor inactive_track = s.has_track
+        ? s.track
+        : (n->track_set
+          ? n->track_color
+          : (cogito_cached_surface_container_high.a ? cogito_cached_surface_container_high : n->bg));
       CogitoColor active_track = s.has_text ? s.text : (s.has_knob ? s.knob : n->text_color);
       cogito_anim_apply(n, &s, &inactive_track, &active_track, NULL, NULL);
+      inactive_track = cogito_bin_scope_remap_color(inactive_track);
+      active_track = cogito_bin_scope_remap_color(active_track);
 
       bool cp_panel_slider = false;
       int cp_slider_channel = -1;

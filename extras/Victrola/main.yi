@@ -7,27 +7,36 @@ bring net
 bring gst
 
 def STATE_PATH = ".victrola_state.json"
+def APP_ACCENT = "#ff8c00"
 
 def library_rail = cogito.nav_rail().set_items(["Titles", "Artists", "Albums"], ["sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0)
 def top_status = cogito.label("").set_class("caption")
-def search_input = cogito.searchfield("").set_hexpand(true).set_class("victrola-search")
+def search_input = cogito.searchfield("").set_hexpand(true).set_class("victrola-search").set_visible(false)
+def search_revealer = cogito.revealer().set_show_children(false).set_hexpand(true).set_visible(false)
 def library_list = cogito.content_list()
-def now_title = cogito.label("").set_class("view-subtitle").set_align(1).set_text_align(1)
-def now_artist = cogito.label("").set_class("cb-title").set_align(1).set_text_align(1)
-def transport_status = cogito.label("Stopped").set_class("caption")
+def library_grid = cogito.grid(2)
+def titles_revealer = cogito.revealer().set_show_children(true).set_hexpand(true).set_vexpand(true)
+def groups_revealer = cogito.revealer().set_show_children(false).set_hexpand(true).set_vexpand(true)
+def album_detail_revealer = cogito.revealer().set_show_children(false).set_hexpand(true).set_visible(false)
+def album_detail_art = cogito.image("sf:square.stack").set_size(112, 112).set_radius(14)
+def album_detail_title = cogito.label("").set_class("view-subtitle").set_text_align(0).set_align(0).set_max_width_chars(56)
+def album_detail_artist = cogito.label("").set_class("caption").set_text_align(0).set_align(0).set_max_width_chars(72)
+def now_title = cogito.label("").set_class("view-subtitle").set_align(1).set_text_align(1).set_max_width_chars(44).set_visible(false)
+def now_artist = cogito.label("").set_class("cb-title").set_align(1).set_text_align(1).set_max_width_chars(56).set_visible(false)
 def time_left = cogito.label("00:00").set_class("caption").set_text_align(0)
 def time_right = cogito.label("00:00").set_class("caption").set_text_align(2)
 def seek_slider = cogito.slider(0, 1000, 0).set_xs().set_class("victrola-seek")
-def cover_art = cogito.image("sf:music.note").set_size(256, 256).set_radius(6)
+def cover_art = cogito.image("sf:music.note").set_size(335, 335).set_radius(26)
 def lyrics_text = cogito.textview("Lyrics will appear here when available.").set_editable(false).set_hexpand(true).set_vexpand(true).set_class("victrola-lyrics")
 def search_input_visible = false
-
 def ?tracks = []: [any]
 def ?visible_track_indexes = []: [num]
 def ?visible_group_keys = []: [string]
 def ?current_folder = ""
 def ?query_text = ""
 def ?view_mode = 0
+def ?album_detail_open = false
+def ?album_detail_key = ""
 def ?selected_track = -1
 def ?playing_track = -1
 def ?is_playing = false
@@ -36,7 +45,14 @@ def ?lyrics_view_visible = false
 def ?suspend_seek_callback = false
 def ?poll_timer_id = 0
 def ?ui_ready = false
-def ?last_duration_ms = 0
+def ?album_cover_map = []: [string => any]
+def ?album_artist_map = []: [string => any]
+def ?current_cover_path = ""
+def ?current_tint_source = ""
+def ?cover_locked_for_track = false
+def app_ref = cogito.app()
+def player_tint_bin = cogito.bin()
+def poll_anchor = cogito.shape(27).set_size(1).set_color("transparent")
 
 def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
@@ -177,6 +193,76 @@ fun shell_quote(text = string) (( string )) {
     return out
 }
 
+fun collapse_path_separators(path = string) (( string )) {
+    let n = len(path)
+    if n == 0 {
+        return ""
+    }
+
+    let ?out = ""
+    let ?prev_slash = false
+
+    for (let ?i = 0; i < n; i = i + 1) {
+        let ?ch = stdr.slice(path, i, i + 1)
+        if ch == "\\" {
+            ch = "/"
+        }
+
+        if ch == "/" {
+            if !prev_slash {
+                out = stdr.str_concat(out, "/")
+            }
+            prev_slash = true
+        } else {
+            out = stdr.str_concat(out, ch)
+            prev_slash = false
+        }
+    }
+
+    return out
+}
+
+fun sanitize_cover_path(path = string) (( string )) {
+    let ?p = trim(path)
+    if len(p) == 0 {
+        return ""
+    }
+
+    if len(p) >= 2 {
+        let first = stdr.slice(p, 0, 1)
+        let last = stdr.slice(p, len(p) - 1, len(p))
+        if (first == "\"" && last == "\"") || (first == "'" && last == "'") {
+            p = stdr.slice(p, 1, len(p) - 1)
+        }
+    }
+
+    p = trim(p)
+
+    if index_of(p, "file://") == 0 {
+        p = stdr.slice(p, 7, len(p))
+        if index_of(p, "localhost") == 0 {
+            p = stdr.slice(p, 9, len(p))
+        }
+        if len(p) > 0 && stdr.slice(p, 0, 1) != "/" {
+            p = stdr.str_concat("/", p)
+        }
+    } elif index_of(p, "file:") == 0 {
+        p = stdr.slice(p, 5, len(p))
+        if len(p) > 0 && stdr.slice(p, 0, 1) != "/" {
+            p = stdr.str_concat("/", p)
+        }
+    }
+
+    p = collapse_path_separators(p)
+
+    let pn = len(p)
+    if pn > 1 && stdr.slice(p, pn - 1, pn) == "/" {
+        p = stdr.slice(p, 0, pn - 1)
+    }
+
+    return p
+}
+
 fun split_lines(text = string) (( any )) {
     let ?lines = []: [string]
     let ?start = 0
@@ -204,6 +290,7 @@ fun split_lines(text = string) (( any )) {
 }
 
 fun make_track(path = string) (( any )) {
+    path = sanitize_cover_path(path)
     let file = basename(path)
     let parent = basename(dirname(path))
     let base = stem(file)
@@ -237,13 +324,215 @@ fun make_track(path = string) (( any )) {
     return track
 }
 
+fun file_exists(path = string) (( bool )) {
+    let clean = sanitize_cover_path(path)
+    if len(clean) == 0 {
+        return false
+    }
+    let quoted = shell_quote(clean)
+    let run = stdr.run_command("test -f $$quoted$$")
+    return (run[0] ?? 1) == 0
+}
+
+fun join_path(dir = string, name = string) (( string )) {
+    let base = sanitize_cover_path(dir)
+    let leaf = trim(name)
+
+    if len(base) == 0 {
+        return sanitize_cover_path(leaf)
+    }
+    if len(leaf) == 0 {
+        return base
+    }
+
+    let ?out = base
+    if stdr.slice(out, len(out) - 1, len(out)) != "/" {
+        out = stdr.str_concat(out, "/")
+    }
+    out = stdr.str_concat(out, leaf)
+    return sanitize_cover_path(out)
+}
+
+fun discover_album_cover(track = any) (( string )) {
+    let dir = dirname(sanitize_cover_path(str(track["path"] ?? "")))
+    if len(dir) == 0 {
+        return ""
+    }
+
+    let candidates = [
+        "cover.jpg", "cover.jpeg", "cover.png",
+        "folder.jpg", "folder.jpeg", "folder.png",
+        "front.jpg", "front.jpeg", "front.png",
+        "artwork.jpg", "artwork.jpeg", "artwork.png"
+    ]
+
+    for (let ?i = 0; i < len(candidates); i = i + 1) {
+        let p = sanitize_cover_path(join_path(dir, candidates[i] ?? ""))
+        if file_exists(p) {
+            return p
+        }
+    }
+
+    return ""
+}
+
+fun album_cover_key(album = string, artist = string) (( string )) {
+    let ?album_norm = trim(album)
+    let ?artist_norm = trim(artist)
+
+    if len(album_norm) == 0 {
+        album_norm = "Unknown Album"
+    }
+    if len(artist_norm) == 0 {
+        artist_norm = "Unknown Artist"
+    }
+
+    return "$$artist_norm$$\n$$album_norm$$"
+}
+
+fun rebuild_album_indexes() (( -- )) {
+    let previous_cover_map = album_cover_map
+    album_cover_map = []: [string => any]
+    album_artist_map = []: [string => any]
+
+    for (let ?i = 0; i < len(tracks); i = i + 1) {
+        let t = tracks[i]
+        let album = str(t["album"] ?? "Unknown Album")
+        let artist = str(t["artist"] ?? "Unknown Artist")
+
+        if is_null(album_artist_map[album]) {
+            album_artist_map[album] = artist
+        }
+
+        let key = album_cover_key(album, artist)
+
+        if is_null(album_cover_map[key]) {
+            let restored = sanitize_cover_path(str(previous_cover_map[key] ?? ""))
+            if len(restored) == 0 {
+                -- Backward compatibility for older album-only keys in state.
+                restored = sanitize_cover_path(str(previous_cover_map[album] ?? ""))
+            }
+            if len(restored) > 0 && file_exists(restored) {
+                album_cover_map[key] = restored
+            }
+        }
+
+        if is_null(album_cover_map[key]) {
+            let c = discover_album_cover(t)
+            if len(c) > 0 {
+                album_cover_map[key] = c
+            }
+        }
+    }
+}
+
+fun album_cover_for(album = string, artist = string) (( string )) {
+    let key = album_cover_key(album, artist)
+    let ?cover = sanitize_cover_path(str(album_cover_map[key] ?? ""))
+    if len(cover) == 0 {
+        -- Backward compatibility for old album-only entries.
+        cover = sanitize_cover_path(str(album_cover_map[album] ?? ""))
+    }
+    return cover
+}
+
+fun album_artist_for(album = string) (( string )) {
+    return str(album_artist_map[album] ?? "Unknown Artist")
+}
+
+fun set_library_view_shows_groups(show_groups = bool) (( -- )) {
+    groups_revealer.set_show_children(show_groups)
+    groups_revealer.set_visible(show_groups)
+    titles_revealer.set_show_children(!show_groups)
+    titles_revealer.set_visible(!show_groups)
+}
+
+fun set_search_visible(visible = bool) (( -- )) {
+    search_revealer.set_show_children(visible)
+    search_revealer.set_visible(visible)
+    search_input.set_visible(visible)
+    search_input_visible = visible
+}
+
+fun set_album_detail_visible(visible = bool) (( -- )) {
+    album_detail_revealer.set_show_children(visible)
+    album_detail_revealer.set_visible(visible)
+    album_detail_open = visible
+    if !visible {
+        album_detail_key = ""
+    }
+}
+
+fun close_album_detail() (( -- )) {
+    set_album_detail_visible(false)
+}
+
+fun open_album_detail(album = string) (( -- )) {
+    album_detail_key = album
+
+    let artist = album_artist_for(album)
+
+    let cover = album_cover_for(album, artist)
+    if len(cover) > 0 {
+        album_detail_art.set_source(cover)
+    } else {
+        album_detail_art.set_source("sf:square.stack")
+    }
+
+    album_detail_title.set_text(album)
+    album_detail_artist.set_text(artist)
+    set_album_detail_visible(true)
+    refresh_library_list()
+}
+
 fun save_state() (( -- )) {
     let folder_esc = json.escape(current_folder)
-    let payload = "{\"folder\":\"$$folder_esc$$\"}"
+
+    let ?covers_json = ""
+    let ?seen = []: [string => any]
+    for (let ?i = 0; i < len(tracks); i = i + 1) {
+        let t = tracks[i]
+        let album = str(t["album"] ?? "Unknown Album")
+        let artist = str(t["artist"] ?? "Unknown Artist")
+        let key = album_cover_key(album, artist)
+
+        if !is_null(seen[key]) {
+            continue
+        }
+        seen[key] = 1
+
+        let ?cover = sanitize_cover_path(str(album_cover_map[key] ?? ""))
+        if len(cover) == 0 {
+            -- Backward compatibility for old album-only entries.
+            cover = sanitize_cover_path(str(album_cover_map[album] ?? ""))
+        }
+        if len(cover) == 0 {
+            continue
+        }
+        if !file_exists(cover) {
+            continue
+        }
+
+        if len(covers_json) > 0 {
+            covers_json = "$$covers_json$$,"
+        }
+
+        let album_esc = json.escape(album)
+        let artist_esc = json.escape(artist)
+        let cover_esc = json.escape(cover)
+        covers_json = "$$covers_json$${\"album\":\"$$album_esc$$\",\"artist\":\"$$artist_esc$$\",\"cover\":\"$$cover_esc$$\"}"
+    }
+
+    let ?payload = "{"
+    payload = "$$payload$$\"folder\":\"$$folder_esc$$\""
+    payload = "$$payload$$,\"album_covers\":[$$covers_json$$]"
+    payload = "$$payload$$}"
     stdr.write_text_file(STATE_PATH, payload)
 }
 
 fun load_state() (( -- )) {
+    album_cover_map = []: [string => any]
+
     let raw = stdr.read_text_file(STATE_PATH)
     if is_null(raw) {
         return
@@ -263,12 +552,39 @@ fun load_state() (( -- )) {
     if len(folder) > 0 {
         current_folder = folder
     }
+
+    let entries = root["album_covers"] ?? []: [any]
+    if stdr.str(entries) != "[array]" {
+        return
+    }
+
+    for (let ?i = 0; i < len(entries); i = i + 1) {
+        let item = entries[i]
+        let album = str(item["album"] ?? "")
+        let artist = str(item["artist"] ?? "")
+        let cover = sanitize_cover_path(str(item["cover"] ?? ""))
+        if len(album) == 0 || len(cover) == 0 {
+            continue
+        }
+        if !file_exists(cover) {
+            continue
+        }
+        if len(trim(artist)) > 0 {
+            album_cover_map[album_cover_key(album, artist)] = cover
+        } else {
+            -- Backward compatibility for old album-only entries.
+            album_cover_map[album] = cover
+        }
+    }
 }
 
 fun set_now_playing(idx = num) (( -- )) {
     if idx < 0 || idx >= len(tracks) {
         now_title.set_text("")
         now_artist.set_text("")
+        now_title.set_visible(false)
+        now_artist.set_visible(false)
+        apply_cover_art("")
         lyrics_text.set_text("Lyrics will appear here when available.")
         return
     }
@@ -276,8 +592,82 @@ fun set_now_playing(idx = num) (( -- )) {
     let t = tracks[idx]
     let title = str(t["title"] ?? "")
     let artist = str(t["artist"] ?? "")
+    now_title.set_visible(true)
+    now_artist.set_visible(true)
     now_title.set_text(title)
     now_artist.set_text(artist)
+}
+
+fun clear_now_playing_tint() (( -- )) {
+    current_tint_source = ""
+    player_tint_bin.set_accent_color(null)
+    app_ref.set_accent_color(APP_ACCENT, false)
+}
+
+fun apply_now_playing_tint(path = string) (( -- )) {
+    let clean = sanitize_cover_path(path)
+    if len(clean) == 0 {
+        clear_now_playing_tint()
+        return
+    }
+
+    if clean == current_tint_source {
+        return
+    }
+
+    let accent = app_ref.set_accent_from_image(clean, false)
+
+    -- Ensure source-color extraction does not permanently retint the whole app.
+    app_ref.set_accent_color(APP_ACCENT, false)
+
+    if len(accent) > 0 {
+        current_tint_source = clean
+        player_tint_bin.set_accent_color(accent)
+    } else {
+        current_tint_source = ""
+        player_tint_bin.set_accent_color(null)
+    }
+}
+
+fun apply_cover_art(path = string) (( -- )) {
+    let clean = sanitize_cover_path(path)
+
+    if clean == current_cover_path {
+        return
+    }
+
+    if len(clean) > 0 && !file_exists(clean) {
+        return
+    }
+
+    if len(clean) > 0 && cover_locked_for_track {
+        return
+    }
+
+    if len(clean) > 0 {
+        current_cover_path = clean
+        cover_locked_for_track = true
+        cover_art.set_source(clean)
+        if playing_track >= 0 && playing_track < len(tracks) {
+            let t = tracks[playing_track]
+            let album = str(t["album"] ?? "Unknown Album")
+            let artist = str(t["artist"] ?? "Unknown Artist")
+            let key = album_cover_key(album, artist)
+            if len(album) > 0 && len(str(album_cover_map[key] ?? "")) == 0 {
+                album_cover_map[key] = clean
+                save_state()
+            }
+            if album_detail_open && album == album_detail_key {
+                album_detail_art.set_source(clean)
+            }
+        }
+        apply_now_playing_tint(clean)
+    } else {
+        current_cover_path = ""
+        cover_locked_for_track = false
+        cover_art.set_source("sf:music.note")
+        clear_now_playing_tint()
+    }
 }
 
 fun track_matches_query(track = any) (( bool )) {
@@ -300,25 +690,67 @@ fun build_library_row(track = any, mode = num) (( any )) {
         subtitle = str(track["artist"] ?? "")
     }
 
-    let card = cogito.card(title)
-    .set_subtitle(subtitle)
-    .set_variant(cogito.CARD_FILLED())
+    let row = cogito.hstack()
     .set_class("victrola-song-row")
     .set_hexpand(true)
     .set_padding(10, 12, 10, 12)
-    .set_gap(4)
+    .set_gap(10)
+
+    let text_col = cogito.vstack().set_gap(3).set_hexpand(true)
+    text_col.add(cogito.label(title).set_class("cb-title").set_align(0).set_text_align(0).set_hexpand(true).set_max_width_chars(88))
+    text_col.add(cogito.label(subtitle).set_class("caption").set_align(0).set_text_align(0).set_hexpand(true).set_max_width_chars(112))
+
+    row.add(text_col)
+    row.add(cogito.hstack().set_hexpand(true))
+
+    return row
+}
+
+fun build_group_row(title = string, subtitle = string) (( any )) {
+    let row = cogito.vstack()
+    .set_class("victrola-song-row")
+    .set_padding(10, 12, 10, 12)
+    .set_gap(3)
+
+    row.add(cogito.label(title).set_class("cb-title").set_align(0).set_text_align(0).set_hexpand(true).set_max_width_chars(88))
+    row.add(cogito.label(subtitle).set_class("caption").set_align(0).set_text_align(0).set_hexpand(true).set_max_width_chars(112))
+
+    return row
+}
+
+fun build_artist_card(name = string, subtitle = string) (( any )) {
+    let card = cogito.card(name)
+    .set_subtitle(subtitle)
+    .set_variant(cogito.CARD_FILLED())
+    .set_class("victrola-group-card")
+
+    card.on_click((c = any) => {
+        open_group_in_titles(name)
+    })
 
     return card
 }
 
-fun build_group_row(title = string, subtitle = string) (( any )) {
-    let card = cogito.card(title)
-    .set_subtitle(subtitle)
+fun build_album_card(album = string, artist = string, subtitle = string) (( any )) {
+    let card = cogito.card(album)
+    .set_subtitle("$$artist$$ · $$subtitle$$")
     .set_variant(cogito.CARD_FILLED())
-    .set_class("victrola-song-row")
-    .set_hexpand(true)
-    .set_padding(10, 12, 10, 12)
-    .set_gap(4)
+    .set_class("victrola-group-card")
+
+    let cover = album_cover_for(album, artist)
+    let header = cogito.image("sf:square.stack")
+    .set_size(128, 128)
+    .set_radius(16)
+
+    if len(cover) > 0 {
+        header.set_source(cover)
+    }
+
+    card.add(header)
+
+    card.on_click((c = any) => {
+        open_album_detail(album)
+    })
 
     return card
 }
@@ -356,23 +788,56 @@ fun update_mode_status(count = num) (( -- )) {
 
 fun refresh_library_list() (( -- )) {
     library_list.clear()
+    library_grid.clear()
     visible_track_indexes = []: [num]
     visible_group_keys = []: [string]
 
     let mode = view_mode
+    set_album_detail_visible(mode == 2 && album_detail_open)
 
-    if mode == 0 {
+    let songs_view = mode == 0 || (mode == 2 && album_detail_open)
+    set_library_view_shows_groups(!songs_view)
+    let library_bar = cogito.appbar("Titles", "").set_hexpand(true).set_class("small victrola-library-bar")
+
+    if songs_view {
         for (let ?i = 0; i < len(tracks); i = i + 1) {
             let t = tracks[i]
-            if track_matches_query(t) {
-                library_list.add(build_library_row(t, mode))
-                visible_track_indexes[len(visible_track_indexes)] = i
-                visible_group_keys[len(visible_group_keys)] = ""
+            if !track_matches_query(t) {
+                continue
             }
+
+            if mode == 2 && album_detail_open {
+                let album = str(t["album"] ?? "Unknown Album")
+                if album != album_detail_key {
+                    continue
+                }
+            }
+
+            library_list.add(build_library_row(t, 0))
+            visible_track_indexes[len(visible_track_indexes)] = i
+            visible_group_keys[len(visible_group_keys)] = ""
         }
-    } elif mode == 1 {
+
+        let count = len(visible_track_indexes)
+        if mode == 2 && album_detail_open {
+            top_status.set_text("$$count$$ songs")
+        } else {
+            update_mode_status(count)
+        }
+
+        if count == 0 {
+            selected_track = -1
+            set_now_playing(-1)
+        }
+        return
+    }
+
+    if mode == 1 {
+        library_grid.set_cols(2)
         let ?seen = []: [string => any]
         let ?order = []: [string]
+        let ?first_indexes = []: [num]
+
         for (let ?i = 0; i < len(tracks); i = i + 1) {
             let t = tracks[i]
             if !track_matches_query(t) {
@@ -380,50 +845,67 @@ fun refresh_library_list() (( -- )) {
             }
             let key = str(t["artist"] ?? "Unknown Artist")
             if is_null(seen[key]) {
-                seen[key] = true
+                seen[key] = 1
                 order[len(order)] = key
-                visible_track_indexes[len(visible_track_indexes)] = i
-                visible_group_keys[len(visible_group_keys)] = key
+                first_indexes[len(first_indexes)] = i
+            } else {
+                seen[key] = (seen[key] ?? 0) + 1
             }
+        }
+
+        for (let ?k = 0; k < len(order); k = k + 1) {
+            visible_group_keys[len(visible_group_keys)] = order[k] ?? "Unknown Artist"
+            visible_track_indexes[len(visible_track_indexes)] = first_indexes[k] ?? -1
         }
 
         for (let ?j = 0; j < len(order); j = j + 1) {
             let key = order[j] ?? "Unknown Artist"
-            let count = group_song_count(1, key)
-            let subtitle = stdr.str_concat(str(count), " songs")
-            library_list.add(build_group_row(key, subtitle))
+            let count = seen[key] ?? 0
+            let col = j % 2
+            let row = (j - col) / 2
+            library_grid.add(build_artist_card(key, "$$count$$ songs"), col, row, 1, 1)
         }
+
+        let count = len(order)
+        update_mode_status(count)
     } else {
+        library_grid.set_cols(2)
         let ?seen = []: [string => any]
         let ?order = []: [string]
+        let ?first_indexes = []: [num]
+
         for (let ?i = 0; i < len(tracks); i = i + 1) {
             let t = tracks[i]
             if !track_matches_query(t) {
                 continue
             }
+
             let key = str(t["album"] ?? "Unknown Album")
             if is_null(seen[key]) {
-                seen[key] = true
+                seen[key] = 1
                 order[len(order)] = key
-                visible_track_indexes[len(visible_track_indexes)] = i
-                visible_group_keys[len(visible_group_keys)] = key
+                first_indexes[len(first_indexes)] = i
+            } else {
+                seen[key] = (seen[key] ?? 0) + 1
             }
+        }
+
+        for (let ?k = 0; k < len(order); k = k + 1) {
+            visible_group_keys[len(visible_group_keys)] = order[k] ?? "Unknown Album"
+            visible_track_indexes[len(visible_track_indexes)] = first_indexes[k] ?? -1
         }
 
         for (let ?j = 0; j < len(order); j = j + 1) {
             let key = order[j] ?? "Unknown Album"
-            let count = group_song_count(2, key)
-            let subtitle = stdr.str_concat(str(count), " songs")
-            library_list.add(build_group_row(key, subtitle))
+            let count = seen[key] ?? 0
+            let artist = album_artist_for(key)
+            let col = j % 2
+            let row = (j - col) / 2
+            library_grid.add(build_album_card(key, artist, "$$count$$ songs"), col, row, 1, 1)
         }
-    }
 
-    let count = len(visible_track_indexes)
-    update_mode_status(count)
-
-    if count == 0 {
-        selected_track = -1
-        set_now_playing(-1)
+        let count = len(order)
+        update_mode_status(count)
     }
 }
 
@@ -432,6 +914,7 @@ fun open_group_in_titles(group_key = string) (( -- )) {
         return
     }
 
+    close_album_detail()
     query_text = group_key
     search_input.set_text(group_key)
     view_mode = 0
@@ -462,6 +945,11 @@ fun scan_folder(folder = string) (( -- )) {
         return
     }
 
+    let folder_changed = chosen != current_folder
+    if folder_changed {
+        album_cover_map = []: [string => any]
+    }
+
     current_folder = chosen
     save_state()
 
@@ -473,7 +961,6 @@ fun scan_folder(folder = string) (( -- )) {
     let out = str(run[1] ?? "")
 
     if exit != 0 {
-        transport_status.set_text("Scan command failed")
         return
     }
 
@@ -486,10 +973,14 @@ fun scan_folder(folder = string) (( -- )) {
         }
     }
 
+    rebuild_album_indexes()
+    save_state()
+
     playing_track = -1
     selected_track = -1
     is_playing = false
-    last_duration_ms = 0
+    close_album_detail()
+    apply_cover_art("")
     seek_slider.set_value(0)
     time_left.set_text("00:00")
     time_right.set_text("00:00")
@@ -526,28 +1017,45 @@ fun play_track(track_idx = num) (( -- )) {
         return
     }
 
+    stop_poll_loop()
+    gst.stop()
+    apply_cover_art("")
+
     if !gst.load(path) {
-        transport_status.set_text("Load failed")
+        is_playing = false
+        let err = gst.last_error()
+        if len(err) > 0 {
+        } else {
+        }
+        stop_poll_loop()
         return
     }
-
     if !gst.play() {
-        transport_status.set_text("Play failed")
+        is_playing = false
+        let err = gst.last_error()
+        if len(err) > 0 {
+        } else {
+        }
+        stop_poll_loop()
         return
     }
 
     playing_track = track_idx
     selected_track = track_idx
     is_playing = true
-    last_duration_ms = 0
     seek_slider.set_value(0)
-    transport_status.set_text("Playing")
     set_now_playing(track_idx)
+
+    let known_cover = album_cover_for(str(t["album"] ?? "Unknown Album"), str(t["artist"] ?? "Unknown Artist"))
+    if len(known_cover) > 0 {
+        apply_cover_art(known_cover)
+    }
 
     if lyrics_view_visible {
         fetch_lyrics_for_track(track_idx)
     }
 
+    start_poll_loop()
     poll_playback()
 
     let row_idx = find_visible_index(track_idx)
@@ -558,6 +1066,14 @@ fun play_track(track_idx = num) (( -- )) {
 
 fun play_selected() (( -- )) {
     if selected_track >= 0 {
+        if !is_playing && selected_track == playing_track {
+            if gst.play() {
+                is_playing = true
+                start_poll_loop()
+                poll_playback()
+                return
+            }
+        }
         play_track(selected_track)
     }
 }
@@ -611,7 +1127,7 @@ fun play_prev() (( -- )) {
 fun pause_playback() (( -- )) {
     if gst.pause() {
         is_playing = false
-        transport_status.set_text("Paused")
+        stop_poll_loop()
     } else {
     }
 }
@@ -619,8 +1135,9 @@ fun pause_playback() (( -- )) {
 fun stop_playback() (( -- )) {
     if gst.stop() {
         is_playing = false
-        last_duration_ms = 0
-        transport_status.set_text("Stopped")
+        playing_track = -1
+        stop_poll_loop()
+        apply_cover_art("")
         seek_slider.set_value(0)
         time_left.set_text("00:00")
         time_right.set_text("00:00")
@@ -672,7 +1189,6 @@ fun fetch_lyrics_for_track(track_idx = num) (( -- )) {
 fun poll_playback() (( -- )) {
     let ev = gst.poll()
     if ev == EVENT_EOS {
-        transport_status.set_text("Track ended")
         if repeat_one && playing_track >= 0 {
             play_track(playing_track)
         } else {
@@ -680,35 +1196,59 @@ fun poll_playback() (( -- )) {
         }
     } elif ev == EVENT_ERROR {
         is_playing = false
-        transport_status.set_text("Playback error")
+        let err = gst.last_error()
+        if len(err) > 0 {
+        } else {
+        }
+        stop_poll_loop()
+        apply_cover_art("")
     }
 
     let pos = gst.position_ms()
     let dur = gst.duration_ms()
 
-    if dur > 0 {
-        last_duration_ms = dur
-    }
-
-    let display_dur = if dur > 0 { dur } else { last_duration_ms }
-
     if pos >= 0 {
         time_left.set_text(format_ms(pos))
     }
 
-    if display_dur > 0 {
-        let clamped = pos
-        if clamped < 0 {
-            clamped = 0
+    if dur > 0 {
+        time_right.set_text(format_ms(dur))
+
+        let elapsed = pos
+        if elapsed < 0 {
+            elapsed = 0
         }
-        if clamped > display_dur {
-            clamped = display_dur
+        if elapsed > dur {
+            elapsed = dur
         }
-        let scaled = (clamped * 1000) / display_dur
+
+        -- Slider tracks actual elapsed/total fraction in per-mille.
+        let scaled = (elapsed * 1000) / dur
         suspend_seek_callback = true
         seek_slider.set_value(scaled)
         suspend_seek_callback = false
-        time_right.set_text(format_ms(display_dur))
+    }
+}
+
+fun poll_tick() (( -- )) {
+    poll_playback()
+}
+
+fun start_poll_loop() (( -- )) {
+    if poll_timer_id > 0 {
+        cogito.clear_timer(poll_timer_id)
+        poll_timer_id = 0
+    }
+    poll_timer_id = cogito.set_interval_for(poll_anchor, 250, () => {
+        poll_tick()
+    })
+    poll_tick()
+}
+
+fun stop_poll_loop() (( -- )) {
+    if poll_timer_id > 0 {
+        cogito.clear_timer(poll_timer_id)
+        poll_timer_id = 0
     }
 }
 
@@ -716,50 +1256,52 @@ entry() (( -- )) {
     let app = cogito.app()
     .set_appid("yis.cogito.Victrola")
     .set_app_name("Victrola")
-    .set_accent_color("#ff8c00", false)
+    .set_accent_color(APP_ACCENT, false)
 
-    if !gst.init() {
-        transport_status.set_text(gst.last_error())
-    }
+    app_ref = app
 
     gst.on_eos(() => {
         play_next()
     })
-
-    gst.on_error((msg = any) => {
+    gst.on_error((msg = string) => {
         is_playing = false
-        transport_status.set_text("Playback error")
+        if len(msg) > 0 {
+        } else {
+        }
+        stop_poll_loop()
+        apply_cover_art("")
+    })
+    gst.on_tag((cover_path = string) => {
+        apply_cover_art(cover_path)
     })
 
-    let win = cogito.window_size("Victrola", 1200, 760).set_resizable(true).set_autosize(false)
+    if !gst.init() {
+    }
+
+    let win = cogito.window_size("Victrola", 1024, 800).set_resizable(true)
 
     cogito.load_sum("victrola.sum")
 
     let root = cogito.hstack().set_hexpand(true).set_vexpand(true).set_gap(12)
 
-    let sidebar = cogito.vstack().set_gap(8).set_vexpand(true).set_class("victrola-sidebar")
-    sidebar.add(library_rail.set_vexpand(true))
+    let rail_bar = cogito.appbar("", "").set_small().set_hexpand(false).set_class("victrola-rail-controls")
+
+    let sidebar = cogito.vstack().set_gap(0).set_vexpand(true).set_class("victrola-sidebar")
+    sidebar.add(rail_bar)
+    sidebar.add(library_rail.set_vexpand(true).set_class("victrola-navrail"))
     root.add(sidebar)
 
     let center = cogito.vstack().set_gap(8).set_hexpand(true).set_vexpand(true)
-    let library_bar = cogito.appbar("Titles", "").set_small().set_hexpand(true)
-    library_bar.add_trailing_button("sf:ellipsis", (b = any) => {
+    let library_bar = cogito.appbar("Titles", "").set_hexpand(true).set_class("victrola-library-bar").set_small()
+    library_bar.add_trailing_button("sf:folder.badge.gearshape", (b = any) => {
         if ui_ready && !is_null(b) {
             choose_and_scan()
         }
     })
 
-    let revealer = cogito.revealer()
-    revealer.set_show_children(false)
     library_bar.add_trailing_button("sf:magnifyingglass", (b = any) => {
         if ui_ready && !is_null(b) {
-            if search_input_visible == true {
-                revealer.set_show_children(false)
-                search_input_visible = false
-            } else {
-                revealer.set_show_children(true)
-                search_input_visible = true
-            }
+            set_search_visible(!search_input_visible)
             search_input.set_text("")
             query_text = ""
             refresh_library_list()
@@ -767,12 +1309,31 @@ entry() (( -- )) {
     })
 
     center.add(library_bar)
-    revealer.add(search_input)
-    center.add(revealer)
+    search_revealer.add(search_input)
+    center.add(search_revealer)
 
-    let list_scroll = cogito.scroller().set_hexpand(true).set_vexpand(true)
+    let album_header = cogito.hstack().set_gap(12).set_hexpand(true).set_padding(8, 12, 8, 12).set_class("victrola-album-header")
+    album_header.add(cogito.iconbtn("sf:chevron.left").set_class("iconic").on_click((b = cogito.IconButton) => {
+        close_album_detail()
+        refresh_library_list()
+    }))
+    album_header.add(album_detail_art)
+    let album_meta = cogito.vstack().set_gap(4).set_hexpand(true).set_align(1)
+    album_meta.add(album_detail_title)
+    album_meta.add(album_detail_artist)
+    album_header.add(album_meta)
+    album_detail_revealer.add(album_header)
+    center.add(album_detail_revealer)
+
+    let list_scroll = cogito.scroller().set_hexpand(true).set_vexpand(true).set_min_content_width(420).set_min_content_height(280)
     library_bar.pair_with_scroller(list_scroll)
-    list_scroll.add(library_list.set_hexpand(true).set_vexpand(true).set_gap(10).set_padding(4, 4, 4, 4))
+
+    let library_stack = cogito.vstack().set_hexpand(true).set_vexpand(true).set_gap(0)
+    titles_revealer.add(library_list.set_hexpand(true).set_vexpand(true).set_gap(10).set_padding(4, 4, 4, 4))
+    groups_revealer.add(library_grid.set_class("victrola-group-grid").set_hexpand(true).set_vexpand(true).set_gap(10, 10).set_cols(2).set_padding(4, 4, 4, 4))
+    library_stack.add(titles_revealer)
+    library_stack.add(groups_revealer)
+    list_scroll.add(library_stack)
     center.add(list_scroll)
     root.add(center)
 
@@ -780,11 +1341,17 @@ entry() (( -- )) {
     .set_padding(0, 0, 0, 0)
     .set_hexpand(false)
     .set_vexpand(true)
+    .set_class("victrola-player")
 
-    let player_bar = cogito.appbar("Now Playing", "").set_small().set_hexpand(true)
+    let player_tint = cogito.bin().set_vexpand(true)
+    player_tint_bin = player_tint
+    player_tint.add(player_panel)
 
-    let now_revealer = cogito.revealer().set_show_children(true).set_hexpand(true).set_vexpand(true)
-    let lyrics_revealer = cogito.revealer().set_show_children(false).set_hexpand(true).set_vexpand(true)
+    let player_bar = cogito.appbar("Now Playing", "").set_hexpand(true).set_class("victrola-player-bar").set_small()
+    let player_bar = cogito.appbar("Now Playing", "").set_hexpand(true).set_class("small victrola-player-bar")
+
+    let now_revealer = cogito.revealer().set_show_children(true).set_hexpand(true).set_vexpand(true).set_visible(true)
+    let lyrics_revealer = cogito.revealer().set_show_children(false).set_hexpand(true).set_vexpand(true).set_visible(false)
 
     player_bar.add_trailing_button("sf:quote.bubble", (b = any) => {
         if ui_ready && !is_null(b) {
@@ -792,12 +1359,16 @@ entry() (( -- )) {
             if lyrics_view_visible {
                 player_bar.set_title("Lyrics")
                 now_revealer.set_show_children(false)
+                now_revealer.set_visible(false)
                 lyrics_revealer.set_show_children(true)
+                lyrics_revealer.set_visible(true)
                 fetch_lyrics_for_track(selected_track)
             } else {
                 player_bar.set_title("Now Playing")
                 lyrics_revealer.set_show_children(false)
+                lyrics_revealer.set_visible(false)
                 now_revealer.set_show_children(true)
+                now_revealer.set_visible(true)
             }
         }
     })
@@ -805,14 +1376,14 @@ entry() (( -- )) {
     player_panel.add(player_bar)
 
     let player_info = cogito.vstack()
-    .set_gap(0)
+    .set_gap(12)
     .set_hexpand(true)
     .set_vexpand(true)
-    .set_padding(24, 18, 12, 18)
+    .set_padding(16, 16, 16, 16)
 
     player_info.add(cover_art.set_halign(1))
 
-    let song_box = cogito.vstack().set_gap(4).set_hexpand(true).set_padding(12, 0, 12, 0)
+    let song_box = cogito.vstack().set_gap(6).set_hexpand(true).set_padding(12, 0, 12, 0)
     song_box.add(now_title)
     song_box.add(now_artist)
     player_info.add(song_box)
@@ -826,7 +1397,7 @@ entry() (( -- )) {
     time_row.add(time_right)
     player_info.add(time_row)
 
-    let player_controls = cogito.vstack().set_gap(18).set_align(1).set_padding(18, 24, 18, 24).set_vexpand(true)
+    let player_controls = cogito.vstack().set_gap(16).set_align(1).set_padding(16, 16, 16, 16).set_vexpand(true)
 
     let controls = cogito.hstack().set_gap(12).set_hexpand(true)
     controls.add(cogito.iconbtn("sf:backward.fill").set_class("tonal").set_l().set_width(0).on_click((b = cogito.IconButton) => {
@@ -862,9 +1433,9 @@ entry() (( -- )) {
     now_page.add(player_controls)
     now_revealer.add(now_page)
 
-    let lyrics_page = cogito.vstack().set_gap(10).set_hexpand(true).set_vexpand(true).set_padding(18, 18, 18, 18)
-    lyrics_page.add(cogito.label("Lyrics").set_class("view-subtitle"))
-    let lyrics_scroll = cogito.scroller().set_hexpand(true).set_vexpand(true)
+    let lyrics_page = cogito.vstack().set_gap(0).set_hexpand(true).set_vexpand(true).set_padding(10, 12, 12, 12)
+    let lyrics_page = cogito.vstack().set_gap(0).set_hexpand(true).set_vexpand(true).set_padding(10, 12, 12, 12).set_class("victrola-lyrics-page")
+    let lyrics_scroll = cogito.scroller().set_hexpand(true).set_vexpand(true).set_min_content_width(320).set_min_content_height(220).set_class("victrola-lyrics-scroll")
     lyrics_scroll.add(lyrics_text)
     lyrics_page.add(lyrics_scroll)
     lyrics_revealer.add(lyrics_page)
@@ -872,11 +1443,21 @@ entry() (( -- )) {
     player_panel.add(now_revealer)
     player_panel.add(lyrics_revealer)
 
-    root.add(player_panel)
+    player_panel.add(poll_anchor)
+
+    root.add(player_tint)
 
     library_rail.on_change((idx) => {
         if !is_null(idx) {
             view_mode = idx
+
+            if view_mode != 0 {
+                set_search_visible(false)
+            }
+
+            if view_mode != 2 {
+                close_album_detail()
+            }
 
             if view_mode == 0 {
                 library_bar.set_title("Titles")
@@ -884,6 +1465,9 @@ entry() (( -- )) {
                 library_bar.set_title("Artists")
             } else {
                 library_bar.set_title("Albums")
+                if !album_detail_open {
+                    set_album_detail_visible(false)
+                }
             }
 
             refresh_library_list()
@@ -891,30 +1475,28 @@ entry() (( -- )) {
     })
 
     library_list.on_select((idx) => {
-        if idx >= 0 && idx < len(visible_track_indexes) {
-            selected_track = visible_track_indexes[idx] ?? -1
+        let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open)
+        if songs_view {
+            if idx >= 0 && idx < len(visible_track_indexes) {
+                selected_track = visible_track_indexes[idx] ?? -1
 
-            if view_mode == 0 {
-                if selected_track >= 0 && selected_track != playing_track {
-                    play_track(selected_track)
-                } else {
-                    set_now_playing(selected_track)
+                if selected_track >= 0 {
+                    if selected_track != playing_track || !is_playing {
+                        play_track(selected_track)
+                    } else {
+                        set_now_playing(selected_track)
+                    }
                 }
-            } else {
-                set_now_playing(selected_track)
             }
         }
     })
 
     library_list.on_activate((idx) => {
-        if idx >= 0 && idx < len(visible_track_indexes) {
-            selected_track = visible_track_indexes[idx] ?? -1
-
-            if view_mode == 0 {
+        let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open)
+        if songs_view {
+            if idx >= 0 && idx < len(visible_track_indexes) {
+                selected_track = visible_track_indexes[idx] ?? -1
                 play_selected()
-            } else {
-                let group_key = str(visible_group_keys[idx] ?? "")
-                open_group_in_titles(group_key)
             }
         }
     })
@@ -950,17 +1532,12 @@ entry() (( -- )) {
         scan_folder(current_folder)
     }
 
-    poll_timer_id = cogito.set_interval(250, () => {
-        poll_playback()
-    })
+    win.add(root)
 
     ui_ready = true
 
-    win.add(root)
     app.run(win)
 
-    if poll_timer_id > 0 {
-        cogito.clear_timer(poll_timer_id)
-    }
+    stop_poll_loop()
     gst.shutdown()
 }

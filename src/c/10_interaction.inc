@@ -228,6 +228,7 @@ static bool cogito_hit_node_min48(const CogitoNode* n, int x, int y) {
 
 static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
+  if (n->hidden) return NULL;
   if (n->kind == COGITO_WINDOW && n->popover_open && n->popover) {
     CogitoNode* pop_hit = cogito_find_clickable(n->popover, x, y);
     if (pop_hit) return pop_hit;

@@ -24,6 +24,7 @@ static int cogito_content_list_hit_index(CogitoNode* list, int x, int y) {
   if (!cogito_list_point_visible(list, x, y)) return -1;
   for (size_t i = 0; i < list->len; i++) {
     CogitoNode* item = list->children[i];
+    if (!item || item->hidden) continue;
     if (!cogito_rect_visible_local(item->x, item->y, item->w, item->h, list->x, list->y, list->w, list->h)) continue;
     if (cogito_hit_node(item, x, y)) return (int)i;
   }
@@ -55,6 +56,7 @@ static void cogito_content_list_on_activate(YisVal listv, YisVal handler) {
 }
 static CogitoNode* cogito_find_list_grid_hit(CogitoNode* n, int x, int y, int* out_idx) {
   if (!n) return NULL;
+  if (n->hidden) return NULL;
   if (n->kind == COGITO_DIALOG && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;
   if (n->kind == COGITO_SCROLLER && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;
   if (n->kind == COGITO_VIEWSWITCHER) {

@@ -636,6 +636,8 @@ typedef struct CogitoNode {
   bool text_wrap;
   bool text_ellipsis;
   int text_align;
+  int label_max_width_chars;
+  bool label_max_width_chars_set;
   bool font_mono;
   bool font_tabular;
 
@@ -646,9 +648,13 @@ typedef struct CogitoNode {
   int align;
   bool hexpand;
   bool vexpand;
+  bool hexpand_set;
+  bool vexpand_set;
   int gap;
   bool auto_size;
   int fixed_x, fixed_y;
+  int grid_col, grid_row;
+  bool grid_pos_set;
   int grid_span_x, grid_span_y;
   int grid_align_x, grid_align_y;
   int action_button_x, action_button_y, action_button_w, action_button_h;

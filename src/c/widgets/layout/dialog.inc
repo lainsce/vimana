@@ -79,7 +79,7 @@ case COGITO_DIALOG: {
         intrinsic_w[i] = iw;
         intrinsic_h[i] = ih;
         assigned_h[i] = ih;
-        expand[i] = c->vexpand;
+        expand[i] = cogito_layout_effective_vexpand(c);
         total_margins += c->margin_top + c->margin_bottom;
       }
 
@@ -131,16 +131,14 @@ case COGITO_DIALOG: {
         int slot_w = avail_w - c->margin_left - c->margin_right;
         if (slot_w < 0) slot_w = 0;
 
-        bool is_chrome = (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR ||
-                          c->kind == COGITO_BOTTOM_NAV);
-        if (c->hexpand || is_chrome) {
-          child_w = slot_w;
-          if (c->kind == COGITO_LABEL && c->text_wrap && !c->vexpand) {
+        bool child_hexpand = cogito_layout_effective_hexpand(c);
+        bool child_vexpand = cogito_layout_effective_vexpand(c);
+        child_w = cogito_layout_axis_size(child_w, slot_w, child_hexpand);
+        if (child_hexpand) {
+          if (c->kind == COGITO_LABEL && c->text_wrap && !child_vexpand) {
             child_h = cogito_text_wrap_height(c, c->text ? c->text->data : "", cogito_node_font_size(c), slot_w);
             if (child_h <= 0) child_h = cogito_text_height_size(cogito_node_font_size(c));
           }
-        } else if (child_w > slot_w) {
-          child_w = slot_w;
         }
 
         int child_col = c->align % 3;

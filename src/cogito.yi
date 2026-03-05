@@ -100,10 +100,12 @@ fun __cogito_container_set_align(node = any, align = num) (( -- )) { }
 fun __cogito_container_set_gap(node = any, gap = num) (( -- )) { }
 fun __cogito_container_set_halign(node = any, align = num) (( -- )) { }
 fun __cogito_container_set_hexpand(node = any, expand = bool) (( -- )) { }
+fun __cogito_container_set_hexpand_set(node = any, set = bool) (( -- )) { }
 fun __cogito_container_set_margins(node = any, top = num, right = num, bottom = num, left = num) (( -- )) { }
 fun __cogito_container_set_padding(node = any, top = num, right = num, bottom = num, left = num) (( -- )) { }
 fun __cogito_container_set_valign(node = any, align = num) (( -- )) { }
 fun __cogito_container_set_vexpand(node = any, expand = bool) (( -- )) { }
+fun __cogito_container_set_vexpand_set(node = any, set = bool) (( -- )) { }
 fun __cogito_content_list() (( ContentList )) { }
 fun __cogito_content_list_set_selected(list = ContentList, idx = num) (( -- )) { }
 fun __cogito_content_list_remove_at(list = ContentList, idx = num) (( -- )) { }
@@ -141,7 +143,10 @@ fun __cogito_fixed_set_pos(fixed = Fixed, child = any, x = num, y = num) (( -- )
 fun __cogito_fixed() (( Fixed )) { }
 fun __cogito_grid_on_activate(grid = Grid, handler = any) (( -- )) { }
 fun __cogito_grid_on_select(grid = Grid, handler = any) (( -- )) { }
+fun __cogito_grid_add(grid = Grid, child = any, col = num, row = num, w = num, h = num) (( -- )) { }
 fun __cogito_grid_set_align(child = any, halign = num, valign = num) (( -- )) { }
+fun __cogito_grid_set_cols(grid = Grid, cols = num) (( -- )) { }
+fun __cogito_grid_clear(grid = Grid) (( -- )) { }
 fun __cogito_grid_set_gap(grid = Grid, x = num, y = num) (( -- )) { }
 fun __cogito_grid_set_span(child = any, col_span = num, row_span = num) (( -- )) { }
 fun __cogito_grid(cols = num) (( Grid )) { }
@@ -207,6 +212,7 @@ fun __cogito_shape_get_vertex_y(shape = Shape, index = num) (( num )) { }
 fun __cogito_label_set_align(label = Label, align = num) (( -- )) { }
 fun __cogito_label_set_class(label = Label, cls = string) (( -- )) { }
 fun __cogito_label_set_ellipsis(label = Label, on = bool) (( -- )) { }
+fun __cogito_label_set_max_width_chars(label = Label, max_chars = num) (( -- )) { }
 fun __cogito_label_set_text(label = Label, text = string) (( -- )) { }
 fun __cogito_label_set_wrap(label = Label, on = bool) (( -- )) { }
 fun __cogito_label(text = string) (( Label )) { }
@@ -229,6 +235,8 @@ fun __cogito_node_set_a11y_role(node = any, role = string) (( -- )) { }
 fun __cogito_node_set_class(node = any, cls = string) (( -- )) { }
 fun __cogito_node_set_disabled(node = any, on = bool) (( -- )) { }
 fun __cogito_node_set_editable(node = any, on = bool) (( -- )) { }
+fun __cogito_node_set_visible(node = any, on = bool) (( -- )) { }
+fun __cogito_node_get_visible(node = any) (( bool )) { }
 fun __cogito_node_set_id(node = any, id = string) (( -- )) { }
 fun __cogito_node_set_tooltip(node = any, text = string) (( -- )) { }
 fun __cogito_node_window(node = any) (( Window )) { }
@@ -246,6 +254,7 @@ fun __cogito_gst_set_volume(value = num) (( bool )) { }
 fun __cogito_gst_get_volume() (( num )) { }
 fun __cogito_gst_poll_event() (( num )) { }
 fun __cogito_gst_last_error() (( string )) { }
+fun __cogito_gst_last_cover_path() (( string )) { }
 fun __cogito_pointer_capture(node = any) (( -- )) { }
 fun __cogito_pointer_release() (( -- )) { }
 fun __cogito_progress_get_circular(p = Progress) (( bool )) { }
@@ -269,6 +278,8 @@ fun __cogito_timer_cancel_for(node = any) (( -- )) { }
 fun __cogito_timer_cancel_all() (( -- )) { }
 fun __cogito_scroller_set_axes(scroller = Scroller, h = bool, v = bool) (( -- )) { }
 fun __cogito_scroller_set_sync(scroller = Scroller, other = any) (( -- )) { }
+fun __cogito_scroller_set_min_content_width(scroller = Scroller, w = num) (( -- )) { }
+fun __cogito_scroller_set_min_content_height(scroller = Scroller, h = num) (( -- )) { }
 fun __cogito_scroller() (( Scroller )) { }
 fun __cogito_searchfield_get_text(sf = SearchField) (( string )) { }
 fun __cogito_searchfield_on_change(sf = SearchField, handler = any) (( -- )) { }
@@ -472,6 +483,10 @@ pub class Window {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Window )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_dialog(this, dialog = any) (( Window )) {
         __cogito_window_set_dialog(this, dialog)
         return this
@@ -570,6 +585,10 @@ pub class AppBar {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( AppBar )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( AppBar )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -603,6 +622,10 @@ pub class FABMenu {
     }
     pub fun set_disabled(this, on = bool) (( FABMenu )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( FABMenu )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( FABMenu )) {
@@ -676,6 +699,10 @@ pub class Image {
 
     pub fun set_disabled(this, on = bool) (( Image )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Image )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Image )) {
@@ -754,6 +781,10 @@ pub class WebView {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( WebView )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( WebView )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -805,6 +836,10 @@ pub class Dialog {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Dialog )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( Dialog )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -834,6 +869,10 @@ pub class DialogSlot {
     }
     pub fun set_disabled(this, on = bool) (( DialogSlot )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( DialogSlot )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( DialogSlot )) {
@@ -875,8 +914,16 @@ pub class VStack {
         __cogito_container_set_hexpand(this, expand)
         return this
     }
+    pub fun set_hexpand_set(this, set = bool) (( VStack )) {
+        __cogito_container_set_hexpand_set(this, set)
+        return this
+    }
     pub fun set_vexpand(this, expand = bool) (( VStack )) {
         __cogito_container_set_vexpand(this, expand)
+        return this
+    }
+    pub fun set_vexpand_set(this, set = bool) (( VStack )) {
+        __cogito_container_set_vexpand_set(this, set)
         return this
     }
     pub fun set_gap(this, gap = num) (( VStack )) {
@@ -901,6 +948,10 @@ pub class VStack {
     }
     pub fun set_disabled(this, on = bool) (( VStack )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( VStack )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( VStack )) {
@@ -946,6 +997,10 @@ pub class Revealer {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Revealer )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( Revealer )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -989,6 +1044,10 @@ pub class Bin {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Bin )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( Bin )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -1028,8 +1087,16 @@ pub class HStack {
         __cogito_container_set_hexpand(this, expand)
         return this
     }
+    pub fun set_hexpand_set(this, set = bool) (( HStack )) {
+        __cogito_container_set_hexpand_set(this, set)
+        return this
+    }
     pub fun set_vexpand(this, expand = bool) (( HStack )) {
         __cogito_container_set_vexpand(this, expand)
+        return this
+    }
+    pub fun set_vexpand_set(this, set = bool) (( HStack )) {
+        __cogito_container_set_vexpand_set(this, set)
         return this
     }
     pub fun set_gap(this, gap = num) (( HStack )) {
@@ -1054,6 +1121,10 @@ pub class HStack {
     }
     pub fun set_disabled(this, on = bool) (( HStack )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( HStack )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( HStack )) {
@@ -1120,6 +1191,10 @@ pub class ZStack {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( ZStack )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( ZStack )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -1167,6 +1242,10 @@ pub class Fixed {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Fixed )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( Fixed )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -1188,6 +1267,14 @@ pub class Scroller {
     }
     pub fun set_sync(this, other = any) (( Scroller )) {
         __cogito_scroller_set_sync(this, other)
+        return this
+    }
+    pub fun set_min_content_width(this, w = num) (( Scroller )) {
+        __cogito_scroller_set_min_content_width(this, w)
+        return this
+    }
+    pub fun set_min_content_height(this, h = num) (( Scroller )) {
+        __cogito_scroller_set_min_content_height(this, h)
         return this
     }
     pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Scroller )) {
@@ -1216,6 +1303,10 @@ pub class Scroller {
     }
     pub fun set_disabled(this, on = bool) (( Scroller )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Scroller )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Scroller )) {
@@ -1294,8 +1385,8 @@ pub class CarouselItem {
 }
 
 pub class Grid {
-    pub fun add(this, child = any) (( Grid )) {
-        __cogito_container_add(this, child)
+    pub fun add(this, child = any, col = num, row = num, w = num, h = num) (( Grid )) {
+        __cogito_grid_add(this, child, col, row, w, h)
         return this
     }
     pub fun set_margins(this, top = num, right = num, bottom = num, left = num) (( Grid )) {
@@ -1308,6 +1399,14 @@ pub class Grid {
     }
     pub fun set_gap(this, x = num, y = num) (( Grid )) {
         __cogito_grid_set_gap(this, x, y)
+        return this
+    }
+    pub fun set_cols(this, cols = num) (( Grid )) {
+        __cogito_grid_set_cols(this, cols)
+        return this
+    }
+    pub fun clear(this) (( Grid )) {
+        __cogito_grid_clear(this)
         return this
     }
     pub fun set_span(this, child = any, col_span = num, row_span = num) (( Grid )) {
@@ -1365,6 +1464,10 @@ pub class Grid {
 
     pub fun set_disabled(this, on = bool) (( Grid )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Grid )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Grid )) {
@@ -1430,6 +1533,10 @@ pub class Label {
         __cogito_label_set_wrap(this, on)
         return this
     }
+    pub fun set_max_width_chars(this, max_chars = num) (( Label )) {
+        __cogito_label_set_max_width_chars(this, max_chars)
+        return this
+    }
     pub fun set_ellipsis(this, on = bool) (( Label )) {
         __cogito_label_set_ellipsis(this, on)
         return this
@@ -1449,6 +1556,10 @@ pub class Label {
 
     pub fun set_disabled(this, on = bool) (( Label )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Label )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_id(this, id = string) (( Label )) {
@@ -1591,6 +1702,10 @@ pub class Button {
     }
     pub fun set_disabled(this, on = bool) (( Button )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Button )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Button )) {
@@ -1770,6 +1885,10 @@ pub class IconButton {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( IconButton )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( IconButton )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -1840,6 +1959,10 @@ pub class Checkbox {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Checkbox )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( Checkbox )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -1907,6 +2030,10 @@ pub class Switch {
     }
     pub fun set_disabled(this, on = bool) (( Switch )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Switch )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Switch )) {
@@ -2054,6 +2181,10 @@ pub class TextField {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( TextField )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( TextField )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -2128,6 +2259,10 @@ pub class TextView {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( TextView )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( TextView )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -2185,6 +2320,10 @@ pub class DatePicker {
 
     pub fun set_disabled(this, on = bool) (( DatePicker )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( DatePicker )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( DatePicker )) {
@@ -2307,6 +2446,10 @@ pub class Dropdown {
 
     pub fun set_disabled(this, on = bool) (( Dropdown )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Dropdown )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Dropdown )) {
@@ -2457,6 +2600,10 @@ pub class Slider {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Slider )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( Slider )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -2522,6 +2669,10 @@ pub class Tabs {
 
     pub fun set_disabled(this, on = bool) (( Tabs )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Tabs )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Tabs )) {
@@ -2642,6 +2793,10 @@ pub class ViewSwitcher {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( ViewSwitcher )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( ViewSwitcher )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -2721,6 +2876,10 @@ pub class Progress {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Progress )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( Progress )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -2762,6 +2921,10 @@ pub class Divider {
     }
     pub fun set_disabled(this, on = bool) (( Divider )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Divider )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Divider )) {
@@ -2817,6 +2980,10 @@ pub class Card {
     }
     pub fun set_disabled(this, on = bool) (( Card )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Card )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Card )) {
@@ -3098,6 +3265,10 @@ pub class TimePicker {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( TimePicker )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( TimePicker )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -3205,6 +3376,10 @@ pub class ColorPicker {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( ColorPicker )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( ColorPicker )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -3247,6 +3422,10 @@ pub class Toasts {
 
     pub fun set_disabled(this, on = bool) (( Toasts )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Toasts )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Toasts )) {
@@ -3299,6 +3478,10 @@ pub class Toast {
 
     pub fun set_disabled(this, on = bool) (( Toast )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Toast )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Toast )) {
@@ -3400,6 +3583,10 @@ pub class Chip {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( Chip )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( Chip )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -3471,6 +3658,10 @@ pub class FAB {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( FAB )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( FAB )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -3533,6 +3724,10 @@ pub class NavRail {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    pub fun set_visible(this, on = bool) (( NavRail )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
     pub fun set_class(this, cls = string) (( NavRail )) {
         __cogito_node_set_class(this, cls)
         return this
@@ -3577,6 +3772,10 @@ pub class BottomNav {
     }
     pub fun set_disabled(this, on = bool) (( BottomNav )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( BottomNav )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( BottomNav )) {
@@ -3650,6 +3849,9 @@ pub fun gst_poll_event() (( num )) {
 }
 pub fun gst_last_error() (( string )) {
     return __cogito_gst_last_error()
+}
+pub fun gst_last_cover_path() (( string )) {
+    return __cogito_gst_last_cover_path()
 }
 pub fun set_timeout(ms = num, handler = any) (( num )) {
     return __cogito_timer_timeout(ms, handler)
@@ -4317,6 +4519,10 @@ pub class ContentList {
     }
     pub fun set_disabled(this, on = bool) (( ContentList )) {
         __cogito_node_set_disabled(this, on)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( ContentList )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( ContentList )) {

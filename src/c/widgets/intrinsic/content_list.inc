@@ -1,7 +1,7 @@
 case COGITO_CONTENT_LIST: {
   if (n->len == 0) {
-    w = 280;
-    h = 48;
+    w = 280 + n->padding_left + n->padding_right;
+    h = 48 + n->padding_top + n->padding_bottom;
     break;
   }
   int gap = n->gap;
@@ -18,8 +18,8 @@ case COGITO_CONTENT_LIST: {
     total_h += th;
     if (i + 1 < n->len) total_h += gap;
   }
-  if (max_cw < 200) max_cw = 200;
-  w = max_cw;
-  h = total_h;
+  if (max_cw < 280) max_cw = 280;
+  w = max_cw + n->padding_left + n->padding_right;
+  h = total_h + n->padding_top + n->padding_bottom;
   break;
 }

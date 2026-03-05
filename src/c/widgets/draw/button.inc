@@ -25,9 +25,13 @@ case COGITO_BUTTON: {
         bool over = have_mouse && cogito_hit_rect(mx, my, n->x, n->y, n->w, n->h);
         bool down = over && down_state;
         if (down) {
-          cogito_style_merge_into(&s, &cogito_theme.appbar_child_button_active, &s);
+          CogitoStyle appbar_active = cogito_theme.appbar_child_button_active;
+          cogito_apply_bin_scope_to_style(&appbar_active);
+          cogito_style_merge_into(&s, &appbar_active, &s);
         } else if (over) {
-          cogito_style_merge_into(&s, &cogito_theme.appbar_child_button_hover, &s);
+          CogitoStyle appbar_hover = cogito_theme.appbar_child_button_hover;
+          cogito_apply_bin_scope_to_style(&appbar_hover);
+          cogito_style_merge_into(&s, &appbar_hover, &s);
         }
       }
       
@@ -83,12 +87,14 @@ case COGITO_BUTTON: {
           } else {
             // Use the button's checked style which should have secondary colors
             CogitoStyle checked_s = cogito_theme.per_kind_checked[COGITO_BUTTON];
+            cogito_apply_bin_scope_to_style(&checked_s);
             if (checked_s.has_bg) {
               bg = checked_s.bg;
               text = checked_s.has_text ? checked_s.text : cogito_on_color(bg);
             } else {
               // Fallback: try to use per_kind style
               CogitoStyle button_s = cogito_theme.per_kind[COGITO_BUTTON];
+              cogito_apply_bin_scope_to_style(&button_s);
               bg = button_s.has_bg ? button_s.bg : cogito_rgba(0, 0, 0, 0);
               text = button_s.has_text ? button_s.text : bg_node->text_color;
             }
@@ -104,6 +110,7 @@ case COGITO_BUTTON: {
             // For secondary container, we need a lighter color
             // Use the button's hover style which often has container-like colors
             CogitoStyle hover_s = cogito_theme.per_kind_hover[COGITO_BUTTON];
+            cogito_apply_bin_scope_to_style(&hover_s);
             if (hover_s.has_bg) {
               bg = hover_s.bg;
               text = hover_s.has_text ? hover_s.text : bg_node->text_color;

@@ -1,5 +1,27 @@
 case COGITO_LABEL: {
       if (n->text) {
+        const char* full_text = n->text->data ? n->text->data : "";
+        const char* draw_text = full_text;
+        int capped_len = -1;
+        char trunc_stack[512];
+        char* trunc_heap = NULL;
+        if (n->label_max_width_chars_set) {
+          capped_len = cogito_utf8_prefix_bytes_for_codepoints(full_text, n->label_max_width_chars);
+          size_t len = (size_t)capped_len;
+          if (len < sizeof(trunc_stack)) {
+            memcpy(trunc_stack, full_text, len);
+            trunc_stack[len] = '\0';
+            draw_text = trunc_stack;
+          } else {
+            trunc_heap = (char*)calloc(len + 1, 1);
+            if (trunc_heap) {
+              memcpy(trunc_heap, full_text, len);
+              trunc_heap[len] = '\0';
+              draw_text = trunc_heap;
+            }
+          }
+        }
+
         bool hover = false;
         bool active = false;
         cogito_node_hover_state(n, &hover, &active);
@@ -19,20 +41,21 @@ case COGITO_LABEL: {
         if (content_w < 0) content_w = 0;
         if (content_h < 0) content_h = 0;
         if (n->text_wrap) {
-          cogito_draw_text_wrapped(n, content_x, content_y, content_w, n->text->data, text, size, cogito_label_bold(n), false, align, true);
+          cogito_draw_text_wrapped(n, content_x, content_y, content_w, draw_text, text, size, cogito_label_bold(n), false, align, true);
         } else if (n->text_ellipsis) {
           int th = cogito_text_height_size(size);
           int ty = content_y + (content_h - th) / 2;
-          cogito_draw_text_ellipsis(n, content_x, ty, content_w, n->text->data, text, size, cogito_label_bold(n), false, align);
+          cogito_draw_text_ellipsis(n, content_x, ty, content_w, draw_text, text, size, cogito_label_bold(n), false, align);
         } else {
-          int tw = cogito_text_width_size_node(n, n->text->data, size);
+          int tw = cogito_text_width_size_node(n, draw_text, size);
           int th = cogito_text_height_size(size);
           int ty = content_y + (content_h - th) / 2;
           int tx = content_x;
           if (align == 1) tx = content_x + (content_w - tw) / 2;
           else if (align == 2) tx = content_x + (content_w - tw);
-          cogito_draw_text_size_node(n, tx, ty, n->text->data, text, size, cogito_label_bold(n), false);
+          cogito_draw_text_size_node(n, tx, ty, draw_text, text, size, cogito_label_bold(n), false);
         }
+        if (trunc_heap) free(trunc_heap);
       }
       break;
     }

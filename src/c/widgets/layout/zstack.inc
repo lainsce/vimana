@@ -5,10 +5,6 @@ static void cogito_layout_zstack(CogitoNode* n, int x, int y) {
   int inner_h = n->h - n->padding_top - n->padding_bottom;
   if (inner_w < 0) inner_w = 0;
   if (inner_h < 0) inner_h = 0;
-  int align = n->align;
-  if (align < 0 || align > 8) align = 0;
-  int row = align / 3;
-  int col = align % 3;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
     if (c->kind == COGITO_BOTTOM_SHEET) {
@@ -108,13 +104,25 @@ static void cogito_layout_zstack(CogitoNode* n, int x, int y) {
       ch = avail_h;
     } else {
       cogito_intrinsic_size(c, &cw, &ch);
+      if (c->hexpand) cw = avail_w;
+      if (c->vexpand) ch = avail_h;
     }
-    int col_use = col;
-    int row_use = row;
+    int align = c->align;
+    if (align < 0 || align > 8) align = 0;
+    int row_use = align / 3;
+    int col_use = align % 3;
     if (c->kind == COGITO_TOASTS) {
       col_use = 2;
       row_use = 2;
     }
+    if (c->kind != COGITO_DIALOG_SLOT && c->kind != COGITO_TOASTS) {
+      bool fill_w = cogito_layout_effective_hexpand(c) || col_use == 0;
+      bool fill_h = cogito_layout_effective_vexpand(c) || row_use == 0;
+      if (fill_w) cw = avail_w;
+      if (fill_h) ch = avail_h;
+    }
+    if (cw > avail_w) cw = avail_w;
+    if (ch > avail_h) ch = avail_h;
     if (col_use == 1) ox = (avail_w - cw) / 2;
     else if (col_use == 2) ox = avail_w - cw;
     if (row_use == 1) oy = (avail_h - ch) / 2;

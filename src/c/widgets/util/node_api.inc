@@ -98,12 +98,48 @@ static void cogito_container_set_hexpand(YisVal nodev, YisVal expandv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_hexpand expects object");
   CogitoNode* node = (CogitoNode*)nodev.as.p;
   node->hexpand = yis_as_bool(expandv);
+  node->hexpand_set = true;
+}
+
+static void cogito_container_set_hexpand_set(YisVal nodev, YisVal setv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_hexpand_set expects object");
+  CogitoNode* node = (CogitoNode*)nodev.as.p;
+  node->hexpand_set = yis_as_bool(setv);
 }
 
 static void cogito_container_set_vexpand(YisVal nodev, YisVal expandv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_vexpand expects object");
   CogitoNode* node = (CogitoNode*)nodev.as.p;
   node->vexpand = yis_as_bool(expandv);
+  node->vexpand_set = true;
+}
+
+static void cogito_container_set_vexpand_set(YisVal nodev, YisVal setv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_vexpand_set expects object");
+  CogitoNode* node = (CogitoNode*)nodev.as.p;
+  node->vexpand_set = yis_as_bool(setv);
+}
+
+static void cogito_scroller_set_min_content_width(YisVal scv, YisVal wv) {
+  if (scv.tag != EVT_OBJ) yis_trap("cogito.scroller_set_min_content_width expects scroller");
+  CogitoNode* n = (CogitoNode*)scv.as.p;
+  if (!n || n->kind != COGITO_SCROLLER) yis_trap("cogito.scroller_set_min_content_width expects scroller");
+  int w = (int)yis_as_int(wv);
+  if (w < 0) w = 0;
+  n->min_w = w;
+  n->min_w_set = true;
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static void cogito_scroller_set_min_content_height(YisVal scv, YisVal hv) {
+  if (scv.tag != EVT_OBJ) yis_trap("cogito.scroller_set_min_content_height expects scroller");
+  CogitoNode* n = (CogitoNode*)scv.as.p;
+  if (!n || n->kind != COGITO_SCROLLER) yis_trap("cogito.scroller_set_min_content_height expects scroller");
+  int h = (int)yis_as_int(hv);
+  if (h < 0) h = 0;
+  n->min_h = h;
+  n->min_h_set = true;
+  cogito_window_relayout(cogito_node_window(n));
 }
 
 static void cogito_container_set_gap(YisVal nodev, YisVal gapv) {
@@ -133,6 +169,33 @@ static void cogito_node_set_disabled(YisVal nodev, YisVal onv) {
     cogito_focus_visible = false;
   }
   cogito_window_relayout(cogito_node_window(n));
+}
+
+static void cogito_node_set_visible(YisVal nodev, YisVal onv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_set_visible expects object");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  bool visible = yis_as_bool(onv);
+  n->hidden = !visible;
+
+  if (!visible && cogito_focused) {
+    CogitoNode* cur = cogito_focused;
+    while (cur) {
+      if (cur == n) {
+        cogito_focused = NULL;
+        cogito_focus_visible = false;
+        break;
+      }
+      cur = cur->parent;
+    }
+  }
+
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static YisVal cogito_node_get_visible(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_get_visible expects object");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  return YV_BOOL(!n->hidden);
 }
 
 static bool cogito_node_supports_editable(const CogitoNode* n) {

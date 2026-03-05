@@ -236,8 +236,14 @@ static void cogito_layout_window(CogitoNode* win) {
   if (toolbar_vertical) avail_w -= toolbar_w;
   if (avail_w < 0) avail_w = 0;
   if (avail_h < 0) avail_h = 0;
-  int content_x = win->padding_left + (nav_rail ? nav_rail_w : 0);
   int content_y = win->padding_top + appbar_h + appbar_gap;
+
+  size_t content_child_count = 0;
+  for (size_t i = 0; i < win->len; i++) {
+    CogitoNode* c = win->children[i];
+    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR || c->kind == COGITO_NAV_RAIL || c->kind == COGITO_BOTTOM_NAV) continue;
+    content_child_count++;
+  }
 
   for (size_t i = 0; i < win->len; i++) {
     CogitoNode* c = win->children[i];
@@ -246,24 +252,54 @@ static void cogito_layout_window(CogitoNode* win) {
     int cw = 0;
     int ch = 0;
     cogito_intrinsic_size(c, &cw, &ch);
-    int ch_total = ch + c->margin_top + c->margin_bottom;
     int slot_w = avail_w - c->margin_left - c->margin_right;
     if (slot_w < 0) slot_w = 0;
 
-    // Check if widget should expand (only if explicit hexpand/vexpand)
-    bool should_hexpand = c->hexpand;
-    bool should_vexpand = c->vexpand;
+    if (content_child_count == 1) {
+      int slot_h_single = avail_h - c->margin_top - c->margin_bottom;
+      if (slot_h_single < 0) slot_h_single = 0;
 
-    if (should_hexpand || should_vexpand) {
-      int target_w = should_hexpand ? avail_w : cw;
-      int target_h = should_vexpand ? avail_h : ch;
-      cogito_layout_node(c, content_x, content_y, target_w, target_h);
-      cy = content_y + target_h;
-    } else {
-      if (cw > slot_w) cw = slot_w;
-      cogito_layout_node(c, cx + c->margin_left, cy + c->margin_top, cw, ch);
-      cy += ch_total;
+      int child_col = c->align % 3;
+      int child_row = c->align / 3;
+      if (child_col < 0 || child_col > 2) child_col = 0;
+      if (child_row < 0 || child_row > 2) child_row = 0;
+
+      int target_w = (child_col == 0) ? slot_w : cw;
+      int target_h = (child_row == 0) ? slot_h_single : ch;
+      if (target_w > slot_w) target_w = slot_w;
+      if (target_h > slot_h_single) target_h = slot_h_single;
+
+      int ox = 0;
+      int oy = 0;
+      if (child_col == 1) {
+        ox = (slot_w - target_w) / 2;
+      } else if (child_col == 2) {
+        ox = slot_w - target_w;
+      }
+      if (child_row == 1) {
+        oy = (slot_h_single - target_h) / 2;
+      } else if (child_row == 2) {
+        oy = slot_h_single - target_h;
+      }
+      if (ox < 0) ox = 0;
+      if (oy < 0) oy = 0;
+
+      cogito_layout_node(c, cx + ox + c->margin_left, content_y + oy + c->margin_top, target_w, target_h);
+      cy = content_y + slot_h_single + c->margin_top + c->margin_bottom;
+      continue;
     }
+
+    bool should_hexpand = cogito_layout_effective_hexpand(c);
+    bool should_vexpand = cogito_layout_effective_vexpand(c);
+    int target_w = should_hexpand ? slot_w : cw;
+    if (target_w > slot_w) target_w = slot_w;
+
+    int remaining_h = content_y + avail_h - (cy + c->margin_top + c->margin_bottom);
+    if (remaining_h < 0) remaining_h = 0;
+    int target_h = should_vexpand ? remaining_h : ch;
+
+    cogito_layout_node(c, cx + c->margin_left, cy + c->margin_top, target_w, target_h);
+    cy += target_h + c->margin_top + c->margin_bottom;
   }
   if (win->dialog) {
     if (win->dialog->kind == COGITO_DIALOG_SLOT) {

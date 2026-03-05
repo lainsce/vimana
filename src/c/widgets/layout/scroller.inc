@@ -194,13 +194,19 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
   if (inner_h < 0) inner_h = 0;
   if (n->len == 0) return;
   CogitoNode* c = n->children[0];
+  int viewport_w = inner_w - c->margin_left - c->margin_right;
+  int viewport_h = inner_h - c->margin_top - c->margin_bottom;
+  if (viewport_w < 0) viewport_w = 0;
+  if (viewport_h < 0) viewport_h = 0;
+  int child_x = inner_x + c->margin_left;
+  int child_y = inner_y + c->margin_top;
   int cw = 0;
   int ch = 0;
   cogito_intrinsic_size(c, &cw, &ch);
   if (!n->scroller.horz) {
-    cw = inner_w;
-  } else if (cw < inner_w) {
-    cw = inner_w;
+    cw = viewport_w;
+  } else if (cw < viewport_w) {
+    cw = viewport_w;
   }
   /* Re-measure content height given the actual width.
    * This lets text-wrapping nodes (textview, webview) report their natural
@@ -210,14 +216,14 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
     if (measured_h > ch) ch = measured_h;
   }
   if (!n->scroller.vert) {
-    ch = inner_h;
-  } else if (ch < inner_h) {
-    ch = inner_h;
+    ch = viewport_h;
+  } else if (ch < viewport_h) {
+    ch = viewport_h;
   }
   n->scroller.content_w = cw;
   n->scroller.content_h = ch;
-  int max_x = cw - inner_w;
-  int max_y = ch - inner_h;
+  int max_x = cw - viewport_w;
+  int max_y = ch - viewport_h;
   if (max_x < 0) max_x = 0;
   if (max_y < 0) max_y = 0;
 
@@ -230,8 +236,17 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
       int src_inner_h = sync_src->h - sync_src->padding_top - sync_src->padding_bottom;
       if (src_inner_w < 0) src_inner_w = 0;
       if (src_inner_h < 0) src_inner_h = 0;
-      int src_max_x = sync_src->scroller.content_w - src_inner_w;
-      int src_max_y = sync_src->scroller.content_h - src_inner_h;
+      int src_view_w = src_inner_w;
+      int src_view_h = src_inner_h;
+      if (sync_src->len > 0 && sync_src->children[0]) {
+        CogitoNode* src_child = sync_src->children[0];
+        src_view_w -= src_child->margin_left + src_child->margin_right;
+        src_view_h -= src_child->margin_top + src_child->margin_bottom;
+        if (src_view_w < 0) src_view_w = 0;
+        if (src_view_h < 0) src_view_h = 0;
+      }
+      int src_max_x = sync_src->scroller.content_w - src_view_w;
+      int src_max_y = sync_src->scroller.content_h - src_view_h;
       if (src_max_x < 0) src_max_x = 0;
       if (src_max_y < 0) src_max_y = 0;
 
@@ -272,8 +287,8 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
   if (n->scroller.scroll_x > max_x) n->scroller.scroll_x = max_x;
   if (n->scroller.scroll_y > max_y) n->scroller.scroll_y = max_y;
   cogito_scroller_state_store(n);
-  cogito_layout_node(c, inner_x - n->scroller.scroll_x, inner_y - n->scroller.scroll_y, cw, ch);
+  cogito_layout_node(c, child_x - n->scroller.scroll_x, child_y - n->scroller.scroll_y, cw, ch);
   for (size_t i = 1; i < n->len; i++) {
-    cogito_layout_node(n->children[i], inner_x, inner_y, 0, 0);
+    cogito_layout_node(n->children[i], child_x, child_y, 0, 0);
   }
 }

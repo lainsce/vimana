@@ -28,7 +28,9 @@ case COGITO_SIDE_SHEET: {
     header_h = 24 + 24; // close button pad_t + box height
   }
 
-  int cy = r_y + pad_t + header_h + gap + pad_b;
+  int inner_h = n->h - pad_t - pad_b;
+  if (inner_h < 0) inner_h = 0;
+  int cy = r_y + pad_t + header_h + gap;
 
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i
@@ -39,6 +41,9 @@ case COGITO_SIDE_SHEET: {
     if (slot_w < 0) slot_w = 0;
     if (c->hexpand) cw = slot_w;
     else if (cw > slot_w) cw = slot_w;
+    int remaining_h = r_y + pad_t + inner_h - (cy + c->margin_top + c->margin_bottom);
+    if (remaining_h < 0) remaining_h = 0;
+    if (c->vexpand) ch = remaining_h;
     cogito_layout_node(c, content_x + c->margin_left, cy + c->margin_top, cw, ch);
     cy += ch + c->margin_top + c->margin_bottom;
     if (i < n->len - 1) cy += gap;

@@ -1,15 +1,33 @@
 @diagnostics: warn
 
-vstack
-hstack
-zstack
-scroller
+appbar.victrola-rail-controls
+  min-width: 96
+  max-width: 96
+  min-height: 28
+  max-height: 28
   background: transparent
 
-card.victrola-player
-  background: #131b19
-  border-radius: 18
-  padding: 16
+vstack.victrola-sidebar
+  background: transparent
+
+appbar.victrola-library-bar
+  background: transparent
+
+appbar.victrola-player-bar
+  background: transparent
+
+grid.victrola-group-grid
+  background: transparent
+
+card.victrola-group-card
+  min-height: 220
+  min-width: 220
+
+hstack.victrola-album-header
+  background: transparent
+
+vstack.victrola-player
+  background: transparent
 
 hstack.victrola-seek-row
 hstack.victrola-duration
@@ -23,7 +41,9 @@ slider.victrola-seek
   min-width: 335
   max-width: 335
 
+hstack.victrola-song-row
+vstack.victrola-song-row
+  background: transparent
+
 textview.victrola-lyrics
-  background: #131b19
-  border-radius: 12
-  padding: 10 12
+  border-radius: 18

@@ -37,6 +37,30 @@ static int cogito_utf8_codepoint_count(const char* s) {
   return count;
 }
 
+static int cogito_utf8_prefix_bytes_for_codepoints(const char* s, int max_chars) {
+  if (!s || max_chars <= 0) return 0;
+  int count = 0;
+  int idx = 0;
+  while (s[idx] && count < max_chars) {
+    unsigned char ch = (unsigned char)s[idx];
+    int step = 1;
+    if ((ch & 0x80) == 0x00) step = 1;
+    else if ((ch & 0xE0) == 0xC0) step = 2;
+    else if ((ch & 0xF0) == 0xE0) step = 3;
+    else if ((ch & 0xF8) == 0xF0) step = 4;
+    for (int i = 1; i < step && s[idx + i]; i++) {
+      unsigned char cc = (unsigned char)s[idx + i];
+      if ((cc & 0xC0) != 0x80) {
+        step = i;
+        break;
+      }
+    }
+    idx += step;
+    count++;
+  }
+  return idx;
+}
+
 static int cogito_font_parse_int_env(const char* name, int fallback) {
   if (!name) return fallback;
   const char* env = getenv(name);

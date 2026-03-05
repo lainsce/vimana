@@ -170,12 +170,12 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
     if (cogito_css_read_number(p, &v)) { style->has_letter_spacing = true; style->letter_spacing = (float)v; }
     return;
   }
-  if (strcmp(prop, "min-width") == 0) {
+  if (strcmp(prop, "min-width") == 0 || strcmp(prop, "min-content-width") == 0) {
     double v;
     if (cogito_css_read_number(p, &v)) { style->has_min_w = true; style->min_w = (int)lround(v); }
     return;
   }
-  if (strcmp(prop, "min-height") == 0) {
+  if (strcmp(prop, "min-height") == 0 || strcmp(prop, "min-content-height") == 0) {
     double v;
     if (cogito_css_read_number(p, &v)) { style->has_min_h = true; style->min_h = (int)lround(v); }
     return;

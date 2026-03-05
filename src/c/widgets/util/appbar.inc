@@ -535,5 +535,6 @@ static CogitoStyle cogito_appbar_win_btn_style(int kind, int state) {
     cogito_style_merge_into(&s, &cogito_theme.appbar_win_btn_active_all, &s);
     cogito_style_merge_into(&s, &cogito_theme.appbar_win_btn_active[kind], &s);
   }
+  cogito_apply_bin_scope_to_style(&s);
   return s;
 }

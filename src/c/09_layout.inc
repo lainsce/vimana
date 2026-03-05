@@ -97,6 +97,43 @@ static void cogito_distribute_axis_sizes(size_t count, const int* min_sizes, con
   }
 }
 
+// Axis sizing contract:
+// - Default: fit intrinsic size (clamped to available slot)
+// - Expand: consume full slot on that axis
+static inline int cogito_layout_axis_size(int intrinsic, int slot, bool expand) {
+  if (slot < 0) slot = 0;
+  if (intrinsic < 0) intrinsic = 0;
+  if (expand) return slot;
+  return intrinsic > slot ? slot : intrinsic;
+}
+
+static bool cogito_layout_effective_hexpand(const CogitoNode* n);
+static bool cogito_layout_effective_vexpand(const CogitoNode* n);
+
+static bool cogito_layout_effective_hexpand(const CogitoNode* n) {
+  if (!n) return false;
+  if (n->hexpand_set) return n->hexpand;
+  if (n->hexpand) return true;
+  if (n->kind == COGITO_HSTACK || n->kind == COGITO_VSTACK) {
+    for (size_t i = 0; i < n->len; i++) {
+      if (cogito_layout_effective_hexpand(n->children[i])) return true;
+    }
+  }
+  return false;
+}
+
+static bool cogito_layout_effective_vexpand(const CogitoNode* n) {
+  if (!n) return false;
+  if (n->vexpand_set) return n->vexpand;
+  if (n->vexpand) return true;
+  if (n->kind == COGITO_HSTACK || n->kind == COGITO_VSTACK) {
+    for (size_t i = 0; i < n->len; i++) {
+      if (cogito_layout_effective_vexpand(n->children[i])) return true;
+    }
+  }
+  return false;
+}
+
 #include "widgets/layout/treeview.inc"
 #include "widgets/layout/vstack.inc"
 #include "widgets/layout/zstack.inc"
@@ -121,6 +158,12 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
   n->h = h;
   cogito_apply_size_constraints(n, &n->w, &n->h);
   if (changed || n->w != w || n->h != h) cogito_layout_mark_changed();
+  if (n->hidden) {
+    if (n->w != 0 || n->h != 0) cogito_layout_mark_changed();
+    n->w = 0;
+    n->h = 0;
+    return;
+  }
   switch (n->kind) {
 
     #include "widgets/layout/appbar.inc"

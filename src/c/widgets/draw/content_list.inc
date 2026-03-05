@@ -15,11 +15,15 @@ case COGITO_CONTENT_LIST: {
   if ((s.has_bg || n->bg_set) && n->len == 0) {
     cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, r);
   }
-  // Get element position styles from theme
-  CogitoStyle* first_style = &cogito_theme.content_list_item_first;
-  CogitoStyle* last_style = &cogito_theme.content_list_item_last;
-  CogitoStyle* middle_style = &cogito_theme.content_list_item_middle;
-  CogitoStyle* single_style = &cogito_theme.content_list_item_single;
+  // Get element position styles from theme and remap to active Bin scope.
+  CogitoStyle first_style = cogito_theme.content_list_item_first;
+  CogitoStyle last_style = cogito_theme.content_list_item_last;
+  CogitoStyle middle_style = cogito_theme.content_list_item_middle;
+  CogitoStyle single_style = cogito_theme.content_list_item_single;
+  cogito_apply_bin_scope_to_style(&first_style);
+  cogito_apply_bin_scope_to_style(&last_style);
+  cogito_apply_bin_scope_to_style(&middle_style);
+  cogito_apply_bin_scope_to_style(&single_style);
 
   bool has_selection = n->selected >= 0 && (size_t)n->selected < n->len;
 
@@ -40,18 +44,18 @@ case COGITO_CONTENT_LIST: {
     int tl = 0, tr = 0, br = 0, bl = 0;
 
     if (n->len == 1) {
-      item_style = single_style;
+      item_style = &single_style;
       tl = tr = br = bl = 12;
     } else if (i == 0) {
-      item_style = first_style;
+      item_style = &first_style;
       tl = tr = 12;
       br = bl = 8;
     } else if (i == n->len - 1) {
-      item_style = last_style;
+      item_style = &last_style;
       tl = tr = 8;
       br = bl = 12;
     } else {
-      item_style = middle_style;
+      item_style = &middle_style;
       tl = tr = br = bl = 8;
     }
     // Override fallback radii with any explicit per-position style radius values.
@@ -96,12 +100,12 @@ case COGITO_CONTENT_LIST: {
     if (i + 1 < n->len && !is_selected && !(has_selection && (size_t)n->selected == i + 1)) {
       CogitoColor div_color = border_color;
       // Check if middle style has custom divider color
-      if (middle_style->has_border) {
-        div_color = middle_style->border;
+      if (middle_style.has_border) {
+        div_color = middle_style.border;
       }
       div_color.a = (uint8_t)(div_color.a * 0.3f);
       int dy = child->y + child->h;
-      int div_margin = middle_style->has_padding_left ? middle_style->padding_left : 16;
+      int div_margin = middle_style.has_padding_left ? middle_style.padding_left : 16;
       int div_w = n->w - (div_margin * 2);
       if (div_w > 0) {
         cogito_draw_rect(n->x + div_margin, dy, div_w,

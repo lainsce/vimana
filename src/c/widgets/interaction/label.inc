@@ -21,6 +21,19 @@ static void cogito_label_set_wrap(YisVal labelv, YisVal onv) {
   n->text_wrap = yis_as_bool(onv);
   cogito_window_relayout(cogito_node_window(n));
 }
+static void cogito_label_set_max_width_chars(YisVal labelv, YisVal maxv) {
+  if (labelv.tag != EVT_OBJ) yis_trap("cogito.label_set_max_width_chars expects label");
+  CogitoNode* n = (CogitoNode*)labelv.as.p;
+  int max_chars = (int)yis_as_int(maxv);
+  if (max_chars < 0) {
+    n->label_max_width_chars = 0;
+    n->label_max_width_chars_set = false;
+  } else {
+    n->label_max_width_chars = max_chars;
+    n->label_max_width_chars_set = true;
+  }
+  cogito_window_relayout(cogito_node_window(n));
+}
 static void cogito_label_set_ellipsis(YisVal labelv, YisVal onv) {
   if (labelv.tag != EVT_OBJ) yis_trap("cogito.label_set_ellipsis expects label");
   CogitoNode* n = (CogitoNode*)labelv.as.p;

@@ -466,44 +466,54 @@ static CogitoStyle cogito_checkbox_box_style(bool is_radio, bool checked, bool h
 }
 
 static bool cogito_color_same(CogitoColor a, CogitoColor b) {
-  return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+  return a.r == b.r && a.g == b.g && a.b == b.b;
+}
+
+static CogitoColor cogito_color_with_alpha(CogitoColor base, uint8_t alpha) {
+  base.a = alpha;
+  return base;
 }
 
 static CogitoColor cogito_bin_scope_remap_color(CogitoColor in) {
   if (!cogito_bin_scope_active) return in;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.primary)) return cogito_bin_scope_to_scheme.primary;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_primary)) return cogito_bin_scope_to_scheme.on_primary;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.primary_container)) return cogito_bin_scope_to_scheme.primary_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_primary_container)) return cogito_bin_scope_to_scheme.on_primary_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.secondary)) return cogito_bin_scope_to_scheme.secondary;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_secondary)) return cogito_bin_scope_to_scheme.on_secondary;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.secondary_container)) return cogito_bin_scope_to_scheme.secondary_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_secondary_container)) return cogito_bin_scope_to_scheme.on_secondary_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.tertiary)) return cogito_bin_scope_to_scheme.tertiary;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_tertiary)) return cogito_bin_scope_to_scheme.on_tertiary;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.tertiary_container)) return cogito_bin_scope_to_scheme.tertiary_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_tertiary_container)) return cogito_bin_scope_to_scheme.on_tertiary_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.error)) return cogito_bin_scope_to_scheme.error;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_error)) return cogito_bin_scope_to_scheme.on_error;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.error_container)) return cogito_bin_scope_to_scheme.error_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_error_container)) return cogito_bin_scope_to_scheme.on_error_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.background)) return cogito_bin_scope_to_scheme.background;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_background)) return cogito_bin_scope_to_scheme.on_background;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.surface)) return cogito_bin_scope_to_scheme.surface;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_surface)) return cogito_bin_scope_to_scheme.on_surface;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.surface_container_lowest)) return cogito_bin_scope_to_scheme.surface_container_lowest;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.surface_container_low)) return cogito_bin_scope_to_scheme.surface_container_low;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.surface_container)) return cogito_bin_scope_to_scheme.surface_container;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.surface_container_high)) return cogito_bin_scope_to_scheme.surface_container_high;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.surface_container_highest)) return cogito_bin_scope_to_scheme.surface_container_highest;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.inverse_surface)) return cogito_bin_scope_to_scheme.inverse_surface;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.inverse_on_surface)) return cogito_bin_scope_to_scheme.inverse_on_surface;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.inverse_primary)) return cogito_bin_scope_to_scheme.inverse_primary;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.outline)) return cogito_bin_scope_to_scheme.outline;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.outline_variant)) return cogito_bin_scope_to_scheme.outline_variant;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.surface_variant)) return cogito_bin_scope_to_scheme.surface_variant;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.on_surface_variant)) return cogito_bin_scope_to_scheme.on_surface_variant;
-  if (cogito_color_same(in, cogito_bin_scope_from_scheme.surface_tint)) return cogito_bin_scope_to_scheme.surface_tint;
+#define COGITO_BIN_MAP_TOKEN(tok) \
+  if (cogito_color_same(in, cogito_bin_scope_from_scheme.tok)) { \
+    return cogito_color_with_alpha(cogito_bin_scope_to_scheme.tok, in.a); \
+  }
+  COGITO_BIN_MAP_TOKEN(primary);
+  COGITO_BIN_MAP_TOKEN(on_primary);
+  COGITO_BIN_MAP_TOKEN(primary_container);
+  COGITO_BIN_MAP_TOKEN(on_primary_container);
+  COGITO_BIN_MAP_TOKEN(secondary);
+  COGITO_BIN_MAP_TOKEN(on_secondary);
+  COGITO_BIN_MAP_TOKEN(secondary_container);
+  COGITO_BIN_MAP_TOKEN(on_secondary_container);
+  COGITO_BIN_MAP_TOKEN(tertiary);
+  COGITO_BIN_MAP_TOKEN(on_tertiary);
+  COGITO_BIN_MAP_TOKEN(tertiary_container);
+  COGITO_BIN_MAP_TOKEN(on_tertiary_container);
+  COGITO_BIN_MAP_TOKEN(error);
+  COGITO_BIN_MAP_TOKEN(on_error);
+  COGITO_BIN_MAP_TOKEN(error_container);
+  COGITO_BIN_MAP_TOKEN(on_error_container);
+  COGITO_BIN_MAP_TOKEN(background);
+  COGITO_BIN_MAP_TOKEN(on_background);
+  COGITO_BIN_MAP_TOKEN(surface);
+  COGITO_BIN_MAP_TOKEN(on_surface);
+  COGITO_BIN_MAP_TOKEN(surface_container_lowest);
+  COGITO_BIN_MAP_TOKEN(surface_container_low);
+  COGITO_BIN_MAP_TOKEN(surface_container);
+  COGITO_BIN_MAP_TOKEN(surface_container_high);
+  COGITO_BIN_MAP_TOKEN(surface_container_highest);
+  COGITO_BIN_MAP_TOKEN(inverse_surface);
+  COGITO_BIN_MAP_TOKEN(inverse_on_surface);
+  COGITO_BIN_MAP_TOKEN(inverse_primary);
+  COGITO_BIN_MAP_TOKEN(outline);
+  COGITO_BIN_MAP_TOKEN(outline_variant);
+  COGITO_BIN_MAP_TOKEN(surface_variant);
+  COGITO_BIN_MAP_TOKEN(on_surface_variant);
+  COGITO_BIN_MAP_TOKEN(surface_tint);
+#undef COGITO_BIN_MAP_TOKEN
   return in;
 }
 
@@ -1213,9 +1223,9 @@ static CogitoColor cogito_label_class_color(int cls, CogitoColor fallback) {
   if (cls > COGITO_LABEL_CLASS_NONE && cls < COGITO_LABEL_CLASS_COUNT) {
     CogitoStyle* s = &cogito_theme.label_class[cls
     ];
-    if (s->has_text) return s->text;
+    if (s->has_text) return cogito_bin_scope_remap_color(s->text);
   }
-  return fallback;
+  return cogito_bin_scope_remap_color(fallback);
 }
 
 static int cogito_css_hex_value(char c) {

@@ -5,9 +5,11 @@ bring cogito
 pub def EVENT_NONE = 0
 pub def EVENT_EOS = 1
 pub def EVENT_ERROR = 2
+pub def EVENT_TAG = 3
 
 def ?eos_handler = null
 def ?error_handler = null
+def ?tag_handler = null
 
 pub fun init() (( bool )) {
     return cogito.gst_init()
@@ -57,12 +59,20 @@ pub fun last_error() (( string )) {
     return cogito.gst_last_error()
 }
 
+pub fun last_cover_path() (( string )) {
+    return cogito.gst_last_cover_path()
+}
+
 pub fun on_eos(handler = any) (( -- )) {
     eos_handler = handler
 }
 
 pub fun on_error(handler = any) (( -- )) {
     error_handler = handler
+}
+
+pub fun on_tag(handler = any) (( -- )) {
+    tag_handler = handler
 }
 
 pub fun poll() (( num )) {
@@ -74,6 +84,10 @@ pub fun poll() (( num )) {
     } elif ev == EVENT_ERROR {
         if !is_null(error_handler) {
             error_handler(last_error())
+        }
+    } elif ev == EVENT_TAG {
+        if !is_null(tag_handler) {
+            tag_handler(last_cover_path())
         }
     }
     return ev

@@ -130,6 +130,9 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_grid_on_activate cogito_grid_on_activate_yis
 #define cogito_grid_on_select cogito_grid_on_select_yis
 #define cogito_grid_set_align cogito_grid_set_align_yis
+#define cogito_grid_add cogito_grid_add_yis
+#define cogito_grid_set_cols cogito_grid_set_cols_yis
+#define cogito_grid_clear cogito_grid_clear_yis
 #define cogito_grid_set_gap cogito_grid_set_gap_yis
 #define cogito_grid_set_span cogito_grid_set_span_yis
 #define cogito_hstack_new cogito_hstack_new_yis
@@ -197,6 +200,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_label_set_ellipsis cogito_label_set_ellipsis_yis
 #define cogito_label_set_text cogito_label_set_text_yis
 #define cogito_label_set_wrap cogito_label_set_wrap_yis
+#define cogito_label_set_max_width_chars cogito_label_set_max_width_chars_yis
 #define cogito_load_sum cogito_load_sum_yis
 #define cogito_load_sum_file cogito_load_sum_file_yis
 #define cogito_nav_rail_get_selected cogito_nav_rail_get_selected_yis
@@ -216,6 +220,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_node_set_a11y_role cogito_node_set_a11y_role_yis
 #define cogito_node_set_class cogito_node_set_class_yis
 #define cogito_node_set_disabled cogito_node_set_disabled_yis
+#define cogito_node_set_visible cogito_node_set_visible_yis
+#define cogito_node_get_visible cogito_node_get_visible_yis
 #define cogito_node_set_editable cogito_node_set_editable_yis
 #define cogito_node_set_id cogito_node_set_id_yis
 #define cogito_node_set_text cogito_node_set_text_yis
@@ -242,6 +248,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_scroller_new cogito_scroller_new_yis
 #define cogito_scroller_set_axes cogito_scroller_set_axes_yis
 #define cogito_scroller_set_sync cogito_scroller_set_sync_yis
+#define cogito_scroller_set_min_content_width cogito_scroller_set_min_content_width_yis
+#define cogito_scroller_set_min_content_height cogito_scroller_set_min_content_height_yis
 #define cogito_carousel_new cogito_carousel_new_yis
 #define cogito_carousel_set_active_index cogito_carousel_set_active_index_yis
 #define cogito_carousel_get_active_index cogito_carousel_get_active_index_yis
@@ -483,6 +491,9 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_grid_on_activate
 #undef cogito_grid_on_select
 #undef cogito_grid_set_align
+#undef cogito_grid_add
+#undef cogito_grid_set_cols
+#undef cogito_grid_clear
 #undef cogito_grid_set_gap
 #undef cogito_grid_set_span
 #undef cogito_hstack_new
@@ -554,6 +565,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_label_set_ellipsis
 #undef cogito_label_set_text
 #undef cogito_label_set_wrap
+#undef cogito_label_set_max_width_chars
 #undef cogito_load_sum
 #undef cogito_load_sum_file
 #undef cogito_nav_rail_get_selected
@@ -573,6 +585,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_node_set_a11y_role
 #undef cogito_node_set_class
 #undef cogito_node_set_disabled
+#undef cogito_node_set_visible
+#undef cogito_node_get_visible
 #undef cogito_node_set_editable
 #undef cogito_node_set_id
 #undef cogito_node_set_text
@@ -598,6 +612,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_scroller_new
 #undef cogito_scroller_set_axes
 #undef cogito_scroller_set_sync
+#undef cogito_scroller_set_min_content_width
+#undef cogito_scroller_set_min_content_height
 #undef cogito_searchfield_get_text
 #undef cogito_searchfield_new
 #undef cogito_searchfield_on_change
@@ -1023,11 +1039,237 @@ static GstBus *cogito_gst_bus = NULL;
 static bool cogito_gst_ready = false;
 static int cogito_gst_pending_event = 0;
 static char cogito_gst_error_msg[512] = "";
+static char cogito_gst_cover_path[PATH_MAX] = "";
+static uint32_t cogito_gst_cover_seq = 0;
 
 static void cogito_gst_set_error_msg(const char *msg) {
   if (!msg)
     msg = "";
   snprintf(cogito_gst_error_msg, sizeof(cogito_gst_error_msg), "%s", msg);
+}
+
+static void cogito_gst_clear_cover_path(void) {
+  cogito_gst_cover_path[0] = '\0';
+}
+
+static void cogito_gst_sanitize_path_copy(const char *in, char *out,
+                                          size_t out_cap) {
+  if (!out || out_cap == 0)
+    return;
+  out[0] = '\0';
+  if (!in || !in[0])
+    return;
+
+  size_t w = 0;
+  char prev = 0;
+  for (size_t i = 0; in[i] && (w + 1) < out_cap; i++) {
+    char ch = in[i];
+    if ((unsigned char)ch < 32)
+      continue;
+    if (ch == '\\')
+      ch = '/';
+    if (ch == '/' && prev == '/')
+      continue;
+    out[w++] = ch;
+    prev = ch;
+  }
+  while (w > 1 && out[w - 1] == '/')
+    w--;
+  out[w] = '\0';
+}
+
+static bool cogito_gst_cover_cache_dir(char *out, size_t out_cap) {
+  if (!out || out_cap == 0)
+    return false;
+  out[0] = '\0';
+
+  const char *base = g_get_user_cache_dir();
+  if (!base || !base[0]) {
+    const char *home = g_get_home_dir();
+    if (home && home[0]) {
+      gchar *fallback = g_build_filename(home, ".cache", NULL);
+      if (fallback) {
+        base = fallback;
+        gchar *dir = g_build_filename(base, "cogito", "cover-art", NULL);
+        g_free(fallback);
+        if (!dir)
+          return false;
+        if (g_mkdir_with_parents(dir, 0700) != 0) {
+          g_free(dir);
+          return false;
+        }
+        cogito_gst_sanitize_path_copy(dir, out, out_cap);
+        g_free(dir);
+        return out[0] != '\0';
+      }
+    }
+    return false;
+  }
+
+  gchar *dir = g_build_filename(base, "cogito", "cover-art", NULL);
+  if (!dir)
+    return false;
+  if (g_mkdir_with_parents(dir, 0700) != 0) {
+    g_free(dir);
+    return false;
+  }
+  cogito_gst_sanitize_path_copy(dir, out, out_cap);
+  g_free(dir);
+  return out[0] != '\0';
+}
+
+static const char *cogito_gst_cover_ext_from_signature(const guint8 *data,
+                                                       gsize len) {
+  if (data && len >= 3 && data[0] == 0xFF && data[1] == 0xD8 &&
+      data[2] == 0xFF)
+    return ".jpg";
+  if (data && len >= 8 && data[0] == 0x89 && data[1] == 'P' && data[2] == 'N' &&
+      data[3] == 'G' && data[4] == 0x0D && data[5] == 0x0A &&
+      data[6] == 0x1A && data[7] == 0x0A)
+    return ".png";
+  if (data && len >= 12 && memcmp(data, "RIFF", 4) == 0 &&
+      memcmp(data + 8, "WEBP", 4) == 0)
+    return ".webp";
+  if (data && len >= 4 && memcmp(data, "GIF8", 4) == 0)
+    return ".gif";
+  return ".img";
+}
+
+static const char *cogito_gst_cover_ext_from_caps(GstSample *sample,
+                                                   const guint8 *data,
+                                                   gsize len) {
+  if (sample) {
+    GstCaps *caps = gst_sample_get_caps(sample);
+    if (caps && gst_caps_get_size(caps) > 0) {
+      const GstStructure *st = gst_caps_get_structure(caps, 0);
+      const char *name = st ? gst_structure_get_name(st) : NULL;
+      if (name) {
+        if (strcmp(name, "image/jpeg") == 0)
+          return ".jpg";
+        if (strcmp(name, "image/png") == 0)
+          return ".png";
+        if (strcmp(name, "image/webp") == 0)
+          return ".webp";
+        if (strcmp(name, "image/gif") == 0)
+          return ".gif";
+      }
+    }
+  }
+  return cogito_gst_cover_ext_from_signature(data, len);
+}
+
+static bool cogito_gst_try_sample_from_tags(const GstTagList *tags,
+                                            GstSample **out_sample) {
+  if (!out_sample)
+    return false;
+  *out_sample = NULL;
+  if (!tags)
+    return false;
+
+  GstSample *sample = NULL;
+  if (gst_tag_list_get_sample(tags, GST_TAG_IMAGE, &sample)) {
+    *out_sample = sample;
+    return true;
+  }
+  if (gst_tag_list_get_sample(tags, GST_TAG_PREVIEW_IMAGE, &sample)) {
+    *out_sample = sample;
+    return true;
+  }
+
+  guint tag_count = gst_tag_list_n_tags(tags);
+  for (guint i = 0; i < tag_count; i++) {
+    const gchar *tag = gst_tag_list_nth_tag_name(tags, i);
+    if (!tag)
+      continue;
+    gint value_count = gst_tag_list_get_tag_size(tags, tag);
+    for (gint j = 0; j < value_count; j++) {
+      const GValue *v = gst_tag_list_get_value_index(tags, tag, (guint)j);
+      if (!v || !G_VALUE_HOLDS(v, GST_TYPE_SAMPLE))
+        continue;
+      const GstSample *embedded = gst_value_get_sample(v);
+      if (!embedded)
+        continue;
+      *out_sample = gst_sample_ref((GstSample *)embedded);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static bool cogito_gst_store_cover_sample(GstSample *sample) {
+  if (!sample)
+    return false;
+  GstBuffer *buffer = gst_sample_get_buffer(sample);
+  if (!buffer)
+    return false;
+
+  GstMapInfo map;
+  memset(&map, 0, sizeof(map));
+  if (!gst_buffer_map(buffer, &map, GST_MAP_READ))
+    return false;
+
+  bool ok = false;
+  const guint8 *bytes = map.data;
+  gsize n = map.size;
+  if (bytes && n > 0 && n <= (gsize)G_MAXSSIZE) {
+    const char *ext = cogito_gst_cover_ext_from_caps(sample, bytes, n);
+
+    char cache_dir[PATH_MAX];
+    if (!cogito_gst_cover_cache_dir(cache_dir, sizeof(cache_dir))) {
+      cogito_gst_set_error_msg("failed to create cover cache directory");
+      gst_buffer_unmap(buffer, &map);
+      return false;
+    }
+
+    char leaf[96];
+    gchar *digest =
+      g_compute_checksum_for_data(G_CHECKSUM_SHA256, bytes, (gssize)n);
+    if (digest && digest[0]) {
+      snprintf(leaf, sizeof(leaf), "cover-%s%s", digest, ext);
+    } else {
+      uint32_t seq = ++cogito_gst_cover_seq;
+      snprintf(leaf, sizeof(leaf), "cover-%u%s", seq, ext);
+    }
+    if (digest)
+      g_free(digest);
+
+    gchar *path = g_build_filename(cache_dir, leaf, NULL);
+    if (!path) {
+      cogito_gst_set_error_msg("failed to build cover cache path");
+      gst_buffer_unmap(buffer, &map);
+      return false;
+    }
+
+    bool already_cached = g_file_test(path, G_FILE_TEST_IS_REGULAR);
+    if (!already_cached) {
+      GError *err = NULL;
+      ok = g_file_set_contents(path, (const gchar *)bytes, (gssize)n, &err);
+      if (!ok) {
+        if (err && err->message)
+          cogito_gst_set_error_msg(err->message);
+        else
+          cogito_gst_set_error_msg("failed to write embedded cover art");
+        if (err)
+          g_error_free(err);
+      }
+    } else {
+      ok = true;
+    }
+
+    if (ok) {
+      char sanitized[PATH_MAX];
+      cogito_gst_sanitize_path_copy(path, sanitized, sizeof(sanitized));
+      snprintf(cogito_gst_cover_path, sizeof(cogito_gst_cover_path), "%s",
+               sanitized[0] ? sanitized : path);
+    }
+
+    if (path)
+      g_free(path);
+  }
+
+  gst_buffer_unmap(buffer, &map);
+  return ok;
 }
 
 static bool cogito_gst_ensure_player(void) {
@@ -1113,6 +1355,7 @@ void cogito_gst_shutdown(void) {
     gst_object_unref(cogito_gst_player);
     cogito_gst_player = NULL;
   }
+  cogito_gst_clear_cover_path();
   cogito_gst_pending_event = 0;
   cogito_gst_set_error_msg("");
 #endif
@@ -1127,6 +1370,7 @@ bool cogito_gst_load(const char *path_or_uri) {
     return false;
   g_object_set(cogito_gst_player, "uri", uri, NULL);
   g_free(uri);
+  cogito_gst_clear_cover_path();
   cogito_gst_pending_event = 0;
   return true;
 #else
@@ -1291,6 +1535,21 @@ int cogito_gst_poll_event(void) {
       ev = 2;
       break;
     }
+    case GST_MESSAGE_TAG: {
+      GstTagList *tags = NULL;
+      gst_message_parse_tag(msg, &tags);
+      if (tags) {
+        GstSample *sample = NULL;
+        if (cogito_gst_try_sample_from_tags(tags, &sample)) {
+          if (cogito_gst_store_cover_sample(sample)) {
+            ev = 3;
+          }
+          gst_sample_unref(sample);
+        }
+        gst_tag_list_unref(tags);
+      }
+      break;
+    }
     default:
       break;
     }
@@ -1308,6 +1567,14 @@ const char *cogito_gst_last_error(void) {
   return cogito_gst_error_msg;
 #else
   return "gstreamer is not enabled in this Cogito build";
+#endif
+}
+
+const char *cogito_gst_last_cover_path(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  return cogito_gst_cover_path;
+#else
+  return "";
 #endif
 }
 
@@ -2473,6 +2740,18 @@ void cogito_node_set_vexpand(cogito_node *node, bool expand) {
   cogito_container_set_vexpand(YV_OBJ(node), YV_BOOL(expand));
 }
 
+void cogito_node_set_hexpand_set(cogito_node *node, bool set) {
+  if (!node)
+    return;
+  cogito_container_set_hexpand_set(YV_OBJ(node), YV_BOOL(set));
+}
+
+void cogito_node_set_vexpand_set(cogito_node *node, bool set) {
+  if (!node)
+    return;
+  cogito_container_set_vexpand_set(YV_OBJ(node), YV_BOOL(set));
+}
+
 void cogito_node_set_gap(cogito_node *node, int gap) {
   if (!node)
     return;
@@ -2559,6 +2838,19 @@ void cogito_node_set_disabled(cogito_node *node, bool on) {
   if (!node)
     return;
   cogito_node_set_disabled_yis(YV_OBJ(node), YV_BOOL(on));
+}
+
+void cogito_node_set_visible(cogito_node *node, bool on) {
+  if (!node)
+    return;
+  cogito_node_set_visible_yis(YV_OBJ(node), YV_BOOL(on));
+}
+
+bool cogito_node_get_visible(cogito_node *node) {
+  if (!node)
+    return false;
+  YisVal v = cogito_node_get_visible_yis(YV_OBJ(node));
+  return yis_as_bool(v);
 }
 
 void cogito_node_set_editable(cogito_node *node, bool on) {
@@ -3200,6 +3492,14 @@ void cogito_label_set_wrap(cogito_node *label, bool on) {
   cogito_label_set_wrap_yis(YV_OBJ(label), YV_BOOL(on));
 }
 
+void cogito_label_set_max_width_chars(cogito_node *label, int max_chars) {
+  if (!label)
+    return;
+  if (max_chars < 0)
+    max_chars = 0;
+  cogito_label_set_max_width_chars_yis(YV_OBJ(label), YV_INT(max_chars));
+}
+
 void cogito_label_set_ellipsis(cogito_node *label, bool on) {
   if (!label)
     return;
@@ -3469,6 +3769,44 @@ void cogito_scroller_set_sync(cogito_node *scroller, cogito_node *other) {
     return;
   YisVal ov = other ? YV_OBJ(other) : YV_NULLV;
   cogito_scroller_set_sync_yis(YV_OBJ(scroller), ov);
+}
+
+void cogito_scroller_set_min_content_width(cogito_node *scroller, int w) {
+  if (!scroller)
+    return;
+  if (w < 0)
+    w = 0;
+  cogito_scroller_set_min_content_width_yis(YV_OBJ(scroller), YV_INT(w));
+}
+
+void cogito_scroller_set_min_content_height(cogito_node *scroller, int h) {
+  if (!scroller)
+    return;
+  if (h < 0)
+    h = 0;
+  cogito_scroller_set_min_content_height_yis(YV_OBJ(scroller), YV_INT(h));
+}
+
+void cogito_grid_set_cols(cogito_node *grid, int cols) {
+  if (!grid)
+    return;
+  if (cols < 1)
+    cols = 1;
+  cogito_grid_set_cols_yis(YV_OBJ(grid), YV_INT(cols));
+}
+
+void cogito_grid_add(cogito_node *grid, cogito_node *child, int col, int row,
+                     int col_span, int row_span) {
+  if (!grid || !child)
+    return;
+  if (col < 0 || row < 0)
+    return;
+  if (col_span < 1)
+    col_span = 1;
+  if (row_span < 1)
+    row_span = 1;
+  cogito_grid_add_yis(YV_OBJ(grid), YV_OBJ(child), YV_INT(col), YV_INT(row),
+                      YV_INT(col_span), YV_INT(row_span));
 }
 
 void cogito_grid_set_gap(cogito_node *grid, int x, int y) {
@@ -3957,6 +4295,12 @@ void cogito_content_list_clear(cogito_node *list) {
 
   cogito_clear_children(n);
   n->selected = -1;
+}
+
+void cogito_grid_clear(cogito_node *grid) {
+  if (!grid)
+    return;
+  cogito_grid_clear_yis(YV_OBJ(grid));
 }
 
 void cogito_content_list_on_select(cogito_node *list, cogito_index_fn fn, void *user) {

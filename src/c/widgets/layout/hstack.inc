@@ -48,7 +48,7 @@ static void cogito_layout_hstack(CogitoNode* n, int x, int y) {
     intrinsic_w[i] = cw;
     intrinsic_h[i] = ch;
     assigned_w[i] = cw;
-    expand[i] = c->hexpand;
+    expand[i] = cogito_layout_effective_hexpand(c);
     total_margins += c->margin_left + c->margin_right;
   }
   int total_gaps = (count > 0) ? (int)(count - 1) * pad : 0;
@@ -59,21 +59,35 @@ static void cogito_layout_hstack(CogitoNode* n, int x, int y) {
   int cx = x + n->padding_left;
   for (size_t i = 0; i < count; i++) {
     CogitoNode* c = n->children[i];
-    int cw = assigned_w[i];
-    int ch = intrinsic_h[i];
+    int cell_w = assigned_w[i];
+    int intrinsic_cw = intrinsic_w[i];
+    int intrinsic_ch = intrinsic_h[i];
+
+    int child_col = c->align % 3;
+    if (child_col < 0 || child_col > 2) child_col = 0;
+
+    bool child_hexpand = cogito_layout_effective_hexpand(c);
+    int cw = intrinsic_cw;
+    if (child_hexpand && child_col == 0) cw = cell_w;
+    if (cw > cell_w) cw = cell_w;
+
     int slot_h = avail_h - c->margin_top - c->margin_bottom;
     if (slot_h < 0) slot_h = 0;
+    int ch = intrinsic_ch;
 
     int child_row = c->align / 3;
     if (child_row < 0 || child_row > 2) child_row = 0;
 
-    bool is_chrome = (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR ||
-                      c->kind == COGITO_NAV_RAIL || c->kind == COGITO_BOTTOM_NAV);
-    if (c->vexpand || is_chrome) {
-      ch = slot_h;
-    } else if (ch > slot_h) {
-      ch = slot_h;
+    if (child_row == 0) ch = slot_h;
+    if (ch > slot_h) ch = slot_h;
+
+    int ox = 0;
+    if (child_col == 1) {
+      ox = (cell_w - cw) / 2;
+    } else if (child_col == 2) {
+      ox = cell_w - cw;
     }
+    if (ox < 0) ox = 0;
 
     int cy = y + n->padding_top;
     int oy = 0;
@@ -83,8 +97,8 @@ static void cogito_layout_hstack(CogitoNode* n, int x, int y) {
       oy = slot_h - ch;
     }
     if (oy < 0) oy = 0;
-    cogito_layout_node(c, cx + c->margin_left, cy + oy + c->margin_top, cw, ch);
-    cx += cw + c->margin_left + c->margin_right;
+    cogito_layout_node(c, cx + ox + c->margin_left, cy + oy + c->margin_top, cw, ch);
+    cx += cell_w + c->margin_left + c->margin_right;
     if (i < count - 1) cx += pad;
   }
   if (heap_block) free(heap_block);

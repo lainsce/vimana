@@ -247,6 +247,75 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
   n->revealer_show_children = true;
   n->bin_accent_set = false;
   n->bin_accent_color = cogito_rgba(0, 0, 0, 0);
+
+  // Sane geometry defaults:
+  // - margin: 0 for everything
+  // - padding: 6 for leaf-like widgets, 0 for container-capable widgets
+  // - alignment: begin/begin baseline (intrinsic-first + top-left origin)
+  // - expand: explicit opt-in only
+  bool can_have_children =
+    kind == COGITO_APPBAR ||
+    kind == COGITO_BIN ||
+    kind == COGITO_BOTTOM_NAV ||
+    kind == COGITO_CAROUSEL ||
+    kind == COGITO_CAROUSEL_ITEM ||
+    kind == COGITO_COLORPICKER ||
+    kind == COGITO_DIALOG ||
+    kind == COGITO_DIALOG_SLOT ||
+    kind == COGITO_FIXED ||
+    kind == COGITO_GRID ||
+    kind == COGITO_HSTACK ||
+    kind == COGITO_NAV_RAIL ||
+    kind == COGITO_POPOVER ||
+    kind == COGITO_SCROLLER ||
+    kind == COGITO_REVEALER ||
+    kind == COGITO_BUTTON_GROUP ||
+    kind == COGITO_TOASTS ||
+    kind == COGITO_TOOLBAR ||
+    kind == COGITO_TREEVIEW ||
+    kind == COGITO_VIEWSWITCHER ||
+    kind == COGITO_VSTACK ||
+    kind == COGITO_WINDOW ||
+    kind == COGITO_ZSTACK ||
+    kind == COGITO_CARD ||
+    kind == COGITO_BOTTOM_SHEET ||
+    kind == COGITO_SWITCHBAR ||
+    kind == COGITO_CONTENT_LIST ||
+    kind == COGITO_EMPTY_PAGE ||
+    kind == COGITO_TIP_VIEW ||
+    kind == COGITO_SETTINGS_WINDOW ||
+    kind == COGITO_SETTINGS_PAGE ||
+    kind == COGITO_SETTINGS_LIST ||
+    kind == COGITO_SETTINGS_ROW ||
+    kind == COGITO_WELCOME_SCREEN ||
+    kind == COGITO_VIEW_DUAL ||
+    kind == COGITO_VIEW_CHOOSER ||
+    kind == COGITO_ABOUT_WINDOW ||
+    kind == COGITO_MENU_SECTION ||
+    kind == COGITO_SIDE_SHEET;
+
+  n->margin_left = 0;
+  n->margin_top = 0;
+  n->margin_right = 0;
+  n->margin_bottom = 0;
+
+  int default_pad = can_have_children ? 0 : 6;
+  n->padding_left = default_pad;
+  n->padding_top = default_pad;
+  n->padding_right = default_pad;
+  n->padding_bottom = default_pad;
+
+  n->align = 0;
+  n->hexpand = false;
+  n->vexpand = false;
+  n->hexpand_set = false;
+  n->vexpand_set = false;
+  n->label_max_width_chars = 0;
+  n->label_max_width_chars_set = false;
+  n->grid_col = 0;
+  n->grid_row = 0;
+  n->grid_pos_set = false;
+
   // Kind-specific non-zero defaults
   switch (kind) {
     case COGITO_SCROLLER: n->scroller.vert = true; break;
@@ -632,6 +701,11 @@ void cogito_node_add_menu_section(CogitoNode* n, YisStr* label, YisFn* handler) 
 #include "widgets/util/webview_render.inc"
 
 static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
+  if (!n || n->hidden) {
+    if (out_w) *out_w = 0;
+    if (out_h) *out_h = 0;
+    return;
+  }
   int text_w = 0;
   int text_h = cogito_text_height();
   if (n->text) {

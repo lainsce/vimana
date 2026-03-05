@@ -1162,10 +1162,24 @@ static bool sdl3_poll_events(void) { return process_events(); }
 static void sdl3_wait_event_timeout(uint32_t timeout_ms) {
   SDL_Event event;
 #if defined(__APPLE__)
-  extern bool cogito_wait_event_with_autoreleasepool(SDL_Event * event,
-                                                     int timeout_ms);
-  if (cogito_wait_event_with_autoreleasepool(&event, (int)timeout_ms)) {
-    SDL_PushEvent(&event);
+  // On macOS, SDL_WaitEventTimeout can intermittently stall timer-driven
+  // updates in our loop. Poll in small slices so timer wakeups remain reliable.
+  uint64_t start = SDL_GetTicks();
+  for (;;) {
+    if (SDL_PollEvent(&event)) {
+      SDL_PushEvent(&event);
+      return;
+    }
+    uint64_t elapsed = SDL_GetTicks() - start;
+    if (elapsed >= (uint64_t)timeout_ms) {
+      return;
+    }
+    uint32_t remain = (uint32_t)((uint64_t)timeout_ms - elapsed);
+    uint32_t slice = remain > 4 ? 4 : remain;
+    if (slice == 0) {
+      return;
+    }
+    SDL_Delay(slice);
   }
 #else
   if (SDL_WaitEventTimeout(&event, (int)timeout_ms)) {

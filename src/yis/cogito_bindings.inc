@@ -67,6 +67,8 @@
 #undef cogito_grid_on_activate
 #undef cogito_grid_on_select
 #undef cogito_grid_set_align
+#undef cogito_grid_set_cols
+#undef cogito_grid_clear
 #undef cogito_grid_set_gap
 #undef cogito_grid_set_span
 #undef cogito_revealer_set_show_children
@@ -171,6 +173,7 @@
 #undef cogito_gst_get_volume
 #undef cogito_gst_poll_event
 #undef cogito_gst_last_error
+#undef cogito_gst_last_cover_path
 #undef cogito_pointer_capture
 #undef cogito_pointer_release
 #undef cogito_progress_get_circular
@@ -1860,6 +1863,11 @@ static void __cogito_label_set_wrap(YisVal labelv, YisVal onv) {
   cogito_label_set_wrap(n, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
+static void __cogito_label_set_max_width_chars(YisVal labelv, YisVal maxv) {
+  cogito_node* n = cogito_node_from_val(labelv);
+  cogito_label_set_max_width_chars(n, (int)yis_as_int(maxv));
+}
+
 static void __cogito_label_set_ellipsis(YisVal labelv, YisVal onv) {
   cogito_node* n = cogito_node_from_val(labelv);
   cogito_label_set_ellipsis(n, onv.tag == EVT_BOOL ? onv.as.b : false);
@@ -2192,10 +2200,20 @@ static void __cogito_container_set_hexpand(YisVal nodev, YisVal expand) {
   cogito_node_set_hexpand(node, yis_as_bool(expand));
 }
 
+static void __cogito_container_set_hexpand_set(YisVal nodev, YisVal setv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_hexpand_set(node, yis_as_bool(setv));
+}
+
 static void __cogito_container_set_vexpand(YisVal nodev, YisVal expand) {
   cogito_node* node = cogito_node_from_val(nodev);
   bool expand_bool = yis_as_bool(expand);
   cogito_node_set_vexpand(node, expand_bool);
+}
+
+static void __cogito_container_set_vexpand_set(YisVal nodev, YisVal setv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_vexpand_set(node, yis_as_bool(setv));
 }
 
 static void __cogito_container_set_gap(YisVal nodev, YisVal gap) {
@@ -2230,9 +2248,35 @@ static void __cogito_scroller_set_sync(YisVal scv, YisVal otherv) {
   cogito_scroller_set_sync(sc, other);
 }
 
+static void __cogito_scroller_set_min_content_width(YisVal scv, YisVal wv) {
+  cogito_node* sc = cogito_node_from_val(scv);
+  cogito_scroller_set_min_content_width(sc, (int)yis_as_int(wv));
+}
+
+static void __cogito_scroller_set_min_content_height(YisVal scv, YisVal hv) {
+  cogito_node* sc = cogito_node_from_val(scv);
+  cogito_scroller_set_min_content_height(sc, (int)yis_as_int(hv));
+}
+
 static void __cogito_grid_set_gap(YisVal gridv, YisVal xv, YisVal yv) {
   cogito_node* grid = cogito_node_from_val(gridv);
   cogito_grid_set_gap(grid, (int)yis_as_int(xv), (int)yis_as_int(yv));
+}
+
+static void __cogito_grid_set_cols(YisVal gridv, YisVal colsv) {
+  cogito_node* grid = cogito_node_from_val(gridv);
+  cogito_grid_set_cols(grid, (int)yis_as_int(colsv));
+}
+
+static void __cogito_grid_clear(YisVal gridv) {
+  cogito_node* grid = cogito_node_from_val(gridv);
+  cogito_grid_clear(grid);
+}
+
+static void __cogito_grid_add(YisVal gridv, YisVal childv, YisVal colv, YisVal rowv, YisVal wv, YisVal hv) {
+  cogito_node* grid = cogito_node_from_val(gridv);
+  cogito_node* child = cogito_node_from_val(childv);
+  cogito_grid_add(grid, child, (int)yis_as_int(colv), (int)yis_as_int(rowv), (int)yis_as_int(wv), (int)yis_as_int(hv));
 }
 
 static void __cogito_grid_set_span(YisVal childv, YisVal col_span, YisVal row_span) {
@@ -2250,6 +2294,11 @@ static void __cogito_node_set_disabled(YisVal nodev, YisVal onv) {
   cogito_node_set_disabled(node, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
+static void __cogito_node_set_visible(YisVal nodev, YisVal onv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_visible(node, onv.tag == EVT_BOOL ? onv.as.b : false);
+}
+
 static void __cogito_node_set_editable(YisVal nodev, YisVal onv) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_editable(node, onv.tag == EVT_BOOL ? onv.as.b : false);
@@ -2258,6 +2307,11 @@ static void __cogito_node_set_editable(YisVal nodev, YisVal onv) {
 static YisVal __cogito_node_get_editable(YisVal nodev) {
   cogito_node* node = cogito_node_from_val(nodev);
   return YV_BOOL(cogito_node_get_editable(node));
+}
+
+static YisVal __cogito_node_get_visible(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_BOOL(cogito_node_get_visible(node));
 }
 
 static void __cogito_node_set_id(YisVal nodev, YisVal idv) {
@@ -3433,6 +3487,12 @@ static YisVal __cogito_gst_last_error(void) {
   if (!err || !err[0]) return YV_STR(stdr_str_lit(""));
   return YV_STR(stdr_str_lit(err));
 }
+
+static YisVal __cogito_gst_last_cover_path(void) {
+  const char* path = cogito_gst_last_cover_path();
+  if (!path || !path[0]) return YV_STR(stdr_str_lit(""));
+  return YV_STR(stdr_str_lit(path));
+}
 // ---- Codegen aliases ----
 #define cogito_app_new __cogito_app
 #define cogito_app_set_appid __cogito_app_set_appid
@@ -3458,6 +3518,7 @@ static YisVal __cogito_gst_last_error(void) {
 #define cogito_gst_get_volume __cogito_gst_get_volume
 #define cogito_gst_poll_event __cogito_gst_poll_event
 #define cogito_gst_last_error __cogito_gst_last_error
+#define cogito_gst_last_cover_path __cogito_gst_last_cover_path
 #define cogito_window_new __cogito_window
 #define cogito_window_set_resizable __cogito_window_set_resizable
 #define cogito_window_set_autosize __cogito_window_set_autosize
@@ -3519,7 +3580,9 @@ static YisVal __cogito_gst_last_error(void) {
 #define cogito_container_set_halign __cogito_container_set_halign
 #define cogito_container_set_valign __cogito_container_set_valign
 #define cogito_container_set_hexpand __cogito_container_set_hexpand
+#define cogito_container_set_hexpand_set __cogito_container_set_hexpand_set
 #define cogito_container_set_vexpand __cogito_container_set_vexpand
+#define cogito_container_set_vexpand_set __cogito_container_set_vexpand_set
 #define cogito_container_set_gap __cogito_container_set_gap
 #define cogito_dialog_slot_show __cogito_dialog_slot_show
 #define cogito_dialog_slot_clear __cogito_dialog_slot_clear
@@ -3527,17 +3590,25 @@ static YisVal __cogito_gst_last_error(void) {
 #define cogito_fixed_set_pos __cogito_fixed_set_pos
 #define cogito_scroller_set_axes __cogito_scroller_set_axes
 #define cogito_scroller_set_sync __cogito_scroller_set_sync
+#define cogito_scroller_set_min_content_width __cogito_scroller_set_min_content_width
+#define cogito_scroller_set_min_content_height __cogito_scroller_set_min_content_height
+#define cogito_grid_set_cols __cogito_grid_set_cols
+#define cogito_grid_clear __cogito_grid_clear
+#define cogito_grid_add __cogito_grid_add
 #define cogito_grid_set_gap __cogito_grid_set_gap
 #define cogito_grid_set_span __cogito_grid_set_span
 #define cogito_grid_set_align __cogito_grid_set_align
 #define cogito_label_set_class __cogito_label_set_class
 #define cogito_label_set_text __cogito_label_set_text
 #define cogito_label_set_wrap __cogito_label_set_wrap
+#define cogito_label_set_max_width_chars __cogito_label_set_max_width_chars
 #define cogito_label_set_ellipsis __cogito_label_set_ellipsis
 #define cogito_label_set_align __cogito_label_set_align
 #define cogito_node_set_disabled __cogito_node_set_disabled
+#define cogito_node_set_visible __cogito_node_set_visible
 #define cogito_node_set_editable __cogito_node_set_editable
 #define cogito_node_get_editable __cogito_node_get_editable
+#define cogito_node_get_visible __cogito_node_get_visible
 #define cogito_node_set_id __cogito_node_set_id
 #define cogito_node_set_class __cogito_node_set_class
 #define cogito_node_set_a11y_label __cogito_node_set_a11y_label
@@ -3763,6 +3834,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_content_list_set_selected __cogito_content_list_set_selected
 #define cogito_content_list_remove_at __cogito_content_list_remove_at
 #define cogito_content_list_clear __cogito_content_list_clear
+#define cogito_grid_set_cols __cogito_grid_set_cols
+#define cogito_grid_clear __cogito_grid_clear
 #define cogito_empty_page_new __cogito_empty_page
 #define cogito_empty_page_set_description __cogito_empty_page_set_description
 #define cogito_empty_page_set_icon __cogito_empty_page_set_icon

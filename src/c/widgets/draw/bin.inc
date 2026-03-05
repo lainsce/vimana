@@ -57,7 +57,7 @@ case COGITO_BIN: {
 				double h = 0.0;
 				double c = 0.0;
 				double t = 0.0;
-				cogito_rgb_to_hct(n->bin_accent_color, &h, &c, &t);
+				cogito_bin_scope_safe_seed_hct(n->bin_accent_color, &h, &c, &t);
 				int variant = cogito_theme_ensor_variant;
 				if (variant < COGITO_ENSOR_DEFAULT || variant > COGITO_ENSOR_CONTENT) {
 					variant = COGITO_ENSOR_DEFAULT;
