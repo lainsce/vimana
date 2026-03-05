@@ -5458,6 +5458,33 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_nav_rail_set_centered")) {
+                        GenExpr rail, on;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &rail, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &on, err)) { gen_expr_free(&rail); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_nav_rail_set_centered(%s, %s);", rail.tmp, on.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", rail.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", on.tmp);
+                        gen_expr_release_except(cg, &rail, rail.tmp);
+                        gen_expr_release_except(cg, &on, on.tmp);
+                        gen_expr_free(&rail);
+                        gen_expr_free(&on);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_nav_rail_get_selected")) {
                         GenExpr rail;
                         if (!gen_expr(cg, path, e->as.call.args[

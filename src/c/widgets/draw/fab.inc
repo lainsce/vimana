@@ -38,7 +38,7 @@ case COGITO_FAB: {
   // Determine colors based on variant
   // variant: 0=Primary, 1=Secondary, 2=Tertiary, 3=PrimaryContainer, 4=SecondaryContainer, 5=TertiaryContainer
   CogitoColor bg, text_color;
-  if (!in_nav_rail) {
+  if (!in_nav_rail || n->fab.variant_set) {
     switch (n->fab.variant) {
       case 0: // Primary
         bg = cogito_cached_primary;
@@ -75,8 +75,10 @@ case COGITO_FAB: {
   }
   int radius = fab_radius;
   if (in_nav_rail) {
-    bg = rail_style.has_selection ? rail_style.selection : n->parent->selection_color;
-    text_color = cogito_on_color(bg);
+    if (!n->fab.variant_set) {
+      bg = rail_style.has_selection ? rail_style.selection : n->parent->selection_color;
+      text_color = cogito_on_color(bg);
+    }
     radius = 16;
   }
 

@@ -47,10 +47,6 @@ vstack.victrola-song-row
   background: transparent
 
 textview.victrola-lyrics
-  background: #211827
-  color: #f2e8ff
-  border-width: 1
-  border-color: #3f2d4a
   border-radius: 18
   padding: 12
 

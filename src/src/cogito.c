@@ -212,6 +212,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_nav_rail_set_selected cogito_nav_rail_set_selected_yis
 #define cogito_nav_rail_set_no_label cogito_nav_rail_set_no_label_yis
 #define cogito_nav_rail_get_no_label cogito_nav_rail_get_no_label_yis
+#define cogito_nav_rail_set_centered cogito_nav_rail_set_centered_yis
 #define __cogito_nav_rail_set_divider __cogito_nav_rail_set_divider_yis
 #define cogito_node_get_editable cogito_node_get_editable_yis
 #define cogito_node_new cogito_node_new_yis
@@ -577,6 +578,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_nav_rail_set_selected
 #undef cogito_nav_rail_set_no_label
 #undef cogito_nav_rail_get_no_label
+#undef cogito_nav_rail_set_centered
 #undef __cogito_nav_rail_set_divider
 #undef cogito_node_get_editable
 #undef cogito_node_new
@@ -4654,6 +4656,12 @@ void cogito_nav_rail_set_divider(cogito_node *rail, bool visible) {
   if (!rail)
     return;
   __cogito_nav_rail_set_divider_yis(YV_OBJ(rail), YV_BOOL(visible));
+}
+
+void cogito_nav_rail_set_centered(cogito_node *rail, bool centered) {
+  if (!rail)
+    return;
+  cogito_nav_rail_set_centered_yis(rail, centered);
 }
 
 int cogito_nav_rail_get_selected(cogito_node *rail) {

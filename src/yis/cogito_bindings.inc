@@ -3065,6 +3065,11 @@ static void __cogito_nav_rail_set_divider(YisVal railv, YisVal onv) {
   cogito_nav_rail_set_divider(rail, yis_as_bool(onv));
 }
 
+static void __cogito_nav_rail_set_centered(YisVal railv, YisVal onv) {
+  cogito_node* rail = cogito_node_from_val(railv);
+  cogito_nav_rail_set_centered(rail, yis_as_bool(onv));
+}
+
 static void __cogito_nav_rail_set_selected(YisVal railv, YisVal idxv) {
   cogito_node* rail = cogito_node_from_val(railv);
   cogito_nav_rail_set_selected(rail, (int)yis_as_int(idxv));
@@ -3673,6 +3678,7 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_nav_rail_set_badges __cogito_nav_rail_set_badges
 #define cogito_nav_rail_set_toggle __cogito_nav_rail_set_toggle
 #define cogito_nav_rail_set_divider __cogito_nav_rail_set_divider
+#define cogito_nav_rail_set_centered __cogito_nav_rail_set_centered
 #define cogito_nav_rail_set_selected __cogito_nav_rail_set_selected
 #define cogito_nav_rail_get_selected __cogito_nav_rail_get_selected
 #define cogito_nav_rail_on_change __cogito_nav_rail_on_change

@@ -28,6 +28,7 @@ static void cogito_fab_set_color(YisVal fabv, YisVal colorv) {
   if (c < 0) c = 0;
   if (c > 5) c = 5;
   n->fab.variant = (uint8_t)c;
+  n->fab.variant_set = true;
 }
 
 // color: 0=Primary, 1=Secondary, 2=Tertiary

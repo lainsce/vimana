@@ -8,6 +8,7 @@ static CogitoNode* cogito_nav_rail_new_obj(void) {
   n->nav_rail.cap = 0;
   n->nav_rail.selected = 0;
   n->nav_rail.expanded = false;
+  n->nav_rail.centered = false;
   n->nav_rail.show_toggle = true;
   n->nav_rail.no_label = false;
   return n;
@@ -209,6 +210,21 @@ static bool cogito_nav_rail_hit_toggle(CogitoNode* n, int x, int y) {
 
 static int cogito_nav_rail_items_start_y(CogitoNode* n) {
   if (!n) return 0;
+
+  if (n->nav_rail.centered && n->h > 0 && n->nav_rail.len > 0) {
+    int item_step = n->nav_rail.expanded
+      ? COGITO_NAV_RAIL_EXPANDED_ITEM_STEP
+      : COGITO_NAV_RAIL_COLLAPSED_ITEM_STEP;
+    int block_h = item_step * (int)n->nav_rail.len;
+    int top = n->y + n->padding_top;
+    int bottom = n->y + n->h - n->padding_bottom;
+    int avail_h = bottom - top;
+
+    // Center destinations in the rail lane without reserving toggle/FAB offsets.
+    if (avail_h > block_h) return top + ((avail_h - block_h) / 2);
+    return top;
+  }
+
   int top_offset = n->nav_rail.expanded
     ? COGITO_NAV_RAIL_EXPANDED_TOP_OFFSET
     : COGITO_NAV_RAIL_COLLAPSED_TOP_OFFSET;
@@ -226,6 +242,7 @@ static int cogito_nav_rail_items_start_y(CogitoNode* n) {
     if (item_y < min_item_y) item_y = min_item_y;
     break;
   }
+
   return item_y;
 }
 

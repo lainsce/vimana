@@ -928,6 +928,7 @@ typedef struct CogitoNode {
       size_t len, cap;
       int selected;
       bool expanded;
+      bool centered; // If true, center destination block vertically in available lane
       bool show_toggle;
       bool no_label; // If true, use icon-only mode with larger indicator
       bool show_divider; // If true, show vertical divider on right edge
@@ -980,6 +981,7 @@ typedef struct CogitoNode {
     } side_sheet;
     struct {
         bool extended;
+        bool variant_set; // true when set_color(...) is explicitly called
         uint8_t variant; // 0=Primary, 1=Secondary, 2=Tertiary, 3=PContainer, 4=SContainer, 5=TContainer
         uint8_t size;    // 0=S(42), 1=M(56, default), 2=L(96)
     } fab;
@@ -2453,4 +2455,12 @@ void cogito_nav_rail_set_no_label(CogitoNode* n, bool val) {
 
 bool cogito_nav_rail_get_no_label(CogitoNode* n) {
   return n ? n->nav_rail.no_label : false;
+}
+
+void cogito_nav_rail_set_centered(CogitoNode* n, bool val) {
+  if (n) n->nav_rail.centered = val;
+}
+
+bool cogito_nav_rail_get_centered(CogitoNode* n) {
+  return n ? n->nav_rail.centered : false;
 }
