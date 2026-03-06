@@ -20,9 +20,35 @@ appbar.victrola-player-bar
 grid.victrola-group-grid
   background: transparent
 
-card.victrola-group-card
+card.victrola-artist-card
   min-height: 220
   min-width: 220
+
+card.victrola-album-card
+  min-height: 256
+  min-width: 256
+  border-radius: 12
+
+image.victrola-album-art
+  min-width: 335
+  min-height: 335
+  max-width: 335
+  max-height: 335
+  border-radius: 26
+
+image.victrola-cover-art
+  min-width: 335
+  min-height: 335
+  max-width: 335
+  max-height: 335
+  border-radius: 26
+
+label.victrola-album-title
+  font-size: 24
+  font-weight: 700
+
+label.victrola-album-meta
+  font-size: 14
 
 hstack.victrola-album-header
   background: transparent

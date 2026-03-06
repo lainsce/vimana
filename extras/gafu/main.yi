@@ -323,17 +323,17 @@ fun build_right_panel() (( cogito.VStack )) {
     .halign(1)
     tools.add(cogito.image("sf:laptopcomputer").set_class("gafu-tool"))
     tools.add(scheme_switch
-    .set_checked(false)
-    .set_class("gafu-tool-switch")
-    .set_disabled(len(selected_image_path) == 0)
-    .on_change((sw = cogito.Switch) => {
-        if sw.checked() {
-            gafu_app.set_ensor_variant(ENSOR_CONTENT)
-        } else {
-            gafu_app.set_ensor_variant(ENSOR_DEFAULT)
-        }
-        save_state()
-    }))
+        .set_checked(false)
+        .set_class("gafu-tool-switch")
+        .set_disabled(len(selected_image_path) == 0)
+        .on_change((sw = cogito.Switch) => {
+            if sw.checked() {
+                gafu_app.set_ensor_variant(ENSOR_CONTENT)
+            } else {
+                gafu_app.set_ensor_variant(ENSOR_DEFAULT)
+            }
+            save_state()
+        }))
     tools.add(cogito.image("sf:photo").set_class("gafu-tool"))
 
     let modes = cogito.buttongroup()

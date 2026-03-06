@@ -101,5 +101,7 @@ case COGITO_WINDOW: {
       cogito_draw_toasts_overlay(n);
       // Draw FAB Menus in a final overlay pass so they always float above all content.
       cogito_draw_fab_overlay(n);
+      // Draw appbar traffic lights last so window controls always overlay everything.
+      cogito_draw_appbar_traffic_overlay(n);
       break;
 }

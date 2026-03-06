@@ -716,6 +716,18 @@ static void sdl3_window_set_size(CogitoWindow *window, int w, int h) {
   win->height = h;
 }
 
+static void sdl3_window_set_min_size(CogitoWindow *window, int min_w,
+                                     int min_h) {
+  CogitoSDL3Window *win = (CogitoSDL3Window *)window;
+  if (!win || !win->sdl_window)
+    return;
+  if (min_w < 0)
+    min_w = 0;
+  if (min_h < 0)
+    min_h = 0;
+  SDL_SetWindowMinimumSize(win->sdl_window, min_w, min_h);
+}
+
 static void sdl3_window_get_size(CogitoWindow *window, int *w, int *h) {
   CogitoSDL3Window *win = (CogitoSDL3Window *)window;
   if (!win) {
@@ -2859,6 +2871,7 @@ static CogitoBackend sdl3_backend = {
     .window_create = sdl3_window_create,
     .window_destroy = sdl3_window_destroy,
     .window_set_size = sdl3_window_set_size,
+    .window_set_min_size = sdl3_window_set_min_size,
     .window_get_size = sdl3_window_get_size,
     .window_set_position = sdl3_window_set_position,
     .window_get_position = sdl3_window_get_position,

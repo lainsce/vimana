@@ -336,6 +336,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_window_set_side_sheet cogito_window_set_side_sheet_yis
 #define cogito_window_clear_side_sheet cogito_window_clear_side_sheet_yis
 #define cogito_window_set_resizable cogito_window_set_resizable_yis
+#define cogito_window_set_size_request cogito_window_set_size_request_yis
 #define cogito_zstack_new cogito_zstack_new_yis
 #define cogito_active_indicator_new cogito_active_indicator_new_yis
 #define cogito_switchbar_new cogito_switchbar_new_yis
@@ -698,6 +699,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_window_set_side_sheet
 #undef cogito_window_clear_side_sheet
 #undef cogito_window_set_resizable
+#undef cogito_window_set_size_request
 #undef cogito_window_relayout
 #undef cogito_zstack_new
 #undef cogito_active_indicator_new
@@ -1669,6 +1671,12 @@ void cogito_window_set_autosize(cogito_window *window, bool on) {
   cogito_window_set_autosize_yis(YV_OBJ(window), YV_BOOL(on));
 }
 
+void cogito_window_set_size_request(cogito_window *window, int w, int h) {
+  if (!window)
+    return;
+  cogito_window_set_size_request_yis(YV_OBJ(window), YV_INT(w), YV_INT(h));
+}
+
 void cogito_window_set_a11y_label(cogito_window *window, const char *label) {
   if (!window)
     return;
@@ -2043,6 +2051,32 @@ void cogito_card_set_variant(cogito_node *card, int variant) {
     n->shadow_level = (n->card.variant == 0) ? 1 : 0;
   }
 }
+
+void cogito_card_set_header_image(cogito_node *card, const char *url) {
+  if (!card)
+    return;
+  CogitoNode *n = (CogitoNode *)card;
+
+  if (n->kind != COGITO_CARD)
+    return;
+
+  if (n->card.header_image) {
+    yis_release_val(YV_OBJ(n->card.header_image));
+    n->card.header_image = NULL;
+  }
+
+  if (url && url[0]) {
+    cogito_node *img = cogito_image_new(url);
+    if (img) {
+      cogito_image_set_source(img, url);
+      img->parent = n;
+      n->card.header_image = (CogitoNode *)img;
+    }
+  }
+
+  cogito_window_relayout((cogito_window *)n);
+}
+
 cogito_node *cogito_avatar_new(const char *text_or_icon) {
   YisVal tv = text_or_icon ? cogito_val_from_cstr(text_or_icon) : YV_NULLV;
   YisVal v = cogito_avatar_new_yis(tv);

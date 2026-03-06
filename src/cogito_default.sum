@@ -286,6 +286,7 @@ about_window
 
 active_indicator
   color: @primary
+  padding: 0
 
 appbar
   background: @background
@@ -334,6 +335,7 @@ avatar
   color: @on-secondary-container
   min-width: 64
   min-height: 64
+  padding: 0
 
 badge
   background: @error
@@ -341,6 +343,7 @@ badge
   font-size: 11
   min-width: 10
   min-height: 10
+  padding: 0
 
 banner
   background: @secondary-container
@@ -376,6 +379,7 @@ bottom-sheet
 button
   background: @primary
   color: @on-primary
+  padding: 0
 
 button:hover
   background: alpha(@primary, 8%)
@@ -560,7 +564,7 @@ chip
   color: @on-surface
   border-radius: 100
   min-height: 32
-  padding: 0 16
+  padding: 0
   border: 1 solid @outline
 
 chip:hover
@@ -647,6 +651,7 @@ dialogslot
 divider
   background: @outline-variant
   min-height: 1
+  padding: 0
 
 dropdown
   background: @surface-container-high
@@ -668,6 +673,7 @@ empty_page
 
 fab
   elevation: 3
+  padding: 0
 
 fab:hover
   background: alpha(@primary, 8%)
@@ -698,6 +704,7 @@ hstack
 iconbtn
   background: alpha(@shadow, 5%)
   color: @on-surface
+  padding: 0
 
 iconbtn:hover
   background: alpha(@on-surface, 8%)
@@ -756,6 +763,7 @@ iconbtn.tonal:active
 
 image
   background: transparent
+  padding: 0
 
 label
   color: @on-surface
@@ -828,6 +836,7 @@ progress
   track-height: 4
   min-height: 12
   min-width: 120
+  padding: 0
 
 progress:selection
   background: @primary
@@ -935,6 +944,7 @@ slider
   track-height: 4
   min-height: 48
   min-width: 360
+  padding: 0
 
 slider:disabled
   color: alpha(@on-surface, 32%)
@@ -942,6 +952,7 @@ slider:disabled
 split_button
   background: @primary
   color: @on-primary
+  padding: 0
 
 split_button:hover
   background: alpha(@primary, 8%)
@@ -955,6 +966,7 @@ stepper
   border-radius: 8
   min-height: 32
   min-width: 96
+  padding: 0
 
 stepper:hover
   background: alpha(@surface-container-low, 8%)
@@ -970,6 +982,7 @@ switch
   color: @on-surface
   min-height: 28
   min-width: 64
+  padding: 0
 
 switch track
   background: @surface-container-highest
@@ -1045,6 +1058,7 @@ tabs
   color: @on-surface
   border-radius: 10
   min-height: 42
+  padding: 0
 
 tabs:selection
   background: @on-secondary
@@ -1128,6 +1142,7 @@ toast
   color: @on-secondary
   border-radius: 10
   min-height: 34
+  padding: 0
 
 toast:selection
   background: @primary
@@ -1328,6 +1343,7 @@ switch knob:checked
 ; FAB menu
 fab-menu
   elevation: 2
+  padding: 0
 
 ; Keyboard focus ring
 button:focus, button.text:focus, button.outlined:focus, iconbtn:focus, fab:focus, chip:focus, checkbox:focus, radio:focus, slider:focus, stepper:focus, buttongroup:focus, dropdown:focus, datepicker:focus, colorpicker:focus, nav-rail:focus, bottom-nav:focus

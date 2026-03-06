@@ -389,6 +389,11 @@ static void cogito_appbar_row_positions(
   int btn_pad_right = 9;
   cogito_appbar_button_metrics(&btn_size, &btn_gap, &btn_pad_top, &btn_pad_right);
   int appbar_type = cogito_appbar_type(n);
+  int nav_top_inset = n->y + n->padding_top + COGITO_NAV_RAIL_COLLAPSED_TOP_OFFSET;
+  bool has_actual_height = n->h > 0;
+  int node_top = n->y + n->padding_top;
+  int node_bottom = has_actual_height ? (n->y + n->h - n->padding_bottom) : 0;
+  if (has_actual_height && node_bottom < node_top) node_bottom = node_top;
 
   CogitoNode* title_widget = cogito_appbar_title_widget(n);
   const int has_title_widget = title_widget != NULL;
@@ -427,19 +432,53 @@ static void cogito_appbar_row_positions(
     if (icon_row_h == 0) icon_row_h = btn_size;
   }
 
-  const int y_buttons = n->y + btn_pad_top;
+  int y_buttons = n->y + btn_pad_top;
+  if (y_buttons < nav_top_inset) y_buttons = nav_top_inset;
+  if (has_actual_height) {
+    int max_buttons_y = node_bottom - btn_size;
+    if (max_buttons_y < node_top) max_buttons_y = node_top;
+    if (y_buttons > max_buttons_y) y_buttons = max_buttons_y;
+    if (y_buttons < node_top) y_buttons = node_top;
+  }
 
   if (appbar_type == COGITO_APPBAR_TYPE_SEARCH) {
-    int appbar_h = 104;
+    int top_row_h = 0;
+    if (has_title && title_h > top_row_h) top_row_h = title_h;
+    if (has_children && icon_row_h > top_row_h) top_row_h = icon_row_h;
+    int top_lane_y = nav_top_inset;
+    if (has_actual_height) {
+      int max_top_lane = node_bottom - top_row_h;
+      if (max_top_lane < node_top) max_top_lane = node_top;
+      if (top_lane_y > max_top_lane) top_lane_y = max_top_lane;
+      if (top_lane_y < node_top) top_lane_y = node_top;
+    }
     int y_buttons_center = y_buttons;
     int y_title = 0;
-    if (has_title_widget) {
-      y_title = n->y + appbar_h - title_h - 12;
+    if (has_title) {
+      y_title = top_lane_y;
     }
     int y_child = 0;
     if (has_children) {
-      y_child = n->y + appbar_h - icon_row_h - 12;
+      if (has_title) {
+        y_child = y_title + (title_h - icon_row_h) / 2;
+      } else {
+        y_child = top_lane_y;
+      }
+      if (y_child < top_lane_y) y_child = top_lane_y;
     }
+
+    int content_bottom = top_lane_y;
+    if (has_title) {
+      int b = y_title + title_h;
+      if (b > content_bottom) content_bottom = b;
+    }
+    if (has_children) {
+      int b = y_child + icon_row_h;
+      if (b > content_bottom) content_bottom = b;
+    }
+    int appbar_h = (content_bottom - n->y) + 12;
+    if (appbar_h < 104) appbar_h = 104;
+
     if (out_buttons_y) *out_buttons_y = y_buttons_center;
     if (out_title_y) *out_title_y = y_title;
     if (out_subtitle_y) *out_subtitle_y = 0;
@@ -499,22 +538,80 @@ static void cogito_appbar_row_positions(
   int h = (cursor_y - n->y) + bottom_pad;
   if (h < min_h) h = min_h;
 
-  if (appbar_type == COGITO_APPBAR_TYPE_SMALL) {
-    if (has_children) {
-      y_child = n->y + h - icon_row_h - 12;
+  // Align AppBar's top content lane to the same top inset used by NavRail FAB.
+  if (appbar_type != COGITO_APPBAR_TYPE_SEARCH) {
+    int sub_gap = (appbar_type == COGITO_APPBAR_TYPE_SMALL) ? 6 : subtitle_gap;
+    int top_row_h = 0;
+    if (has_title && title_h > top_row_h) top_row_h = title_h;
+    if (has_children && icon_row_h > top_row_h) top_row_h = icon_row_h;
+    int block_h = top_row_h;
+    if (has_subtitle) {
+      if (block_h > 0) block_h += sub_gap;
+      block_h += subtitle_h;
+    }
+
+    int top_lane_y = nav_top_inset;
+    if (has_actual_height) {
+      int max_top_lane = node_bottom - block_h;
+      if (max_top_lane < node_top) max_top_lane = node_top;
+      if (top_lane_y > max_top_lane) top_lane_y = max_top_lane;
+      if (top_lane_y < node_top) top_lane_y = node_top;
+    }
+    if (has_title) {
+      y_title = top_lane_y;
     }
     if (has_subtitle) {
-      y_subtitle = n->y + h - subtitle_h - 12;
+      y_subtitle = has_title ? (y_title + title_h + sub_gap) : top_lane_y;
+    }
+    if (has_children) {
       if (has_title) {
-        y_title = y_subtitle - title_h - 6;
-      }
-    } else if (has_title) {
-      if (has_children) {
-        y_title = y_child + (icon_row_h - title_h) / 2;
+        y_child = y_title + (title_h - icon_row_h) / 2;
       } else {
-        y_title = n->y + h - title_h - 12;
+        y_child = top_lane_y;
+      }
+      if (y_child < top_lane_y) y_child = top_lane_y;
+    }
+
+    if (appbar_type == COGITO_APPBAR_TYPE_SMALL && has_children) {
+      bool has_title_only = has_title && !has_subtitle;
+      bool has_subtitle_only = has_subtitle && !has_title;
+      if (has_title_only) {
+        int line_y = y_child + (icon_row_h - title_h) / 2;
+        if (has_actual_height) {
+          int max_line_y = node_bottom - title_h;
+          if (max_line_y < node_top) max_line_y = node_top;
+          if (line_y < node_top) line_y = node_top;
+          if (line_y > max_line_y) line_y = max_line_y;
+        }
+        y_title = line_y;
+      } else if (has_subtitle_only) {
+        int line_y = y_child + (icon_row_h - subtitle_h) / 2;
+        if (has_actual_height) {
+          int max_line_y = node_bottom - subtitle_h;
+          if (max_line_y < node_top) max_line_y = node_top;
+          if (line_y < node_top) line_y = node_top;
+          if (line_y > max_line_y) line_y = max_line_y;
+        }
+        y_subtitle = line_y;
       }
     }
+
+    int content_bottom = top_lane_y;
+    if (has_title) {
+      int b = y_title + title_h;
+      if (b > content_bottom) content_bottom = b;
+    }
+    if (has_subtitle) {
+      int b = y_subtitle + subtitle_h;
+      if (b > content_bottom) content_bottom = b;
+    }
+    if (has_children) {
+      int b = y_child + icon_row_h;
+      if (b > content_bottom) content_bottom = b;
+    }
+    int aligned_h = (content_bottom - n->y) + bottom_pad;
+    if (aligned_h < min_h) aligned_h = min_h;
+    if (h < aligned_h) h = aligned_h;
   }
 
   if (out_buttons_y)  *out_buttons_y  = y_buttons;

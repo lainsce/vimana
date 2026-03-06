@@ -75,6 +75,7 @@ typedef struct CogitoBackend {
                                  bool initially_hidden);
   void (*window_destroy)(CogitoWindow *window);
   void (*window_set_size)(CogitoWindow *window, int w, int h);
+  void (*window_set_min_size)(CogitoWindow *window, int min_w, int min_h);
   void (*window_get_size)(CogitoWindow *window, int *w, int *h);
   void (*window_set_position)(CogitoWindow *window, int x, int y);
   void (*window_get_position)(CogitoWindow *window, int *x, int *y);

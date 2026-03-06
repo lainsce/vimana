@@ -76,6 +76,7 @@
 #undef cogito_iconbtn_add_menu
 #undef cogito_iconbtn_add_menu_section
 #undef cogito_iconbtn_new
+#undef cogito_iconbtn_set_icon
 #undef cogito_image_new
 #undef cogito_image_set_icon
 #undef cogito_webview_new
@@ -291,6 +292,7 @@
 #undef cogito_side_sheet_set_mode
 #undef cogito_window_clear_side_sheet
 #undef cogito_window_set_resizable
+#undef cogito_window_set_size_request
 #undef cogito_fab_menu_set_size
 #undef cogito_fab_menu_set_color
 #undef cogito_card_set_subtitle
@@ -700,6 +702,13 @@ static void __cogito_window_set_autosize(YisVal winv, YisVal onv) {
   cogito_window_set_autosize(win, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
+static void __cogito_window_set_size_request(YisVal winv, YisVal wv, YisVal hv) {
+  cogito_window* win = cogito_window_from_val(winv);
+  int w = (int)yis_as_int(wv);
+  int h = (int)yis_as_int(hv);
+  cogito_window_set_size_request(win, w, h);
+}
+
 static void __cogito_window_set_a11y_label(YisVal winv, YisVal labelv) {
   cogito_window* win = cogito_window_from_val(winv);
   YisStr* tmp = NULL;
@@ -921,20 +930,13 @@ static void __cogito_card_set_variant(YisVal cardv, YisVal variantv) {
 
 static void __cogito_card_set_header_image(YisVal cardv, YisVal urlv) {
   cogito_node* n = cogito_node_from_val(cardv);
-  // Note: Card header_image requires internal API - using placeholder approach
-  // The public API doesn't expose card header image setter, so we skip this
-  // or could add the image as a child node instead
+  YisStr* tmp = NULL;
+  const char* url = NULL;
   if (urlv.tag != EVT_NULL) {
-    YisStr* tmp = NULL;
-    const char* url = cogito_required_cstr(urlv, &tmp);
-    // Create an image node and add it to the card as header
-    cogito_node* img = cogito_image_new(url);
-    cogito_image_set_source(img, url);
-    // Note: Adding as child - actual header image positioning would need proper API
-    cogito_node_add(n, img);
-    if (tmp) yis_release_val(YV_STR(tmp));
+    url = cogito_required_cstr(urlv, &tmp);
   }
-  cogito_window_relayout(cogito_node_window(n));
+  cogito_card_set_header_image(n, url);
+  if (tmp) yis_release_val(YV_STR(tmp));
 }
 
 static void __cogito_card_add_action(YisVal cardv, YisVal btnv) {
@@ -2421,6 +2423,15 @@ static void __cogito_menu_set_toggled(YisVal nodev, YisVal toggledv) {
 }
 
 // Icon button setters/getters
+static void __cogito_iconbtn_set_icon(YisVal btnv, YisVal iconv) {
+  cogito_node* btn = cogito_node_from_val(btnv);
+  YisStr* tmp = NULL;
+  const char* icon = cogito_optional_cstr(iconv, &tmp);
+  if (icon) cogito_node_set_text(btn, icon);
+  if (tmp) yis_release_val(YV_STR(tmp));
+  cogito_window_relayout(cogito_node_window(btn));
+}
+
 static void __cogito_iconbtn_set_shape(YisVal btnv, YisVal shapev) {
   cogito_node* btn = cogito_node_from_val(btnv);
   cogito_iconbtn_set_shape(btn, (int)yis_as_int(shapev));
@@ -3527,6 +3538,7 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_window_new __cogito_window
 #define cogito_window_set_resizable __cogito_window_set_resizable
 #define cogito_window_set_autosize __cogito_window_set_autosize
+#define cogito_window_set_size_request __cogito_window_set_size_request
 #define cogito_window_set_a11y_label __cogito_window_set_a11y_label
 #define cogito_window_set_builder __cogito_window_set_builder
 #define cogito_button_new __cogito_button
@@ -3703,6 +3715,7 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_toast_set_action __cogito_toast_set_action
 #define cogito_window_set_autosize __cogito_window_set_autosize
 #define cogito_window_set_resizable __cogito_window_set_resizable
+#define cogito_window_set_size_request __cogito_window_set_size_request
 #define cogito_window_set_dialog __cogito_window_set_dialog
 #define cogito_window_clear_dialog __cogito_window_clear_dialog
 #define cogito_window_set_side_sheet __cogito_window_set_side_sheet
@@ -3746,6 +3759,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_button_add_menu_section __cogito_button_add_menu_section
 #define cogito_iconbtn_add_menu __cogito_iconbtn_add_menu
 #define cogito_iconbtn_add_menu_section __cogito_iconbtn_add_menu_section
+#define cogito_iconbtn_set_icon __cogito_iconbtn_set_icon
 #define cogito_iconbtn_set_shape __cogito_iconbtn_set_shape
 #define cogito_iconbtn_get_shape __cogito_iconbtn_get_shape
 #define cogito_iconbtn_set_color_style __cogito_iconbtn_set_color_style

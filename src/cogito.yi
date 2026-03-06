@@ -163,6 +163,7 @@ fun __cogito_iconbtn_set_checked(btn = IconButton, checked = bool) (( -- )) { }
 fun __cogito_iconbtn_set_color_style(btn = IconButton, style = num) (( -- )) { }
 fun __cogito_iconbtn_set_shape(btn = IconButton, shape = num) (( -- )) { }
 fun __cogito_iconbtn_set_size(btn = IconButton, size = num) (( -- )) { }
+fun __cogito_iconbtn_set_icon(btn = IconButton, icon = string) (( -- )) { }
 fun __cogito_iconbtn_set_toggle(btn = IconButton, on = bool) (( -- )) { }
 fun __cogito_iconbtn_set_width(btn = IconButton, width = num) (( -- )) { }
 fun __cogito_iconbtn_set_menu_divider(btn = IconButton, divider = bool) (( -- )) { }
@@ -402,6 +403,7 @@ fun __cogito_window_set_autosize(win = Window, on = bool) (( -- )) { }
 fun __cogito_window_set_builder(win = Window, builder = any) (( -- )) { }
 fun __cogito_window_set_dialog(win = Window, dialog = any) (( -- )) { }
 fun __cogito_window_set_resizable(win = Window, on = bool) (( -- )) { }
+fun __cogito_window_set_size_request(win = Window, w = num, h = num) (( -- )) { }
 fun __cogito_window_set_side_sheet(win = Window, side_sheet = SideSheet) (( -- )) { }
 fun __cogito_window(title = string, w = num, h = num) (( Window )) { }
 fun __cogito_zstack() (( ZStack )) { }
@@ -472,6 +474,10 @@ pub class Window {
         __cogito_window_set_resizable(this, on)
         return this
     }
+    pub fun set_size_request(this, w = num, h = num) (( Window )) {
+        __cogito_window_set_size_request(this, w, h)
+        return this
+    }
     pub fun set_a11y_label(this, label = string) (( Window )) {
         __cogito_node_set_a11y_label(this, label)
         return this
@@ -521,9 +527,8 @@ pub class Window {
 
 pub class AppBar {
     pub fun add_leading_button(this, icon = string, handler = any) (( Button )) {
-        let b = __cogito_appbar_add_button(this, icon, handler)
-        __cogito_node_set_class(b, "appbar-leading iconic")
-        return b
+        __cogito_appbar_add_button(this, icon, handler).set_class("leading")
+        return this
     }
     pub fun set_type(this, appbar_type = num) (( AppBar )) {
         if appbar_type == 0 {
@@ -550,7 +555,8 @@ pub class AppBar {
         return this.set_type(3)
     }
     pub fun add_trailing_button(this, icon = string, handler = any) (( Button )) {
-        return __cogito_appbar_add_button(this, icon, handler)
+        __cogito_appbar_add_button(this, icon, handler).set_class("trailing")
+        return this
     }
     pub fun pair_with_scroller(this, scroller = Scroller) (( AppBar )) {
         __cogito_appbar_pair_scroller(this, scroller)
@@ -1822,6 +1828,10 @@ pub class IconButton {
     }
     pub fun toggle(this) (( bool )) {
         return __cogito_iconbtn_get_toggle(this)
+    }
+    pub fun set_icon(this, icon = string) (( IconButton )) {
+        __cogito_iconbtn_set_icon(this, icon)
+        return this
     }
     pub fun set_checked(this, checked = bool) (( IconButton )) {
         __cogito_iconbtn_set_checked(this, checked)

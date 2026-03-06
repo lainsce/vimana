@@ -182,6 +182,7 @@ cogito_window *cogito_window_new(const char *title, int w, int h);
 void cogito_window_free(cogito_window *window);
 void cogito_window_set_resizable(cogito_window *window, bool on);
 void cogito_window_set_autosize(cogito_window *window, bool on);
+void cogito_window_set_size_request(cogito_window *window, int w, int h);
 void cogito_window_set_a11y_label(cogito_window *window, const char *label);
 void cogito_window_set_builder(cogito_window *window, cogito_node_fn builder,
                                void *user);
@@ -238,6 +239,7 @@ cogito_node *cogito_progress_new(double value);
 cogito_node *cogito_divider_new(const char *orientation, bool is_inset);
 cogito_node *cogito_card_new(const char *title);
 void cogito_card_set_variant(cogito_node *card, int variant);
+void cogito_card_set_header_image(cogito_node *card, const char *url);
 cogito_node *cogito_avatar_new(const char *text_or_icon);
 cogito_node *cogito_badge_new(int count);
 cogito_node *cogito_banner_new(const char *text);

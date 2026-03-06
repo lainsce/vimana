@@ -38,3 +38,55 @@ static void cogito_draw_fab_overlay(CogitoNode* n) {
     cogito_draw_fab_overlay(n->children[i]);
   }
 }
+
+static void cogito_draw_appbar_traffic_overlay(CogitoNode* n) {
+  if (!n) return;
+
+  if (n->kind == COGITO_APPBAR) {
+    if (n->appbar.btn_close_x >= 0 || n->appbar.btn_min_x >= 0 || n->appbar.btn_max_x >= 0) {
+      bool hover = false;
+      bool active = false;
+      cogito_node_hover_state(n, &hover, &active);
+      CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+      CogitoColor text = s.has_text ? s.text : n->text_color;
+      CogitoColor border = s.has_border ? s.border : n->border_color;
+
+      int btn = n->appbar.btn_size;
+      if (btn < 1) btn = 12;
+      int by = n->appbar.btn_y;
+
+      int mx = 0, my = 0;
+      bool down = false;
+      (void)cogito_pointer_query(&mx, &my, &down, NULL);
+
+      CogitoTrafficLightsState lights = {0};
+      cogito_traffic_lights_compute(
+          n->appbar.btn_close_x, n->appbar.btn_min_x, n->appbar.btn_max_x,
+          by, btn, mx, my, down, &lights);
+
+      CogitoColor fallback_btn = s.has_selection ? s.selection : n->selection_color;
+      fallback_btn = cogito_bin_scope_remap_color(fallback_btn);
+      CogitoColor fallback_border = border;
+      if (!s.has_border) fallback_border = text;
+      if (fallback_border.a > 80) fallback_border.a = 80;
+
+      CogitoBinOverlayScopeState bin_scope_state = {0};
+      cogito_bin_scope_begin_for_node(n, &bin_scope_state);
+      cogito_draw_traffic_lights_styled(
+          &s, fallback_btn, fallback_border,
+          n->appbar.btn_close_x, n->appbar.btn_min_x, n->appbar.btn_max_x,
+          by, btn, &lights, false);
+      cogito_bin_scope_end_for_node(&bin_scope_state);
+    }
+    return;
+  }
+
+  for (size_t i = 0; i < n->len; i++) {
+    cogito_draw_appbar_traffic_overlay(n->children[i]);
+  }
+
+  if ((n->kind == COGITO_WINDOW || n->kind == COGITO_DIALOG_SLOT) &&
+      n->dialog && n->dialog_open) {
+    cogito_draw_appbar_traffic_overlay(n->dialog);
+  }
+}

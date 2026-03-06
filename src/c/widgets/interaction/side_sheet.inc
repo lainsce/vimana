@@ -13,22 +13,29 @@ static void cogito_side_sheet_close_rect(CogitoNode* n, int* out_x, int* out_y, 
 
 static int cogito_side_sheet_min_width(CogitoNode* n) {
   if (!n) return 200;
+  int handle_w = 28;
   int pad_l = n->padding_left;
   int pad_r = n->padding_right;
-  int gap = n->gap > 0 ? n->gap : 8;
   int title_w = 0;
   if (n->text && n->text->data && n->text->data[0]) {
     int ts = cogito_node_font_size(n);
-    title_w = cogito_text_width_size_node(n, n->text->data, ts) + gap;
+    title_w = cogito_text_width_size_node(n, n->text->data, ts);
   }
+  // Keep title clear of the close button area (24 right pad + 24 button + 8 gap).
+  int close_lane_w = 56;
+  int header_w = pad_l + title_w + close_lane_w;
+
+  // SideSheet content is vertically stacked, so min width is max row width, not sum.
   int content_w = 0;
   for (size_t i = 0; i < n->len; i++) {
     int cw = 0, ch = 0;
     cogito_intrinsic_size(n->children[i], &cw, &ch);
-    content_w += cw + n->children[i]->margin_left + n->children[i]->margin_right;
-    if (i > 0) content_w += gap;
+    int row_w = cw + n->children[i]->margin_left + n->children[i]->margin_right;
+    if (row_w > content_w) content_w = row_w;
   }
-  int w = title_w + pad_l + content_w + pad_r;
+
+  int body_w = handle_w + pad_l + content_w + pad_r;
+  int w = body_w > header_w ? body_w : header_w;
   if (w < 200) w = 200;
   return w;
 }
@@ -42,7 +49,8 @@ static int cogito_side_sheet_settle_width(CogitoNode* n, int host_x, int host_w)
   if (host_w <= 0) return min_w;
   int left_inset = cogito_side_sheet_left_inset(host_x);
   int max_w = host_w - left_inset;
-  if (max_w < min_w) max_w = min_w;
+  if (max_w < 1) max_w = 1;
+  if (max_w < min_w) return max_w;
   int settle_w = (int)lround((double)host_w * (double)COGITO_SIDE_SHEET_DEFAULT_RATIO);
   if (settle_w < min_w) settle_w = min_w;
   if (settle_w > max_w) settle_w = max_w;
@@ -54,7 +62,8 @@ static int cogito_side_sheet_target_width(CogitoNode* n, int host_x, int host_w)
   if (host_w <= 0) return min_w;
   int left_inset = cogito_side_sheet_left_inset(host_x);
   int max_w = host_w - left_inset;
-  if (max_w < min_w) max_w = min_w;
+  if (max_w < 1) max_w = 1;
+  if (max_w < min_w) return max_w;
   int target_w = n->side_sheet.desired_w > 0
     ? n->side_sheet.desired_w
     : cogito_side_sheet_settle_width(n, host_x, host_w);
@@ -68,7 +77,8 @@ static int cogito_side_sheet_snap_width(CogitoNode* n, int host_x, int host_w, i
   int settle_w = cogito_side_sheet_settle_width(n, host_x, host_w);
   int left_inset = cogito_side_sheet_left_inset(host_x);
   int max_w = host_w - left_inset;
-  if (max_w < min_w) max_w = min_w;
+  if (max_w < 1) max_w = 1;
+  if (max_w < min_w) return max_w;
 
   int d_min = abs(from_w - min_w);
   int d_settle = abs(from_w - settle_w);

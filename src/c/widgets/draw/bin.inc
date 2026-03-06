@@ -133,8 +133,15 @@ case COGITO_BIN: {
 				cogito_bin_scope_to_scheme = to_scheme;
 				palette_pushed = cogito_theme_palette_scope_push_scheme(&local_scheme);
 			}
+			bool can_clip = cogito_backend && cogito_backend->begin_scissor && cogito_backend->end_scissor;
+			if (can_clip) {
+				cogito_backend->begin_scissor(n->x, n->y, n->w, n->h);
+			}
 			for (size_t i = 0; i < n->len; i++) {
 				cogito_draw_node(n->children[i]);
+			}
+			if (can_clip) {
+				cogito_backend->end_scissor();
 			}
 			if (palette_pushed) cogito_theme_palette_scope_pop();
 			cogito_bin_scope_active = had_bin_scope;

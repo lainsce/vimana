@@ -27,6 +27,8 @@ static CogitoNode* cogito_window_new_obj(YisStr* title, int w, int h) {
   win->w = w;
   win->h = h;
   win->auto_size = true;
+  win->resize_min_w = 0;
+  win->resize_min_h = 0;
   return win;
 }
 static YisVal cogito_window_new(YisVal title, YisVal w, YisVal h) {
@@ -54,6 +56,31 @@ static void cogito_window_set_resizable(YisVal winv, YisVal onv) {
   (void)win;
   cogito_window_relayout(win);
 }
+
+static void cogito_window_set_size_request(YisVal winv, YisVal wv, YisVal hv) {
+  if (winv.tag != EVT_OBJ) yis_trap("cogito.window_set_size_request expects window");
+  CogitoNode* win = (CogitoNode*)winv.as.p;
+  int min_w = (int)yis_as_int(wv);
+  int min_h = (int)yis_as_int(hv);
+  if (min_w < 0) min_w = 0;
+  if (min_h < 0) min_h = 0;
+
+  win->resize_min_w = min_w;
+  win->resize_min_h = min_h;
+
+  if (win->w < min_w) win->w = min_w;
+  if (win->h < min_h) win->h = min_h;
+
+  if (cogito_backend_ready && cogito_active_backend_window) {
+    if (cogito_backend->window_set_min_size) {
+      cogito_backend->window_set_min_size(cogito_active_backend_window, min_w, min_h);
+    }
+    cogito_backend->window_set_size(cogito_active_backend_window, win->w, win->h);
+  }
+
+  cogito_window_relayout(win);
+}
+
 static void cogito_window_set_builder(YisVal winv, YisVal builder) {
   if (winv.tag != EVT_OBJ) yis_trap("cogito.window_set_builder expects window");
   if (builder.tag != EVT_FN) yis_trap("cogito.window_set_builder expects function");

@@ -599,6 +599,18 @@ static void cogito_run(YisVal appv, YisVal winv) {
   if (!window) {
     yis_trap("Failed to create window");
   }
+
+  if (cogito_backend->window_set_min_size) {
+    int min_w = win->resize_min_w < 0 ? 0 : win->resize_min_w;
+    int min_h = win->resize_min_h < 0 ? 0 : win->resize_min_h;
+    cogito_backend->window_set_min_size(window, min_w, min_h);
+    if (win->w < min_w || win->h < min_h) {
+      if (win->w < min_w) win->w = min_w;
+      if (win->h < min_h) win->h = min_h;
+      cogito_backend->window_set_size(window, win->w, win->h);
+    }
+  }
+
   cogito_active_backend_window = window;
 
   cogito_backend_ready = true;
@@ -783,8 +795,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
   }
   startup_t_after_layout = cogito_startup_now();
   CogitoWindow* inspector_window = NULL;
-  const int inspector_w = 520;
-  const int inspector_h = 680;
+  const int inspector_w = 800;
+  const int inspector_h = 500;
   const int inspector_appbar_h = 52;
   const int inspector_drag_hit_pad = 8;
   const int inspector_corner_r = 18;
@@ -1359,8 +1371,12 @@ static void cogito_run(YisVal appv, YisVal winv) {
       cogito_inspector_view_w = 0;
       cogito_inspector_view_h = 0;
     }
+    bool inspector_text_editing = cogito_inspector_is_text_editing();
+    if (cogito_inspector_open && cogito_inspector_handle_text_input(win)) {
+      inspector_text_editing = cogito_inspector_is_text_editing();
+    }
     // Tab key navigation
-    if (cogito_backend->is_key_pressed(SDL_SCANCODE_TAB) && !cogito_menu.open && !cogito_fab_menu_open_node) {
+    if (cogito_backend->is_key_pressed(SDL_SCANCODE_TAB) && !cogito_menu.open && !cogito_fab_menu_open_node && !inspector_text_editing) {
       CogitoNode* root = cogito_focus_scope_root(win);
       bool reverse = cogito_backend->is_key_down(SDL_SCANCODE_LSHIFT) || cogito_backend->is_key_down(SDL_SCANCODE_RSHIFT);
       bool found = false;
@@ -1377,7 +1393,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
       cogito_focused = next;
       cogito_focus_visible = (next != NULL);
     }
-    if (cogito_focused && !cogito_focus_is_text_editing(cogito_focused) && !cogito_focused->disabled) {
+    if (cogito_focused && !cogito_focus_is_text_editing(cogito_focused) && !cogito_focused->disabled && !inspector_text_editing) {
       bool relayout = false;
       int dir = 0;
       if (cogito_backend->is_key_pressed(SDL_SCANCODE_LEFT) ||
@@ -1414,7 +1430,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
       cogito_focused->editable;
     bool focused_color_hex_edit = cogito_focused &&
       cogito_focused->kind == COGITO_COLORPICKER && cogito_focused->colorpicker.hex_editing;
-    if (cogito_focused && !cogito_focused->disabled && (focused_text_editable || focused_color_hex_edit)) {
+    if (cogito_focused && !cogito_focused->disabled && (focused_text_editable || focused_color_hex_edit) && !inspector_text_editing) {
       bool changed = false;
       bool caret_changed = false;
       int ch = cogito_backend->get_char_pressed();
@@ -2181,7 +2197,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
           click = false;
         } else {
           CogitoNode* picked = cogito_inspector_pick_node_recursive(win, mx, my);
-          if (picked) cogito_inspector_selected = picked;
+          if (picked) {
+            (void)cogito_inspector_commit_string_edit(win);
+            cogito_inspector_selected = picked;
+          }
         }
       }
     }
@@ -3042,7 +3061,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
         &inspector_appbar_style, inspector_fallback_btn, inspector_fallback_border,
         inspector_btn_close_x, inspector_btn_min_x, inspector_btn_max_x,
         inspector_btn_y, inspector_traffic_btn,
-        &inspector_lights
+        &inspector_lights,
+        true
       );
       int title_size = 20;
       int title_y = (appbar_h - cogito_text_height_size(title_size)) / 2;

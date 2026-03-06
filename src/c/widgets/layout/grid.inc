@@ -222,7 +222,35 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
     int ch = cell_h_span - c->margin_top - c->margin_bottom;
     if (cw < 0) cw = 0;
     if (ch < 0) ch = 0;
+
+    // Keep children inside their computed cell even when their min-size constraints are larger.
+    bool prev_max_w_set = c->max_w_set;
+    bool prev_max_h_set = c->max_h_set;
+    int prev_max_w = c->max_w;
+    int prev_max_h = c->max_h;
+    bool forced_max_w = false;
+    bool forced_max_h = false;
+    if (cw > 0 && (!c->max_w_set || c->max_w <= 0 || c->max_w > cw)) {
+      c->max_w_set = true;
+      c->max_w = cw;
+      forced_max_w = true;
+    }
+    if (ch > 0 && (!c->max_h_set || c->max_h <= 0 || c->max_h > ch)) {
+      c->max_h_set = true;
+      c->max_h = ch;
+      forced_max_h = true;
+    }
+
     cogito_layout_node(c, cell_x + c->margin_left, cell_y + c->margin_top, cw, ch);
+
+    if (forced_max_w) {
+      c->max_w_set = prev_max_w_set;
+      c->max_w = prev_max_w;
+    }
+    if (forced_max_h) {
+      c->max_h_set = prev_max_h_set;
+      c->max_h = prev_max_h;
+    }
   }
 
   free(col_min_w);

@@ -60,7 +60,7 @@
     },
     "returnSpec": {
       "name": "meta.return-spec.yi",
-      "begin": "(\\(\\()",
+      "begin": "(?<!\\()(\\(\\()(?=\\s*(?:--|[A-Za-z_\\[]))",
       "beginCaptures": {
         "0": {
           "name": "punctuation.definition.return.bracket.yi"
@@ -280,7 +280,7 @@
         },
         {
           "name": "keyword.operator.other.yi",
-          "match": "(?:\\?|\\||\\bis\\b)"
+          "match": "(?:\\?|\\|)"
         }
       ]
     },

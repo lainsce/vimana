@@ -3465,6 +3465,41 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_window_set_size_request")) {
+                        GenExpr win, w, h;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &win, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &w, err)) { gen_expr_free(&win); return false;
+                        }
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            2
+                        ], &h, err)) { gen_expr_free(&win); gen_expr_free(&w); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_window_set_size_request(%s, %s, %s);", win.tmp, w.tmp, h.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", win.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", w.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", h.tmp);
+                        gen_expr_release_except(cg, &win, win.tmp);
+                        gen_expr_release_except(cg, &w, w.tmp);
+                        gen_expr_release_except(cg, &h, h.tmp);
+                        gen_expr_free(&win);
+                        gen_expr_free(&w);
+                        gen_expr_free(&h);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_window_set_dialog")) {
                         GenExpr win, dialog;
                         if (!gen_expr(cg, path, e->as.call.args[

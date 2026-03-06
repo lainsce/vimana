@@ -58,9 +58,9 @@ fun is_txt_path(path = string) (( bool )) {
     let c2 = path[n - 2]
     let c3 = path[n - 1]
     -- .txt or .TXT (retro)
-        return (c1 == "t" || c1 == "T") &&
-            (c2 == "x" || c2 == "X") &&
-            (c3 == "t" || c3 == "T")
+    return (c1 == "t" || c1 == "T") &&
+    (c2 == "x" || c2 == "X") &&
+    (c3 == "t" || c3 == "T")
 }
 
 fun basename(path = string) (( string )) {

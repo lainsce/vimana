@@ -58,8 +58,14 @@ case COGITO_CARD: {
     if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
     cogito_window_relayout(cogito_node_window(n));
   }
+
   // Background
   cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
+
+  bool can_clip = cogito_backend && cogito_backend->begin_scissor && cogito_backend->end_scissor;
+  if (can_clip) {
+    cogito_backend->begin_scissor(n->x, n->y, n->w, n->h);
+  }
 
   // Header image (drawn inside card bg; shares card radius for top-corner clipping)
   if (n->card.header_image) {
@@ -69,27 +75,15 @@ case COGITO_CARD: {
     cogito_draw_node(img);
   }
 
-  // State layer for interactive cards (on_click set): hover 8%, press 12%
-  if (n->on_click) {
-    CogitoColor state = cogito_node_state_layer_seed(n);
-    if (active)     state.a = 31;
-    else if (hover) state.a = 20;
-    else            state.a = 0;
-    if (state.a > 0) {
-      cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, state, radius);
-    }
-  }
-  // Border
-  if (border_w > 0) {
-    cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, border_color, radius, border_w);
-  }
-
   int img_h = n->card.header_image ? 160 : 0;
   CogitoStyle ts = cogito_theme_resolve_node(n);
-  int pad_l = ts.has_padding_left ? ts.padding_left : 16;
-  int pad_t = ts.has_padding_top  ? ts.padding_top  : 16;
+  bool has_header_image = n->card.header_image != NULL;
+  int header_content_gap = has_header_image ? 24 : 0;
+  int default_pad = has_header_image ? 0 : 16;
+  int pad_l = ts.has_padding_left ? ts.padding_left : default_pad;
+  int pad_t = ts.has_padding_top  ? ts.padding_top  : default_pad;
   int cx    = n->x + pad_l;
-  int cy    = n->y + img_h + pad_t;
+  int cy    = n->y + img_h + (has_header_image ? header_content_gap : pad_t);
 
   // Title
   if (n->text && n->text->data && n->text->data[0]) {
@@ -117,6 +111,26 @@ case COGITO_CARD: {
   // Overflow button (drawn on top of everything)
   if (n->card.overflow_btn) {
     cogito_draw_node(n->card.overflow_btn);
+  }
+
+  // State layer for interactive cards (on_click set): hover 8%, press 12%
+  if (n->on_click) {
+    CogitoColor state = cogito_node_state_layer_seed(n);
+    if (active)     state.a = 31;
+    else if (hover) state.a = 20;
+    else            state.a = 0;
+    if (state.a > 0) {
+      cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, state, radius);
+    }
+  }
+
+  if (can_clip) {
+    cogito_backend->end_scissor();
+  }
+
+  // Border is drawn last so content never paints over it.
+  if (border_w > 0) {
+    cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, border_color, radius, border_w);
   }
   break;
 }

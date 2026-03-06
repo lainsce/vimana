@@ -1,7 +1,10 @@
 case COGITO_CARD: {
   CogitoStyle s = cogito_theme_resolve_node(n);
-  int pad_l = s.has_padding_left ? s.padding_left : 16;
-  int pad_t = s.has_padding_top ? s.padding_top : 16;
+  bool has_header_image = n->card.header_image != NULL;
+  int header_content_gap = has_header_image ? 24 : 0;
+  int default_pad = has_header_image ? 0 : 16;
+  int pad_l = s.has_padding_left ? s.padding_left : default_pad;
+  int pad_t = s.has_padding_top ? s.padding_top : default_pad;
   int pad_r = s.has_padding_right ? s.padding_right : pad_l;
   int pad_b = s.has_padding_bottom ? s.padding_bottom : pad_t;
   int gap = n->gap;
@@ -87,7 +90,7 @@ case COGITO_CARD: {
   }
 
   w = pad_l + pad_r + max_cw;
-  h = img_h + pad_t + title_h + subtitle_h + content_h + action_h + pad_b;
+  h = img_h + (has_header_image ? header_content_gap : pad_t) + title_h + subtitle_h + content_h + action_h + pad_b;
   if (w < 200) w = 200;
   if (h < 60) h = 60;
   break;

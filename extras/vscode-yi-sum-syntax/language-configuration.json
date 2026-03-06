@@ -49,8 +49,18 @@
     }
   },
   "indentationRules": {
-    "increaseIndentPattern": "^.*\\{[^}\"']*$",
-    "decreaseIndentPattern": "^\\s*[}\\]].*$"
+    "increaseIndentPattern": "^.*[\\{\\[][^}\\]\"']*$",
+    "decreaseIndentPattern": "^\\s*[}\\])].*$"
   },
+  "onEnterRules": [
+    {
+      "beforeText": "^\\s*\\.[A-Za-z_][A-Za-z0-9_]*\\((?:[^()]|\\([^()]*\\))*\\)\\s*$",
+      "action": { "indent": "none" }
+    },
+    {
+      "beforeText": "^\\s*\\)\\s*$",
+      "action": { "indent": "none" }
+    }
+  ],
   "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\^\\&\\*\\(\\)\\=\\+\\[\\{\\]\\}\\|\\;\\:\\\"\\'\\,\\.\\<\\>\\/\\?\\s]+)"
 }

@@ -50,12 +50,9 @@ case COGITO_ICONBTN:
         }
 
 
-        // Ensure icon buttons have a minimum constraint to prevent them from being shrunk
-        if (!n->min_h_set || !n->min_w_set) {
-          n->min_h = 32;
-          n->min_h_set = true;
-          n->min_w = 32;
-          n->min_w_set = true;
-        }
+        // Activate the tier-computed min sizes as hard constraints.
+        // (The tier code above always sets n->min_h and n->min_w but not the _set flags.)
+        if (!n->min_h_set) n->min_h_set = true;
+        if (!n->min_w_set) n->min_w_set = true;
       }
       break;

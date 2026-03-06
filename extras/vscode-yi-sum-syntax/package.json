@@ -2,8 +2,12 @@
   "name": "yis-syntax",
   "displayName": "Yis + SUM Language Support",
   "description": "Syntax highlighting and basic editor support for Yis and SUM.",
-  "version": "0.0.8",
+  "version": "0.1.8",
   "publisher": "local",
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:yis"
+  ],
   "engines": {
     "vscode": "^1.70.0"
   },

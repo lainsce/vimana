@@ -652,6 +652,8 @@ typedef struct CogitoNode {
   bool vexpand_set;
   int gap;
   bool auto_size;
+  int resize_min_w;
+  int resize_min_h;
   int fixed_x, fixed_y;
   int grid_col, grid_row;
   bool grid_pos_set;
