@@ -87,6 +87,8 @@ case COGITO_SLIDER: {
       if (t0 > 1.0) t0 = 1.0;
       if (t1 < 0.0) t1 = 0.0;
       if (t1 > 1.0) t1 = 1.0;
+      // RTL: invert track so value 0 is on right, max on left
+      if (cogito_is_rtl()) { t0 = 1.0 - t0; t1 = 1.0 - t1; }
 
       int k0 = x0 + (int)lround((double)(x1 - x0) * t0);
       int k1 = x0 + (int)lround((double)(x1 - x0) * t1);
@@ -241,20 +243,52 @@ case COGITO_SLIDER: {
                                     active_rl, active_rr, active_rr, active_rl);
         }
       } else {
-        if (inactive_left_end > rx0) {
+        bool wavy = (n->slider.shape == COGITO_SLIDER_SHAPE_WAVY);
+
+        double wave_thickness = (double)rail_h;
+        double wave_amp = 0.0;
+        double wave_period = 40.0;
+        if (wavy) {
+          if (slider_size == COGITO_SLIDER_SIZE_XL) {
+            wave_thickness = 24.0; wave_amp = 3.0; wave_period = 120.0;
+          } else if (slider_size == COGITO_SLIDER_SIZE_L) {
+            wave_thickness = 16.0; wave_amp = 3.0; wave_period = 90.0;
+          } else if (slider_size == COGITO_SLIDER_SIZE_M) {
+            wave_thickness =  8.0; wave_amp = 3.0; wave_period = 80.0;
+          } else if (slider_size == COGITO_SLIDER_SIZE_S) {
+            wave_thickness =  4.0; wave_amp = 3.0; wave_period = 50.0;
+          } else {
+            wave_thickness =  1.6; wave_amp = 3.0; wave_period = 40.0;
+          }
+        }
+
+        int inactive_h  = wavy ? (int)lround(wave_thickness) : rail_h;
+        if (inactive_h < 1) inactive_h = 1;
+        int inactive_rl = wavy ? inactive_h / 2 : track_r;
+
+        // In wavy NORMAL mode the left inactive segment covers the same region
+        // as the active wave, so skip it. In RANGE/CENTERED modes the left
+        // inactive is outside the active region and should always render.
+        bool hide_inactive_left = wavy && (n->slider.mode == COGITO_SLIDER_MODE_NORMAL);
+        if (!hide_inactive_left && inactive_left_end > rx0) {
           int seg_w = inactive_left_end - rx0;
-          cogito_draw_rect_radii_aa(rx0, cy - rail_h / 2, seg_w, rail_h, inactive_track,
-                                    inactive_left_rl, inactive_left_rr, inactive_left_rr, inactive_left_rl);
+          cogito_draw_rect_radii_aa(rx0, cy - inactive_h / 2, seg_w, inactive_h, inactive_track,
+                                    inactive_rl, inactive_rl, inactive_rl, inactive_rl);
         }
         if (inactive_right_start < rx1) {
           int seg_w = rx1 - inactive_right_start;
-          cogito_draw_rect_radii_aa(inactive_right_start, cy - rail_h / 2, seg_w, rail_h, inactive_track,
-                                    inactive_right_rl, inactive_right_rr, inactive_right_rr, inactive_right_rl);
+          cogito_draw_rect_radii_aa(inactive_right_start, cy - inactive_h / 2, seg_w, inactive_h, inactive_track,
+                                    inactive_rl, inactive_rl, inactive_rl, inactive_rl);
         }
         if (draw_active) {
           int seg_w = active_end - active_start;
-          cogito_draw_rect_radii_aa(active_start, cy - rail_h / 2, seg_w, rail_h, active_track,
-                                    active_rl, active_rr, active_rr, active_rl);
+          if (wavy && seg_w >= 2) {
+            cogito_draw_wavy_line_aa(active_start, active_end, cy,
+                                     wave_thickness, wave_amp, wave_period, 0.0, active_track);
+          } else {
+            cogito_draw_rect_radii_aa(active_start, cy - rail_h / 2, seg_w, rail_h, active_track,
+                                      active_rl, active_rr, active_rr, active_rl);
+          }
         }
       }
 

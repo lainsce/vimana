@@ -47,7 +47,7 @@ static void cogito_chip_close_rect(CogitoNode* n, int* out_x, int* out_y, int* o
     return;
   }
   int icon_size = 12;
-  int icon_x = n->x + n->w - 16 - icon_size;  // Right side, matches draw code
+  int icon_x = cogito_is_rtl() ? (n->x + 16) : (n->x + n->w - 16 - icon_size);
   int icon_y = n->y + (n->h - icon_size) / 2;
   if (out_x) *out_x = icon_x;
   if (out_y) *out_y = icon_y;

@@ -26,7 +26,9 @@ static bool cogito_scroller_vert_scrollbar_rects(CogitoNode* n, int sb_width,
   if (inner_h <= 0) return false;
   int max_y = n->scroller.content_h - inner_h;
   if (max_y <= 0) return false;
-  *track_x = n->x + n->w - sb_width - COGITO_SCROLLBAR_MARGIN;
+  *track_x = cogito_is_rtl()
+    ? (n->x + COGITO_SCROLLBAR_MARGIN)
+    : (n->x + n->w - sb_width - COGITO_SCROLLBAR_MARGIN);
   *track_y = inner_y + COGITO_SCROLLBAR_MARGIN;
   *track_w = sb_width;
   *track_h = inner_h - 2 * COGITO_SCROLLBAR_MARGIN;
@@ -63,7 +65,12 @@ static bool cogito_scroller_horz_scrollbar_rects(CogitoNode* n, int sb_height,
   *thumb_y = *track_y;
   *thumb_h = sb_height;
   *thumb_w = th_w;
-  *thumb_x = *track_x + (int)((long)(*track_w - th_w) * (long)n->scroller.scroll_x / (long)max_x);
+  if (cogito_is_rtl()) {
+    // RTL: scroll_x=0 → thumb at right end; scroll_x=max → thumb at left end
+    *thumb_x = *track_x + *track_w - th_w - (int)((long)(*track_w - th_w) * (long)n->scroller.scroll_x / (long)max_x);
+  } else {
+    *thumb_x = *track_x + (int)((long)(*track_w - th_w) * (long)n->scroller.scroll_x / (long)max_x);
+  }
   if (*thumb_x < *track_x) *thumb_x = *track_x;
   if (*thumb_x + *thumb_w > *track_x + *track_w) *thumb_x = *track_x + *track_w - *thumb_w;
   return true;

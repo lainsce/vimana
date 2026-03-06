@@ -16,6 +16,7 @@ case COGITO_TABS: {
 
       int slot_count = (int)n->tab_len;
       if (slot_count < 1) slot_count = 1;
+      bool tabs_rtl = cogito_is_rtl();
       const int icon_size  = 24;
       const int icon_gap   = 4;
       // Cogito: active indicator — 3dp height, Full (1.5dp = 2dp) radius
@@ -27,8 +28,9 @@ case COGITO_TABS: {
       int indicator_target_w = 0;
 
       for (size_t i = 0; i < n->tab_len; i++) {
-        int sx0 = n->x + (n->w * (int)i) / slot_count;
-        int sx1 = n->x + (n->w * ((int)i + 1)) / slot_count;
+        int vi = tabs_rtl ? (int)(n->tab_len - 1 - i) : (int)i;
+        int sx0 = n->x + (n->w * vi) / slot_count;
+        int sx1 = n->x + (n->w * (vi + 1)) / slot_count;
         int sw  = sx1 - sx0;
         if (sw < 1) continue;
 
@@ -96,8 +98,9 @@ case COGITO_TABS: {
         // Get positions for from_tab and to_tab
         int from_x = 0, from_w = 0, to_x = 0, to_w = 0;
         for (size_t i = 0; i < n->tab_len; i++) {
-          int sx0 = n->x + (n->w * (int)i) / slot_count;
-          int sx1 = n->x + (n->w * ((int)i + 1)) / slot_count;
+          int vi = tabs_rtl ? (int)(n->tab_len - 1 - i) : (int)i;
+          int sx0 = n->x + (n->w * vi) / slot_count;
+          int sx1 = n->x + (n->w * (vi + 1)) / slot_count;
           int sw = sx1 - sx0;
           if (sw < 1) continue;
 

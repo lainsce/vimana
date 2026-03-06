@@ -64,6 +64,7 @@ case COGITO_APPBAR: {
       if (action_row_h < btn_size) action_row_h = btn_size;
 
       int appbar_type = cogito_appbar_type(n);
+      bool rtl = cogito_is_rtl();
       int title_tx = 0;
       int title_ty = 0;
       int title_tw = 0;
@@ -72,48 +73,112 @@ case COGITO_APPBAR: {
         cogito_intrinsic_size(title_widget, &title_tw, &title_th);
         if (title_tw < 1) title_tw = 1;
         if (title_th < 1) title_th = btn_size;
-        title_tx = x + 16;
-        if (lead_count > 0) {
-          title_tx += lead_total_w + 12;
+        if (rtl) {
+          title_tx = x + w - 16;
+          if (lead_count > 0) title_tx -= lead_total_w + 12;
+          title_tx -= title_tw;
+        } else {
+          title_tx = x + 16;
+          if (lead_count > 0) title_tx += lead_total_w + 12;
         }
         title_ty = title_y ? title_y : (y + btn_pad_top + btn_size + 18);
-        int avail_right = x + w - 16;
-        if (trail_count > 0) {
-          int actions_left = x + w - 12 - trail_total_w;
-          if (actions_left < avail_right) avail_right = actions_left - 12;
-        }
-        int max_w = avail_right - title_tx;
-        if (max_w < 1) max_w = 1;
-        bool title_expand = title_widget->hexpand;
-        if (!title_expand && (title_widget->kind == COGITO_HSTACK || title_widget->kind == COGITO_VSTACK)) {
-          for (size_t i = 0; i < title_widget->len; i++) {
-            if (title_widget->children[i] && title_widget->children[i]->hexpand) {
-              title_expand = true;
-              break;
+        int avail_left, avail_right;
+        if (rtl) {
+          avail_left = x + 16;
+          if (trail_count > 0) {
+            int actions_right = x + 12 + trail_total_w;
+            if (actions_right + 12 > avail_left) avail_left = actions_right + 12;
+          }
+          int max_w = title_tx + title_tw - avail_left;
+          if (max_w < 1) max_w = 1;
+          bool title_expand = title_widget->hexpand;
+          if (!title_expand && (title_widget->kind == COGITO_HSTACK || title_widget->kind == COGITO_VSTACK)) {
+            for (size_t i = 0; i < title_widget->len; i++) {
+              if (title_widget->children[i] && title_widget->children[i]->hexpand) { title_expand = true; break; }
             }
           }
+          if (appbar_type == COGITO_APPBAR_TYPE_SEARCH || title_expand) { title_tw = max_w; title_tx = avail_left; }
+          else if (title_tw > max_w) { title_tw = max_w; title_tx = title_tx + title_tw - max_w; }
+        } else {
+          avail_right = x + w - 16;
+          if (trail_count > 0) {
+            int actions_left = x + w - 12 - trail_total_w;
+            if (actions_left < avail_right) avail_right = actions_left - 12;
+          }
+          int max_w = avail_right - title_tx;
+          if (max_w < 1) max_w = 1;
+          bool title_expand = title_widget->hexpand;
+          if (!title_expand && (title_widget->kind == COGITO_HSTACK || title_widget->kind == COGITO_VSTACK)) {
+            for (size_t i = 0; i < title_widget->len; i++) {
+              if (title_widget->children[i] && title_widget->children[i]->hexpand) { title_expand = true; break; }
+            }
+          }
+          if (appbar_type == COGITO_APPBAR_TYPE_SEARCH || title_expand) title_tw = max_w;
+          else if (title_tw > max_w) title_tw = max_w;
         }
-        if (appbar_type == COGITO_APPBAR_TYPE_SEARCH || title_expand) title_tw = max_w;
-        else if (title_tw > max_w) title_tw = max_w;
       }
 
       int icon_row_h = action_row_h;
       if (icon_row_h < btn_size) icon_row_h = btn_size;
-      int lx = x + 16;
+      int lx;
+      if (rtl) {
+        lx = x + w - 16;
+      } else {
+        lx = x + 16;
+      }
       if (n->appbar.btn_close_x >= 0 || n->appbar.btn_min_x >= 0 || n->appbar.btn_max_x >= 0) {
+        // Traffic lights are always on the left (macOS convention), even in RTL
         int rightmost_light = n->appbar.btn_close_x;
         if (n->appbar.btn_min_x > rightmost_light) rightmost_light = n->appbar.btn_min_x;
         if (n->appbar.btn_max_x > rightmost_light) rightmost_light = n->appbar.btn_max_x;
         if (rightmost_light >= 0) {
           int min_left = rightmost_light + btn_size + 12;
-          if (min_left > lx) lx = min_left;
+          if (!rtl && min_left > lx) lx = min_left;
+          // In RTL, traffic lights don't affect the leading button start (which is on the right)
         }
       }
-      int trail_left_limit = lx;
-      if (title_widget) {
-        int title_right = title_tx + title_tw + 12;
-        if (title_right > trail_left_limit) trail_left_limit = title_right;
+      int trail_left_limit;
+      if (rtl) {
+        trail_left_limit = lx; // trailing starts from the right in RTL (will go leftward)
+        if (title_widget) {
+          int title_left = title_tx - 12;
+          if (title_left < trail_left_limit) trail_left_limit = title_left;
+        }
+      } else {
+        trail_left_limit = lx;
+        if (title_widget) {
+          int title_right = title_tx + title_tw + 12;
+          if (title_right > trail_left_limit) trail_left_limit = title_right;
+        }
       }
+      if (rtl) {
+        // RTL: trailing buttons on the LEFT, leading buttons on the RIGHT
+        int cx = x + 12;
+        for (size_t i = 0; i < n->len; i++) {
+          CogitoNode* c = n->children[i];
+          if (title_widget && c == title_widget) continue;
+          if (cogito_appbar_is_leading_child(c)) continue;
+          int cw = 0; int ch = 0;
+          cogito_intrinsic_size(c, &cw, &ch);
+          if (cw < 1) cw = 1; if (ch < 1) ch = btn_size;
+          int cy_btn = child_y + (icon_row_h - ch) / 2;
+          cogito_layout_node(c, cx, cy_btn, cw, ch);
+          cx += cw + btn_gap;
+        }
+        // Leading buttons on the RIGHT
+        for (size_t i = 0; i < n->len; i++) {
+          CogitoNode* c = n->children[i];
+          if (title_widget && c == title_widget) continue;
+          if (!cogito_appbar_is_leading_child(c)) continue;
+          int cw = 0; int ch = 0;
+          cogito_intrinsic_size(c, &cw, &ch);
+          if (cw < 1) cw = 1; if (ch < 1) ch = btn_size;
+          lx -= cw;
+          int cy_btn = child_y + (icon_row_h - ch) / 2;
+          cogito_layout_node(c, lx, cy_btn, cw, ch);
+          lx -= btn_gap;
+        }
+      } else {
       int cx = x + w - 12;
       for (size_t i = 0; i < n->len; i++) {
         CogitoNode* c = n->children[i];
@@ -160,7 +225,8 @@ case COGITO_APPBAR: {
         lx += cw + btn_gap;
         if (lx > lead_right_limit) lx = lead_right_limit;
       }
-      n->appbar.title_x = title_tx > 0 ? title_tx : lx;
+      } // end LTR else
+      n->appbar.title_x = title_tx > 0 ? title_tx : (rtl ? (lx + btn_gap) : lx);
       if (title_widget) {
         cogito_layout_node(title_widget, title_tx, title_ty, title_tw, title_th);
       }

@@ -230,6 +230,7 @@ typedef struct CogitoTextCacheKey {
   uint16_t text_len;
   uint16_t raster_size_q64;
   TTF_Font *font;
+  uint8_t rtl; // 0=LTR, 1=RTL — part of cache key
 } CogitoTextCacheKey;
 
 typedef struct CogitoTextCacheEntry {
@@ -253,7 +254,8 @@ static size_t g_text_cache_bytes = 0;
 
 static uint32_t cogito_text_cache_hash(TTF_Font *font, const char *text,
                                        size_t text_len,
-                                       uint16_t raster_size_q64) {
+                                       uint16_t raster_size_q64,
+                                       uint8_t rtl) {
   uint32_t h = 5381;
   for (size_t i = 0; i < text_len; i++) {
     h = ((h << 5) + h) ^ (uint8_t)text[i];
@@ -261,12 +263,14 @@ static uint32_t cogito_text_cache_hash(TTF_Font *font, const char *text,
   h ^= (uint32_t)(uintptr_t)font;
   h ^= (uint32_t)text_len;
   h ^= ((uint32_t)raster_size_q64 << 1);
+  h ^= ((uint32_t)rtl << 17);
   return h;
 }
 
 static bool cogito_text_cache_key_eq(const CogitoTextCacheKey *a,
                                      const CogitoTextCacheKey *b) {
   return a->font == b->font && a->text_len == b->text_len &&
+         a->rtl == b->rtl &&
          memcmp(a->text, b->text, a->text_len) == 0;
 }
 
@@ -313,7 +317,7 @@ static void cogito_text_cache_trim(size_t max_bytes,
 
 static CogitoTextCacheEntry *
 cogito_text_cache_lookup(TTF_Font *font, const char *text, size_t text_len,
-                         uint16_t raster_size_q64) {
+                         uint16_t raster_size_q64, uint8_t rtl) {
   CogitoTextCacheKey key = {0};
   if (text_len >= (size_t)COGITO_TEXT_CACHE_MAX_LEN) {
     text_len = (size_t)COGITO_TEXT_CACHE_MAX_LEN - 1;
@@ -325,9 +329,10 @@ cogito_text_cache_lookup(TTF_Font *font, const char *text, size_t text_len,
   key.text_len = (uint16_t)text_len;
   key.raster_size_q64 = raster_size_q64;
   key.font = font;
+  key.rtl = rtl;
 
   uint32_t hash =
-      cogito_text_cache_hash(font, key.text, text_len, raster_size_q64);
+      cogito_text_cache_hash(font, key.text, text_len, raster_size_q64, rtl);
   int idx = (int)(hash & (COGITO_TEXT_CACHE_SIZE - 1));
 
   // Linear probing
@@ -2316,6 +2321,10 @@ static int sdl3_text_measure_width(CogitoFont *font, const char *text,
   if (!f || !f->ttf_font || !text || !text[0])
     return 0;
 
+  // Set font direction for correct HarfBuzz measurement
+  TTF_SetFontDirection(f->ttf_font,
+                       cogito_is_rtl() ? TTF_DIRECTION_RTL : TTF_DIRECTION_LTR);
+
   int w, h;
   if (!TTF_GetStringSize(f->ttf_font, text, 0, &w, &h))
     return 0;
@@ -2356,6 +2365,11 @@ static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
     return;
   sdl3_rect_batch_flush();
 
+  // Use global direction for shaping
+  uint8_t rtl = cogito_is_rtl() ? 1 : 0;
+  TTF_SetFontDirection(f->ttf_font,
+                       rtl ? TTF_DIRECTION_RTL : TTF_DIRECTION_LTR);
+
   float logical_pt = (float)(size > 0 ? size : f->size);
   if (logical_pt <= 0.0f)
     logical_pt = (float)(f->size > 0 ? f->size : 12);
@@ -2372,9 +2386,9 @@ static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
   CogitoTextCacheEntry *entry = NULL;
 
   if (cacheable) {
-    // Look up in cache
+    // Look up in cache (direction-aware)
     entry =
-        cogito_text_cache_lookup(f->ttf_font, text, text_len, raster_size_q64);
+        cogito_text_cache_lookup(f->ttf_font, text, text_len, raster_size_q64, rtl);
     if (entry->valid && entry->texture) {
       // Cache hit - use existing texture
       SDL_FRect dst = {(float)x,
@@ -2453,6 +2467,37 @@ static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
   }
 
   SDL_DestroySurface(surface);
+}
+
+// Set font direction for HarfBuzz shaping (used by bidi pipeline per-run)
+static void sdl3_font_set_direction(CogitoFont *font, bool rtl) {
+  CogitoSDL3Font *f = (CogitoSDL3Font *)font;
+  if (!f || !f->ttf_font) return;
+  TTF_SetFontDirection(f->ttf_font,
+                       rtl ? TTF_DIRECTION_RTL : TTF_DIRECTION_LTR);
+}
+
+// Draw text with explicit direction (bypasses global cogito_is_rtl())
+static void sdl3_draw_text_dir(CogitoFont *font, const char *text, int x, int y,
+                                int size, CogitoColor color, bool rtl) {
+  CogitoSDL3Font *f = (CogitoSDL3Font *)font;
+  if (!f || !f->ttf_font) return;
+  TTF_SetFontDirection(f->ttf_font,
+                       rtl ? TTF_DIRECTION_RTL : TTF_DIRECTION_LTR);
+  sdl3_draw_text(font, text, x, y, size, color);
+}
+
+// Measure text width with explicit direction
+static int sdl3_text_measure_width_dir(CogitoFont *font, const char *text,
+                                        int size, bool rtl) {
+  CogitoSDL3Font *f = (CogitoSDL3Font *)font;
+  if (!f || !f->ttf_font || !text || !text[0]) return 0;
+  TTF_SetFontDirection(f->ttf_font,
+                       rtl ? TTF_DIRECTION_RTL : TTF_DIRECTION_LTR);
+  int w, h;
+  if (!TTF_GetStringSize(f->ttf_font, text, 0, &w, &h)) return 0;
+  (void)h; (void)size;
+  return w;
 }
 
 // ============================================================================
@@ -2920,9 +2965,12 @@ static CogitoBackend sdl3_backend = {
     .font_get_metrics = sdl3_font_get_metrics,
     .font_get_internal_face = sdl3_font_get_internal_face,
     .font_set_variation = sdl3_font_set_variation,
+    .font_set_direction = sdl3_font_set_direction,
     .text_measure_width = sdl3_text_measure_width,
+    .text_measure_width_dir = sdl3_text_measure_width_dir,
     .text_measure_height = sdl3_text_measure_height,
     .draw_text = sdl3_draw_text,
+    .draw_text_dir = sdl3_draw_text_dir,
     .texture_create = sdl3_texture_create,
     .texture_destroy = sdl3_texture_destroy,
     .texture_get_size = sdl3_texture_get_size,

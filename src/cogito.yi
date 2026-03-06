@@ -19,6 +19,8 @@ fun __cogito_app_get_icon(app = App) (( string )) { }
 fun __cogito_app_copy_to_clipboard(app = App, text = string) (( bool )) { }
 fun __cogito_app_set_accent_color(app = App, color = string, follow_system = bool) (( -- )) { }
 fun __cogito_app_set_dark_mode(app = App, dark = bool, follow_system = bool) (( -- )) { }
+fun __cogito_set_direction(dir = num) (( -- )) { }
+fun __cogito_get_direction() (( num )) { }
 fun __cogito_app_set_app_name(app = App, name = string) (( -- )) { }
 fun __cogito_app_set_appid(app = App, id = string) (( -- )) { }
 fun __cogito_app_set_ensor_variant(app = App, variant = num) (( -- )) { }
@@ -314,6 +316,8 @@ fun __cogito_slider_on_change(sl = Slider, handler = any) (( -- )) { }
 fun __cogito_slider_range(min = num, max = num, start = num, end = num) (( Slider )) { }
 fun __cogito_slider_set_centered(sl = Slider, on = bool) (( -- )) { }
 fun __cogito_slider_set_end_dots(sl = Slider, on = bool) (( -- )) { }
+fun __cogito_slider_set_wavy(sl = Slider, on = bool) (( -- )) { }
+fun __cogito_slider_get_wavy(sl = Slider) (( bool )) { }
 fun __cogito_slider_set_step(sl = Slider, step = num) (( -- )) { }
 fun __cogito_slider_set_step_dots(sl = Slider, on = bool) (( -- )) { }
 fun __cogito_slider_set_icon(sl = Slider, icon = any) (( -- )) { }
@@ -2527,6 +2531,13 @@ pub class Slider {
     pub fun end_dots(this) (( bool )) {
         return __cogito_slider_get_end_dots(this)
     }
+    pub fun set_wavy(this, on = bool) (( Slider )) {
+        __cogito_slider_set_wavy(this, on)
+        return this
+    }
+    pub fun wavy(this) (( bool )) {
+        return __cogito_slider_get_wavy(this)
+    }
     pub fun set_step(this, step = num) (( Slider )) {
         __cogito_slider_set_step(this, step)
         return this
@@ -3822,6 +3833,15 @@ pub fun load_sum(path = string) (( -- )) {
 }
 pub fun set_script_dir(dir = string) (( -- )) {
     __cogito_set_script_dir(dir)
+}
+pub fun set_direction(dir = num) (( -- )) {
+    __cogito_set_direction(dir)
+}
+pub fun get_direction() (( num )) {
+    return __cogito_get_direction()
+}
+pub fun is_rtl() (( bool )) {
+    return __cogito_get_direction() == 1
 }
 pub fun open_url(url = string) (( bool )) {
     return __cogito_open_url(url)

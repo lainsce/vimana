@@ -41,28 +41,45 @@ case COGITO_TREEVIEW: {
     if (selected) {
       cogito_draw_rect(inner_x + 1, row_y, inner_w - 2, row_h, sel_bg, 0);
     }
-    int indent_x = inner_x + pad + depth * indent_step;
+    bool tree_rtl = cogito_is_rtl();
+    int indent_x = tree_rtl
+        ? (inner_x + inner_w - pad - depth * indent_step)
+        : (inner_x + pad + depth * indent_step);
     CogitoColor row_fg = selected ? cogito_on_color(sel_bg) : fg;
     if (row_node->len > 0) {
-      int cx = indent_x + 4;
+      int cx = tree_rtl ? (indent_x - 4) : (indent_x + 4);
       int cy = row_y + row_h / 2;
       if (row_node->tree_collapsed) {
-        cogito_draw_line(cx - 1, cy - 3, cx + 2, cy, row_fg);
-        cogito_draw_line(cx - 1, cy + 3, cx + 2, cy, row_fg);
+        if (tree_rtl) {
+          // RTL chevron points left (collapsed)
+          cogito_draw_line(cx + 1, cy - 3, cx - 2, cy, row_fg);
+          cogito_draw_line(cx + 1, cy + 3, cx - 2, cy, row_fg);
+        } else {
+          cogito_draw_line(cx - 1, cy - 3, cx + 2, cy, row_fg);
+          cogito_draw_line(cx - 1, cy + 3, cx + 2, cy, row_fg);
+        }
       } else {
         cogito_draw_line(cx - 3, cy - 1, cx, cy + 2, row_fg);
         cogito_draw_line(cx + 3, cy - 1, cx, cy + 2, row_fg);
       }
     }
-    int label_x = indent_x + (row_node->len > 0 ? (chevron_w + chevron_gap) : 0);
-    if (label_x > inner_x + inner_w - 40) label_x = inner_x + inner_w - 40;
+    int label_x = tree_rtl
+        ? (indent_x - (row_node->len > 0 ? (chevron_w + chevron_gap) : 0))
+        : (indent_x + (row_node->len > 0 ? (chevron_w + chevron_gap) : 0));
+    if (!tree_rtl && label_x > inner_x + inner_w - 40) label_x = inner_x + inner_w - 40;
+    if (tree_rtl && label_x < inner_x + 40) label_x = inner_x + 40;
     char label[160];
     cogito_treeview_node_label(row_node, label, sizeof(label));
     int font_size = cogito_node_font_size(row_node);
     int text_h = cogito_text_height_size(font_size);
     int text_y = row_y + (row_h - text_h) / 2;
     if (text_y < row_y) text_y = row_y;
-    cogito_draw_text_size_node(row_node, label_x, text_y, label, row_fg, font_size, false, false);
+    int text_draw_x = label_x;
+    if (tree_rtl) {
+      int tw = cogito_text_width_size_node(row_node, label, font_size);
+      text_draw_x = label_x - tw;
+    }
+    cogito_draw_text_size_node(row_node, text_draw_x, text_y, label, row_fg, font_size, false, false);
   }
   if (clip) cogito_backend->end_scissor();
   free(rows);

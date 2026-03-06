@@ -22,15 +22,16 @@ case COGITO_POPOVER: {
         }
         
         // Default: position popover below anchor
-        int pop_x = anchor->x;
+        // RTL: prefer right-edge alignment; LTR: prefer left-edge alignment
+        int pop_x = cogito_is_rtl() ? (anchor->x + anchor->w - n->w) : anchor->x;
         int pop_y = anchor->y + anchor->h + anchor_gap;
 
-        // Horizontal placement:
-        // 1) Prefer anchor-left alignment.
-        // 2) If overflowing right, align popover right edge to anchor right edge.
-        // 3) Clamp to inset bounds.
+        // Horizontal placement: clamp to visible bounds
         if (pop_x + n->w > max_x) {
           pop_x = anchor->x + anchor->w - n->w;
+        }
+        if (pop_x < min_x) {
+          pop_x = anchor->x;
         }
         if (pop_x < min_x) pop_x = min_x;
         if (pop_x + n->w > max_x) pop_x = max_x - n->w;

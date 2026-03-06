@@ -65,7 +65,8 @@ case COGITO_BOTTOM_NAV: {
   for (size_t i = 0; i < n->bottom_nav.len; i++) {
     bool selected = (int)i == n->bottom_nav.selected;
     bool hover = false;
-    int item_x = n->x + (int)i * item_w;
+    int visual_i = cogito_is_rtl() ? (int)(n->bottom_nav.len - 1 - i) : (int)i;
+    int item_x = n->x + visual_i * item_w;
 
     if (have_mouse && cogito_hit_rect(mx, my, item_x, n->y, item_w, n->h)) {
       hover = true;

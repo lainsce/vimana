@@ -134,6 +134,11 @@ const char *cogito_app_get_icon(cogito_app *app);
 bool cogito_open_url(const char *url);
 bool cogito_app_copy_to_clipboard(cogito_app *app, const char *text);
 
+// Text direction (RTL support)
+void cogito_set_direction(int dir); // 0 = LTR, 1 = RTL
+int cogito_get_direction(void);
+bool cogito_is_rtl(void);
+
 // GStreamer playback API (single global player instance)
 bool cogito_gst_init(void);
 void cogito_gst_shutdown(void);
@@ -414,6 +419,8 @@ void cogito_slider_set_centered(cogito_node *slider, bool on);
 bool cogito_slider_get_centered(cogito_node *slider);
 void cogito_slider_set_end_dots(cogito_node *slider, bool on);
 bool cogito_slider_get_end_dots(cogito_node *slider);
+void cogito_slider_set_wavy(cogito_node *slider, bool on);
+bool cogito_slider_get_wavy(cogito_node *slider);
 void cogito_slider_set_step(cogito_node *slider, double step);
 double cogito_slider_get_step(cogito_node *slider);
 void cogito_slider_set_step_dots(cogito_node *slider, bool on);

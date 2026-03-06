@@ -45,7 +45,12 @@ case COGITO_DIALOG: {
       // Draw title in header row.
       if (has_title) {
         int ty = n->y + pad_t + (header_h - title_h) / 2;
-        cogito_draw_text_size_node(n, n->x + pad_l, ty, n->text->data, title_color, title_size, false, false);
+        if (cogito_is_rtl()) {
+          int tw = cogito_text_width_size_node(n, n->text->data, title_size);
+          cogito_draw_text_size_node(n, n->x + n->w - COGITO_DIALOG_HEADER_INSET - tw, ty, n->text->data, title_color, title_size, false, false);
+        } else {
+          cogito_draw_text_size_node(n, n->x + pad_l, ty, n->text->data, title_color, title_size, false, false);
+        }
   }
   // Draw close button in top-right.
       if (has_title && cw > 0 && ch > 0) {

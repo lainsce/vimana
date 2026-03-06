@@ -111,7 +111,7 @@ case COGITO_TOOLBAR: {
         break;
       }
 
-      // For floating toolbars with FAB: FAB goes to the right with 16px gap
+      // For floating toolbars with FAB: FAB goes to the trailing side
       if (floating && fab_child) {
         int fab_w = 0;
         int fab_h = 0;
@@ -119,9 +119,9 @@ case COGITO_TOOLBAR: {
         if (fab_w < 1) fab_w = 56;
         if (fab_h < 1) fab_h = 56;
 
-        // Layout FAB to the right of toolbar with 8px gap
+        // Layout FAB: right of toolbar in LTR, left of toolbar in RTL
         int fab_gap = 8;
-        int fab_x = n->x + n->w + fab_gap;
+        int fab_x = cogito_is_rtl() ? (n->x - fab_gap - fab_w) : (n->x + n->w + fab_gap);
         int fab_y = n->y + (n->h - fab_h) / 2;
         cogito_layout_node(fab_child, fab_x, fab_y, fab_w, fab_h);
 
@@ -336,6 +336,7 @@ case COGITO_TOOLBAR: {
       }
 
       // Non-floating toolbar: FAB occupies the 6th slot
+      bool toolbar_rtl = cogito_is_rtl();
       int total_gap = (slots > 1) ? gap * (slots - 1) : 0;
       if (total_gap > content_w) total_gap = content_w;
       int slot_w = (content_w - total_gap) / slots;
@@ -355,8 +356,8 @@ case COGITO_TOOLBAR: {
         
         // For non-floating with FAB, FAB goes to 6th slot (index 5)
         if (fab_child && !floating && is_fab) {
-          // Place FAB in the 6th slot
-          int fab_slot = 5; // 6th slot (0-indexed)
+          // Place FAB in the 6th slot (mirrored in RTL)
+          int fab_slot = toolbar_rtl ? 0 : 5;
           int fab_w = 0;
           int fab_h = 0;
           cogito_intrinsic_size(c, &fab_w, &fab_h);
@@ -406,7 +407,8 @@ case COGITO_TOOLBAR: {
         if (cw > slot_w) cw = slot_w;
         if (ch > content_h) ch = content_h;
 
-        int current_slot_x = slot_x0 + slot_idx * (slot_w + gap);
+        int visual_slot = toolbar_rtl ? (slots - 1 - slot_idx) : slot_idx;
+        int current_slot_x = slot_x0 + visual_slot * (slot_w + gap);
         int child_x = current_slot_x + (slot_w - cw) / 2;
         int child_y = content_y + (content_h - ch) / 2;
         bool override_btn_min = (c->kind == COGITO_BUTTON && !c->hexpand);

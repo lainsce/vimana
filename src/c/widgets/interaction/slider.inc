@@ -66,6 +66,7 @@ static CogitoNode* cogito_slider_new_obj(double min, double max, double value) {
   sl->slider.show_end_dots = true;
   sl->slider.active_handle = 0;
   sl->slider.size = COGITO_SLIDER_SIZE_XS;
+  sl->slider.shape = COGITO_SLIDER_SHAPE_FLAT;
   return sl;
 }
 
@@ -81,6 +82,7 @@ static CogitoNode* cogito_slider_range_new_obj(double min, double max, double st
   sl->slider.show_end_dots = true;
   sl->slider.active_handle = 1;
   sl->slider.size = COGITO_SLIDER_SIZE_XS;
+  sl->slider.shape = COGITO_SLIDER_SHAPE_FLAT;
   cogito_slider_normalize_range(sl);
   return sl;
 }
@@ -279,4 +281,17 @@ static void cogito_slider_on_change(YisVal nodev, YisVal handler) {
   if (n->on_change) yis_release_val(YV_FN(n->on_change));
   n->on_change = (YisFn*)handler.as.p;
   yis_retain_val(YV_FN(n->on_change));
+}
+
+static void cogito_slider_set_wavy(YisVal nodev, YisVal onv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_wavy expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  n->slider.shape = yis_as_bool(onv) ? COGITO_SLIDER_SHAPE_WAVY : COGITO_SLIDER_SHAPE_FLAT;
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static YisVal cogito_slider_get_wavy(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_wavy expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  return YV_BOOL(n->slider.shape == COGITO_SLIDER_SHAPE_WAVY);
 }

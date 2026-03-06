@@ -36,8 +36,12 @@ case COGITO_DROPDOWN: {
       if (icon_size < 8) icon_size = 8;
       int icon_box = icon_size + 4;
       int text_w = n->w - pad * 2 - icon_box;
-      cogito_draw_text_ellipsis(n, n->x + pad, ty, text_w, label, text, size, cogito_node_bold(n), false, 0);
-      int ix = n->x + n->w - pad - icon_box + (icon_box - icon_size) / 2;
+      bool dd_rtl = cogito_is_rtl();
+      int label_x = dd_rtl ? (n->x + pad + icon_box) : (n->x + pad);
+      cogito_draw_text_ellipsis(n, label_x, ty, text_w, label, text, size, cogito_node_bold(n), false, dd_rtl ? 2 : 0);
+      int ix = dd_rtl
+          ? (n->x + pad + (icon_box - icon_size) / 2)
+          : (n->x + n->w - pad - icon_box + (icon_box - icon_size) / 2);
       int iy = n->y + (n->h - icon_size) / 2;
       CogitoColor icon_color = s.has_icon_color ? s.icon_color : text;
       cogito_draw_icon_fallback(n, "chevron.down", ix, iy, icon_size, icon_color);

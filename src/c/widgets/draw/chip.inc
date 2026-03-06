@@ -73,10 +73,13 @@ case COGITO_CHIP: {
 
   if (check_scale > 0.01f) {
     // Draws a proper checkmark: start→mid→end, proportional to chip h
-    int icon_zone  = n->h; // square icon slot at left edge
-    int check_size = (int)(((n->h * 7) / 16) * check_scale); // ~7dp for 16dp tall chip (scales)
+    int icon_zone  = n->h; // square icon slot at leading edge
+    int check_size = (int)(((n->h * 7) / 16) * check_scale);
     if (check_size < 2) check_size = 2;
-    int check_cx = n->x + icon_zone / 2;
+    // RTL: check on right side; LTR: check on left side
+    int check_cx = cogito_is_rtl()
+        ? (n->x + n->w - icon_zone / 2)
+        : (n->x + icon_zone / 2);
     int check_cy = n->y + n->h / 2;
     int sx  = check_cx - check_size / 2;
     int sy  = check_cy;
@@ -95,11 +98,13 @@ case COGITO_CHIP: {
   }
   // ---- Label ----
   if (n->text) {
+    bool chip_rtl = cogito_is_rtl();
     int font_size = cogito_node_font_size(n);
     int text_h    = cogito_text_height_size(font_size);
-    // Cogito: 12dp leading pad (or 8dp when leading icon present), 12dp trailing
+    int tw        = cogito_text_width_size_node(n, n->text->data, font_size);
+    // Cogito: 12dp leading pad (or h+4 when selected = check icon space), 12dp trailing
     int lead = n->chip.selected ? (n->h + 4) : 12;
-    int text_x = n->x + lead;
+    int text_x = chip_rtl ? (n->x + n->w - lead - tw) : (n->x + lead);
     int text_y = n->y + (n->h - text_h) / 2;
     cogito_draw_text_size_node(n, text_x, text_y, n->text->data, text_color, font_size, false, false);
 
@@ -108,7 +113,10 @@ case COGITO_CHIP: {
       // Cogito: trailing 8dp gap + 18dp close button
       int close_zone = 18;
       int icon_size  = 10;
-      int icon_x = n->x + n->w - close_zone / 2 - icon_size / 2;
+      // RTL: close icon on left; LTR: close icon on right
+      int icon_x = chip_rtl
+          ? (n->x + close_zone / 2 - icon_size / 2)
+          : (n->x + n->w - close_zone / 2 - icon_size / 2);
       int icon_y = n->y + n->h / 2 - icon_size / 2;
       CogitoColor close_col = text_color;
       close_col.a = (uint8_t)(close_col.a * 0.7f);

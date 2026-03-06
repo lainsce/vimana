@@ -381,6 +381,26 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
     if (cogito_css_read_number(p, &v)) { style->has_margin_bottom = true; style->margin_bottom = (int)lround(v); }
     return;
   }
+  if (strcmp(prop, "padding-start") == 0) {
+    double v;
+    if (cogito_css_read_number(p, &v)) { style->has_padding_start = true; style->padding_start = (int)lround(v); }
+    return;
+  }
+  if (strcmp(prop, "padding-end") == 0) {
+    double v;
+    if (cogito_css_read_number(p, &v)) { style->has_padding_end = true; style->padding_end = (int)lround(v); }
+    return;
+  }
+  if (strcmp(prop, "margin-start") == 0) {
+    double v;
+    if (cogito_css_read_number(p, &v)) { style->has_margin_start = true; style->margin_start = (int)lround(v); }
+    return;
+  }
+  if (strcmp(prop, "margin-end") == 0) {
+    double v;
+    if (cogito_css_read_number(p, &v)) { style->has_margin_end = true; style->margin_end = (int)lround(v); }
+    return;
+  }
   if (strcmp(prop, "item-padding") == 0 || strcmp(prop, "menu-item-padding") == 0) {
     int vals[4] = {0, 0, 0, 0};
     int count = cogito_css_parse_ints(p, vals, 4);

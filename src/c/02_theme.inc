@@ -342,6 +342,11 @@ static void cogito_style_merge_into(const CogitoStyle* base, const CogitoStyle* 
   }
   if (over->has_margin_bottom) { out->has_margin_bottom = true; out->margin_bottom = over->margin_bottom;
   }
+  // Logical (direction-aware) margin/padding
+  if (over->has_padding_start) { out->has_padding_start = true; out->padding_start = over->padding_start; }
+  if (over->has_padding_end) { out->has_padding_end = true; out->padding_end = over->padding_end; }
+  if (over->has_margin_start) { out->has_margin_start = true; out->margin_start = over->margin_start; }
+  if (over->has_margin_end) { out->has_margin_end = true; out->margin_end = over->margin_end; }
   if (over->has_opacity) { out->has_opacity = true; out->opacity = over->opacity;
   }
   if (over->has_track_height) { out->has_track_height = true; out->track_height = over->track_height;
@@ -1098,6 +1103,23 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
     if (s.has_margin_top) n->margin_top = s.margin_top;
     if (s.has_margin_right) n->margin_right = s.margin_right;
     if (s.has_margin_bottom) n->margin_bottom = s.margin_bottom;
+  }
+  // Resolve logical (direction-aware) margin/padding — overrides physical sides
+  if (s.has_padding_start) {
+    if (cogito_is_rtl()) n->padding_right = s.padding_start;
+    else n->padding_left = s.padding_start;
+  }
+  if (s.has_padding_end) {
+    if (cogito_is_rtl()) n->padding_left = s.padding_end;
+    else n->padding_right = s.padding_end;
+  }
+  if (s.has_margin_start) {
+    if (cogito_is_rtl()) n->margin_right = s.margin_start;
+    else n->margin_left = s.margin_start;
+  }
+  if (s.has_margin_end) {
+    if (cogito_is_rtl()) n->margin_left = s.margin_end;
+    else n->margin_right = s.margin_end;
   }
   if (s.has_opacity) { n->opacity = s.opacity; n->opacity_set = true;
   }

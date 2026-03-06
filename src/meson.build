@@ -23,12 +23,18 @@ endif
 # Optional GStreamer playback backend used by Extras/Victrola gst.yi
 gst_dep = dependency('gstreamer-1.0', required : false)
 
+# FriBidi for Unicode Bidirectional Algorithm (RTL text support)
+fribidi_dep = dependency('fribidi', required : false)
+
 cogito_c_args = []
 if sdl3_image_dep.found()
   cogito_c_args += ['-DCOGITO_HAS_SDL3_IMAGE=1']
 endif
 if gst_dep.found()
   cogito_c_args += ['-DCOGITO_HAS_GSTREAMER=1']
+endif
+if fribidi_dep.found()
+  cogito_c_args += ['-DCOGITO_HAS_FRIBIDI=1']
 endif
 
 cogito_deps = [
@@ -41,6 +47,9 @@ if sdl3_image_dep.found()
 endif
 if gst_dep.found()
   cogito_deps += gst_dep
+endif
+if fribidi_dep.found()
+  cogito_deps += fribidi_dep
 endif
 
 # Detect target platform

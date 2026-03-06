@@ -169,12 +169,17 @@ static void cogito_menu_open_for(CogitoNode* n) {
   if (h > max_h) h = max_h;
 
   // Horizontal placement:
-  // 1) Prefer anchor-left alignment.
-  // 2) If it overflows right, align menu right edge to anchor right edge.
-  // 3) Clamp to edge inset bounds.
+  // LTR: prefer anchor-left alignment; RTL: prefer anchor-right alignment.
+  // If overflow, try opposite alignment. Clamp to edge inset bounds.
   int right_aligned = n->x + n->w - w;
-  if (x + w > win_w - edge_inset) {
+  if (cogito_is_rtl()) {
+    // RTL: start right-aligned
     x = right_aligned;
+    if (x < edge_inset) x = n->x;  // flip to left-aligned if overflow
+  } else {
+    if (x + w > win_w - edge_inset) {
+      x = right_aligned;
+    }
   }
 
   int min_x = edge_inset;
@@ -291,7 +296,8 @@ static void cogito_fab_menu_geom(CogitoNode* n, int* out_item_w, int* out_item_x
   }
   int item_w = max_content_w;
   if (item_w < n->w) item_w = n->w; // at least as wide as the FAB
-  int item_x = n->x + n->w - item_w; // right-align with FAB right edge
+  // RTL: left-align with FAB left edge; LTR: right-align with FAB right edge
+  int item_x = cogito_is_rtl() ? n->x : (n->x + n->w - item_w);
   if (out_item_w) *out_item_w = item_w;
   if (out_item_x) *out_item_x = item_x;
 }

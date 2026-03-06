@@ -19,9 +19,10 @@ case COGITO_SEARCHFIELD: {
 
   cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
 
-  // Search icon — 24dp, 16dp from left edge, vertically centered
+  // Search icon — 24dp, leading edge, vertically centered
+  bool sf_rtl = cogito_is_rtl();
   int icon_size = 24;
-  int icon_x    = n->x + 16;
+  int icon_x    = sf_rtl ? (n->x + n->w - 16 - icon_size) : (n->x + 16);
   int size      = cogito_node_font_size(n);
   int text_h    = cogito_text_height_size(size);
   int text_y    = n->y + (n->h - text_h) / 2;
@@ -35,9 +36,9 @@ case COGITO_SEARCHFIELD: {
   cogito_draw_icon_fallback(n,
   "magnifyingglass", icon_x, icon_y, icon_size, icon_color);
 
-  // Text area: starts at icon_x + icon_size + 8 gap = 16+24+8 = 48dp from left
-  int text_x      = icon_x + icon_size + 8;
-  int text_avail  = n->w - (text_x - n->x) - 16;
+  // Text area: starts after icon+gap (48dp from leading edge)
+  int text_x      = sf_rtl ? (n->x + 16) : (icon_x + icon_size + 8);
+  int text_avail  = sf_rtl ? (icon_x - text_x - 8) : (n->w - (text_x - n->x) - 16);
   const char* txt = n->text ? n->text->data : "";
   bool has_text   = txt[
     0

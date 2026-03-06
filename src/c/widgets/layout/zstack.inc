@@ -78,12 +78,13 @@ static void cogito_layout_zstack(CogitoNode* n, int x, int y) {
 
       // Position side sheet based on mode
       int target_x;
+      bool rtl = cogito_is_rtl();
       if (c->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
-          // Sidebar mode: position on the RIGHT side, adjacent to window
-          target_x = host_x + host_w;
+          // Sidebar mode: position adjacent to window. RTL: left side, LTR: right side
+          target_x = rtl ? (host_x - target_w) : (host_x + host_w);
       } else {
-          // Modal/Inset mode: overlay on the RIGHT side
-          target_x = host_x + host_w - target_w;
+          // Modal/Inset mode: overlay. RTL: left side, LTR: right side
+          target_x = rtl ? host_x : (host_x + host_w - target_w);
       }
       int target_y = host_y;
 
@@ -111,6 +112,7 @@ static void cogito_layout_zstack(CogitoNode* n, int x, int y) {
     if (align < 0 || align > 8) align = 0;
     int row_use = align / 3;
     int col_use = align % 3;
+    if (cogito_is_rtl()) col_use = cogito_resolve_halign(col_use);
     if (c->kind == COGITO_TOASTS) {
       col_use = 2;
       row_use = 2;

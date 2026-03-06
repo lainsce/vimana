@@ -21,7 +21,7 @@ static void cogito_dialog_close_rect(CogitoNode* n, int* out_x, int* out_y, int*
   int title_h = cogito_text_height_size(title_size);
   int box = COGITO_DIALOG_CLOSE_BOX;
   int header_h = title_h > box ? title_h : box;
-  int x = n->x + n->w - pad_r - box;
+  int x = cogito_is_rtl() ? (n->x + COGITO_DIALOG_HEADER_INSET) : (n->x + n->w - pad_r - box);
   int y = n->y + pad_t + (header_h - box) / 2;
   if (out_x) *out_x = x;
   if (out_y) *out_y = y;

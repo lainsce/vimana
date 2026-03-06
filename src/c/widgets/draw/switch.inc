@@ -100,6 +100,8 @@ case COGITO_SWITCH: {
       int off_x = cx + inset_x;
       int on_x = cx + w - knob_w_target - inset_x;
       if (on_x < off_x) on_x = off_x;
+      // RTL: swap knob direction (OFF = right, ON = left)
+      if (cogito_is_rtl()) { int tmp = off_x; off_x = on_x; on_x = tmp; }
 
       int center_target = (n->checked ? on_x : off_x) + knob_w_target / 2;
       (void)(track_cy - knob_h_target / 2); // ky_target not used; ky derived from spring

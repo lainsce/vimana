@@ -46,42 +46,51 @@ case COGITO_SIDE_SHEET: {
   // Draw docked sheet surface.
   cogito_draw_rect_node(n, &s, r_x, r_y, r_w, r_h, bg, radius);
 
-  // Draw left border for sidebar mode
+  // Draw border on inner edge: right edge in RTL, left edge in LTR
   if (n->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
       CogitoStyle outline_style = cogito_theme_resolve(COGITO_SIDE_SHEET);
       CogitoColor border_color = n->border_color;
-      // Use outline color from theme if available
       if (outline_style.has_bg) {
           border_color = outline_style.bg;
       } else {
           CogitoStyle ws = cogito_theme_resolve(COGITO_WINDOW);
           if (ws.has_bg) border_color = ws.bg;
       }
-      // Draw left border (1px)
-      cogito_draw_rect(r_x, r_y, 1, r_h, border_color, 0);
+      int bx = cogito_is_rtl() ? (r_x + r_w - 1) : r_x;
+      cogito_draw_rect(bx, r_y, 1, r_h, border_color, 0);
   }
 
   // Draw title (clipped so it does not overlap the close button)
+  bool sheet_rtl = cogito_is_rtl();
   if (n->text && n->text->data && n->text->data[0]) {
     int pad_l = n->padding_left;
+    int pad_r = n->padding_right;
     int pad_t = n->padding_top;
     int size = cogito_node_font_size(n);
-    int title_x = r_x + pad_l;
-    // Reserve space for the close button (24px pad_r + 24px box + 8px gap)
-    int max_title_right = r_x + r_w - 24 - 24 - 8;
-    int max_title_w = max_title_right - title_x;
+    // Reserve space for the close button (24px pad + 24px box + 8px gap = 56px)
+    int btn_reserve = 24 + 24 + 8;
+    int title_x, max_title_w;
+    if (sheet_rtl) {
+      // RTL: close button on left, title on right
+      title_x = r_x + btn_reserve;
+      max_title_w = r_x + r_w - pad_r - title_x;
+    } else {
+      // LTR: close button on right, title on left
+      title_x = r_x + pad_l;
+      max_title_w = (r_x + r_w - btn_reserve) - title_x;
+    }
     if (max_title_w > 0) {
       cogito_draw_text_ellipsis(n, title_x, r_y + pad_t + 12,
                                 max_title_w, n->text->data, text_color, size,
       true, false,
-      0);
+      sheet_rtl ? 2 : 0);
     }
   }
 
-  // Close button is always 24px from top and right edges
+  // Close button: left side in RTL, right side in LTR
   int cw = 24;
   int ch = 24;
-  int cx = r_x + r_w - 24 - cw;
+  int cx = sheet_rtl ? (r_x + 24) : (r_x + r_w - 24 - cw);
   int cy = r_y + 24;
   if (cw > 0 && ch > 0) {
     int mx = 0, my = 0;

@@ -29,9 +29,14 @@ case COGITO_STEPPER: {
         cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, border_col, radius, border_w);
       }
 
-      // Layout: [ - | value | + ]
+      // Layout: [ - | value | + ] in LTR; [ + | value | - ] in RTL
+      bool stepper_rtl = cogito_is_rtl();
       int btn_w = n->h;  // Square buttons at each end
       int center_w = n->w - btn_w * 2;
+
+      // Determine button positions based on direction
+      int minus_x = stepper_rtl ? (n->x + btn_w + center_w) : n->x;
+      int plus_x  = stepper_rtl ? n->x : (n->x + btn_w + center_w);
 
       // Draw dividers
       CogitoColor divider = border_col;
@@ -48,10 +53,10 @@ case COGITO_STEPPER: {
       if (minus_hover) {
         CogitoColor hl = text_col;
         hl.a = 20;
-        cogito_draw_rect(n->x + border_w, n->y + border_w, btn_w - border_w, n->h - border_w * 2, hl, radius);
+        cogito_draw_rect(minus_x + border_w, n->y + border_w, btn_w - border_w, n->h - border_w * 2, hl, radius);
       }
       int icon_len = 12;
-      int mx = n->x + (btn_w - icon_len) / 2;
+      int mx = minus_x + (btn_w - icon_len) / 2;
       int my = n->y + n->h / 2;
       cogito_draw_line(mx, my, mx + icon_len, my, minus_col);
 
@@ -64,9 +69,9 @@ case COGITO_STEPPER: {
       if (plus_hover) {
         CogitoColor hl = text_col;
         hl.a = 20;
-        cogito_draw_rect(n->x + btn_w + center_w, n->y + border_w, btn_w - border_w, n->h - border_w * 2, hl, radius);
+        cogito_draw_rect(plus_x, n->y + border_w, btn_w - border_w, n->h - border_w * 2, hl, radius);
       }
-      int px = n->x + btn_w + center_w + (btn_w - icon_len) / 2;
+      int px = plus_x + (btn_w - icon_len) / 2;
       int py = n->y + n->h / 2;
       cogito_draw_line(px, py, px + icon_len, py, plus_col);
       cogito_draw_line(px + icon_len / 2, py - icon_len / 2, px + icon_len / 2, py + icon_len / 2, plus_col);

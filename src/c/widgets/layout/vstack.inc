@@ -107,6 +107,7 @@ static void cogito_layout_vstack(CogitoNode* n, int x, int y) {
     if (slot_w < 0) slot_w = 0;
     int child_col = c->align % 3;
     if (child_col < 0 || child_col > 2) child_col = 0;
+    if (cogito_is_rtl()) child_col = cogito_resolve_halign(child_col);
 
     bool child_hexpand = cogito_layout_effective_hexpand(c);
     bool child_vexpand = cogito_layout_effective_vexpand(c);

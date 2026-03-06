@@ -287,7 +287,12 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
   if (n->scroller.scroll_x > max_x) n->scroller.scroll_x = max_x;
   if (n->scroller.scroll_y > max_y) n->scroller.scroll_y = max_y;
   cogito_scroller_state_store(n);
-  cogito_layout_node(c, child_x - n->scroller.scroll_x, child_y - n->scroller.scroll_y, cw, ch);
+  // RTL horizontal: flip scroll direction (scroll_x=0 → rightmost content visible)
+  int sx_offset = n->scroller.scroll_x;
+  if (cogito_is_rtl() && n->scroller.horz && max_x > 0) {
+    sx_offset = max_x - n->scroller.scroll_x;
+  }
+  cogito_layout_node(c, child_x - sx_offset, child_y - n->scroller.scroll_y, cw, ch);
   for (size_t i = 1; i < n->len; i++) {
     cogito_layout_node(n->children[i], child_x, child_y, 0, 0);
   }

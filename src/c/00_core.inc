@@ -227,6 +227,35 @@ typedef enum {
   COGITO_SIDE_SHEET_SIDEBAR
 } CogitoSideSheetMode;
 
+// --- Text direction (RTL support) ---
+typedef enum {
+  COGITO_DIR_LTR = 0,
+  COGITO_DIR_RTL = 1
+} CogitoDirection;
+
+static CogitoDirection cogito_direction = COGITO_DIR_LTR;
+
+void cogito_set_direction(int dir) {
+  cogito_direction = (CogitoDirection)dir;
+}
+
+int cogito_get_direction(void) {
+  return (int)cogito_direction;
+}
+
+bool cogito_is_rtl(void) {
+  return cogito_direction == COGITO_DIR_RTL;
+}
+
+// Flip horizontal alignment (0=start, 1=center, 2=end) for RTL
+static inline int cogito_resolve_halign(int halign) {
+  if (cogito_direction == COGITO_DIR_RTL) {
+    if (halign == 0) return 2;
+    if (halign == 2) return 0;
+  }
+  return halign;
+}
+
 typedef enum {
   COGITO_APPBAR,
   COGITO_BIN,
@@ -371,6 +400,10 @@ typedef struct CogitoStyle {
   bool has_track_height;
   bool has_divider;
   bool has_item_gap;
+  bool has_padding_start;
+  bool has_padding_end;
+  bool has_margin_start;
+  bool has_margin_end;
   CogitoColor bg;
   CogitoColor text;
   CogitoColor border;
@@ -423,6 +456,10 @@ typedef struct CogitoStyle {
   int margin_top;
   int margin_right;
   int margin_bottom;
+  int padding_start;
+  int padding_end;
+  int margin_start;
+  int margin_end;
   float opacity;
   int track_height;
 } CogitoStyle;
@@ -845,6 +882,7 @@ typedef struct CogitoNode {
       uint8_t mode;
       uint8_t active_handle;
       uint8_t size;
+      uint8_t shape;
     } slider;
 
     struct {
@@ -1018,7 +1056,7 @@ typedef struct CogitoNode {
       int drag_start_mouse_x;
       int drag_offset;
     } view_dual;
-    struct { int arrow_x; uint8_t size; // 0=XS..4=XL, same as button
+    struct { int arrow_x; int arrow_w; uint8_t size; // 0=XS..4=XL, same as button
       bool outlined, text_style;
     } split_btn;
     struct {
@@ -1065,6 +1103,23 @@ typedef struct CogitoNode {
     } card;
   };
 } CogitoNode;
+
+// Resolve logical start/end margins to physical left/right
+static inline int cogito_margin_start(const CogitoNode* n) {
+  return cogito_direction == COGITO_DIR_RTL ? n->margin_right : n->margin_left;
+}
+
+static inline int cogito_margin_end(const CogitoNode* n) {
+  return cogito_direction == COGITO_DIR_RTL ? n->margin_left : n->margin_right;
+}
+
+static inline int cogito_padding_start(const CogitoNode* n) {
+  return cogito_direction == COGITO_DIR_RTL ? n->padding_right : n->padding_left;
+}
+
+static inline int cogito_padding_end(const CogitoNode* n) {
+  return cogito_direction == COGITO_DIR_RTL ? n->padding_left : n->padding_right;
+}
 
 typedef struct CogitoState {
   YisObj base;
@@ -1398,6 +1453,10 @@ enum {
   COGITO_SLIDER_SIZE_M,
   COGITO_SLIDER_SIZE_L,
   COGITO_SLIDER_SIZE_XL
+};
+enum {
+  COGITO_SLIDER_SHAPE_FLAT = 0,
+  COGITO_SLIDER_SHAPE_WAVY
 };
 enum {
   COGITO_BUTTON_SIZE_XS = 0,

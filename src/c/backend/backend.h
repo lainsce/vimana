@@ -13,6 +13,9 @@
 extern "C" {
 #endif
 
+// Text direction (declared in cogito.h / 00_core.inc, used by backend for shaping)
+extern bool cogito_is_rtl(void);
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -147,10 +150,14 @@ typedef struct CogitoBackend {
   // ('w'<<24)|('g'<<16)|('h'<<8)|'t' Returns true if the axis was successfully
   // set.
   bool (*font_set_variation)(CogitoFont *font, uint32_t axis_tag, float value);
+  void (*font_set_direction)(CogitoFont *font, bool rtl);
   int (*text_measure_width)(CogitoFont *font, const char *text, int size);
+  int (*text_measure_width_dir)(CogitoFont *font, const char *text, int size, bool rtl);
   int (*text_measure_height)(CogitoFont *font, int size);
   void (*draw_text)(CogitoFont *font, const char *text, int x, int y, int size,
                     CogitoColor color);
+  void (*draw_text_dir)(CogitoFont *font, const char *text, int x, int y, int size,
+                        CogitoColor color, bool rtl);
 
   // Textures
   CogitoTexture *(*texture_create)(int w, int h, const uint8_t *data,

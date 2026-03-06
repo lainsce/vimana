@@ -559,3 +559,53 @@ Default theme files are located in the `cogito/` directory:
 Custom themes can be loaded via:
 - `cogito_load_sum_file(path)` - Load from file
 - `cogito_load_sum_inline(src)` - Load from string
+
+---
+
+## 15. Right-to-Left (RTL) Design
+
+When `cogito_set_direction(1)` is active, the entire widget tree mirrors horizontally relative to default LTR layout. Design tokens and component layouts follow Material Design RTL guidelines.
+
+### 15.1 Layout Direction
+
+- Inline flow (HStack, Grid columns) proceeds right-to-left.
+- Block flow (VStack, vertical stacking) is unchanged; horizontal alignment within flips.
+- Fixed-position widgets mirror their x coordinates within the parent.
+
+### 15.2 Navigation Components
+
+| Component | LTR | RTL |
+|-----------|-----|-----|
+| AppBar leading | Left | Right |
+| AppBar trailing | Right | Left |
+| NavRail | Left edge | Right edge |
+| SideSheet | Right edge | Left edge |
+| Scrollbar (vertical) | Right | Left |
+
+### 15.3 Interactive Controls
+
+| Control | LTR | RTL |
+|---------|-----|-----|
+| Switch off | Knob left | Knob right |
+| Slider min | Left | Right |
+| Progress 0% | Left | Right |
+| Stepper minus | Left | Right |
+| SplitButton arrow | Right | Left |
+| Dropdown chevron | Right | Left |
+
+### 15.4 Text & Icons
+
+- Bidirectional text is processed with FriBidi (when available) and rendered per-run with correct shaping direction.
+- Icons that indicate direction (chevrons, arrows) flip automatically.
+- Decorative and symmetric icons do not flip.
+
+### 15.5 SUM Logical Properties
+
+Use `margin-start/end` and `padding-start/end` for direction-aware spacing. These resolve to physical left/right based on the current direction:
+
+| Logical Property | LTR Resolution | RTL Resolution |
+|-----------------|----------------|----------------|
+| `margin-start` | `margin-left` | `margin-right` |
+| `margin-end` | `margin-right` | `margin-left` |
+| `padding-start` | `padding-left` | `padding-right` |
+| `padding-end` | `padding-right` | `padding-left` |

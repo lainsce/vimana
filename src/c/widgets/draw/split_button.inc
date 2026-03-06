@@ -21,16 +21,20 @@ case COGITO_SPLIT_BUTTON: {
   if (gap < 0) gap = 0;
   int main_w = n->w - menu_w - gap;
   if (main_w < 1) main_w = 1;
-  int menu_x = n->x + main_w + gap;
+  // RTL: dropdown arrow on left, main button on right
+  bool split_rtl = cogito_is_rtl();
+  int main_x = split_rtl ? (n->x + menu_w + gap) : n->x;
+  int menu_x = split_rtl ? n->x : (n->x + main_w + gap);
   n->split_btn.arrow_x = menu_x;
+  n->split_btn.arrow_w = menu_w;
 
   // Per-part hover/active detection
   int mx = 0, my = 0;
   bool btn_down = false;
   bool have_mouse = cogito_pointer_query(&mx, &my, &btn_down, NULL);
   bool over_whole = have_mouse && cogito_hit_rect(mx, my, n->x, n->y, n->w, n->h) && !n->disabled;
-  bool over_main = over_whole && mx < menu_x;
-  bool over_menu = over_whole && mx >= menu_x;
+  bool over_main = over_whole && (split_rtl ? (mx >= main_x) : (mx < menu_x));
+  bool over_menu = over_whole && (split_rtl ? (mx < main_x) : (mx >= menu_x));
   bool main_hover = over_main && !btn_down;
   bool main_active = over_main && btn_down;
   bool menu_hover = (over_menu && !btn_down) || menu_active;
@@ -103,9 +107,16 @@ case COGITO_SPLIT_BUTTON: {
   int main_inner_radius = 4;
   if (main_inner_radius > main_outer_radius) main_inner_radius = main_outer_radius;
 
-  // Draw main button with circular outer corners and 4px inner corners
-  cogito_draw_rect_radii_aa(n->x, n->y, main_w, n->h, main_bg,
-                            main_outer_radius, main_inner_radius, main_inner_radius, main_outer_radius);
+  // Draw main button with correct corner radii for direction
+  if (split_rtl) {
+    // RTL: main button on right — outer corners on right, inner on left
+    cogito_draw_rect_radii_aa(main_x, n->y, main_w, n->h, main_bg,
+                              main_inner_radius, main_outer_radius, main_outer_radius, main_inner_radius);
+  } else {
+    // LTR: main button on left — outer corners on left, inner on right
+    cogito_draw_rect_radii_aa(main_x, n->y, main_w, n->h, main_bg,
+                              main_outer_radius, main_inner_radius, main_inner_radius, main_outer_radius);
+  }
   
   // Draw ripple effect for split buttons with Primary/Secondary/Tertiary/Surface backgrounds
   if (cogito_ripple_update(n)) {
@@ -122,16 +133,32 @@ case COGITO_SPLIT_BUTTON: {
   }
   
   if (border_w > 0) {
-    cogito_draw_rect_lines_radii_aa(n->x, n->y, main_w, n->h, border_color,
-                                    main_outer_radius, main_inner_radius, main_inner_radius, main_outer_radius, border_w);
+    if (split_rtl) {
+      cogito_draw_rect_lines_radii_aa(main_x, n->y, main_w, n->h, border_color,
+                                      main_inner_radius, main_outer_radius, main_outer_radius, main_inner_radius, border_w);
+    } else {
+      cogito_draw_rect_lines_radii_aa(main_x, n->y, main_w, n->h, border_color,
+                                      main_outer_radius, main_inner_radius, main_inner_radius, main_outer_radius, border_w);
+    }
   }
 
-  // Draw menu button with reversed corner radii; when menu is active make it fully circular.
-  cogito_draw_rect_radii_aa(menu_x, n->y, menu_w, n->h, menu_bg,
-                            menu_inner_radius, menu_outer_radius, menu_outer_radius, menu_inner_radius);
+  // Draw menu button with reversed corner radii
+  if (split_rtl) {
+    // RTL: menu button on left — outer on left, inner on right
+    cogito_draw_rect_radii_aa(menu_x, n->y, menu_w, n->h, menu_bg,
+                              menu_outer_radius, menu_inner_radius, menu_inner_radius, menu_outer_radius);
+  } else {
+    cogito_draw_rect_radii_aa(menu_x, n->y, menu_w, n->h, menu_bg,
+                              menu_inner_radius, menu_outer_radius, menu_outer_radius, menu_inner_radius);
+  }
   if (border_w > 0) {
-    cogito_draw_rect_lines_radii_aa(menu_x, n->y, menu_w, n->h, border_color,
-                                    menu_inner_radius, menu_outer_radius, menu_outer_radius, menu_inner_radius, border_w);
+    if (split_rtl) {
+      cogito_draw_rect_lines_radii_aa(menu_x, n->y, menu_w, n->h, border_color,
+                                      menu_outer_radius, menu_inner_radius, menu_inner_radius, menu_outer_radius, border_w);
+    } else {
+      cogito_draw_rect_lines_radii_aa(menu_x, n->y, menu_w, n->h, border_color,
+                                      menu_inner_radius, menu_outer_radius, menu_outer_radius, menu_inner_radius, border_w);
+    }
   }
 
   // Draw main button text
@@ -139,7 +166,7 @@ case COGITO_SPLIT_BUTTON: {
     int ts = cogito_node_font_size(n);
     int tw = cogito_text_width_size_node(n, n->text->data, ts);
     int th = cogito_text_height_size(ts);
-    int tx = n->x + (main_w - tw) / 2;
+    int tx = main_x + (main_w - tw) / 2;
     int ty = n->y + (n->h - th) / 2;
     cogito_draw_text_size_node(n, tx, ty, n->text->data, text_color, ts, false, true);
   }

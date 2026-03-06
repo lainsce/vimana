@@ -394,7 +394,72 @@ Implementation note:
 
 - Current backend default window registry limit is `COGITO_MAX_WINDOWS` (currently 8).
 
-## 12. Compatibility Notes
+## 12. Right-to-Left (RTL) Support
+
+Cogito supports full right-to-left layout mirroring and bidirectional text.
+
+### 12.1 Direction API
+
+- `cogito_set_direction(dir)` — Set global text direction. `0` = LTR (default), `1` = RTL.
+- `cogito_get_direction()` — Returns current direction (0 or 1).
+- `cogito_is_rtl()` — Returns `true` if direction is RTL.
+
+Direction is a global setting. It affects all layout, drawing, and interaction behavior.
+
+### 12.2 Layout Mirroring
+
+When RTL is active:
+
+- **HStack**: Children flow right-to-left. Start edge is on the right.
+- **VStack**: Child horizontal alignment flips (left ↔ right).
+- **Grid**: Columns render right-to-left (column 0 at right edge).
+- **Fixed**: Fixed-position x coordinates mirror within the parent.
+- **ZStack**: Child alignment flips horizontally.
+- **AppBar**: Leading buttons appear on the right, trailing on the left. Title mirrors. macOS traffic lights remain on the left (platform convention).
+- **BottomNav**: Destination order mirrors visually.
+- **Tabs**: Tab labels and indicator mirror positions.
+- **NavRail**: Divider, icons, labels, and expand arrow mirror sides.
+- **SideSheet**: Anchors to the left edge (instead of right). Handle, close button, and title mirror.
+- **Toolbar**: Slot positions mirror. FAB moves to the left end.
+- **Scroller**: Horizontal scroll direction inverts. Vertical scrollbar moves to the left.
+- **Carousel**: Visual item order reverses. Swipe and wheel direction invert.
+
+### 12.3 Widget Mirroring
+
+- **Switch**: Knob direction mirrors (off = right, on = left).
+- **Slider**: Value axis mirrors (min at right, max at left). Drag and keyboard input invert.
+- **Settings Row**: Control widget moves to the left; label right-aligns.
+- **TextField**: Leading icon on right, text area adjusts.
+- **Chip**: Close icon moves to the left.
+- **SearchField**: Search icon on right, clear button on left.
+- **SplitButton**: Dropdown arrow moves to the left, main button to the right.
+- **Stepper**: Plus/minus buttons swap positions.
+- **TreeView**: Indentation from right edge. Chevron points left when collapsed.
+- **Progress**: Fill direction reverses (right-to-left).
+- **Dropdown**: Text on right, chevron on left.
+- **Menu**: Popup aligns to the right edge of the anchor. FAB menu items left-align.
+- **Dialog**: Close button moves to the top-left. Title right-aligns.
+- **Tooltip**: Appears to the left of the cursor.
+- **Popover**: Prefers right-edge alignment with anchor.
+
+### 12.4 Bidirectional Text
+
+When FriBidi is available (`COGITO_HAS_FRIBIDI`), text with mixed directional content is processed through the Unicode Bidirectional Algorithm:
+
+- Text is split into directional runs.
+- Each run is rendered with the correct direction via SDL3_ttf / HarfBuzz.
+- Ellipsis position mirrors (appears on the left in RTL mode).
+
+When FriBidi is not available, text is rendered as a single run using the global direction.
+
+### 12.5 SUM Styling
+
+- `@when rtl { ... }` — Conditional block active only in RTL mode.
+- `@when ltr { ... }` — Conditional block active only in LTR mode.
+- `margin-start` / `margin-end` — Logical margin properties (resolve to left/right based on direction).
+- `padding-start` / `padding-end` — Logical padding properties.
+
+## 13. Compatibility Notes
 
 - Public C API is declared in `cogito/src/cogito.h`.
 - Yis bindings are expected to preserve this model at the language level.

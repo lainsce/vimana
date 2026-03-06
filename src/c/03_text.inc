@@ -989,6 +989,43 @@ static int cogito_text_wrap_height(const CogitoNode* n, const char* text, int si
 
 static void cogito_draw_text_tabular(CogitoFont* f, const char* text, int x, int y, int size, CogitoColor color);
 
+// Draw a single text run with explicit direction (used by bidi pipeline)
+static void cogito_draw_font_run(CogitoFont* f, const char* text, int len, int x, int y, int size, CogitoColor color, bool rtl) {
+  if (!f || !text || len <= 0) return;
+  if (!cogito_backend || !cogito_backend->draw_text_dir) return;
+  char buf[1024];
+  char* s = buf;
+  bool heap = false;
+  if (len >= 1024) {
+    s = (char*)malloc((size_t)len + 1);
+    if (!s) return;
+    heap = true;
+  }
+  memcpy(s, text, (size_t)len);
+  s[len] = '\0';
+  cogito_backend->draw_text_dir(f, s, x, y, size, color, rtl);
+  if (heap) free(s);
+}
+
+// Measure a single text run with explicit direction
+static int cogito_measure_font_run(CogitoFont* f, const char* text, int len, int size, bool rtl) {
+  if (!f || !text || len <= 0) return 0;
+  if (!cogito_backend || !cogito_backend->text_measure_width_dir) return 0;
+  char buf[1024];
+  char* s = buf;
+  bool heap = false;
+  if (len >= 1024) {
+    s = (char*)malloc((size_t)len + 1);
+    if (!s) return 0;
+    heap = true;
+  }
+  memcpy(s, text, (size_t)len);
+  s[len] = '\0';
+  int w = cogito_backend->text_measure_width_dir(f, s, size, rtl);
+  if (heap) free(s);
+  return w;
+}
+
 static void cogito_draw_text_size_node(const CogitoNode* n, int x, int y, const char* text, CogitoColor color, int size, bool bold, bool medium) {
   if (!text || !n) return;
   if (size <= 0) size = cogito_font_size();
@@ -1012,6 +1049,33 @@ static void cogito_draw_text_size_node(const CogitoNode* n, int x, int y, const 
     (f == cogito_font_medium && cogito_font_medium_variable)
   );
   if (cogito_backend && cogito_backend->draw_text) {
+    // Check if text needs bidi processing (mixed directional text)
+    bool needs_bidi = cogito_text_needs_bidi(text);
+
+    if (needs_bidi && !n->font_tabular && cogito_backend->draw_text_dir) {
+      int text_len = 0;
+      while (text[text_len]) text_len++;
+      CogitoBidiRun runs[COGITO_BIDI_MAX_RUNS];
+      int nruns = cogito_bidi_get_runs(text, text_len, runs, COGITO_BIDI_MAX_RUNS);
+      if (nruns > 1) {
+        int pen_x = x;
+        for (int r = 0; r < nruns; r++) {
+          cogito_draw_font_run(f, text + runs[r].byte_offset, runs[r].byte_len,
+                               pen_x, y, size, color, runs[r].rtl);
+          int run_w = cogito_measure_font_run(f, text + runs[r].byte_offset,
+                                              runs[r].byte_len, size, runs[r].rtl);
+          if (faux_bold || faux_medium) {
+            CogitoColor c2 = color;
+            c2.a = (unsigned char)((float)c2.a * 0.72f);
+            cogito_draw_font_run(f, text + runs[r].byte_offset, runs[r].byte_len,
+                                 pen_x + 1, y, size, c2, runs[r].rtl);
+          }
+          pen_x += run_w;
+        }
+        return;
+      }
+    }
+
     if (n->font_tabular) {
       cogito_draw_text_tabular(f, text, x, y, size, color);
     } else {
@@ -1085,8 +1149,14 @@ static void cogito_draw_text_ellipsis(const CogitoNode* n, int x, int y, int w, 
   int tx = x;
   if (align == 1) tx = x + (w - line_w) / 2;
   else if (align == 2) tx = x + (w - line_w);
-  cogito_draw_text_size_node(n, tx, y, buf, color, size, bold, medium);
-  cogito_draw_text_size_node(n, tx + cogito_text_width_size_node(n, buf, size), y, dots, color, size, bold, medium);
+  if (cogito_is_rtl()) {
+    // RTL: ellipsis on left (visual start), text on right
+    cogito_draw_text_size_node(n, tx, y, dots, color, size, bold, medium);
+    cogito_draw_text_size_node(n, tx + dots_w, y, buf, color, size, bold, medium);
+  } else {
+    cogito_draw_text_size_node(n, tx, y, buf, color, size, bold, medium);
+    cogito_draw_text_size_node(n, tx + cogito_text_width_size_node(n, buf, size), y, dots, color, size, bold, medium);
+  }
 }
 
 static void cogito_draw_text_tabular(CogitoFont* f, const char* text, int x, int y, int size, CogitoColor color) {

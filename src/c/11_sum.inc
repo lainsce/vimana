@@ -147,6 +147,8 @@ static bool sum_eval_variant_condition(const char* expr, int line) {
   else if (strcmp(cond, "light") == 0) value = !sum_system_is_dark();
   else if (strcmp(cond, "high-contrast") == 0 || strcmp(cond, "highcontrast") == 0) value = sum_system_high_contrast();
   else if (strcmp(cond, "reduced-motion") == 0 || strcmp(cond, "reducedmotion") == 0) value = sum_system_reduced_motion();
+  else if (strcmp(cond, "rtl") == 0) value = cogito_is_rtl();
+  else if (strcmp(cond, "ltr") == 0) value = !cogito_is_rtl();
   else if (strcmp(cond, "default") == 0 || strcmp(cond, "base") == 0) value = true;
   else {
     sum_diag_emit(false, line, "unknown @when condition '%s'", cond);

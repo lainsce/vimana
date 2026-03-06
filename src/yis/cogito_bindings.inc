@@ -220,6 +220,8 @@
 #undef cogito_slider_range_new
 #undef cogito_slider_set_centered
 #undef cogito_slider_set_end_dots
+#undef cogito_slider_set_wavy
+#undef cogito_slider_get_wavy
 #undef cogito_slider_set_step
 #undef cogito_slider_set_step_dots
 #undef cogito_slider_set_icon
@@ -2775,6 +2777,16 @@ static YisVal __cogito_slider_get_end_dots(YisVal slv) {
   return YV_BOOL(cogito_slider_get_end_dots(sl));
 }
 
+static void __cogito_slider_set_wavy(YisVal slv, YisVal onv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  cogito_slider_set_wavy(sl, yis_as_bool(onv));
+}
+
+static YisVal __cogito_slider_get_wavy(YisVal slv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  return YV_BOOL(cogito_slider_get_wavy(sl));
+}
+
 static void __cogito_slider_set_step(YisVal slv, YisVal stepv) {
   cogito_node* sl = cogito_node_from_val(slv);
   cogito_slider_set_step(sl, yis_as_float(stepv));
@@ -3440,6 +3452,15 @@ static void __cogito_set_script_dir(YisVal dirv) {
   if (tmp) yis_release_val(YV_STR(tmp));
 }
 
+static void __cogito_set_direction(YisVal dirv) {
+  int dir = (int)yis_as_int(dirv);
+  cogito_set_direction(dir);
+}
+
+static YisVal __cogito_get_direction(void) {
+  return YV_INT(cogito_get_direction());
+}
+
 static YisVal __cogito_open_url(YisVal urlv) {
   YisStr* tmp = NULL;
   const char* url = cogito_optional_cstr(urlv, &tmp);
@@ -3669,6 +3690,8 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_slider_get_centered __cogito_slider_get_centered
 #define cogito_slider_set_end_dots __cogito_slider_set_end_dots
 #define cogito_slider_get_end_dots __cogito_slider_get_end_dots
+#define cogito_slider_set_wavy __cogito_slider_set_wavy
+#define cogito_slider_get_wavy __cogito_slider_get_wavy
 #define cogito_slider_set_step __cogito_slider_set_step
 #define cogito_slider_get_step __cogito_slider_get_step
 #define cogito_slider_set_step_dots __cogito_slider_set_step_dots
@@ -3820,6 +3843,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_timer_cancel_all __cogito_timer_cancel_all
 #define cogito_load_sum __cogito_load_sum
 #define cogito_set_script_dir __cogito_set_script_dir
+#define cogito_set_direction __cogito_set_direction
+#define cogito_get_direction __cogito_get_direction
 #define cogito_active_indicator_new __cogito_active_indicator
 #define cogito_switchbar_new __cogito_switchbar
 #define cogito_switchbar_get_checked __cogito_switchbar_get_checked

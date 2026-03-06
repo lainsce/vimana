@@ -100,17 +100,21 @@ case COGITO_TEXTFIELD: {
         cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, field_h, border, radius, border_w);
       }
 
+      bool tf_rtl = cogito_is_rtl();
       int edge_pad = has_icon ? field_pad_lr_icon : field_pad_lr;
       int text_x = n->x + edge_pad;
       int text_right = n->x + n->w - edge_pad;
-      if (has_icon) text_x += icon_size + icon_gap;
+      if (has_icon) {
+        if (tf_rtl) text_right -= (icon_size + icon_gap);
+        else text_x += icon_size + icon_gap;
+      }
       int text_w = text_right - text_x;
       if (text_w < 0) text_w = 0;
       int ty = n->y + (field_h - th) / 2;
 
       if (has_icon) {
         CogitoColor icon_color = s.has_icon_color ? s.icon_color : text;
-        int ix = n->x + field_pad_lr_icon;
+        int ix = tf_rtl ? (n->x + n->w - field_pad_lr_icon - icon_size) : (n->x + field_pad_lr_icon);
         int iy = n->y + (field_h - icon_size) / 2;
         cogito_draw_icon_fallback(n, n->icon->data, ix, iy, icon_size, icon_color);
       }

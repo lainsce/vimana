@@ -58,15 +58,24 @@ case COGITO_NAV_RAIL: {
     }
 
     if (n->nav_rail.expanded) {
-      int arrow_tip_x = toggle_icon_x + toggle_icon_size - 11;
-      int arrow_back_x = toggle_icon_x + toggle_icon_size - 4;
+      int arrow_tip_x, arrow_back_x;
+      if (cogito_is_rtl()) {
+        // RTL: arrow points right (collapse toward right wall)
+        arrow_tip_x = toggle_icon_x + 11;
+        arrow_back_x = toggle_icon_x + 4;
+      } else {
+        // LTR: arrow points left (collapse toward left wall)
+        arrow_tip_x = toggle_icon_x + toggle_icon_size - 11;
+        arrow_back_x = toggle_icon_x + toggle_icon_size - 4;
+      }
       int arrow_top_y = line_mid - 4;
       int arrow_bot_y = line_mid + 4;
       CogitoColor toggle_bg = s.has_bg ? s.bg : n->bg;
 
       // Mask line intersections under the arrow so the arrow appears to cut through.
-      int erase_x = arrow_tip_x - 1;
-      int erase_w = (line_right - erase_x) + 1;
+      int erase_x = cogito_is_rtl() ? arrow_back_x - 1 : (arrow_tip_x - 1);
+      int erase_end = cogito_is_rtl() ? (arrow_tip_x + 1) : (line_right + 1);
+      int erase_w = erase_end - erase_x;
       if (erase_w < 1) erase_w = 1;
       cogito_draw_rect(erase_x, toggle_icon_y + 3, erase_w, toggle_icon_size - 6, toggle_bg,
       0);
@@ -193,19 +202,24 @@ case COGITO_NAV_RAIL: {
         }
       }
       int content_x = expanded_content_x;
+      bool rail_rtl = cogito_is_rtl();
+      if (rail_rtl) {
+        // RTL: start content from right edge of lane
+        content_x = expanded_lane_x + expanded_lane_w - COGITO_NAV_RAIL_EXPANDED_CONTENT_INSET;
+      }
       if (has_icon) {
         int badge_value = (n->nav_rail.badges ? n->nav_rail.badges[i
         ] : 0);
         int icon_y = bg_y + (indicator_h - icon_size) / 2;
-        int icon_x = content_x;
+        int icon_x = rail_rtl ? (content_x - icon_size) : content_x;
         cogito_draw_icon_fallback(n, n->nav_rail.icons[i
         ]->data, icon_x, icon_y, icon_size, content_color);
         if (badge_value != 0) {
-          int anchor_x = icon_x + icon_size;
+          int anchor_x = rail_rtl ? icon_x : (icon_x + icon_size);
           int anchor_y = icon_y;
           if (badge_value < 0) {
             int d = 8;
-            int bx = anchor_x - d / 2 + 2;
+            int bx = anchor_x - d / 2 + (rail_rtl ? -2 : 2);
             int by = anchor_y - d / 2 + 2;
             cogito_draw_rect(bx, by, d, d, badge_bg, d / 2);
           } else {
@@ -229,11 +243,12 @@ case COGITO_NAV_RAIL: {
             cogito_draw_text_size_node(n, tx, ty, buf, badge_fg, text_size, true, false);
           }
         }
-        content_x += icon_size + COGITO_NAV_RAIL_EXPANDED_LABEL_GAP;
+        content_x += rail_rtl ? -(icon_size + COGITO_NAV_RAIL_EXPANDED_LABEL_GAP) : (icon_size + COGITO_NAV_RAIL_EXPANDED_LABEL_GAP);
       }
       if (has_label) {
         int label_y = bg_y + (indicator_h - cogito_text_height_size(label_size)) / 2;
-        cogito_draw_text_size_node(n, content_x, label_y, n->nav_rail.labels[i
+        int lx = rail_rtl ? (content_x - label_w) : content_x;
+        cogito_draw_text_size_node(n, lx, label_y, n->nav_rail.labels[i
         ]->data, content_color, label_size, false, false);
       }
 
@@ -277,11 +292,11 @@ case COGITO_NAV_RAIL: {
         cogito_draw_icon_fallback(n, n->nav_rail.icons[i
         ]->data, icon_x, icon_y, icon_size, content_color);
         if (badge_value != 0) {
-          int anchor_x = icon_x + icon_size;
+          int anchor_x = cogito_is_rtl() ? icon_x : (icon_x + icon_size);
           int anchor_y = icon_y;
           if (badge_value < 0) {
             int d = 8;
-            int bx = anchor_x - d / 2 + 2;
+            int bx = anchor_x - d / 2 + (cogito_is_rtl() ? -2 : 2);
             int by = anchor_y - d / 2 + 2;
             cogito_draw_rect(bx, by, d, d, badge_bg, d / 2);
           } else {
@@ -322,14 +337,14 @@ case COGITO_NAV_RAIL: {
       item_y += item_step;
     }
   }
-  // Draw vertical divider on right edge if enabled
+  // Draw vertical divider on inner edge (right in LTR, left in RTL)
   if (n->nav_rail.show_divider) {
     CogitoColor divider_color = s.has_border
       ? s.border
       : (cogito_cached_outline_variant.a
         ? cogito_cached_outline_variant
         : (cogito_cached_outline.a ? cogito_cached_outline : n->border_color));
-    int divider_x = n->x + rail_w - 1;
+    int divider_x = cogito_is_rtl() ? n->x : (n->x + rail_w - 1);
     cogito_draw_line(divider_x, n->y, divider_x, n->y + n->h, divider_color);
   }
   if (fab) cogito_draw_node(fab);

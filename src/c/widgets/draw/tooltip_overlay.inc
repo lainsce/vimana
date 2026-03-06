@@ -33,7 +33,7 @@ static void cogito_draw_tooltip(CogitoNode* win, CogitoNode* target) {
 
   int mx = 0, my = 0;
   (void)cogito_pointer_query(&mx, &my, NULL, NULL);
-  int x = mx + 12;
+  int x = cogito_is_rtl() ? (mx - w - 12) : (mx + 12);
   int y = my + 16;
   if (x < 4) x = 4;
   if (x + w > win->w - 4) x = win->w - 4 - w;

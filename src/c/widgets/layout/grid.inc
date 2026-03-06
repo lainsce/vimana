@@ -181,6 +181,7 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
     cy += row_heights[r] + gap_y;
   }
 
+  bool rtl = cogito_is_rtl();
   int base_x = x + n->padding_left;
   for (size_t i = 0; i < count; i++) {
     CogitoNode* c = n->children[i];
@@ -199,15 +200,20 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
     if (r + rs > row_count) rs = row_count - r;
     if (rs < 1) rs = 1;
 
+    // In RTL, mirror the column index so column 0 appears on the right
+    int visual_col = rtl ? (cols - ccol - cs) : ccol;
+    if (visual_col < 0) visual_col = 0;
+
     int cell_x = base_x;
-    for (int cc = 0; cc < ccol; cc++) {
-      cell_x += col_widths[cc] + gap_x;
+    for (int cc = 0; cc < visual_col; cc++) {
+      int ci = rtl ? (cols - 1 - cc) : cc;
+      if (ci >= 0 && ci < cols) cell_x += col_widths[ci] + gap_x;
     }
     int cell_y = row_y[r];
     int cell_w_span = 0;
     for (int cc = 0; cc < cs; cc++) {
-      int col_idx = ccol + cc;
-      if (col_idx >= cols) break;
+      int col_idx = (rtl ? (cols - 1 - ccol - cc) : (ccol + cc));
+      if (col_idx < 0 || col_idx >= cols) break;
       cell_w_span += col_widths[col_idx];
       if (cc + 1 < cs) cell_w_span += gap_x;
     }

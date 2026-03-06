@@ -248,8 +248,11 @@ static void cogito_layout_carousel(CogitoNode* n, int x, int y) {
   if (min_cx > inner_x) min_cx = inner_x;
   if (cx < min_cx) cx = min_cx;
   
+  bool carousel_rtl = cogito_is_rtl();
   // Layout children (CarouselItem widgets) with calculated widths and gaps
-  for (size_t i = 0; i < count; i++) {
+  for (size_t idx = 0; idx < count; idx++) {
+    // RTL: reverse visual order so item 0 is on the right
+    size_t i = carousel_rtl ? (count - 1 - idx) : idx;
     CogitoNode* c = n->children[i];
     int cw = item_widths[i];
     

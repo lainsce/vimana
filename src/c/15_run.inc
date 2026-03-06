@@ -120,6 +120,7 @@ static bool cogito_keyboard_toggle_focus(CogitoNode* n) {
 
 static bool cogito_keyboard_adjust_slider(CogitoNode* n, int dir) {
   if (!n || n->kind != COGITO_SLIDER || n->disabled || dir == 0) return false;
+  if (cogito_is_rtl()) dir = -dir;
   double span = n->slider.max - n->slider.min;
   double step = cogito_slider_step_normalized(n->slider.step);
   if (step < 0.000001) {
@@ -178,6 +179,7 @@ static uint8_t cogito_slider_pick_range_handle(CogitoNode* sld, int mx, int my) 
   if (t0 > 1.0) t0 = 1.0;
   if (t1 < 0.0) t1 = 0.0;
   if (t1 > 1.0) t1 = 1.0;
+  if (cogito_is_rtl()) { t0 = 1.0 - t0; t1 = 1.0 - t1; }
 
   int k0 = x0 + (int)lround((double)(x1 - x0) * t0);
   int k1 = x0 + (int)lround((double)(x1 - x0) * t1);
@@ -1290,7 +1292,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
           bool horiz = scroller->scroller.horz && (cogito_backend->is_key_down(SDL_SCANCODE_LSHIFT) || 
                                                  cogito_backend->is_key_down(SDL_SCANCODE_RSHIFT) || 
                                                  !scroller->scroller.vert);
-          if (horiz) scroller->scroller.scroll_x -= delta;
+          if (horiz) scroller->scroller.scroll_x -= cogito_is_rtl() ? -delta : delta;
           else scroller->scroller.scroll_y -= delta;
           CogitoNode* synced = cogito_scroller_sync_from(scroller);
           cogito_relayout_subtree(scroller);
@@ -1315,7 +1317,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
             bool should_snap = unit_w >= 56;
             
             // Use wheel delta to scroll (horizontal or vertical wheel both work)
-            double target_xf = carousel->carousel.scroll_xf - (double)(wheel * 80.0f);
+            float wheel_dir = cogito_is_rtl() ? -wheel : wheel;
+            double target_xf = carousel->carousel.scroll_xf - (double)(wheel_dir * 80.0f);
             if (target_xf < 0.0) target_xf = 0.0;
             if (target_xf > (double)max_scroll) target_xf = (double)max_scroll;
             
@@ -1545,6 +1548,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
         double t = (x1 > x0) ? ((double)(mx - x0) / (double)(x1 - x0)) : 0.0;
         if (t < 0.0) t = 0.0;
         if (t > 1.0) t = 1.0;
+        if (cogito_is_rtl()) t = 1.0 - t;
         double v = sld->slider.min + t * (sld->slider.max - sld->slider.min);
         v = cogito_slider_snap_to_step(sld, v);
         bool changed = false;
@@ -1584,6 +1588,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
       if (left_down) {
         CogitoNode* cr = cogito_carousel_active;
         int dx = mx - cr->carousel.drag_start_x;
+        if (cogito_is_rtl()) dx = -dx;
         double new_xf = (double)cr->carousel.drag_start_scroll - (double)dx;
         
         int max_scroll = 0;
@@ -1735,6 +1740,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
              host_w = host->parent->w;
           }
            int dx = ss->side_sheet.drag_start_x - mx;
+           if (cogito_is_rtl()) dx = -dx;
            ss->side_sheet.desired_w = ss->side_sheet.drag_start_w + dx;
            int clamped_w = cogito_side_sheet_target_width(ss, host_x, host_w);
            ss->side_sheet.desired_w = clamped_w;
@@ -2039,6 +2045,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
         CogitoNode* sc = cogito_scrollbar_drag_scroller;
         int cur = cogito_scrollbar_drag_vert ? my : mx;
         int delta = cur - cogito_scrollbar_drag_start_mouse;
+        // In RTL mode, horizontal scrollbar drag direction is inverted
+        if (!cogito_scrollbar_drag_vert && cogito_is_rtl()) delta = -delta;
         int new_scroll = cogito_scrollbar_drag_start_scroll + (int)((long)delta * (long)cogito_scrollbar_drag_max / (long)cogito_scrollbar_drag_travel);
         if (new_scroll < 0) new_scroll = 0;
         if (new_scroll > cogito_scrollbar_drag_max) new_scroll = cogito_scrollbar_drag_max;
@@ -2123,6 +2131,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
               sc->scroller.bar_in_use = true;
               cogito_scrollbar_in_use = sc;
               sc->scroller.scroll_x = cogito_scroller_track_to_scroll(mx, htx, htw, huw, max_s);
+              // In RTL, horizontal track click maps inversely
+              if (cogito_is_rtl()) sc->scroller.scroll_x = max_s - sc->scroller.scroll_x;
               if (sc->scroller.scroll_x < 0) sc->scroller.scroll_x = 0;
               if (sc->scroller.scroll_x > max_s) sc->scroller.scroll_x = max_s;
               CogitoNode* synced = cogito_scroller_sync_from(sc);
@@ -2459,7 +2469,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
             }
           } else if (hit->kind == COGITO_SPLIT_BUTTON) {
             int arrow_x = hit->split_btn.arrow_x;
-            if (mx >= arrow_x && hit->menu_len > 0) {
+            bool hit_arrow = cogito_is_rtl() ? (mx < arrow_x + hit->split_btn.arrow_w) : (mx >= arrow_x);
+            if (hit_arrow && hit->menu_len > 0) {
               cogito_menu_open_for(hit);
             } else {
               cogito_invoke_click(hit);

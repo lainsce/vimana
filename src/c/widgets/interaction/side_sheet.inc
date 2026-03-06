@@ -1,9 +1,9 @@
 static void cogito_side_sheet_close_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n || n->kind != COGITO_SIDE_SHEET) return;
-  // Close button is always 24px from top and right edges of the SHEET
+  // Close button: in LTR at top-right of sheet; in RTL at top-left
   int cw = 24;
   int ch = 24;
-  int cx = n->x + n->w - 24 - cw;
+  int cx = cogito_is_rtl() ? (n->x + 24) : (n->x + n->w - 24 - cw);
   int cy = n->y + 24;
   if (out_x) *out_x = cx;
   if (out_y) *out_y = cy;
@@ -92,7 +92,8 @@ static void cogito_side_sheet_handle_rect(CogitoNode* n, int* out_x, int* out_y,
   if (!n) return;
   int w = COGITO_SIDE_SHEET_HANDLE_TOUCH_W;
   int h = 96;
-  int x = n->x;
+  // In LTR sheet is on right → handle on left edge; in RTL sheet is on left → handle on right edge
+  int x = cogito_is_rtl() ? (n->x + n->w - w) : n->x;
   int y = n->y + (n->h - h) / 2;
   if (out_x) *out_x = x;
   if (out_y) *out_y = y;

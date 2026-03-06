@@ -32,7 +32,7 @@ SUM supports lightweight directives before rule parsing:
   - Imported content is inlined at the `@bring` line, so later declarations still override earlier ones.
 - Variant condition block:
   - `@when <condition>`
-  - Condition examples: `dark`, `light`, `high-contrast`, `reduced-motion`
+  - Condition examples: `dark`, `light`, `high-contrast`, `reduced-motion`, `rtl`, `ltr`
   - Negation: `!dark` or `not dark`
 
 ### 1.2 Indentation Rules (Current Runtime)
@@ -302,8 +302,10 @@ Order: **top-left**, **top-right**, **bottom-right**, **bottom-left
 
 - `padding`
 - `padding-left`, `padding-top`, `padding-right`, `padding-bottom`
+- `padding-start`, `padding-end` — Logical inline padding (resolves to left/right based on direction)
 - `margin`
 - `margin-left`, `margin-top`, `margin-right`, `margin-bottom`
+- `margin-start`, `margin-end` — Logical inline margin (resolves to left/right based on direction)
 - `min-width`, `min-height`
 - `max-width`, `max-height`
 

@@ -222,9 +222,16 @@ case COGITO_PROGRESS: {
           double t = n->progress.value;
           if (t < 0.0) t = 0.0;
           if (t > 1.0) t = 1.0;
-          active_start = x0;
-          active_end = x0 + (int)lround((double)(x1 - x0) * t);
-          if (active_end > x1) active_end = x1;
+          if (cogito_is_rtl()) {
+            // RTL: fill from right to left
+            active_end = x1;
+            active_start = x1 - (int)lround((double)(x1 - x0) * t);
+            if (active_start < x0) active_start = x0;
+          } else {
+            active_start = x0;
+            active_end = x0 + (int)lround((double)(x1 - x0) * t);
+            if (active_end > x1) active_end = x1;
+          }
           has_active = active_end > active_start;
         }
 
