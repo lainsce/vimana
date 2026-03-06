@@ -17,7 +17,7 @@ fun __cogito_about_window(name = string, version = string) (( AboutWindow )) { }
 fun __cogito_active_indicator() (( ActiveIndicator )) { }
 fun __cogito_app_get_icon(app = App) (( string )) { }
 fun __cogito_app_copy_to_clipboard(app = App, text = string) (( bool )) { }
-fun __cogito_app_set_accent_color(app = App, color = string, follow_system = bool) (( -- )) { }
+fun __cogito_app_set_accent_color(app = App, color = any, follow_system = bool) (( -- )) { }
 fun __cogito_app_set_dark_mode(app = App, dark = bool, follow_system = bool) (( -- )) { }
 fun __cogito_set_direction(dir = num) (( -- )) { }
 fun __cogito_get_direction() (( num )) { }
@@ -394,7 +394,7 @@ fun __cogito_view_switcher() (( ViewSwitcher )) { }
 fun __cogito_revealer() (( Revealer )) { }
 fun __cogito_revealer_set_show_children(revealer = Revealer, show_children = bool) (( -- )) { }
 fun __cogito_bin() (( Bin )) { }
-fun __cogito_bin_set_accent_color(bin = Bin, accent_color = string) (( -- )) { }
+fun __cogito_bin_set_accent_color(bin = Bin, accent_color = any) (( -- )) { }
 fun __cogito_vstack() (( VStack )) { }
 fun __cogito_welcome_screen_set_action(ws = WelcomeScreen, text = string, handler = any) (( -- )) { }
 fun __cogito_welcome_screen_set_description(ws = WelcomeScreen, desc = string) (( -- )) { }
@@ -425,7 +425,7 @@ pub class App {
         __cogito_app_set_app_name(this, name)
         return this.chain()
     }
-    pub fun set_accent_color(this, color = string, follow_system = bool) (( App )) {
+    pub fun set_accent_color(this, color = any, follow_system = bool) (( App )) {
         __cogito_app_set_accent_color(this, color, follow_system)
         return this.chain()
     }
@@ -530,7 +530,7 @@ pub class Window {
 }
 
 pub class AppBar {
-    pub fun add_leading_button(this, icon = string, handler = any) (( Button )) {
+    pub fun add_leading_button(this, icon = string, handler = any) (( AppBar )) {
         __cogito_appbar_add_button(this, icon, handler).set_class("leading")
         return this
     }
@@ -558,7 +558,7 @@ pub class AppBar {
     pub fun set_large(this) (( AppBar )) {
         return this.set_type(3)
     }
-    pub fun add_trailing_button(this, icon = string, handler = any) (( Button )) {
+    pub fun add_trailing_button(this, icon = string, handler = any) (( AppBar )) {
         __cogito_appbar_add_button(this, icon, handler).set_class("trailing")
         return this
     }
@@ -1027,7 +1027,7 @@ pub class Bin {
         __cogito_container_add(this, child)
         return this
     }
-    pub fun set_accent_color(this, accent_color = string) (( Bin )) {
+    pub fun set_accent_color(this, accent_color = any) (( Bin )) {
         __cogito_bin_set_accent_color(this, accent_color)
         return this
     }
@@ -2108,6 +2108,10 @@ pub class SearchField {
     pub fun editable(this) (( bool )) {
         return __cogito_node_get_editable(this)
     }
+    pub fun set_visible(this, on = bool) (( SearchField )) {
+        __cogito_node_set_visible(this, on)
+        return this
+    }
 
     pub fun set_class(this, cls = string) (( SearchField )) {
         __cogito_node_set_class(this, cls)
@@ -2310,7 +2314,7 @@ pub class DatePicker {
         return this
     }
     pub fun set_date(this, y = num, m = num, d = num) (( DatePicker )) { return this }
-    pub fun date(this) (( [any] )) { return this }
+    pub fun date(this) (( [any] )) { return [0, 0, 0] }
 
     pub fun on_change(this, handler = any) (( DatePicker )) {
         __cogito_datepicker_on_change(this, handler)
@@ -4467,6 +4471,10 @@ pub class Shape {
     }
     pub fun set_padding(this, top = num, right = num, bottom = num, left = num) (( Shape )) {
         __cogito_container_set_padding(this, top, right, bottom, left)
+        return this
+    }
+    pub fun set_visible(this, on = bool) (( Shape )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     pub fun set_class(this, cls = string) (( Shape )) {

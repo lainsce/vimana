@@ -1,0 +1,39 @@
+cask victrola_lyrics
+
+bring stdr
+bring json
+bring net
+
+pub fun fetch_lyrics(artist = string, title = string) (( string )) {
+    if stdr.len(artist) == 0 && stdr.len(title) == 0 {
+        return "Select a track to view lyrics."
+    }
+
+    let resp = net.get(
+        "https://lrclib.net/api/get",
+        [["artist_name", artist], ["track_name", title]],
+        [["Accept", "application/json"]],
+        15
+    )
+
+    if !(resp["ok"] ?? false) {
+        return "Could not fetch lyrics."
+    }
+
+    let body = stdr.str(resp["body"] ?? "")
+    let root = json.parse(body)
+    if stdr.is_null(root) {
+        return "Lyrics service returned invalid data."
+    }
+
+    let plain = stdr.str(json.get(root, "plainLyrics", ""))
+    let synced = stdr.str(json.get(root, "syncedLyrics", ""))
+
+    if stdr.len(plain) > 0 {
+        return plain
+    }
+    if stdr.len(synced) > 0 {
+        return synced
+    }
+    return "No lyrics found for this track."
+}

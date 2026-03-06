@@ -1,5 +1,6 @@
 cask gst
 
+bring stdr
 bring cogito
 
 pub def EVENT_NONE = 0
@@ -76,19 +77,5 @@ pub fun on_tag(handler = any) (( -- )) {
 }
 
 pub fun poll() (( num )) {
-    let ev = cogito.gst_poll_event()
-    if ev == EVENT_EOS {
-        if !is_null(eos_handler) {
-            eos_handler()
-        }
-    } elif ev == EVENT_ERROR {
-        if !is_null(error_handler) {
-            error_handler(last_error())
-        }
-    } elif ev == EVENT_TAG {
-        if !is_null(tag_handler) {
-            tag_handler(last_cover_path())
-        }
-    }
-    return ev
+    return cogito.gst_poll_event()
 }

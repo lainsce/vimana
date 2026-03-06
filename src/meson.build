@@ -1,4 +1,10 @@
-project('cogito', 'c', 'cpp', 'objcpp', version : '1.0')
+project(
+  'cogito', 'c', 'cpp', 'objcpp',
+  version : '1.0',
+  default_options : ['warning_level=2', 'c_std=c11', 'cpp_std=c++17']
+)
+
+add_project_arguments('-march=native', language : 'c')
 
 cogito_inc = include_directories('src', 'c/backend')
 

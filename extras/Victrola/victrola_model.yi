@@ -1,0 +1,128 @@
+cask victrola_model
+
+bring stdr
+bring victrola_util
+
+pub fun make_track(path = string) (( any )) {
+    let clean_path = victrola_util.sanitize_cover_path(path)
+    let file = stdr.basename(clean_path)
+    let parent = stdr.basename(stdr.dirname(clean_path))
+    let base = stdr.stem(file)
+
+    let ?artist = "Unknown Artist"
+    let ?title = base
+    let ?album = parent
+
+    if stdr.len(album) == 0 {
+        album = "Unknown Album"
+    }
+
+    let sep = stdr.index_of(base, " - ")
+    if sep > 0 {
+        let a = stdr.trim(stdr.slice(base, 0, sep))
+        let t = stdr.trim(stdr.slice(base, sep + 3, stdr.len(base)))
+        if stdr.len(a) > 0 {
+            artist = a
+        }
+        if stdr.len(t) > 0 {
+            title = t
+        }
+    }
+
+    let ?track = []: [string => any]
+    track["path"] = clean_path
+    track["title"] = title
+    track["artist"] = artist
+    track["album"] = album
+    track["search"] = "$$title$$ $$artist$$ $$album$$ $$file$$"
+    return track
+}
+
+pub fun discover_album_cover(track = any) (( string )) {
+    let dir = stdr.dirname(victrola_util.sanitize_cover_path(stdr.str(track["path"] ?? "")))
+    if stdr.len(dir) == 0 {
+        return ""
+    }
+
+    let candidates = [
+        "cover.jpg", "cover.jpeg", "cover.png",
+        "folder.jpg", "folder.jpeg", "folder.png",
+        "front.jpg", "front.jpeg", "front.png",
+        "artwork.jpg", "artwork.jpeg", "artwork.png"
+    ]
+
+    for (let ?i = 0; i < stdr.len(candidates); i = i + 1) {
+        let p = victrola_util.sanitize_cover_path(stdr.join_path(dir, candidates[i] ?? ""))
+        if stdr.file_exists(p) {
+            return p
+        }
+    }
+
+    return ""
+}
+
+pub fun album_cover_key(album = string, artist = string) (( string )) {
+    let ?album_norm = stdr.trim(album)
+    let ?artist_norm = stdr.trim(artist)
+
+    if stdr.len(album_norm) == 0 {
+        album_norm = "Unknown Album"
+    }
+    if stdr.len(artist_norm) == 0 {
+        artist_norm = "Unknown Artist"
+    }
+
+    return "$$artist_norm$$\n$$album_norm$$"
+}
+
+pub fun rebuild_album_indexes(tracks = any, previous_cover_map = any) (( any )) {
+    let ?album_cover_map = []: [string => any]
+    let ?album_artist_map = []: [string => any]
+
+    for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+        let t = tracks[i] ?? []: [string => any]
+        let album = stdr.str(t["album"] ?? "Unknown Album")
+        let artist = stdr.str(t["artist"] ?? "Unknown Artist")
+
+        if stdr.is_null(album_artist_map[album]) {
+            album_artist_map[album] = artist
+        }
+
+        let key = album_cover_key(album, artist)
+
+        if stdr.is_null(album_cover_map[key]) {
+            let ?restored = victrola_util.sanitize_cover_path(stdr.str(previous_cover_map[key] ?? ""))
+            if stdr.len(restored) == 0 {
+                restored = victrola_util.sanitize_cover_path(stdr.str(previous_cover_map[album] ?? ""))
+            }
+            if stdr.len(restored) > 0 && stdr.file_exists(restored) {
+                album_cover_map[key] = restored
+            }
+        }
+
+        if stdr.is_null(album_cover_map[key]) {
+            let c = discover_album_cover(t)
+            if stdr.len(c) > 0 {
+                album_cover_map[key] = c
+            }
+        }
+    }
+
+    let ?out = []: [string => any]
+    out["covers"] = album_cover_map
+    out["artists"] = album_artist_map
+    return out
+}
+
+pub fun album_cover_for(album_cover_map = any, album = string, artist = string) (( string )) {
+    let key = album_cover_key(album, artist)
+    let ?cover = victrola_util.sanitize_cover_path(stdr.str(album_cover_map[key] ?? ""))
+    if stdr.len(cover) == 0 {
+        cover = victrola_util.sanitize_cover_path(stdr.str(album_cover_map[album] ?? ""))
+    }
+    return cover
+}
+
+pub fun album_artist_for(album_artist_map = any, album = string) (( string )) {
+    return stdr.str(album_artist_map[album] ?? "Unknown Artist")
+}

@@ -1,0 +1,263 @@
+cask victrola_library
+
+bring stdr
+bring cogito
+bring victrola_model
+
+def ?artist_click_handler = (artist = string) => {}
+def ?album_click_handler = (album = string) => {}
+
+fun set_library_view_shows_groups(groups_revealer = cogito.Revealer, titles_revealer = cogito.Revealer, show_groups = bool) (( -- )) {
+    groups_revealer.set_show_children(show_groups)
+    groups_revealer.set_vexpand(show_groups)
+    titles_revealer.set_show_children(!show_groups)
+    titles_revealer.set_vexpand(!show_groups)
+}
+
+pub fun track_matches_query(track = any, query_text = string) (( bool )) {
+    if stdr.len(query_text) == 0 {
+        return true
+    }
+    let blob = stdr.str(track["search"] ?? "")
+    return stdr.contains(blob, query_text)
+}
+
+fun build_library_row(track = any, mode = num, is_now_playing = bool) (( any )) {
+    let ?title = stdr.str(track["title"] ?? "")
+    let ?subtitle = stdr.str(track["artist"] ?? "")
+
+    if mode == 1 {
+        title = stdr.str(track["artist"] ?? "")
+        subtitle = stdr.str(track["title"] ?? "")
+    } elif mode == 2 {
+        title = stdr.str(track["album"] ?? "")
+        subtitle = stdr.str(track["artist"] ?? "")
+    }
+
+    let row = cogito.hstack()
+    .set_class("victrola-song-row")
+    .set_hexpand(true)
+    .set_padding(12, 16, 12, 16)
+    .set_gap(0)
+
+    let text_col = cogito.vstack()
+    .set_gap(4)
+    .set_hexpand(true)
+    .add(cogito.label(title)
+        .set_class("cb-title")
+        .set_align(0)
+        .set_text_align(0)
+        .set_hexpand(true)
+        .set_max_width_chars(88)
+    )
+    .add(cogito.label(subtitle)
+        .set_class("caption")
+        .set_align(0)
+        .set_text_align(0)
+        .set_hexpand(true)
+        .set_max_width_chars(112)
+    )
+
+    row.add(text_col)
+    row.add(cogito.hstack().set_hexpand(true))
+    if is_now_playing {
+        row.add(cogito.image("sf:speaker.wave.2")
+            .set_size(24, 24)
+            .set_halign(2)
+            .set_align(4)
+        )
+    }
+
+    return row
+}
+
+fun build_artist_card(name = string, subtitle = string) (( any )) {
+    let card = cogito.card(name)
+    .set_subtitle(subtitle)
+    .set_variant(cogito.CARD_FILLED())
+    .set_class("victrola-artist-card")
+    .on_click((c = any) => {
+        artist_click_handler(name)
+    })
+
+    return card
+}
+
+fun build_album_card(album = string, artist = string, subtitle = string, album_cover_map = any) (( any )) {
+    let cover = victrola_model.album_cover_for(album_cover_map, album, artist)
+
+    let card = cogito.card("")
+    .set_class("outlined victrola-album-card")
+    .set_gap(4)
+    .set_padding(0, 0, 0, 0)
+    .set_header_image(cover)
+    .add(cogito.label(album)
+        .set_class("victrola-album-title")
+        .set_align(0)
+        .set_text_align(0)
+        .set_padding(0, 14, 0, 14)
+        .set_max_width_chars(18)
+    )
+    .add(cogito.label(subtitle)
+        .set_class("victrola-album-meta")
+        .set_align(0)
+        .set_text_align(0)
+        .set_padding(0, 14, 0, 14)
+        .set_max_width_chars(26)
+    )
+    .on_click((c = any) => {
+        album_click_handler(album)
+    })
+
+    return card
+}
+
+fun find_visible_index(track_idx = num, visible_track_indexes = [num]) (( num )) {
+    for (let ?i = 0; i < stdr.len(visible_track_indexes); i = i + 1) {
+        if visible_track_indexes[i] == track_idx {
+            return i
+        }
+    }
+    return -1
+}
+
+pub fun refresh_library_list(
+    library_list = cogito.ContentList,
+    library_grid = cogito.Grid,
+    groups_revealer = cogito.Revealer,
+    titles_revealer = cogito.Revealer,
+    tracks = any,
+    view_mode = num,
+    query_text = string,
+    playing_track = num,
+    album_detail_open = bool,
+    album_detail_key = string,
+    album_artist_map = any,
+    album_cover_map = any,
+    on_artist_click = any,
+    on_album_click = any
+) (( any )) {
+    artist_click_handler = on_artist_click
+    album_click_handler = on_album_click
+
+    library_list.clear()
+    library_grid.clear()
+
+    let ?visible_track_indexes = []: [num]
+    let ?visible_group_keys = []: [string]
+
+    let mode = view_mode
+    let songs_view = mode == 0 || (mode == 2 && album_detail_open)
+    set_library_view_shows_groups(groups_revealer, titles_revealer, !songs_view)
+
+    if songs_view {
+        for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+            let t = tracks[i] ?? []: [string => any]
+            if !track_matches_query(t, query_text) {
+                continue
+            }
+
+            if mode == 2 && album_detail_open {
+                let album = stdr.str(t["album"] ?? "Unknown Album")
+                if album != album_detail_key {
+                    continue
+                }
+            }
+
+            library_list.add(build_library_row(t, 0, i == playing_track))
+            visible_track_indexes[stdr.len(visible_track_indexes)] = i
+            visible_group_keys[stdr.len(visible_group_keys)] = ""
+        }
+
+        let playing_row = find_visible_index(playing_track, visible_track_indexes)
+        if playing_row >= 0 {
+            library_list.set_selected(playing_row)
+        }
+    } elif mode == 1 {
+        library_grid.set_cols(2)
+
+        let ?seen = []: [string => any]
+        let ?order = []: [string]
+        let ?first_indexes = []: [num]
+
+        for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+            let t = tracks[i] ?? []: [string => any]
+            if !track_matches_query(t, query_text) {
+                continue
+            }
+
+            let key = stdr.str(t["artist"] ?? "Unknown Artist")
+            if stdr.is_null(seen[key]) {
+                seen[key] = 1
+                order[stdr.len(order)] = key
+                first_indexes[stdr.len(first_indexes)] = i
+            } else {
+                seen[key] = stdr.num(seen[key] ?? 0) + 1
+            }
+        }
+
+        let ?playing_artist = ""
+        if playing_track >= 0 && playing_track < stdr.len(tracks) {
+            let pt = tracks[playing_track] ?? []: [string => any]
+            playing_artist = stdr.str(pt["artist"] ?? "Unknown Artist")
+        }
+
+        for (let ?j = 0; j < stdr.len(order); j = j + 1) {
+            let key = order[j] ?? "Unknown Artist"
+            visible_group_keys[stdr.len(visible_group_keys)] = key
+            visible_track_indexes[stdr.len(visible_track_indexes)] = first_indexes[j] ?? -1
+
+            let count = seen[key] ?? 0
+            let col = j % 2
+            let row = (j - col) / 2
+            let subtitle = "$$count$$ songs"
+            library_grid.add(build_artist_card(key, subtitle), col, row, 1, 1)
+        }
+    } else {
+        library_grid.set_cols(2)
+
+        let ?seen = []: [string => any]
+        let ?order = []: [string]
+        let ?first_indexes = []: [num]
+
+        for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+            let t = tracks[i] ?? []: [string => any]
+            if !track_matches_query(t, query_text) {
+                continue
+            }
+
+            let key = stdr.str(t["album"] ?? "Unknown Album")
+            if stdr.is_null(seen[key]) {
+                seen[key] = 1
+                order[stdr.len(order)] = key
+                first_indexes[stdr.len(first_indexes)] = i
+            } else {
+                seen[key] = stdr.num(seen[key] ?? 0) + 1
+            }
+        }
+
+        let ?playing_album = ""
+        if playing_track >= 0 && playing_track < stdr.len(tracks) {
+            let pt = tracks[playing_track] ?? []: [string => any]
+            playing_album = stdr.str(pt["album"] ?? "Unknown Album")
+        }
+
+        for (let ?j = 0; j < stdr.len(order); j = j + 1) {
+            let key = order[j] ?? "Unknown Album"
+            visible_group_keys[stdr.len(visible_group_keys)] = key
+            visible_track_indexes[stdr.len(visible_track_indexes)] = first_indexes[j] ?? -1
+
+            let count = seen[key] ?? 0
+            let artist = victrola_model.album_artist_for(album_artist_map, key)
+            let col = j % 2
+            let row = (j - col) / 2
+            let subtitle = "$$count$$ songs"
+            library_grid.add(build_album_card(key, artist, subtitle, album_cover_map), col, row, 1, 1)
+        }
+    }
+
+    let ?out = []: [string => any]
+    out["track_indexes"] = visible_track_indexes
+    out["group_keys"] = visible_group_keys
+    return out
+}
