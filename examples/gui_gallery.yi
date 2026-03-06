@@ -1178,14 +1178,14 @@ fun build_dialog_page() (( cogito.VStack )) {
             .set_class("iconic")
             .set_halign(1)
             .set_disabled(true))
-        .add(cogito.label("Delete selected files?")
-            .set_halign(1))
-        .add(cogito.label("This test dialog previews final layout and spacing.")
-            .set_class("body"))
-        .add(cogito.label("Selected files are moved to Trash and can be restored.")
-            .set_class("body"))
-        .add(cogito.label("Use the action buttons below to close this test dialog.")
-            .set_class("body"))
+            .add(cogito.label("Delete selected files?")
+                .set_halign(1))
+            .add(cogito.label("This test dialog previews final layout and spacing.")
+                .set_class("body"))
+            .add(cogito.label("Selected files are moved to Trash and can be restored.")
+                .set_class("body"))
+            .add(cogito.label("Use the action buttons below to close this test dialog.")
+                .set_class("body"))
 
         let custom = cogito.vstack()
         .set_hexpand(true)
@@ -1196,9 +1196,9 @@ fun build_dialog_page() (( cogito.VStack )) {
             .set_halign(1)
             .set_valign(1))
 
-        let actions = cogito.hstack()
-        .set_gap(12)
-        .set_align(2)
+            let actions = cogito.hstack()
+            .set_gap(12)
+            .set_align(2)
         .add(cogito.button("Dismiss")
             .set_class("text")
             .on_click((db = cogito.Button) => {
@@ -1921,8 +1921,9 @@ fun build_settings_window_page() (( cogito.VStack )) {
     let row_font = cogito.settings_row("Font Size")
     .set_hexpand(true)
     .add(cogito.dropdown()
-    .set_items(["Small", "Medium", "Large"])
-    .set_selected(1))
+        .set_items(["Small", "Medium", "Large"])
+        .set_selected(1))
+
     list_general.add(row_font)
 
     page_general.add(list_general)
@@ -1935,6 +1936,7 @@ fun build_settings_window_page() (( cogito.VStack )) {
     let row_version = cogito.settings_row("Version")
     .set_hexpand(true)
     .add(cogito.label("1.0.0"))
+
     list_about.add(row_version)
 
     page_about.add(list_about)
@@ -2228,8 +2230,8 @@ fun build_side_sheet_page() (( cogito.VStack )) {
 
     -- Placeholder for where sidebar content would go
     let sidebar_placeholder = cogito.vstack()
-        .set_hexpand(true)
-        .add(cogito.label("Press 'Open Sidebar' to show the sidebar."))
+    .set_hexpand(true)
+    .add(cogito.label("Press 'Open Sidebar' to show the sidebar."))
     vstack.add(sidebar_placeholder)
 
     return vstack
@@ -2305,7 +2307,7 @@ fun build_bin_page() (( cogito.VStack )) {
         .set_color_style(1)
         .on_click((ib = cogito.IconButton) => {
             bin_status.set_text("Tonal icon button clicked.")
-    }))
+        }))
 
     let bin_controls2 = cogito.hstack()
     .set_gap(8)
@@ -2434,7 +2436,7 @@ fun view_id_from_index(idx = num) (( string )) {
         "active_indicator"
     } elif idx == 35 {
         "switchbar"
-     } elif idx == 36 {
+    } elif idx == 36 {
         "split_button"
     } elif idx == 37 {
         "menu_button"
@@ -2544,7 +2546,7 @@ fun view_title_from_index(idx = num) (( string )) {
         "ActiveIndicator"
     } elif idx == 35 {
         "SwitchBar"
-     } elif idx == 36 {
+    } elif idx == 36 {
         "SplitButton"
     } elif idx == 37 {
         "MenuButton"
