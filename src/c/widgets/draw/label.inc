@@ -40,12 +40,14 @@ case COGITO_LABEL: {
         int content_h = n->h - n->padding_top - n->padding_bottom;
         if (content_w < 0) content_w = 0;
         if (content_h < 0) content_h = 0;
+        bool lbold = cogito_label_bold(n);
+        bool lmedium = cogito_label_medium(n);
         if (n->text_wrap) {
-          cogito_draw_text_wrapped(n, content_x, content_y, content_w, draw_text, text, size, cogito_label_bold(n), false, align, true);
+          cogito_draw_text_wrapped(n, content_x, content_y, content_w, draw_text, text, size, lbold, lmedium, align, true);
         } else if (n->text_ellipsis) {
           int th = cogito_text_height_size(size);
           int ty = content_y + (content_h - th) / 2;
-          cogito_draw_text_ellipsis(n, content_x, ty, content_w, draw_text, text, size, cogito_label_bold(n), false, align);
+          cogito_draw_text_ellipsis(n, content_x, ty, content_w, draw_text, text, size, lbold, lmedium, align);
         } else {
           int tw = cogito_text_width_size_node(n, draw_text, size);
           int th = cogito_text_height_size(size);
@@ -53,7 +55,7 @@ case COGITO_LABEL: {
           int tx = content_x;
           if (align == 1) tx = content_x + (content_w - tw) / 2;
           else if (align == 2) tx = content_x + (content_w - tw);
-          cogito_draw_text_size_node(n, tx, ty, draw_text, text, size, cogito_label_bold(n), false);
+          cogito_draw_text_size_node(n, tx, ty, draw_text, text, size, lbold, lmedium);
         }
         if (trunc_heap) free(trunc_heap);
       }

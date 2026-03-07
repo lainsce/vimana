@@ -30,7 +30,7 @@ def ABACUS_STATE_PATH = ".abacus_state.json"
 def ABOUT_MORE_INFO_URL = "https://github.com/lainsce/yis"
 def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
-fun save_state() (( -- )) {
+: save_state() (( -- )) {
     let pending_op_esc = json.escape(pending_op)
     let conv_input_esc = json.escape(conv_input.text())
     let ?payload = "{"
@@ -51,7 +51,7 @@ fun save_state() (( -- )) {
     stdr.write_text_file(ABACUS_STATE_PATH, payload)
 }
 
-fun load_state() (( -- )) {
+: load_state() (( -- )) {
     let raw = stdr.read_text_file(ABACUS_STATE_PATH)
     if is_null(raw) {
         return
@@ -76,7 +76,7 @@ fun load_state() (( -- )) {
     state_loaded = true
 }
 
-fun apply_loaded_state(view_switcher = cogito.ViewSwitcher) (( -- )) {
+: apply_loaded_state(view_switcher = cogito.ViewSwitcher) (( -- )) {
     if has_error {
         clear_expression()
         update_display_value("Error")
@@ -114,15 +114,15 @@ fun apply_loaded_state(view_switcher = cogito.ViewSwitcher) (( -- )) {
     }
 }
 
-fun update_display_value(text = string) (( -- )) {
+: update_display_value(text = string) (( -- )) {
     display_working.set_text(text)
 }
 
-fun clear_expression() (( -- )) {
+: clear_expression() (( -- )) {
     display_expression.set_text("")
 }
 
-fun set_expression(lhs_text = string, op_text = string, rhs_text = string, show_equals = bool) (( -- )) {
+: set_expression(lhs_text = string, op_text = string, rhs_text = string, show_equals = bool) (( -- )) {
     let text = if rhs_text == "" {
         if show_equals { "$$lhs_text$$ $$op_text$$ =" } else { "$$lhs_text$$ $$op_text$$" }
     } else {
@@ -131,7 +131,7 @@ fun set_expression(lhs_text = string, op_text = string, rhs_text = string, show_
     display_expression.set_text(text)
 }
 
-fun clear_all() (( -- )) {
+: clear_all() (( -- )) {
     current_value = 0.0
     stored_value = 0.0
     pending_op = ""
@@ -142,7 +142,7 @@ fun clear_all() (( -- )) {
     save_state()
 }
 
-fun commit_pending(show_equals = bool) (( -- )) {
+: commit_pending(show_equals = bool) (( -- )) {
     let op = pending_op
     if op == "" {
         return
@@ -179,7 +179,7 @@ fun commit_pending(show_equals = bool) (( -- )) {
     update_display_value(str(result))
 }
 
-fun input_digit(d = num) (( -- )) {
+: input_digit(d = num) (( -- )) {
     if has_error {
         clear_all()
     }
@@ -202,7 +202,7 @@ fun input_digit(d = num) (( -- )) {
     save_state()
 }
 
-fun choose_operator(op = string) (( -- )) {
+: choose_operator(op = string) (( -- )) {
     if has_error {
         clear_all()
     }
@@ -223,7 +223,7 @@ fun choose_operator(op = string) (( -- )) {
     save_state()
 }
 
-fun evaluate() (( -- )) {
+: evaluate() (( -- )) {
     if has_error {
         clear_all()
         return
@@ -242,7 +242,7 @@ fun evaluate() (( -- )) {
     save_state()
 }
 
-fun digit_button(d = num) (( cogito.Button )) {
+: digit_button(d = num) (( cogito.Button )) {
     let btn = cogito.button(str(d))
     .set_class("calc-digit")
     .on_click((b = cogito.Button) => {
@@ -251,7 +251,7 @@ fun digit_button(d = num) (( cogito.Button )) {
     return btn
 }
 
-fun operator_button(text = string, op = string) (( cogito.Button )) {
+: operator_button(text = string, op = string) (( cogito.Button )) {
     let btn = cogito.button(text)
     .set_class("calc-op")
     .on_click((b = cogito.Button) => {
@@ -260,7 +260,7 @@ fun operator_button(text = string, op = string) (( cogito.Button )) {
     return btn
 }
 
-fun clear_button() (( cogito.Button )) {
+: clear_button() (( cogito.Button )) {
     let btn = cogito.button("C")
     .set_class("calc-clear")
     .on_click((b = cogito.Button) => {
@@ -269,7 +269,7 @@ fun clear_button() (( cogito.Button )) {
     return btn
 }
 
-fun equals_button() (( cogito.Button )) {
+: equals_button() (( cogito.Button )) {
     let btn = cogito.button("=")
     .set_class("calc-equals")
     .on_click((b = cogito.Button) => {
@@ -278,13 +278,13 @@ fun equals_button() (( cogito.Button )) {
     return btn
 }
 
-fun spacer() (( cogito.Label )) {
+: spacer() (( cogito.Label )) {
     let s = cogito.label("")
     .set_class("calc-spacer")
     return s
 }
 
-fun aton(s = string) (( num )) {
+: aton(s = string) (( num )) {
     let ?result = 0.0
     let ?i = 0
     let ?neg = false
@@ -330,7 +330,7 @@ fun aton(s = string) (( num )) {
     return result
 }
 
-fun conv_unit_names() (( [any] )) {
+: conv_unit_names() (( [any] )) {
     if conv_category == 0 {
         return ["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"]
     } elif conv_category == 1 {
@@ -342,7 +342,7 @@ fun conv_unit_names() (( [any] )) {
     }
 }
 
-fun conv_unit_count() (( num )) {
+: conv_unit_count() (( num )) {
     if conv_category == 0 {
         return 8
     } elif conv_category == 1 {
@@ -353,7 +353,7 @@ fun conv_unit_count() (( num )) {
     return 6
 }
 
-fun conv_apply_unit_items() (( -- )) {
+: conv_apply_unit_items() (( -- )) {
     if conv_category == 0 {
         conv_from_dd.set_items(["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"])
         conv_to_dd.set_items(["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"])
@@ -369,7 +369,7 @@ fun conv_apply_unit_items() (( -- )) {
     }
 }
 
-fun conv_to_base(value = num, idx = num) (( num )) {
+: conv_to_base(value = num, idx = num) (( num )) {
     if conv_category == 0 {
         if idx == 0 { return value }
         elif idx == 1 { return value * 1000 }
@@ -400,7 +400,7 @@ fun conv_to_base(value = num, idx = num) (( num )) {
     }
 }
 
-fun conv_from_base(value = num, idx = num) (( num )) {
+: conv_from_base(value = num, idx = num) (( num )) {
     if conv_category == 0 {
         if idx == 0 { return value }
         elif idx == 1 { return value / 1000 }
@@ -431,7 +431,7 @@ fun conv_from_base(value = num, idx = num) (( num )) {
     }
 }
 
-fun do_convert() (( -- )) {
+: do_convert() (( -- )) {
     let input_text = conv_input.text()
     conv_input_state = input_text
     let input_val = aton(input_text)
@@ -440,7 +440,7 @@ fun do_convert() (( -- )) {
     conv_output.set_text(str(result))
 }
 
-fun swap_conv() (( -- )) {
+: swap_conv() (( -- )) {
     let old_from = conv_from_idx
     let old_to = conv_to_idx
     conv_from_idx = old_to
@@ -455,7 +455,7 @@ fun swap_conv() (( -- )) {
     save_state()
 }
 
-fun refresh_conv_units() (( -- )) {
+: refresh_conv_units() (( -- )) {
     if conv_category < 0 || conv_category > 3 {
         conv_category = 0
     }
@@ -470,7 +470,7 @@ fun refresh_conv_units() (( -- )) {
     save_state()
 }
 
-fun build_converter_ui() (( cogito.VStack )) {
+: build_converter_ui() (( cogito.VStack )) {
     let panel = cogito.vstack()
     panel.set_hexpand(true)
     panel.set_vexpand(true)
@@ -554,7 +554,7 @@ fun build_converter_ui() (( cogito.VStack )) {
     return panel
 }
 
-fun show_about_window(win = cogito.Window) (( -- )) {
+: show_about_window(win = cogito.Window) (( -- )) {
     let dlg = cogito.dialog("")
     let content = cogito.vstack()
     content.align_center()
@@ -569,7 +569,7 @@ fun show_about_window(win = cogito.Window) (( -- )) {
     win.set_dialog(dlg)
 }
 
-fun build_ui(win = cogito.Window) (( -- )) {
+: build_ui(win = cogito.Window) (( -- )) {
     let root = cogito.vstack()
     .set_hexpand(true)
     .set_vexpand(true)

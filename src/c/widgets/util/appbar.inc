@@ -6,11 +6,11 @@ static void cogito_appbar_button_metrics(int* size, int* gap, int* pad_top, int*
   if (size) {
     if (s.has_min_w) *size = s.min_w;
     else if (s.has_min_h) *size = s.min_h;
-    else *size = 12;
+    else *size = 14;
   }
-  if (gap) *gap = 10;
-  if (pad_top) *pad_top = 14;
-  if (pad_right) *pad_right = 14;
+  if (gap) *gap = 9;
+  if (pad_top) *pad_top = 15;
+  if (pad_right) *pad_right = 15;
 }
 
 static bool cogito_tree_has_visible_bottom_sheet_above_y(const CogitoNode* n, int y_limit) {
@@ -34,7 +34,7 @@ static bool cogito_appbar_bottom_sheet_active(const CogitoNode* appbar) {
 
 static int cogito_appbar_titlebar_inset(void) {
   int btn_size = 12;
-  int btn_gap = 10;
+  int btn_gap = 9;
   int btn_pad_top = 14;
   int btn_pad_right = 14;
   cogito_appbar_button_metrics(&btn_size, &btn_gap, &btn_pad_top, &btn_pad_right);
@@ -196,25 +196,26 @@ static bool cogito_hit_rect_min48_local(int px, int py, int rx, int ry, int rw, 
 
 static bool cogito_point_over_appbar_buttons(CogitoNode* app, int x, int y) {
   if (!app) return false;
-  int btn_hit_pad = 1; // element_size + 2px target (1px on each side)
+  int btn_hit_pad = 3;
+  int hit_size = app->appbar.btn_size + btn_hit_pad * 2;
   if (app->appbar.btn_close_x >= 0 &&
       cogito_hit_rect(x, y,
                       app->appbar.btn_close_x - btn_hit_pad,
                       app->appbar.btn_y - btn_hit_pad,
-                      app->appbar.btn_size + 2,
-                      app->appbar.btn_size + 2)) return true;
+                      hit_size,
+                      hit_size)) return true;
   if (app->appbar.btn_min_x >= 0 &&
       cogito_hit_rect(x, y,
                       app->appbar.btn_min_x - btn_hit_pad,
                       app->appbar.btn_y - btn_hit_pad,
-                      app->appbar.btn_size + 2,
-                      app->appbar.btn_size + 2)) return true;
+                      hit_size,
+                      hit_size)) return true;
   if (app->appbar.btn_max_x >= 0 &&
       cogito_hit_rect(x, y,
                       app->appbar.btn_max_x - btn_hit_pad,
                       app->appbar.btn_y - btn_hit_pad,
-                      app->appbar.btn_size + 2,
-                      app->appbar.btn_size + 2)) return true;
+                      hit_size,
+                      hit_size)) return true;
   for (size_t i = 0; i < app->len; i++) {
     CogitoNode* c = app->children[i];
     if (cogito_hit_rect_min48_local(x, y, c->x, c->y, c->w, c->h)) return true;
@@ -383,13 +384,13 @@ static void cogito_appbar_row_positions(
   int* out_child_y,
   int* out_appbar_h
 ) {
-  int btn_size = 12;
+  int btn_size = 14;
   int btn_gap = 6;
-  int btn_pad_top = 9;
-  int btn_pad_right = 9;
+  int btn_pad_top = 15;
+  int btn_pad_right = 15;
   cogito_appbar_button_metrics(&btn_size, &btn_gap, &btn_pad_top, &btn_pad_right);
   int appbar_type = cogito_appbar_type(n);
-  int nav_top_inset = n->y + n->padding_top + COGITO_NAV_RAIL_COLLAPSED_TOP_OFFSET;
+  int nav_top_inset = n->y + n->padding_top + btn_pad_top + btn_size + btn_pad_top;
   bool has_actual_height = n->h > 0;
   int node_top = n->y + n->padding_top;
   int node_bottom = has_actual_height ? (n->y + n->h - n->padding_bottom) : 0;
@@ -493,9 +494,9 @@ static void cogito_appbar_row_positions(
   int bottom_pad = 12;
   int min_h = 64;
   if (appbar_type == COGITO_APPBAR_TYPE_SMALL) {
-    title_gap = 8;
-    subtitle_gap = 8;
-    baseline_gap = 10;
+    title_gap = 12;
+    subtitle_gap = 12;
+    baseline_gap = 18;
     min_h = 104;
   } else if (appbar_type == COGITO_APPBAR_TYPE_LARGE) {
     title_gap = 14;
@@ -541,13 +542,28 @@ static void cogito_appbar_row_positions(
   // Align AppBar's top content lane to the same top inset used by NavRail FAB.
   if (appbar_type != COGITO_APPBAR_TYPE_SEARCH) {
     int sub_gap = (appbar_type == COGITO_APPBAR_TYPE_SMALL) ? 6 : subtitle_gap;
-    int top_row_h = 0;
-    if (has_title && title_h > top_row_h) top_row_h = title_h;
-    if (has_children && icon_row_h > top_row_h) top_row_h = icon_row_h;
-    int block_h = top_row_h;
-    if (has_subtitle) {
-      if (block_h > 0) block_h += sub_gap;
-      block_h += subtitle_h;
+    int block_h = 0;
+    if (appbar_type == COGITO_APPBAR_TYPE_SMALL) {
+      // Small: everything on one row - block_h = max of text stack and icons
+      int text_block_h = 0;
+      if (has_title) text_block_h += title_h;
+      if (has_subtitle) {
+        if (text_block_h > 0) text_block_h += sub_gap;
+        text_block_h += subtitle_h;
+      }
+      block_h = text_block_h;
+      if (has_children && icon_row_h > block_h) block_h = icon_row_h;
+    } else {
+      // Medium/Large: action buttons row on top, then title, then subtitle
+      if (has_children) block_h += icon_row_h;
+      if (has_title) {
+        if (block_h > 0) block_h += title_gap;
+        block_h += title_h;
+      }
+      if (has_subtitle) {
+        if (block_h > 0) block_h += sub_gap;
+        block_h += subtitle_h;
+      }
     }
 
     int top_lane_y = nav_top_inset;
@@ -557,42 +573,39 @@ static void cogito_appbar_row_positions(
       if (top_lane_y > max_top_lane) top_lane_y = max_top_lane;
       if (top_lane_y < node_top) top_lane_y = node_top;
     }
-    if (has_title) {
-      y_title = top_lane_y;
-    }
-    if (has_subtitle) {
-      y_subtitle = has_title ? (y_title + title_h + sub_gap) : top_lane_y;
-    }
-    if (has_children) {
-      if (has_title) {
-        y_child = y_title + (title_h - icon_row_h) / 2;
-      } else {
-        y_child = top_lane_y;
+    if (appbar_type == COGITO_APPBAR_TYPE_SMALL) {
+      // Small: single row with text stack and icons vertically centered
+      int text_block_h = 0;
+      if (has_title) text_block_h += title_h;
+      if (has_subtitle) {
+        if (text_block_h > 0) text_block_h += sub_gap;
+        text_block_h += subtitle_h;
       }
-      if (y_child < top_lane_y) y_child = top_lane_y;
-    }
-
-    if (appbar_type == COGITO_APPBAR_TYPE_SMALL && has_children) {
-      bool has_title_only = has_title && !has_subtitle;
-      bool has_subtitle_only = has_subtitle && !has_title;
-      if (has_title_only) {
-        int line_y = y_child + (icon_row_h - title_h) / 2;
-        if (has_actual_height) {
-          int max_line_y = node_bottom - title_h;
-          if (max_line_y < node_top) max_line_y = node_top;
-          if (line_y < node_top) line_y = node_top;
-          if (line_y > max_line_y) line_y = max_line_y;
-        }
-        y_title = line_y;
-      } else if (has_subtitle_only) {
-        int line_y = y_child + (icon_row_h - subtitle_h) / 2;
-        if (has_actual_height) {
-          int max_line_y = node_bottom - subtitle_h;
-          if (max_line_y < node_top) max_line_y = node_top;
-          if (line_y < node_top) line_y = node_top;
-          if (line_y > max_line_y) line_y = max_line_y;
-        }
-        y_subtitle = line_y;
+      int row_h = text_block_h;
+      if (has_children && icon_row_h > row_h) row_h = icon_row_h;
+      int text_y = top_lane_y + (row_h - text_block_h) / 2;
+      if (has_title) y_title = text_y;
+      if (has_subtitle) {
+        y_subtitle = has_title ? (y_title + title_h + sub_gap) : text_y;
+      }
+      if (has_children) {
+        y_child = top_lane_y + (row_h - icon_row_h) / 2;
+        if (y_child < top_lane_y) y_child = top_lane_y;
+      }
+    } else {
+      // Medium/Large: action buttons row at top, then title, then subtitle
+      int cursor = top_lane_y;
+      if (has_children) {
+        y_child = cursor;
+        cursor += icon_row_h + title_gap;
+      }
+      if (has_title) {
+        y_title = cursor;
+        cursor += title_h;
+        if (has_subtitle) cursor += sub_gap;
+      }
+      if (has_subtitle) {
+        y_subtitle = cursor;
       }
     }
 
@@ -609,9 +622,7 @@ static void cogito_appbar_row_positions(
       int b = y_child + icon_row_h;
       if (b > content_bottom) content_bottom = b;
     }
-    int aligned_h = (content_bottom - n->y) + bottom_pad;
-    if (aligned_h < min_h) aligned_h = min_h;
-    if (h < aligned_h) h = aligned_h;
+    h = (content_bottom - n->y) + bottom_pad;
   }
 
   if (out_buttons_y)  *out_buttons_y  = y_buttons;

@@ -2,7 +2,7 @@ cask victrola_util
 
 bring stdr
 
-pub fun collapse_path_separators(path = string) (( string )) {
+:: collapse_path_separators(path = string) (( string )) {
     let n = stdr.len(path)
     if n == 0 {
         return ""
@@ -31,7 +31,7 @@ pub fun collapse_path_separators(path = string) (( string )) {
     return out
 }
 
-pub fun sanitize_cover_path(path = string) (( string )) {
+:: sanitize_cover_path(path = string) (( string )) {
     let ?p = stdr.trim(path)
     if stdr.len(p) == 0 {
         return ""
@@ -74,7 +74,7 @@ pub fun sanitize_cover_path(path = string) (( string )) {
     return p
 }
 
-pub fun split_lines(text = string) (( any )) {
+:: split_lines(text = string) (( any )) {
     let ?lines = []: [string]
     let ?start = 0
     let ?i = 0
@@ -100,7 +100,7 @@ pub fun split_lines(text = string) (( any )) {
     return lines
 }
 
-pub fun format_ms(ms = num) (( string )) {
+:: format_ms(ms = num) (( string )) {
     if ms < 0 {
         return "00:00"
     }

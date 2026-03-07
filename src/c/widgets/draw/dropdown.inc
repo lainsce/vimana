@@ -38,7 +38,7 @@ case COGITO_DROPDOWN: {
       int text_w = n->w - pad * 2 - icon_box;
       bool dd_rtl = cogito_is_rtl();
       int label_x = dd_rtl ? (n->x + pad + icon_box) : (n->x + pad);
-      cogito_draw_text_ellipsis(n, label_x, ty, text_w, label, text, size, cogito_node_bold(n), false, dd_rtl ? 2 : 0);
+      cogito_draw_text_ellipsis(n, label_x, ty, text_w, label, text, size, cogito_node_bold(n), cogito_node_medium(n), dd_rtl ? 2 : 0);
       int ix = dd_rtl
           ? (n->x + pad + (icon_box - icon_size) / 2)
           : (n->x + n->w - pad - icon_box + (icon_box - icon_size) / 2);

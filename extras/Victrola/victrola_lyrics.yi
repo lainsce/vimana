@@ -4,7 +4,7 @@ bring stdr
 bring json
 bring net
 
-pub fun fetch_lyrics(artist = string, title = string) (( string )) {
+:: fetch_lyrics(artist = string, title = string) (( string )) {
     if stdr.len(artist) == 0 && stdr.len(title) == 0 {
         return "Select a track to view lyrics."
     }

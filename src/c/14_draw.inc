@@ -1627,6 +1627,7 @@ static void cogito_draw_node(CogitoNode* n) {
   }
   switch (n->kind) {
     #include "widgets/draw/button.inc"
+    #include "widgets/draw/fontbutton.inc"
     #include "widgets/draw/carousel.inc"
     #include "widgets/draw/carousel_item.inc"
     #include "widgets/draw/iconbtn.inc"

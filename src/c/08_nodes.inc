@@ -356,6 +356,7 @@ static const char* cogito_node_default_a11y_role(CogitoKind kind) {
     case COGITO_SIDE_SHEET:
       return "dialog";
     case COGITO_BUTTON:
+    case COGITO_FONTBUTTON:
     case COGITO_ICONBTN:
     case COGITO_FAB:
     case COGITO_FAB_MENU:
@@ -719,6 +720,8 @@ static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
   switch (n->kind) {
 
     #include "widgets/intrinsic/button.inc"
+
+    #include "widgets/intrinsic/fontbutton.inc"
 
     #include "widgets/intrinsic/carousel.inc"
 

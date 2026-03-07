@@ -41,6 +41,12 @@ static void sdl3_sync_logical_presentation(CogitoSDL3Window *win);
 static void sdl3_get_mouse_position_in_window(CogitoWindow *window, int *x,
                                               int *y);
 static void sdl3_free_geometry_buffers(void);
+static char *sdl3_choose_font_name(CogitoWindow *window,
+                                   const char *current_name);
+
+#if defined(__APPLE__)
+extern char *cogito_macos_choose_font_name(const char *current_name);
+#endif
 
 // ============================================================================
 // Cursor
@@ -76,6 +82,17 @@ static void sdl3_set_cursor(CogitoCursorType cursor) {
   }
   if (c)
     SDL_SetCursor(c);
+}
+
+static char *sdl3_choose_font_name(CogitoWindow *window,
+                                   const char *current_name) {
+  (void)window;
+#if defined(__APPLE__)
+  return cogito_macos_choose_font_name(current_name);
+#else
+  (void)current_name;
+  return NULL;
+#endif
 }
 
 // ============================================================================
@@ -2932,6 +2949,7 @@ static CogitoBackend sdl3_backend = {
     .window_set_icon = sdl3_window_set_icon,
     .window_get_id = sdl3_window_get_id,
     .open_url = sdl3_open_url,
+    .choose_font_name = sdl3_choose_font_name,
     .set_clipboard_text = sdl3_set_clipboard_text,
     .begin_frame = sdl3_begin_frame,
     .end_frame = sdl3_end_frame,

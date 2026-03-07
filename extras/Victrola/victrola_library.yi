@@ -7,14 +7,14 @@ bring victrola_model
 def ?artist_click_handler = (artist = string) => {}
 def ?album_click_handler = (album = string) => {}
 
-fun set_library_view_shows_groups(groups_revealer = cogito.Revealer, titles_revealer = cogito.Revealer, show_groups = bool) (( -- )) {
+: set_library_view_shows_groups(groups_revealer = cogito.Revealer, titles_revealer = cogito.Revealer, show_groups = bool) (( -- )) {
     groups_revealer.set_show_children(show_groups)
     groups_revealer.set_vexpand(show_groups)
     titles_revealer.set_show_children(!show_groups)
     titles_revealer.set_vexpand(!show_groups)
 }
 
-pub fun track_matches_query(track = any, query_text = string) (( bool )) {
+:: track_matches_query(track = any, query_text = string) (( bool )) {
     if stdr.len(query_text) == 0 {
         return true
     }
@@ -22,7 +22,7 @@ pub fun track_matches_query(track = any, query_text = string) (( bool )) {
     return stdr.contains(blob, query_text)
 }
 
-fun build_library_row(track = any, mode = num, is_now_playing = bool) (( any )) {
+: build_library_row(track = any, mode = num, is_now_playing = bool) (( any )) {
     let ?title = stdr.str(track["title"] ?? "")
     let ?subtitle = stdr.str(track["artist"] ?? "")
 
@@ -71,7 +71,7 @@ fun build_library_row(track = any, mode = num, is_now_playing = bool) (( any )) 
     return row
 }
 
-fun build_artist_card(name = string, subtitle = string) (( any )) {
+: build_artist_card(name = string, subtitle = string) (( any )) {
     let card = cogito.card(name)
     .set_subtitle(subtitle)
     .set_variant(cogito.CARD_FILLED())
@@ -83,7 +83,7 @@ fun build_artist_card(name = string, subtitle = string) (( any )) {
     return card
 }
 
-fun build_album_card(album = string, artist = string, subtitle = string, album_cover_map = any) (( any )) {
+: build_album_card(album = string, artist = string, subtitle = string, album_cover_map = any) (( any )) {
     let cover = victrola_model.album_cover_for(album_cover_map, album, artist)
 
     let card = cogito.card("")
@@ -112,7 +112,7 @@ fun build_album_card(album = string, artist = string, subtitle = string, album_c
     return card
 }
 
-fun find_visible_index(track_idx = num, visible_track_indexes = [num]) (( num )) {
+: find_visible_index(track_idx = num, visible_track_indexes = [num]) (( num )) {
     for (let ?i = 0; i < stdr.len(visible_track_indexes); i = i + 1) {
         if visible_track_indexes[i] == track_idx {
             return i
@@ -121,7 +121,7 @@ fun find_visible_index(track_idx = num, visible_track_indexes = [num]) (( num ))
     return -1
 }
 
-pub fun refresh_library_list(
+:: refresh_library_list(
     library_list = cogito.ContentList,
     library_grid = cogito.Grid,
     groups_revealer = cogito.Revealer,

@@ -12,70 +12,70 @@ def ?eos_handler = null
 def ?error_handler = null
 def ?tag_handler = null
 
-pub fun init() (( bool )) {
+:: init() (( bool )) {
     return cogito.gst_init()
 }
 
-pub fun shutdown() (( -- )) {
+:: shutdown() (( -- )) {
     cogito.gst_shutdown()
 }
 
-pub fun load(path_or_uri = string) (( bool )) {
+:: load(path_or_uri = string) (( bool )) {
     return cogito.gst_load(path_or_uri)
 }
 
-pub fun play() (( bool )) {
+:: play() (( bool )) {
     return cogito.gst_play()
 }
 
-pub fun pause() (( bool )) {
+:: pause() (( bool )) {
     return cogito.gst_pause()
 }
 
-pub fun stop() (( bool )) {
+:: stop() (( bool )) {
     return cogito.gst_stop()
 }
 
-pub fun seek_ms(position_ms = num) (( bool )) {
+:: seek_ms(position_ms = num) (( bool )) {
     return cogito.gst_seek_ms(position_ms)
 }
 
-pub fun position_ms() (( num )) {
+:: position_ms() (( num )) {
     return cogito.gst_position_ms()
 }
 
-pub fun duration_ms() (( num )) {
+:: duration_ms() (( num )) {
     return cogito.gst_duration_ms()
 }
 
-pub fun set_volume(value_0_to_1 = num) (( bool )) {
+:: set_volume(value_0_to_1 = num) (( bool )) {
     return cogito.gst_set_volume(value_0_to_1)
 }
 
-pub fun volume() (( num )) {
+:: volume() (( num )) {
     return cogito.gst_volume()
 }
 
-pub fun last_error() (( string )) {
+:: last_error() (( string )) {
     return cogito.gst_last_error()
 }
 
-pub fun last_cover_path() (( string )) {
+:: last_cover_path() (( string )) {
     return cogito.gst_last_cover_path()
 }
 
-pub fun on_eos(handler = any) (( -- )) {
+:: on_eos(handler = any) (( -- )) {
     eos_handler = handler
 }
 
-pub fun on_error(handler = any) (( -- )) {
+:: on_error(handler = any) (( -- )) {
     error_handler = handler
 }
 
-pub fun on_tag(handler = any) (( -- )) {
+:: on_tag(handler = any) (( -- )) {
     tag_handler = handler
 }
 
-pub fun poll() (( num )) {
+:: poll() (( num )) {
     return cogito.gst_poll_event()
 }

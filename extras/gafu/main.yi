@@ -5,7 +5,7 @@ bring cogito
 bring json
 
 def gafu_app = cogito.app()
-def source_picker = cogito.colorpicker().set_hex("#65558F")
+def source_picker = cogito.colorpicker()
 def upload_hint = cogito.label("Choose an Image or Drop Here…")
 def scheme_switch = cogito.switch("")
 def ?source_hex = "#65558F"
@@ -21,7 +21,7 @@ def dark_switch = cogito.switchbar("Dark Mode")
 def ?mode_idx = 1
 def GAFU_STATE_PATH = ".gafu_state.json"
 
-fun save_state() (( -- )) {
+: save_state() (( -- )) {
     let source_hex_esc = json.escape(source_hex)
     let selected_image_path_esc = json.escape(selected_image_path)
     let ?payload = "{"
@@ -36,7 +36,7 @@ fun save_state() (( -- )) {
     stdr.write_text_file(GAFU_STATE_PATH, payload)
 }
 
-fun apply_mode(idx = num) (( -- )) {
+: apply_mode(idx = num) (( -- )) {
     mode_idx = idx
     set_mode_selection(mode_idx, mode_moon, mode_base, mode_bright, mode_brightest)
     if mode_idx == 0 {
@@ -50,7 +50,7 @@ fun apply_mode(idx = num) (( -- )) {
     }
 }
 
-fun load_state() (( -- )) {
+: load_state() (( -- )) {
     let raw = stdr.read_text_file(GAFU_STATE_PATH)
     if is_null(raw) {
         return
@@ -96,7 +96,7 @@ fun load_state() (( -- )) {
     gafu_app.set_dark_mode(dark_mode, false)
 }
 
-fun apply_source_color(hex = string) (( -- )) {
+: apply_source_color(hex = string) (( -- )) {
     if len(hex) == 0 {
         return
     }
@@ -106,7 +106,7 @@ fun apply_source_color(hex = string) (( -- )) {
     save_state()
 }
 
-fun choose_source_image() (( -- )) {
+: choose_source_image() (( -- )) {
     let picked = stdr.open_file_dialog("Choose image", "png")
     if is_null(picked) {
         return
@@ -131,7 +131,7 @@ fun choose_source_image() (( -- )) {
     }
 }
 
-fun reset_everything() (( -- )) {
+: reset_everything() (( -- )) {
     selected_image_path = ""
     upload_hint.set_text("Choose File Or Drag & Drop Here…")
     selected_image_preview.set_source("")
@@ -151,14 +151,14 @@ fun reset_everything() (( -- )) {
     save_state()
 }
 
-fun swatch(text = string, cls = string) (( cogito.Button )) {
+: swatch(text = string, cls = string) (( cogito.Button )) {
     let box = cogito.button(text)
     .set_class(cls)
     .set_hexpand(true)
     return box
 }
 
-fun tone_column(a = string, ca = string, b = string, cb = string, c = string, cc = string, d = string, cd = string) (( cogito.VStack )) {
+: tone_column(a = string, ca = string, b = string, cb = string, c = string, cc = string, d = string, cd = string) (( cogito.VStack )) {
     let col = cogito.vstack()
     .set_hexpand(true)
     .set_class("gafu-tone-col")
@@ -170,7 +170,7 @@ fun tone_column(a = string, ca = string, b = string, cb = string, c = string, cc
     return col
 }
 
-fun fixed_column(a = string, ca = string, b = string, cb = string, c = string, cc = string, d = string, cd = string) (( cogito.VStack )) {
+: fixed_column(a = string, ca = string, b = string, cb = string, c = string, cc = string, d = string, cd = string) (( cogito.VStack )) {
     let col = cogito.vstack()
     .set_hexpand(true)
 
@@ -185,7 +185,7 @@ fun fixed_column(a = string, ca = string, b = string, cb = string, c = string, c
     return col
 }
 
-fun set_mode_selection(
+: set_mode_selection(
     active = num,
     moon = cogito.IconButton,
     base = cogito.IconButton,
@@ -204,7 +204,7 @@ fun set_mode_selection(
     brightest.set_class(if active == 3 { "filled" } else { "tonal" })
 }
 
-fun build_palette_grid() (( cogito.VStack )) {
+: build_palette_grid() (( cogito.VStack )) {
     let group = cogito.vstack()
     .set_hexpand(true)
     .set_padding(12, 18, 18, 18)
@@ -279,7 +279,7 @@ fun build_palette_grid() (( cogito.VStack )) {
     return group
 }
 
-fun build_right_panel() (( cogito.VStack )) {
+: build_right_panel() (( cogito.VStack )) {
     let panel = cogito.vstack()
     .set_gap(24)
     .set_padding(0, 18, 18, 18)
@@ -438,6 +438,9 @@ entry() (( -- )) {
     .set_accent_color("#65558F", false)
 
     cogito.load_sum("gafu.sum")
+
+    -- Configure module-level widgets
+    source_picker.set_hex("#65558F")
 
     let win = cogito.window_size("Gafu", 1720, 760)
     .set_autosize(false)

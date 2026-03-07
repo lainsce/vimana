@@ -1,0 +1,67 @@
+cask custom_fonts
+
+bring stdr
+bring cogito
+
+: build_ui(win = cogito.Window) (( -- )) {
+    let vstack = cogito.vstack()
+    .set_gap(12)
+    .set_padding(0, 24, 24, 24)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let appbar = cogito.appbar("Custom Fonts", "Baseline & Emphasized")
+    .set_medium()
+    .set_hexpand(true)
+    win.add(appbar)
+
+    let big_display = cogito.label("Big Display")
+    .set_class("big-display")
+    .set_hexpand(true)
+    vstack.add(big_display)
+
+    let display = cogito.label("Display")
+    .set_class("display")
+    .set_hexpand(true)
+    vstack.add(display)
+
+    let view_title = cogito.label("View Title")
+    .set_class("view-title")
+    .set_hexpand(true)
+    vstack.add(view_title)
+
+    let heading = cogito.label("Heading")
+    .set_class("heading")
+    .set_hexpand(true)
+    vstack.add(heading)
+
+    let content_title = cogito.label("Content Title")
+    .set_class("content-title")
+    .set_hexpand(true)
+    vstack.add(content_title)
+
+    let body = cogito.label("Body text rendered with the baseline font at normal weight.")
+    .set_class("body")
+    .set_wrap(true)
+    .set_hexpand(true)
+    vstack.add(body)
+
+    let caption = cogito.label("Caption text")
+    .set_class("caption")
+    .set_hexpand(true)
+    vstack.add(caption)
+
+    win.add(vstack)
+}
+
+entry () (( -- )) {
+    let app = cogito.app()
+    .set_appid("yis.cogito.CustomFonts")
+    .set_baseline_font("Helvetica")
+    .set_emphasized_font("Georgia")
+    .set_accent_color("#6750a4", false)
+
+    let win = cogito.window_title("Custom Fonts Demo", 800, 700)
+    .build(build_ui)
+    app.run(win)
+}

@@ -9,7 +9,7 @@ macro with_ext(ext = string) (( string )) {
 }
 
 def editor = cogito.textview("")
-def bar = cogito.appbar("Untitled.txt", "Ready").set_medium()
+def bar = cogito.appbar("Untitled.txt", "Ready")
 def ?title_text = "Untitled.txt"
 def ?subtitle_text = "Ready"
 def ?current_path = ""
@@ -19,7 +19,7 @@ def STATE_PATH = ".enigma_state.json"
 def ABOUT_MORE_INFO_URL = "https://github.com/lainsce/yis"
 def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
-fun save_session_state() (( -- )) {
+: save_session_state() (( -- )) {
     let path_esc = json.escape(current_path)
     let text_esc = json.escape(editor.text())
     let ?payload = "{\"path\":\"$$path_esc$$\",\"dirty\":"
@@ -28,7 +28,7 @@ fun save_session_state() (( -- )) {
     stdr.write_text_file(STATE_PATH, payload)
 }
 
-fun load_session_state() (( -- )) {
+: load_session_state() (( -- )) {
     let raw = stdr.read_text_file(STATE_PATH)
     if is_null(raw) {
         return
@@ -49,7 +49,7 @@ fun load_session_state() (( -- )) {
     set_status("Recovered autosaved session")
 }
 
-fun is_txt_path(path = string) (( bool )) {
+: is_txt_path(path = string) (( bool )) {
     let n = len(path)
     if n < 4 || path[n - 4] != "." {
         return false
@@ -63,7 +63,7 @@ fun is_txt_path(path = string) (( bool )) {
     (c3 == "t" || c3 == "T")
 }
 
-fun basename(path = string) (( string )) {
+: basename(path = string) (( string )) {
     let n = len(path)
     let ?last_sep = -1
     for (let ?i = 0; i < n; i += 1) {
@@ -83,24 +83,24 @@ fun basename(path = string) (( string )) {
     return name
 }
 
-fun set_status(text = string) (( -- )) {
+: set_status(text = string) (( -- )) {
     subtitle_text = text
     bar.set_subtitle(subtitle_text)
 }
 
-fun refresh_header() (( -- )) {
+: refresh_header() (( -- )) {
     let name = if current_path != "" { basename(current_path) } else { "Untitled.txt" }
     title_text = if is_dirty { "$$name$$ *" } else { name }
     bar.set_title(title_text)
 }
 
-fun set_editor_text(text = string) (( -- )) {
+: set_editor_text(text = string) (( -- )) {
     suspend_dirty = true
     editor.set_text(text)
     suspend_dirty = false
 }
 
-fun new_document() (( -- )) {
+: new_document() (( -- )) {
     set_editor_text("")
     current_path = ""
     is_dirty = false
@@ -109,11 +109,11 @@ fun new_document() (( -- )) {
     save_session_state()
 }
 
-fun default_save_name() (( string )) {
+: default_save_name() (( string )) {
     return if current_path == "" { "Untitled.txt" } else { current_path }
 }
 
-fun show_open_dialog() (( -- )) {
+: show_open_dialog() (( -- )) {
     let picked = stdr.open_file_dialog("Open .txt", "txt")
     if is_null(picked) {
         set_status("Open canceled")
@@ -136,7 +136,7 @@ fun show_open_dialog() (( -- )) {
     }
 }
 
-fun show_save_dialog() (( -- )) {
+: show_save_dialog() (( -- )) {
     let picked = stdr.save_file_dialog("Save As .txt", default_save_name(), "txt")
     if is_null(picked) {
         set_status("Save canceled")
@@ -161,7 +161,7 @@ fun show_save_dialog() (( -- )) {
     }
 }
 
-fun show_about_window(win = cogito.Window) (( -- )) {
+: show_about_window(win = cogito.Window) (( -- )) {
     let dlg = cogito.dialog("")
 
     let aw = cogito.about_window("Yis Text Editor", "MIT License")
@@ -183,6 +183,9 @@ entry() (( -- )) {
 
     cogito.load_sum("enigma.sum")
 
+    -- Configure module-level widgets
+    bar.set_medium()
+
     let win = cogito.window_size("Enigma", 900, 640)
     .set_resizable(true)
 
@@ -197,8 +200,7 @@ entry() (( -- )) {
     bar.set_subtitle(subtitle_text)
     bar.set_hexpand(true)
 
-    let file_btn = bar.add_trailing_button("sf:gearshape", (b = cogito.Button) => {
-    })
+    let file_btn = bar.add_trailing_menu_button("sf:gearshape")
     file_btn.add_menu("New", (b = any) => {
         new_document()
     })

@@ -15,7 +15,7 @@ def ?draft_task = ""
 def ?draft_task_detail = ""
 def TASKS_STATE_PATH = ".tasks_state.json"
 
-fun save_state() (( -- )) {
+: save_state() (( -- )) {
     let ?payload = "{\"tasks\":["
     for (let ?i = 0; i < len(tasks); i += 1) {
         if i > 0 {
@@ -38,7 +38,7 @@ fun save_state() (( -- )) {
     stdr.write_text_file(TASKS_STATE_PATH, payload)
 }
 
-fun load_state() (( -- )) {
+: load_state() (( -- )) {
     let raw = stdr.read_text_file(TASKS_STATE_PATH)
     if is_null(raw) {
         return
@@ -66,7 +66,7 @@ fun load_state() (( -- )) {
     }
 }
 
-fun trim_text(text = string) (( string )) {
+: trim_text(text = string) (( string )) {
     let n = len(text)
     if n == 0 {
         return ""
@@ -98,23 +98,23 @@ fun trim_text(text = string) (( string )) {
     return out
 }
 
-fun request_rebuild() (( -- )) {
+: request_rebuild() (( -- )) {
     let is_open = sheet_open_state.get()
     sheet_open_state.set(is_open)
 }
 
-fun open_create_sheet() (( -- )) {
+: open_create_sheet() (( -- )) {
     draft_task = ""
     sheet_open_state.set(true)
 }
 
-fun close_create_sheet() (( -- )) {
+: close_create_sheet() (( -- )) {
     draft_task = ""
     draft_task_detail = ""
     sheet_open_state.set(false)
 }
 
-fun add_task_from_sheet() (( -- )) {
+: add_task_from_sheet() (( -- )) {
     let text = trim_text(draft_task)
     let detail = trim_text(draft_task_detail)
     if len(text) == 0 {
@@ -130,7 +130,7 @@ fun add_task_from_sheet() (( -- )) {
     save_state()
 }
 
-fun set_task_done(index = num, checked = bool) (( -- )) {
+: set_task_done(index = num, checked = bool) (( -- )) {
     if index < 0 || index >= len(completed) {
         return
     }
@@ -139,7 +139,7 @@ fun set_task_done(index = num, checked = bool) (( -- )) {
     save_state()
 }
 
-fun remove_task(index = num) (( -- )) {
+: remove_task(index = num) (( -- )) {
     if index < 0 || index >= len(tasks) {
         return
     }
@@ -165,7 +165,7 @@ fun remove_task(index = num) (( -- )) {
     save_state()
 }
 
-fun completed_count() (( num )) {
+: completed_count() (( num )) {
     let ?count = 0
     for (let ?i = 0; i < len(completed); i += 1) {
         if completed[i] {
@@ -175,7 +175,7 @@ fun completed_count() (( num )) {
     return count
 }
 
-fun build_task_card(index = num, text = string, checked = bool) (( cogito.Card )) {
+: build_task_card(index = num, text = string, checked = bool) (( cogito.Card )) {
     let card = cogito.card("Task")
     .set_hexpand(true)
     .set_gap(8)
@@ -211,7 +211,7 @@ fun build_task_card(index = num, text = string, checked = bool) (( cogito.Card )
     return card
 }
 
-fun build_task_sheet() (( cogito.BottomSheet )) {
+: build_task_sheet() (( cogito.BottomSheet )) {
     let sheet = cogito.bottom_sheet("Create Task")
     .set_gap(12)
 
@@ -258,7 +258,7 @@ fun build_task_sheet() (( cogito.BottomSheet )) {
     return sheet
 }
 
-fun build_main_content() (( cogito.VStack )) {
+: build_main_content() (( cogito.VStack )) {
     let total = len(tasks)
 
     let content = cogito.vstack()
@@ -301,7 +301,7 @@ fun build_main_content() (( cogito.VStack )) {
     return content
 }
 
-fun build_window(win = cogito.Window) (( -- )) {
+: build_window(win = cogito.Window) (( -- )) {
     let total = len(tasks)
     let done = completed_count()
     let is_sheet_open = sheet_open_state.get() == true

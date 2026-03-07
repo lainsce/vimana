@@ -54,6 +54,7 @@ case COGITO_CAROUSEL_ITEM: {
         int lbl_pad = 16;
         int lbl_size = label_child->font_size_set ? label_child->font_size : 21;
         bool lbl_bold = label_child->font_weight_set ? (label_child->font_weight >= 600) : true;
+        bool lbl_medium = !lbl_bold && label_child->font_weight_set && label_child->font_weight >= 500;
         int tw = cogito_text_width_size_node(label_child, label_child->text->data, lbl_size);
         int th = cogito_text_height_size(lbl_size);
         int lx = n->x + lbl_pad;
@@ -85,8 +86,8 @@ case COGITO_CAROUSEL_ITEM: {
           }
           CogitoColor shadow = cogito_on_color(lbl_color);
           shadow.a = 90;
-          cogito_draw_text_size_node(label_child, lx + 1, ly + 1, label_child->text->data, shadow, lbl_size, lbl_bold, false);
-          cogito_draw_text_size_node(label_child, lx, ly, label_child->text->data, lbl_color, lbl_size, lbl_bold, false);
+          cogito_draw_text_size_node(label_child, lx + 1, ly + 1, label_child->text->data, shadow, lbl_size, lbl_bold, lbl_medium);
+          cogito_draw_text_size_node(label_child, lx, ly, label_child->text->data, lbl_color, lbl_size, lbl_bold, lbl_medium);
         }
       }
       break;

@@ -194,6 +194,8 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
 
     #include "widgets/layout/button.inc"
 
+    #include "widgets/layout/fontbutton.inc"
+
     #include "widgets/layout/iconbtn.inc"
 
     #include "widgets/layout/image.inc"

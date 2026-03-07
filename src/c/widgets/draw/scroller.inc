@@ -3,11 +3,16 @@ case COGITO_SCROLLER: {
       cogito_node_hover_state(n, &hover, &active);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
       CogitoColor bg = s.has_bg ? s.bg : n->bg;
+      bool transparent_bg = n->class_name && n->class_name->data &&
+          (cogito_class_has_token(n->class_name->data, "transparent") ||
+           cogito_class_has_token(n->class_name->data, "plain"));
 
       if (n->len > 0) {
         cogito_anim_apply(n, &s, &bg, NULL, NULL, NULL);
-        cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg,
-    0);
+        if (!transparent_bg) {
+          cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg,
+      0);
+        }
 
         if (cogito_backend && cogito_backend->begin_scissor) {
           cogito_backend->begin_scissor(n->x, n->y, n->w, n->h);

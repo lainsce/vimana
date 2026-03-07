@@ -1,10 +1,10 @@
 case COGITO_APPBAR: {
       int btn_size = 12;
-      int btn_gap = 10;
+      int btn_gap = 9;
       int btn_pad_top = 15;
       int btn_pad_right = 15;
-  int controls_edge_pad = 15;
-  int controls_top_pad = 15;
+      int controls_edge_pad = 15;
+      int controls_top_pad = 15;
       cogito_appbar_button_metrics(&btn_size, &btn_gap, &btn_pad_top, &btn_pad_right);
       int buttons_y = y + btn_pad_top;
       n->appbar.btn_size = btn_size;
@@ -65,6 +65,7 @@ case COGITO_APPBAR: {
 
       int appbar_type = cogito_appbar_type(n);
       bool rtl = cogito_is_rtl();
+      bool same_row = (appbar_type == COGITO_APPBAR_TYPE_SMALL || appbar_type == COGITO_APPBAR_TYPE_SEARCH);
       int title_tx = 0;
       int title_ty = 0;
       int title_tw = 0;
@@ -75,17 +76,17 @@ case COGITO_APPBAR: {
         if (title_th < 1) title_th = btn_size;
         if (rtl) {
           title_tx = x + w - 16;
-          if (lead_count > 0) title_tx -= lead_total_w + 12;
+          if (same_row && lead_count > 0) title_tx -= lead_total_w + 12;
           title_tx -= title_tw;
         } else {
           title_tx = x + 16;
-          if (lead_count > 0) title_tx += lead_total_w + 12;
+          if (same_row && lead_count > 0) title_tx += lead_total_w + 12;
         }
         title_ty = title_y ? title_y : (y + btn_pad_top + btn_size + 18);
         int avail_left, avail_right;
         if (rtl) {
           avail_left = x + 16;
-          if (trail_count > 0) {
+          if (same_row && trail_count > 0) {
             int actions_right = x + 12 + trail_total_w;
             if (actions_right + 12 > avail_left) avail_left = actions_right + 12;
           }
@@ -101,7 +102,7 @@ case COGITO_APPBAR: {
           else if (title_tw > max_w) { title_tw = max_w; title_tx = title_tx + title_tw - max_w; }
         } else {
           avail_right = x + w - 16;
-          if (trail_count > 0) {
+          if (same_row && trail_count > 0) {
             int actions_left = x + w - 12 - trail_total_w;
             if (actions_left < avail_right) avail_right = actions_left - 12;
           }
@@ -139,14 +140,14 @@ case COGITO_APPBAR: {
       }
       int trail_left_limit;
       if (rtl) {
-        trail_left_limit = lx; // trailing starts from the right in RTL (will go leftward)
-        if (title_widget) {
+        trail_left_limit = lx;
+        if (same_row && title_widget) {
           int title_left = title_tx - 12;
           if (title_left < trail_left_limit) trail_left_limit = title_left;
         }
       } else {
         trail_left_limit = lx;
-        if (title_widget) {
+        if (same_row && title_widget) {
           int title_right = title_tx + title_tw + 12;
           if (title_right > trail_left_limit) trail_left_limit = title_right;
         }
@@ -202,7 +203,7 @@ case COGITO_APPBAR: {
         cx -= btn_gap;
         if (cx < trail_left_limit) cx = trail_left_limit;
       }
-      int lead_right_limit = title_widget ? (title_tx - 12) : (cx + btn_gap);
+      int lead_right_limit = (same_row && title_widget) ? (title_tx - 12) : (cx + btn_gap);
       if (lead_right_limit < lx) lead_right_limit = lx;
       for (size_t i = 0; i < n->len; i++) {
         CogitoNode* c = n->children[i];
@@ -226,7 +227,10 @@ case COGITO_APPBAR: {
         if (lx > lead_right_limit) lx = lead_right_limit;
       }
       } // end LTR else
-      n->appbar.title_x = title_tx > 0 ? title_tx : (rtl ? (lx + btn_gap) : lx);
+      if (title_tx <= 0) {
+        title_tx = same_row ? (rtl ? (lx + btn_gap) : lx) : (rtl ? (x + w - 16) : (x + 16));
+      }
+      n->appbar.title_x = title_tx;
       if (title_widget) {
         cogito_layout_node(title_widget, title_tx, title_ty, title_tw, title_th);
       }

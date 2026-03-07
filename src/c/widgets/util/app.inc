@@ -261,6 +261,64 @@ static const char* cogito_app_get_icon_path(CogitoApp* app) {
   return NULL;
 }
 
+static void cogito_app_set_baseline_font(YisVal appv, YisVal pathv) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_baseline_font expects app");
+  CogitoApp* app = (CogitoApp*)appv.as.p;
+  YisStr* s = NULL;
+  bool temp = false;
+  if (pathv.tag == EVT_STR) {
+    s = (YisStr*)pathv.as.p;
+    if (s) yis_retain_val(YV_STR(s));
+  } else if (pathv.tag != EVT_NULL) {
+    s = stdr_to_string(pathv);
+    temp = true;
+  }
+  if (app->baseline_font) yis_release_val(YV_STR(app->baseline_font));
+  app->baseline_font = s;
+  if (temp && s) {
+    // app now owns temp string (ref=1)
+  }
+  if (app == cogito_active_app) {
+    cogito_app_fonts_refresh();
+  }
+}
+
+static const char* cogito_app_get_baseline_font_path(CogitoApp* app) {
+  if (app && app->baseline_font && app->baseline_font->data && app->baseline_font->data[0]) {
+    return app->baseline_font->data;
+  }
+  return NULL;
+}
+
+static void cogito_app_set_emphasized_font(YisVal appv, YisVal pathv) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_emphasized_font expects app");
+  CogitoApp* app = (CogitoApp*)appv.as.p;
+  YisStr* s = NULL;
+  bool temp = false;
+  if (pathv.tag == EVT_STR) {
+    s = (YisStr*)pathv.as.p;
+    if (s) yis_retain_val(YV_STR(s));
+  } else if (pathv.tag != EVT_NULL) {
+    s = stdr_to_string(pathv);
+    temp = true;
+  }
+  if (app->emphasized_font) yis_release_val(YV_STR(app->emphasized_font));
+  app->emphasized_font = s;
+  if (temp && s) {
+    // app now owns temp string (ref=1)
+  }
+  if (app == cogito_active_app) {
+    cogito_app_fonts_refresh();
+  }
+}
+
+static const char* cogito_app_get_emphasized_font_path(CogitoApp* app) {
+  if (app && app->emphasized_font && app->emphasized_font->data && app->emphasized_font->data[0]) {
+    return app->emphasized_font->data;
+  }
+  return NULL;
+}
+
 static YisVal cogito_app_new(void) {
   if (cogito_debug_enabled()) {
     fprintf(stderr, "cogito: app_new\n");

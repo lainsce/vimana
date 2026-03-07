@@ -423,6 +423,15 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_fontbutton")) {
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_fontbutton_new();", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_toasts")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
@@ -3029,6 +3038,33 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_fontbutton_on_change")) {
+                        GenExpr node, fn;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &fn, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_fontbutton_on_change(%s, %s);", node.tmp, fn.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", fn.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &fn, fn.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&fn);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_tabs_set_items")) {
                         GenExpr node, arr;
                         if (!gen_expr(cg, path, e->as.call.args[
@@ -3933,6 +3969,50 @@
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
                         "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_fontbutton_set_font")) {
+                        GenExpr btn, text;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &btn, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &text, err)) { gen_expr_free(&btn); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_fontbutton_set_font(%s, %s);", btn.tmp, text.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", btn.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", text.tmp);
+                        gen_expr_release_except(cg, &btn, btn.tmp);
+                        gen_expr_release_except(cg, &text, text.tmp);
+                        gen_expr_free(&btn);
+                        gen_expr_free(&text);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_fontbutton_get_font")) {
+                        GenExpr btn;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &btn, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_fontbutton_get_font(%s);", t, btn.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", btn.tmp);
+                        gen_expr_release_except(cg, &btn, btn.tmp);
+                        gen_expr_free(&btn);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;

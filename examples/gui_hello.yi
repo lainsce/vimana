@@ -10,11 +10,11 @@ macro fill_center() (( cogito.Button )) {
     .set_valign(1)
 }
 
-fun on_btn(btn = cogito.Button) (( -- )) {
+: on_btn(btn = cogito.Button) (( -- )) {
     btn.set_text("This Button Got Clicked!")
 }
 
-fun build_ui(win = cogito.Window) (( -- )) {
+: build_ui(win = cogito.Window) (( -- )) {
     let vstack = cogito.vstack()
     .set_gap(8)
     .set_padding(0, 18, 18, 18)

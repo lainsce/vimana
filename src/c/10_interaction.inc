@@ -100,6 +100,7 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
 #include "widgets/interaction/colorpicker.inc"
 #include "widgets/interaction/datepicker.inc"
 #include "widgets/interaction/dialog.inc"
+#include "widgets/interaction/fontbutton.inc"
 #include "widgets/interaction/popover.inc"
 #include "widgets/interaction/dropdown.inc"
 #include "widgets/interaction/divider.inc"
@@ -287,6 +288,7 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
     }
   }
   if (n->kind == COGITO_BUTTON || n->kind == COGITO_ICONBTN ||
+      n->kind == COGITO_FONTBUTTON ||
       n->kind == COGITO_CONTENT_LIST || n->kind == COGITO_GRID ||
       n->kind == COGITO_TREEVIEW ||
       n->kind == COGITO_TEXTFIELD || n->kind == COGITO_TEXTVIEW ||
@@ -360,6 +362,7 @@ static bool cogito_node_focusable(const CogitoNode* n) {
     #include "widgets/interaction/focusable/switch.inc"
     #include "widgets/interaction/focusable/colorpicker.inc"
     #include "widgets/interaction/focusable/datepicker.inc"
+    #include "widgets/interaction/focusable/fontbutton.inc"
     #include "widgets/interaction/focusable/fab.inc"
     #include "widgets/interaction/focusable/fab_menu.inc"
     #include "widgets/interaction/focusable/nav_rail.inc"

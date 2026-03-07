@@ -128,7 +128,7 @@ static int cogito_scroller_measure_child_h(CogitoNode* n, int width) {
       int size = cogito_node_font_size(n);
       CogitoColor dummy = {0, 0, 0, 0};
       int text_h = cogito_draw_text_wrapped(n, 0, 0, avail_w, t, dummy, size,
-                                            cogito_node_bold(n), false, 0, false);
+                                            cogito_node_bold(n), cogito_node_medium(n), 0, false);
       return text_h + pad * 2;
     }
     case COGITO_WEBVIEW: {

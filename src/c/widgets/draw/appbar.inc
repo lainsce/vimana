@@ -64,8 +64,9 @@ case COGITO_APPBAR:
     int tx = n->appbar.title_x ? n->appbar.title_x : (n->x + 16);
     int max_w = text_right_bound - tx;
     CogitoColor tcol = cogito_label_class_color(title_cls, text);
-    bool tbold = cogito_label_class_bold(title_cls, appbar_type != COGITO_APPBAR_TYPE_LARGE);
-    bool use_serif = cogito_label_class_font_family_serif(title_cls, appbar_type == COGITO_APPBAR_TYPE_LARGE);
+    bool tbold = cogito_label_class_bold(title_cls, false);
+    bool tmedium = !tbold && cogito_label_class_medium(title_cls, appbar_type != COGITO_APPBAR_TYPE_LARGE);
+    bool use_serif = cogito_label_class_font_family_serif(title_cls, false);
     bool prev_family_set = n->font_family_set;
     char prev_family[sizeof(n->font_family)];
     memcpy(prev_family, n->font_family, sizeof(prev_family));
@@ -75,7 +76,7 @@ case COGITO_APPBAR:
       n->font_family[sizeof(n->font_family) - 1] = '\0';
     }
     if (max_w > 0) {
-      cogito_draw_text_ellipsis(n, tx, ty, max_w, n->text->data, tcol, tsz, tbold, false, 0);
+      cogito_draw_text_ellipsis(n, tx, ty, max_w, n->text->data, tcol, tsz, tbold, tmedium, 0);
     }
     if (use_serif) {
       n->font_family_set = prev_family_set;
@@ -95,8 +96,9 @@ case COGITO_APPBAR:
     int max_w = text_right_bound - tx;
     CogitoColor scol = cogito_label_class_color(subtitle_cls, text);
     bool sbold = cogito_label_class_bold(subtitle_cls, false);
+    bool smedium = !sbold && cogito_label_class_medium(subtitle_cls, appbar_type == COGITO_APPBAR_TYPE_SMALL);
     if (max_w > 0) {
-      cogito_draw_text_ellipsis(n, tx, sy, max_w, n->subtitle->data, scol, ssz, sbold, false, 0);
+      cogito_draw_text_ellipsis(n, tx, sy, max_w, n->subtitle->data, scol, ssz, sbold, smedium, 0);
     }
   }
   for (size_t i = 0; i < n->len; i++)

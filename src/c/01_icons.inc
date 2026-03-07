@@ -598,7 +598,7 @@ static bool cogito_sf_symbol_load(const char* symbol, int size, CogitoTexture** 
       BOOL can_cfg3 = ((BOOL (*)(id, SEL, SEL))objc_msgSend)(cfg_cls, sel_responds, sel_cfg3);
       if (can_cfg3) {
         // 0.0 = regular weight, 2 = medium symbol scale.
-        cfg = ((id (*)(id, SEL, CGFloat, CGFloat, CogitoNSInteger))objc_msgSend)(cfg_cls, sel_cfg3, (CGFloat)raster_size, (CGFloat)0.0, (CogitoNSInteger)2);
+        cfg = ((id (*)(id, SEL, CGFloat, CGFloat, CogitoNSInteger))objc_msgSend)(cfg_cls, sel_cfg3, (CGFloat)raster_size, (CGFloat)0.0, (CogitoNSInteger)1);
       }
       if (!cfg) {
         SEL sel_cfg2 = sel_registerName("configurationWithPointSize:weight:");

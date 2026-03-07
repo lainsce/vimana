@@ -250,3 +250,176 @@ static const char* cogito_guess_serif_font_path(const char* regular_path) {
   }
   return NULL;
 }
+
+// Resolve a font family name (e.g. "Roboto Flex") to a file path.
+// If the input looks like a file path, it is returned as-is when valid.
+#if defined(__APPLE__)
+#include <CoreText/CoreText.h>
+extern char* cogito_macos_list_font_names(void);
+
+static char* cogito_list_font_family_names(void) {
+  return cogito_macos_list_font_names();
+}
+
+static const char* cogito_resolve_font_by_name(const char* name) {
+  static char resolved[PATH_MAX];
+  if (!name || !name[0]) return NULL;
+  // Treat as path if it starts with / or .
+  if (name[0] == '/' || name[0] == '.') {
+    if (cogito_file_exists(name)) return name;
+    return NULL;
+  }
+  {
+    const char* ext = strrchr(name, '.');
+    if (ext && (strcmp(ext, ".ttf") == 0 || strcmp(ext, ".otf") == 0 ||
+                strcmp(ext, ".ttc") == 0 || strcmp(ext, ".woff") == 0)) {
+      if (cogito_file_exists(name)) return name;
+      return NULL;
+    }
+  }
+  CFStringRef cf_name = CFStringCreateWithCString(kCFAllocatorDefault, name, kCFStringEncodingUTF8);
+  if (!cf_name) return NULL;
+  CFStringRef keys[] = { kCTFontFamilyNameAttribute };
+  CFTypeRef values[] = { cf_name };
+  CFDictionaryRef attrs = CFDictionaryCreate(kCFAllocatorDefault,
+    (const void**)keys, (const void**)values, 1,
+    &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  CFRelease(cf_name);
+  if (!attrs) return NULL;
+  CTFontDescriptorRef desc = CTFontDescriptorCreateWithAttributes(attrs);
+  CFRelease(attrs);
+  if (!desc) return NULL;
+  CTFontDescriptorRef match = CTFontDescriptorCreateMatchingFontDescriptor(desc, NULL);
+  CFRelease(desc);
+  if (!match) return NULL;
+  CFURLRef url = (CFURLRef)CTFontDescriptorCopyAttribute(match, kCTFontURLAttribute);
+  CFRelease(match);
+  if (!url) return NULL;
+  Boolean ok = CFURLGetFileSystemRepresentation(url, true, (UInt8*)resolved, sizeof(resolved));
+  CFRelease(url);
+  if (ok && resolved[0]) return resolved;
+  return NULL;
+}
+#elif defined(__linux__) || defined(__FreeBSD__)
+static char* cogito_list_font_family_names(void) {
+  FILE* fp = popen("fc-list -f '%{family}\\n'", "r");
+  if (!fp) return NULL;
+  size_t cap = 8192;
+  size_t len = 0;
+  char* out = (char*)malloc(cap);
+  if (!out) {
+    pclose(fp);
+    return NULL;
+  }
+  out[0] = '\0';
+  char buf[1024];
+  while (fgets(buf, sizeof(buf), fp)) {
+    size_t chunk = strlen(buf);
+    if (len + chunk + 1 > cap) {
+      size_t next = cap * 2;
+      while (len + chunk + 1 > next) next *= 2;
+      char* grown = (char*)realloc(out, next);
+      if (!grown) {
+        free(out);
+        pclose(fp);
+        return NULL;
+      }
+      out = grown;
+      cap = next;
+    }
+    memcpy(out + len, buf, chunk);
+    len += chunk;
+    out[len] = '\0';
+  }
+  pclose(fp);
+  if (len == 0) {
+    free(out);
+    return NULL;
+  }
+  return out;
+}
+
+static const char* cogito_resolve_font_by_name(const char* name) {
+  static char resolved[PATH_MAX];
+  if (!name || !name[0]) return NULL;
+  if (name[0] == '/' || name[0] == '.') {
+    if (cogito_file_exists(name)) return name;
+    return NULL;
+  }
+  {
+    const char* ext = strrchr(name, '.');
+    if (ext && (strcmp(ext, ".ttf") == 0 || strcmp(ext, ".otf") == 0 ||
+                strcmp(ext, ".ttc") == 0 || strcmp(ext, ".woff") == 0)) {
+      if (cogito_file_exists(name)) return name;
+      return NULL;
+    }
+  }
+  // Sanitize: only allow alnum, space, hyphen, underscore, period in name
+  for (const char* p = name; *p; p++) {
+    char c = *p;
+    if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+          (c >= '0' && c <= '9') || c == ' ' || c == '-' || c == '_' || c == '.'))
+      return NULL;
+  }
+  char cmd[512];
+  snprintf(cmd, sizeof(cmd), "fc-match -f '%%{file}' \"%s\"", name);
+  FILE* fp = popen(cmd, "r");
+  if (!fp) return NULL;
+  resolved[0] = '\0';
+  if (fgets(resolved, sizeof(resolved), fp)) {
+    size_t len = strlen(resolved);
+    if (len > 0 && resolved[len - 1] == '\n') resolved[len - 1] = '\0';
+  }
+  pclose(fp);
+  if (resolved[0] && cogito_file_exists(resolved)) return resolved;
+  return NULL;
+}
+#elif defined(_WIN32)
+static char* cogito_list_font_family_names(void) {
+  return NULL;
+}
+
+static const char* cogito_resolve_font_by_name(const char* name) {
+  static char resolved[PATH_MAX];
+  if (!name || !name[0]) return NULL;
+  if (name[0] == '/' || name[0] == '.' || (name[0] && name[1] == ':')) {
+    if (cogito_file_exists(name)) return name;
+    return NULL;
+  }
+  {
+    const char* ext = strrchr(name, '.');
+    if (ext && (strcmp(ext, ".ttf") == 0 || strcmp(ext, ".otf") == 0 ||
+                strcmp(ext, ".ttc") == 0 || strcmp(ext, ".woff") == 0)) {
+      if (cogito_file_exists(name)) return name;
+      return NULL;
+    }
+  }
+  // Try common naming patterns in Windows Fonts directory
+  const char* exts[] = { ".ttf", ".otf", ".ttc" };
+  for (int e = 0; e < 3; e++) {
+    snprintf(resolved, sizeof(resolved), "C:\\Windows\\Fonts\\%s%s", name, exts[e]);
+    if (cogito_file_exists(resolved)) return resolved;
+  }
+  // Try with spaces removed
+  char compact[256];
+  size_t j = 0;
+  for (const char* p = name; *p && j + 1 < sizeof(compact); p++) {
+    if (*p != ' ') compact[j++] = *p;
+  }
+  compact[j] = '\0';
+  for (int e = 0; e < 3; e++) {
+    snprintf(resolved, sizeof(resolved), "C:\\Windows\\Fonts\\%s%s", compact, exts[e]);
+    if (cogito_file_exists(resolved)) return resolved;
+  }
+  return NULL;
+}
+#else
+static char* cogito_list_font_family_names(void) {
+  return NULL;
+}
+
+static const char* cogito_resolve_font_by_name(const char* name) {
+  (void)name;
+  return NULL;
+}
+#endif

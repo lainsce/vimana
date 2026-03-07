@@ -26,6 +26,9 @@ case COGITO_CONTENT_LIST: {
   cogito_apply_bin_scope_to_style(&single_style);
 
   bool has_selection = n->selected >= 0 && (size_t)n->selected < n->len;
+  bool plain_list = n->class_name && n->class_name->data &&
+                    (cogito_class_has_token(n->class_name->data, "plain") ||
+                     cogito_class_has_token(n->class_name->data, "transparent"));
 
   // Determine unselected item background based on parent class
   bool in_sidebar = n->parent && n->parent->class_name &&
@@ -33,6 +36,7 @@ case COGITO_CONTENT_LIST: {
                     strcmp(n->parent->class_name->data, "sidebar") == 0;
   CogitoColor unsel_bg = in_sidebar ? cogito_cached_surface_container_high
                                     : cogito_cached_surface_container;
+  if (plain_list) unsel_bg = cogito_rgba(0, 0, 0, 0);
 
   // Draw children with proper rounded corners based on position
   for (size_t i = 0; i < n->len; i++) {

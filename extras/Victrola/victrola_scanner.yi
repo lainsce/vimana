@@ -3,7 +3,7 @@ cask victrola_scanner
 bring stdr
 bring victrola_util
 
-pub fun pick_folder_macos() (( string )) {
+:: pick_folder_macos() (( string )) {
     let cmd = "osascript -e 'POSIX path of (choose folder with prompt \"Choose Music Folder\")'"
     let run = stdr.run_command(cmd)
     let exit = run[0] ?? 1
@@ -14,7 +14,7 @@ pub fun pick_folder_macos() (( string )) {
     return ""
 }
 
-pub fun scan_folder(folder = string, audio_exts = any) (( any )) {
+:: scan_folder(folder = string, audio_exts = any) (( any )) {
     let chosen = stdr.trim(folder)
     if stdr.len(chosen) == 0 {
         return []: [string]

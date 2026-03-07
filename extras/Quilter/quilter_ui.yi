@@ -2,7 +2,7 @@ cask quilter_ui
 
 bring cogito
 
-fun show_preferences(
+: show_preferences(
     win = cogito.Window,
     show_sidebar = bool,
     show_searchbar = bool,
@@ -147,7 +147,7 @@ fun show_preferences(
     win.set_dialog(dlg)
 }
 
-fun show_about(win = cogito.Window) (( -- )) {
+: show_about(win = cogito.Window) (( -- )) {
     let dlg = cogito.dialog("")
     let about = cogito.about_window("Quilter", "io.github.lainsce.Quilter")
     .set_icon("sf:doc.text")
@@ -158,7 +158,7 @@ fun show_about(win = cogito.Window) (( -- )) {
     win.set_dialog(dlg)
 }
 
-fun show_cheatsheet(win = cogito.Window) (( -- )) {
+: show_cheatsheet(win = cogito.Window) (( -- )) {
     let dlg = cogito.dialog("Markdown Cheatsheet")
 
     let content = cogito.textview("# Headings\n# Heading\n## Subheading\n### Section\n\n# Emphasis\n**Bold text**\n*Italicized text*\n`Code line`\n\n# Lists\n- [ ] Empty\n- [x] Checked\n\n# Links and Assets\n[Link](https://example.com)\n/Folder/Document.md :file\n/Folder/Image.png :image")

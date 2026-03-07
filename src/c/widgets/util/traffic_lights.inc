@@ -22,8 +22,7 @@ static void cogito_traffic_lights_compute(int close_x, int min_x, int max_x, int
   if (btn <= 0) return;
 
   int center_off = btn / 2;
-  float light_r = (btn / 14.0f) * 9.0f;
-  int light_d = (int)(light_r * 2.0f + 0.5f);
+  int light_d = btn;
   if (light_d < 2) light_d = 2;
 
   out->light_d = light_d;
@@ -33,9 +32,11 @@ static void cogito_traffic_lights_compute(int close_x, int min_x, int max_x, int
   out->min_lx = min_x + center_off - light_d / 2;
   out->max_lx = max_x + center_off - light_d / 2;
 
-  out->over_close = (close_x >= 0) && cogito_hit_rect(mx, my, close_x, by, btn, btn);
-  out->over_min = (min_x >= 0) && cogito_hit_rect(mx, my, min_x, by, btn, btn);
-  out->over_max = (max_x >= 0) && cogito_hit_rect(mx, my, max_x, by, btn, btn);
+  int hit_pad = 3;
+  int hit_size = btn + hit_pad * 2;
+  out->over_close = (close_x >= 0) && cogito_hit_rect(mx, my, close_x - hit_pad, by - hit_pad, hit_size, hit_size);
+  out->over_min = (min_x >= 0) && cogito_hit_rect(mx, my, min_x - hit_pad, by - hit_pad, hit_size, hit_size);
+  out->over_max = (max_x >= 0) && cogito_hit_rect(mx, my, max_x - hit_pad, by - hit_pad, hit_size, hit_size);
 
   int cluster_left = 0;
   int cluster_right = 0;
@@ -56,7 +57,7 @@ static void cogito_traffic_lights_compute(int close_x, int min_x, int max_x, int
     cluster_init = true;
   }
   if (cluster_init) {
-    out->over_cluster = cogito_hit_rect(mx, my, cluster_left, by, cluster_right - cluster_left, btn);
+    out->over_cluster = cogito_hit_rect(mx, my, cluster_left - hit_pad, by - hit_pad, cluster_right - cluster_left + hit_pad * 2, hit_size);
   }
 
   out->state_close = out->over_close ? (down ? 2 : 1) : 0;
@@ -95,6 +96,27 @@ static void cogito_draw_window_button_stroke_icon(int btn_x, int btn_y, int btn,
 }
 #endif
 
+static void cogito_draw_traffic_light_glyph(int lx, int ly, int d, const char* sf_name, CogitoColor color) {
+  if (d <= 0 || !sf_name) return;
+  int glyph_size = (d * 6) / 10;
+  if (glyph_size < 2) glyph_size = 2;
+  int gx = lx + (d - glyph_size) / 2;
+  int gy = ly + (d - glyph_size) / 2;
+  CogitoTexture* tex = NULL;
+  int tw = 0, th = 0;
+  if (cogito_icon_load_texture(sf_name, glyph_size, &tex, &tw, &th) && tex && cogito_backend && cogito_backend->draw_texture) {
+    int dw = glyph_size, dh = glyph_size;
+    int dx = gx, dy = gy;
+    if (tw > 0 && th > 0) {
+      if (tw > th) { dh = (glyph_size * th + tw / 2) / tw; if (dh < 1) dh = 1; dy = gy + (glyph_size - dh) / 2; }
+      else if (th > tw) { dw = (glyph_size * tw + th / 2) / th; if (dw < 1) dw = 1; dx = gx + (glyph_size - dw) / 2; }
+    }
+    CogitoRect src = {0, 0, tw, th};
+    CogitoRect dst = {dx, dy, dw, dh};
+    cogito_backend->draw_texture(tex, src, dst, color);
+  }
+}
+
 static void cogito_draw_traffic_lights_styled(const CogitoStyle* base_style,
                                               CogitoColor fallback_btn,
                                               CogitoColor fallback_border,
@@ -110,7 +132,6 @@ static void cogito_draw_traffic_lights_styled(const CogitoStyle* base_style,
   (void)btn;
 
   if (monochrome) {
-    CogitoColor mono_glyph = s->has_text ? s->text : cogito_rgba(30, 30, 30, 220);
     CogitoColor mono_border = fallback_border;
     if (mono_border.a == 0) mono_border = cogito_rgba(0, 0, 0, 70);
 
@@ -140,39 +161,18 @@ static void cogito_draw_traffic_lights_styled(const CogitoStyle* base_style,
     }
 
     if (!st->over_cluster) return;
-    int glyph_d = (st->light_d * 5) / 10;
-    if (glyph_d < 2) glyph_d = 2;
-    if (glyph_d > st->light_d) glyph_d = st->light_d;
-    int inset = (st->light_d - glyph_d) / 2;
 
     if (close_x >= 0) {
-      int x0 = st->close_lx + inset;
-      int y0 = st->lights_y + inset;
-      int x1 = st->close_lx + st->light_d - inset - 1;
-      int y1 = st->lights_y + st->light_d - inset - 1;
-      if (x1 < x0) x1 = x0;
-      if (y1 < y0) y1 = y0;
-      cogito_draw_line(x0, y0, x1, y1, mono_glyph);
-      cogito_draw_line(x1, y0, x0, y1, mono_glyph);
+      CogitoColor g = s->has_text ? s->text : cogito_on_color(close_bg);
+      cogito_draw_traffic_light_glyph(st->close_lx, st->lights_y, st->light_d, "sf:xmark", g);
     }
     if (min_x >= 0) {
-      int x0 = st->min_lx + inset;
-      int x1 = st->min_lx + st->light_d - inset - 1;
-      int y = st->lights_y + st->light_d / 2;
-      if (x1 < x0) x1 = x0;
-      cogito_draw_line(x0, y, x1, y, mono_glyph);
+      CogitoColor g = s->has_text ? s->text : cogito_on_color(min_bg);
+      cogito_draw_traffic_light_glyph(st->min_lx, st->lights_y, st->light_d, "sf:minus", g);
     }
     if (max_x >= 0) {
-      int x0 = st->max_lx + inset;
-      int x1 = st->max_lx + st->light_d - inset - 1;
-      int y = st->lights_y + st->light_d / 2;
-      int x = st->max_lx + st->light_d / 2;
-      int y0 = st->lights_y + inset;
-      int y1 = st->lights_y + st->light_d - inset - 1;
-      if (x1 < x0) x1 = x0;
-      if (y1 < y0) y1 = y0;
-      cogito_draw_line(x0, y, x1, y, mono_glyph);
-      cogito_draw_line(x, y0, x, y1, mono_glyph);
+      CogitoColor g = s->has_text ? s->text : cogito_on_color(max_bg);
+      cogito_draw_traffic_light_glyph(st->max_lx, st->lights_y, st->light_d, "sf:plus", g);
     }
     return;
   }
@@ -187,10 +187,9 @@ static void cogito_draw_traffic_lights_styled(const CogitoStyle* base_style,
     : (s->has_appbar_btn_min_color ? s->appbar_btn_min_color : fallback_btn);
   CogitoColor max_bg = max_s.has_bg ? max_s.bg
     : (s->has_appbar_btn_max_color ? s->appbar_btn_max_color : fallback_btn);
-  CogitoColor glyph_fallback = s->has_text ? s->text : cogito_rgba(28, 28, 28, 220);
-  CogitoColor close_glyph = close_s.has_text ? close_s.text : glyph_fallback;
-  CogitoColor min_glyph = min_s.has_text ? min_s.text : glyph_fallback;
-  CogitoColor max_glyph = max_s.has_text ? max_s.text : glyph_fallback;
+  CogitoColor close_glyph = close_s.has_text ? close_s.text : cogito_on_color(close_bg);
+  CogitoColor min_glyph = min_s.has_text ? min_s.text : cogito_on_color(min_bg);
+  CogitoColor max_glyph = max_s.has_text ? max_s.text : cogito_on_color(max_bg);
 
   if (close_x >= 0) {
     cogito_draw_rect(st->close_lx, st->lights_y, st->light_d, st->light_d, close_bg, st->light_rad);
@@ -225,41 +224,17 @@ static void cogito_draw_traffic_lights_styled(const CogitoStyle* base_style,
   }
 
   if (!st->over_cluster) return;
-  int glyph_d = (st->light_d * 5) / 10;
-  if (glyph_d < 2) glyph_d = 2;
-  if (glyph_d > st->light_d) glyph_d = st->light_d;
-  int inset = (st->light_d - glyph_d) / 2;
 
   if (close_x >= 0) {
-    int x0 = st->close_lx + inset;
-    int y0 = st->lights_y + inset;
-    int x1 = st->close_lx + st->light_d - inset - 1;
-    int y1 = st->lights_y + st->light_d - inset - 1;
-    if (x1 < x0) x1 = x0;
-    if (y1 < y0) y1 = y0;
-    cogito_draw_line(x0, y0, x1, y1, close_glyph);
-    cogito_draw_line(x1, y0, x0, y1, close_glyph);
+    cogito_draw_traffic_light_glyph(st->close_lx, st->lights_y, st->light_d, "sf:xmark", close_glyph);
   }
 
   if (min_x >= 0) {
-    int x0 = st->min_lx + inset;
-    int x1 = st->min_lx + st->light_d - inset - 1;
-    int y = st->lights_y + st->light_d / 2;
-    if (x1 < x0) x1 = x0;
-    cogito_draw_line(x0, y, x1, y, min_glyph);
+    cogito_draw_traffic_light_glyph(st->min_lx, st->lights_y, st->light_d, "sf:minus", min_glyph);
   }
 
   if (max_x >= 0) {
-    int x0 = st->max_lx + inset;
-    int x1 = st->max_lx + st->light_d - inset - 1;
-    int y = st->lights_y + st->light_d / 2;
-    int x = st->max_lx + st->light_d / 2;
-    int y0 = st->lights_y + inset;
-    int y1 = st->lights_y + st->light_d - inset - 1;
-    if (x1 < x0) x1 = x0;
-    if (y1 < y0) y1 = y0;
-    cogito_draw_line(x0, y, x1, y, max_glyph);
-    cogito_draw_line(x, y0, x, y1, max_glyph);
+    cogito_draw_traffic_light_glyph(st->max_lx, st->lights_y, st->light_d, "sf:plus", max_glyph);
   }
 #else
   (void)fallback_btn;

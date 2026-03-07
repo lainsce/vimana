@@ -264,27 +264,27 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   ".shadow\n  background: %s\n", scrm);
 
   cogito_sum_append(out, cap, &off,
-  ".big-display\n  color: %s\n  font-family: serif\n  font-size: 56\n  font-weight: normal\n", ons);
+  ".big-display\n  color: %s\n  font-size: 56\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".display\n  color: %s\n  font-family: serif\n  font-size: 36\n  font-weight: normal\n", ons);
+  ".display\n  color: %s\n  font-size: 36\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".view-title\n  color: %s\n  font-size: 24\n  font-weight: normal\n", ons);
+  ".view-title\n  color: %s\n  font-size: 24\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".view-subtitle\n  color: %s\n  font-size: 18\n  font-weight: bold\n", ons);
+  ".view-subtitle\n  color: %s\n  font-size: 18\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".heading\n  color: %s\n  font-size: 16\n  font-weight: normal\n", ons);
+  ".heading\n  color: %s\n  font-size: 16\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".content-title\n  color: %s\n  font-size: 16\n  font-weight: bold\n", ons);
+  ".content-title\n  color: %s\n  font-size: 16\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".content-subtitle\n  color: %s\n  font-size: 14\n  font-weight: normal\n", ons);
+  ".content-subtitle\n  color: %s\n  font-size: 14\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".title\n  color: %s\n  font-size: 24\n  font-weight: normal\n", ons);
+  ".title\n  color: %s\n  font-size: 24\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".subtitle\n  color: %s\n  font-size: 18\n  font-weight: bold\n", ons);
+  ".subtitle\n  color: %s\n  font-size: 18\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".body\n  color: %s\n  font-size: 14\n  font-weight: normal\n", ons);
+  ".body\n  color: %s\n  font-size: 14\n", ons);
   cogito_sum_append(out, cap, &off,
-  ".caption\n  color: %s\n  font-size: 12\n  font-weight: bold\n", ons);
+  ".caption\n  color: %s\n  font-size: 12\n", ons);
 
   cogito_sum_append(out, cap, &off,
   ".tabular\n  font-variant-numeric: tnum\n");

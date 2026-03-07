@@ -1,10 +1,10 @@
 cask quilter_text
 
-fun is_blank_char(ch = string) (( bool )) {
+: is_blank_char(ch = string) (( bool )) {
     return ch == " " || ch == "\t" || ch == "\n" || ch == "\r"
 }
 
-fun trim_text(text = string) (( string )) {
+: trim_text(text = string) (( string )) {
     let n = len(text)
     if n == 0 {
         return ""
@@ -34,7 +34,7 @@ fun trim_text(text = string) (( string )) {
     return out
 }
 
-fun starts_with(text = string, prefix = string) (( bool )) {
+: starts_with(text = string, prefix = string) (( bool )) {
     if len(prefix) > len(text) {
         return false
     }
@@ -46,7 +46,7 @@ fun starts_with(text = string, prefix = string) (( bool )) {
     return true
 }
 
-fun slice_between(text = string, start = num, end = num) (( string )) {
+: slice_between(text = string, start = num, end = num) (( string )) {
     let n = len(text)
     if start < 0 {
         start = 0
@@ -65,11 +65,11 @@ fun slice_between(text = string, start = num, end = num) (( string )) {
     return out
 }
 
-fun slice_from(text = string, from = num) (( string )) {
+: slice_from(text = string, from = num) (( string )) {
     return slice_between(text, from, len(text))
 }
 
-fun basename(path = string) (( string )) {
+: basename(path = string) (( string )) {
     let n = len(path)
     let ?last = -1
     for (let ?i = 0; i < n; i += 1) {
@@ -84,7 +84,7 @@ fun basename(path = string) (( string )) {
     return slice_between(path, last + 1, n)
 }
 
-fun ends_with_md(path = string) (( bool )) {
+: ends_with_md(path = string) (( bool )) {
     let n = len(path)
     if n < 3 || path[n - 3] != "." {
         return false
@@ -94,14 +94,14 @@ fun ends_with_md(path = string) (( bool )) {
     return (c1 == "m" || c1 == "M") && (c2 == "d" || c2 == "D")
 }
 
-fun ensure_md(path = string) (( string )) {
+: ensure_md(path = string) (( string )) {
     if ends_with_md(path) {
         return path
     }
     return "$$path$$.md"
 }
 
-fun count_words(text = string) (( num )) {
+: count_words(text = string) (( num )) {
     let ?count = 0
     let ?in_word = false
 
@@ -121,7 +121,7 @@ fun count_words(text = string) (( num )) {
     return count
 }
 
-fun count_sentences(text = string) (( num )) {
+: count_sentences(text = string) (( num )) {
     let ?count = 0
     for (let ?i = 0; i < len(text); i += 1) {
         let ch = text[i]
@@ -132,7 +132,7 @@ fun count_sentences(text = string) (( num )) {
     return count
 }
 
-fun find_from(haystack = string, needle = string, from = num) (( num )) {
+: find_from(haystack = string, needle = string, from = num) (( num )) {
     let n = len(haystack)
     let m = len(needle)
 
@@ -162,7 +162,7 @@ fun find_from(haystack = string, needle = string, from = num) (( num )) {
     return -1
 }
 
-fun count_matches(haystack = string, needle = string) (( num )) {
+: count_matches(haystack = string, needle = string) (( num )) {
     if len(needle) == 0 {
         return 0
     }
@@ -181,7 +181,7 @@ fun count_matches(haystack = string, needle = string) (( num )) {
     return count
 }
 
-fun replace_at(text = string, at = num, old_len = num, replacement = string) (( string )) {
+: replace_at(text = string, at = num, old_len = num, replacement = string) (( string )) {
     let left = slice_between(text, 0, at)
     let right = slice_between(text, at + old_len, len(text))
     return "$$left$$$$replacement$$$$right$$"

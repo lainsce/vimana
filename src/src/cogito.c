@@ -45,6 +45,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_app_set_appid cogito_app_set_appid_yis
 #define cogito_app_set_contrast cogito_app_set_contrast_yis
 #define cogito_app_set_icon cogito_app_set_icon_yis
+#define cogito_app_set_baseline_font cogito_app_set_baseline_font_yis
+#define cogito_app_set_emphasized_font cogito_app_set_emphasized_font_yis
 #define cogito_app_set_ensor_variant cogito_app_set_ensor_variant_yis
 #define cogito_appbar_add_button cogito_appbar_add_button_yis
 #define cogito_appbar_new cogito_appbar_new_yis
@@ -88,6 +90,10 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_chip_set_selected cogito_chip_set_selected_yis
 #define cogito_colorpicker_new cogito_colorpicker_new_yis
 #define cogito_colorpicker_on_change cogito_colorpicker_on_change_yis
+#define cogito_fontbutton_new cogito_fontbutton_new_yis
+#define cogito_fontbutton_set_font cogito_fontbutton_set_font_yis
+#define cogito_fontbutton_get_font cogito_fontbutton_get_font_yis
+#define cogito_fontbutton_on_change cogito_fontbutton_on_change_yis
 #define cogito_datepicker_new cogito_datepicker_new_yis
 #define cogito_datepicker_on_change cogito_datepicker_on_change_yis
 #define cogito_dialog_close cogito_dialog_close_yis
@@ -418,6 +424,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_app_set_contrast
 #undef cogito_app_set_ensor_variant
 #undef cogito_app_set_icon
+#undef cogito_app_set_baseline_font
+#undef cogito_app_set_emphasized_font
 #undef cogito_appbar_add_button
 #undef cogito_appbar_new
 #undef cogito_appbar_set_controls
@@ -454,6 +462,10 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_chip_set_selected
 #undef cogito_colorpicker_new
 #undef cogito_colorpicker_on_change
+#undef cogito_fontbutton_new
+#undef cogito_fontbutton_set_font
+#undef cogito_fontbutton_get_font
+#undef cogito_fontbutton_on_change
 #undef cogito_datepicker_new
 #undef cogito_datepicker_on_change
 #undef cogito_dialog_close
@@ -903,6 +915,24 @@ void cogito_app_set_icon(cogito_app *app, const char *path) {
     return;
   YisVal pv = cogito_val_from_cstr(path);
   cogito_app_set_icon_yis(YV_OBJ(app), pv);
+  if (pv.tag == EVT_STR)
+    yis_release_val(pv);
+}
+
+void cogito_app_set_baseline_font(cogito_app *app, const char *path) {
+  if (!app)
+    return;
+  YisVal pv = cogito_val_from_cstr(path);
+  cogito_app_set_baseline_font_yis(YV_OBJ(app), pv);
+  if (pv.tag == EVT_STR)
+    yis_release_val(pv);
+}
+
+void cogito_app_set_emphasized_font(cogito_app *app, const char *path) {
+  if (!app)
+    return;
+  YisVal pv = cogito_val_from_cstr(path);
+  cogito_app_set_emphasized_font_yis(YV_OBJ(app), pv);
   if (pv.tag == EVT_STR)
     yis_release_val(pv);
 }
@@ -1831,6 +1861,8 @@ static CogitoKind cogito_kind_from_public(cogito_node_kind kind) {
     return COGITO_DATEPICKER;
   case COGITO_NODE_COLORPICKER:
     return COGITO_COLORPICKER;
+  case COGITO_NODE_FONTBUTTON:
+    return COGITO_FONTBUTTON;
   case COGITO_NODE_STEPPER:
     return COGITO_STEPPER;
   case COGITO_NODE_BUTTON_GROUP:
@@ -2174,6 +2206,10 @@ cogito_node *cogito_colorpicker_new(void) {
   return cogito_from_val(cogito_colorpicker_new_yis());
 }
 
+cogito_node *cogito_fontbutton_new(void) {
+  return cogito_from_val(cogito_fontbutton_new_yis());
+}
+
 void cogito_colorpicker_set_hex(cogito_node *colorpicker, const char *hex) {
   if (!colorpicker || colorpicker->kind != COGITO_COLORPICKER || !hex)
     return;
@@ -2195,6 +2231,23 @@ const char *cogito_colorpicker_get_hex(cogito_node *colorpicker) {
   if (!n->text || !n->text->data || !n->text->data[0]) {
     cogito_colorpicker_sync_hex(n);
   }
+  if (!n->text || !n->text->data)
+    return "";
+  return n->text->data;
+}
+
+void cogito_fontbutton_set_font(cogito_node *fontbutton, const char *font_name) {
+  if (!fontbutton || fontbutton->kind != COGITO_FONTBUTTON)
+    return;
+  cogito_node_set_text(fontbutton, font_name ? font_name : "");
+  CogitoNode *win = cogito_node_window((CogitoNode *)fontbutton);
+  if (win) cogito_window_relayout(win);
+}
+
+const char *cogito_fontbutton_get_font(cogito_node *fontbutton) {
+  if (!fontbutton || fontbutton->kind != COGITO_FONTBUTTON)
+    return "";
+  CogitoNode *n = (CogitoNode *)fontbutton;
   if (!n->text || !n->text->data)
     return "";
   return n->text->data;
@@ -4315,6 +4368,22 @@ void cogito_colorpicker_on_change(cogito_node *colorpicker, cogito_node_fn fn,
   env->user = user;
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
   cogito_colorpicker_on_change_yis(YV_OBJ(colorpicker), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
+}
+
+void cogito_fontbutton_on_change(cogito_node *fontbutton, cogito_node_fn fn,
+                                 void *user) {
+  if (!fontbutton)
+    return;
+  if (!fn) {
+    cogito_fontbutton_on_change_yis(YV_OBJ(fontbutton), YV_NULLV);
+    return;
+  }
+  CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
+  env->fn = fn;
+  env->user = user;
+  YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
+  cogito_fontbutton_on_change_yis(YV_OBJ(fontbutton), YV_FN(wrap));
   yis_release_val(YV_FN(wrap));
 }
 

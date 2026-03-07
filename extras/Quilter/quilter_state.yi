@@ -3,14 +3,14 @@ cask quilter_state
 bring stdr
 bring json
 
-fun bool_json(v = bool) (( string )) {
+: bool_json(v = bool) (( string )) {
     if v {
         return "true"
     }
     return "false"
 }
 
-fun save(
+: save(
     state_path = string,
     current_path = string,
     dirty = bool,
@@ -66,7 +66,7 @@ fun save(
     stdr.write_text_file(state_path, payload)
 }
 
-fun load(state_path = string) (( any )) {
+: load(state_path = string) (( any )) {
     let raw = stdr.read_text_file(state_path)
     if is_null(raw) {
         return null

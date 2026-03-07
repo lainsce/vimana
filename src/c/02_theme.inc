@@ -419,9 +419,9 @@ static CogitoStyle cogito_theme_resolve_node(const CogitoNode* n) {
       // Match class name and widget kind; COGITO_KIND_COUNT means universal (any kind)
         if (cogito_class_has_token(n->class_name->data, cogito_theme.custom_classes[i
         ].name) &&
-          (cogito_theme.custom_classes[i
+          ((CogitoKind)cogito_theme.custom_classes[i
       ].kind == n->kind ||
-           cogito_theme.custom_classes[i
+           (CogitoKind)cogito_theme.custom_classes[i
       ].kind == COGITO_KIND_COUNT)) {
         s = cogito_style_merge(&s, &cogito_theme.custom_classes[i
         ].style);
@@ -776,10 +776,10 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
       }
         if (cogito_class_has_token(n->class_name->data, cogito_theme.custom_classes[i
         ].name) &&
-          (cogito_theme.custom_classes[i
-      ].kind == n->kind ||
-           cogito_theme.custom_classes[i
-      ].kind == COGITO_KIND_COUNT)) {
+          ((CogitoKind)cogito_theme.custom_classes[i
+         ].kind == n->kind ||
+           (CogitoKind)cogito_theme.custom_classes[i
+         ].kind == COGITO_KIND_COUNT)) {
         if (checked) s = cogito_style_merge(&s, &cogito_theme.custom_classes[i
         ].checked);
         if (disabled) {
@@ -1165,6 +1165,7 @@ static int cogito_label_font_size(const CogitoNode* n) {
 }
 
 static bool cogito_label_bold(const CogitoNode* n);
+static bool cogito_label_medium(const CogitoNode* n);
 
 static int cogito_node_font_size(const CogitoNode* n) {
   if (!n) return cogito_font_size();
@@ -1177,6 +1178,16 @@ static bool cogito_node_bold(const CogitoNode* n) {
   if (!n) return false;
   if (n->kind == COGITO_LABEL) return cogito_label_bold(n);
   if (n->font_weight_set) return n->font_weight >= 600;
+  return false;
+}
+
+static bool cogito_node_medium(const CogitoNode* n) {
+  if (!n) return false;
+  if (n->kind == COGITO_LABEL) return cogito_label_medium(n);
+  if (n->font_weight_set) {
+    int w = n->font_weight;
+    return w >= 500 && w < 600;
+  }
   return false;
 }
 
@@ -1194,13 +1205,41 @@ static void cogito_apply_size_constraints(const CogitoNode* n, int* w, int* h) {
 // Appbar widget utilities (metrics, positions, navigation)
 #include "widgets/util/appbar.inc"
 
+// Weight table for each label class.
+// Baseline: some classes are 400, some 500.
+// Emphasized (font_emphasized flag): bumps one level (400→500, 500→700).
+// Explicit font-weight (font_weight_set) overrides everything.
+static int cogito_label_baseline_weight(const CogitoNode* n) {
+  if (!n) return 400;
+  if (n->font_weight_set) return n->font_weight;
+  int base;
+  switch (n->label.cls) {
+    case COGITO_LABEL_CLASS_VIEW_TITLE:
+    case COGITO_LABEL_CLASS_TITLE:
+    case COGITO_LABEL_CLASS_CONTENT_TITLE:
+    case COGITO_LABEL_CLASS_CAPTION:
+      base = 500;
+      break;
+    default:
+      base = 400;
+      break;
+  }
+  if (n->font_emphasized) {
+    if (base >= 500) return 700;
+    return 500;
+  }
+  return base;
+}
+
 static bool cogito_label_bold(const CogitoNode* n) {
   if (!n) return false;
-  if (n->font_weight_set) return n->font_weight >= 600;
-  return n->label.cls == COGITO_LABEL_CLASS_SUBTITLE ||
-         n->label.cls == COGITO_LABEL_CLASS_VIEW_SUBTITLE ||
-         n->label.cls == COGITO_LABEL_CLASS_CONTENT_TITLE ||
-         n->label.cls == COGITO_LABEL_CLASS_CAPTION;
+  return cogito_label_baseline_weight(n) >= 600;
+}
+
+static bool cogito_label_medium(const CogitoNode* n) {
+  if (!n) return false;
+  int w = cogito_label_baseline_weight(n);
+  return w >= 500 && w < 600;
 }
 
 static int cogito_label_class_font_size(int cls, int fallback) {

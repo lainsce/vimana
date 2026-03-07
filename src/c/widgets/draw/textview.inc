@@ -112,7 +112,7 @@ case COGITO_TEXTVIEW: {
           cy += line_h;
         }
       }
-      cogito_draw_text_wrapped(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), false, 0, true);
+      cogito_draw_text_wrapped(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), cogito_node_medium(n), 0, true);
       if (n->text_input.sel_start != n->text_input.sel_end) {
         int a2 = n->text_input.sel_start;
         int b2 = n->text_input.sel_end;
@@ -163,7 +163,7 @@ case COGITO_TEXTVIEW: {
             if (slen > 1000) slen = 1000;
             memcpy(sbuf, t + sa, (size_t)slen);
             sbuf[slen] = '\0';
-            cogito_draw_text_size_node(n, n->x + pad + sx2, cy2, sbuf, sel_text, size, cogito_node_bold(n), false);
+            cogito_draw_text_size_node(n, n->x + pad + sx2, cy2, sbuf, sel_text, size, cogito_node_bold(n), cogito_node_medium(n));
           }
           cy2 += line_h2;
         }

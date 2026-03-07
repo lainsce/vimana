@@ -33,6 +33,7 @@ static CogitoNode* cogito_appbar_new_obj(YisStr* title, YisStr* subtitle) {
   CogitoNode* ab = cogito_node_new(COGITO_APPBAR);
   cogito_node_set_text(ab, title);
   cogito_node_set_subtitle(ab, subtitle);
+  ab->hexpand = true;
   ab->appbar.btn_close_x = -1;
   ab->appbar.btn_min_x = -1;
   ab->appbar.btn_max_x = -1;

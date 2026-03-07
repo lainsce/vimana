@@ -15,29 +15,29 @@ bring victrola_lyrics
 def STATE_PATH = ".victrola_state.json"
 def APP_ACCENT = "#ff8c00"
 
-def album_detail_art = cogito.image("sf:music.note").set_size(128, 128).set_radius(26).set_hexpand(false).set_class("surface-container")
-def album_detail_artist = cogito.label("").set_class("caption").set_hexpand(true).set_text_align(0).set_max_width_chars(25)
-def album_detail_revealer = cogito.revealer().set_show_children(false).set_hexpand(true)
-def album_detail_title = cogito.label("").set_class("view-subtitle").set_hexpand(true).set_text_align(0).set_max_width_chars(25)
+def album_detail_art = cogito.image("sf:music.note")
+def album_detail_artist = cogito.label("")
+def album_detail_revealer = cogito.revealer()
+def album_detail_title = cogito.label("")
 def ?app_ref = cogito.app()
-def cover_art = cogito.image("sf:music.note").set_radius(26).set_class("surface-container victrola-cover-art")
-def groups_revealer = cogito.revealer().set_show_children(false).set_hexpand(true).set_vexpand(true)
-def library_grid = cogito.grid(2).set_gap(8, 8)
+def cover_art = cogito.image("sf:music.note")
+def groups_revealer = cogito.revealer()
+def library_grid = cogito.grid(2)
 def library_list = cogito.content_list()
-def library_rail = cogito.nav_rail().set_items(["Titles", "Artists", "Albums"], ["sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
-def lyrics_text = cogito.textview("Lyrics will appear here when available.").set_editable(false).set_hexpand(true).set_vexpand(true).set_class("victrola-lyrics")
-def now_artist = cogito.label("No Artist").set_class("cb-title").set_text_align(1).set_max_width_chars(25)
-def now_title = cogito.label("No Title").set_class("view-subtitle").set_text_align(1).set_max_width_chars(44)
-def play_pause_btn = cogito.iconbtn("sf:play").set_l().set_class("tonal")
-def repeat_btn = cogito.iconbtn("sf:repeat").set_class("iconic")
+def library_rail = cogito.nav_rail()
+def lyrics_text = cogito.textview("")
+def now_artist = cogito.label("No Artist")
+def now_title = cogito.label("No Title")
+def play_pause_btn = cogito.iconbtn("sf:play")
+def repeat_btn = cogito.iconbtn("sf:repeat")
 def ?player_tint_bin = cogito.bin()
-def poll_anchor = cogito.shape(27).set_size(1).set_visible(false)
-def search_input = cogito.searchfield("").set_hexpand(true).set_class("victrola-search")
-def search_revealer = cogito.revealer().set_show_children(false).set_hexpand(true).set_padding(0, 16, 6, 16)
-def seek_slider = cogito.slider(0, 1000, 0).set_s().set_class("victrola-seek").set_wavy(true)
-def time_left = cogito.label("00:00").set_class("caption").set_text_align(0)
-def time_right = cogito.label("00:00").set_class("caption").set_text_align(2)
-def titles_revealer = cogito.revealer().set_show_children(true).set_hexpand(true).set_vexpand(true)
+def poll_anchor = cogito.shape(27)
+def search_input = cogito.searchfield("")
+def search_revealer = cogito.revealer()
+def seek_slider = cogito.slider(0, 1000, 0)
+def time_left = cogito.label("00:00")
+def time_right = cogito.label("00:00")
+def titles_revealer = cogito.revealer()
 
 def ?album_artist_map = []: [string => any]
 def ?album_cover_map = []: [string => any]
@@ -65,31 +65,31 @@ def ?search_input_visible = false
 
 def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
-fun sanitize_cover_path(path = string) (( string )) {
+: sanitize_cover_path(path = string) (( string )) {
     return victrola_util.sanitize_cover_path(path)
 }
 
-fun format_ms(ms = num) (( string )) {
+: format_ms(ms = num) (( string )) {
     return victrola_util.format_ms(ms)
 }
 
-fun album_cover_key(album = string, artist = string) (( string )) {
+: album_cover_key(album = string, artist = string) (( string )) {
     return victrola_model.album_cover_key(album, artist)
 }
 
-fun album_cover_for(album = string, artist = string) (( string )) {
+: album_cover_for(album = string, artist = string) (( string )) {
     return victrola_model.album_cover_for(album_cover_map, album, artist)
 }
 
-fun album_artist_for(album = string) (( string )) {
+: album_artist_for(album = string) (( string )) {
     return victrola_model.album_artist_for(album_artist_map, album)
 }
 
-fun save_state() (( -- )) {
+: save_state() (( -- )) {
     victrola_state.save_state(STATE_PATH, current_folder, tracks, album_cover_map)
 }
 
-fun load_state() (( -- )) {
+: load_state() (( -- )) {
     let loaded = victrola_state.load_state(STATE_PATH)
     album_cover_map = loaded["covers"] ?? []: [string => any]
     let folder = stdr.str(loaded["folder"] ?? "")
@@ -98,7 +98,7 @@ fun load_state() (( -- )) {
     }
 }
 
-fun set_player_lyrics_visible(show_lyrics = bool, player_bar = cogito.AppBar, now_revealer = cogito.Revealer, lyrics_revealer = cogito.Revealer) (( -- )) {
+: set_player_lyrics_visible(show_lyrics = bool, player_bar = cogito.AppBar, now_revealer = cogito.Revealer, lyrics_revealer = cogito.Revealer) (( -- )) {
     lyrics_view_visible = show_lyrics
     if show_lyrics {
         player_bar.set_title("Lyrics")
@@ -115,7 +115,7 @@ fun set_player_lyrics_visible(show_lyrics = bool, player_bar = cogito.AppBar, no
     }
 }
 
-fun sync_play_pause_button() (( -- )) {
+: sync_play_pause_button() (( -- )) {
     let actually_playing = is_playing && playing_track >= 0
     if actually_playing {
         play_pause_btn.set_icon("sf:pause")
@@ -128,7 +128,7 @@ fun sync_play_pause_button() (( -- )) {
     }
 }
 
-fun sync_repeat_button() (( -- )) {
+: sync_repeat_button() (( -- )) {
     if repeat_one {
         repeat_btn.set_class("tonal")
         repeat_btn.set_shape(1)
@@ -138,7 +138,7 @@ fun sync_repeat_button() (( -- )) {
     }
 }
 
-fun next_shuffle_pick(limit = num) (( num )) {
+: next_shuffle_pick(limit = num) (( num )) {
     if limit <= 0 {
         return -1
     }
@@ -151,13 +151,13 @@ fun next_shuffle_pick(limit = num) (( num )) {
     return shuffle_seed % limit
 }
 
-fun set_search_visible(visible = bool) (( -- )) {
+: set_search_visible(visible = bool) (( -- )) {
     search_revealer.set_show_children(visible)
     search_input.set_visible(visible)
     search_input_visible = visible
 }
 
-fun set_album_detail_visible(visible = bool) (( -- )) {
+: set_album_detail_visible(visible = bool) (( -- )) {
     album_detail_revealer.set_show_children(visible)
     album_detail_open = visible
     if !visible {
@@ -165,11 +165,11 @@ fun set_album_detail_visible(visible = bool) (( -- )) {
     }
 }
 
-fun close_album_detail() (( -- )) {
+: close_album_detail() (( -- )) {
     set_album_detail_visible(false)
 }
 
-fun open_album_detail(album = string) (( -- )) {
+: open_album_detail(album = string) (( -- )) {
     album_detail_key = album
 
     let artist = album_artist_for(album)
@@ -187,7 +187,7 @@ fun open_album_detail(album = string) (( -- )) {
     refresh_library_list()
 }
 
-fun set_now_playing(idx = num) (( -- )) {
+: set_now_playing(idx = num) (( -- )) {
     if idx < 0 || idx >= len(tracks) {
         now_title.set_text("No Title")
         now_artist.set_text("No Artist")
@@ -203,13 +203,13 @@ fun set_now_playing(idx = num) (( -- )) {
     now_artist.set_text(artist)
 }
 
-fun clear_now_playing_tint() (( -- )) {
+: clear_now_playing_tint() (( -- )) {
     current_tint_source = ""
     player_tint_bin.set_accent_color(null)
     app_ref.set_accent_color(APP_ACCENT, true)
 }
 
-fun apply_now_playing_tint(path = string) (( -- )) {
+: apply_now_playing_tint(path = string) (( -- )) {
     let clean = sanitize_cover_path(path)
     if len(clean) == 0 {
         clear_now_playing_tint()
@@ -234,7 +234,7 @@ fun apply_now_playing_tint(path = string) (( -- )) {
     }
 }
 
-fun apply_cover_art(path = string) (( -- )) {
+: apply_cover_art(path = string) (( -- )) {
     let clean = sanitize_cover_path(path)
 
     if clean == current_cover_path {
@@ -275,7 +275,7 @@ fun apply_cover_art(path = string) (( -- )) {
     }
 }
 
-fun refresh_library_list() (( -- )) {
+: refresh_library_list() (( -- )) {
     set_album_detail_visible(view_mode == 2 && album_detail_open)
 
     let result = victrola_library.refresh_library_list(
@@ -309,7 +309,7 @@ fun refresh_library_list() (( -- )) {
     }
 }
 
-fun open_group_in_titles(group_key = string) (( -- )) {
+: open_group_in_titles(group_key = string) (( -- )) {
     if len(group_key) == 0 {
         return
     }
@@ -328,7 +328,7 @@ fun open_group_in_titles(group_key = string) (( -- )) {
     }
 }
 
-fun scan_folder(folder = string) (( -- )) {
+: scan_folder(folder = string) (( -- )) {
     let chosen = stdr.trim(folder)
     if len(chosen) == 0 {
         return
@@ -370,7 +370,7 @@ fun scan_folder(folder = string) (( -- )) {
     let n = len(tracks)
 }
 
-fun choose_and_scan() (( -- )) {
+: choose_and_scan() (( -- )) {
     let folder = victrola_scanner.pick_folder_macos()
     if len(folder) == 0 {
         return
@@ -378,7 +378,7 @@ fun choose_and_scan() (( -- )) {
     scan_folder(folder)
 }
 
-fun find_visible_index(track_idx = num) (( num )) {
+: find_visible_index(track_idx = num) (( num )) {
     for (let ?i = 0; i < len(visible_track_indexes); i = i + 1) {
         if visible_track_indexes[i] == track_idx {
             return i
@@ -387,7 +387,7 @@ fun find_visible_index(track_idx = num) (( num )) {
     return -1
 }
 
-fun play_track(track_idx = num) (( -- )) {
+: play_track(track_idx = num) (( -- )) {
     if track_idx < 0 || track_idx >= len(tracks) {
         return
     }
@@ -444,7 +444,7 @@ fun play_track(track_idx = num) (( -- )) {
     poll_playback()
 }
 
-fun play_selected() (( -- )) {
+: play_selected() (( -- )) {
     if selected_track >= 0 {
         if !is_playing && selected_track == playing_track {
             if gst.play() {
@@ -459,7 +459,7 @@ fun play_selected() (( -- )) {
     }
 }
 
-fun play_next() (( -- )) {
+: play_next() (( -- )) {
     if len(visible_track_indexes) == 0 {
         return
     }
@@ -482,7 +482,7 @@ fun play_next() (( -- )) {
     play_track(visible_track_indexes[next_pos] ?? -1)
 }
 
-fun play_prev() (( -- )) {
+: play_prev() (( -- )) {
     if len(visible_track_indexes) == 0 {
         return
     }
@@ -505,7 +505,7 @@ fun play_prev() (( -- )) {
     play_track(visible_track_indexes[prev_pos] ?? -1)
 }
 
-fun play_shuffled_track() (( -- )) {
+: play_shuffled_track() (( -- )) {
     let ?candidates = []: [num]
 
     for (let ?i = 0; i < len(tracks); i = i + 1) {
@@ -538,7 +538,7 @@ fun play_shuffled_track() (( -- )) {
     play_track(idx)
 }
 
-fun pause_playback() (( -- )) {
+: pause_playback() (( -- )) {
     if gst.pause() {
         is_playing = false
         sync_play_pause_button()
@@ -547,7 +547,7 @@ fun pause_playback() (( -- )) {
     }
 }
 
-fun stop_playback() (( -- )) {
+: stop_playback() (( -- )) {
     if gst.stop() {
         is_playing = false
         playing_track = -1
@@ -562,7 +562,7 @@ fun stop_playback() (( -- )) {
     }
 }
 
-fun fetch_lyrics_for_track(track_idx = num) (( -- )) {
+: fetch_lyrics_for_track(track_idx = num) (( -- )) {
     if track_idx < 0 || track_idx >= len(tracks) {
         lyrics_text.set_text("Select a track to view lyrics.")
         return
@@ -574,7 +574,7 @@ fun fetch_lyrics_for_track(track_idx = num) (( -- )) {
     lyrics_text.set_text(victrola_lyrics.fetch_lyrics(artist, title))
 }
 
-fun poll_playback() (( -- )) {
+: poll_playback() (( -- )) {
     let ev = gst.poll()
     if ev == gst.EVENT_EOS {
         if repeat_one && playing_track >= 0 {
@@ -621,11 +621,11 @@ fun poll_playback() (( -- )) {
     }
 }
 
-fun poll_tick() (( -- )) {
+: poll_tick() (( -- )) {
     poll_playback()
 }
 
-fun start_poll_loop() (( -- )) {
+: start_poll_loop() (( -- )) {
     if poll_timer_id > 0 {
         cogito.clear_timer(poll_timer_id)
         poll_timer_id = 0
@@ -636,7 +636,7 @@ fun start_poll_loop() (( -- )) {
     poll_tick()
 }
 
-fun stop_poll_loop() (( -- )) {
+: stop_poll_loop() (( -- )) {
     if poll_timer_id > 0 {
         cogito.clear_timer(poll_timer_id)
         poll_timer_id = 0
@@ -659,6 +659,28 @@ entry() (( -- )) {
     .set_size_request(360, 294)
 
     cogito.load_sum("victrola.sum")
+
+    -- Configure module-level widgets
+    album_detail_art.set_size(128, 128).set_radius(26).set_hexpand(false).set_class("surface-container")
+    album_detail_artist.set_class("caption").set_hexpand(true).set_text_align(0).set_max_width_chars(25)
+    album_detail_revealer.set_show_children(false).set_hexpand(true)
+    album_detail_title.set_class("view-subtitle").set_hexpand(true).set_text_align(0).set_max_width_chars(25)
+    cover_art.set_radius(26).set_class("surface-container victrola-cover-art")
+    groups_revealer.set_show_children(false).set_hexpand(true).set_vexpand(true)
+    library_grid.set_gap(8, 8)
+    library_rail.set_items(["Titles", "Artists", "Albums"], ["sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
+    lyrics_text.set_editable(false).set_hexpand(true).set_vexpand(true).set_class("victrola-lyrics")
+    now_artist.set_class("cb-title").set_text_align(1).set_max_width_chars(25)
+    now_title.set_class("view-subtitle").set_text_align(1).set_max_width_chars(44)
+    play_pause_btn.set_l().set_class("tonal")
+    repeat_btn.set_class("iconic")
+    poll_anchor.set_size(1).set_visible(false)
+    search_input.set_hexpand(true).set_class("victrola-search")
+    search_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 16, 6, 16)
+    seek_slider.set_s().set_class("victrola-seek").set_wavy(true)
+    time_left.set_class("caption").set_text_align(0)
+    time_right.set_class("caption").set_text_align(2)
+    titles_revealer.set_show_children(true).set_hexpand(true).set_vexpand(true)
 
     let root = cogito.hstack()
     .set_hexpand(true)

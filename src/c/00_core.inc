@@ -219,6 +219,8 @@ typedef struct CogitoApp {
   bool system_accent_set;
   double system_theme_next_check;
   YisStr* app_icon; // path to app icon (png/svg/jpg/bmp)
+  YisStr* baseline_font; // path to baseline (regular weight) font
+  YisStr* emphasized_font; // path to emphasized (bold/medium) font
 } CogitoApp;
 
 typedef enum {
@@ -270,6 +272,7 @@ typedef enum {
   COGITO_DIALOG,
   COGITO_DIALOG_SLOT,
   COGITO_DROPDOWN,
+  COGITO_FONTBUTTON,
   COGITO_FAB,
   COGITO_FAB_MENU,
   COGITO_FIXED,
@@ -597,6 +600,8 @@ typedef struct CogitoTheme {
 
 typedef struct CogitoFontCacheEntry {
   int size;
+  int weight;
+  char path[PATH_MAX];
   CogitoFont* font;
   bool ready;
 } CogitoFontCacheEntry;
@@ -677,6 +682,7 @@ typedef struct CogitoNode {
   bool label_max_width_chars_set;
   bool font_mono;
   bool font_tabular;
+  bool font_emphasized;
 
   // Geometry
   int x, y, w, h;
@@ -1184,7 +1190,13 @@ static CogitoFontCacheEntry cogito_font_bold_cache[
 static CogitoFontCacheEntry cogito_font_medium_cache[
   8
 ];
+static CogitoFontCacheEntry cogito_font_emphasized_cache[
+  8
+];
 static CogitoFontCacheEntry cogito_font_tabular_cache[
+  8
+];
+static CogitoFontCacheEntry cogito_font_mono_cache[
   8
 ];
 static int cogito_font_size_value = 16;
@@ -1194,6 +1206,7 @@ static int cogito_font_medium_loaded_size = 0;
 static bool cogito_font_from_env = false;
 static bool cogito_font_bold_from_env = false;
 static bool cogito_font_medium_from_env = false;
+static const char* cogito_font_emphasized_path_active = NULL;
 static bool cogito_sum_default_loaded = false;
 static char* cogito_user_sum = NULL;
 static int cogito_style_version = 0;
@@ -2499,7 +2512,10 @@ static bool cogito_debug_enabled(void) {
 static void cogito_draw_rect(int x, int y, int w, int h, CogitoColor bg, int radius);
 static bool cogito_hit_rect(int x, int y, int rx, int ry, int rw, int rh);
 static CogitoNode* cogito_node_window(CogitoNode* n);
+static void cogito_window_relayout(CogitoNode* win);
 static bool cogito_file_exists(const char* path);
+static const char* cogito_app_get_baseline_font_path(CogitoApp* app);
+static const char* cogito_app_get_emphasized_font_path(CogitoApp* app);
 static int cogito_font_weight_normal(void);
 static int cogito_font_weight_bold(void);
 static int cogito_font_weight_medium(void);
@@ -2509,6 +2525,7 @@ static bool cogito_load_font_file_tabular(CogitoFont** out, const char* path, in
 static CogitoFont* cogito_font_for_size(CogitoFont* f, int size);
 static CogitoFont* cogito_font_tabular_for(CogitoFont* f, int size);
 static void cogito_font_cache_clear(void);
+static void cogito_app_fonts_refresh(void);
 
 void cogito_nav_rail_set_no_label(CogitoNode* n, bool val) {
   if (n) n->nav_rail.no_label = val;

@@ -2,7 +2,7 @@ cask quilter_markdown
 
 bring quilter_text
 
-fun escape_char(ch = string) (( string )) {
+: escape_char(ch = string) (( string )) {
     if ch == "&" {
         return "&amp;"
     }
@@ -21,7 +21,7 @@ fun escape_char(ch = string) (( string )) {
     return ch
 }
 
-fun escape_html(text = string) (( string )) {
+: escape_html(text = string) (( string )) {
     let ?out = ""
     for (let ?i = 0; i < len(text); i += 1) {
         let ch = text[i]
@@ -31,7 +31,7 @@ fun escape_html(text = string) (( string )) {
     return out
 }
 
-fun escape_attr(text = string) (( string )) {
+: escape_attr(text = string) (( string )) {
     let ?out = ""
     for (let ?i = 0; i < len(text); i += 1) {
         let ch = text[i]
@@ -52,11 +52,11 @@ fun escape_attr(text = string) (( string )) {
     return out
 }
 
-fun is_digit_char(ch = string) (( bool )) {
+: is_digit_char(ch = string) (( bool )) {
     return ch == "0" || ch == "1" || ch == "2" || ch == "3" || ch == "4" || ch == "5" || ch == "6" || ch == "7" || ch == "8" || ch == "9"
 }
 
-fun heading_level(line = string) (( num )) {
+: heading_level(line = string) (( num )) {
     let ?i = 0
     for (; i < len(line); i += 1) {
         if line[i] != "#" {
@@ -69,7 +69,7 @@ fun heading_level(line = string) (( num )) {
     return 0
 }
 
-fun is_hr_line(line = string) (( bool )) {
+: is_hr_line(line = string) (( bool )) {
     let ?mark = ""
     let ?count = 0
 
@@ -92,7 +92,7 @@ fun is_hr_line(line = string) (( bool )) {
     return count >= 3
 }
 
-fun blockquote_content(line = string) (( string )) {
+: blockquote_content(line = string) (( string )) {
     let ?i = 0
     for (; i < len(line);) {
         if line[i] != ">" {
@@ -106,7 +106,7 @@ fun blockquote_content(line = string) (( string )) {
     return quilter_text.trim_text(quilter_text.slice_from(line, i))
 }
 
-fun normalize_task_prefix(text = string) (( string )) {
+: normalize_task_prefix(text = string) (( string )) {
     if quilter_text.starts_with(text, "[ ] ") {
         let rest = quilter_text.slice_from(text, 4)
         return "[ ] $$rest$$"
@@ -118,7 +118,7 @@ fun normalize_task_prefix(text = string) (( string )) {
     return text
 }
 
-fun list_item_content(line = string) (( any )) {
+: list_item_content(line = string) (( any )) {
     if quilter_text.starts_with(line, "- ") || quilter_text.starts_with(line, "* ") || quilter_text.starts_with(line, "+ ") {
         return normalize_task_prefix(quilter_text.slice_from(line, 2))
     }
@@ -136,7 +136,7 @@ fun list_item_content(line = string) (( any )) {
     return null
 }
 
-fun inline_markup(text = string) (( string )) {
+: inline_markup(text = string) (( string )) {
     let ?out = ""
     let ?i = 0
 
@@ -226,7 +226,7 @@ fun inline_markup(text = string) (( string )) {
     return out
 }
 
-fun markdown_to_html(md = string) (( string )) {
+: markdown_to_html(md = string) (( string )) {
     let ?out = ""
     let ?line = ""
     let ?in_list = false
@@ -334,7 +334,7 @@ fun markdown_to_html(md = string) (( string )) {
     return out
 }
 
-fun outline_from_markdown(md = string) (( string )) {
+: outline_from_markdown(md = string) (( string )) {
     let ?out = ""
     let ?line = ""
     let ?in_code = false
@@ -385,6 +385,6 @@ fun outline_from_markdown(md = string) (( string )) {
     return out
 }
 
-fun markdown_to_preview(md = string) (( string )) {
+: markdown_to_preview(md = string) (( string )) {
     return markdown_to_html(md)
 }

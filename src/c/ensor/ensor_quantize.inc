@@ -289,6 +289,9 @@ static int cogito_ensor_quantizer_wu(const int* pixels, int n_pixels,
                                      const CogitoEnsorQMap* pixel_to_count,
                                      int max_colors,
                                      CogitoEnsorQMap* out) {
+  (void)pixels;
+  (void)n_pixels;
+
   // Allocate histogram arrays on heap (large: 35937 × 5)
   int*    weights   = (int*)calloc(COGITO_WU_TOTAL_SIZE, sizeof(int));
   int*    moments_r = (int*)calloc(COGITO_WU_TOTAL_SIZE, sizeof(int));

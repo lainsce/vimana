@@ -284,6 +284,7 @@ static bool cogito_keyboard_activate_focus(CogitoNode* n, int mx, int my) {
   if (!n || n->disabled) return false;
   switch (n->kind) {
     case COGITO_BUTTON:
+    case COGITO_FONTBUTTON:
     case COGITO_ICONBTN:
     case COGITO_FAB:
     case COGITO_FAB_MENU:
@@ -640,7 +641,22 @@ static void cogito_run(YisVal appv, YisVal winv) {
   cogito_apply_window_a11y_label(win);
   startup_t_after_window = cogito_startup_now();
 
-  const char* font_path = getenv("COGITO_FONT");
+  const char* font_path = NULL;
+  static char app_baseline_font_buf[PATH_MAX];
+  if (cogito_active_app) {
+    const char* baseline_name = cogito_app_get_baseline_font_path(cogito_active_app);
+    if (baseline_name && baseline_name[0]) {
+      const char* resolved = cogito_resolve_font_by_name(baseline_name);
+      if (resolved && resolved[0]) {
+        strncpy(app_baseline_font_buf, resolved, PATH_MAX - 1);
+        app_baseline_font_buf[PATH_MAX - 1] = '\0';
+        font_path = app_baseline_font_buf;
+      }
+    }
+  }
+  if (!font_path || !font_path[0]) {
+    font_path = getenv("COGITO_FONT");
+  }
   if (!font_path || !font_path[
     0
   ]) {
@@ -710,7 +726,23 @@ static void cogito_run(YisVal appv, YisVal winv) {
     cogito_font_mono_loaded_size = 0;
   }
   // Bold font
-  const char* bold_font_path = getenv("COGITO_FONT_BOLD");
+  const char* bold_font_path = NULL;
+  static char app_emph_buf[PATH_MAX];
+  cogito_font_emphasized_path_active = NULL;
+  if (cogito_active_app) {
+    const char* emph_name = cogito_app_get_emphasized_font_path(cogito_active_app);
+    if (emph_name && emph_name[0]) {
+      const char* resolved = cogito_resolve_font_by_name(emph_name);
+      if (resolved && resolved[0]) {
+        strncpy(app_emph_buf, resolved, PATH_MAX - 1);
+        app_emph_buf[PATH_MAX - 1] = '\0';
+        cogito_font_emphasized_path_active = app_emph_buf;
+      }
+    }
+  }
+  if (!bold_font_path || !bold_font_path[0]) {
+    bold_font_path = getenv("COGITO_FONT_BOLD");
+  }
   bool bold_from_regular = false;
   if (!bold_font_path || !bold_font_path[
     0
@@ -742,7 +774,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
     }
   }
   // Medium font
-  const char* medium_font_path = getenv("COGITO_FONT_MEDIUM");
+  const char* medium_font_path = NULL;
+  if (!medium_font_path || !medium_font_path[0]) {
+    medium_font_path = getenv("COGITO_FONT_MEDIUM");
+  }
   bool medium_from_regular = false;
   if (!medium_font_path || !medium_font_path[
     0
@@ -933,6 +968,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
   bool prev_inspector_mouse_inside = false;
   bool prev_inspector_mouse_in_frame = false;
   CogitoNode* prev_hover_node = NULL;
+  bool prev_over_traffic_lights = false;
   bool appbar_drag_swallow = false;
 
   // Main event loop
@@ -1152,6 +1188,34 @@ static void cogito_run(YisVal appv, YisVal winv) {
       if (cogito_inspector_open && !inspector_window) {
         cogito_queue_draw(win);
       }
+      // Traffic light glyphs appear on cluster hover; redraw while pointer is near them.
+      bool cur_over_traffic_lights = false;
+      if (route_main_pointer) {
+        CogitoNode* first_ab = cogito_find_appbar(win);
+        if (first_ab && (first_ab->appbar.btn_close_x >= 0 ||
+                         first_ab->appbar.btn_min_x >= 0 ||
+                         first_ab->appbar.btn_max_x >= 0)) {
+          int btn = first_ab->appbar.btn_size;
+          int by = first_ab->appbar.btn_y;
+          int pad = 5;
+          int cl = first_ab->appbar.btn_close_x;
+          int cr = cl + btn;
+          if (first_ab->appbar.btn_min_x >= 0) {
+            int r = first_ab->appbar.btn_min_x + btn;
+            if (r > cr) cr = r;
+          }
+          if (first_ab->appbar.btn_max_x >= 0) {
+            int r = first_ab->appbar.btn_max_x + btn;
+            if (r > cr) cr = r;
+          }
+          cur_over_traffic_lights = cogito_hit_rect(mx, my, cl - pad, by - pad,
+                                                    cr - cl + pad * 2, btn + pad * 2);
+        }
+      }
+      if (cur_over_traffic_lights || cur_over_traffic_lights != prev_over_traffic_lights) {
+        cogito_queue_draw(win);
+      }
+      prev_over_traffic_lights = cur_over_traffic_lights;
     }
     if (inspector_pointer_changed && cogito_inspector_open && inspector_window) {
       cogito_queue_draw(win);
@@ -2467,6 +2531,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
             } else {
               cogito_invoke_click(hit);
             }
+          } else if (hit->kind == COGITO_FONTBUTTON) {
+            cogito_fontbutton_click(hit);
           } else if (hit->kind == COGITO_SPLIT_BUTTON) {
             int arrow_x = hit->split_btn.arrow_x;
             bool hit_arrow = cogito_is_rtl() ? (mx < arrow_x + hit->split_btn.arrow_w) : (mx >= arrow_x);

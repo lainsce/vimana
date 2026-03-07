@@ -20,6 +20,8 @@
 #undef cogito_app_set_contrast
 #undef cogito_app_set_ensor_variant
 #undef cogito_app_set_icon
+#undef cogito_app_set_baseline_font
+#undef cogito_app_set_emphasized_font
 #undef cogito_appbar_add_button
 #undef cogito_appbar_new
 #undef cogito_appbar_pair_scroller
@@ -665,6 +667,22 @@ static void __cogito_app_set_icon(YisVal appv, YisVal pathv) {
   YisStr* tmp = NULL;
   const char* path = cogito_optional_cstr(pathv, &tmp);
   if (path) cogito_app_set_icon(app, path);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_app_set_baseline_font(YisVal appv, YisVal pathv) {
+  cogito_app* app = cogito_app_from_val(appv);
+  YisStr* tmp = NULL;
+  const char* path = cogito_optional_cstr(pathv, &tmp);
+  if (path) cogito_app_set_baseline_font(app, path);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_app_set_emphasized_font(YisVal appv, YisVal pathv) {
+  cogito_app* app = cogito_app_from_val(appv);
+  YisStr* tmp = NULL;
+  const char* path = cogito_optional_cstr(pathv, &tmp);
+  if (path) cogito_app_set_emphasized_font(app, path);
   if (tmp) yis_release_val(YV_STR(tmp));
 }
 
@@ -2023,6 +2041,11 @@ static YisVal __cogito_colorpicker(void) {
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
+static YisVal __cogito_fontbutton(void) {
+  cogito_node* n = cogito_fontbutton_new();
+  return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+
 static void __cogito_colorpicker_on_change(YisVal cpv, YisVal handler) {
   cogito_node* cp = cogito_node_from_val(cpv);
   CogitoHandle* h = (CogitoHandle*)cpv.as.p;
@@ -2033,6 +2056,18 @@ static void __cogito_colorpicker_on_change(YisVal cpv, YisVal handler) {
   }
   cogito_set_handler(h, &h->on_change, handler);
   cogito_colorpicker_on_change(cp, cogito_cb_change, h);
+}
+
+static void __cogito_fontbutton_on_change(YisVal btnv, YisVal handler) {
+  cogito_node* btn = cogito_node_from_val(btnv);
+  CogitoHandle* h = (CogitoHandle*)btnv.as.p;
+  if (handler.tag != EVT_FN) {
+    cogito_set_handler(h, &h->on_change, handler);
+    cogito_fontbutton_on_change(btn, NULL, NULL);
+    return;
+  }
+  cogito_set_handler(h, &h->on_change, handler);
+  cogito_fontbutton_on_change(btn, cogito_cb_change, h);
 }
 
 static void __cogito_colorpicker_set_hex(YisVal cpv, YisVal hexv) {
@@ -2047,6 +2082,20 @@ static YisVal __cogito_colorpicker_get_hex(YisVal cpv) {
   cogito_node* cp = cogito_node_from_val(cpv);
   const char* hex = cogito_colorpicker_get_hex(cp);
   return YV_STR(stdr_str_lit(hex ? hex : ""));
+}
+
+static void __cogito_fontbutton_set_font(YisVal btnv, YisVal textv) {
+  cogito_node* btn = cogito_node_from_val(btnv);
+  YisStr* tmp = NULL;
+  const char* text = cogito_optional_cstr(textv, &tmp);
+  cogito_fontbutton_set_font(btn, text ? text : "");
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static YisVal __cogito_fontbutton_get_font(YisVal btnv) {
+  cogito_node* btn = cogito_node_from_val(btnv);
+  const char* text = cogito_fontbutton_get_font(btn);
+  return YV_STR(stdr_str_lit(text ? text : ""));
 }
 
 static YisVal __cogito_toasts(void) {
@@ -3540,6 +3589,8 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_app_set_contrast __cogito_app_set_contrast
 #define cogito_app_set_ensor_variant __cogito_app_set_ensor_variant
 #define cogito_app_set_icon __cogito_app_set_icon
+#define cogito_app_set_baseline_font __cogito_app_set_baseline_font
+#define cogito_app_set_emphasized_font __cogito_app_set_emphasized_font
 #define cogito_app_get_icon __cogito_app_get_icon
 #define cogito_open_url __cogito_open_url
 #define cogito_gst_init __cogito_gst_init
@@ -3590,6 +3641,9 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_colorpicker_new __cogito_colorpicker
 #define cogito_colorpicker_set_hex __cogito_colorpicker_set_hex
 #define cogito_colorpicker_get_hex __cogito_colorpicker_get_hex
+#define cogito_fontbutton_new __cogito_fontbutton
+#define cogito_fontbutton_set_font __cogito_fontbutton_set_font
+#define cogito_fontbutton_get_font __cogito_fontbutton_get_font
 #define cogito_toasts_new __cogito_toasts
 #define cogito_toast_new __cogito_toast
 #define cogito_appbar_new __cogito_appbar
@@ -3660,6 +3714,8 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_app_set_contrast __cogito_app_set_contrast
 #define cogito_app_set_ensor_variant __cogito_app_set_ensor_variant
 #define cogito_app_set_icon __cogito_app_set_icon
+#define cogito_app_set_baseline_font __cogito_app_set_baseline_font
+#define cogito_app_set_emphasized_font __cogito_app_set_emphasized_font
 #define cogito_app_get_icon __cogito_app_get_icon
 #define cogito_pointer_capture_set __cogito_pointer_capture
 #define cogito_pointer_capture_clear __cogito_pointer_release
@@ -3703,6 +3759,7 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_slider_get_range_end __cogito_slider_get_range_end
 #define cogito_slider_on_change __cogito_slider_on_change
 #define cogito_colorpicker_on_change __cogito_colorpicker_on_change
+#define cogito_fontbutton_on_change __cogito_fontbutton_on_change
 #define cogito_tabs_set_items __cogito_tabs_set_items
 #define cogito_tabs_set_ids __cogito_tabs_set_ids
 #define cogito_tabs_set_selected __cogito_tabs_set_selected

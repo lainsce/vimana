@@ -15,7 +15,7 @@ macro clicked_message() (( string )) {
     "Button clicked."
 }
 
-fun build_page(title = string, blurb = string) (( cogito.VStack )) {
+: build_page(title = string, blurb = string) (( cogito.VStack )) {
     let vstack = cogito.vstack()
     .set_vexpand(true)
     .set_hexpand(true)
@@ -32,7 +32,7 @@ fun build_page(title = string, blurb = string) (( cogito.VStack )) {
     return vstack
 }
 
-fun build_button_page() (( cogito.VStack )) {
+: build_button_page() (( cogito.VStack )) {
     let vstack = build_page("Button", "Buttons trigger immediate actions. This page showcases all button variants, sizes, and states.")
 
     let status = cogito.label("Tap a button to update this status.")
@@ -129,7 +129,7 @@ fun build_button_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_iconbtn_page() (( cogito.VStack )) {
+: build_iconbtn_page() (( cogito.VStack )) {
     let vstack = build_page("Icon Button", "Icon buttons come in 4 color styles (Filled, Tonal, Outlined, Iconic), 2 shapes (Circle, Rounded Square), and 3 widths (Narrow, Default, Wide).")
 
     let status = cogito.label("Tap an icon button.")
@@ -241,7 +241,7 @@ fun build_iconbtn_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_textfield_page() (( cogito.VStack )) {
+: build_textfield_page() (( cogito.VStack )) {
     let vstack = build_page("TextField", "TextField is a single-line editable input for concise text entry.")
 
     let status = cogito.label("Current value: ")
@@ -296,7 +296,7 @@ fun build_textfield_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_searchfield_page() (( cogito.VStack )) {
+: build_searchfield_page() (( cogito.VStack )) {
     let vstack = build_page("SearchField", "SearchField is optimized for query text with search-focused styling and behavior.")
 
     let status = cogito.label("Query: ")
@@ -314,7 +314,7 @@ fun build_searchfield_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_textview_page() (( cogito.VStack )) {
+: build_textview_page() (( cogito.VStack )) {
     let vstack = build_page("TextView", "TextView is a multi-line editable area suitable for notes and longer text.")
 
     let status = cogito.label("Edit the text view to trigger change notifications.")
@@ -333,7 +333,7 @@ fun build_textview_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_checkbox_page() (( cogito.VStack )) {
+: build_checkbox_page() (( cogito.VStack )) {
     let vstack = build_page("Checkbox", "Checkboxes capture independent yes/no selections.")
 
     let status = cogito.label("Toggle a checkbox.")
@@ -374,7 +374,7 @@ fun build_checkbox_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_switch_page() (( cogito.VStack )) {
+: build_switch_page() (( cogito.VStack )) {
     let vstack = build_page("Switch", "Switches represent immediate on/off state and are ideal for settings toggles.")
 
     let status = cogito.label("Switch is off.")
@@ -399,7 +399,7 @@ fun build_switch_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_slider_page() (( cogito.VStack )) {
+: build_slider_page() (( cogito.VStack )) {
     let vstack = build_page("Slider", "Sliders let users choose a value along a continuous range.")
 
     let status = cogito.label("Value: 50")
@@ -461,7 +461,7 @@ fun build_slider_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_stepper_page() (( cogito.VStack )) {
+: build_stepper_page() (( cogito.VStack )) {
     let vstack = build_page("Stepper", "Steppers provide precise incremental adjustments using +/- controls.")
 
     let status = cogito.label("Value: 0")
@@ -478,7 +478,7 @@ fun build_stepper_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_datepicker_page() (( cogito.VStack )) {
+: build_datepicker_page() (( cogito.VStack )) {
     let vstack = build_page("DatePicker", "DatePicker allows users to choose calendar dates in a structured UI.")
 
     let status = cogito.label("Pick a date.")
@@ -494,7 +494,7 @@ fun build_datepicker_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_colorpicker_page() (( cogito.VStack )) {
+: build_colorpicker_page() (( cogito.VStack )) {
     let vstack = build_page("ColorPicker", "ColorPicker exposes channels and previews for selecting colors.")
 
     let status = cogito.label("Pick a color.")
@@ -510,7 +510,7 @@ fun build_colorpicker_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_timepicker_page() (( cogito.VStack )) {
+: build_timepicker_page() (( cogito.VStack )) {
     let vstack = build_page("TimePicker", "TimePicker is used for selecting hour/minute values.")
 
     let status = cogito.label("Selected: --:--")
@@ -528,7 +528,7 @@ fun build_timepicker_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_dropdown_page() (( cogito.VStack )) {
+: build_dropdown_page() (( cogito.VStack )) {
     let vstack = build_page("Dropdown", "Dropdown presents a compact list of mutually exclusive options.")
 
     let status = cogito.label("Selected index: 0")
@@ -547,7 +547,7 @@ fun build_dropdown_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_progress_page() (( cogito.VStack )) {
+: build_progress_page() (( cogito.VStack )) {
     let vstack = build_page("Progress", "Progress indicators communicate task completion and indeterminate loading states.")
 
     let status = cogito.label("Adjust the progress value or toggle indeterminate mode.")
@@ -595,7 +595,7 @@ fun build_progress_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_list_page() (( cogito.VStack )) {
+: build_list_page() (( cogito.VStack )) {
     let vstack = build_page("List", "List presents vertical collections with stylized grouped rows and selection support.")
 
     let status = cogito.label("Select a row.")
@@ -618,7 +618,7 @@ fun build_list_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_grid_page() (( cogito.VStack )) {
+: build_grid_page() (( cogito.VStack )) {
     let vstack = build_page("Grid", "Grid arranges content in rows and columns with consistent gaps.")
 
     let status = cogito.label("Select a cell.")
@@ -642,7 +642,7 @@ fun build_grid_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_tabs_page() (( cogito.VStack )) {
+: build_tabs_page() (( cogito.VStack )) {
     let vstack = build_page("Tabs", "Tabs switch between multiple related content panels while preserving context.")
 
     let status = cogito.label("Selected tab index: 0")
@@ -677,7 +677,7 @@ fun build_tabs_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_buttongroup_page() (( cogito.VStack )) {
+: build_buttongroup_page() (( cogito.VStack )) {
     let vstack = build_page("ButtonGroup Control", "ButtonGroup controls expose a compact set of mutually exclusive options.")
 
     let status = cogito.label("Select a time range.")
@@ -834,7 +834,7 @@ fun build_buttongroup_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_chip_page() (( cogito.VStack )) {
+: build_chip_page() (( cogito.VStack )) {
     let vstack = build_page("Chip", "Chips represent attributes, filters, or compact actions.")
 
     let status = cogito.label("Interact with a chip.")
@@ -905,7 +905,7 @@ fun build_chip_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_fab_page() (( cogito.VStack )) {
+: build_fab_page() (( cogito.VStack )) {
     let vstack = build_page("FAB", "Floating Action Buttons emphasize the primary action on a screen.")
 
     let status = cogito.label("Tap a FAB.")
@@ -969,7 +969,7 @@ fun build_fab_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_carousel_page() (( cogito.VStack )) {
+: build_carousel_page() (( cogito.VStack )) {
     let vstack = build_page("Carousel", "Carousel presents horizontally swipeable cards with a focused active item.")
 
     let status = cogito.label("Active item: 0")
@@ -1037,7 +1037,7 @@ fun build_carousel_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_nav_rail_page() (( cogito.VStack )) {
+: build_nav_rail_page() (( cogito.VStack )) {
     let vstack = build_page("Nav Rail", "Navigation rails provide persistent, vertically arranged destinations.")
 
     let status = cogito.label("Selected: Home")
@@ -1058,7 +1058,7 @@ fun build_nav_rail_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_bottom_nav_page() (( cogito.VStack )) {
+: build_bottom_nav_page() (( cogito.VStack )) {
     let vstack = build_page("BottomNav", "Bottom navigation is a compact destination bar intended for top-level views.")
 
     let status = cogito.label("Selected: Home")
@@ -1078,7 +1078,7 @@ fun build_bottom_nav_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_toolbar_page() (( cogito.VStack )) {
+: build_toolbar_page() (( cogito.VStack )) {
     let vstack = build_page("Toolbar", "Toolbars support six slot-based actions; docked and floating variants share the same slot model.")
 
     let dock_label = cogito.label("Docked")
@@ -1153,7 +1153,7 @@ fun build_toolbar_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_dialog_page() (( cogito.VStack )) {
+: build_dialog_page() (( cogito.VStack )) {
     let vstack = build_page("Dialog", "Dialogs interrupt normal flow to request confirmation or gather focused input.")
 
     let status = cogito.label("Open the dialog to continue.")
@@ -1222,7 +1222,7 @@ fun build_dialog_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_toast_page() (( cogito.VStack )) {
+: build_toast_page() (( cogito.VStack )) {
     let vstack = build_page("Toast", "Toasts provide lightweight, temporary notifications without blocking interaction.")
 
     let status = cogito.label("Show a toast notification.")
@@ -1249,7 +1249,7 @@ fun build_toast_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_treeview_page() (( cogito.VStack )) {
+: build_treeview_page() (( cogito.VStack )) {
     let vstack = build_page("TreeView", "TreeView shows hierarchical content where branches can be expanded or collapsed.")
 
     let tree = cogito.treeview()
@@ -1273,7 +1273,7 @@ fun build_treeview_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_card_page() (( cogito.VStack )) {
+: build_card_page() (( cogito.VStack )) {
     let vstack = build_page("Card", "Cards group related content and actions within an elevated container. Choose a variant to change the elevation and fill.")
 
     let status = cogito.label("Select a card variant.")
@@ -1321,7 +1321,7 @@ fun build_card_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_avatar_page() (( cogito.VStack )) {
+: build_avatar_page() (( cogito.VStack )) {
     let vstack = build_page("Avatar", "Avatars represent people or entities through initials, icons, or images.")
 
     let status = cogito.label("Select an avatar type.")
@@ -1377,7 +1377,7 @@ fun build_avatar_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_badge_page() (( cogito.VStack )) {
+: build_badge_page() (( cogito.VStack )) {
     let vstack = build_page("Badge", "Badges annotate nearby UI with counts or status dots.")
 
     let row = cogito.hstack()
@@ -1391,7 +1391,7 @@ fun build_badge_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_banner_page() (( cogito.VStack )) {
+: build_banner_page() (( cogito.VStack )) {
     let vstack = build_page("Banner", "Banners communicate high-priority information and can include an inline action.")
 
     let status = cogito.label("Trigger a banner action.")
@@ -1409,7 +1409,7 @@ fun build_banner_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_divider_page() (( cogito.VStack )) {
+: build_divider_page() (( cogito.VStack )) {
     let vstack = build_page("Divider", "Dividers separate sections and improve scanability in dense layouts.")
 
     vstack.add(cogito.label("Section A"))
@@ -1427,7 +1427,7 @@ fun build_divider_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_image_page() (( cogito.VStack )) {
+: build_image_page() (( cogito.VStack )) {
     let vstack = build_page("Image", "Image displays icons or file-backed assets with configurable size and corner radius.")
 
     let img = cogito.image("")
@@ -1439,7 +1439,7 @@ fun build_image_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_drawing_area_page() (( cogito.VStack )) {
+: build_drawing_area_page() (( cogito.VStack )) {
     let vstack = build_page("DrawingArea", "DrawingArea captures press, drag, and release gestures. Use the pen toggle and eraser to switch tools.")
 
     let status = cogito.label("Tool - Pen | Event - Idle | Pointer - (0, 0)")
@@ -1518,7 +1518,7 @@ fun build_drawing_area_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun session_breath_multiplier(phase = num, min_multiplier = num) (( num )) {
+: session_breath_multiplier(phase = num, min_multiplier = num) (( num )) {
     if phase < 0.25 {
         return min_multiplier + (phase * 4.0) * (1.0 - min_multiplier)
     } elif phase < 0.5 {
@@ -1529,7 +1529,7 @@ fun session_breath_multiplier(phase = num, min_multiplier = num) (( num )) {
     return min_multiplier
 }
 
-fun session_countdown5(progress = num) (( num )) {
+: session_countdown5(progress = num) (( num )) {
     let p = progress * 5.0
     if p < 1.0 { return 5 }
     elif p < 2.0 { return 4 }
@@ -1538,16 +1538,16 @@ fun session_countdown5(progress = num) (( num )) {
     return 1
 }
 
-fun session_wrap_phase(v = num) (( num )) {
+: session_wrap_phase(v = num) (( num )) {
     if v >= 1.0 { return v - 1.0 }
     return v
 }
 
-fun session_add(a = num, b = num) (( num )) {
+: session_add(a = num, b = num) (( num )) {
     return a + b
 }
 
-fun session_phase_label(phase = num) (( string )) {
+: session_phase_label(phase = num) (( string )) {
     if phase < 0.25 {
         return "Inhale"
     } elif phase < 0.5 {
@@ -1558,7 +1558,7 @@ fun session_phase_label(phase = num) (( string )) {
     return "Hold"
 }
 
-fun session_phase_progress(phase = num) (( num )) {
+: session_phase_progress(phase = num) (( num )) {
     if phase < 0.25 {
         return phase * 4.0
     } elif phase < 0.5 {
@@ -1569,7 +1569,7 @@ fun session_phase_progress(phase = num) (( num )) {
     return (phase - 0.75) * 4.0
 }
 
-fun session_layer_size(base_size = num, phase = num, min_multiplier = num, layer_index = num, layer_count = num) (( num )) {
+: session_layer_size(base_size = num, phase = num, min_multiplier = num, layer_index = num, layer_count = num) (( num )) {
     let lag = layer_index * 0.015
     let staggered_phase = if phase >= lag { phase - lag } else { phase - lag + 1.0 }
     let mult = session_breath_multiplier(staggered_phase, min_multiplier)
@@ -1579,7 +1579,7 @@ fun session_layer_size(base_size = num, phase = num, min_multiplier = num, layer
     return size
 }
 
-fun session_apply_scaled_vertices(target = cogito.Shape, template = cogito.Shape, scale = num) (( -- )) {
+: session_apply_scaled_vertices(target = cogito.Shape, template = cogito.Shape, scale = num) (( -- )) {
     let ?s = scale
     if s < 0.01 { s = 0.01 }
     if s > 1.0 { s = 1.0 }
@@ -1592,7 +1592,7 @@ fun session_apply_scaled_vertices(target = cogito.Shape, template = cogito.Shape
     }
 }
 
-fun build_shape_gallery_page() (( cogito.VStack )) {
+: build_shape_gallery_page() (( cogito.VStack )) {
     let vstack = build_page("Shape Gallery", "Breathing Flower Animation with 18 layers of shapes.")
 
     let section = cogito.label("Shape Breathing Animation")
@@ -1756,7 +1756,7 @@ fun build_shape_gallery_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_active_indicator_page() (( cogito.VStack )) {
+: build_active_indicator_page() (( cogito.VStack )) {
     let vstack = build_page("ActiveIndicator", "ActiveIndicator is a compact spinner for signaling ongoing activity.")
 
     let ai = cogito.active_indicator()
@@ -1765,7 +1765,7 @@ fun build_active_indicator_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_switchbar_page() (( cogito.VStack )) {
+: build_switchbar_page() (( cogito.VStack )) {
     let vstack = build_page("SwitchBar", "SwitchBar combines descriptive text with an inline switch for preference toggles.")
 
     let status = cogito.label("Notifications disabled.")
@@ -1783,7 +1783,7 @@ fun build_switchbar_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_menu_button_page() (( cogito.VStack )) {
+: build_menu_button_page() (( cogito.VStack )) {
     let vstack = build_page("MenuButton", "MenuButtons trigger a dropdown menu with selectable items.")
 
     let status = cogito.label("Select a menu item.")
@@ -1835,7 +1835,7 @@ fun build_menu_button_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_split_button_page() (( cogito.VStack )) {
+: build_split_button_page() (( cogito.VStack )) {
     let vstack = build_page("SplitButton", "SplitButton exposes a primary action plus a secondary dropdown menu.")
 
     let status = cogito.label("Choose an action.")
@@ -1857,7 +1857,7 @@ fun build_split_button_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_empty_page_widget_page() (( cogito.VStack )) {
+: build_empty_page_widget_page() (( cogito.VStack )) {
     let vstack = build_page("EmptyPage", "EmptyPage communicates a zero-state with optional supporting action.")
 
     let status = cogito.label("No action yet.")
@@ -1876,7 +1876,7 @@ fun build_empty_page_widget_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_welcome_screen_page() (( cogito.VStack )) {
+: build_welcome_screen_page() (( cogito.VStack )) {
     let vstack = build_page("WelcomeScreen", "WelcomeScreen acts as a window-wide onboarding dialog with an optional call to action.")
 
     let status = cogito.label("Open the WelcomeScreen dialog.")
@@ -1902,7 +1902,7 @@ fun build_welcome_screen_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_settings_window_page() (( cogito.VStack )) {
+: build_settings_window_page() (( cogito.VStack )) {
     let vstack = build_page("SettingsWindow", "SettingsWindow hosts structured preference pages built from settings page/list/row widgets.")
 
     let sw = cogito.settings_window("Preferences")
@@ -1946,7 +1946,7 @@ fun build_settings_window_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_view_dual_page() (( cogito.VStack )) {
+: build_view_dual_page() (( cogito.VStack )) {
     let vstack = build_page("ViewDual", "ViewDual splits content into resizable panes for side-by-side workflows.")
 
     let vd = cogito.view_dual()
@@ -1975,7 +1975,7 @@ fun build_view_dual_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_view_chooser_page() (( cogito.VStack )) {
+: build_view_chooser_page() (( cogito.VStack )) {
     let vstack = build_page("ViewChooser", "ViewChooser binds to a ViewSwitcher and controls which view is active.")
 
     let views = cogito.view_switcher()
@@ -1995,7 +1995,7 @@ fun build_view_chooser_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_fabmenu_page() (( cogito.VStack )) {
+: build_fabmenu_page() (( cogito.VStack )) {
     let vstack = build_page("FABMenu", "FABMenu combines a Floating Action Button with a menu of related actions.")
 
     let status = cogito.label("Tap a FAB.")
@@ -2055,7 +2055,7 @@ fun build_fabmenu_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_about_window_page() (( cogito.VStack )) {
+: build_about_window_page() (( cogito.VStack )) {
     let vstack = build_page("AboutWindow", "AboutWindow presents product metadata such as name, version, description, and website.")
 
     let status = cogito.label("Open the about dialog.")
@@ -2085,7 +2085,7 @@ fun build_about_window_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun add_typography_row(vstack = cogito.VStack, name = string, cls = string, sample = string, ypad = num) (( -- )) {
+: add_typography_row(vstack = cogito.VStack, name = string, cls = string, sample = string, ypad = num) (( -- )) {
     let row = cogito.hstack()
     .set_hexpand(true)
     .set_gap(24)
@@ -2106,81 +2106,121 @@ fun add_typography_row(vstack = cogito.VStack, name = string, cls = string, samp
     vstack.add(row)
 }
 
-fun build_typography_page() (( cogito.VStack )) {
+: build_typography_page() (( cogito.VStack )) {
     let vstack = build_page("Typography", "Typography classes define consistent text rhythm for headings and content.")
 
-    let header = cogito.hstack()
+    let font_controls = cogito.hstack()
     .set_hexpand(true)
-    .set_gap(24)
+    .set_gap(12)
 
-    let header_class = cogito.label("Class")
-    .set_class("caption")
-    header.add(header_class)
-
-    let header_sample = cogito.label("Sample")
-    header_sample.set_class("caption")
-    header_sample.set_text_align(2)
-    header_sample.set_hexpand(true)
-    header.add(header_sample)
-
-    vstack.add(header)
-
-    let table = cogito.vstack()
+    let baseline_font = cogito.fontbutton()
+    .set_font("System Default")
     .set_hexpand(true)
-    .set_gap(0)
+    .set_a11y_label("Choose baseline font")
+    baseline_font.on_change((btn = cogito.FontButton) => {
+        let name = btn.font()
+        if name == "System Default" {
+            app.set_baseline_font("")
+        } else {
+            app.set_baseline_font(name)
+        }
+    })
+    font_controls.add(baseline_font)
 
-    add_typography_row(table, "Big Display", "big-display", "Serif, 56", 10)
-    add_typography_row(table, "Display", "display", "Serif, 36", 8)
-    add_typography_row(table, "View Title", "view-title", "Sans, 24", 6)
-    add_typography_row(table, "View Subtitle", "view-subtitle", "Sans Bold, 18", 4)
-    add_typography_row(table, "Heading", "heading", "Sans, 16", 3)
-    add_typography_row(table, "Content Title", "content-title", "Sans Bold, 16", 3)
-    add_typography_row(table, "Content Subtitle", "content-subtitle", "Sans, 14", 3)
-    add_typography_row(table, "Body", "body", "Sans, 14", 3)
-    add_typography_row(table, "Caption", "caption", "Sans Bold, 12", 2)
-
-    let tabular_row = cogito.hstack()
+    let emphasized_font = cogito.fontbutton()
+    .set_font("System Default")
     .set_hexpand(true)
-    .set_gap(24)
-    .set_padding(10, 0, 0, 0)
+    .set_a11y_label("Choose emphasized font")
+    emphasized_font.on_change((btn = cogito.FontButton) => {
+        let name = btn.font()
+        if name == "System Default" {
+            app.set_emphasized_font("")
+        } else {
+            app.set_emphasized_font(name)
+        }
+    })
+    font_controls.add(emphasized_font)
 
-    let tabular_name = cogito.label("Tabular")
-    .set_class("content-title")
-    tabular_name.set_valign(1)
-    tabular_row.add(tabular_name)
+    vstack.add(font_controls)
 
-    let nums = cogito.label("09:41  001  128  999")
-    .set_class("tabular")
-    .set_text_align(2)
-    .set_valign(1)
+    let tabs = cogito.tabs()
+    .set_items(["Baseline", "Emphasized"])
+    .set_ids(["baseline", "emphasized"])
+    .set_selected(0)
     .set_hexpand(true)
-    tabular_row.add(nums)
+    vstack.add(tabs)
 
-    let monospace_row = cogito.hstack()
+    let tab_views = cogito.view_switcher()
     .set_hexpand(true)
-    .set_gap(24)
-    .set_padding(10, 0, 0, 0)
+    .add("baseline", (vs = cogito.ViewSwitcher) => {
+        let t = cogito.vstack().set_hexpand(true).set_gap(0)
 
-    let monospace_name = cogito.label("Monospace")
-    .set_class("content-title")
-    monospace_name.set_valign(1)
-    monospace_row.add(monospace_name)
+        let header = cogito.hstack().set_hexpand(true).set_gap(24)
+        header.add(cogito.label("Class").set_class("caption"))
+        header.add(cogito.label("Sample").set_class("caption").set_text_align(2).set_hexpand(true))
+        t.add(header)
 
-    let bash = cogito.label("$ bash ~/")
-    .set_class("monospace")
-    .set_text_align(2)
-    .set_valign(1)
-    .set_hexpand(true)
-    monospace_row.add(bash)
+        add_typography_row(t, "Big Display", "big-display", "Baseline, 56", 10)
+        add_typography_row(t, "Display", "display", "Baseline, 36", 8)
+        add_typography_row(t, "View Title", "view-title", "Baseline, 24", 6)
+        add_typography_row(t, "View Subtitle", "view-subtitle", "Baseline, 18", 4)
+        add_typography_row(t, "Heading", "heading", "Baseline, 16", 3)
+        add_typography_row(t, "Content Title", "content-title", "Baseline, 16", 3)
+        add_typography_row(t, "Content Subtitle", "content-subtitle", "Baseline, 14", 3)
+        add_typography_row(t, "Body", "body", "Baseline, 14", 3)
+        add_typography_row(t, "Caption", "caption", "Baseline, 12", 2)
 
-    table.add(tabular_row)
-    table.add(monospace_row)
-    vstack.add(table)
+        let tabular_row = cogito.hstack().set_hexpand(true).set_gap(24).set_padding(10, 0, 0, 0)
+        tabular_row.add(cogito.label("Tabular").set_class("content-title").set_valign(1))
+        tabular_row.add(cogito.label("09:41  001  128  999").set_class("tabular").set_text_align(2).set_valign(1).set_hexpand(true))
+        t.add(tabular_row)
+
+        let mono_row = cogito.hstack().set_hexpand(true).set_gap(24).set_padding(10, 0, 0, 0)
+        mono_row.add(cogito.label("Monospace").set_class("content-title").set_valign(1))
+        mono_row.add(cogito.label("$ bash ~/").set_class("monospace").set_text_align(2).set_valign(1).set_hexpand(true))
+        t.add(mono_row)
+
+        return t
+    })
+    .add("emphasized", (vs = cogito.ViewSwitcher) => {
+        let t = cogito.vstack().set_hexpand(true).set_gap(0)
+
+        let header = cogito.hstack().set_hexpand(true).set_gap(24)
+        header.add(cogito.label("Class").set_class("caption"))
+        header.add(cogito.label("Sample").set_class("caption").set_text_align(2).set_hexpand(true))
+        t.add(header)
+
+        add_typography_row(t, "Big Display", "big-display emphasized", "Emphasized, 56", 10)
+        add_typography_row(t, "Display", "display emphasized", "Emphasized, 36", 8)
+        add_typography_row(t, "View Title", "view-title emphasized", "Emphasized, 24", 6)
+        add_typography_row(t, "View Subtitle", "view-subtitle emphasized", "Emphasized, 18", 4)
+        add_typography_row(t, "Heading", "heading emphasized", "Emphasized, 16", 3)
+        add_typography_row(t, "Content Title", "content-title emphasized", "Emphasized, 16", 3)
+        add_typography_row(t, "Content Subtitle", "content-subtitle emphasized", "Emphasized, 14", 3)
+        add_typography_row(t, "Body", "body emphasized", "Emphasized, 14", 3)
+        add_typography_row(t, "Caption", "caption emphasized", "Emphasized, 12", 2)
+
+        let tabular_row = cogito.hstack().set_hexpand(true).set_gap(24).set_padding(10, 0, 0, 0)
+        tabular_row.add(cogito.label("Tabular").set_class("content-title").set_valign(1))
+        tabular_row.add(cogito.label("09:41  001  128  999").set_class("tabular").set_text_align(2).set_valign(1).set_hexpand(true))
+        t.add(tabular_row)
+
+        let mono_row = cogito.hstack().set_hexpand(true).set_gap(24).set_padding(10, 0, 0, 0)
+        mono_row.add(cogito.label("Monospace").set_class("content-title").set_valign(1))
+        mono_row.add(cogito.label("$ bash ~/").set_class("monospace").set_text_align(2).set_valign(1).set_hexpand(true))
+        t.add(mono_row)
+
+        return t
+    })
+    .set_active("baseline")
+
+    tabs.bind(tab_views)
+    vstack.add(tab_views)
 
     return vstack
 }
 
-fun build_side_sheet_page() (( cogito.VStack )) {
+: build_side_sheet_page() (( cogito.VStack )) {
     let vstack = build_page("SideSheet", "SideSheet slides in from the right edge, useful for detail views or settings.")
 
     let status = cogito.label("Click the button to open a side sheet.")
@@ -2237,7 +2277,7 @@ fun build_side_sheet_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_revealer_page() (( cogito.VStack )) {
+: build_revealer_page() (( cogito.VStack )) {
     let vstack = build_page("Revealer", "Revealer toggles visibility of its children programmatically.")
 
     let status = cogito.label("Revealer children are visible.")
@@ -2276,7 +2316,7 @@ fun build_revealer_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_bin_page() (( cogito.VStack )) {
+: build_bin_page() (( cogito.VStack )) {
     let vstack = build_page("Bin", "Bin applies a local Ensor accent to itself and descendants without changing app-wide accent.")
 
     let status = cogito.label("Bin accent is #72DEC2.")
@@ -2363,7 +2403,7 @@ fun build_bin_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun view_id_from_index(idx = num) (( string )) {
+: view_id_from_index(idx = num) (( string )) {
     return if idx == 0 {
         "appbar"
     } elif idx == 1 {
@@ -2473,7 +2513,7 @@ fun view_id_from_index(idx = num) (( string )) {
     }
 }
 
-fun view_title_from_index(idx = num) (( string )) {
+: view_title_from_index(idx = num) (( string )) {
     return if idx == 0 {
         "AppBar"
     } elif idx == 1 {
@@ -2583,7 +2623,7 @@ fun view_title_from_index(idx = num) (( string )) {
     }
 }
 
-fun build_ensor_page() (( cogito.VStack )) {
+: build_ensor_page() (( cogito.VStack )) {
     let vstack = build_page("Ensor Color System", "Ensor generates color schemes from a single accent color. Choose a variant to change the palette character.")
 
     let variants_label = cogito.label("Scheme Variant")
@@ -2611,7 +2651,7 @@ fun build_ensor_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_appbar_page() (( cogito.VStack )) {
+: build_appbar_page() (( cogito.VStack )) {
     let vstack = build_page("AppBar", "AppBar has 4 variants: Search, Small, Medium (default), and Large.")
 
     let search_label = cogito.label("Search")
@@ -2674,7 +2714,7 @@ fun build_appbar_page() (( cogito.VStack )) {
     return vstack
 }
 
-fun build_ui(win = cogito.Window) (( -- )) {
+: build_ui(win = cogito.Window) (( -- )) {
     let sidebar_bar = cogito.appbar("Widgets", "")
     .set_class("sidebar small")
     .set_hexpand(false)
@@ -2749,58 +2789,59 @@ fun build_ui(win = cogito.Window) (( -- )) {
     let sidebar_list = cogito.content_list()
     .set_padding(8, 8, 8, 8)
     .set_selected(0)
-    .add(cogito.label("AppBar").set_padding(10,16,10,16))
-    .add(cogito.label("Button").set_padding(10,16,10,16))
-    .add(cogito.label("Icon Button").set_padding(10,16,10,16))
-    .add(cogito.label("TextField").set_padding(10,16,10,16))
-    .add(cogito.label("SearchField").set_padding(10,16,10,16))
-    .add(cogito.label("TextView").set_padding(10,16,10,16))
-    .add(cogito.label("Checkbox").set_padding(10,16,10,16))
-    .add(cogito.label("Switch").set_padding(10,16,10,16))
-    .add(cogito.label("Slider").set_padding(10,16,10,16))
-    .add(cogito.label("Stepper").set_padding(10,16,10,16))
-    .add(cogito.label("DatePicker").set_padding(10,16,10,16))
-    .add(cogito.label("ColorPicker").set_padding(10,16,10,16))
-    .add(cogito.label("TimePicker").set_padding(10,16,10,16))
-    .add(cogito.label("Dropdown").set_padding(10,16,10,16))
-    .add(cogito.label("Progress").set_padding(10,16,10,16))
-    .add(cogito.label("List").set_padding(10,16,10,16))
-    .add(cogito.label("Grid").set_padding(10,16,10,16))
-    .add(cogito.label("Tabs").set_padding(10,16,10,16))
-    .add(cogito.label("ButtonGroup").set_padding(10,16,10,16))
-    .add(cogito.label("Chip").set_padding(10,16,10,16))
-    .add(cogito.label("FAB").set_padding(10,16,10,16))
-    .add(cogito.label("Carousel").set_padding(10,16,10,16))
-    .add(cogito.label("Nav Rail").set_padding(10,16,10,16))
-    .add(cogito.label("BottomNav").set_padding(10,16,10,16))
-    .add(cogito.label("Toolbar").set_padding(10,16,10,16))
-    .add(cogito.label("Dialog").set_padding(10,16,10,16))
-    .add(cogito.label("Toast").set_padding(10,16,10,16))
-    .add(cogito.label("TreeView").set_padding(10,16,10,16))
-    .add(cogito.label("Card").set_padding(10,16,10,16))
-    .add(cogito.label("Avatar").set_padding(10,16,10,16))
-    .add(cogito.label("Badge").set_padding(10,16,10,16))
-    .add(cogito.label("Banner").set_padding(10,16,10,16))
-    .add(cogito.label("Divider").set_padding(10,16,10,16))
-    .add(cogito.label("Image").set_padding(10,16,10,16))
-    .add(cogito.label("ActiveIndicator").set_padding(10,16,10,16))
-    .add(cogito.label("SwitchBar").set_padding(10,16,10,16))
-    .add(cogito.label("SplitButton").set_padding(10,16,10,16))
-    .add(cogito.label("MenuButton").set_padding(10,16,10,16))
-    .add(cogito.label("EmptyPage").set_padding(10,16,10,16))
-    .add(cogito.label("WelcomeScreen").set_padding(10,16,10,16))
-    .add(cogito.label("SettingsWindow").set_padding(10,16,10,16))
-    .add(cogito.label("ViewDual").set_padding(10,16,10,16))
-    .add(cogito.label("ViewChooser").set_padding(10,16,10,16))
-    .add(cogito.label("AboutWindow").set_padding(10,16,10,16))
-    .add(cogito.label("Typography").set_padding(10,16,10,16))
-    .add(cogito.label("SideSheet").set_padding(10,16,10,16))
-    .add(cogito.label("FAB Menu").set_padding(10,16,10,16))
-    .add(cogito.label("Ensor").set_padding(10,16,10,16))
-    .add(cogito.label("Revealer").set_padding(10,16,10,16))
-    .add(cogito.label("Bin").set_padding(10,16,10,16))
-    .add(cogito.label("DrawingArea").set_padding(10,16,10,16))
-    .add(cogito.label("Shape Gallery").set_padding(10,16,10,16))
+    .set_hexpand(true)
+    .add(cogito.label("AppBar").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Button").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Icon Button").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("TextField").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("SearchField").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("TextView").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Checkbox").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Switch").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Slider").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Stepper").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("DatePicker").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("ColorPicker").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("TimePicker").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Dropdown").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Progress").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("List").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Grid").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Tabs").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("ButtonGroup").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Chip").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("FAB").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Carousel").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Nav Rail").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("BottomNav").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Toolbar").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Dialog").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Toast").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("TreeView").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Card").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Avatar").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Badge").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Banner").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Divider").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Image").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("ActiveIndicator").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("SwitchBar").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("SplitButton").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("MenuButton").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("EmptyPage").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("WelcomeScreen").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("SettingsWindow").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("ViewDual").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("ViewChooser").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("AboutWindow").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Typography").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("SideSheet").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("FAB Menu").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Ensor").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Revealer").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Bin").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("DrawingArea").set_padding(10,16,10,16).set_hexpand(true))
+    .add(cogito.label("Shape Gallery").set_padding(10,16,10,16).set_hexpand(true))
     .on_select((idx) => {
         let vid = view_id_from_index(idx)
         views.set_active(vid)

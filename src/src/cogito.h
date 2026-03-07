@@ -64,6 +64,7 @@ typedef enum {
   COGITO_NODE_PROGRESS,
   COGITO_NODE_DATEPICKER,
   COGITO_NODE_COLORPICKER,
+  COGITO_NODE_FONTBUTTON,
   COGITO_NODE_STEPPER,
   COGITO_NODE_BUTTON_GROUP,
   COGITO_NODE_TREEVIEW,
@@ -131,6 +132,8 @@ int cogito_accent_from_pixels(const unsigned char *pixels, int n_bytes,
                                bool alpha, int *out_argb, int out_cap);
 void cogito_app_set_icon(cogito_app *app, const char *path);
 const char *cogito_app_get_icon(cogito_app *app);
+void cogito_app_set_baseline_font(cogito_app *app, const char *path);
+void cogito_app_set_emphasized_font(cogito_app *app, const char *path);
 bool cogito_open_url(const char *url);
 bool cogito_app_copy_to_clipboard(cogito_app *app, const char *text);
 
@@ -265,6 +268,7 @@ void cogito_badge_set_count(cogito_node *badge, int count);
 int cogito_badge_get_count(cogito_node *badge);
 cogito_node *cogito_datepicker_new(void);
 cogito_node *cogito_colorpicker_new(void);
+cogito_node *cogito_fontbutton_new(void);
 cogito_node *cogito_stepper_new(double min, double max, double value,
                                 double step);
 cogito_node *cogito_buttongroup_new(void);
@@ -624,6 +628,10 @@ void cogito_colorpicker_on_change(cogito_node *colorpicker, cogito_node_fn fn,
                                   void *user);
 void cogito_colorpicker_set_hex(cogito_node *colorpicker, const char *hex);
 const char *cogito_colorpicker_get_hex(cogito_node *colorpicker);
+void cogito_fontbutton_on_change(cogito_node *fontbutton, cogito_node_fn fn,
+                                 void *user);
+void cogito_fontbutton_set_font(cogito_node *fontbutton, const char *font_name);
+const char *cogito_fontbutton_get_font(cogito_node *fontbutton);
 
 void cogito_content_list_set_selected(cogito_node *list, int idx);
 void cogito_content_list_remove_at(cogito_node *list, int idx);

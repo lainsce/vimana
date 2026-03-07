@@ -5,7 +5,7 @@ bring json
 bring victrola_model
 bring victrola_util
 
-pub fun save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any) (( -- )) {
+:: save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any) (( -- )) {
     let folder_esc = json.escape(current_folder)
 
     let ?covers_json = ""
@@ -49,7 +49,7 @@ pub fun save_state(state_path = string, current_folder = string, tracks = any, a
     stdr.write_text_file(state_path, payload)
 }
 
-pub fun load_state(state_path = string) (( any )) {
+:: load_state(state_path = string) (( any )) {
     let ?out = []: [string => any]
     out["folder"] = ""
     out["covers"] = []: [string => any]
