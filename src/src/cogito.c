@@ -166,6 +166,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_iconbtn_get_menu_vibrant cogito_iconbtn_get_menu_vibrant_yis
 #define cogito_image_new cogito_image_new_yis
 #define cogito_image_set_icon cogito_image_set_icon_yis
+#define cogito_image_set_blur cogito_image_set_blur_yis
 #define cogito_image_set_source cogito_image_set_source_yis
 #define cogito_image_set_size cogito_image_set_size_yis
 #define cogito_image_set_radius cogito_image_set_radius_yis
@@ -547,6 +548,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_button_get_menu_vibrant
 #undef cogito_image_new
 #undef cogito_image_set_icon
+#undef cogito_image_set_blur
 #undef cogito_image_set_source
 #undef cogito_image_set_size
 #undef cogito_image_set_radius
@@ -1131,6 +1133,19 @@ static bool cogito_gst_cover_cache_dir(char *out, size_t out_cap) {
     return false;
   out[0] = '\0';
 
+  const char *app_dir = "cogito";
+  if (cogito_active_app && cogito_active_app->app_name &&
+      cogito_active_app->app_name->len > 0) {
+    app_dir = cogito_active_app->app_name->data;
+  }
+
+  // Lowercase the app directory name
+  char app_dir_lower[256];
+  size_t adl = 0;
+  for (const char *s = app_dir; *s && adl < sizeof(app_dir_lower) - 1; s++, adl++)
+    app_dir_lower[adl] = (*s >= 'A' && *s <= 'Z') ? (*s + 32) : *s;
+  app_dir_lower[adl] = '\0';
+
   const char *base = g_get_user_cache_dir();
   if (!base || !base[0]) {
     const char *home = g_get_home_dir();
@@ -1138,7 +1153,7 @@ static bool cogito_gst_cover_cache_dir(char *out, size_t out_cap) {
       gchar *fallback = g_build_filename(home, ".cache", NULL);
       if (fallback) {
         base = fallback;
-        gchar *dir = g_build_filename(base, "cogito", "cover-art", NULL);
+        gchar *dir = g_build_filename(base, app_dir_lower, "cover-art", NULL);
         g_free(fallback);
         if (!dir)
           return false;
@@ -1154,7 +1169,7 @@ static bool cogito_gst_cover_cache_dir(char *out, size_t out_cap) {
     return false;
   }
 
-  gchar *dir = g_build_filename(base, "cogito", "cover-art", NULL);
+  gchar *dir = g_build_filename(base, app_dir_lower, "cover-art", NULL);
   if (!dir)
     return false;
   if (g_mkdir_with_parents(dir, 0700) != 0) {
@@ -3713,6 +3728,12 @@ void cogito_image_set_source(cogito_node *image, const char *source) {
   cogito_image_set_source_yis(YV_OBJ(image), sv);
   if (sv.tag == EVT_STR)
     yis_release_val(sv);
+}
+
+void cogito_image_set_blur(cogito_node *image, float sigma) {
+  if (!image)
+    return;
+  cogito_image_set_blur_yis(YV_OBJ(image), YV_FLOAT((double)sigma));
 }
 
 void cogito_image_set_size(cogito_node *image, int w, int h) {

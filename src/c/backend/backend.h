@@ -174,6 +174,9 @@ typedef struct CogitoBackend {
   CogitoTexture *(*render_target_create)(int w, int h);
   void (*set_render_target)(CogitoTexture *target); // NULL = back to screen
 
+  // Gaussian blur (separable two-pass convolution)
+  CogitoTexture *(*texture_gaussian_blur)(CogitoTexture *src, float sigma);
+
   // Textured polygon (triangle-fan from centroid)
   void (*draw_texture_polygon)(CogitoTexture *tex,
                                const float *screen_x, const float *screen_y,

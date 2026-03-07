@@ -181,6 +181,7 @@ macro chain() (( any )) {
 : __cogito_iconbtn_on_click(btn = IconButton, handler = any) (( -- )) { }
 : __cogito_iconbtn(icon = string) (( IconButton )) { }
 : __cogito_image_set_icon(img = Image, icon = string) (( -- )) { }
+: __cogito_image_set_blur(img = Image, sigma = num) (( -- )) { }
 : __cogito_image_set_radius(img = Image, radius = num) (( -- )) { }
 : __cogito_image_set_size(img = Image, w = num, h = num) (( -- )) { }
 : __cogito_image_set_source(img = Image, source = string) (( -- )) { }
@@ -713,6 +714,10 @@ pub class Image {
     }
     :: set_size(this, w = num, h = num) (( Image )) {
         __cogito_image_set_size(this, w, h)
+        return this
+    }
+    :: set_blur(this, sigma = num) (( Image )) {
+        __cogito_image_set_blur(this, sigma)
         return this
     }
     :: set_radius(this, radius = num) (( Image )) {

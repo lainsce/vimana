@@ -628,6 +628,20 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
      }
      return;
    }
+   if (strcmp(prop, "filter") == 0) {
+     // filter: blur(N)  — Gaussian blur with sigma N
+     while (**p == ' ') (*p)++;
+     if (strncmp(*p, "blur(", 5) == 0) {
+       *p += 5;
+       double v;
+       if (cogito_css_read_number(p, &v)) {
+         if (v < 0.0) v = 0.0;
+         style->has_filter_blur = true;
+         style->filter_blur = (float)v;
+       }
+     }
+     return;
+   }
    if (strcmp(prop, "divider") == 0) {
      style->has_divider = true;
      style->divider = true;

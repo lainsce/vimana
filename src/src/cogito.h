@@ -507,6 +507,7 @@ void cogito_label_set_align(cogito_node *label, int align);
 // Image helpers
 void cogito_image_set_icon(cogito_node *image, const char *icon);
 void cogito_image_set_source(cogito_node *image, const char *source);
+void cogito_image_set_blur(cogito_node *image, float sigma);
 void cogito_image_set_size(cogito_node *image, int w, int h);
 void cogito_image_set_radius(cogito_node *image, int radius);
 void cogito_image_set_alt_text(cogito_node *image, const char *alt_text);

@@ -81,6 +81,7 @@
 #undef cogito_iconbtn_set_icon
 #undef cogito_image_new
 #undef cogito_image_set_icon
+#undef cogito_image_set_blur
 #undef cogito_webview_new
 #undef cogito_webview_set_url
 #undef cogito_webview_get_url
@@ -1629,6 +1630,11 @@ static void __cogito_image_set_icon(YisVal imgv, YisVal iconv) {
   const char* icon = cogito_required_cstr(iconv, &tmp);
   cogito_image_set_icon(n, icon);
   if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_image_set_blur(YisVal imgv, YisVal sigmav) {
+  cogito_node* n = cogito_node_from_val(imgv);
+  cogito_image_set_blur(n, sigmav.tag == EVT_INT ? (float)sigmav.as.i : (sigmav.tag == EVT_FLOAT ? (float)sigmav.as.f : 0.0f));
 }
 
 static void __cogito_image_set_source(YisVal imgv, YisVal sourcev) {
@@ -3856,6 +3862,7 @@ static YisVal __cogito_gst_last_tag_album(void) {
 #define cogito_button_set_size __cogito_button_set_size
 #define cogito_button_get_size __cogito_button_get_size
 #define cogito_image_set_icon __cogito_image_set_icon
+#define cogito_image_set_blur __cogito_image_set_blur
 #define cogito_webview_set_url __cogito_webview_set_url
 #define cogito_webview_get_url __cogito_webview_get_url
 #define cogito_webview_set_open_external_on_click                            \

@@ -237,7 +237,7 @@ def ?album_click_handler = (album = string) => {}
             let count = seen[key] ?? 0
             let col = j % 2
             let row = (j - col) / 2
-            let subtitle = "$$count$$ songs"
+            let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
             library_grid.add(build_album_card(key, artist_detail_key, subtitle, album_cover_map), col, row, 1, 1)
         }
     } elif mode == 1 {
@@ -277,7 +277,7 @@ def ?album_click_handler = (album = string) => {}
             let count = seen[key] ?? 0
             let col = j % 2
             let row = (j - col) / 2
-            let subtitle = "$$count$$ songs"
+            let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
 
             let ?artist_cover = stdr.str(artist_image_map[key] ?? "")
             if stdr.len(artist_cover) == 0 || !stdr.file_exists(artist_cover) {
@@ -330,7 +330,7 @@ def ?album_click_handler = (album = string) => {}
             let artist = victrola_model.album_artist_for(album_artist_map, key)
             let col = j % 2
             let row = (j - col) / 2
-            let subtitle = "$$count$$ songs"
+            let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
             library_grid.add(build_album_card(key, artist, subtitle, album_cover_map), col, row, 1, 1)
         }
     }

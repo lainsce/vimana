@@ -59,8 +59,6 @@ case COGITO_LABEL: {
           if (overflows && cogito_backend->begin_scissor && cogito_backend->end_scissor) {
             // Marquee scroll offset
             int scroll_offset = 0;
-            bool at_start = true;  // true when showing the beginning (no left fade)
-            bool at_end = false;   // true when fully scrolled right (no right fade)
             if (n->text_marquee && overflows) {
               int max_scroll = tw - content_w;
               if (!n->marquee_active) {
@@ -73,23 +71,16 @@ case COGITO_LABEL: {
               double cycle = fmod(elapsed, 12.0);
               if (cycle < 2.0) {
                 scroll_offset = 0;
-                at_start = true;
               } else if (cycle < 6.0) {
                 double t = (cycle - 2.0) / 4.0;
                 double et = t < 0.5 ? 2.0 * t * t : 1.0 - 0.5 * (2.0 - 2.0 * t) * (2.0 - 2.0 * t);
                 scroll_offset = (int)(et * max_scroll);
-                at_start = (scroll_offset <= 0);
-                at_end = (scroll_offset >= max_scroll);
               } else if (cycle < 8.0) {
                 scroll_offset = max_scroll;
-                at_start = false;
-                at_end = true;
               } else {
                 double t = (cycle - 8.0) / 4.0;
                 double et = t < 0.5 ? 2.0 * t * t : 1.0 - 0.5 * (2.0 - 2.0 * t) * (2.0 - 2.0 * t);
                 scroll_offset = max_scroll - (int)(et * max_scroll);
-                at_start = (scroll_offset <= 0);
-                at_end = (scroll_offset >= max_scroll);
               }
               tx = content_x - scroll_offset;
             }

@@ -2,10 +2,16 @@ static CogitoNode* cogito_image_new_obj(YisStr* source) {
   CogitoNode* img = cogito_node_new(COGITO_IMAGE);
   cogito_node_set_icon(img, source);
   img->image.texture = NULL;
+  img->image.glow_texture = NULL;
+  img->image.glow_source = NULL;
   img->image.w = 0;
   img->image.h = 0;
+  img->image.glow_w = 0;
+  img->image.glow_h = 0;
+  img->image.glow_sigma = 0.0f;
   img->image.loaded = false;
   img->image.avg_lum = 0.5f;
+  img->blur_radius = 0.0f;
   return img;
 }
 static YisVal cogito_image_new(YisVal source) {
@@ -23,11 +29,18 @@ static void cogito_image_set_icon(YisVal imgv, YisVal icon) {
     cogito_image_cache_release_texture(img->image.texture);
     img->image.texture = NULL;
   }
+  if (img->image.glow_texture && cogito_backend && cogito_backend->texture_destroy) {
+    cogito_backend->texture_destroy(img->image.glow_texture);
+    img->image.glow_texture = NULL;
+  }
+  img->image.glow_source = NULL;
   
   cogito_node_set_icon(img, is);
   img->image.loaded = false;
   img->image.w = 0;
   img->image.h = 0;
+  img->image.glow_w = 0;
+  img->image.glow_h = 0;
   img->image.avg_lum = 0.5f;
   cogito_window_relayout(cogito_node_window(img));
 }
@@ -56,6 +69,23 @@ static void cogito_image_set_radius(YisVal imgv, YisVal radius) {
   int r = (int)yis_as_int(radius);
   img->border_radius = r;
   img->radius_set = true;
+  cogito_window_relayout(cogito_node_window(img));
+}
+
+static void cogito_image_set_blur(YisVal imgv, YisVal sigmav) {
+  if (imgv.tag != EVT_OBJ) yis_trap("cogito.image_set_blur expects image");
+  CogitoNode* img = (CogitoNode*)imgv.as.p;
+  float sigma = (float)yis_as_float(sigmav);
+  if (sigma < 0.0f) sigma = 0.0f;
+  img->blur_radius = sigma;
+  if (sigma == 0.0f && img->image.glow_texture && cogito_backend &&
+      cogito_backend->texture_destroy) {
+    cogito_backend->texture_destroy(img->image.glow_texture);
+    img->image.glow_texture = NULL;
+    img->image.glow_source = NULL;
+    img->image.glow_w = 0;
+    img->image.glow_h = 0;
+  }
   cogito_window_relayout(cogito_node_window(img));
 }
 

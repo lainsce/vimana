@@ -63,6 +63,13 @@ static void cogito_node_drop(YisObj* o) {
     cogito_image_cache_release_texture(n->image.texture);
     n->image.texture = NULL;
   }
+  if ((n->kind == COGITO_IMAGE || n->kind == COGITO_AVATAR) &&
+      n->image.glow_texture && cogito_backend &&
+      cogito_backend->texture_destroy) {
+    cogito_backend->texture_destroy(n->image.glow_texture);
+    n->image.glow_texture = NULL;
+    n->image.glow_source = NULL;
+  }
   if (n->on_click) {
     yis_release_val(YV_FN(n->on_click));
     n->on_click = NULL;

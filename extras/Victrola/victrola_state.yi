@@ -164,20 +164,20 @@ bring victrola_util
         if stdr.len(p) == 0 {
             continue
         }
-        let ?entry = []: [string => any]
+        let ?ent = []: [string => any]
         let mt = stdr.str(m["title"] ?? "")
         let ma = stdr.str(m["artist"] ?? "")
         let mal = stdr.str(m["album"] ?? "")
         if stdr.len(mt) > 0 {
-            entry["title"] = mt
+            ent["title"] = mt
         }
         if stdr.len(ma) > 0 {
-            entry["artist"] = ma
+            ent["artist"] = ma
         }
         if stdr.len(mal) > 0 {
-            entry["album"] = mal
+            ent["album"] = mal
         }
-        meta[p] = entry
+        meta[p] = ent
     }
     out["track_meta"] = meta
 

@@ -2694,6 +2694,132 @@ static void sdl3_set_render_target(CogitoTexture *target) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Separable Gaussian blur via CPU convolution
+// ---------------------------------------------------------------------------
+static CogitoTexture *sdl3_texture_gaussian_blur(CogitoTexture *src,
+                                                  float sigma) {
+  CogitoSDL3Texture *stex = (CogitoSDL3Texture *)src;
+  if (!stex || !stex->sdl_texture || sigma <= 0.0f)
+    return NULL;
+
+  int w = stex->width;
+  int h = stex->height;
+  if (w <= 0 || h <= 0)
+    return NULL;
+
+  SDL_Renderer *renderer = sdl3_active_renderer();
+  if (!renderer)
+    return NULL;
+
+  sdl3_rect_batch_flush();
+
+  // Save current render target
+  SDL_Texture *prev_target = SDL_GetRenderTarget(renderer);
+
+  // Create temp target and blit source into it for pixel readback
+  SDL_Texture *rt = SDL_CreateTexture(
+      renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h);
+  if (!rt) return NULL;
+
+  SDL_SetRenderTarget(renderer, rt);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+  SDL_RenderClear(renderer);
+  // Copy pixels without alpha blending to get raw data
+  SDL_BlendMode prev_blend;
+  SDL_GetTextureBlendMode(stex->sdl_texture, &prev_blend);
+  SDL_SetTextureBlendMode(stex->sdl_texture, SDL_BLENDMODE_NONE);
+  SDL_RenderTexture(renderer, stex->sdl_texture, NULL, NULL);
+  SDL_SetTextureBlendMode(stex->sdl_texture, prev_blend);
+
+  // Read pixels from the render target
+  SDL_Surface *readback = SDL_RenderReadPixels(renderer, NULL);
+  SDL_SetRenderTarget(renderer, prev_target);
+  SDL_DestroyTexture(rt);
+  if (!readback) return NULL;
+
+  // Convert to RGBA32 for portable byte-order (R=0, G=1, B=2, A=3)
+  SDL_Surface *rgba = SDL_ConvertSurface(readback, SDL_PIXELFORMAT_RGBA32);
+  SDL_DestroySurface(readback);
+  if (!rgba) return NULL;
+
+  uint8_t *pixels = (uint8_t *)rgba->pixels;
+  int pitch = rgba->pitch;
+
+  // ---- Generate 1-D Gaussian kernel ----
+  int radius = (int)ceilf(3.0f * sigma);
+  if (radius < 1) radius = 1;
+  int ksize = 2 * radius + 1;
+  float *kernel = (float *)malloc((size_t)ksize * sizeof(float));
+  if (!kernel) { SDL_DestroySurface(rgba); return NULL; }
+
+  float ksum = 0.0f;
+  for (int i = 0; i < ksize; i++) {
+    float x = (float)(i - radius);
+    kernel[i] = expf(-0.5f * x * x / (sigma * sigma));
+    ksum += kernel[i];
+  }
+  for (int i = 0; i < ksize; i++) kernel[i] /= ksum;
+
+  // ---- Allocate temp scanline buffer ----
+  uint8_t *temp = (uint8_t *)calloc((size_t)w * (size_t)h * 4, 1);
+  if (!temp) { free(kernel); SDL_DestroySurface(rgba); return NULL; }
+
+  // ---- Horizontal pass: pixels → temp ----
+  for (int y = 0; y < h; y++) {
+    const uint8_t *row_in = pixels + y * pitch;
+    uint8_t *row_out = temp + y * w * 4;
+    for (int px = 0; px < w; px++) {
+      float r = 0, g = 0, b = 0, a = 0;
+      for (int k = -radius; k <= radius; k++) {
+        int sx = px + k;
+        if (sx < 0) sx = 0; else if (sx >= w) sx = w - 1;
+        float wt = kernel[k + radius];
+        const uint8_t *p = row_in + sx * 4;
+        r += p[0] * wt;
+        g += p[1] * wt;
+        b += p[2] * wt;
+        a += p[3] * wt;
+      }
+      uint8_t *o = row_out + px * 4;
+      o[0] = (uint8_t)(r > 255.0f ? 255 : (r < 0.0f ? 0 : (r + 0.5f)));
+      o[1] = (uint8_t)(g > 255.0f ? 255 : (g < 0.0f ? 0 : (g + 0.5f)));
+      o[2] = (uint8_t)(b > 255.0f ? 255 : (b < 0.0f ? 0 : (b + 0.5f)));
+      o[3] = (uint8_t)(a > 255.0f ? 255 : (a < 0.0f ? 0 : (a + 0.5f)));
+    }
+  }
+
+  // ---- Vertical pass: temp → pixels ----
+  for (int px = 0; px < w; px++) {
+    for (int y = 0; y < h; y++) {
+      float r = 0, g = 0, b = 0, a = 0;
+      for (int k = -radius; k <= radius; k++) {
+        int sy = y + k;
+        if (sy < 0) sy = 0; else if (sy >= h) sy = h - 1;
+        float wt = kernel[k + radius];
+        const uint8_t *p = temp + sy * w * 4 + px * 4;
+        r += p[0] * wt;
+        g += p[1] * wt;
+        b += p[2] * wt;
+        a += p[3] * wt;
+      }
+      uint8_t *o = pixels + y * pitch + px * 4;
+      o[0] = (uint8_t)(r > 255.0f ? 255 : (r < 0.0f ? 0 : (r + 0.5f)));
+      o[1] = (uint8_t)(g > 255.0f ? 255 : (g < 0.0f ? 0 : (g + 0.5f)));
+      o[2] = (uint8_t)(b > 255.0f ? 255 : (b < 0.0f ? 0 : (b + 0.5f)));
+      o[3] = (uint8_t)(a > 255.0f ? 255 : (a < 0.0f ? 0 : (a + 0.5f)));
+    }
+  }
+
+  free(temp);
+  free(kernel);
+
+  // Create output texture from blurred RGBA pixels
+  CogitoTexture *result = sdl3_texture_create(w, h, pixels, 4);
+  SDL_DestroySurface(rgba);
+  return result;
+}
+
 static void sdl3_draw_texture_polygon(CogitoTexture *tex,
                                        const float *screen_x,
                                        const float *screen_y,
@@ -3090,6 +3216,7 @@ static CogitoBackend sdl3_backend = {
     .draw_texture_pro = sdl3_draw_texture_pro,
     .render_target_create = sdl3_render_target_create,
     .set_render_target = sdl3_set_render_target,
+    .texture_gaussian_blur = sdl3_texture_gaussian_blur,
     .draw_texture_polygon = sdl3_draw_texture_polygon,
     .begin_scissor = sdl3_begin_scissor,
     .end_scissor = sdl3_end_scissor,

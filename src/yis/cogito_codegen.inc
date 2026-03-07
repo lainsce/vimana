@@ -3912,6 +3912,33 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_image_set_blur")) {
+                        GenExpr img, onv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &img, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &onv, err)) { gen_expr_free(&img); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_image_set_blur(%s, %s);", img.tmp, onv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", img.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", onv.tmp);
+                        gen_expr_release_except(cg, &img, img.tmp);
+                        gen_expr_release_except(cg, &onv, onv.tmp);
+                        gen_expr_free(&img);
+                        gen_expr_free(&onv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_image_set_size")) {
                         GenExpr img, w, h;
                         if (!gen_expr(cg, path, e->as.call.args[

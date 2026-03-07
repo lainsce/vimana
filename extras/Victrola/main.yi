@@ -13,7 +13,7 @@ bring victrola_scanner
 bring victrola_lyrics
 bring victrola_artist_images
 
-def STATE_PATH = ".victrola_state.json"
+def ?STATE_PATH = ""
 def APP_ACCENT = "#ff8c00"
 
 def album_detail_art = cogito.image("sf:music.note")
@@ -99,12 +99,24 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     return victrola_model.album_artist_for(album_artist_map, album)
 }
 
+: ensure_state_path() (( string )) {
+    if stdr.len(STATE_PATH) > 0 { return STATE_PATH }
+    let run = stdr.run_command("echo $HOME")
+    let home = stdr.trim(stdr.str(run[1] ?? ""))
+    if stdr.len(home) == 0 { home = "/tmp" }
+    let dir = stdr.join_path(home, ".cache/victrola")
+    let qdir = stdr.shell_quote(dir)
+    stdr.run_command("mkdir -p $$qdir$$")
+    STATE_PATH = stdr.join_path(dir, "victrola_state.json")
+    return STATE_PATH
+}
+
 : save_state() (( -- )) {
-    victrola_state.save_state(STATE_PATH, current_folder, tracks, album_cover_map, track_meta_map, artist_image_map)
+    victrola_state.save_state(ensure_state_path(), current_folder, tracks, album_cover_map, track_meta_map, artist_image_map)
 }
 
 : load_state() (( -- )) {
-    let loaded = victrola_state.load_state(STATE_PATH)
+    let loaded = victrola_state.load_state(ensure_state_path())
     album_cover_map = loaded["covers"] ?? []: [string => any]
     track_meta_map = loaded["track_meta"] ?? []: [string => any]
     artist_image_map = loaded["artist_images"] ?? []: [string => any]
@@ -793,7 +805,7 @@ entry() (( -- )) {
     artist_detail_clip.set_size(128).set_clip(true).set_hexpand(false).add(artist_detail_art)
     artist_detail_name.set_class("view-title-expressive").set_hexpand(true).set_text_align(0).set_max_width_chars(40)
     artist_detail_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 0, 0, 0)
-    cover_art.set_radius(26).set_class("surface-container victrola-cover-art")
+    cover_art.set_radius(26).set_blur(6).set_class("surface-container victrola-cover-art")
     groups_revealer.set_show_children(false).set_hexpand(true).set_vexpand(true).set_padding(0, 0, 0, 0)
     library_grid.set_gap(8, 8).set_padding(0, 0, 0, 0)
     library_list.set_padding(0, 0, 0, 0)

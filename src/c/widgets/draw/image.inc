@@ -96,13 +96,146 @@ case COGITO_IMAGE: {
 
         CogitoColor white = {255, 255, 255, 255};
         if (cogito_backend && cogito_backend->draw_texture) {
+          float blur_sigma = n->blur_radius;
+          if (blur_sigma > 0.0f && cogito_backend->render_target_create &&
+              cogito_backend->set_render_target &&
+              cogito_backend->texture_gaussian_blur &&
+              cogito_backend->texture_destroy && draw_w > 0 && draw_h > 0) {
+            int glow_pad_x = (int)(blur_sigma * 3.0f + 0.5f);
+            int glow_pad_y = glow_pad_x;
+            if (glow_pad_x < 1) glow_pad_x = 1;
+            if (glow_pad_y < 1) glow_pad_y = 1;
+            bool glow_stale = n->image.glow_texture == NULL ||
+                              n->image.glow_source != n->image.texture ||
+                              n->image.glow_w != draw_w ||
+                              n->image.glow_h != draw_h ||
+                              n->image.glow_sigma != blur_sigma;
+            if (glow_stale) {
+              if (n->image.glow_texture) {
+                cogito_backend->texture_destroy(n->image.glow_texture);
+                n->image.glow_texture = NULL;
+              }
+              n->image.glow_source = NULL;
+              n->image.glow_w = 0;
+              n->image.glow_h = 0;
+              n->image.glow_sigma = 0.0f;
+
+              int full_w = draw_w + glow_pad_x * 2;
+              int full_h = draw_h + glow_pad_y * 2;
+              // Work at half resolution for performance
+              int half_w = full_w / 2;
+              int half_h = full_h / 2;
+              if (half_w < 16) half_w = 16;
+              if (half_h < 16) half_h = 16;
+              int half_pad_x = (glow_pad_x * half_w) / full_w;
+              int half_pad_y = (glow_pad_y * half_h) / full_h;
+              if (half_pad_x < 1) half_pad_x = 1;
+              if (half_pad_y < 1) half_pad_y = 1;
+              int half_img_w = half_w - half_pad_x * 2;
+              int half_img_h = half_h - half_pad_y * 2;
+              if (half_img_w < 1) half_img_w = 1;
+              if (half_img_h < 1) half_img_h = 1;
+
+              CogitoTexture* rt_pad = cogito_backend->render_target_create(half_w, half_h);
+              if (rt_pad) {
+                CogitoRect img_src = {src_x, src_y, src_w, src_h};
+                cogito_backend->set_render_target(rt_pad);
+                cogito_backend->clear(cogito_color(0, 0, 0, 0));
+
+                // Scale radius to half-res image area
+                int hr = 0;
+                if (radius > 0 && half_img_w > 0 && half_img_h > 0) {
+                  int rx = (radius * half_img_w + draw_w / 2) / draw_w;
+                  int ry = (radius * half_img_h + draw_h / 2) / draw_h;
+                  hr = rx < ry ? rx : ry;
+                  if (hr < 1) hr = 1;
+                  if (hr > half_img_w / 2) hr = half_img_w / 2;
+                  if (hr > half_img_h / 2) hr = half_img_h / 2;
+                }
+
+                if (hr <= 0) {
+                  CogitoRect img_dst = {half_pad_x, half_pad_y, half_img_w, half_img_h};
+                  cogito_backend->draw_texture(n->image.texture, img_src, img_dst, white);
+                } else {
+                  // Row-segment rounded clipping at half-res
+                  float hr_f = (float)hr;
+                  int seg_start = 0, seg_inset = -1;
+                  for (int row = 0; row <= half_img_h; row++) {
+                    int inset = -1;
+                    if (row < half_img_h) {
+                      inset = 0;
+                      if (row < hr) {
+                        float yd = hr_f - ((float)row + 0.5f);
+                        float ins = hr_f * hr_f - yd * yd;
+                        if (ins < 0.0f) ins = 0.0f;
+                        inset = (int)(hr_f - sqrtf(ins));
+                      } else if (row >= half_img_h - hr) {
+                        int br = half_img_h - 1 - row;
+                        float yd = hr_f - ((float)br + 0.5f);
+                        float ins = hr_f * hr_f - yd * yd;
+                        if (ins < 0.0f) ins = 0.0f;
+                        inset = (int)(hr_f - sqrtf(ins));
+                      }
+                    }
+                    if (row == 0) { seg_inset = inset; continue; }
+                    if (row < half_img_h && inset == seg_inset) continue;
+                    int sh = row - seg_start;
+                    int lw = half_img_w - seg_inset * 2;
+                    if (sh > 0 && lw > 0) {
+                      int sy0 = src_y + (seg_start * src_h) / half_img_h;
+                      int sy1 = src_y + (row * src_h) / half_img_h;
+                      int ssh = sy1 - sy0; if (ssh < 1) ssh = 1;
+                      int sx0 = src_x + (seg_inset * src_w) / half_img_w;
+                      int sx1 = src_x + ((half_img_w - seg_inset) * src_w) / half_img_w;
+                      int ssw = sx1 - sx0; if (ssw < 1) ssw = 1;
+                      CogitoRect ss = {sx0, sy0, ssw, ssh};
+                      CogitoRect sd = {half_pad_x + seg_inset, half_pad_y + seg_start, lw, sh};
+                      cogito_backend->draw_texture(n->image.texture, ss, sd, white);
+                    }
+                    seg_start = row;
+                    seg_inset = inset;
+                  }
+                }
+
+                cogito_backend->set_render_target(NULL);
+
+                // Half the sigma for half-res, bilinear upscale adds smoothing
+                float half_sigma = blur_sigma * 0.5f;
+                if (half_sigma < 1.0f) half_sigma = 1.0f;
+                CogitoTexture* blurred = cogito_backend->texture_gaussian_blur(rt_pad, half_sigma);
+                cogito_backend->texture_destroy(rt_pad);
+
+                if (blurred) {
+                  n->image.glow_texture = blurred;
+                  n->image.glow_source = n->image.texture;
+                  n->image.glow_w = draw_w;
+                  n->image.glow_h = draw_h;
+                  n->image.glow_sigma = blur_sigma;
+                }
+              }
+            }
+
+            if (n->image.glow_texture) {
+              CogitoRect glow_src = {0, 0, 0, 0};
+              CogitoRect glow_dst = {
+                draw_x - glow_pad_x,
+                draw_y - glow_pad_y,
+                draw_w + glow_pad_x * 2,
+                draw_h + glow_pad_y * 2
+              };
+              CogitoColor glow_tint = {255, 255, 255, 136};
+              cogito_backend->draw_texture(n->image.glow_texture, glow_src, glow_dst, glow_tint);
+            }
+          }
+
           if (radius <= 0) {
             CogitoRect src_rect = {src_x, src_y, src_w, src_h};
             CogitoRect dst_rect = {draw_x, draw_y, draw_w, draw_h};
             cogito_backend->draw_texture(n->image.texture, src_rect, dst_rect, white);
           } else {
-            // Rounded clipping for textures:
-            // batch contiguous rows with the same inset to reduce draw calls.
+            // Rounded clipping for textures with anti-aliased edges.
+            // Use ceilf() for interior strips so they never extend past the
+            // rounded rect boundary, then draw edge pixels at fractional alpha.
             float r_f = (float)radius;
             int seg_start = 0;
             int seg_inset = -1;
@@ -114,13 +247,13 @@ case COGITO_IMAGE: {
                   float y_dist = r_f - ((float)row + 0.5f);
                   float inside = r_f * r_f - y_dist * y_dist;
                   if (inside < 0.0f) inside = 0.0f;
-                  inset = (int)(r_f - sqrtf(inside));
+                  inset = (int)ceilf(r_f - sqrtf(inside));
                 } else if (row >= draw_h - radius) {
                   int br = draw_h - 1 - row;
                   float y_dist = r_f - ((float)br + 0.5f);
                   float inside = r_f * r_f - y_dist * y_dist;
                   if (inside < 0.0f) inside = 0.0f;
-                  inset = (int)(r_f - sqrtf(inside));
+                  inset = (int)ceilf(r_f - sqrtf(inside));
                 }
               }
               if (row == 0) {
@@ -150,6 +283,54 @@ case COGITO_IMAGE: {
 
               seg_start = row;
               seg_inset = inset;
+            }
+            // AA edge pixels along the corner arcs
+            for (int row = 0; row < draw_h; row++) {
+              float y_dist;
+              bool in_corner = false;
+              if (row < radius) {
+                y_dist = r_f - ((float)row + 0.5f);
+                in_corner = true;
+              } else if (row >= draw_h - radius) {
+                int br = draw_h - 1 - row;
+                y_dist = r_f - ((float)br + 0.5f);
+                in_corner = true;
+              }
+              if (!in_corner) continue;
+              float ins_sq = r_f * r_f - y_dist * y_dist;
+              if (ins_sq <= 0.0f) continue;
+              float exact = r_f - sqrtf(ins_sq);
+              int fl = (int)floorf(exact);
+              float frac = exact - (float)fl;
+              if (frac < 0.004f) continue; // pixel fully inside, already drawn
+              float coverage = 1.0f - frac;
+              uint8_t ea = (uint8_t)(coverage * 255.0f + 0.5f);
+              if (ea < 1) continue;
+              int sy = src_y + (row * src_h) / draw_h;
+              int sh_e = (src_h + draw_h - 1) / draw_h;
+              if (sh_e < 1) sh_e = 1;
+              if (sy + sh_e > src_y + src_h) sh_e = src_y + src_h - sy;
+              if (sh_e < 1) sh_e = 1;
+              CogitoColor et = {255, 255, 255, ea};
+              // Left edge
+              if (fl >= 0 && fl < draw_w / 2) {
+                int sx_l = src_x + (fl * src_w) / draw_w;
+                int sw_l = (src_w + draw_w - 1) / draw_w;
+                if (sw_l < 1) sw_l = 1;
+                CogitoRect es = {sx_l, sy, sw_l, sh_e};
+                CogitoRect ed = {draw_x + fl, draw_y + row, 1, 1};
+                cogito_backend->draw_texture(n->image.texture, es, ed, et);
+              }
+              // Right edge
+              int rc = draw_w - 1 - fl;
+              if (rc >= draw_w / 2 && rc < draw_w) {
+                int sx_r = src_x + (rc * src_w) / draw_w;
+                int sw_r = (src_w + draw_w - 1) / draw_w;
+                if (sw_r < 1) sw_r = 1;
+                CogitoRect es = {sx_r, sy, sw_r, sh_e};
+                CogitoRect ed = {draw_x + rc, draw_y + row, 1, 1};
+                cogito_backend->draw_texture(n->image.texture, es, ed, et);
+              }
             }
           }
         }

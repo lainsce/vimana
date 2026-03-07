@@ -355,6 +355,8 @@ static void cogito_style_merge_into(const CogitoStyle* base, const CogitoStyle* 
   if (over->has_margin_end) { out->has_margin_end = true; out->margin_end = over->margin_end; }
   if (over->has_opacity) { out->has_opacity = true; out->opacity = over->opacity;
   }
+  if (over->has_filter_blur) { out->has_filter_blur = true; out->filter_blur = over->filter_blur;
+  }
   if (over->has_track_height) { out->has_track_height = true; out->track_height = over->track_height;
   }
   if (over->has_divider) { out->has_divider = true; out->divider = over->divider;
@@ -1152,6 +1154,8 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
   if (s.has_opacity) { n->opacity = s.opacity; n->opacity_set = true;
   }
   else { n->opacity_set = false; n->opacity = 1.0f;
+  }
+  if (s.has_filter_blur) { n->blur_radius = s.filter_blur;
   }
 }
 

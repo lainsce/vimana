@@ -407,6 +407,7 @@ typedef struct CogitoStyle {
   bool has_appbar_btn_border_width;
   bool has_shadow;
   bool has_opacity;
+  bool has_filter_blur;
   bool has_track_height;
   bool has_text_fade;
   bool has_text_ellipsis;
@@ -476,6 +477,7 @@ typedef struct CogitoStyle {
   int margin_start;
   int margin_end;
   float opacity;
+  float filter_blur;
   int track_height;
   bool text_fade;
   bool text_ellipsis;
@@ -695,6 +697,7 @@ typedef struct CogitoNode {
   bool text_ellipsis;
   bool text_fade;
   bool text_marquee;
+  float blur_radius;
   double marquee_start;
   bool marquee_active;
   int text_align;
@@ -979,7 +982,11 @@ typedef struct CogitoNode {
 
     struct {
       CogitoTexture* texture;
+      CogitoTexture* glow_texture;
+      CogitoTexture* glow_source;
       int w, h;
+      int glow_w, glow_h;
+      float glow_sigma;
       bool loaded;
       float avg_lum;
     } image;
