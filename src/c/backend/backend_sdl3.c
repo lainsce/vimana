@@ -1089,7 +1089,6 @@ static bool process_events(void) {
       break;
 
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
-
       if (event.button.button >= 1 && event.button.button <= 3) {
         int btn = event.button.button - 1;
         mouse_buttons[btn] = true;
@@ -1098,7 +1097,6 @@ static bool process_events(void) {
       break;
 
     case SDL_EVENT_MOUSE_BUTTON_UP:
-
       if (event.button.button >= 1 && event.button.button <= 3) {
         int btn = event.button.button - 1;
         mouse_buttons[btn] = false;
@@ -1107,12 +1105,10 @@ static bool process_events(void) {
       break;
 
     case SDL_EVENT_MOUSE_WHEEL:
-
       mouse_wheel = event.wheel.y;
       break;
 
     case SDL_EVENT_KEY_DOWN:
-
       if (event.key.scancode < 512) {
         keys_down[event.key.scancode] = true;
         keys_pressed[event.key.scancode] = true;
@@ -1141,7 +1137,6 @@ static bool process_events(void) {
       break;
 
     case SDL_EVENT_KEY_UP:
-
       if (event.key.scancode < 512) {
         keys_down[event.key.scancode] = false;
         keys_released[event.key.scancode] = true;
@@ -1149,7 +1144,6 @@ static bool process_events(void) {
       break;
 
     case SDL_EVENT_TEXT_INPUT: {
-
       const char *text = event.text.text;
       if (text) {
         while (*text) {

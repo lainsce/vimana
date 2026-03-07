@@ -37,7 +37,8 @@ case COGITO_DIALOG: {
       int title_h = has_title ? cogito_text_height_size(title_size) : 0;
       int cx = 0, cy = 0, cw = 0, ch = 0;
       cogito_dialog_close_rect(n, &cx, &cy, &cw, &ch);
-      int header_h = has_title ? (title_h > ch ? title_h : ch) : 0;
+      bool has_header = has_title || (cw > 0 && ch > 0);
+      int header_h = has_header ? (title_h > ch ? title_h : ch) : 0;
       int section_pad_l = 24;
       int section_pad_r = 24;
       CogitoColor title_color = s.has_text ? s.text : n->text_color;
@@ -53,7 +54,7 @@ case COGITO_DIALOG: {
         }
   }
   // Draw close button in top-right.
-      if (has_title && cw > 0 && ch > 0) {
+      if (cw > 0 && ch > 0) {
         int mx = 0, my = 0;
         bool down = false;
         (void)cogito_pointer_query(&mx, &my, &down, NULL);

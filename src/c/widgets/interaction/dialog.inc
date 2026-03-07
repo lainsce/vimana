@@ -7,14 +7,6 @@ static CogitoNode* cogito_dialog_new_obj(YisStr* title) {
 #define COGITO_DIALOG_CLOSE_BOX 24
 static void cogito_dialog_close_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n || n->kind != COGITO_DIALOG) return;
-  bool has_title = (n->text && n->text->data && n->text->data[0]);
-  if (!has_title) {
-    if (out_x) *out_x = 0;
-    if (out_y) *out_y = 0;
-    if (out_w) *out_w = 0;
-    if (out_h) *out_h = 0;
-    return;
-  }
   int pad_t = COGITO_DIALOG_HEADER_INSET;
   int pad_r = COGITO_DIALOG_HEADER_INSET;
   int title_size = 20;

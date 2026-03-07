@@ -303,7 +303,7 @@ static CogitoInspectorPropRow* cogito_inspector_hit_prop_row(int x, int y) {
 
 static bool cogito_inspector_scroll_properties(CogitoNode* win, float wheel_delta) {
   if (!win || wheel_delta == 0.0f) return false;
-  int delta = (int)(wheel_delta * 32.0f);
+  int delta = (int)(wheel_delta * 10.0f);
   cogito_inspector_props_scroll_y -= delta;
   if (cogito_inspector_props_scroll_y > cogito_inspector_props_scroll_max) {
     cogito_inspector_props_scroll_y = cogito_inspector_props_scroll_max;
@@ -833,7 +833,7 @@ static bool cogito_inspector_handle_wheel(CogitoNode* win, int local_x, int loca
   cogito_inspector_rebuild_tree(win);
   int total_tree_h = cogito_inspector_node_count * row_h;
   int max_scroll = total_tree_h > list_h ? total_tree_h - list_h : 0;
-  int delta = (int)(wheel_delta * 32.0f);
+  int delta = (int)(wheel_delta * 10.0f);
   cogito_inspector_tree_scroll_y -= delta;
   if (cogito_inspector_tree_scroll_y > max_scroll) cogito_inspector_tree_scroll_y = max_scroll;
   if (cogito_inspector_tree_scroll_y < 0) cogito_inspector_tree_scroll_y = 0;

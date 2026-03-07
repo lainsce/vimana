@@ -100,13 +100,15 @@ case COGITO_CHIP: {
   if (n->text) {
     bool chip_rtl = cogito_is_rtl();
     int font_size = cogito_node_font_size(n);
+    bool chip_bold = cogito_node_bold(n);
+    bool chip_medium = !chip_bold && cogito_node_medium(n);
     int text_h    = cogito_text_height_size(font_size);
     int tw        = cogito_text_width_size_node(n, n->text->data, font_size);
     // Cogito: 12dp leading pad (or h+4 when selected = check icon space), 12dp trailing
     int lead = n->chip.selected ? (n->h + 4) : 12;
     int text_x = chip_rtl ? (n->x + n->w - lead - tw) : (n->x + lead);
     int text_y = n->y + (n->h - text_h) / 2;
-    cogito_draw_text_size_node(n, text_x, text_y, n->text->data, text_color, font_size, false, false);
+    cogito_draw_text_size_node(n, text_x, text_y, n->text->data, text_color, font_size, chip_bold, chip_medium);
 
     // ---- Close icon ----
     if (n->chip.has_close) {

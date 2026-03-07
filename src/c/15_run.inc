@@ -1352,7 +1352,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
         CogitoNode* root = (slot && slot->dialog) ? slot->dialog : win;
         CogitoNode* scroller = cogito_find_scroller(root, mx, my);
         if (scroller) {
-          int delta = (int)(wheel * 32.0f);
+          int delta = (int)(wheel * 10.0f);
           bool horiz = scroller->scroller.horz && (cogito_backend->is_key_down(SDL_SCANCODE_LSHIFT) || 
                                                  cogito_backend->is_key_down(SDL_SCANCODE_RSHIFT) || 
                                                  !scroller->scroller.vert);

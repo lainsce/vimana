@@ -6,7 +6,7 @@ enum {
   COGITO_TIMEPICKER_POPOVER_W = 360,        // Match DatePicker width
   COGITO_TIMEPICKER_POP_SIDE = 12,          // Match DATEPICKER_POP_SIDE
   COGITO_TIMEPICKER_POP_TOP = 20,           // Match DATEPICKER_POP_TOP
-  COGITO_TIMEPICKER_POP_HEADER_H = 20,
+  COGITO_TIMEPICKER_POP_HEADER_H = 24,
   COGITO_TIMEPICKER_POP_TIME_H = 80,
   COGITO_TIMEPICKER_POP_TIME_TO_DIAL_GAP = 36,
   COGITO_TIMEPICKER_POP_DIAL_SIZE = 256,
@@ -182,9 +182,9 @@ static void cogito_timepicker_panel_layout(const CogitoNode* n, CogitoTimePicker
   out->ok_x = panel_x + panel_w - COGITO_TIMEPICKER_POP_SIDE - out->ok_w;
   out->ok_y = out->footer_y + (out->footer_h - out->ok_h) / 2;
 
-  out->cancel_w = 72;
+  out->cancel_w = 84;
   out->cancel_h = 32;
-  out->cancel_x = out->ok_x - 12 - out->cancel_w;
+  out->cancel_x = out->ok_x - 16 - out->cancel_w;
   out->cancel_y = out->footer_y + (out->footer_h - out->cancel_h) / 2;
 }
 

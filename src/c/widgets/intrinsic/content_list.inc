@@ -11,7 +11,7 @@ case COGITO_CONTENT_LIST: {
   for (size_t i = 0; i < n->len; i++) {
     int cw = 0, ch = 0;
     cogito_intrinsic_size(n->children[i], &cw, &ch);
-    if (ch < 48) ch = 48;
+    if (ch < 42) ch = 42;
     int tw = cw + n->children[i]->margin_left + n->children[i]->margin_right;
     int th = ch + n->children[i]->margin_top + n->children[i]->margin_bottom;
     if (tw > max_cw) max_cw = tw;
