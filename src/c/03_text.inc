@@ -106,6 +106,19 @@ static int cogito_default_codepoints(int* out, int cap) {
   return count;
 }
 
+static uint32_t cogito_font_variation_hash(const CogitoFontVariation* vars, int count) {
+  uint32_t h = 0;
+  for (int i = 0; i < count; i++) {
+    h ^= vars[i].tag;
+    h = (h << 5) | (h >> 27);
+    uint32_t fv;
+    memcpy(&fv, &vars[i].value, sizeof(fv));
+    h ^= fv;
+    h = (h << 7) | (h >> 25);
+  }
+  return h;
+}
+
 static bool cogito_freetype_set_weight(FT_Library lib, FT_Face face, int weight, bool* out_applied) {
   if (!face || weight <= 0) return false;
   if (!(face->face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS)) return false;
@@ -199,6 +212,76 @@ static int cogito_find_named_instance_for_weight(const char* path, int target_we
   return (0 | ((best_instance + 1) << 16));
 }
 
+// Find the best named instance matching weight + user variation axes.
+// Returns face_index encoding or -1 if no reasonable match found.
+static int cogito_find_named_instance_for_variations(const char* path, int target_weight,
+    const CogitoFontVariation* vars, int var_count) {
+  if (!vars || var_count <= 0) return cogito_find_named_instance_for_weight(path, target_weight);
+
+  FT_Library lib = cogito_ft_library();
+  if (!lib) return -1;
+  FT_Face face;
+  if (FT_New_Face(lib, path, 0, &face) != 0) return -1;
+  if (!(face->face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS)) {
+    FT_Done_Face(face);
+    return -1;
+  }
+  FT_MM_Var* mm = NULL;
+  if (FT_Get_MM_Var(face, &mm) != 0 || !mm) {
+    FT_Done_Face(face);
+    return -1;
+  }
+  if (mm->num_namedstyles == 0) {
+    FT_Done_MM_Var(lib, mm);
+    FT_Done_Face(face);
+    return -1;
+  }
+
+  // Map axis indices for weight and user variations
+  int wght_axis = -1;
+  int var_axis[COGITO_MAX_FONT_VARIATIONS];
+  for (int v = 0; v < var_count; v++) var_axis[v] = -1;
+
+  for (FT_UInt i = 0; i < mm->num_axis; i++) {
+    if (mm->axis[i].tag == FT_MAKE_TAG('w','g','h','t'))
+      wght_axis = (int)i;
+    for (int v = 0; v < var_count; v++) {
+      if (mm->axis[i].tag == (FT_ULong)vars[v].tag)
+        var_axis[v] = (int)i;
+    }
+  }
+
+  FT_Fixed target_w = (FT_Fixed)((long)target_weight << 16);
+  int best = -1;
+  double best_score = 1e30;
+
+  for (FT_UInt inst = 0; inst < mm->num_namedstyles; inst++) {
+    double score = 0;
+    // Weight distance (normalized: 1 unit = 1 weight unit)
+    if (wght_axis >= 0 && target_weight > 0) {
+      double dw = (double)(mm->namedstyle[inst].coords[wght_axis] - target_w) / 65536.0;
+      score += dw * dw;
+    }
+    // User axis distances (normalized: square of difference in axis units)
+    for (int v = 0; v < var_count; v++) {
+      if (var_axis[v] < 0) continue;
+      FT_Fixed inst_val = mm->namedstyle[inst].coords[var_axis[v]];
+      double dv = (double)inst_val / 65536.0 - (double)vars[v].value;
+      score += dv * dv * 4.0; // weight user axes more
+    }
+    if (score < best_score) {
+      best_score = score;
+      best = (int)inst;
+    }
+  }
+
+  FT_Done_MM_Var(lib, mm);
+  FT_Done_Face(face);
+
+  if (best < 0) return -1;
+  return (0 | ((best + 1) << 16));
+}
+
 static bool cogito_load_font_file_ex(CogitoFont** out, const char* path, int size, int weight, bool* out_weight_applied) {
   if (out_weight_applied) *out_weight_applied = false;
   if (!out || !path || !path[0]) return false;
@@ -247,6 +330,9 @@ static bool cogito_load_font_file_tabular(CogitoFont** out, const char* path, in
 }
 
 static CogitoFont* cogito_font_cache_get(CogitoFontCacheEntry* cache, int cap, const char* path, int size, int weight);
+static CogitoFont* cogito_font_cache_get_var(CogitoFontCacheEntry* cache, int cap,
+    const char* path, int size, int weight,
+    const CogitoFontVariation* vars, int var_count);
 
 static CogitoFont* cogito_font_resolve_size(CogitoFont* f, int size) {
   if (!f) return NULL;
@@ -352,6 +438,66 @@ static CogitoFont* cogito_font_cache_get(CogitoFontCacheEntry* cache, int cap, c
   strncpy(cache[slot].path, path, sizeof(cache[slot].path) - 1);
   cache[slot].path[sizeof(cache[slot].path) - 1] = '\0';
   cache[slot].ready = true;
+  cache[slot].variation_hash = 0;
+  return cache[slot].font;
+}
+
+// Extended cache getter that also applies variable-font variation axes.
+static CogitoFont* cogito_font_cache_get_var(CogitoFontCacheEntry* cache, int cap,
+    const char* path, int size, int weight,
+    const CogitoFontVariation* vars, int var_count) {
+  if (var_count <= 0 || !vars) return cogito_font_cache_get(cache, cap, path, size, weight);
+  if (!cache || cap <= 0 || !path || !path[0] || size <= 0) return NULL;
+
+  uint32_t vhash = cogito_font_variation_hash(vars, var_count);
+
+  for (int i = 0; i < cap; i++) {
+    if (cache[i].ready && cache[i].size == size && cache[i].weight == weight &&
+        cache[i].variation_hash == vhash && strcmp(cache[i].path, path) == 0)
+      return cache[i].font;
+  }
+
+  int slot = -1;
+  for (int i = 0; i < cap; i++) {
+    if (!cache[i].ready) { slot = i; break; }
+  }
+  if (slot < 0) slot = 0;
+
+  if (cache[slot].ready) {
+    if (cogito_backend && cogito_backend->font_unload) {
+      cogito_backend->font_unload(cache[slot].font);
+    }
+    cache[slot].ready = false;
+  }
+
+  // Find best-matching named instance for weight + user variation axes
+  if (cogito_backend && cogito_backend->font_load_face) {
+    int face_index = cogito_find_named_instance_for_variations(path, weight, vars, var_count);
+    if (face_index >= 0) {
+      cache[slot].font = cogito_backend->font_load_face(path, size, face_index);
+      if (cache[slot].font) {
+        cache[slot].size = size;
+        cache[slot].weight = weight;
+        cache[slot].variation_hash = vhash;
+        strncpy(cache[slot].path, path, sizeof(cache[slot].path) - 1);
+        cache[slot].path[sizeof(cache[slot].path) - 1] = '\0';
+        cache[slot].ready = true;
+        return cache[slot].font;
+      }
+    }
+  }
+
+  // Fallback: load with weight only (no user variations applied)
+  if (!cogito_load_font_file_ex(&cache[slot].font, path, size, weight, NULL)) {
+    return NULL;
+  }
+
+  cache[slot].size = size;
+  cache[slot].weight = weight;
+  cache[slot].variation_hash = vhash;
+  strncpy(cache[slot].path, path, sizeof(cache[slot].path) - 1);
+  cache[slot].path[sizeof(cache[slot].path) - 1] = '\0';
+  cache[slot].ready = true;
   return cache[slot].font;
 }
 
@@ -439,6 +585,10 @@ static bool cogito_node_uses_app_emphasized_font(const CogitoNode* n) {
 static CogitoFont* cogito_font_variant_for_node(const CogitoNode* n, int size, bool bold, bool medium) {
   if (size <= 0) size = cogito_font_size();
 
+  const CogitoFontVariation* vars = (n && n->font_variation_set && n->font_variation_count > 0)
+    ? n->font_variations : NULL;
+  int var_count = vars ? n->font_variation_count : 0;
+
   if (n && n->font_family_set && n->font_family[0] &&
       !cogito_font_family_eq(n->font_family, "monospace") &&
       !cogito_font_family_eq(n->font_family, "mono") &&
@@ -448,12 +598,13 @@ static CogitoFont* cogito_font_variant_for_node(const CogitoNode* n, int size, b
       int weight = cogito_font_weight_normal();
       if (bold) weight = cogito_font_weight_bold();
       else if (medium) weight = cogito_font_weight_medium();
-      CogitoFont* custom = cogito_font_cache_get(
+      CogitoFont* custom = cogito_font_cache_get_var(
         cogito_font_cache,
         (int)(sizeof(cogito_font_cache) / sizeof(cogito_font_cache[0])),
         path,
         size,
-        weight);
+        weight,
+        vars, var_count);
       if (custom) return custom;
     }
   }
@@ -463,12 +614,13 @@ static CogitoFont* cogito_font_variant_for_node(const CogitoNode* n, int size, b
     if (bold) weight = cogito_font_weight_bold();
     else if (medium) weight = cogito_font_weight_medium();
 
-    CogitoFont* emphasized = cogito_font_cache_get(
+    CogitoFont* emphasized = cogito_font_cache_get_var(
       cogito_font_emphasized_cache,
       (int)(sizeof(cogito_font_emphasized_cache) / sizeof(cogito_font_emphasized_cache[0])),
       cogito_font_emphasized_path_active,
       size,
-      weight);
+      weight,
+      vars, var_count);
     if (emphasized) return emphasized;
   }
 
@@ -514,6 +666,29 @@ static CogitoFont* cogito_font_variant_for_node(const CogitoNode* n, int size, b
   if (n && n->font_tabular) {
     f = cogito_font_tabular_for(f, size);
   }
+
+  // Apply variation axes on global fonts by re-loading through variation cache
+  if (vars && var_count > 0) {
+    const char* vpath = NULL;
+    int vweight = cogito_font_weight_normal();
+    if (f == cogito_font || f == cogito_font_bold || f == cogito_font_medium) {
+      vpath = cogito_font_path_active;
+      if (bold || f == cogito_font_bold) vweight = cogito_font_weight_bold();
+      else if (medium || f == cogito_font_medium) vweight = cogito_font_weight_medium();
+    } else if (f == cogito_font_serif) {
+      vpath = cogito_font_serif_path_active;
+    } else if (f == cogito_font_mono) {
+      vpath = cogito_font_mono_path_active;
+    }
+    if (vpath && vpath[0]) {
+      CogitoFont* var_f = cogito_font_cache_get_var(
+        cogito_font_cache,
+        (int)(sizeof(cogito_font_cache) / sizeof(cogito_font_cache[0])),
+        vpath, size, vweight, vars, var_count);
+      if (var_f) f = var_f;
+    }
+  }
+
   return cogito_font_resolve_size(f, size);
 }
 

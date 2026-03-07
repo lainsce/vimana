@@ -21,8 +21,9 @@ grid.victrola-group-grid
   background: transparent
 
 card.victrola-artist-card
-  min-height: 220
-  min-width: 220
+  min-height: 256
+  min-width: 256
+  border-radius: 12
 
 card.victrola-album-card
   min-height: 256
@@ -43,9 +44,25 @@ image.victrola-cover-art
   max-height: 335
   border-radius: 26
 
-label.victrola-album-title
-  font-size: 24
-  font-weight: 700
+label.victrola-album-title-expressive
+  text-overflow: fade
+  font-variation: wdth 132, opsz 14
+  font-weight: 600
+  font-size: 18
+
+label.view-title-expressive
+  text-overflow: fade
+  font-variation: wdth 132, opsz 14
+  font-weight: 600
+  font-size: 32
+  max-width: 335
+
+label.victrola-now-title
+  text-overflow: marquee
+  font-variation: wdth 132, opsz 14
+  font-weight: 600
+  font-size: 32
+  max-width: 335
 
 label.victrola-album-meta
   font-size: 14
@@ -73,6 +90,7 @@ vstack.victrola-song-row
   background: transparent
 
 textview.victrola-lyrics
+  background: transparent
   border-radius: 18
   padding: 12
 

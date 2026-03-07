@@ -306,6 +306,12 @@ static void cogito_style_merge_into(const CogitoStyle* base, const CogitoStyle* 
       63
     ] = '\0';
   }
+  if (over->has_font_variation) {
+    out->has_font_variation = true;
+    out->font_variation_count = over->font_variation_count;
+    memcpy(out->font_variations, over->font_variations,
+           sizeof(CogitoFontVariation) * over->font_variation_count);
+  }
   if (over->has_box_shadow) {
     out->has_box_shadow = true;
     out->box_shadow = over->box_shadow;
@@ -355,6 +361,9 @@ static void cogito_style_merge_into(const CogitoStyle* base, const CogitoStyle* 
   }
   if (over->has_item_gap) { out->has_item_gap = true; out->item_gap = over->item_gap;
   }
+  if (over->has_text_fade) { out->has_text_fade = true; out->text_fade = over->text_fade; }
+  if (over->has_text_ellipsis) { out->has_text_ellipsis = true; out->text_ellipsis = over->text_ellipsis; }
+  if (over->has_text_marquee) { out->has_text_marquee = true; out->text_marquee = over->text_marquee; }
 }
 // Legacy wrapper for compatibility
 static CogitoStyle cogito_style_merge(const CogitoStyle* base, const CogitoStyle* over) {
@@ -481,6 +490,7 @@ static CogitoColor cogito_color_with_alpha(CogitoColor base, uint8_t alpha) {
 
 static CogitoColor cogito_bin_scope_remap_color(CogitoColor in) {
   if (!cogito_bin_scope_active) return in;
+  if (in.a == 0) return in;
 #define COGITO_BIN_MAP_TOKEN(tok) \
   if (cogito_color_same(in, cogito_bin_scope_from_scheme.tok)) { \
     return cogito_color_with_alpha(cogito_bin_scope_to_scheme.tok, in.a); \
@@ -911,6 +921,15 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
   if (s.has_font_mono) {
     n->font_mono = s.font_mono;
   }
+  if (s.has_text_fade) {
+    n->text_fade = s.text_fade;
+  }
+  if (s.has_text_ellipsis) {
+    n->text_ellipsis = s.text_ellipsis;
+  }
+  if (s.has_text_marquee) {
+    n->text_marquee = s.text_marquee;
+  }
   // Only apply theme size constraints; never clear user-set values
   // Sidebar appbars must not get a default min-width so the sidebar column can be narrow
   if (s.has_min_w) {
@@ -957,6 +976,15 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
     n->font_family_set = true;
   } else {
     n->font_family_set = false;
+  }
+  if (s.has_font_variation) {
+    n->font_variation_set = true;
+    n->font_variation_count = s.font_variation_count;
+    memcpy(n->font_variations, s.font_variations,
+           sizeof(CogitoFontVariation) * s.font_variation_count);
+  } else {
+    n->font_variation_set = false;
+    n->font_variation_count = 0;
   }
   if (s.has_box_shadow) { n->box_shadow = s.box_shadow; n->box_shadow_set = true;
   }

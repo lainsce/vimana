@@ -159,6 +159,10 @@ int cogito_gst_poll_event(void);
 const char *cogito_gst_last_error(void);
 // Absolute filesystem path to latest extracted embedded cover art, or "".
 const char *cogito_gst_last_cover_path(void);
+// Text metadata from the latest GST_MESSAGE_TAG, or "".
+const char *cogito_gst_last_tag_title(void);
+const char *cogito_gst_last_tag_artist(void);
+const char *cogito_gst_last_tag_album(void);
 
 cogito_timer_id cogito_timer_set_timeout(uint32_t delay_ms,
                                          cogito_timer_fn fn, void *user);
@@ -496,6 +500,8 @@ void cogito_label_set_text(cogito_node *label, const char *text);
 void cogito_label_set_wrap(cogito_node *label, bool on);
 void cogito_label_set_max_width_chars(cogito_node *label, int max_chars);
 void cogito_label_set_ellipsis(cogito_node *label, bool on);
+void cogito_label_set_fade(cogito_node *label, bool on);
+void cogito_label_set_marquee(cogito_node *label, bool on);
 void cogito_label_set_align(cogito_node *label, int align);
 
 // Image helpers
@@ -536,6 +542,7 @@ int cogito_shape_get_color_style(cogito_node *shape);
 void cogito_shape_set_vertex(cogito_node *shape, int index, float x, float y);
 float cogito_shape_get_vertex_x(cogito_node *shape, int index);
 float cogito_shape_get_vertex_y(cogito_node *shape, int index);
+void cogito_shape_set_clip(cogito_node *shape, bool clip);
 
 // Appbar helpers
 cogito_node *cogito_appbar_add_button(cogito_node *appbar, const char *icon,

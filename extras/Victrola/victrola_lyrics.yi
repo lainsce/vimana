@@ -4,11 +4,89 @@ bring stdr
 bring json
 bring net
 
-:: fetch_lyrics(artist = string, title = string) (( string )) {
-    if stdr.len(artist) == 0 && stdr.len(title) == 0 {
-        return "Select a track to view lyrics."
+:: read_embedded_lyrics(path = string) (( string )) {
+    if stdr.len(path) == 0 {
+        return ""
     }
 
+    let quoted = stdr.shell_quote(path)
+    let cmd = "ffprobe -v quiet -show_entries format_tags -of json $$quoted$$ 2>/dev/null"
+    let run = stdr.run_command(cmd)
+    let exit = run[0] ?? 1
+    if exit != 0 {
+        return ""
+    }
+
+    let body = stdr.str(run[1] ?? "")
+    let root = json.parse(body)
+    if stdr.is_null(root) {
+        return ""
+    }
+
+    let fmt = root["format"] ?? null
+    if stdr.is_null(fmt) {
+        return ""
+    }
+    let tags = fmt["tags"] ?? null
+    if stdr.is_null(tags) {
+        return ""
+    }
+
+    let keys = ["lyrics", "LYRICS", "lyrics-XXX", "lyrics-None-eng", "UNSYNCEDLYRICS", "unsyncedlyrics"]
+    for (let ?i = 0; i < stdr.len(keys); i = i + 1) {
+        let k = stdr.str(keys[i] ?? "")
+        let v = stdr.str(tags[k] ?? "")
+        if stdr.len(v) > 0 {
+            return v
+        }
+    }
+
+    return ""
+}
+
+:: embed_lyrics(path = string, lyrics = string) (( bool )) {
+    if stdr.len(path) == 0 || stdr.len(lyrics) == 0 {
+        return false
+    }
+
+    let tmp = stdr.str_concat(path, ".victrola_tmp")
+    let quoted_in = stdr.shell_quote(path)
+    let quoted_out = stdr.shell_quote(tmp)
+
+    let lyrics_file = stdr.str_concat(path, ".victrola_lyrics.txt")
+    let quoted_lf = stdr.shell_quote(lyrics_file)
+    if !stdr.write_text_file(lyrics_file, lyrics) {
+        return false
+    }
+
+    let ?tag_key = "lyrics"
+    if stdr.ends_with(path, ".flac") {
+        tag_key = "LYRICS"
+    }
+
+    let cmd = "ffmpeg -y -i $$quoted_in$$ -c copy -map_metadata 0 -metadata $$tag_key$$=\"$(cat $$quoted_lf$$)\" $$quoted_out$$ 2>/dev/null"
+    let run = stdr.run_command(cmd)
+    let exit = run[0] ?? 1
+
+    stdr.run_command(stdr.str_concat("rm -f ", quoted_lf))
+
+    if exit != 0 {
+        stdr.run_command(stdr.str_concat("rm -f ", quoted_out))
+        return false
+    }
+
+    let mv_cmd = "mv -f $$quoted_out$$ $$quoted_in$$"
+    let mv_run = stdr.run_command(mv_cmd)
+    let mv_exit = mv_run[0] ?? 1
+    if mv_exit != 0 {
+        stdr.run_command(stdr.str_concat("rm -f ", quoted_out))
+        return false
+    }
+
+    return true
+}
+
+:: fetch_online(artist = string, title = string) (( string )) {
     let resp = net.get(
         "https://lrclib.net/api/get",
         [["artist_name", artist], ["track_name", title]],
@@ -17,13 +95,13 @@ bring net
     )
 
     if !(resp["ok"] ?? false) {
-        return "Could not fetch lyrics."
+        return ""
     }
 
     let body = stdr.str(resp["body"] ?? "")
     let root = json.parse(body)
     if stdr.is_null(root) {
-        return "Lyrics service returned invalid data."
+        return ""
     }
 
     let plain = stdr.str(json.get(root, "plainLyrics", ""))
@@ -35,5 +113,25 @@ bring net
     if stdr.len(synced) > 0 {
         return synced
     }
-    return "No lyrics found for this track."
+    return ""
+}
+
+:: fetch_lyrics(artist = string, title = string, path = string) (( string )) {
+    if stdr.len(artist) == 0 && stdr.len(title) == 0 {
+        return "Select a track to view lyrics."
+    }
+
+    let embedded = read_embedded_lyrics(path)
+    if stdr.len(embedded) > 0 {
+        return embedded
+    }
+
+    let online = fetch_online(artist, title)
+    if stdr.len(online) == 0 {
+        return "No lyrics found for this track."
+    }
+
+    embed_lyrics(path, online)
+
+    return online
 }

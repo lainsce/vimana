@@ -356,8 +356,8 @@ case COGITO_TOOLBAR: {
         
         // For non-floating with FAB, FAB goes to 6th slot (index 5)
         if (fab_child && !floating && is_fab) {
-          // Place FAB in the 6th slot (mirrored in RTL)
-          int fab_slot = toolbar_rtl ? 0 : 5;
+          // Place FAB in the last slot (mirrored in RTL)
+          int fab_slot = toolbar_rtl ? 0 : (slots - 1);
           int fab_w = 0;
           int fab_h = 0;
           cogito_intrinsic_size(c, &fab_w, &fab_h);

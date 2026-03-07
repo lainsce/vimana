@@ -112,6 +112,7 @@
 #undef cogito_shape_set_vertex
 #undef cogito_shape_get_vertex_x
 #undef cogito_shape_get_vertex_y
+#undef cogito_shape_set_clip
 #undef cogito_timer_set_timeout
 #undef cogito_timer_set_interval
 #undef cogito_timer_set_timeout_ex
@@ -126,6 +127,8 @@
 #undef cogito_label_new
 #undef cogito_label_set_align
 #undef cogito_label_set_ellipsis
+#undef cogito_label_set_fade
+#undef cogito_label_set_marquee
 #undef cogito_label_set_text
 #undef cogito_label_set_wrap
 #undef cogito_content_list_on_activate
@@ -177,6 +180,9 @@
 #undef cogito_gst_poll_event
 #undef cogito_gst_last_error
 #undef cogito_gst_last_cover_path
+#undef cogito_gst_last_tag_title
+#undef cogito_gst_last_tag_artist
+#undef cogito_gst_last_tag_album
 #undef cogito_pointer_capture
 #undef cogito_pointer_release
 #undef cogito_progress_get_circular
@@ -1315,6 +1321,10 @@ static YisVal __cogito_shape_get_vertex_y(YisVal shapev, YisVal idxv) {
   cogito_node* n = cogito_node_from_val(shapev);
   return YV_FLOAT((double)cogito_shape_get_vertex_y(n, (int)yis_as_int(idxv)));
 }
+static void __cogito_shape_set_clip(YisVal shapev, YisVal onv) {
+  cogito_node* n = cogito_node_from_val(shapev);
+  cogito_shape_set_clip(n, yis_as_bool(onv));
+}
 // --- ContentList ---
 static YisVal __cogito_content_list(void) {
   cogito_node* n = cogito_content_list_new();
@@ -1893,6 +1903,16 @@ static void __cogito_label_set_max_width_chars(YisVal labelv, YisVal maxv) {
 static void __cogito_label_set_ellipsis(YisVal labelv, YisVal onv) {
   cogito_node* n = cogito_node_from_val(labelv);
   cogito_label_set_ellipsis(n, onv.tag == EVT_BOOL ? onv.as.b : false);
+}
+
+static void __cogito_label_set_fade(YisVal labelv, YisVal onv) {
+  cogito_node* n = cogito_node_from_val(labelv);
+  cogito_label_set_fade(n, onv.tag == EVT_BOOL ? onv.as.b : false);
+}
+
+static void __cogito_label_set_marquee(YisVal labelv, YisVal onv) {
+  cogito_node* n = cogito_node_from_val(labelv);
+  cogito_label_set_marquee(n, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
 static void __cogito_label_set_align(YisVal labelv, YisVal alignv) {
@@ -3579,6 +3599,24 @@ static YisVal __cogito_gst_last_cover_path(void) {
   if (!path || !path[0]) return YV_STR(stdr_str_lit(""));
   return YV_STR(stdr_str_lit(path));
 }
+
+static YisVal __cogito_gst_last_tag_title(void) {
+  const char* s = cogito_gst_last_tag_title();
+  if (!s || !s[0]) return YV_STR(stdr_str_lit(""));
+  return YV_STR(stdr_str_lit(s));
+}
+
+static YisVal __cogito_gst_last_tag_artist(void) {
+  const char* s = cogito_gst_last_tag_artist();
+  if (!s || !s[0]) return YV_STR(stdr_str_lit(""));
+  return YV_STR(stdr_str_lit(s));
+}
+
+static YisVal __cogito_gst_last_tag_album(void) {
+  const char* s = cogito_gst_last_tag_album();
+  if (!s || !s[0]) return YV_STR(stdr_str_lit(""));
+  return YV_STR(stdr_str_lit(s));
+}
 // ---- Codegen aliases ----
 #define cogito_app_new __cogito_app
 #define cogito_app_set_appid __cogito_app_set_appid
@@ -3607,6 +3645,9 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_gst_poll_event __cogito_gst_poll_event
 #define cogito_gst_last_error __cogito_gst_last_error
 #define cogito_gst_last_cover_path __cogito_gst_last_cover_path
+#define cogito_gst_last_tag_title __cogito_gst_last_tag_title
+#define cogito_gst_last_tag_artist __cogito_gst_last_tag_artist
+#define cogito_gst_last_tag_album __cogito_gst_last_tag_album
 #define cogito_window_new __cogito_window
 #define cogito_window_set_resizable __cogito_window_set_resizable
 #define cogito_window_set_autosize __cogito_window_set_autosize
@@ -3695,6 +3736,8 @@ static YisVal __cogito_gst_last_cover_path(void) {
 #define cogito_label_set_wrap __cogito_label_set_wrap
 #define cogito_label_set_max_width_chars __cogito_label_set_max_width_chars
 #define cogito_label_set_ellipsis __cogito_label_set_ellipsis
+#define cogito_label_set_fade __cogito_label_set_fade
+#define cogito_label_set_marquee __cogito_label_set_marquee
 #define cogito_label_set_align __cogito_label_set_align
 #define cogito_node_set_disabled __cogito_node_set_disabled
 #define cogito_node_set_visible __cogito_node_set_visible
@@ -3932,6 +3975,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_shape_set_vertex __cogito_shape_set_vertex
 #define cogito_shape_get_vertex_x __cogito_shape_get_vertex_x
 #define cogito_shape_get_vertex_y __cogito_shape_get_vertex_y
+#define cogito_shape_set_clip __cogito_shape_set_clip
 #define cogito_content_list_new __cogito_content_list
 #define cogito_content_list_set_selected __cogito_content_list_set_selected
 #define cogito_content_list_remove_at __cogito_content_list_remove_at

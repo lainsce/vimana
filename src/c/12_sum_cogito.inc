@@ -261,6 +261,61 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
     *p = s;
     return;
   }
+  if (strcmp(prop, "text-overflow") == 0) {
+    const char* s = *p;
+    char ident[32];
+    if (cogito_css_read_ident(&s, ident, sizeof(ident))) {
+      if (strcmp(ident, "ellipsis") == 0) {
+        style->has_text_ellipsis = true; style->text_ellipsis = true;
+        style->has_text_fade = true; style->text_fade = false;
+        style->has_text_marquee = true; style->text_marquee = false;
+      } else if (strcmp(ident, "fade") == 0) {
+        style->has_text_fade = true; style->text_fade = true;
+        style->has_text_ellipsis = true; style->text_ellipsis = false;
+        style->has_text_marquee = true; style->text_marquee = false;
+      } else if (strcmp(ident, "marquee") == 0) {
+        style->has_text_marquee = true; style->text_marquee = true;
+        style->has_text_fade = true; style->text_fade = false;
+        style->has_text_ellipsis = true; style->text_ellipsis = false;
+      } else if (strcmp(ident, "clip") == 0) {
+        style->has_text_ellipsis = true; style->text_ellipsis = false;
+        style->has_text_fade = true; style->text_fade = false;
+        style->has_text_marquee = true; style->text_marquee = false;
+      }
+      *p = s;
+    }
+    return;
+  }
+  if (strcmp(prop, "font-variation") == 0) {
+    const char* s = *p;
+    int count = 0;
+    while (*s && count < COGITO_MAX_FONT_VARIATIONS) {
+      while (*s && (isspace((unsigned char)*s) || *s == ',')) s++;
+      if (!*s) break;
+      char tag_str[8] = {0};
+      int ti = 0;
+      while (*s && !isspace((unsigned char)*s) && *s != ',' && ti < 4) tag_str[ti++] = *s++;
+      if (ti != 4) break;
+      while (*s && isspace((unsigned char)*s)) s++;
+      double v = 0;
+      const char* vs = s;
+      if (!cogito_css_read_number(&vs, &v)) break;
+      s = vs;
+      style->font_variations[count].tag =
+        ((uint32_t)(unsigned char)tag_str[0] << 24) |
+        ((uint32_t)(unsigned char)tag_str[1] << 16) |
+        ((uint32_t)(unsigned char)tag_str[2] << 8) |
+        (uint32_t)(unsigned char)tag_str[3];
+      style->font_variations[count].value = (float)v;
+      count++;
+    }
+    if (count > 0) {
+      style->has_font_variation = true;
+      style->font_variation_count = count;
+    }
+    *p = s;
+    return;
+  }
   if (strcmp(prop, "font-family") == 0) {
     const char* s = *p;
     char ident[64];

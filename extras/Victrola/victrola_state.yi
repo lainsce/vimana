@@ -5,7 +5,7 @@ bring json
 bring victrola_model
 bring victrola_util
 
-:: save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any) (( -- )) {
+:: save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any, track_meta_map = any, artist_image_map = any) (( -- )) {
     let folder_esc = json.escape(current_folder)
 
     let ?covers_json = ""
@@ -42,9 +42,62 @@ bring victrola_util
         covers_json = "$$covers_json$${\"album\":\"$$album_esc$$\",\"artist\":\"$$artist_esc$$\",\"cover\":\"$$cover_esc$$\"}"
     }
 
+    let ?meta_json = ""
+    for (let ?j = 0; j < stdr.len(tracks); j = j + 1) {
+        let trk = tracks[j] ?? []: [string => any]
+        let trk_path = stdr.str(trk["path"] ?? "")
+        if stdr.len(trk_path) == 0 {
+            continue
+        }
+        let m = track_meta_map[trk_path] ?? null
+        if stdr.is_null(m) {
+            continue
+        }
+        let m_title = stdr.str(m["title"] ?? "")
+        let m_artist = stdr.str(m["artist"] ?? "")
+        let m_album = stdr.str(m["album"] ?? "")
+        if stdr.len(m_title) == 0 && stdr.len(m_artist) == 0 && stdr.len(m_album) == 0 {
+            continue
+        }
+        if stdr.len(meta_json) > 0 {
+            meta_json = "$$meta_json$$,"
+        }
+        let p_esc = json.escape(trk_path)
+        let t_esc = json.escape(m_title)
+        let ar_esc = json.escape(m_artist)
+        let al_esc = json.escape(m_album)
+        meta_json = "$$meta_json$${\"path\":\"$$p_esc$$\",\"title\":\"$$t_esc$$\",\"artist\":\"$$ar_esc$$\",\"album\":\"$$al_esc$$\"}"
+    }
+
+    let ?ai_json = ""
+    let ?ai_seen = []: [string => any]
+    for (let ?k = 0; k < stdr.len(tracks); k = k + 1) {
+        let ai_t = tracks[k] ?? []: [string => any]
+        let ai_name = stdr.str(ai_t["artist"] ?? "")
+        if stdr.len(ai_name) == 0 || ai_name == "Unknown Artist" {
+            continue
+        }
+        if !stdr.is_null(ai_seen[ai_name]) {
+            continue
+        }
+        ai_seen[ai_name] = true
+        let ai_path = stdr.str(artist_image_map[ai_name] ?? "")
+        if stdr.len(ai_path) == 0 || !stdr.file_exists(ai_path) {
+            continue
+        }
+        if stdr.len(ai_json) > 0 {
+            ai_json = "$$ai_json$$,"
+        }
+        let ai_name_esc = json.escape(ai_name)
+        let ai_path_esc = json.escape(ai_path)
+        ai_json = "$$ai_json$${\"name\":\"$$ai_name_esc$$\",\"image\":\"$$ai_path_esc$$\"}"
+    }
+
     let ?payload = "{"
     payload = "$$payload$$\"folder\":\"$$folder_esc$$\""
     payload = "$$payload$$,\"album_covers\":[$$covers_json$$]"
+    payload = "$$payload$$,\"track_meta\":[$$meta_json$$]"
+    payload = "$$payload$$,\"artist_images\":[$$ai_json$$]"
     payload = "$$payload$$}"
     stdr.write_text_file(state_path, payload)
 }
@@ -53,6 +106,8 @@ bring victrola_util
     let ?out = []: [string => any]
     out["folder"] = ""
     out["covers"] = []: [string => any]
+    out["track_meta"] = []: [string => any]
+    out["artist_images"] = []: [string => any]
 
     let raw = stdr.read_text_file(state_path)
     if stdr.is_null(raw) {
@@ -100,5 +155,46 @@ bring victrola_util
     }
 
     out["covers"] = covers
+
+    let ?meta = []: [string => any]
+    let meta_entries = root["track_meta"] ?? []: [any]
+    for (let ?j = 0; j < stdr.len(meta_entries); j = j + 1) {
+        let m = meta_entries[j] ?? []: [string => any]
+        let p = stdr.str(m["path"] ?? "")
+        if stdr.len(p) == 0 {
+            continue
+        }
+        let ?entry = []: [string => any]
+        let mt = stdr.str(m["title"] ?? "")
+        let ma = stdr.str(m["artist"] ?? "")
+        let mal = stdr.str(m["album"] ?? "")
+        if stdr.len(mt) > 0 {
+            entry["title"] = mt
+        }
+        if stdr.len(ma) > 0 {
+            entry["artist"] = ma
+        }
+        if stdr.len(mal) > 0 {
+            entry["album"] = mal
+        }
+        meta[p] = entry
+    }
+    out["track_meta"] = meta
+
+    let ?ai_map = []: [string => any]
+    let ai_entries = root["artist_images"] ?? []: [any]
+    for (let ?k = 0; k < stdr.len(ai_entries); k = k + 1) {
+        let ai = ai_entries[k] ?? []: [string => any]
+        let ai_name = stdr.str(ai["name"] ?? "")
+        let ai_path = stdr.str(ai["image"] ?? "")
+        if stdr.len(ai_name) == 0 || stdr.len(ai_path) == 0 {
+            continue
+        }
+        if stdr.file_exists(ai_path) {
+            ai_map[ai_name] = ai_path
+        }
+    }
+    out["artist_images"] = ai_map
+
     return out
 }

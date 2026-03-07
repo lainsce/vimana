@@ -64,6 +64,18 @@ def ?tag_handler = null
     return cogito.gst_last_cover_path()
 }
 
+:: last_tag_title() (( string )) {
+    return cogito.gst_last_tag_title()
+}
+
+:: last_tag_artist() (( string )) {
+    return cogito.gst_last_tag_artist()
+}
+
+:: last_tag_album() (( string )) {
+    return cogito.gst_last_tag_album()
+}
+
 :: on_eos(handler = any) (( -- )) {
     eos_handler = handler
 }

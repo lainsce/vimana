@@ -2654,6 +2654,106 @@ static void sdl3_draw_texture_pro(CogitoTexture *tex, CogitoRect src,
 }
 
 // ============================================================================
+// Render Targets
+// ============================================================================
+
+static CogitoTexture *sdl3_render_target_create(int w, int h) {
+  SDL_Renderer *renderer = sdl3_active_renderer();
+  if (!renderer || w <= 0 || h <= 0)
+    return NULL;
+  sdl3_rect_batch_flush();
+
+  CogitoSDL3Texture *tex = calloc(1, sizeof(CogitoSDL3Texture));
+  if (!tex)
+    return NULL;
+  tex->width = w;
+  tex->height = h;
+  tex->channels = 4;
+  tex->gpu_texture = NULL;
+  tex->sdl_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+                                       SDL_TEXTUREACCESS_TARGET, w, h);
+  if (!tex->sdl_texture) {
+    free(tex);
+    return NULL;
+  }
+  SDL_SetTextureBlendMode(tex->sdl_texture, SDL_BLENDMODE_BLEND);
+  SDL_SetTextureScaleMode(tex->sdl_texture, SDL_SCALEMODE_LINEAR);
+  return (CogitoTexture *)tex;
+}
+
+static void sdl3_set_render_target(CogitoTexture *target) {
+  SDL_Renderer *renderer = sdl3_active_renderer();
+  if (!renderer) return;
+  sdl3_rect_batch_flush();
+  g_draw_color_valid = false;
+  if (target) {
+    CogitoSDL3Texture *t = (CogitoSDL3Texture *)target;
+    SDL_SetRenderTarget(renderer, t->sdl_texture);
+  } else {
+    SDL_SetRenderTarget(renderer, NULL);
+  }
+}
+
+static void sdl3_draw_texture_polygon(CogitoTexture *tex,
+                                       const float *screen_x,
+                                       const float *screen_y,
+                                       const float *uv_x,
+                                       const float *uv_y,
+                                       int point_count) {
+  SDL_Renderer *renderer = sdl3_active_renderer();
+  CogitoSDL3Texture *t = (CogitoSDL3Texture *)tex;
+  if (!renderer || !t || !t->sdl_texture || point_count < 3)
+    return;
+  sdl3_rect_batch_flush();
+
+  // Triangle fan from centroid
+  float cx = 0.0f, cy = 0.0f, cu = 0.0f, cv = 0.0f;
+  for (int i = 0; i < point_count; i++) {
+    cx += screen_x[i];
+    cy += screen_y[i];
+    cu += uv_x[i];
+    cv += uv_y[i];
+  }
+  cx /= (float)point_count;
+  cy /= (float)point_count;
+  cu /= (float)point_count;
+  cv /= (float)point_count;
+
+  int vert_count = 1 + point_count;
+  int index_count = 3 * point_count;
+
+  if (!cogito_ensure_cap((void **)&g_rounded_rect_verts,
+                         &g_rounded_rect_verts_cap, vert_count,
+                         sizeof(SDL_Vertex)) ||
+      !cogito_ensure_cap((void **)&g_rounded_rect_indices,
+                         &g_rounded_rect_indices_cap, index_count,
+                         sizeof(int))) {
+    return;
+  }
+
+  SDL_FColor white = {1.0f, 1.0f, 1.0f, 1.0f};
+  g_rounded_rect_verts[0] = (SDL_Vertex){
+      .position = {cx, cy}, .color = white, .tex_coord = {cu, cv}};
+  for (int i = 0; i < point_count; i++) {
+    g_rounded_rect_verts[1 + i] = (SDL_Vertex){
+        .position = {screen_x[i], screen_y[i]},
+        .color = white,
+        .tex_coord = {uv_x[i], uv_y[i]}};
+  }
+
+  int ii = 0;
+  for (int i = 0; i < point_count; i++) {
+    g_rounded_rect_indices[ii++] = 0;
+    g_rounded_rect_indices[ii++] = 1 + i;
+    g_rounded_rect_indices[ii++] = 1 + ((i + 1) % point_count);
+  }
+
+  SDL_RenderGeometry(renderer, t->sdl_texture,
+                     g_rounded_rect_verts, vert_count,
+                     g_rounded_rect_indices, index_count);
+}
+
+// ============================================================================
 // Scissor/Blend
 // ============================================================================
 
@@ -2988,6 +3088,9 @@ static CogitoBackend sdl3_backend = {
     .texture_get_size = sdl3_texture_get_size,
     .draw_texture = sdl3_draw_texture,
     .draw_texture_pro = sdl3_draw_texture_pro,
+    .render_target_create = sdl3_render_target_create,
+    .set_render_target = sdl3_set_render_target,
+    .draw_texture_polygon = sdl3_draw_texture_polygon,
     .begin_scissor = sdl3_begin_scissor,
     .end_scissor = sdl3_end_scissor,
     .set_blend_mode = sdl3_set_blend_mode,

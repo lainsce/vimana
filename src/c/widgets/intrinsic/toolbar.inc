@@ -96,9 +96,13 @@ case COGITO_TOOLBAR: {
           w = side * 2 + sum_item_w + total_gap;
         }
       } else {
-        int fixed_slots = max_slots;
-        int total_gap = (fixed_slots > 1) ? gap * (fixed_slots - 1) : 0;
-        w = side * 2 + (max_item_w * fixed_slots) + total_gap;
+        int actual_slots = slots > 0 ? slots : 0;
+        if (actual_slots <= 0) {
+          w = side * 2;
+        } else {
+          int total_gap = (actual_slots > 1) ? gap * (actual_slots - 1) : 0;
+          w = side * 2 + (max_item_w * actual_slots) + total_gap;
+        }
       }
       break;
     }

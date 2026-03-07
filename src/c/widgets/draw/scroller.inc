@@ -9,7 +9,7 @@ case COGITO_SCROLLER: {
 
       if (n->len > 0) {
         cogito_anim_apply(n, &s, &bg, NULL, NULL, NULL);
-        if (!transparent_bg) {
+        if (!transparent_bg && bg.a > 0) {
           cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg,
       0);
         }

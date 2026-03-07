@@ -348,6 +348,12 @@ typedef struct CogitoBoxShadow {
   bool inset;
 } CogitoBoxShadow;
 
+#define COGITO_MAX_FONT_VARIATIONS 4
+typedef struct CogitoFontVariation {
+  uint32_t tag;
+  float value;
+} CogitoFontVariation;
+
 typedef struct CogitoStyle {
   bool has_bg;
   bool has_text;
@@ -380,6 +386,7 @@ typedef struct CogitoStyle {
   bool has_font_tabular;
   bool has_font_mono;
   bool has_font_family;
+  bool has_font_variation;
   bool has_box_shadow;
   bool has_min_w;
   bool has_min_h;
@@ -401,6 +408,9 @@ typedef struct CogitoStyle {
   bool has_shadow;
   bool has_opacity;
   bool has_track_height;
+  bool has_text_fade;
+  bool has_text_ellipsis;
+  bool has_text_marquee;
   bool has_divider;
   bool has_item_gap;
   bool has_padding_start;
@@ -434,6 +444,8 @@ typedef struct CogitoStyle {
   char font_family[
     64
   ];
+  CogitoFontVariation font_variations[COGITO_MAX_FONT_VARIATIONS];
+  int font_variation_count;
   CogitoBoxShadow box_shadow;
   int min_w;
   int min_h;
@@ -465,6 +477,9 @@ typedef struct CogitoStyle {
   int margin_end;
   float opacity;
   int track_height;
+  bool text_fade;
+  bool text_ellipsis;
+  bool text_marquee;
 } CogitoStyle;
 
 #define COGITO_MAX_CUSTOM_CLASSES 50000 // 50,000 custom classes + 12 label classes
@@ -604,6 +619,7 @@ typedef struct CogitoFontCacheEntry {
   char path[PATH_MAX];
   CogitoFont* font;
   bool ready;
+  uint32_t variation_hash;
 } CogitoFontCacheEntry;
 
 typedef struct CogitoNode {
@@ -677,6 +693,10 @@ typedef struct CogitoNode {
   bool fixed_pos_set;
   bool text_wrap;
   bool text_ellipsis;
+  bool text_fade;
+  bool text_marquee;
+  double marquee_start;
+  bool marquee_active;
   int text_align;
   int label_max_width_chars;
   bool label_max_width_chars_set;
@@ -739,6 +759,7 @@ typedef struct CogitoNode {
   bool border_style_set;
   bool radius_tl_set, radius_tr_set, radius_br_set, radius_bl_set;
   bool font_family_set;
+  bool font_variation_set;
   bool box_shadow_set;
   bool track_height_set;
   bool opacity_set;
@@ -771,6 +792,8 @@ typedef struct CogitoNode {
   char font_family[
     64
   ];
+  CogitoFontVariation font_variations[COGITO_MAX_FONT_VARIATIONS];
+  int font_variation_count;
   CogitoBoxShadow box_shadow;
   int track_height;
   float opacity;
@@ -1086,6 +1109,7 @@ typedef struct CogitoNode {
       int size_dp;
       int color_style; // 0=custom, 1=primary, 2=secondary, 3=tertiary
       bool custom_color_set;
+      bool clip_children;
       CogitoColor custom_color;
       float vertices[COGITO_SHAPE_VERTEX_COUNT * 2];
       int svg_poly_count;
@@ -1322,6 +1346,7 @@ static CogitoNode* cogito_carousel_active = NULL;
 static CogitoNode* cogito_bottom_sheet_active = NULL;
 static CogitoNode* cogito_side_sheet_active = NULL;
 static int cogito_carousel_animating_count = 0; // Track number of animating carousels globally
+static int cogito_marquee_animating_count = 0; // Track number of animating marquee labels globally
 static double cogito_anim_end_time = 0.0; // Time when all animations will complete (time-based for smooth animation)
 static CogitoNode* cogito_colorpicker_active = NULL;
 static int cogito_colorpicker_channel = -1;

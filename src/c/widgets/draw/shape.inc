@@ -103,5 +103,40 @@ case COGITO_SHAPE: {
         stroke_w = 0;
       }
       cogito_draw_shape_polygon(px, py, point_count, fill, stroke, stroke_w, smooth_points, antialias);
+      // --- Clip children through shape polygon ---
+      if (n->shape.clip_children && n->len > 0 && cogito_backend &&
+          cogito_backend->render_target_create &&
+          cogito_backend->set_render_target &&
+          cogito_backend->draw_texture_polygon &&
+          n->w > 0 && n->h > 0) {
+        CogitoTexture *rt = cogito_backend->render_target_create(n->w, n->h);
+        if (rt) {
+          cogito_backend->set_render_target(rt);
+          cogito_backend->clear(cogito_color(0, 0, 0, 0));
+          // Offset children to render target space (0,0)
+          for (size_t ci = 0; ci < n->len; ci++) {
+            cogito_draw_offset_subtree(n->children[ci], -n->x, -n->y);
+            cogito_draw_node(n->children[ci]);
+            cogito_draw_offset_subtree(n->children[ci], n->x, n->y);
+          }
+          cogito_backend->set_render_target(NULL);
+
+          // Build UV arrays from normalized polygon vertices
+          float uvx[COGITO_SHAPE_SVG_POLY_MAX];
+          float uvy[COGITO_SHAPE_SVG_POLY_MAX];
+          for (int i = 0; i < point_count; i++) {
+            float vx = use_svg_poly ? n->shape.svg_poly[i * 2 + 0] : n->shape.vertices[i * 2 + 0];
+            float vy = use_svg_poly ? n->shape.svg_poly[i * 2 + 1] : n->shape.vertices[i * 2 + 1];
+            if (vx < 0.0f) vx = 0.0f;
+            if (vx > 1.0f) vx = 1.0f;
+            if (vy < 0.0f) vy = 0.0f;
+            if (vy > 1.0f) vy = 1.0f;
+            uvx[i] = vx;
+            uvy[i] = vy;
+          }
+          cogito_backend->draw_texture_polygon(rt, px, py, uvx, uvy, point_count);
+          cogito_backend->texture_destroy(rt);
+        }
+      }
       break;
     }

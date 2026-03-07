@@ -426,3 +426,12 @@ static YisVal cogito_shape_get_vertex_y(YisVal shapev, YisVal idxv) {
   if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return YV_FLOAT(0.0);
   return YV_FLOAT(n->shape.vertices[idx * 2 + 1]);
 }
+
+static void cogito_shape_set_clip(YisVal shapev, YisVal onv) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_set_clip expects shape");
+  CogitoNode* n = (CogitoNode*)shapev.as.p;
+  bool on = yis_as_bool(onv);
+  if (n->shape.clip_children == on) return;
+  n->shape.clip_children = on;
+  cogito_window_relayout(cogito_node_window(n));
+}

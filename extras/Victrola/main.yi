@@ -11,6 +11,7 @@ bring victrola_state
 bring victrola_library
 bring victrola_scanner
 bring victrola_lyrics
+bring victrola_artist_images
 
 def STATE_PATH = ".victrola_state.json"
 def APP_ACCENT = "#ff8c00"
@@ -20,6 +21,11 @@ def album_detail_artist = cogito.label("")
 def album_detail_revealer = cogito.revealer()
 def album_detail_title = cogito.label("")
 def ?app_ref = cogito.app()
+def artist_detail_art = cogito.image("sf:person")
+def artist_detail_clip = cogito.shape(27)
+def artist_detail_name = cogito.label("")
+def artist_detail_revealer = cogito.revealer()
+def ?back_btn = cogito.button("")
 def cover_art = cogito.image("sf:music.note")
 def groups_revealer = cogito.revealer()
 def library_grid = cogito.grid(2)
@@ -38,11 +44,18 @@ def seek_slider = cogito.slider(0, 1000, 0)
 def time_left = cogito.label("00:00")
 def time_right = cogito.label("00:00")
 def titles_revealer = cogito.revealer()
+def lyrics_seek_slider = cogito.slider(0, 1000, 0)
+def lyrics_play_btn = cogito.iconbtn("sf:play")
+def lyrics_time_left = cogito.label("00:00")
 
 def ?album_artist_map = []: [string => any]
 def ?album_cover_map = []: [string => any]
+def ?artist_image_map = []: [string => any]
+def ?track_meta_map = []: [string => any]
 def ?album_detail_key = ""
 def ?album_detail_open = false
+def ?artist_detail_key = ""
+def ?artist_detail_open = false
 def ?cover_locked_for_track = false
 def ?current_cover_path = ""
 def ?current_folder = ""
@@ -62,6 +75,7 @@ def ?view_mode = 0
 def ?visible_group_keys = []: [string]
 def ?visible_track_indexes = []: [num]
 def ?search_input_visible = false
+def ?main_volume = 0.667
 
 def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
@@ -86,12 +100,14 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : save_state() (( -- )) {
-    victrola_state.save_state(STATE_PATH, current_folder, tracks, album_cover_map)
+    victrola_state.save_state(STATE_PATH, current_folder, tracks, album_cover_map, track_meta_map, artist_image_map)
 }
 
 : load_state() (( -- )) {
     let loaded = victrola_state.load_state(STATE_PATH)
     album_cover_map = loaded["covers"] ?? []: [string => any]
+    track_meta_map = loaded["track_meta"] ?? []: [string => any]
+    artist_image_map = loaded["artist_images"] ?? []: [string => any]
     let folder = stdr.str(loaded["folder"] ?? "")
     if stdr.len(folder) > 0 {
         current_folder = folder
@@ -121,10 +137,16 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         play_pause_btn.set_icon("sf:pause")
         play_pause_btn.set_class("filled")
         play_pause_btn.set_shape(1)
+        lyrics_play_btn.set_icon("sf:pause")
+        lyrics_play_btn.set_class("tonal")
+        lyrics_play_btn.set_shape(1)
     } else {
         play_pause_btn.set_icon("sf:play")
         play_pause_btn.set_class("tonal")
         play_pause_btn.set_shape(0)
+        lyrics_play_btn.set_icon("sf:play")
+        lyrics_play_btn.set_class("iconic")
+        lyrics_play_btn.set_shape(0)
     }
 }
 
@@ -155,6 +177,34 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     search_revealer.set_show_children(visible)
     search_input.set_visible(visible)
     search_input_visible = visible
+}
+
+: set_artist_detail_visible(visible = bool) (( -- )) {
+    artist_detail_revealer.set_show_children(visible)
+    artist_detail_open = visible
+    if !visible {
+        artist_detail_key = ""
+        close_album_detail()
+    }
+}
+
+: close_artist_detail() (( -- )) {
+    set_artist_detail_visible(false)
+}
+
+: open_artist_detail(artist = string) (( -- )) {
+    artist_detail_key = artist
+
+    let cover = str(artist_image_map[artist] ?? "")
+    if len(cover) > 0 && stdr.file_exists(cover) {
+        artist_detail_art.set_source(cover)
+    } else {
+        artist_detail_art.set_source("sf:person")
+    }
+
+    artist_detail_name.set_text(artist)
+    set_artist_detail_visible(true)
+    refresh_library_list()
 }
 
 : set_album_detail_visible(visible = bool) (( -- )) {
@@ -276,7 +326,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : refresh_library_list() (( -- )) {
-    set_album_detail_visible(view_mode == 2 && album_detail_open)
+    set_album_detail_visible((view_mode == 2 || (view_mode == 1 && artist_detail_open)) && album_detail_open)
+    artist_detail_revealer.set_show_children(view_mode == 1 && artist_detail_open && !album_detail_open)
+
+    let show_back = artist_detail_open || album_detail_open
+    back_btn.set_visible(show_back)
 
     let result = victrola_library.refresh_library_list(
         library_list,
@@ -289,10 +343,13 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         playing_track,
         album_detail_open,
         album_detail_key,
+        artist_detail_open,
+        artist_detail_key,
         album_artist_map,
         album_cover_map,
+        artist_image_map,
         (artist = string) => {
-            open_group_in_titles(artist)
+            open_artist_detail(artist)
         },
         (album = string) => {
             open_album_detail(album)
@@ -302,30 +359,32 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     visible_track_indexes = result["track_indexes"] ?? []: [num]
     visible_group_keys = result["group_keys"] ?? []: [string]
 
-    let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open)
+    let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open) || (view_mode == 1 && artist_detail_open && album_detail_open)
     if songs_view && len(visible_track_indexes) == 0 {
         selected_track = -1
         set_now_playing(-1)
     }
 }
 
-: open_group_in_titles(group_key = string) (( -- )) {
-    if len(group_key) == 0 {
-        return
+: collect_artist_names() (( any )) {
+    let ?names = []: [string]
+    let ?seen = []: [string => any]
+    for (let ?i = 0; i < len(tracks); i = i + 1) {
+        let t = tracks[i] ?? []: [string => any]
+        let artist = str(t["artist"] ?? "")
+        if len(artist) > 0 && artist != "Unknown Artist" && stdr.is_null(seen[artist]) {
+            seen[artist] = true
+            names[len(names)] = artist
+        }
     }
+    return names
+}
 
-    close_album_detail()
-    query_text = group_key
-    search_input.set_text(group_key)
-    view_mode = 0
-    library_rail.set_selected(0)
+: fetch_artist_images() (( -- )) {
+    let names = collect_artist_names()
+    artist_image_map = victrola_artist_images.fetch_missing(names, artist_image_map)
+    save_state()
     refresh_library_list()
-
-    if len(visible_track_indexes) > 0 {
-        selected_track = visible_track_indexes[0] ?? -1
-        library_list.set_selected(0)
-        set_now_playing(selected_track)
-    }
 }
 
 : scan_folder(folder = string) (( -- )) {
@@ -351,6 +410,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         }
     }
 
+    victrola_model.apply_saved_meta(tracks, track_meta_map)
+
     let rebuilt = victrola_model.rebuild_album_indexes(tracks, album_cover_map)
     album_cover_map = rebuilt["covers"] ?? []: [string => any]
     album_artist_map = rebuilt["artists"] ?? []: [string => any]
@@ -363,11 +424,15 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     close_album_detail()
     apply_cover_art("")
     seek_slider.set_value(0)
+    lyrics_seek_slider.set_value(0)
     time_left.set_text("00:00")
     time_right.set_text("00:00")
+    lyrics_time_left.set_text("00:00")
 
     refresh_library_list()
     let n = len(tracks)
+
+    fetch_artist_images()
 }
 
 : choose_and_scan() (( -- )) {
@@ -428,6 +493,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     is_playing = true
     sync_play_pause_button()
     seek_slider.set_value(0)
+    lyrics_seek_slider.set_value(0)
     set_now_playing(track_idx)
     refresh_library_list()
 
@@ -555,8 +621,10 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         stop_poll_loop()
         apply_cover_art("")
         seek_slider.set_value(0)
+        lyrics_seek_slider.set_value(0)
         time_left.set_text("00:00")
         time_right.set_text("00:00")
+        lyrics_time_left.set_text("00:00")
         refresh_library_list()
     } else {
     }
@@ -571,7 +639,60 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     let t = tracks[track_idx] ?? []: [string => any]
     let artist = str(t["artist"] ?? "")
     let title = str(t["title"] ?? "")
-    lyrics_text.set_text(victrola_lyrics.fetch_lyrics(artist, title))
+    let path = str(t["path"] ?? "")
+    lyrics_text.set_text(victrola_lyrics.fetch_lyrics(artist, title, path))
+}
+
+: apply_tag_metadata() (( -- )) {
+    if playing_track < 0 || playing_track >= len(tracks) {
+        return
+    }
+
+    let tag_title = gst.last_tag_title()
+    let tag_artist = gst.last_tag_artist()
+    let tag_album = gst.last_tag_album()
+
+    if len(tag_title) == 0 && len(tag_artist) == 0 && len(tag_album) == 0 {
+        return
+    }
+
+    let ?t = tracks[playing_track] ?? []: [string => any]
+    let ?changed = false
+
+    if len(tag_title) > 0 && str(t["title"] ?? "") != tag_title {
+        t["title"] = tag_title
+        changed = true
+    }
+    if len(tag_artist) > 0 && str(t["artist"] ?? "") != tag_artist {
+        t["artist"] = tag_artist
+        changed = true
+    }
+    if len(tag_album) > 0 && str(t["album"] ?? "") != tag_album {
+        t["album"] = tag_album
+        changed = true
+    }
+
+    if changed {
+        let new_title = str(t["title"] ?? "")
+        let new_artist = str(t["artist"] ?? "")
+        let new_album = str(t["album"] ?? "")
+        let new_file = stdr.basename(str(t["path"] ?? ""))
+        t["search"] = "$$new_title$$ $$new_artist$$ $$new_album$$ $$new_file$$"
+        tracks[playing_track] = t
+
+        let path = str(t["path"] ?? "")
+        if len(path) > 0 {
+            let ?meta = []: [string => any]
+            meta["title"] = new_title
+            meta["artist"] = new_artist
+            meta["album"] = new_album
+            track_meta_map[path] = meta
+            save_state()
+        }
+
+        set_now_playing(playing_track)
+        refresh_library_list()
+    }
 }
 
 : poll_playback() (( -- )) {
@@ -593,6 +714,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         apply_cover_art("")
     } elif ev == gst.EVENT_TAG {
         apply_cover_art(gst.last_cover_path())
+        apply_tag_metadata()
     }
 
     let pos = gst.position_ms()
@@ -600,6 +722,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
     if pos >= 0 {
         time_left.set_text(format_ms(pos))
+        lyrics_time_left.set_text(format_ms(pos))
     }
 
     if dur > 0 {
@@ -617,6 +740,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         let scaled = (elapsed * 1000) / dur
         suspend_seek_callback = true
         seek_slider.set_value(scaled)
+        lyrics_seek_slider.set_value(scaled)
         suspend_seek_callback = false
     }
 }
@@ -662,24 +786,32 @@ entry() (( -- )) {
 
     -- Configure module-level widgets
     album_detail_art.set_size(128, 128).set_radius(26).set_hexpand(false).set_class("surface-container")
-    album_detail_artist.set_class("caption").set_hexpand(true).set_text_align(0).set_max_width_chars(25)
-    album_detail_revealer.set_show_children(false).set_hexpand(true)
-    album_detail_title.set_class("view-subtitle").set_hexpand(true).set_text_align(0).set_max_width_chars(25)
+    album_detail_artist.set_class("caption").set_hexpand(true).set_text_align(0).set_max_width_chars(40)
+    album_detail_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 0, 0, 0)
+    album_detail_title.set_class("view-title-expressive").set_hexpand(true).set_text_align(0).set_max_width_chars(40)
+    artist_detail_art.set_size(128, 128).set_hexpand(false)
+    artist_detail_clip.set_size(128).set_clip(true).set_hexpand(false).add(artist_detail_art)
+    artist_detail_name.set_class("view-title-expressive").set_hexpand(true).set_text_align(0).set_max_width_chars(40)
+    artist_detail_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 0, 0, 0)
     cover_art.set_radius(26).set_class("surface-container victrola-cover-art")
-    groups_revealer.set_show_children(false).set_hexpand(true).set_vexpand(true)
-    library_grid.set_gap(8, 8)
+    groups_revealer.set_show_children(false).set_hexpand(true).set_vexpand(true).set_padding(0, 0, 0, 0)
+    library_grid.set_gap(8, 8).set_padding(0, 0, 0, 0)
+    library_list.set_padding(0, 0, 0, 0)
     library_rail.set_items(["Titles", "Artists", "Albums"], ["sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
     lyrics_text.set_editable(false).set_hexpand(true).set_vexpand(true).set_class("victrola-lyrics")
-    now_artist.set_class("cb-title").set_text_align(1).set_max_width_chars(25)
-    now_title.set_class("view-subtitle").set_text_align(1).set_max_width_chars(44)
+    now_artist.set_class("view-title").set_text_align(0).set_max_width_chars(40)
+    now_title.set_class("victrola-now-title").set_text_align(0).set_max_width_chars(44)
     play_pause_btn.set_l().set_class("tonal")
     repeat_btn.set_class("iconic")
     poll_anchor.set_size(1).set_visible(false)
     search_input.set_hexpand(true).set_class("victrola-search")
     search_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 16, 6, 16)
     seek_slider.set_s().set_class("victrola-seek").set_wavy(true)
-    time_left.set_class("caption").set_text_align(0)
-    time_right.set_class("caption").set_text_align(2)
+    lyrics_seek_slider.set_s().set_hexpand(true).set_wavy(true)
+    lyrics_play_btn.set_class("iconic")
+    lyrics_time_left.set_class("caption tabular emphasized").set_text_align(0)
+    time_left.set_class("caption tabular emphasized").set_text_align(0)
+    time_right.set_class("caption tabular emphasized").set_text_align(2)
     titles_revealer.set_show_children(true).set_hexpand(true).set_vexpand(true)
 
     let root = cogito.hstack()
@@ -732,27 +864,48 @@ entry() (( -- )) {
         }
     })
 
+    back_btn = library_bar.leading_button("sf:chevron.left", (b = any) => {
+        if ui_ready && !is_null(b) {
+            if album_detail_open {
+                close_album_detail()
+            } elif artist_detail_open {
+                close_artist_detail()
+            }
+            refresh_library_list()
+        }
+    })
+    back_btn.set_visible(false)
+
     center.add(library_bar)
     search_revealer.add(search_input)
     center.add(search_revealer)
 
+    let artist_header = cogito.hstack()
+    .set_gap(12)
+    .set_hexpand(true)
+    .set_padding(0, 16, 12, 16)
+    .set_class("victrola-album-header")
+    .add(artist_detail_clip)
+
+    let artist_meta = cogito.vstack()
+    .set_gap(4)
+    .set_hexpand(true)
+    .set_align(3)
+    .add(artist_detail_name)
+
+    artist_header.add(artist_meta)
+    artist_detail_revealer.add(artist_header)
+    center.add(artist_detail_revealer)
+
     let album_header = cogito.hstack()
     .set_gap(12)
     .set_hexpand(true)
-    .set_padding(0, 16, 0, 16)
+    .set_padding(0, 16, 12, 16)
     .set_class("victrola-album-header")
-    .add(cogito.iconbtn("sf:chevron.left")
-        .set_class("iconic")
-        .set_align(3)
-        .on_click((b = cogito.IconButton) => {
-            close_album_detail()
-            refresh_library_list()
-        })
-    )
     .add(album_detail_art)
 
     let album_meta = cogito.vstack()
-    .set_gap(4)
+    .set_gap(12)
     .set_hexpand(true)
     .set_align(3)
     .add(album_detail_title)
@@ -773,6 +926,7 @@ entry() (( -- )) {
     let library_stack = cogito.vstack()
     .set_hexpand(true)
     .set_vexpand(true)
+    .set_padding(0, 16, 12, 16)
 
     titles_revealer.add(library_list
         .set_hexpand(true)
@@ -933,7 +1087,24 @@ entry() (( -- )) {
     .set_class("victrola-lyrics-scroll")
     .add(lyrics_text)
 
+    let lyrics_toolbar = cogito.toolbar()
+    .set_class("floating compact")
+    .set_vibrant(true)
+    .set_hexpand(true)
+    .add(lyrics_time_left)
+    .add(lyrics_seek_slider)
+    .add(lyrics_play_btn
+        .on_click((b = cogito.IconButton) => {
+            if is_playing {
+                pause_playback()
+            } else {
+                play_selected()
+            }
+        })
+    )
+
     lyrics_page.add(lyrics_scroll)
+    lyrics_page.add(lyrics_toolbar)
     lyrics_revealer.add(lyrics_page)
 
     player_panel.add(now_revealer)
@@ -947,10 +1118,13 @@ entry() (( -- )) {
         if !is_null(idx) {
             view_mode = idx
 
+            query_text = ""
+            search_input.set_text("")
             if view_mode != 0 {
                 set_search_visible(false)
             }
 
+            close_artist_detail()
             if view_mode != 2 {
                 close_album_detail()
             }
@@ -971,7 +1145,7 @@ entry() (( -- )) {
     })
 
     library_list.on_select((idx = num) => {
-        let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open)
+        let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open) || (view_mode == 1 && artist_detail_open && album_detail_open)
         if songs_view {
             if idx >= 0 && idx < len(visible_track_indexes) {
                 selected_track = visible_track_indexes[idx] ?? -1
@@ -989,14 +1163,8 @@ entry() (( -- )) {
     })
 
     library_list.on_activate((idx = num) => {
-        let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open)
-        if songs_view {
-            if idx >= 0 && idx < len(visible_track_indexes) {
-                selected_track = visible_track_indexes[idx] ?? -1
-                play_selected()
-                is_playing = true
-            }
-        }
+        -- on_select already handles playback; on_activate is a no-op
+        -- to avoid double-play (song restarts) on every click.
     })
 
     search_input.on_change((tf = cogito.SearchField) => {
@@ -1023,7 +1191,24 @@ entry() (( -- )) {
         }
     })
 
-    gst.set_volume(0.9)
+    lyrics_seek_slider.on_change((sl = cogito.Slider) => {
+        if !suspend_seek_callback {
+            let dur = gst.duration_ms()
+            if dur > 0 {
+                let value = sl.value()
+                let ?target = (value * dur) / 1000
+                if target < 0 {
+                    target = 0
+                }
+                if target > dur {
+                    target = dur
+                }
+                gst.seek_ms(target)
+            }
+        }
+    })
+
+    gst.set_volume(main_volume)
 
     load_state()
     if len(current_folder) > 0 {

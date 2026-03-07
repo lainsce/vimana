@@ -216,9 +216,12 @@ macro chain() (( any )) {
 : __cogito_shape_set_vertex(shape = Shape, index = num, x = num, y = num) (( -- )) { }
 : __cogito_shape_get_vertex_x(shape = Shape, index = num) (( num )) { }
 : __cogito_shape_get_vertex_y(shape = Shape, index = num) (( num )) { }
+: __cogito_shape_set_clip(shape = Shape, on = bool) (( -- )) { }
 : __cogito_label_set_align(label = Label, align = num) (( -- )) { }
 : __cogito_label_set_class(label = Label, cls = string) (( -- )) { }
 : __cogito_label_set_ellipsis(label = Label, on = bool) (( -- )) { }
+: __cogito_label_set_fade(label = Label, on = bool) (( -- )) { }
+: __cogito_label_set_marquee(label = Label, on = bool) (( -- )) { }
 : __cogito_label_set_max_width_chars(label = Label, max_chars = num) (( -- )) { }
 : __cogito_label_set_text(label = Label, text = string) (( -- )) { }
 : __cogito_label_set_wrap(label = Label, on = bool) (( -- )) { }
@@ -263,6 +266,9 @@ macro chain() (( any )) {
 : __cogito_gst_poll_event() (( num )) { }
 : __cogito_gst_last_error() (( string )) { }
 : __cogito_gst_last_cover_path() (( string )) { }
+: __cogito_gst_last_tag_title() (( string )) { }
+: __cogito_gst_last_tag_artist() (( string )) { }
+: __cogito_gst_last_tag_album() (( string )) { }
 : __cogito_pointer_capture(node = any) (( -- )) { }
 : __cogito_pointer_release() (( -- )) { }
 : __cogito_progress_get_circular(p = Progress) (( bool )) { }
@@ -543,7 +549,7 @@ pub class Window {
 
 pub class AppBar {
     :: add_leading_button(this, icon = string, handler = any) (( AppBar )) {
-        __cogito_appbar_add_button(this, icon, handler).set_class("leading")
+        __cogito_appbar_add_button(this, icon, handler).set_class("appbar-leading")
         return this
     }
     :: set_type(this, appbar_type = num) (( AppBar )) {
@@ -573,6 +579,9 @@ pub class AppBar {
     :: add_trailing_button(this, icon = string, handler = any) (( AppBar )) {
         __cogito_appbar_add_button(this, icon, handler).set_class("trailing")
         return this
+    }
+    :: leading_button(this, icon = string, handler = any) (( Button )) {
+        return __cogito_appbar_add_button(this, icon, handler).set_class("appbar-leading")
     }
     :: add_trailing_menu_button(this, icon = string) (( Button )) {
         return __cogito_appbar_add_button(this, icon, null).set_class("trailing")
@@ -1565,6 +1574,14 @@ pub class Label {
     }
     :: set_ellipsis(this, on = bool) (( Label )) {
         __cogito_label_set_ellipsis(this, on)
+        return this
+    }
+    :: set_fade(this, on = bool) (( Label )) {
+        __cogito_label_set_fade(this, on)
+        return this
+    }
+    :: set_marquee(this, on = bool) (( Label )) {
+        __cogito_label_set_marquee(this, on)
         return this
     }
     :: set_text_align(this, align = num) (( Label )) {
@@ -3973,6 +3990,15 @@ pub class State {
 :: gst_last_cover_path() (( string )) {
     return __cogito_gst_last_cover_path()
 }
+:: gst_last_tag_title() (( string )) {
+    return __cogito_gst_last_tag_title()
+}
+:: gst_last_tag_artist() (( string )) {
+    return __cogito_gst_last_tag_artist()
+}
+:: gst_last_tag_album() (( string )) {
+    return __cogito_gst_last_tag_album()
+}
 :: set_timeout(ms = num, handler = any) (( num )) {
     return __cogito_timer_timeout(ms, handler)
 }
@@ -4515,6 +4541,14 @@ pub class Canvas {
 }
 
 pub class Shape {
+    :: add(this, child = any) (( Shape )) {
+        __cogito_container_add(this, child)
+        return this
+    }
+    :: set_clip(this, on = bool) (( Shape )) {
+        __cogito_shape_set_clip(this, on)
+        return this
+    }
     :: set_preset(this, preset = num) (( Shape )) {
         __cogito_shape_set_preset(this, preset)
         return this

@@ -114,9 +114,13 @@ static int cogito_toolbar_floating_width(const CogitoNode* toolbar, int window_w
     }
   }
 
+  int actual_count = toolbar ? (int)toolbar->len : 0;
+  if (actual_count > COGITO_TOOLBAR_MAX_SLOTS) actual_count = COGITO_TOOLBAR_MAX_SLOTS;
+  if (actual_count < 1) actual_count = 1;
+
   int preferred_w = (COGITO_TOOLBAR_FLOATING_MARGIN * 2) +
-                    (slot_w * COGITO_TOOLBAR_MAX_SLOTS) +
-                    (COGITO_TOOLBAR_FLOATING_GAP * (COGITO_TOOLBAR_MAX_SLOTS - 1));
+                    (slot_w * actual_count) +
+                    (COGITO_TOOLBAR_FLOATING_GAP * (actual_count > 1 ? actual_count - 1 : 0));
   if (preferred_w > max_w) preferred_w = max_w;
   if (preferred_w < 1) preferred_w = 1;
   return preferred_w;

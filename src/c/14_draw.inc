@@ -1142,24 +1142,24 @@ static void cogito_bin_scope_palette_from_cached(CogitoBinScopePalette* out) {
   out->on_tertiary_container = cogito_cached_on_tertiary_container;
   out->error = cogito_cached_error;
   out->on_error = cogito_cached_on_error;
-  out->error_container = cogito_cached_error;
-  out->on_error_container = cogito_cached_on_error;
-  out->background = cogito_cached_surface;
-  out->on_background = cogito_cached_on_surface;
+  out->error_container = cogito_cached_error_container;
+  out->on_error_container = cogito_cached_on_error_container;
+  out->background = cogito_cached_background;
+  out->on_background = cogito_cached_on_background;
   out->surface = cogito_cached_surface;
   out->on_surface = cogito_cached_on_surface;
-  out->surface_tint = cogito_cached_primary;
-  out->surface_container_lowest = cogito_cached_surface;
-  out->surface_container_low = cogito_cached_surface;
+  out->surface_tint = cogito_cached_surface_tint;
+  out->surface_container_lowest = cogito_cached_surface_container_lowest;
+  out->surface_container_low = cogito_cached_surface_container_low;
   out->surface_container = cogito_cached_surface_container;
   out->surface_container_high = cogito_cached_surface_container_high;
-  out->surface_container_highest = cogito_cached_surface_container_high;
+  out->surface_container_highest = cogito_cached_surface_container_highest;
   out->inverse_surface = cogito_cached_inverse_surface;
   out->inverse_on_surface = cogito_cached_inverse_on_surface;
-  out->inverse_primary = cogito_cached_primary;
+  out->inverse_primary = cogito_cached_inverse_primary;
   out->outline = cogito_cached_outline;
   out->outline_variant = cogito_cached_outline_variant;
-  out->surface_variant = cogito_cached_surface_container_high;
+  out->surface_variant = cogito_cached_surface_variant;
   out->on_surface_variant = cogito_cached_on_surface_variant;
 }
 

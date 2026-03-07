@@ -200,10 +200,13 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_shape_set_vertex cogito_shape_set_vertex_yis
 #define cogito_shape_get_vertex_x cogito_shape_get_vertex_x_yis
 #define cogito_shape_get_vertex_y cogito_shape_get_vertex_y_yis
+#define cogito_shape_set_clip cogito_shape_set_clip_yis
 #define cogito_label_new cogito_label_new_yis
 #define cogito_label_set_align cogito_label_set_align_yis
 #define cogito_label_set_class cogito_label_set_class_yis
 #define cogito_label_set_ellipsis cogito_label_set_ellipsis_yis
+#define cogito_label_set_fade cogito_label_set_fade_yis
+#define cogito_label_set_marquee cogito_label_set_marquee_yis
 #define cogito_label_set_text cogito_label_set_text_yis
 #define cogito_label_set_wrap cogito_label_set_wrap_yis
 #define cogito_label_set_max_width_chars cogito_label_set_max_width_chars_yis
@@ -576,10 +579,13 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_shape_set_vertex
 #undef cogito_shape_get_vertex_x
 #undef cogito_shape_get_vertex_y
+#undef cogito_shape_set_clip
 #undef cogito_label_new
 #undef cogito_label_set_align
 #undef cogito_label_set_class
 #undef cogito_label_set_ellipsis
+#undef cogito_label_set_fade
+#undef cogito_label_set_marquee
 #undef cogito_label_set_text
 #undef cogito_label_set_wrap
 #undef cogito_label_set_max_width_chars
@@ -1079,6 +1085,9 @@ static bool cogito_gst_ready = false;
 static int cogito_gst_pending_event = 0;
 static char cogito_gst_error_msg[512] = "";
 static char cogito_gst_cover_path[PATH_MAX] = "";
+static char cogito_gst_tag_title[512] = "";
+static char cogito_gst_tag_artist[512] = "";
+static char cogito_gst_tag_album[512] = "";
 static uint32_t cogito_gst_cover_seq = 0;
 
 static void cogito_gst_set_error_msg(const char *msg) {
@@ -1410,6 +1419,9 @@ bool cogito_gst_load(const char *path_or_uri) {
   g_object_set(cogito_gst_player, "uri", uri, NULL);
   g_free(uri);
   cogito_gst_clear_cover_path();
+  cogito_gst_tag_title[0] = '\0';
+  cogito_gst_tag_artist[0] = '\0';
+  cogito_gst_tag_album[0] = '\0';
   cogito_gst_pending_event = 0;
   return true;
 #else
@@ -1585,6 +1597,31 @@ int cogito_gst_poll_event(void) {
           }
           gst_sample_unref(sample);
         }
+        gchar *str_val = NULL;
+        if (gst_tag_list_get_string(tags, GST_TAG_TITLE, &str_val)) {
+          if (str_val && str_val[0])
+            snprintf(cogito_gst_tag_title, sizeof(cogito_gst_tag_title),
+                     "%s", str_val);
+          g_free(str_val);
+          str_val = NULL;
+          ev = 3;
+        }
+        if (gst_tag_list_get_string(tags, GST_TAG_ARTIST, &str_val)) {
+          if (str_val && str_val[0])
+            snprintf(cogito_gst_tag_artist, sizeof(cogito_gst_tag_artist),
+                     "%s", str_val);
+          g_free(str_val);
+          str_val = NULL;
+          ev = 3;
+        }
+        if (gst_tag_list_get_string(tags, GST_TAG_ALBUM, &str_val)) {
+          if (str_val && str_val[0])
+            snprintf(cogito_gst_tag_album, sizeof(cogito_gst_tag_album),
+                     "%s", str_val);
+          g_free(str_val);
+          str_val = NULL;
+          ev = 3;
+        }
         gst_tag_list_unref(tags);
       }
       break;
@@ -1612,6 +1649,30 @@ const char *cogito_gst_last_error(void) {
 const char *cogito_gst_last_cover_path(void) {
 #if defined(COGITO_HAS_GSTREAMER)
   return cogito_gst_cover_path;
+#else
+  return "";
+#endif
+}
+
+const char *cogito_gst_last_tag_title(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  return cogito_gst_tag_title;
+#else
+  return "";
+#endif
+}
+
+const char *cogito_gst_last_tag_artist(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  return cogito_gst_tag_artist;
+#else
+  return "";
+#endif
+}
+
+const char *cogito_gst_last_tag_album(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  return cogito_gst_tag_album;
 #else
   return "";
 #endif
@@ -2401,6 +2462,11 @@ float cogito_shape_get_vertex_y(cogito_node *shape, int index) {
     return 0.0f;
   YisVal v = cogito_shape_get_vertex_y_yis(YV_OBJ(shape), YV_INT(index));
   return (float)yis_as_float(v);
+}
+void cogito_shape_set_clip(cogito_node *shape, bool clip) {
+  if (!shape)
+    return;
+  cogito_shape_set_clip_yis(YV_OBJ(shape), YV_BOOL(clip));
 }
 int cogito_drawing_area_get_x(cogito_node *area) {
   if (!area)
@@ -3611,6 +3677,18 @@ void cogito_label_set_ellipsis(cogito_node *label, bool on) {
   if (!label)
     return;
   cogito_label_set_ellipsis_yis(YV_OBJ(label), YV_BOOL(on));
+}
+
+void cogito_label_set_fade(cogito_node *label, bool on) {
+  if (!label)
+    return;
+  cogito_label_set_fade_yis(YV_OBJ(label), YV_BOOL(on));
+}
+
+void cogito_label_set_marquee(cogito_node *label, bool on) {
+  if (!label)
+    return;
+  cogito_label_set_marquee_yis(YV_OBJ(label), YV_BOOL(on));
 }
 
 void cogito_label_set_align(cogito_node *label, int align) {

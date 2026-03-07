@@ -13,6 +13,10 @@ static void cogito_label_set_text(YisVal labelv, YisVal textv) {
   CogitoNode* n = (CogitoNode*)labelv.as.p;
   YisStr* ts = stdr_to_string(textv);
   cogito_node_set_text(n, ts);
+  if (n->marquee_active) {
+    n->marquee_active = false;
+    cogito_marquee_animating_count--;
+  }
   cogito_window_relayout(cogito_node_window(n));
 }
 static void cogito_label_set_wrap(YisVal labelv, YisVal onv) {
@@ -38,6 +42,24 @@ static void cogito_label_set_ellipsis(YisVal labelv, YisVal onv) {
   if (labelv.tag != EVT_OBJ) yis_trap("cogito.label_set_ellipsis expects label");
   CogitoNode* n = (CogitoNode*)labelv.as.p;
   n->text_ellipsis = yis_as_bool(onv);
+  cogito_window_relayout(cogito_node_window(n));
+}
+static void cogito_label_set_fade(YisVal labelv, YisVal onv) {
+  if (labelv.tag != EVT_OBJ) yis_trap("cogito.label_set_fade expects label");
+  CogitoNode* n = (CogitoNode*)labelv.as.p;
+  n->text_fade = yis_as_bool(onv);
+  cogito_window_relayout(cogito_node_window(n));
+}
+static void cogito_label_set_marquee(YisVal labelv, YisVal onv) {
+  if (labelv.tag != EVT_OBJ) yis_trap("cogito.label_set_marquee expects label");
+  CogitoNode* n = (CogitoNode*)labelv.as.p;
+  bool on = yis_as_bool(onv);
+  if (n->text_marquee == on) return;
+  n->text_marquee = on;
+  if (!on && n->marquee_active) {
+    n->marquee_active = false;
+    cogito_marquee_animating_count--;
+  }
   cogito_window_relayout(cogito_node_window(n));
 }
 static void cogito_label_set_align(YisVal labelv, YisVal alignv) {

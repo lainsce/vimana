@@ -16,17 +16,27 @@ static CogitoColor cogito_cached_tertiary = {0};
 static CogitoColor cogito_cached_on_tertiary = {0};
 static CogitoColor cogito_cached_tertiary_container = {0};
 static CogitoColor cogito_cached_on_tertiary_container = {0};
+static CogitoColor cogito_cached_background = {0};
+static CogitoColor cogito_cached_on_background = {0};
 static CogitoColor cogito_cached_surface = {0};
 static CogitoColor cogito_cached_on_surface = {0};
+static CogitoColor cogito_cached_surface_tint = {0};
+static CogitoColor cogito_cached_surface_container_lowest = {0};
+static CogitoColor cogito_cached_surface_container_low = {0};
 static CogitoColor cogito_cached_surface_container = {0};
 static CogitoColor cogito_cached_surface_container_high = {0};
+static CogitoColor cogito_cached_surface_container_highest = {0};
+static CogitoColor cogito_cached_surface_variant = {0};
 static CogitoColor cogito_cached_on_surface_variant = {0};
 static CogitoColor cogito_cached_outline = {0};
 static CogitoColor cogito_cached_error = {0};
 static CogitoColor cogito_cached_on_error = {0};
+static CogitoColor cogito_cached_error_container = {0};
+static CogitoColor cogito_cached_on_error_container = {0};
 static CogitoColor cogito_cached_outline_variant = {0};
 static CogitoColor cogito_cached_inverse_surface = {0};
 static CogitoColor cogito_cached_inverse_on_surface = {0};
+static CogitoColor cogito_cached_inverse_primary = {0};
 
 typedef struct CogitoThemePaletteSnapshot {
   CogitoColor primary;
@@ -41,17 +51,27 @@ typedef struct CogitoThemePaletteSnapshot {
   CogitoColor on_tertiary;
   CogitoColor tertiary_container;
   CogitoColor on_tertiary_container;
+  CogitoColor background;
+  CogitoColor on_background;
   CogitoColor surface;
   CogitoColor on_surface;
+  CogitoColor surface_tint;
+  CogitoColor surface_container_lowest;
+  CogitoColor surface_container_low;
   CogitoColor surface_container;
   CogitoColor surface_container_high;
+  CogitoColor surface_container_highest;
+  CogitoColor surface_variant;
   CogitoColor on_surface_variant;
   CogitoColor outline;
   CogitoColor error;
   CogitoColor on_error;
+  CogitoColor error_container;
+  CogitoColor on_error_container;
   CogitoColor outline_variant;
   CogitoColor inverse_surface;
   CogitoColor inverse_on_surface;
+  CogitoColor inverse_primary;
 } CogitoThemePaletteSnapshot;
 
 #define COGITO_THEME_PALETTE_SCOPE_MAX 16
@@ -72,17 +92,27 @@ static void cogito_theme_palette_snapshot_capture(CogitoThemePaletteSnapshot* ou
   out->on_tertiary = cogito_cached_on_tertiary;
   out->tertiary_container = cogito_cached_tertiary_container;
   out->on_tertiary_container = cogito_cached_on_tertiary_container;
+  out->background = cogito_cached_background;
+  out->on_background = cogito_cached_on_background;
   out->surface = cogito_cached_surface;
   out->on_surface = cogito_cached_on_surface;
+  out->surface_tint = cogito_cached_surface_tint;
+  out->surface_container_lowest = cogito_cached_surface_container_lowest;
+  out->surface_container_low = cogito_cached_surface_container_low;
   out->surface_container = cogito_cached_surface_container;
   out->surface_container_high = cogito_cached_surface_container_high;
+  out->surface_container_highest = cogito_cached_surface_container_highest;
+  out->surface_variant = cogito_cached_surface_variant;
   out->on_surface_variant = cogito_cached_on_surface_variant;
   out->outline = cogito_cached_outline;
   out->error = cogito_cached_error;
   out->on_error = cogito_cached_on_error;
+  out->error_container = cogito_cached_error_container;
+  out->on_error_container = cogito_cached_on_error_container;
   out->outline_variant = cogito_cached_outline_variant;
   out->inverse_surface = cogito_cached_inverse_surface;
   out->inverse_on_surface = cogito_cached_inverse_on_surface;
+  out->inverse_primary = cogito_cached_inverse_primary;
 }
 
 static void cogito_theme_palette_snapshot_apply(const CogitoThemePaletteSnapshot* snapshot) {
@@ -99,17 +129,27 @@ static void cogito_theme_palette_snapshot_apply(const CogitoThemePaletteSnapshot
   cogito_cached_on_tertiary = snapshot->on_tertiary;
   cogito_cached_tertiary_container = snapshot->tertiary_container;
   cogito_cached_on_tertiary_container = snapshot->on_tertiary_container;
+  cogito_cached_background = snapshot->background;
+  cogito_cached_on_background = snapshot->on_background;
   cogito_cached_surface = snapshot->surface;
   cogito_cached_on_surface = snapshot->on_surface;
+  cogito_cached_surface_tint = snapshot->surface_tint;
+  cogito_cached_surface_container_lowest = snapshot->surface_container_lowest;
+  cogito_cached_surface_container_low = snapshot->surface_container_low;
   cogito_cached_surface_container = snapshot->surface_container;
   cogito_cached_surface_container_high = snapshot->surface_container_high;
+  cogito_cached_surface_container_highest = snapshot->surface_container_highest;
+  cogito_cached_surface_variant = snapshot->surface_variant;
   cogito_cached_on_surface_variant = snapshot->on_surface_variant;
   cogito_cached_outline = snapshot->outline;
   cogito_cached_error = snapshot->error;
   cogito_cached_on_error = snapshot->on_error;
+  cogito_cached_error_container = snapshot->error_container;
+  cogito_cached_on_error_container = snapshot->on_error_container;
   cogito_cached_outline_variant = snapshot->outline_variant;
   cogito_cached_inverse_surface = snapshot->inverse_surface;
   cogito_cached_inverse_on_surface = snapshot->inverse_on_surface;
+  cogito_cached_inverse_primary = snapshot->inverse_primary;
 }
 
 static void cogito_theme_palette_apply_scheme(const CogitoEnsorScheme* scheme) {
@@ -126,17 +166,27 @@ static void cogito_theme_palette_apply_scheme(const CogitoEnsorScheme* scheme) {
   cogito_cached_on_tertiary = scheme->on_tertiary;
   cogito_cached_tertiary_container = scheme->tertiary_container;
   cogito_cached_on_tertiary_container = scheme->on_tertiary_container;
+  cogito_cached_background = scheme->background;
+  cogito_cached_on_background = scheme->on_background;
   cogito_cached_surface = scheme->surface;
   cogito_cached_on_surface = scheme->on_surface;
+  cogito_cached_surface_tint = scheme->surface_tint;
+  cogito_cached_surface_container_lowest = scheme->surface_container_lowest;
+  cogito_cached_surface_container_low = scheme->surface_container_low;
   cogito_cached_surface_container = scheme->surface_container;
   cogito_cached_surface_container_high = scheme->surface_container_high;
+  cogito_cached_surface_container_highest = scheme->surface_container_highest;
+  cogito_cached_surface_variant = scheme->surface_variant;
   cogito_cached_on_surface_variant = scheme->on_surface_variant;
   cogito_cached_outline = scheme->outline;
   cogito_cached_error = scheme->error;
   cogito_cached_on_error = scheme->on_error;
+  cogito_cached_error_container = scheme->error_container;
+  cogito_cached_on_error_container = scheme->on_error_container;
   cogito_cached_outline_variant = scheme->outline_variant;
   cogito_cached_inverse_surface = scheme->inverse_surface;
   cogito_cached_inverse_on_surface = scheme->inverse_on_surface;
+  cogito_cached_inverse_primary = scheme->inverse_primary;
 }
 
 static bool cogito_theme_palette_scope_push_scheme(const CogitoEnsorScheme* scheme) {
@@ -170,17 +220,27 @@ static void cogito_cache_tertiary_colors(CogitoEnsorScheme* scheme) {
   cogito_cached_on_tertiary = scheme->on_tertiary;
   cogito_cached_tertiary_container = scheme->tertiary_container;
   cogito_cached_on_tertiary_container = scheme->on_tertiary_container;
+  cogito_cached_background = scheme->background;
+  cogito_cached_on_background = scheme->on_background;
   cogito_cached_surface = scheme->surface;
   cogito_cached_on_surface = scheme->on_surface;
+  cogito_cached_surface_tint = scheme->surface_tint;
+  cogito_cached_surface_container_lowest = scheme->surface_container_lowest;
+  cogito_cached_surface_container_low = scheme->surface_container_low;
   cogito_cached_surface_container = scheme->surface_container;
   cogito_cached_surface_container_high = scheme->surface_container_high;
+  cogito_cached_surface_container_highest = scheme->surface_container_highest;
+  cogito_cached_surface_variant = scheme->surface_variant;
   cogito_cached_on_surface_variant = scheme->on_surface_variant;
   cogito_cached_outline = scheme->outline;
   cogito_cached_error = scheme->error;
   cogito_cached_on_error = scheme->on_error;
+  cogito_cached_error_container = scheme->error_container;
+  cogito_cached_on_error_container = scheme->on_error_container;
   cogito_cached_outline_variant = scheme->outline_variant;
   cogito_cached_inverse_surface = scheme->inverse_surface;
   cogito_cached_inverse_on_surface = scheme->inverse_on_surface;
+  cogito_cached_inverse_primary = scheme->inverse_primary;
 }
 
 // Get tertiary colors from cached values (set when theme was applied).

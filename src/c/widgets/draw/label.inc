@@ -48,6 +48,104 @@ case COGITO_LABEL: {
           int th = cogito_text_height_size(size);
           int ty = content_y + (content_h - th) / 2;
           cogito_draw_text_ellipsis(n, content_x, ty, content_w, draw_text, text, size, lbold, lmedium, align);
+        } else if (n->text_fade || n->text_marquee) {
+          int tw = cogito_text_width_size_node(n, draw_text, size);
+          int th = cogito_text_height_size(size);
+          int ty = content_y + (content_h - th) / 2;
+          int tx = content_x;
+          if (align == 1) tx = content_x + (content_w - tw) / 2;
+          else if (align == 2) tx = content_x + (content_w - tw);
+          bool overflows = tw > content_w;
+          if (overflows && cogito_backend->begin_scissor && cogito_backend->end_scissor) {
+            // Marquee scroll offset
+            int scroll_offset = 0;
+            bool at_start = true;  // true when showing the beginning (no left fade)
+            bool at_end = false;   // true when fully scrolled right (no right fade)
+            if (n->text_marquee && overflows) {
+              int max_scroll = tw - content_w;
+              if (!n->marquee_active) {
+                n->marquee_active = true;
+                n->marquee_start = cogito_now();
+                cogito_marquee_animating_count++;
+              }
+              // Cycle: 2s pause, 4s scroll right, 2s pause, 4s scroll back = 12s total
+              double elapsed = cogito_now() - n->marquee_start;
+              double cycle = fmod(elapsed, 12.0);
+              if (cycle < 2.0) {
+                scroll_offset = 0;
+                at_start = true;
+              } else if (cycle < 6.0) {
+                double t = (cycle - 2.0) / 4.0;
+                double et = t < 0.5 ? 2.0 * t * t : 1.0 - 0.5 * (2.0 - 2.0 * t) * (2.0 - 2.0 * t);
+                scroll_offset = (int)(et * max_scroll);
+                at_start = (scroll_offset <= 0);
+                at_end = (scroll_offset >= max_scroll);
+              } else if (cycle < 8.0) {
+                scroll_offset = max_scroll;
+                at_start = false;
+                at_end = true;
+              } else {
+                double t = (cycle - 8.0) / 4.0;
+                double et = t < 0.5 ? 2.0 * t * t : 1.0 - 0.5 * (2.0 - 2.0 * t) * (2.0 - 2.0 * t);
+                scroll_offset = max_scroll - (int)(et * max_scroll);
+                at_start = (scroll_offset <= 0);
+                at_end = (scroll_offset >= max_scroll);
+              }
+              tx = content_x - scroll_offset;
+            }
+            cogito_backend->begin_scissor(content_x, n->y, content_w, n->h);
+            cogito_draw_text_size_node(n, tx, ty, draw_text, text, size, lbold, lmedium);
+            // Find ancestor background for gradient overlay
+            CogitoColor fade_bg = cogito_color(255, 255, 255, 255);
+            for (const CogitoNode* p = n->parent; p; p = p->parent) {
+              if (p->bg_set && p->bg.a > 0) { fade_bg = p->bg; break; }
+            }
+            int fade_w = content_w / 5;
+            if (fade_w < 16) fade_w = 16;
+            if (fade_w > 48) fade_w = 48;
+            // Fade intensity ramps with scroll offset for smooth transitions
+            float right_fade_intensity = 1.0f;
+            float left_fade_intensity = 0.0f;
+            if (n->text_marquee && overflows) {
+              int max_scroll = tw - content_w;
+              // Ramp over the first/last fade_w pixels of scroll
+              if (max_scroll > 0) {
+                float ramp = (float)fade_w;
+                right_fade_intensity = (scroll_offset < max_scroll)
+                  ? fminf(1.0f, (float)(max_scroll - scroll_offset) / ramp) : 0.0f;
+                left_fade_intensity = fminf(1.0f, (float)scroll_offset / ramp);
+              }
+            }
+            // Right fade
+            if (right_fade_intensity > 0.001f) {
+              int fx = content_x + content_w - fade_w;
+              for (int i = 0; i < fade_w; i++) {
+                float ft = (float)i / (float)fade_w;
+                ft = ft * ft * right_fade_intensity;
+                CogitoColor c = fade_bg;
+                c.a = (uint8_t)(fade_bg.a * ft);
+                cogito_backend->draw_rect(fx + i, n->y, 1, n->h, c);
+              }
+            }
+            // Left fade (marquee only)
+            if (n->text_marquee && left_fade_intensity > 0.001f) {
+              for (int i = 0; i < fade_w; i++) {
+                float ft = (float)(fade_w - 1 - i) / (float)fade_w;
+                ft = ft * ft * left_fade_intensity;
+                CogitoColor c = fade_bg;
+                c.a = (uint8_t)(fade_bg.a * ft);
+                cogito_backend->draw_rect(content_x + i, n->y, 1, n->h, c);
+              }
+            }
+            cogito_backend->end_scissor();
+          } else {
+            // Text fits or no scissor — stop marquee if active
+            if (n->marquee_active) {
+              n->marquee_active = false;
+              cogito_marquee_animating_count--;
+            }
+            cogito_draw_text_size_node(n, tx, ty, draw_text, text, size, lbold, lmedium);
+          }
         } else {
           int tw = cogito_text_width_size_node(n, draw_text, size);
           int th = cogito_text_height_size(size);

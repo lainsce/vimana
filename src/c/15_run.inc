@@ -2972,7 +2972,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
     double now = cogito_refresh_now();
     bool anim_running = now < cogito_anim_end_time;
     bool need_redraw = !window_being_dragged && (cogito_draw_pending(win) || anim_running
-        || (cogito_carousel_animating_count > 0));
+        || (cogito_carousel_animating_count > 0) || (cogito_marquee_animating_count > 0));
 
     // Debug redraw: set COGITO_DEBUG_REDRAW=1 to see why each frame redraws
     {
@@ -3167,7 +3167,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
         double __frame_end = cogito_refresh_now();
         double __elapsed = __frame_end - __frame_start;
         double __target = 1.0 / 60.0;
-        if (!anim_running && cogito_carousel_animating_count <= 0) {
+        if (!anim_running && cogito_carousel_animating_count <= 0 && cogito_marquee_animating_count <= 0) {
           // Static redraws (without active animation) can run slower.
           __target = had_events ? (1.0 / 50.0) : (1.0 / 36.0);
         }

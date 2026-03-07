@@ -170,6 +170,16 @@ typedef struct CogitoBackend {
   void (*draw_texture_pro)(CogitoTexture *tex, CogitoRect src, CogitoRect dst,
                            CogitoVec2 origin, float rotation, CogitoColor tint);
 
+  // Render targets (offscreen texture rendering)
+  CogitoTexture *(*render_target_create)(int w, int h);
+  void (*set_render_target)(CogitoTexture *target); // NULL = back to screen
+
+  // Textured polygon (triangle-fan from centroid)
+  void (*draw_texture_polygon)(CogitoTexture *tex,
+                               const float *screen_x, const float *screen_y,
+                               const float *uv_x, const float *uv_y,
+                               int point_count);
+
   // Scissor/clip
   void (*begin_scissor)(int x, int y, int w, int h);
   void (*end_scissor)(void);

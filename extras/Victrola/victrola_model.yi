@@ -126,3 +126,41 @@ bring victrola_util
 :: album_artist_for(album_artist_map = any, album = string) (( string )) {
     return stdr.str(album_artist_map[album] ?? "Unknown Artist")
 }
+
+:: apply_saved_meta(tracks = any, track_meta_map = any) (( -- )) {
+    for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+        let ?t = tracks[i] ?? []: [string => any]
+        let path = stdr.str(t["path"] ?? "")
+        if stdr.len(path) == 0 {
+            continue
+        }
+        let m = track_meta_map[path] ?? null
+        if stdr.is_null(m) {
+            continue
+        }
+        let ?changed = false
+        let mt = stdr.str(m["title"] ?? "")
+        let ma = stdr.str(m["artist"] ?? "")
+        let mal = stdr.str(m["album"] ?? "")
+        if stdr.len(mt) > 0 && stdr.str(t["title"] ?? "") != mt {
+            t["title"] = mt
+            changed = true
+        }
+        if stdr.len(ma) > 0 && stdr.str(t["artist"] ?? "") != ma {
+            t["artist"] = ma
+            changed = true
+        }
+        if stdr.len(mal) > 0 && stdr.str(t["album"] ?? "") != mal {
+            t["album"] = mal
+            changed = true
+        }
+        if changed {
+            let new_title = stdr.str(t["title"] ?? "")
+            let new_artist = stdr.str(t["artist"] ?? "")
+            let new_album = stdr.str(t["album"] ?? "")
+            let new_file = stdr.basename(stdr.str(t["path"] ?? ""))
+            t["search"] = "$$new_title$$ $$new_artist$$ $$new_album$$ $$new_file$$"
+            tracks[i] = t
+        }
+    }
+}
