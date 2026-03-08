@@ -5,6 +5,7 @@ bring cogito
 bring json
 bring net
 bring gst
+
 bring victrola_util
 bring victrola_model
 bring victrola_state
@@ -31,10 +32,31 @@ def groups_revealer = cogito.revealer()
 def library_grid = cogito.grid(2)
 def library_list = cogito.content_list()
 def library_rail = cogito.nav_rail()
+def library_center = cogito.vstack()
+def library_scroll = cogito.scroller()
 def lyrics_text = cogito.textview("")
 def now_artist = cogito.label("No Artist")
 def now_title = cogito.label("No Title")
+def mix_art_1 = cogito.image("sf:music.note")
+def mix_art_2 = cogito.image("sf:music.note")
+def mix_art_3 = cogito.image("sf:music.note")
+def mix_art_4 = cogito.image("sf:music.note")
+def mix_art_5 = cogito.image("sf:music.note")
+def mix_art_6 = cogito.image("sf:music.note")
+def mix_clip_1 = cogito.shape(0)
+def mix_clip_2 = cogito.shape(6)
+def mix_clip_3 = cogito.shape(6)
+def mix_clip_4 = cogito.shape(6)
+def mix_clip_5 = cogito.shape(0)
+def mix_clip_6 = cogito.shape(0)
+def mix_collage = cogito.fixed()
+def mix_empty = cogito.label("Play a few songs to build a mix.")
+def mix_panel = cogito.vstack()
+def mix_play_btn = cogito.iconbtn("sf:play")
+def mix_subtitle = cogito.label("")
+def mix_title = cogito.label("Your Mix")
 def play_pause_btn = cogito.iconbtn("sf:play")
+def queue_toggle_btn = cogito.iconbtn("sf:list.bullet")
 def repeat_btn = cogito.iconbtn("sf:repeat")
 def ?player_tint_bin = cogito.bin()
 def poll_anchor = cogito.shape(27)
@@ -76,6 +98,17 @@ def ?visible_group_keys = []: [string]
 def ?visible_track_indexes = []: [num]
 def ?search_input_visible = false
 def ?main_volume = 0.667
+def ?mix_queue = []: [num]
+def ?mix_queue_pos = -1
+def ?queue_source = 0
+def ?lyrics_btn = cogito.button("")
+def ?lyrics_spacer = cogito.button("")
+def ?lyrics_cache = []: [string => any]
+def ?play_count_artists = []: [string]
+def ?play_counts = []: [string => any]
+def ?track_play_counts = []: [string => any]
+def ?queue_active = false
+def ?queue_sheet_open = false
 
 def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
@@ -99,10 +132,15 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     return victrola_model.album_artist_for(album_artist_map, album)
 }
 
+: show_lyrics_btn(show = bool) (( -- )) {
+    lyrics_btn.set_visible(show)
+    lyrics_spacer.set_visible(!show)
+}
+
 : ensure_state_path() (( string )) {
     if stdr.len(STATE_PATH) > 0 { return STATE_PATH }
     let run = stdr.run_command("echo $HOME")
-    let home = stdr.trim(stdr.str(run[1] ?? ""))
+    let ?home = stdr.trim(stdr.str(run[1] ?? ""))
     if stdr.len(home) == 0 { home = "/tmp" }
     let dir = stdr.join_path(home, ".cache/victrola")
     let qdir = stdr.shell_quote(dir)
@@ -112,7 +150,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : save_state() (( -- )) {
-    victrola_state.save_state(ensure_state_path(), current_folder, tracks, album_cover_map, track_meta_map, artist_image_map)
+    victrola_state.save_state(ensure_state_path(), current_folder, tracks, album_cover_map, track_meta_map, artist_image_map, play_counts, play_count_artists, track_play_counts)
 }
 
 : load_state() (( -- )) {
@@ -120,9 +158,612 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     album_cover_map = loaded["covers"] ?? []: [string => any]
     track_meta_map = loaded["track_meta"] ?? []: [string => any]
     artist_image_map = loaded["artist_images"] ?? []: [string => any]
+    play_counts = loaded["play_counts"] ?? []: [string => any]
+    play_count_artists = loaded["play_count_artists"] ?? []: [string]
+    track_play_counts = loaded["track_play_counts"] ?? []: [string => any]
     let folder = stdr.str(loaded["folder"] ?? "")
     if stdr.len(folder) > 0 {
         current_folder = folder
+    }
+}
+
+: is_library_songs_view() (( bool )) {
+    if view_mode == 0 {
+        return false
+    }
+
+    let mode = view_mode - 1
+    return mode == 0 || (mode == 2 && album_detail_open) || (mode == 1 && artist_detail_open && album_detail_open)
+}
+
+: current_library_mode() (( num )) {
+    if view_mode <= 0 {
+        return 0
+    }
+    return view_mode - 1
+}
+
+: artist_has_tracks(artist = string) (( bool )) {
+    for (let ?i = 0; i < len(tracks); i = i + 1) {
+        let t = tracks[i] ?? []: [string => any]
+        if str(t["artist"] ?? "") == artist {
+            return true
+        }
+    }
+    return false
+}
+
+: top_artist_subtitle(artists = any, limit = num) (( string )) {
+    let ?out = ""
+    let total = len(artists)
+    if limit < total {
+        total = limit
+    }
+    for (let ?i = 0; i < total; i = i + 1) {
+        let artist = str(artists[i] ?? "")
+        if len(artist) == 0 {
+            continue
+        }
+        if len(out) > 0 {
+            out = "$$out$$, "
+        }
+        out = "$$out$$$$artist$$"
+    }
+    return out
+}
+
+: get_top_artists(limit = num) (( any )) {
+    let ?top = []: [string]
+    let ?used = []: [string => any]
+    if limit <= 0 {
+        return top
+    }
+
+    for (let ?rank = 0; rank < limit; rank = rank + 1) {
+        let ?best_artist = ""
+        let ?best_count = -1
+
+        for (let ?i = 0; i < len(play_count_artists); i = i + 1) {
+            let artist = str(play_count_artists[i] ?? "")
+            if len(artist) == 0 || !stdr.is_null(used[artist]) || !artist_has_tracks(artist) {
+                continue
+            }
+
+            let count = stdr.num(play_counts[artist] ?? 0)
+            if count > best_count {
+                best_count = count
+                best_artist = artist
+            }
+        }
+
+        if len(best_artist) > 0 && best_count > 0 {
+            used[best_artist] = true
+            stdr.push(top, best_artist)
+        }
+    }
+
+    return top
+}
+
+: collect_mix_covers(artists = any, limit = num) (( any )) {
+    let ?covers = []: [string]
+    let ?seen = []: [string => any]
+    if limit <= 0 {
+        return covers
+    }
+
+    for (let ?i = 0; i < len(artists); i = i + 1) {
+        let artist = str(artists[i] ?? "")
+        if len(artist) == 0 {
+            continue
+        }
+
+        for (let ?j = 0; j < len(tracks); j = j + 1) {
+            let t = tracks[j] ?? []: [string => any]
+            if str(t["artist"] ?? "") != artist {
+                continue
+            }
+
+            let cover = album_cover_for(str(t["album"] ?? "Unknown Album"), artist)
+            if len(cover) == 0 || !stdr.is_null(seen[cover]) {
+                continue
+            }
+
+            seen[cover] = true
+            stdr.push(covers, cover)
+            if len(covers) >= limit {
+                return covers
+            }
+        }
+    }
+
+    return covers
+}
+
+: refresh_mix_view() (( -- )) {
+    let top_artists = get_top_artists(6)
+    let covers = collect_mix_covers(top_artists, 6)
+
+    mix_panel.set_visible(view_mode == 0)
+    library_center.set_visible(view_mode != 0)
+    library_center.set_hexpand(view_mode != 0)
+    player_tint_bin.set_visible(view_mode != 0)
+
+    mix_title.set_text("Your Mix")
+    if len(top_artists) == 0 {
+        mix_subtitle.set_text("Play a few songs to generate a queue from your favorites.")
+        mix_empty.set_visible(true)
+        mix_collage.set_visible(false)
+        mix_play_btn.set_disabled(true)
+        return
+    }
+
+    mix_empty.set_visible(false)
+    mix_collage.set_visible(true)
+    mix_play_btn.set_disabled(false)
+    mix_subtitle.set_text(top_artist_subtitle(top_artists, 3))
+
+    let c1 = str(covers[0] ?? "")
+    if len(c1) == 0 { c1 = "sf:music.note" }
+    let c2 = str(covers[1] ?? "")
+    if len(c2) == 0 { c2 = c1 }
+    let c3 = str(covers[2] ?? "")
+    if len(c3) == 0 { c3 = c2 }
+    let c4 = str(covers[3] ?? "")
+    if len(c4) == 0 { c4 = c3 }
+    let c5 = str(covers[4] ?? "")
+    if len(c5) == 0 { c5 = c4 }
+    let c6 = str(covers[5] ?? "")
+    if len(c6) == 0 { c6 = c5 }
+
+    mix_art_1.set_source(c1)
+    mix_art_2.set_source(c2)
+    mix_art_3.set_source(c3)
+    mix_art_4.set_source(c4)
+    mix_art_5.set_source(c5)
+    mix_art_6.set_source(c6)
+}
+
+: note_artist_play(track = any) (( -- )) {
+    let path = stdr.trim(str(track["path"] ?? ""))
+    if len(path) > 0 {
+        let track_count = stdr.num(track_play_counts[path] ?? 0)
+        track_play_counts[path] = track_count + 1
+    }
+
+    let artist = stdr.trim(str(track["artist"] ?? ""))
+    if len(artist) == 0 || artist == "Unknown Artist" {
+        save_state()
+        refresh_mix_view()
+        return
+    }
+
+    let count = stdr.num(play_counts[artist] ?? 0)
+    if count <= 0 {
+        stdr.push(play_count_artists, artist)
+    }
+    play_counts[artist] = count + 1
+    save_state()
+    refresh_mix_view()
+}
+
+: clear_queue_context() (( -- )) {
+    queue_active = false
+    queue_source = 0
+    mix_queue = []: [num]
+    mix_queue_pos = -1
+}
+
+: find_mix_queue_index(track_idx = num) (( num )) {
+    for (let ?i = 0; i < len(mix_queue); i = i + 1) {
+        if mix_queue[i] == track_idx {
+            return i
+        }
+    }
+    return -1
+}
+
+: build_mix_queue(top_artists = any) (( any )) {
+    let ?queue = []: [num]
+    let ?artist_rank = []: [string => any]
+    let ?used = []: [string => any]
+    let queue_limit = 10
+
+    for (let ?i = 0; i < len(top_artists); i = i + 1) {
+        let artist = str(top_artists[i] ?? "")
+        if len(artist) == 0 || !stdr.is_null(artist_rank[artist]) {
+            continue
+        }
+        artist_rank[artist] = i
+    }
+
+    for (let ?pick = 0; pick < queue_limit; pick = pick + 1) {
+        let ?best_idx = -1
+        let ?best_count = -1
+        let ?best_rank = len(top_artists) + 1
+
+        for (let ?i = 0; i < len(tracks); i = i + 1) {
+            let t = tracks[i] ?? []: [string => any]
+            let track_artist = str(t["artist"] ?? "")
+            let artist_pos = artist_rank[track_artist] ?? null
+            if stdr.is_null(artist_pos) {
+                continue
+            }
+
+            let path = str(t["path"] ?? "")
+            let ?key = path
+            if len(key) == 0 {
+                key = "$$i$$"
+            }
+            if !stdr.is_null(used[key]) {
+                continue
+            }
+
+            let count = stdr.num(track_play_counts[path] ?? 0)
+            let rank = stdr.num(artist_pos)
+
+            if count > best_count {
+                best_idx = i
+                best_count = count
+                best_rank = rank
+            } elif count == best_count && rank < best_rank {
+                best_idx = i
+                best_rank = rank
+            }
+        }
+
+        if best_idx < 0 {
+            break
+        }
+
+        stdr.push(queue, best_idx)
+        let best_track = tracks[best_idx] ?? []: [string => any]
+        let best_path = str(best_track["path"] ?? "")
+        let ?best_key = best_path
+        if len(best_key) == 0 {
+            best_key = "$$best_idx$$"
+        }
+        used[best_key] = true
+    }
+
+    return queue
+}
+
+: refresh_queue_button() (( -- )) {
+    if queue_sheet_open || queue_active {
+        queue_toggle_btn.set_shape(1)
+    } else {
+        queue_toggle_btn.set_shape(0)
+    }
+}
+
+: refresh_queue_sheet_open() (( -- )) {
+    if !queue_sheet_open {
+        return
+    }
+    let win = queue_toggle_btn.window()
+    if is_null(win) {
+        return
+    }
+    win.set_side_sheet(build_queue_sheet())
+}
+
+: sync_queue_playing_position() (( -- )) {
+    if len(mix_queue) == 0 {
+        mix_queue_pos = -1
+        return
+    }
+
+    let playing_pos = find_mix_queue_index(playing_track)
+    if playing_pos >= 0 {
+        mix_queue_pos = playing_pos
+        return
+    }
+
+    if mix_queue_pos < 0 {
+        mix_queue_pos = 0
+    }
+    if mix_queue_pos >= len(mix_queue) {
+        mix_queue_pos = len(mix_queue) - 1
+    }
+}
+
+: queue_remove_at(queue_pos = num) (( -- )) {
+    if queue_pos < 0 || queue_pos >= len(mix_queue) {
+        return
+    }
+
+    let ?next_queue = []: [num]
+    for (let ?i = 0; i < len(mix_queue); i = i + 1) {
+        if i != queue_pos {
+            stdr.push(next_queue, mix_queue[i] ?? -1)
+        }
+    }
+    mix_queue = next_queue
+
+    if len(mix_queue) == 0 {
+        clear_queue_context()
+    } else {
+        sync_queue_playing_position()
+    }
+
+    refresh_queue_sheet_open()
+    refresh_queue_button()
+}
+
+: queue_move_up(queue_pos = num) (( -- )) {
+    if queue_pos <= 0 || queue_pos >= len(mix_queue) {
+        return
+    }
+
+    let above = queue_pos - 1
+    let tmp = mix_queue[above] ?? -1
+    mix_queue[above] = mix_queue[queue_pos] ?? -1
+    mix_queue[queue_pos] = tmp
+
+    sync_queue_playing_position()
+    refresh_queue_sheet_open()
+    refresh_queue_button()
+}
+
+: queue_move_down(queue_pos = num) (( -- )) {
+    if queue_pos < 0 || queue_pos >= len(mix_queue) - 1 {
+        return
+    }
+
+    let below = queue_pos + 1
+    let tmp = mix_queue[below] ?? -1
+    mix_queue[below] = mix_queue[queue_pos] ?? -1
+    mix_queue[queue_pos] = tmp
+
+    sync_queue_playing_position()
+    refresh_queue_sheet_open()
+    refresh_queue_button()
+}
+
+: build_queue_row(track_idx = num, queue_pos = num) (( any )) {
+    let t = tracks[track_idx] ?? []: [string => any]
+    let title = str(t["title"] ?? "")
+    let artist = str(t["artist"] ?? "Unknown Artist")
+    let path = str(t["path"] ?? "")
+    if len(title) == 0 {
+        title = stdr.basename(path)
+    }
+
+    let row = cogito.hstack()
+    .set_gap(12)
+    .set_hexpand(true)
+    .set_padding(8, 0, 8, 0)
+    .set_class("victrola-queue-row")
+
+    if queue_pos == mix_queue_pos && (queue_active || track_idx == playing_track) {
+        row.set_class("victrola-queue-row victrola-queue-current")
+    }
+
+    let meta = cogito.vstack()
+    .set_gap(2)
+    .set_hexpand(true)
+    .add(cogito.label(title)
+        .set_text_align(0)
+        .set_max_width_chars(28)
+        .set_class("emphasized")
+    )
+    .add(cogito.label(artist)
+        .set_text_align(0)
+        .set_max_width_chars(32)
+        .set_class("caption")
+    )
+
+    row
+    .add(cogito.label(stdr.str(queue_pos + 1))
+        .set_class("caption tabular emphasized")
+        .set_text_align(2)
+    )
+    .add(meta)
+    .add(
+        cogito.menu_button("sf:ellipsis")
+        .set_class("iconic")
+        .set_shape(0)
+        .set_s()
+        .add_menu("Move Up", (b = any) => {
+            queue_move_up(queue_pos)
+        })
+        .add_menu("Move Down", (b = any) => {
+            queue_move_down(queue_pos)
+        })
+        .add_menu_section("Remove from Queue", (b = any) => {
+            queue_remove_at(queue_pos)
+        })
+    )
+
+    return row
+}
+
+: refresh_queue_sheet() (( -- )) {
+    refresh_queue_button()
+}
+
+: play_mix_queue_at(queue_pos = num) (( -- )) {
+    if queue_pos < 0 || queue_pos >= len(mix_queue) {
+        return
+    }
+
+    let track_idx = mix_queue[queue_pos] ?? -1
+    if track_idx < 0 {
+        return
+    }
+
+    mix_queue_pos = queue_pos
+    queue_active = len(mix_queue) > 0
+
+    selected_track = track_idx
+    refresh_queue_sheet_open()
+    refresh_queue_button()
+    play_track(track_idx)
+    refresh_queue_sheet()
+}
+
+: build_queue_sheet() (( any )) {
+    let sheet = cogito.side_sheet("Queue")
+    .set_mode(2)
+
+    let queue_list = cogito.content_list()
+    .set_hexpand(true)
+    .set_padding(0,0,0,0)
+    .set_class("victrola-queue-list")
+
+    let ?queue_visible_positions = []: [num]
+
+    for (let ?i = 0; i < len(mix_queue); i = i + 1) {
+        let track_idx = mix_queue[i] ?? -1
+        if track_idx >= 0 {
+            queue_list.add(build_queue_row(track_idx, i))
+            stdr.push(queue_visible_positions, i)
+        }
+    }
+
+    queue_list.on_select((idx = num) => {
+        if idx >= 0 && idx < len(queue_visible_positions) {
+            let queue_pos = queue_visible_positions[idx] ?? -1
+            if queue_pos >= 0 {
+                play_mix_queue_at(queue_pos)
+            }
+        }
+    })
+
+    let queue_scroll = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(0,0,0,0)
+    .set_axes(false, true)
+    .set_min_content_width(260)
+    .set_min_content_height(220)
+    .add(queue_list)
+
+    sheet.add(queue_scroll)
+    return sheet
+}
+
+: open_queue_sheet() (( -- )) {
+    let win = queue_toggle_btn.window()
+    if is_null(win) {
+        return
+    }
+    queue_sheet_open = true
+    win.set_side_sheet(build_queue_sheet())
+    refresh_queue_button()
+}
+
+: close_queue_sheet() (( -- )) {
+    queue_sheet_open = false
+    let win = queue_toggle_btn.window()
+    if !is_null(win) {
+        win.clear_side_sheet()
+    }
+    refresh_queue_button()
+}
+
+: start_mix_playback() (( -- )) {
+    let top_artists = get_top_artists(5)
+    let queue = build_mix_queue(top_artists)
+    if len(queue) == 0 {
+        return
+    }
+
+    mix_queue = queue
+    queue_active = true
+    queue_source = 1
+    mix_queue_pos = 0
+
+    view_mode = 1
+    library_rail.set_selected(1)
+    refresh_library_list()
+
+    play_mix_queue_at(0)
+}
+
+: build_queue_for_artist(artist = string) (( any )) {
+    let ?queue = []: [num]
+    if len(artist) == 0 {
+        return queue
+    }
+
+    for (let ?i = 0; i < len(tracks); i = i + 1) {
+        let t = tracks[i] ?? []: [string => any]
+        if str(t["artist"] ?? "") == artist {
+            stdr.push(queue, i)
+        }
+    }
+
+    return queue
+}
+
+: build_queue_for_album(album = string) (( any )) {
+    let ?queue = []: [num]
+    if len(album) == 0 {
+        return queue
+    }
+
+    for (let ?i = 0; i < len(tracks); i = i + 1) {
+        let t = tracks[i] ?? []: [string => any]
+        if str(t["album"] ?? "") == album {
+            stdr.push(queue, i)
+        }
+    }
+
+    return queue
+}
+
+: set_queue_and_play(queue = any, track_idx = num, source = num) (( -- )) {
+    if track_idx < 0 {
+        return
+    }
+
+    mix_queue = queue
+    queue_active = len(mix_queue) > 0
+    queue_source = source
+    mix_queue_pos = find_mix_queue_index(track_idx)
+    if queue_active && mix_queue_pos < 0 {
+        mix_queue_pos = 0
+    }
+
+    selected_track = track_idx
+    refresh_queue_sheet_open()
+    refresh_queue_button()
+
+    if selected_track != playing_track || !is_playing {
+        play_track(selected_track)
+    } else {
+        set_now_playing(selected_track)
+    }
+}
+
+: add_titles_track_to_queue_and_play(track_idx = num) (( -- )) {
+    if track_idx < 0 {
+        return
+    }
+
+    if !queue_active || queue_source != 2 {
+        mix_queue = []: [num]
+        stdr.push(mix_queue, track_idx)
+        queue_active = true
+        queue_source = 2
+    } else {
+        let existing = find_mix_queue_index(track_idx)
+        if existing < 0 {
+            stdr.push(mix_queue, track_idx)
+        }
+    }
+
+    mix_queue_pos = find_mix_queue_index(track_idx)
+    selected_track = track_idx
+    refresh_queue_sheet_open()
+    refresh_queue_button()
+
+    if selected_track != playing_track || !is_playing {
+        play_track(selected_track)
+    } else {
+        set_now_playing(selected_track)
     }
 }
 
@@ -145,6 +786,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 : sync_play_pause_button() (( -- )) {
     let actually_playing = is_playing && playing_track >= 0
+    seek_slider.set_wavy(actually_playing)
+    lyrics_seek_slider.set_wavy(actually_playing)
     if actually_playing {
         play_pause_btn.set_icon("sf:pause")
         play_pause_btn.set_class("filled")
@@ -255,6 +898,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         now_artist.set_text("No Artist")
         apply_cover_art("")
         lyrics_text.set_text("Lyrics will appear here when available.")
+        show_lyrics_btn(false)
         return
     }
 
@@ -338,8 +982,12 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : refresh_library_list() (( -- )) {
-    set_album_detail_visible((view_mode == 2 || (view_mode == 1 && artist_detail_open)) && album_detail_open)
-    artist_detail_revealer.set_show_children(view_mode == 1 && artist_detail_open && !album_detail_open)
+    let mode = current_library_mode()
+
+    refresh_mix_view()
+
+    set_album_detail_visible((view_mode != 0 && (mode == 2 || (mode == 1 && artist_detail_open))) && album_detail_open)
+    artist_detail_revealer.set_show_children(view_mode != 0 && mode == 1 && artist_detail_open && !album_detail_open)
 
     let show_back = artist_detail_open || album_detail_open
     back_btn.set_visible(show_back)
@@ -350,7 +998,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         groups_revealer,
         titles_revealer,
         tracks,
-        view_mode,
+        mode,
         query_text,
         playing_track,
         album_detail_open,
@@ -371,7 +1019,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     visible_track_indexes = result["track_indexes"] ?? []: [num]
     visible_group_keys = result["group_keys"] ?? []: [string]
 
-    let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open) || (view_mode == 1 && artist_detail_open && album_detail_open)
+    let songs_view = is_library_songs_view()
     if songs_view && len(visible_track_indexes) == 0 {
         selected_track = -1
         set_now_playing(-1)
@@ -408,6 +1056,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     let folder_changed = chosen != current_folder
     if folder_changed {
         album_cover_map = []: [string => any]
+        lyrics_cache = []: [string => any]
     }
 
     current_folder = chosen
@@ -503,6 +1152,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     playing_track = track_idx
     selected_track = track_idx
     is_playing = true
+    note_artist_play(t)
     sync_play_pause_button()
     seek_slider.set_value(0)
     lyrics_seek_slider.set_value(0)
@@ -514,6 +1164,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         apply_cover_art(known_cover)
     }
 
+    check_lyrics_for_track(track_idx)
     if lyrics_view_visible {
         fetch_lyrics_for_track(track_idx)
     }
@@ -533,11 +1184,30 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
                 return
             }
         }
+        clear_queue_context()
+        refresh_queue_sheet()
         play_track(selected_track)
     }
 }
 
 : play_next() (( -- )) {
+    if queue_active && len(mix_queue) > 0 {
+        let ?next_pos = mix_queue_pos
+        if next_pos < 0 {
+            next_pos = find_mix_queue_index(playing_track)
+        }
+        if next_pos < 0 {
+            next_pos = 0
+        } else {
+            next_pos = next_pos + 1
+        }
+        if next_pos >= len(mix_queue) {
+            next_pos = 0
+        }
+        play_mix_queue_at(next_pos)
+        return
+    }
+
     if len(visible_track_indexes) == 0 {
         return
     }
@@ -561,6 +1231,23 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : play_prev() (( -- )) {
+    if queue_active && len(mix_queue) > 0 {
+        let ?prev_pos = mix_queue_pos
+        if prev_pos < 0 {
+            prev_pos = find_mix_queue_index(playing_track)
+        }
+        if prev_pos < 0 {
+            prev_pos = 0
+        } else {
+            prev_pos = prev_pos - 1
+        }
+        if prev_pos < 0 {
+            prev_pos = len(mix_queue) - 1
+        }
+        play_mix_queue_at(prev_pos)
+        return
+    }
+
     if len(visible_track_indexes) == 0 {
         return
     }
@@ -612,7 +1299,9 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         return
     }
 
+    clear_queue_context()
     selected_track = idx
+    refresh_queue_sheet()
     play_track(idx)
 }
 
@@ -638,7 +1327,41 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         time_right.set_text("00:00")
         lyrics_time_left.set_text("00:00")
         refresh_library_list()
+        refresh_queue_sheet()
     } else {
+    }
+}
+
+: lyrics_cache_key(track_idx = num) (( string )) {
+    if track_idx < 0 || track_idx >= len(tracks) { return "" }
+    let t = tracks[track_idx] ?? []: [string => any]
+    let artist = str(t["artist"] ?? "")
+    let title = str(t["title"] ?? "")
+    return "$$artist$$|$$title$$"
+}
+
+: check_lyrics_for_track(track_idx = num) (( -- )) {
+    if track_idx < 0 || track_idx >= len(tracks) {
+        show_lyrics_btn(false)
+        return
+    }
+    let key = lyrics_cache_key(track_idx)
+    let cached = str(lyrics_cache[key] ?? "")
+    if len(cached) > 0 {
+        show_lyrics_btn(cached != "__none__")
+        return
+    }
+    let t = tracks[track_idx] ?? []: [string => any]
+    let artist = str(t["artist"] ?? "")
+    let title = str(t["title"] ?? "")
+    let path = str(t["path"] ?? "")
+    let result = victrola_lyrics.fetch_lyrics(artist, title, path)
+    if result == "No lyrics found for this track." {
+        lyrics_cache[key] = "__none__"
+        show_lyrics_btn(false)
+    } else {
+        lyrics_cache[key] = result
+        show_lyrics_btn(true)
     }
 }
 
@@ -647,12 +1370,25 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         lyrics_text.set_text("Select a track to view lyrics.")
         return
     }
-
+    let key = lyrics_cache_key(track_idx)
+    let cached = str(lyrics_cache[key] ?? "")
+    if len(cached) > 0 && cached != "__none__" {
+        lyrics_text.set_text(cached)
+        return
+    }
     let t = tracks[track_idx] ?? []: [string => any]
     let artist = str(t["artist"] ?? "")
     let title = str(t["title"] ?? "")
     let path = str(t["path"] ?? "")
-    lyrics_text.set_text(victrola_lyrics.fetch_lyrics(artist, title, path))
+    let result = victrola_lyrics.fetch_lyrics(artist, title, path)
+    if result == "No lyrics found for this track." {
+        lyrics_cache[key] = "__none__"
+        show_lyrics_btn(false)
+    } else {
+        lyrics_cache[key] = result
+        show_lyrics_btn(true)
+    }
+    lyrics_text.set_text(result)
 }
 
 : apply_tag_metadata() (( -- )) {
@@ -739,6 +1475,9 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
     if dur > 0 {
         time_right.set_text(format_ms(dur))
+        let scale = dur / 1000.0
+        seek_slider.set_bubble_scale(scale)
+        lyrics_seek_slider.set_bubble_scale(scale)
 
         let ?elapsed = pos
         if elapsed < 0 {
@@ -809,17 +1548,55 @@ entry() (( -- )) {
     groups_revealer.set_show_children(false).set_hexpand(true).set_vexpand(true).set_padding(0, 0, 0, 0)
     library_grid.set_gap(8, 8).set_padding(0, 0, 0, 0)
     library_list.set_padding(0, 0, 0, 0)
-    library_rail.set_items(["Titles", "Artists", "Albums"], ["sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
+    library_rail.set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:sparkles", "sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
+    library_scroll.set_hexpand(true).set_vexpand(true).set_min_content_width(360).set_min_content_height(294)
     lyrics_text.set_editable(false).set_hexpand(true).set_vexpand(true).set_class("victrola-lyrics")
+    mix_art_1.set_hexpand(true).set_vexpand(true).set_class("surface-container")
+    mix_art_2.set_hexpand(true).set_vexpand(true).set_class("surface-container")
+    mix_art_3.set_hexpand(true).set_vexpand(true).set_class("surface-container")
+    mix_art_4.set_hexpand(true).set_vexpand(true).set_class("surface-container")
+    mix_art_5.set_hexpand(true).set_vexpand(true).set_class("surface-container")
+    mix_art_6.set_hexpand(true).set_vexpand(true).set_class("surface-container")
+    mix_clip_1.set_size(165).set_clip(true).set_preset(0).add(mix_art_1)
+    mix_clip_2.set_size(150).set_clip(true).set_preset(6).add(mix_art_2)
+    mix_clip_3.set_size(294).set_clip(true).set_preset(6).add(mix_art_3)
+    mix_clip_4.set_size(283).set_clip(true).set_preset(6).add(mix_art_4)
+    mix_clip_5.set_size(140).set_clip(true).set_preset(0).add(mix_art_5)
+    mix_clip_6.set_size(177).set_clip(true).set_preset(0).add(mix_art_6)
+    mix_collage.set_class("victrola-mix-collage").set_hexpand(true)
+    mix_collage.add(mix_clip_1).set_pos(mix_clip_1, 0, 0)
+    mix_collage.add(mix_clip_2).set_pos(mix_clip_2, 207, 0)
+    mix_collage.add(mix_clip_3).set_pos(mix_clip_3, 361, 15)
+    mix_collage.add(mix_clip_4).set_pos(mix_clip_4, 29, 154)
+    mix_collage.add(mix_clip_5).set_pos(mix_clip_5, 319, 312)
+    mix_collage.add(mix_clip_6).set_pos(mix_clip_6, 564, 272)
+    mix_empty.set_class("caption").set_text_align(0).set_wrap(true).set_hexpand(true)
+    mix_panel.set_gap(0).set_hexpand(true).set_vexpand(true).set_padding(60, 0, 0, 0).set_class("victrola-mix-panel")
+    mix_play_btn.set_xl().set_class("tonal").set_align(2).on_click((b = cogito.IconButton) => {
+        if ui_ready {
+            start_mix_playback()
+        }
+    })
+    mix_subtitle.set_class("victrola-mix-subtitle").set_text_align(0).set_max_width_chars(60)
+    mix_title.set_class("big-display-expressive").set_text_align(0)
     now_artist.set_class("view-title").set_text_align(0).set_max_width_chars(40)
     now_title.set_class("victrola-now-title").set_text_align(0).set_max_width_chars(44)
     play_pause_btn.set_l().set_class("tonal")
+    queue_toggle_btn.set_class("iconic").set_align(4).on_click((b = cogito.IconButton) => {
+        if ui_ready {
+            if queue_sheet_open {
+                close_queue_sheet()
+            } else {
+                open_queue_sheet()
+            }
+        }
+    })
     repeat_btn.set_class("iconic")
     poll_anchor.set_size(1).set_visible(false)
     search_input.set_hexpand(true).set_class("victrola-search")
     search_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 16, 6, 16)
-    seek_slider.set_s().set_class("victrola-seek").set_wavy(true)
-    lyrics_seek_slider.set_s().set_hexpand(true).set_wavy(true)
+    seek_slider.set_xs().set_class("victrola-seek").set_wavy(false).set_show_bubble(true).set_bubble_format("{time}").set_bubble_scale(1.0)
+    lyrics_seek_slider.set_xs().set_hexpand(true).set_wavy(false).set_show_bubble(true).set_bubble_format("{time}").set_bubble_scale(1.0)
     lyrics_play_btn.set_class("iconic")
     lyrics_time_left.set_class("caption tabular emphasized").set_text_align(0)
     time_left.set_class("caption tabular emphasized").set_text_align(0)
@@ -855,11 +1632,10 @@ entry() (( -- )) {
     sidebar.add(library_rail)
     root.add(sidebar)
 
-    let center = cogito.vstack()
-    .set_hexpand(true)
-    .set_vexpand(true)
+    library_center.set_hexpand(true).set_vexpand(true)
+    let center = library_center
 
-    let library_bar = cogito.appbar("Titles", "")
+    let library_bar = cogito.appbar("Your Mix", "")
     .set_hexpand(true)
     .set_class("small victrola-library-bar")
     .add_trailing_button("sf:folder.badge.gearshape", (b = any) => {
@@ -927,13 +1703,7 @@ entry() (( -- )) {
     album_detail_revealer.add(album_header)
     center.add(album_detail_revealer)
 
-    let list_scroll = cogito.scroller()
-    .set_hexpand(true)
-    .set_vexpand(true)
-    .set_min_content_width(360)
-    .set_min_content_height(294)
-
-    library_bar.pair_with_scroller(list_scroll)
+    library_bar.pair_with_scroller(library_scroll)
 
     let library_stack = cogito.vstack()
     .set_hexpand(true)
@@ -953,9 +1723,33 @@ entry() (( -- )) {
 
     library_stack.add(titles_revealer)
     library_stack.add(groups_revealer)
-    list_scroll.add(library_stack)
-    center.add(list_scroll)
+    library_scroll.add(library_stack)
+    center.add(library_scroll)
     root.add(center)
+
+    mix_panel
+    .add(
+        cogito.hstack()
+        .set_hexpand(true)
+        .set_padding(0, 16, 0, 16)
+        .add(
+            cogito.vstack()
+            .set_gap(6)
+            .set_hexpand(true)
+            .add(mix_title)
+            .add(mix_subtitle)
+            .add(mix_empty)
+        )
+        .add(mix_play_btn)
+    )
+    .add(
+        cogito.vstack()
+        .set_hexpand(true)
+        .set_vexpand(true)
+        .set_align(4)
+        .add(mix_collage)
+    )
+    root.add(mix_panel)
 
     let player_panel = cogito.vstack()
     .set_hexpand(false)
@@ -982,7 +1776,8 @@ entry() (( -- )) {
     .set_hexpand(true)
     .set_vexpand(false)
 
-    player_bar.add_trailing_button("sf:quote.bubble", (b = any) => {
+    lyrics_btn = player_bar.add_trailing_menu_button("sf:quote.bubble")
+    lyrics_btn.on_click((b = any) => {
         if ui_ready && !is_null(b) {
             set_player_lyrics_visible(!lyrics_view_visible, player_bar, now_revealer, lyrics_revealer)
             if lyrics_view_visible {
@@ -990,6 +1785,9 @@ entry() (( -- )) {
             }
         }
     })
+    lyrics_btn.set_visible(false)
+    lyrics_spacer = player_bar.add_trailing_menu_button("sf:quote.bubble")
+    lyrics_spacer.set_disabled(true)
 
     player_panel.add(player_bar)
 
@@ -1066,13 +1864,7 @@ entry() (( -- )) {
             play_next()
         })
     )
-    .add(cogito.iconbtn("sf:stop")
-        .set_class("iconic")
-        .set_align(4)
-        .on_click((b = cogito.IconButton) => {
-            stop_playback()
-        })
-    )
+    .add(queue_toggle_btn)
     player_controls.add(controls)
 
     let now_page = cogito.vstack()
@@ -1132,18 +1924,20 @@ entry() (( -- )) {
 
             query_text = ""
             search_input.set_text("")
-            if view_mode != 0 {
+            if view_mode != 1 {
                 set_search_visible(false)
             }
 
             close_artist_detail()
-            if view_mode != 2 {
+            if view_mode != 3 {
                 close_album_detail()
             }
 
             if view_mode == 0 {
-                library_bar.set_title("Titles")
+                library_bar.set_title("Your Mix")
             } elif view_mode == 1 {
+                library_bar.set_title("Titles")
+            } elif view_mode == 2 {
                 library_bar.set_title("Artists")
             } else {
                 library_bar.set_title("Albums")
@@ -1157,17 +1951,29 @@ entry() (( -- )) {
     })
 
     library_list.on_select((idx = num) => {
-        let songs_view = view_mode == 0 || (view_mode == 2 && album_detail_open) || (view_mode == 1 && artist_detail_open && album_detail_open)
+        let songs_view = is_library_songs_view()
         if songs_view {
             if idx >= 0 && idx < len(visible_track_indexes) {
                 selected_track = visible_track_indexes[idx] ?? -1
 
                 if selected_track >= 0 {
-                    if selected_track != playing_track || !is_playing {
-                        play_track(selected_track)
-                        is_playing = true
+                    let mode = current_library_mode()
+                    if mode == 0 {
+                        add_titles_track_to_queue_and_play(selected_track)
+                    } elif mode == 1 && artist_detail_open {
+                        let artist_queue = build_queue_for_artist(artist_detail_key)
+                        set_queue_and_play(artist_queue, selected_track, 3)
+                    } elif mode == 2 && album_detail_open {
+                        let album_queue = build_queue_for_album(album_detail_key)
+                        set_queue_and_play(album_queue, selected_track, 4)
                     } else {
-                        set_now_playing(selected_track)
+                        clear_queue_context()
+                        refresh_queue_sheet()
+                        if selected_track != playing_track || !is_playing {
+                            play_track(selected_track)
+                        } else {
+                            set_now_playing(selected_track)
+                        }
                     }
                 }
             }

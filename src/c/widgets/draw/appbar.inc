@@ -50,7 +50,7 @@ case COGITO_APPBAR:
   if (!title_widget) {
     for (size_t i = 0; i < n->len; i++) {
       CogitoNode* c = n->children[i];
-      if (!c || c->hidden) continue;
+      if (cogito_node_is_hidden(c)) continue;
       if (cogito_appbar_is_leading_child(c)) continue;
       int right = c->x - 12;
       if (right < text_right_bound) text_right_bound = right;

@@ -158,7 +158,7 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
   n->h = h;
   cogito_apply_size_constraints(n, &n->w, &n->h);
   if (changed || n->w != w || n->h != h) cogito_layout_mark_changed();
-  if (n->hidden) {
+  if (cogito_node_is_hidden(n)) {
     if (n->w != 0 || n->h != 0) cogito_layout_mark_changed();
     n->w = 0;
     n->h = 0;

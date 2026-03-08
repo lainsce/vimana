@@ -52,6 +52,38 @@ static void cogito_draw_rect_lines(int x, int y, int w, int h, CogitoColor borde
   }
 }
 
+static float cogito_color_relative_luminance(CogitoColor c) {
+  float r = (float)c.r / 255.0f;
+  float g = (float)c.g / 255.0f;
+  float b = (float)c.b / 255.0f;
+  if (r <= 0.04045f) r = r / 12.92f; else r = powf((r + 0.055f) / 1.055f, 2.4f);
+  if (g <= 0.04045f) g = g / 12.92f; else g = powf((g + 0.055f) / 1.055f, 2.4f);
+  if (b <= 0.04045f) b = b / 12.92f; else b = powf((b + 0.055f) / 1.055f, 2.4f);
+  return 0.2126f * r + 0.7152f * g + 0.0722f * b;
+}
+
+static float cogito_color_contrast_ratio(CogitoColor a, CogitoColor b) {
+  float la = cogito_color_relative_luminance(a);
+  float lb = cogito_color_relative_luminance(b);
+  if (la < lb) {
+    float t = la;
+    la = lb;
+    lb = t;
+  }
+  return (la + 0.05f) / (lb + 0.05f);
+}
+
+static bool cogito_track_needs_stop_indicator(CogitoColor track,
+                                              CogitoColor container_bg,
+                                              CogitoColor surface_bg) {
+  const float min_ratio = 3.0f;
+  CogitoColor over_container = (track.a < 255) ? cogito_color_blend(container_bg, track) : track;
+  CogitoColor over_surface = (track.a < 255) ? cogito_color_blend(surface_bg, track) : track;
+  float ratio_container = cogito_color_contrast_ratio(over_container, container_bg);
+  float ratio_surface = cogito_color_contrast_ratio(over_surface, surface_bg);
+  return (ratio_container < min_ratio) || (ratio_surface < min_ratio);
+}
+
 static int cogito_int_max(int a, int b) {
   return a > b ? a : b;
 }
@@ -1613,7 +1645,7 @@ static void cogito_draw_offset_subtree(CogitoNode* n, int dx, int dy) {
 
 static void cogito_draw_node(CogitoNode* n) {
   if (!n) return;
-  if (n->hidden) return;
+  if (cogito_node_is_hidden(n)) return;
   if (cogito_draw_count_enabled) cogito_draw_count_nodes++;
   // Use the cached main pointer position (set once per frame in the event loop)
   // instead of calling get_mouse_position per-node which is a backend API call.

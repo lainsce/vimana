@@ -64,6 +64,8 @@ static CogitoNode* cogito_slider_new_obj(double min, double max, double value) {
       : COGITO_SLIDER_MODE_NORMAL;
   sl->slider.show_step_dots = false;
   sl->slider.show_end_dots = true;
+  sl->slider.show_value_bubble = true;
+  sl->slider.bubble_scale = 1.0;
   sl->slider.active_handle = 0;
   sl->slider.size = COGITO_SLIDER_SIZE_XS;
   sl->slider.shape = COGITO_SLIDER_SHAPE_FLAT;
@@ -80,6 +82,8 @@ static CogitoNode* cogito_slider_range_new_obj(double min, double max, double st
   sl->slider.mode = COGITO_SLIDER_MODE_RANGE;
   sl->slider.show_step_dots = false;
   sl->slider.show_end_dots = true;
+  sl->slider.show_value_bubble = true;
+  sl->slider.bubble_scale = 1.0;
   sl->slider.active_handle = 1;
   sl->slider.size = COGITO_SLIDER_SIZE_XS;
   sl->slider.shape = COGITO_SLIDER_SHAPE_FLAT;
@@ -244,6 +248,57 @@ static YisVal cogito_slider_get_end_dots(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_end_dots expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return YV_BOOL(n->slider.show_end_dots);
+}
+
+static void cogito_slider_set_value_bubble(YisVal nodev, YisVal onv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_value_bubble expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  n->slider.show_value_bubble = yis_as_bool(onv);
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static YisVal cogito_slider_get_value_bubble(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_value_bubble expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  return YV_BOOL(n->slider.show_value_bubble);
+}
+
+static void cogito_slider_set_bubble_format(YisVal nodev, YisVal fmtv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_bubble_format expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  if (n->slider.bubble_format) {
+    yis_release_val(YV_STR(n->slider.bubble_format));
+    n->slider.bubble_format = NULL;
+  }
+  if (fmtv.tag == EVT_NULL) {
+    cogito_window_relayout(cogito_node_window(n));
+    return;
+  }
+  YisStr* s = stdr_to_string(fmtv);
+  n->slider.bubble_format = s;
+  if (s) yis_retain_val(YV_STR(s));
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static YisVal cogito_slider_get_bubble_format(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_bubble_format expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  YisStr* s = n->slider.bubble_format ? n->slider.bubble_format : stdr_str_lit("");
+  yis_retain_val(YV_STR(s));
+  return YV_STR(s);
+}
+
+static void cogito_slider_set_bubble_scale(YisVal nodev, YisVal scalev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_bubble_scale expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  n->slider.bubble_scale = yis_as_float(scalev);
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static YisVal cogito_slider_get_bubble_scale(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_get_bubble_scale expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  return YV_FLOAT(n->slider.bubble_scale);
 }
 
 static void cogito_slider_set_size(YisVal nodev, YisVal sizev) {

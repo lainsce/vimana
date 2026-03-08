@@ -29,9 +29,17 @@ case COGITO_DIALOG_SLOT:
         int base_y = win ? 0 : y;
         int base_w = win ? win->w : w;
         int base_h = win ? win->h : h;
-        float p = cogito_overlay_anim_value(n->dialog, n->dialog_open);
-        int dx = base_x + (base_w - dw) / 2;
-        int dy = base_y + (base_h - dh) / 2 - (int)lroundf((1.0f - p) * 24.0f);
+        bool compact = win ? cogito_window_node_is_compact(win) : false;
+        int dx = base_x;
+        int dy = base_y;
+        if (compact) {
+          dw = base_w;
+          dh = base_h;
+        } else {
+          float p = cogito_overlay_anim_value(n->dialog, n->dialog_open);
+          dx = base_x + (base_w - dw) / 2;
+          dy = base_y + (base_h - dh) / 2 - (int)lroundf((1.0f - p) * 24.0f);
+        }
         cogito_layout_node(n->dialog, dx, dy, dw, dh);
       }
       break;

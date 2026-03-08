@@ -170,6 +170,7 @@ static void cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
   CogitoNode* win = (CogitoNode*)winv.as.p;
   CogitoNode* ss = (CogitoNode*)side_sheetv.as.p;
   if (ss->kind != COGITO_SIDE_SHEET) yis_trap("cogito.window_set_side_sheet expects SideSheet node");
+
   if (win->side_sheet_node && win->side_sheet_node != ss) {
     yis_release_val(YV_OBJ(win->side_sheet_node));
   }
@@ -177,9 +178,33 @@ static void cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
   win->side_sheet_node->parent = win;
   win->side_sheet_open = true;
   win->side_sheet_closing = false;
-  cogito_overlay_anim_start(ss, 0.0f, 1.0f, 0.24);
+  if (ss->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+    cogito_overlay_anim_start(ss, 1.0f, 1.0f, 0.0);
+  } else {
+    cogito_overlay_anim_start(ss, 0.0f, 1.0f, 0.24);
+  }
   yis_retain_val(YV_OBJ(win->side_sheet_node));
   cogito_apply_style_tree(ss);
+
+  // Keep coplanar sidebar width accounting exact using stored applied width,
+  // so repeated rebuilds/open/close never drift due intrinsic-width changes.
+  if (cogito_backend && cogito_backend->window_set_size && cogito_active_backend_window) {
+    int new_sidebar_w = 0;
+    if (ss->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+      cogito_intrinsic_size(ss, &new_sidebar_w, NULL);
+      if (new_sidebar_w < 0) new_sidebar_w = 0;
+    }
+    int old_applied_w = win->side_sheet_sidebar_applied_w;
+    if (old_applied_w < 0) old_applied_w = 0;
+    int delta_w = new_sidebar_w - old_applied_w;
+    if (delta_w != 0) {
+      int target_w = win->w + delta_w;
+      if (target_w < 1) target_w = 1;
+      win->w = target_w;
+      cogito_backend->window_set_size(cogito_active_backend_window, win->w, win->h);
+    }
+    win->side_sheet_sidebar_applied_w = new_sidebar_w;
+  }
   cogito_window_relayout(win);
 }
 
@@ -189,6 +214,28 @@ static void cogito_window_clear_side_sheet(YisVal winv) {
   if (!win->side_sheet_node) {
     win->side_sheet_open = false;
     win->side_sheet_closing = false;
+    return;
+  }
+  // Shrink by exactly the width previously applied for sidebar mode.
+  if (cogito_backend && cogito_backend->window_set_size && cogito_active_backend_window) {
+    int applied_w = win->side_sheet_sidebar_applied_w;
+    if (applied_w < 0) applied_w = 0;
+    if (applied_w > 0) {
+      int target_w = win->w - applied_w;
+      if (target_w < 1) target_w = 1;
+      win->w = target_w;
+      cogito_backend->window_set_size(cogito_active_backend_window, win->w, win->h);
+    }
+    win->side_sheet_sidebar_applied_w = 0;
+  }
+
+  // Sidebar closes instantly — no slide animation.
+  if (win->side_sheet_node->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+    win->side_sheet_open = false;
+    win->side_sheet_closing = false;
+    yis_release_val(YV_OBJ(win->side_sheet_node));
+    win->side_sheet_node = NULL;
+    cogito_window_relayout(win);
     return;
   }
   float from = cogito_overlay_anim_value(win->side_sheet_node, true);

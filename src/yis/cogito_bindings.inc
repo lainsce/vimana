@@ -264,9 +264,12 @@
 #undef cogito_tabs_set_items
 #undef cogito_tabs_set_selected
 #undef cogito_textfield_get_hint
+#undef cogito_textfield_get_regex
+#undef cogito_textfield_is_valid
 #undef cogito_textfield_get_text
 #undef cogito_textfield_new
 #undef cogito_textfield_on_change
+#undef cogito_textfield_set_regex
 #undef cogito_textfield_set_hint
 #undef cogito_textfield_set_text
 #undef cogito_textview_get_text
@@ -2713,6 +2716,29 @@ static YisVal __cogito_textfield_get_hint(YisVal tfv) {
   return YV_STR(stdr_str_lit(hint ? hint : ""));
 }
 
+static void __cogito_textfield_set_regex(YisVal tfv, YisVal patternv) {
+  cogito_node* tf = cogito_node_from_val(tfv);
+  if (patternv.tag == EVT_NULL) {
+    cogito_textfield_set_regex(tf, NULL);
+    return;
+  }
+  YisStr* tmp = NULL;
+  const char* pattern = cogito_required_cstr(patternv, &tmp);
+  cogito_textfield_set_regex(tf, pattern);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static YisVal __cogito_textfield_get_regex(YisVal tfv) {
+  cogito_node* tf = cogito_node_from_val(tfv);
+  const char* pattern = cogito_textfield_get_regex(tf);
+  return YV_STR(stdr_str_lit(pattern ? pattern : ""));
+}
+
+static YisVal __cogito_textfield_is_valid(YisVal tfv) {
+  cogito_node* tf = cogito_node_from_val(tfv);
+  return YV_BOOL(cogito_textfield_is_valid(tf));
+}
+
 static void __cogito_textfield_on_change(YisVal tfv, YisVal handler) {
   cogito_node* tf = cogito_node_from_val(tfv);
   CogitoHandle* h = (CogitoHandle*)tfv.as.p;
@@ -2850,6 +2876,43 @@ static void __cogito_slider_set_end_dots(YisVal slv, YisVal onv) {
 static YisVal __cogito_slider_get_end_dots(YisVal slv) {
   cogito_node* sl = cogito_node_from_val(slv);
   return YV_BOOL(cogito_slider_get_end_dots(sl));
+}
+
+static void __cogito_slider_set_value_bubble(YisVal slv, YisVal onv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  cogito_slider_set_value_bubble(sl, yis_as_bool(onv));
+}
+
+static YisVal __cogito_slider_get_value_bubble(YisVal slv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  return YV_BOOL(cogito_slider_get_value_bubble(sl));
+}
+
+static void __cogito_slider_set_bubble_format(YisVal slv, YisVal formatv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  if (formatv.tag == EVT_NULL) {
+    cogito_slider_set_bubble_format(sl, NULL);
+    return;
+  }
+  YisStr* s = stdr_to_string(formatv);
+  cogito_slider_set_bubble_format(sl, s ? s->data : NULL);
+  if (s) yis_release_val(YV_STR(s));
+}
+
+static YisVal __cogito_slider_get_bubble_format(YisVal slv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  const char* format = cogito_slider_get_bubble_format(sl);
+  return YV_STR(stdr_str_lit(format ? format : ""));
+}
+
+static void __cogito_slider_set_bubble_scale(YisVal slv, YisVal scalev) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  cogito_slider_set_bubble_scale(sl, yis_as_float(scalev));
+}
+
+static YisVal __cogito_slider_get_bubble_scale(YisVal slv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  return YV_FLOAT(cogito_slider_get_bubble_scale(sl));
 }
 
 static void __cogito_slider_set_wavy(YisVal slv, YisVal onv) {
@@ -3774,6 +3837,9 @@ static YisVal __cogito_gst_last_tag_album(void) {
 #define cogito_textfield_get_text __cogito_textfield_get_text
 #define cogito_textfield_set_hint __cogito_textfield_set_hint
 #define cogito_textfield_get_hint __cogito_textfield_get_hint
+#define cogito_textfield_set_regex __cogito_textfield_set_regex
+#define cogito_textfield_get_regex __cogito_textfield_get_regex
+#define cogito_textfield_is_valid __cogito_textfield_is_valid
 #define cogito_searchfield_set_text __cogito_searchfield_set_text
 #define cogito_searchfield_get_text __cogito_searchfield_get_text
 #define cogito_searchfield_on_change __cogito_searchfield_on_change
@@ -3795,6 +3861,12 @@ static YisVal __cogito_gst_last_tag_album(void) {
 #define cogito_slider_get_centered __cogito_slider_get_centered
 #define cogito_slider_set_end_dots __cogito_slider_set_end_dots
 #define cogito_slider_get_end_dots __cogito_slider_get_end_dots
+#define cogito_slider_set_value_bubble __cogito_slider_set_value_bubble
+#define cogito_slider_get_value_bubble __cogito_slider_get_value_bubble
+#define cogito_slider_set_bubble_format __cogito_slider_set_bubble_format
+#define cogito_slider_get_bubble_format __cogito_slider_get_bubble_format
+#define cogito_slider_set_bubble_scale __cogito_slider_set_bubble_scale
+#define cogito_slider_get_bubble_scale __cogito_slider_get_bubble_scale
 #define cogito_slider_set_wavy __cogito_slider_set_wavy
 #define cogito_slider_get_wavy __cogito_slider_get_wavy
 #define cogito_slider_set_step __cogito_slider_set_step

@@ -287,6 +287,12 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_slider_set_centered cogito_slider_set_centered_yis
 #define cogito_slider_set_end_dots cogito_slider_set_end_dots_yis
 #define cogito_slider_get_end_dots cogito_slider_get_end_dots_yis
+#define cogito_slider_set_value_bubble cogito_slider_set_value_bubble_yis
+#define cogito_slider_get_value_bubble cogito_slider_get_value_bubble_yis
+#define cogito_slider_set_bubble_format cogito_slider_set_bubble_format_yis
+#define cogito_slider_get_bubble_format cogito_slider_get_bubble_format_yis
+#define cogito_slider_set_bubble_scale cogito_slider_set_bubble_scale_yis
+#define cogito_slider_get_bubble_scale cogito_slider_get_bubble_scale_yis
 #define cogito_slider_set_wavy cogito_slider_set_wavy_yis
 #define cogito_slider_get_wavy cogito_slider_get_wavy_yis
 #define cogito_slider_set_step cogito_slider_set_step_yis
@@ -316,8 +322,11 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_tabs_set_selected cogito_tabs_set_selected_yis
 #define cogito_textfield_get_text cogito_textfield_get_text_yis
 #define cogito_textfield_get_hint cogito_textfield_get_hint_yis
+#define cogito_textfield_get_regex cogito_textfield_get_regex_yis
+#define cogito_textfield_is_valid cogito_textfield_is_valid_yis
 #define cogito_textfield_new cogito_textfield_new_yis
 #define cogito_textfield_on_change cogito_textfield_on_change_yis
+#define cogito_textfield_set_regex cogito_textfield_set_regex_yis
 #define cogito_textfield_set_hint cogito_textfield_set_hint_yis
 #define cogito_textfield_set_text cogito_textfield_set_text_yis
 #define cogito_textview_get_text cogito_textview_get_text_yis
@@ -660,6 +669,12 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_slider_get_centered
 #undef cogito_slider_set_end_dots
 #undef cogito_slider_get_end_dots
+#undef cogito_slider_set_value_bubble
+#undef cogito_slider_get_value_bubble
+#undef cogito_slider_set_bubble_format
+#undef cogito_slider_get_bubble_format
+#undef cogito_slider_set_bubble_scale
+#undef cogito_slider_get_bubble_scale
 #undef cogito_slider_set_wavy
 #undef cogito_slider_get_wavy
 #undef cogito_slider_set_step
@@ -692,8 +707,11 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_tabs_set_selected
 #undef cogito_textfield_get_text
 #undef cogito_textfield_get_hint
+#undef cogito_textfield_get_regex
+#undef cogito_textfield_is_valid
 #undef cogito_textfield_new
 #undef cogito_textfield_on_change
+#undef cogito_textfield_set_regex
 #undef cogito_textfield_set_hint
 #undef cogito_textfield_set_text
 #undef cogito_textview_get_text
@@ -3299,6 +3317,60 @@ bool cogito_slider_get_end_dots(cogito_node *slider) {
   return yis_as_bool(v);
 }
 
+void cogito_slider_set_value_bubble(cogito_node *slider, bool on) {
+  if (!slider)
+    return;
+  cogito_slider_set_value_bubble_yis(YV_OBJ(slider), YV_BOOL(on));
+}
+
+bool cogito_slider_get_value_bubble(cogito_node *slider) {
+  if (!slider)
+    return false;
+  YisVal v = cogito_slider_get_value_bubble_yis(YV_OBJ(slider));
+  return yis_as_bool(v);
+}
+
+void cogito_slider_set_bubble_format(cogito_node *slider, const char *format) {
+  if (!slider)
+    return;
+  if (!format) {
+    cogito_slider_set_bubble_format_yis(YV_OBJ(slider), YV_NULLV);
+    return;
+  }
+  YisVal fv = cogito_val_from_cstr(format);
+  cogito_slider_set_bubble_format_yis(YV_OBJ(slider), fv);
+  if (fv.tag == EVT_STR)
+    yis_release_val(fv);
+}
+
+const char *cogito_slider_get_bubble_format(cogito_node *slider) {
+  if (!slider)
+    return NULL;
+  YisVal v = cogito_slider_get_bubble_format_yis(YV_OBJ(slider));
+  return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
+}
+
+void cogito_slider_set_bubble_scale(cogito_node *slider, double scale) {
+  if (!slider)
+    return;
+  cogito_slider_set_bubble_scale_yis(YV_OBJ(slider), YV_FLOAT(scale));
+}
+
+double cogito_slider_get_bubble_scale(cogito_node *slider) {
+  if (!slider)
+    return 1.0;
+  YisVal v = cogito_slider_get_bubble_scale_yis(YV_OBJ(slider));
+  return yis_as_float(v);
+}
+
+void cogito_slider_set_show_bubble(cogito_node *slider, bool on) {
+  cogito_slider_set_value_bubble(slider, on);
+}
+
+bool cogito_slider_get_show_bubble(cogito_node *slider) {
+  return cogito_slider_get_value_bubble(slider);
+}
+
 void cogito_slider_set_wavy(cogito_node *slider, bool on) {
   if (!slider)
     return;
@@ -3426,6 +3498,29 @@ const char *cogito_textfield_get_hint(cogito_node *tf) {
     return NULL;
   YisVal v = cogito_textfield_get_hint_yis(YV_OBJ(tf));
   return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
+}
+
+void cogito_textfield_set_regex(cogito_node *tf, const char *pattern) {
+  if (!tf)
+    return;
+  YisVal pv = cogito_val_from_cstr(pattern);
+  cogito_textfield_set_regex_yis(YV_OBJ(tf), pv);
+  if (pv.tag == EVT_STR)
+    yis_release_val(pv);
+}
+
+const char *cogito_textfield_get_regex(cogito_node *tf) {
+  if (!tf)
+    return NULL;
+  YisVal v = cogito_textfield_get_regex_yis(YV_OBJ(tf));
+  return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
+}
+
+bool cogito_textfield_is_valid(cogito_node *tf) {
+  if (!tf)
+    return false;
+  YisVal v = cogito_textfield_is_valid_yis(YV_OBJ(tf));
+  return yis_as_bool(v);
 }
 
 void cogito_textview_set_text(cogito_node *tv, const char *text) {

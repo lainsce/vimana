@@ -88,7 +88,10 @@ case COGITO_WINDOW: {
           scrim.a = (uint8_t)lroundf((float)scrim.a * p);
             cogito_draw_rect(0, 0, n->w, n->h, scrim, 0);
         }
-        int slide_dx = (int)lroundf((1.0f - p) * (float)n->side_sheet_node->w);
+        int slide_dx = 0;
+        if (n->side_sheet_node->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR) {
+          slide_dx = (int)lroundf((1.0f - p) * (float)n->side_sheet_node->w);
+        }
         if (slide_dx > 0) cogito_draw_offset_subtree(n->side_sheet_node, slide_dx, 0);
         cogito_draw_node(n->side_sheet_node);
         if (slide_dx > 0) cogito_draw_offset_subtree(n->side_sheet_node, -slide_dx, 0);

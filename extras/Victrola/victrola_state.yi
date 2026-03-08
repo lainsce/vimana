@@ -2,10 +2,11 @@ cask victrola_state
 
 bring stdr
 bring json
+
 bring victrola_model
 bring victrola_util
 
-:: save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any, track_meta_map = any, artist_image_map = any) (( -- )) {
+:: save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any, track_meta_map = any, artist_image_map = any, play_counts = any, play_count_artists = any, track_play_counts = any) (( -- )) {
     let folder_esc = json.escape(current_folder)
 
     let ?covers_json = ""
@@ -93,11 +94,58 @@ bring victrola_util
         ai_json = "$$ai_json$${\"name\":\"$$ai_name_esc$$\",\"image\":\"$$ai_path_esc$$\"}"
     }
 
+    let ?play_json = ""
+    let ?play_seen = []: [string => any]
+    for (let ?m = 0; m < stdr.len(play_count_artists); m = m + 1) {
+        let artist = stdr.str(play_count_artists[m] ?? "")
+        if stdr.len(artist) == 0 || !stdr.is_null(play_seen[artist]) {
+            continue
+        }
+        play_seen[artist] = true
+
+        let count = stdr.num(play_counts[artist] ?? 0)
+        if count <= 0 {
+            continue
+        }
+
+        if stdr.len(play_json) > 0 {
+            play_json = "$$play_json$$,"
+        }
+
+        let artist_esc = json.escape(artist)
+        play_json = "$$play_json$${\"name\":\"$$artist_esc$$\",\"count\":$$count$$}"
+    }
+
+    let ?track_play_json = ""
+    let ?track_play_seen = []: [string => any]
+    for (let ?n = 0; n < stdr.len(tracks); n = n + 1) {
+        let trk = tracks[n] ?? []: [string => any]
+        let trk_path = stdr.str(trk["path"] ?? "")
+        if stdr.len(trk_path) == 0 || !stdr.is_null(track_play_seen[trk_path]) {
+            continue
+        }
+
+        track_play_seen[trk_path] = true
+        let count = stdr.num(track_play_counts[trk_path] ?? 0)
+        if count <= 0 {
+            continue
+        }
+
+        if stdr.len(track_play_json) > 0 {
+            track_play_json = "$$track_play_json$$,"
+        }
+
+        let path_esc = json.escape(trk_path)
+        track_play_json = "$$track_play_json$${\"path\":\"$$path_esc$$\",\"count\":$$count$$}"
+    }
+
     let ?payload = "{"
     payload = "$$payload$$\"folder\":\"$$folder_esc$$\""
     payload = "$$payload$$,\"album_covers\":[$$covers_json$$]"
     payload = "$$payload$$,\"track_meta\":[$$meta_json$$]"
     payload = "$$payload$$,\"artist_images\":[$$ai_json$$]"
+    payload = "$$payload$$,\"play_counts\":[$$play_json$$]"
+    payload = "$$payload$$,\"track_play_counts\":[$$track_play_json$$]"
     payload = "$$payload$$}"
     stdr.write_text_file(state_path, payload)
 }
@@ -108,6 +156,9 @@ bring victrola_util
     out["covers"] = []: [string => any]
     out["track_meta"] = []: [string => any]
     out["artist_images"] = []: [string => any]
+    out["play_counts"] = []: [string => any]
+    out["play_count_artists"] = []: [string]
+    out["track_play_counts"] = []: [string => any]
 
     let raw = stdr.read_text_file(state_path)
     if stdr.is_null(raw) {
@@ -195,6 +246,49 @@ bring victrola_util
         }
     }
     out["artist_images"] = ai_map
+
+    let ?play_map = []: [string => any]
+    let ?play_artists = []: [string]
+    let ?play_seen = []: [string => any]
+    let play_entries = root["play_counts"] ?? []: [any]
+    for (let ?m = 0; m < stdr.len(play_entries); m = m + 1) {
+        let play = play_entries[m] ?? []: [string => any]
+        let artist = stdr.str(play["name"] ?? "")
+        if stdr.len(artist) == 0 || !stdr.is_null(play_seen[artist]) {
+            continue
+        }
+
+        let count = stdr.num(play["count"] ?? 0)
+        if count <= 0 {
+            continue
+        }
+
+        play_seen[artist] = true
+        play_map[artist] = count
+        play_artists[stdr.len(play_artists)] = artist
+    }
+    out["play_counts"] = play_map
+    out["play_count_artists"] = play_artists
+
+    let ?track_play_map = []: [string => any]
+    let ?track_play_seen = []: [string => any]
+    let track_play_entries = root["track_play_counts"] ?? []: [any]
+    for (let ?n = 0; n < stdr.len(track_play_entries); n = n + 1) {
+        let play = track_play_entries[n] ?? []: [string => any]
+        let path = stdr.str(play["path"] ?? "")
+        if stdr.len(path) == 0 || !stdr.is_null(track_play_seen[path]) {
+            continue
+        }
+
+        let count = stdr.num(play["count"] ?? 0)
+        if count <= 0 {
+            continue
+        }
+
+        track_play_seen[path] = true
+        track_play_map[path] = count
+    }
+    out["track_play_counts"] = track_play_map
 
     return out
 }

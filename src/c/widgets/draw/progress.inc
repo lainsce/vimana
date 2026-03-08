@@ -7,6 +7,14 @@ case COGITO_PROGRESS: {
       CogitoColor fill = s.has_selection ? s.selection : (s.has_text ? s.text : (s.has_knob ? s.knob : n->text_color));
       cogito_anim_apply(n, &s, &track, &fill, NULL, NULL);
 
+      CogitoColor container_bg = n->bg_set
+        ? n->bg
+        : (cogito_cached_surface_container.a ? cogito_cached_surface_container : cogito_cached_surface);
+      CogitoColor surface_bg = cogito_cached_surface.a ? cogito_cached_surface : container_bg;
+      container_bg = cogito_bin_scope_remap_color(container_bg);
+      surface_bg = cogito_bin_scope_remap_color(surface_bg);
+      bool require_stop_indicator = cogito_track_needs_stop_indicator(track, container_bg, surface_bg);
+
       int thickness = n->track_height_set ? n->track_height : (s.has_track_height ? s.track_height : 4);
       if (thickness < 1) thickness = 1;
       int cap = thickness / 2;
@@ -196,8 +204,9 @@ case COGITO_PROGRESS: {
           cogito_draw_ring_arc_aa(cx, cy, (double)stroke_r, (double)thickness, a0, a1, fill, wavy, wave_phase, wave_amp);
         }
       } else {
-        int x0 = n->x;
-        int x1 = n->x + n->w;
+        const int linear_inset = 4;
+        int x0 = n->x + linear_inset;
+        int x1 = n->x + n->w - linear_inset;
         if (x1 <= x0) break;
         int cy = n->y + n->h / 2;
         int boundary_gap = cap * 2 + 1;
@@ -272,6 +281,19 @@ case COGITO_PROGRESS: {
               }
             }
           }
+        }
+
+        if (require_stop_indicator) {
+          int stop_d = thickness;
+          if (stop_d < 3) stop_d = 3;
+          int stop_r = stop_d / 2;
+          int stop_cx = cogito_is_rtl() ? x0 : (x1 - 1);
+          int stop_cy = cy;
+          CogitoColor stop_col = fill;
+          if (cogito_color_contrast_ratio(stop_col, track) < 1.2f) {
+            stop_col = cogito_on_color(track);
+          }
+          cogito_draw_rect(stop_cx - stop_r, stop_cy - stop_r, stop_d, stop_d, stop_col, stop_r);
         }
       }
 

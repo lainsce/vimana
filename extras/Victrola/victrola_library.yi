@@ -2,6 +2,7 @@ cask victrola_library
 
 bring stdr
 bring cogito
+
 bring victrola_model
 
 def ?artist_click_handler = (artist = string) => {}

@@ -229,10 +229,21 @@ static bool cogito_hit_node_min48(const CogitoNode* n, int x, int y) {
 
 static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
-  if (n->hidden) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_WINDOW && n->popover_open && n->popover) {
     CogitoNode* pop_hit = cogito_find_clickable(n->popover, x, y);
     if (pop_hit) return pop_hit;
+  }
+  if (n->kind == COGITO_WINDOW && n->side_sheet_open && n->side_sheet_node) {
+    CogitoNode* ss = n->side_sheet_node;
+    CogitoNode* ss_hit = cogito_find_clickable(ss, x, y);
+    if (ss_hit) return ss_hit;
+    // In modal/inset mode, side sheet captures interactions over the window.
+    if (ss->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR &&
+        cogito_hit_rect(x, y, 0, 0, n->w, n->h)) {
+      return ss;
+    }
+    if (cogito_hit_node(ss, x, y)) return ss;
   }
   if (n->kind == COGITO_ZSTACK) {
     CogitoNode* sheet = NULL;

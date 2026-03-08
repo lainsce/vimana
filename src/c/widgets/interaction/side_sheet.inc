@@ -13,7 +13,9 @@ static void cogito_side_sheet_close_rect(CogitoNode* n, int* out_x, int* out_y, 
 
 static int cogito_side_sheet_min_width(CogitoNode* n) {
   if (!n) return 200;
-  int handle_w = 28;
+  int handle_w = (n->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR)
+    ? 0
+    : COGITO_SIDE_SHEET_HANDLE_TOUCH_W;
   int pad_l = n->padding_left;
   int pad_r = n->padding_right;
   int title_w = 0;
@@ -23,7 +25,8 @@ static int cogito_side_sheet_min_width(CogitoNode* n) {
   }
   // Keep title clear of the close button area (24 right pad + 24 button + 8 gap).
   int close_lane_w = 56;
-  int header_w = pad_l + title_w + close_lane_w;
+  int edge_pad = pad_l > pad_r ? pad_l : pad_r;
+  int header_w = handle_w + edge_pad + title_w + close_lane_w;
 
   // SideSheet content is vertically stacked, so min width is max row width, not sum.
   int content_w = 0;
@@ -90,6 +93,13 @@ static int cogito_side_sheet_snap_width(CogitoNode* n, int host_x, int host_w, i
 
 static void cogito_side_sheet_handle_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n) return;
+  if (n->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+    if (out_x) *out_x = n->x;
+    if (out_y) *out_y = n->y;
+    if (out_w) *out_w = 0;
+    if (out_h) *out_h = 0;
+    return;
+  }
   int w = COGITO_SIDE_SHEET_HANDLE_TOUCH_W;
   int h = 96;
   // In LTR sheet is on right → handle on left edge; in RTL sheet is on left → handle on right edge
@@ -103,7 +113,11 @@ static void cogito_side_sheet_handle_rect(CogitoNode* n, int* out_x, int* out_y,
 
 void cogito_side_sheet_set_mode(CogitoNode* n, int mode) {
     if (!n || n->kind != COGITO_SIDE_SHEET) return;
+  if (mode < COGITO_SIDE_SHEET_MODAL || mode > COGITO_SIDE_SHEET_SIDEBAR) {
+    mode = COGITO_SIDE_SHEET_MODAL;
+  }
     n->side_sheet.mode = mode;
+  n->side_sheet.preferred_mode = mode;
     // Set class name for theme styling based on mode
     const char* class_name = NULL;
     switch (mode) {
@@ -133,6 +147,7 @@ static CogitoNode* cogito_side_sheet_new_obj(YisStr* title) {
   n->side_sheet.drag_start_w = 0;
   n->side_sheet.desired_w = 0;
   n->side_sheet.mode = COGITO_SIDE_SHEET_MODAL;
+  n->side_sheet.preferred_mode = COGITO_SIDE_SHEET_MODAL;
   return n;
 }
 

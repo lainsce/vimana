@@ -317,6 +317,9 @@ macro chain() (( any )) {
 : __cogito_settings_window(title = string) (( SettingsWindow )) { }
 : __cogito_slider_get_centered(sl = Slider) (( bool )) { }
 : __cogito_slider_get_end_dots(sl = Slider) (( bool )) { }
+: __cogito_slider_get_value_bubble(sl = Slider) (( bool )) { }
+: __cogito_slider_get_bubble_format(sl = Slider) (( string )) { }
+: __cogito_slider_get_bubble_scale(sl = Slider) (( num )) { }
 : __cogito_slider_get_step(sl = Slider) (( num )) { }
 : __cogito_slider_get_step_dots(sl = Slider) (( bool )) { }
 : __cogito_slider_get_range_end(sl = Slider) (( num )) { }
@@ -327,6 +330,9 @@ macro chain() (( any )) {
 : __cogito_slider_range(min = num, max = num, start = num, end = num) (( Slider )) { }
 : __cogito_slider_set_centered(sl = Slider, on = bool) (( -- )) { }
 : __cogito_slider_set_end_dots(sl = Slider, on = bool) (( -- )) { }
+: __cogito_slider_set_value_bubble(sl = Slider, on = bool) (( -- )) { }
+: __cogito_slider_set_bubble_format(sl = Slider, format = string) (( -- )) { }
+: __cogito_slider_set_bubble_scale(sl = Slider, scale = num) (( -- )) { }
 : __cogito_slider_set_wavy(sl = Slider, on = bool) (( -- )) { }
 : __cogito_slider_get_wavy(sl = Slider) (( bool )) { }
 : __cogito_slider_set_step(sl = Slider, step = num) (( -- )) { }
@@ -366,9 +372,12 @@ macro chain() (( any )) {
 : __cogito_tabs_set_selected(tabs = Tabs, idx = num) (( -- )) { }
 : __cogito_tabs() (( Tabs )) { }
 : __cogito_textfield_get_hint(tf = TextField) (( string )) { }
+: __cogito_textfield_get_regex(tf = TextField) (( string )) { }
 : __cogito_textfield_get_text(tf = TextField) (( string )) { }
+: __cogito_textfield_is_valid(tf = TextField) (( bool )) { }
 : __cogito_textfield_on_change(tf = TextField, handler = any) (( -- )) { }
 : __cogito_textfield_set_hint(tf = TextField, hint = string) (( -- )) { }
+: __cogito_textfield_set_regex(tf = TextField, pattern = any) (( -- )) { }
 : __cogito_textfield_set_text(tf = TextField, text = string) (( -- )) { }
 : __cogito_textfield(text = string) (( TextField )) { }
 : __cogito_textview_get_text(tv = TextView) (( string )) { }
@@ -2218,6 +2227,16 @@ pub class TextField {
         __cogito_textfield_on_change(this, handler)
         return this
     }
+    :: set_regex(this, pattern = any) (( TextField )) {
+        __cogito_textfield_set_regex(this, pattern)
+        return this
+    }
+    :: regex(this) (( string )) {
+        return __cogito_textfield_get_regex(this)
+    }
+    :: is_valid(this) (( bool )) {
+        return __cogito_textfield_is_valid(this)
+    }
     :: set_hexpand(this, expand = bool) (( TextField )) {
         __cogito_container_set_hexpand(this, expand)
         return this
@@ -2571,6 +2590,34 @@ pub class Slider {
     }
     :: end_dots(this) (( bool )) {
         return __cogito_slider_get_end_dots(this)
+    }
+    :: set_value_bubble(this, on = bool) (( Slider )) {
+        __cogito_slider_set_value_bubble(this, on)
+        return this
+    }
+    :: set_show_bubble(this, on = bool) (( Slider )) {
+        __cogito_slider_set_value_bubble(this, on)
+        return this
+    }
+    :: value_bubble(this) (( bool )) {
+        return __cogito_slider_get_value_bubble(this)
+    }
+    :: show_bubble(this) (( bool )) {
+        return __cogito_slider_get_value_bubble(this)
+    }
+    :: set_bubble_format(this, format = string) (( Slider )) {
+        __cogito_slider_set_bubble_format(this, format)
+        return this
+    }
+    :: bubble_format(this) (( string )) {
+        return __cogito_slider_get_bubble_format(this)
+    }
+    :: set_bubble_scale(this, scale = num) (( Slider )) {
+        __cogito_slider_set_bubble_scale(this, scale)
+        return this
+    }
+    :: bubble_scale(this) (( num )) {
+        return __cogito_slider_get_bubble_scale(this)
     }
     :: set_wavy(this, on = bool) (( Slider )) {
         __cogito_slider_set_wavy(this, on)

@@ -50,6 +50,13 @@ label.victrola-album-title-expressive
   font-weight: 600
   font-size: 18
 
+label.big-display-expressive
+  text-overflow: fade
+  font-variation: wdth 132, opsz 14
+  font-weight: 600
+  font-size: 57
+  max-width: 360
+
 label.view-title-expressive
   text-overflow: fade
   font-variation: wdth 132, opsz 14
@@ -74,6 +81,25 @@ vstack.victrola-player
   background: transparent
   min-width: 360
   max-width: 360
+
+vstack.victrola-mix-panel
+  background: transparent
+
+fixed.victrola-mix-collage
+  background: transparent
+  min-width: 741
+  min-height: 452
+
+label.victrola-mix-subtitle
+  font-size: 17
+  font-weight: 500
+  max-width: 420
+
+hstack.victrola-queue-row
+  background: transparent
+
+victrola-queue-list
+  background: transparent
 
 hstack.victrola-seek-row
 hstack.victrola-duration

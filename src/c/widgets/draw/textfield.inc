@@ -22,6 +22,7 @@ case COGITO_TEXTFIELD: {
       const char* hint = (n->hint && n->hint->data && n->hint->data[0]) ? n->hint->data : NULL;
       bool has_hint = hint && hint[0];
       bool has_icon = (n->icon && n->icon->data && n->icon->data[0]);
+      bool has_validation_icon = n->textfield_regex_invalid;
 
       int hint_size = cogito_label_class_font_size(COGITO_LABEL_CLASS_CAPTION, 12);
       bool hint_medium = cogito_label_class_medium(COGITO_LABEL_CLASS_CAPTION, true);
@@ -80,6 +81,9 @@ case COGITO_TEXTFIELD: {
       if (s.has_border) border = s.border;
       if (s.has_border_width) border_w = s.border_width;
       if (s.has_radius) radius = s.radius;
+      if (n->textfield_regex_invalid && cogito_cached_error.a) {
+        border = cogito_cached_error;
+      }
       if (cogito_has_selection_text) {
         text = cogito_selection_text;
         if (text.a < 8) text = s.has_text ? s.text : n->text_color;
@@ -89,6 +93,9 @@ case COGITO_TEXTFIELD: {
       cogito_draw_rect_node(n, &s, n->x, n->y, n->w, field_h, bg, radius);
       if (!is_outlined) {
         CogitoColor indicator = border;
+        if (n->textfield_regex_invalid && cogito_cached_error.a) {
+          indicator = cogito_cached_error;
+        }
         int indicator_w = border_w > 0 ? border_w : 1;
         if (indicator.a == 0) {
           indicator = cogito_cached_outline.a ? cogito_cached_outline : cogito_rgba(120, 120, 120, 255);
@@ -108,6 +115,10 @@ case COGITO_TEXTFIELD: {
         if (tf_rtl) text_right -= (icon_size + icon_gap);
         else text_x += icon_size + icon_gap;
       }
+      if (has_validation_icon) {
+        if (tf_rtl) text_x += icon_size + icon_gap;
+        else text_right -= icon_size + icon_gap;
+      }
       int text_w = text_right - text_x;
       if (text_w < 0) text_w = 0;
       int ty = n->y + (field_h - th) / 2;
@@ -118,11 +129,19 @@ case COGITO_TEXTFIELD: {
         int iy = n->y + (field_h - icon_size) / 2;
         cogito_draw_icon_fallback(n, n->icon->data, ix, iy, icon_size, icon_color);
       }
+      if (has_validation_icon) {
+        CogitoColor warn_color = cogito_cached_error.a ? cogito_cached_error : text;
+        int ix = tf_rtl ? (n->x + field_pad_lr_icon) : (n->x + n->w - field_pad_lr_icon - icon_size);
+        int iy = n->y + (field_h - icon_size) / 2;
+        cogito_draw_icon_fallback(n, "exclamationmark.triangle", ix, iy, icon_size, warn_color);
+      }
 
       bool float_placeholder = has_placeholder && (focused || has_text);
       if (has_placeholder) {
         CogitoColor ph = text;
-        if (focused && cogito_cached_primary.a) {
+        if (n->textfield_regex_invalid && cogito_cached_error.a) {
+          ph = cogito_cached_error;
+        } else if (focused && cogito_cached_primary.a) {
           ph = cogito_cached_primary;
         } else {
           ph.a = 140;
@@ -269,6 +288,9 @@ case COGITO_TEXTFIELD: {
         CogitoColor hint_base = text;
         hint_base.a = (uint8_t)(hint_base.a * 0.78f);
         CogitoColor hint_color = cogito_label_class_color(COGITO_LABEL_CLASS_CAPTION, hint_base);
+        if (n->textfield_regex_invalid && cogito_cached_error.a) {
+          hint_color = cogito_cached_error;
+        }
 
         const char* helper_left = hint;
         const char* helper_right = NULL;

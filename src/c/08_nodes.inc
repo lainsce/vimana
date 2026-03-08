@@ -177,6 +177,14 @@ static void cogito_node_drop(YisObj* o) {
     free(n->bottom_nav.labels);
     free(n->bottom_nav.icons);
   }
+  if (n->kind == COGITO_SLIDER && n->slider.bubble_format) {
+    yis_release_val(YV_STR(n->slider.bubble_format));
+    n->slider.bubble_format = NULL;
+  }
+  if (n->textfield_regex) {
+    yis_release_val(YV_STR(n->textfield_regex));
+    n->textfield_regex = NULL;
+  }
   if (n->view_id) {
     yis_release_val(YV_STR(n->view_id));
     n->view_id = NULL;
@@ -326,6 +334,10 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
   // Kind-specific non-zero defaults
   switch (kind) {
     case COGITO_SCROLLER: n->scroller.vert = true; break;
+    case COGITO_SLIDER:
+      n->slider.show_value_bubble = true;
+      n->slider.bubble_scale = 1.0;
+      break;
     case COGITO_STEPPER: n->stepper.max = 100.0; n->stepper.step = 1.0; break;
     case COGITO_COLORPICKER:
       n->colorpicker.h = 236.0;
@@ -342,6 +354,13 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
       n->view_dual.animating = false;
       n->view_dual.show_handle = true;
       n->view_dual.edge_snap = 0;
+      break;
+    case COGITO_WINDOW:
+      n->window_size_class = COGITO_WINDOW_SIZE_MEDIUM;
+      break;
+    case COGITO_SIDE_SHEET:
+      n->side_sheet.mode = COGITO_SIDE_SHEET_MODAL;
+      n->side_sheet.preferred_mode = COGITO_SIDE_SHEET_MODAL;
       break;
     default: break;
   }
@@ -590,6 +609,9 @@ static void cogito_node_set_text(CogitoNode* n, YisStr* s) {
     if (n->colorpicker.sel_start > len) n->colorpicker.sel_start = len;
     if (n->colorpicker.sel_end > len) n->colorpicker.sel_end = len;
   }
+  if (n->kind == COGITO_TEXTFIELD) {
+    cogito_textfield_refresh_regex_state(n);
+  }
 }
 
 static void cogito_node_set_subtitle(CogitoNode* n, YisStr* s) {
@@ -709,7 +731,7 @@ void cogito_node_add_menu_section(CogitoNode* n, YisStr* label, YisFn* handler) 
 #include "widgets/util/webview_render.inc"
 
 static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
-  if (!n || n->hidden) {
+  if (cogito_node_is_hidden(n)) {
     if (out_w) *out_w = 0;
     if (out_h) *out_h = 0;
     return;

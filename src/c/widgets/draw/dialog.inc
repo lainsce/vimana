@@ -3,6 +3,9 @@ case COGITO_DIALOG: {
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+      CogitoNode* win = cogito_node_window(n);
+      bool compact_fullscreen = win && cogito_window_node_is_compact(win) &&
+        n->x <= 0 && n->y <= 0 && n->w >= win->w && n->h >= win->h;
   bool has_title = (n->text && n->text->data && n->text->data[0]);
       if (s.has_bg)           { n->bg = s.bg;                       n->bg_set = true;
   }
@@ -10,25 +13,29 @@ case COGITO_DIALOG: {
   }
       if (s.has_border_width) { n->border_width = s.border_width;    n->border_width_set = true;
   }
-  // Cogito: Dialog uses XL=28dp corner radius as a hard floor
-      if (s.has_radius)       { n->border_radius = s.radius;
-  }
-      else if (n->border_radius < 28) { n->border_radius = 28;
-  }
+      int dialog_radius = s.has_radius ? s.radius : n->border_radius;
+      if (compact_fullscreen) {
+        dialog_radius = 0;
+      } else if (dialog_radius < 28) {
+        // Cogito: Dialog uses XL=28dp corner radius as a hard floor.
+        dialog_radius = 28;
+      }
       if (s.has_shadow)       { n->shadow_level = s.shadow_level;   n->shadow_set = true;
   }
   // Draw box-shadow from SUM
-      if (s.has_box_shadow && s.box_shadow.blur > 0) {
-        cogito_draw_shadow_node_box(n, &s, n->x, n->y, n->w, n->h, n->border_radius, &s.box_shadow);
-    } else if (n->shadow_set && n->shadow_level >= 0) {
-        cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, n->border_radius, n->shadow_level);
+      if (!compact_fullscreen) {
+        if (s.has_box_shadow && s.box_shadow.blur > 0) {
+          cogito_draw_shadow_node_box(n, &s, n->x, n->y, n->w, n->h, dialog_radius, &s.box_shadow);
+      } else if (n->shadow_set && n->shadow_level >= 0) {
+          cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, dialog_radius, n->shadow_level);
+    }
   }
 
       if (n->bg_set) {
-        cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, n->bg, n->border_radius);
+        cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, n->bg, dialog_radius);
   }
       if (n->border_width > 0) {
-        cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, n->border_color, n->border_radius, n->border_width);
+        cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, n->border_color, dialog_radius, n->border_width);
   }
 
       int pad_l = COGITO_DIALOG_HEADER_INSET;

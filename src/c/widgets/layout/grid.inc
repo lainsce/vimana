@@ -11,7 +11,7 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
   int row_count = 0;
   for (size_t i = 0; i < count; i++) {
     CogitoNode* c = n->children[i];
-    if (!c || c->hidden) continue;
+    if (cogito_node_is_hidden(c)) continue;
     int col = c->grid_pos_set ? c->grid_col : 0;
     int row = c->grid_pos_set ? c->grid_row : 0;
     int cs = c->grid_span_x > 0 ? c->grid_span_x : 1;
@@ -28,7 +28,7 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
   if (row_count < 1) {
     for (size_t i = 0; i < count; i++) {
       CogitoNode* c = n->children[i];
-      if (!c || c->hidden) continue;
+      if (cogito_node_is_hidden(c)) continue;
       cogito_layout_node(c, x, y, 0, 0);
     }
     return;
@@ -44,7 +44,7 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
   }
   for (size_t i = 0; i < count; i++) {
     CogitoNode* c = n->children[i];
-    if (!c || c->hidden) continue;
+    if (cogito_node_is_hidden(c)) continue;
     int cw = 0;
     cogito_intrinsic_size(c, &cw, NULL);
     int col = c->grid_pos_set ? c->grid_col : 0;
@@ -88,7 +88,7 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
   }
   for (size_t i = 0; i < count; i++) {
     CogitoNode* c = n->children[i];
-    if (!c || c->hidden) continue;
+    if (cogito_node_is_hidden(c)) continue;
     int ch = 0;
     cogito_intrinsic_size(c, NULL, &ch);
     int row = c->grid_pos_set ? c->grid_row : 0;
@@ -185,7 +185,7 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
   int base_x = x + n->padding_left;
   for (size_t i = 0; i < count; i++) {
     CogitoNode* c = n->children[i];
-    if (!c || c->hidden) continue;
+    if (cogito_node_is_hidden(c)) continue;
     int r = c->grid_pos_set ? c->grid_row : 0;
     int ccol = c->grid_pos_set ? c->grid_col : 0;
     int cs = c->grid_span_x > 0 ? c->grid_span_x : 1;

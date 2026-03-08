@@ -17,6 +17,48 @@ static void cogito_textfield_set_text(YisVal nodev, YisVal textv) {
   cogito_node_set_text(n, ts);
   cogito_window_relayout(cogito_node_window(n));
 }
+
+static void cogito_textfield_set_regex(YisVal nodev, YisVal regexv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_set_regex expects textfield");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+
+  YisStr* rs = NULL;
+  bool temp = false;
+  if (regexv.tag == EVT_STR) {
+    rs = (YisStr*)regexv.as.p;
+  } else if (regexv.tag != EVT_NULL) {
+    rs = stdr_to_string(regexv);
+    temp = true;
+  }
+
+  if (rs && (!rs->data || !rs->data[0])) {
+    if (temp) yis_release_val(YV_STR(rs));
+    rs = NULL;
+    temp = false;
+  }
+  if (rs) yis_retain_val(YV_STR(rs));
+  if (n->textfield_regex) yis_release_val(YV_STR(n->textfield_regex));
+  n->textfield_regex = rs;
+  if (temp && rs) yis_release_val(YV_STR(rs));
+  cogito_textfield_refresh_regex_state(n);
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static YisVal cogito_textfield_get_regex(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_get_regex expects textfield");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  YisStr* s = n->textfield_regex ? n->textfield_regex : stdr_str_lit("");
+  yis_retain_val(YV_STR(s));
+  return YV_STR(s);
+}
+
+static YisVal cogito_textfield_is_valid(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_is_valid expects textfield");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  cogito_textfield_refresh_regex_state(n);
+  return YV_BOOL(!n->textfield_regex_invalid);
+}
+
 static YisVal cogito_textfield_get_text(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_get_text expects textfield");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
@@ -48,9 +90,19 @@ static void cogito_textfield_on_change(YisVal nodev, YisVal handler) {
 }
 static CogitoNode* cogito_find_text_input(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_WINDOW && n->popover_open && n->popover) {
     CogitoNode* pop_hit = cogito_find_text_input(n->popover, x, y);
     if (pop_hit) return pop_hit;
+  }
+  if (n->kind == COGITO_WINDOW && n->side_sheet_open && n->side_sheet_node) {
+    CogitoNode* ss = n->side_sheet_node;
+    CogitoNode* ss_hit = cogito_find_text_input(ss, x, y);
+    if (ss_hit) return ss_hit;
+    if (ss->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR &&
+        cogito_hit_rect(x, y, 0, 0, n->w, n->h)) {
+      return NULL;
+    }
   }
   if (n->kind == COGITO_DIALOG_SLOT && n->dialog && n->dialog_open) {
     return cogito_find_text_input(n->dialog, x, y);

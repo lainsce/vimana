@@ -2286,6 +2286,67 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_textfield_set_regex")) {
+                        GenExpr node, pattern;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &pattern, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_textfield_set_regex(%s, %s);", node.tmp, pattern.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", pattern.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &pattern, pattern.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&pattern);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_textfield_get_regex")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_textfield_get_regex(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_textfield_is_valid")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_textfield_is_valid(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_searchfield_set_text")) {
                         GenExpr node, text;
                         if (!gen_expr(cg, path, e->as.call.args[
@@ -2774,6 +2835,138 @@
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
                         "YisVal %s = cogito_slider_get_end_dots(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_set_value_bubble")) {
+                        GenExpr node, onv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &onv, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_slider_set_value_bubble(%s, %s);", node.tmp, onv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", onv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &onv, onv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&onv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_get_value_bubble")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_slider_get_value_bubble(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_set_bubble_format")) {
+                        GenExpr node, formatv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &formatv, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_slider_set_bubble_format(%s, %s);", node.tmp, formatv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", formatv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &formatv, formatv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&formatv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_get_bubble_format")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_slider_get_bubble_format(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_set_bubble_scale")) {
+                        GenExpr node, scalev;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &scalev, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_slider_set_bubble_scale(%s, %s);", node.tmp, scalev.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", scalev.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &scalev, scalev.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&scalev);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_slider_get_bubble_scale")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_slider_get_bubble_scale(%s);", t, node.tmp);
                         w_line(&cg->w,
                         "yis_release_val(%s);", node.tmp);
                         gen_expr_release_except(cg, &node, node.tmp);

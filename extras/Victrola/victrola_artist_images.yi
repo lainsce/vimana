@@ -30,7 +30,9 @@ def CACHE_DIR = ""
     for (let ?i = 0; i < n; i = i + 1) {
         let ch = stdr.slice(artist, i, i + 1)
         let code = stdr.char_code(ch)
-        if (code >= 97 && code <= 122) || (code >= 65 && code <= 90) || (code >= 48 && code <= 57) || ch == "-" || ch == "_" {
+        let is_alpha = (code >= 97 && code <= 122) || (code >= 65 && code <= 90)
+        let is_alnum = is_alpha || (code >= 48 && code <= 57)
+        if is_alnum || ch == "-" || ch == "_" {
             out = stdr.str_concat(out, ch)
         } else {
             out = stdr.str_concat(out, "_")

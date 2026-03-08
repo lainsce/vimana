@@ -2,6 +2,7 @@
 
 #include "backend.h"
 #include <SDL3/SDL.h> // Required for SDL_GetPerformanceCounter (spring dt) and other SDL types
+#include <regex.h>
 #if defined(__APPLE__)
 #include <objc/objc.h>
 #include <objc/message.h>
@@ -77,6 +78,7 @@ static void cogito_apply_theme(bool dark, CogitoColor accent);
 #define COGITO_SIDE_SHEET_DEFAULT_RATIO 0.40f
 #define COGITO_SIDE_SHEET_LEFT_INSET 0
 #define COGITO_SIDE_SHEET_HANDLE_TOUCH_W 32
+#define COGITO_WINDOW_COMPACT_MAX_W 600
 // Nav Rail Constants (dp)
 // Shared between collapsed and expanded modes
 #define COGITO_NAV_RAIL_SHARED_TOGGLE_BUTTON_SIZE 48
@@ -229,6 +231,11 @@ typedef enum {
   COGITO_SIDE_SHEET_SIDEBAR
 } CogitoSideSheetMode;
 
+typedef enum {
+  COGITO_WINDOW_SIZE_COMPACT = 1,
+  COGITO_WINDOW_SIZE_MEDIUM = 2
+} CogitoWindowSizeClass;
+
 // --- Text direction (RTL support) ---
 typedef enum {
   COGITO_DIR_LTR = 0,
@@ -256,6 +263,11 @@ static inline int cogito_resolve_halign(int halign) {
     if (halign == 2) return 0;
   }
   return halign;
+}
+
+static inline int cogito_window_size_class_for_width(int w) {
+  if (w > 0 && w <= COGITO_WINDOW_COMPACT_MAX_W) return COGITO_WINDOW_SIZE_COMPACT;
+  return COGITO_WINDOW_SIZE_MEDIUM;
 }
 
 typedef enum {
@@ -688,6 +700,7 @@ typedef struct CogitoNode {
   bool should_close;
   bool disabled;
   bool hidden;
+  bool adaptive_hidden;
   bool revealer_show_children;
   bool bin_accent_set;
   bool editable;
@@ -718,6 +731,7 @@ typedef struct CogitoNode {
   bool vexpand_set;
   int gap;
   bool auto_size;
+  uint8_t window_size_class;
   int resize_min_w;
   int resize_min_h;
   int fixed_x, fixed_y;
@@ -737,6 +751,7 @@ typedef struct CogitoNode {
   struct CogitoNode* side_sheet_node;
   bool side_sheet_open;
   bool side_sheet_closing;
+  int side_sheet_sidebar_applied_w;
 
   // Style flags
   bool margin_set;
@@ -777,6 +792,8 @@ typedef struct CogitoNode {
   CogitoColor track_on_color;
   CogitoColor knob_color;
   CogitoColor check_color;
+  YisStr* textfield_regex;
+  bool textfield_regex_invalid;
   // Switch handle inset configuration
   int switch_inset_x_unchecked; // Horizontal inset for unchecked (default: 8)
   int switch_inset_x_checked;   // Horizontal inset for checked (default: 4)
@@ -911,6 +928,9 @@ typedef struct CogitoNode {
       bool dragging;
       bool show_step_dots;
       bool show_end_dots;
+      bool show_value_bubble;
+      YisStr* bubble_format;
+      double bubble_scale;
       uint8_t mode;
       uint8_t active_handle;
       uint8_t size;
@@ -1054,6 +1074,7 @@ typedef struct CogitoNode {
        int drag_start_w;
        int desired_w;
        uint8_t mode;
+       uint8_t preferred_mode;
     } side_sheet;
     struct {
         bool extended;
@@ -1180,7 +1201,39 @@ typedef struct CogitoMenu {
   int anchor_y; // Button's Y for animation origin
   int anchor_w; // Button's width for animation origin
   int anchor_h; // Button's height for animation origin
+  uint8_t presentation; // 0 = anchored menu, 1 = bottom-sheet style
 } CogitoMenu;
+
+static inline bool cogito_node_is_hidden(const CogitoNode* n) {
+  return !n || n->hidden || n->adaptive_hidden;
+}
+
+static inline bool cogito_window_node_is_compact(const CogitoNode* win) {
+  if (!win || win->kind != COGITO_WINDOW) return false;
+  return cogito_window_size_class_for_width(win->w) == COGITO_WINDOW_SIZE_COMPACT;
+}
+
+static void cogito_textfield_refresh_regex_state(CogitoNode* n) {
+  if (!n || n->kind != COGITO_TEXTFIELD) return;
+
+  n->textfield_regex_invalid = false;
+  if (!n->textfield_regex || !n->textfield_regex->data || !n->textfield_regex->data[0]) return;
+
+  regex_t re;
+  int rc = regcomp(&re, n->textfield_regex->data, REG_EXTENDED);
+  if (rc != 0) {
+    n->textfield_regex_invalid = true;
+    return;
+  }
+
+  const char* text = (n->text && n->text->data) ? n->text->data : "";
+  regmatch_t match[1];
+  rc = regexec(&re, text, 1, match, 0);
+  if (rc != 0 || match[0].rm_so != 0 || (size_t)match[0].rm_eo != strlen(text)) {
+    n->textfield_regex_invalid = true;
+  }
+  regfree(&re);
+}
 
 static CogitoTheme cogito_theme;
 static bool cogito_theme_initialized = false;

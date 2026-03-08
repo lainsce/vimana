@@ -19,6 +19,14 @@ case COGITO_SLIDER: {
       inactive_track = cogito_bin_scope_remap_color(inactive_track);
       active_track = cogito_bin_scope_remap_color(active_track);
 
+      CogitoColor container_bg = n->bg_set
+        ? n->bg
+        : (cogito_cached_surface_container.a ? cogito_cached_surface_container : cogito_cached_surface);
+      CogitoColor surface_bg = cogito_cached_surface.a ? cogito_cached_surface : container_bg;
+      container_bg = cogito_bin_scope_remap_color(container_bg);
+      surface_bg = cogito_bin_scope_remap_color(surface_bg);
+      bool require_stop_indicator = cogito_track_needs_stop_indicator(inactive_track, container_bg, surface_bg);
+
       bool cp_panel_slider = false;
       int cp_slider_channel = -1;
       CogitoNode* cp_panel = NULL;
@@ -71,6 +79,10 @@ case COGITO_SLIDER: {
       int cy = n->y + n->h / 2;
       int x0 = n->x + pad;
       int x1 = n->x + n->w - pad;
+      if (n->slider.shape == COGITO_SLIDER_SHAPE_WAVY) {
+        x0 += 4;
+        x1 -= 4;
+      }
       if (x1 < x0) x1 = x0;
       int endpoint_center_inset_x = dot_d / 2 + endpoint_pad_x;
       int rx0 = x0 - endpoint_center_inset_x;
@@ -248,6 +260,7 @@ case COGITO_SLIDER: {
         double wave_thickness = (double)rail_h;
         double wave_amp = 0.0;
         double wave_period = 40.0;
+        double wave_phase = 0.0;
         if (wavy) {
           if (slider_size == COGITO_SLIDER_SIZE_XL) {
             wave_thickness = 24.0; wave_amp = 3.0; wave_period = 120.0;
@@ -256,10 +269,17 @@ case COGITO_SLIDER: {
           } else if (slider_size == COGITO_SLIDER_SIZE_M) {
             wave_thickness =  8.0; wave_amp = 3.0; wave_period = 80.0;
           } else if (slider_size == COGITO_SLIDER_SIZE_S) {
-            wave_thickness =  4.0; wave_amp = 3.0; wave_period = 50.0;
+            wave_thickness =  4.0; wave_amp = 4.0; wave_period = 60.0;
           } else {
-            wave_thickness =  1.6; wave_amp = 3.0; wave_period = 40.0;
+            wave_thickness =  4.0; wave_amp = 3.0; wave_period = 40.0;
           }
+
+          // Animate wavy sliders: phase travels along X while amplitude
+          // breathes up/down to create a lively vertical motion.
+          double wt = cogito_now();
+          wave_phase = wt * 4.5;
+          double breathe = 0.5 + 0.5 * sin(wt * 2.8);
+          wave_amp *= (0.55 + 0.45 * breathe);
         }
 
         int inactive_h  = wavy ? (int)lround(wave_thickness) : rail_h;
@@ -284,7 +304,9 @@ case COGITO_SLIDER: {
           int seg_w = active_end - active_start;
           if (wavy && seg_w >= 2) {
             cogito_draw_wavy_line_aa(active_start, active_end, cy,
-                                     wave_thickness, wave_amp, wave_period, 0.0, active_track);
+                                     wave_thickness, wave_amp, wave_period, wave_phase, active_track);
+            double wave_end = cogito_now() + 0.10;
+            if (wave_end > cogito_anim_end_time) cogito_anim_end_time = wave_end;
           } else {
             cogito_draw_rect_radii_aa(active_start, cy - rail_h / 2, seg_w, rail_h, active_track,
                                       active_rl, active_rr, active_rr, active_rl);
@@ -326,6 +348,9 @@ case COGITO_SLIDER: {
         if (draw_right_end_dot && right_handle_t >= (1.0 - end_dot_hide_t)) {
           draw_right_end_dot = false;
         }
+      }
+      if (require_stop_indicator && n->slider.mode == COGITO_SLIDER_MODE_NORMAL) {
+        draw_right_end_dot = true;
       }
 
       if (!cp_panel_slider && span > 0.0 && n->slider.show_step_dots) {
@@ -443,6 +468,135 @@ case COGITO_SLIDER: {
       if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
         int k1_anim_left = k1 - animated_thumb_w / 2;
         cogito_draw_rect(k1_anim_left, cy - animated_thumb_h / 2, animated_thumb_w, animated_thumb_h, active_track, animated_thumb_r);
+      }
+
+      bool bubble_visible = n->slider.show_value_bubble && (active || n->slider.dragging);
+      if (!cp_panel_slider && bubble_visible) {
+        int bubble_h = 40;
+        int value_size = cogito_node_font_size(n);
+        if (value_size < 12) value_size = 12;
+        if (value_size > 16) value_size = 16;
+
+        CogitoColor bubble_bg = cogito_cached_inverse_surface.a
+          ? cogito_cached_inverse_surface
+          : (cogito_cached_surface_container_high.a ? cogito_cached_surface_container_high : n->bg);
+        CogitoColor bubble_text = cogito_cached_inverse_on_surface.a
+          ? cogito_cached_inverse_on_surface
+          : (cogito_cached_on_surface.a ? cogito_cached_on_surface : cogito_on_color(bubble_bg));
+        bubble_bg = cogito_bin_scope_remap_color(bubble_bg);
+        bubble_text = cogito_bin_scope_remap_color(bubble_text);
+
+        int handle_count = 1;
+        int handle_idx[2] = {0, 0};
+        if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
+          handle_idx[0] = (n->slider.active_handle == 2) ? 1 : 0;
+        }
+        int handle_x[2] = {k0, k1};
+        double handle_val[2] = {n->slider.value, n->slider.value2};
+
+        int bubble_y_base = cy - animated_thumb_h / 2 - 4 - bubble_h;
+
+        for (int hi = 0; hi < handle_count; hi++) {
+          int idx = handle_idx[hi];
+          double bubble_value = handle_val[idx];
+          double display_value = bubble_value * n->slider.bubble_scale;
+          char value_buf[96];
+          value_buf[0] = '\0';
+
+          char number_buf[48];
+          double iv = round(display_value);
+          if (fabs(display_value - iv) < 0.0005) {
+            snprintf(number_buf, sizeof(number_buf), "%d", (int)iv);
+          } else {
+            snprintf(number_buf, sizeof(number_buf), "%.2f", display_value);
+            size_t nlen = strlen(number_buf);
+            while (nlen > 0 && number_buf[nlen - 1] == '0') {
+              number_buf[--nlen] = '\0';
+            }
+            if (nlen > 0 && number_buf[nlen - 1] == '.') {
+              number_buf[--nlen] = '\0';
+            }
+          }
+
+          const char* fmt = (n->slider.bubble_format && n->slider.bubble_format->data)
+            ? n->slider.bubble_format->data
+            : NULL;
+          if (fmt && fmt[0]) {
+            char time_buf[32];
+            long long ms = llround(display_value);
+            if (ms < 0) ms = 0;
+            long long total_s = ms / 1000;
+            long long hours = total_s / 3600;
+            long long mins = (total_s % 3600) / 60;
+            long long secs = total_s % 60;
+            if (hours > 0) {
+              snprintf(time_buf, sizeof(time_buf), "%lld:%02lld:%02lld", hours, mins, secs);
+            } else {
+              snprintf(time_buf, sizeof(time_buf), "%02lld:%02lld", mins, secs);
+            }
+
+            char int_buf[32];
+            snprintf(int_buf, sizeof(int_buf), "%d", (int)llround(display_value));
+
+            const char* marker = NULL;
+            const char* replacement = NULL;
+            const char* marker_pos = NULL;
+
+            marker = "{time}";
+            marker_pos = strstr(fmt, marker);
+            if (marker_pos) {
+              replacement = time_buf;
+            } else {
+              marker = "{int}";
+              marker_pos = strstr(fmt, marker);
+              if (marker_pos) {
+                replacement = int_buf;
+              } else {
+                marker = "{value}";
+                marker_pos = strstr(fmt, marker);
+                if (marker_pos) {
+                  replacement = number_buf;
+                }
+              }
+            }
+
+            if (marker_pos && replacement) {
+              size_t prefix_len = (size_t)(marker_pos - fmt);
+              const char* suffix = marker_pos + strlen(marker);
+              snprintf(value_buf, sizeof(value_buf), "%.*s%s%s", (int)prefix_len, fmt, replacement, suffix);
+            } else {
+              snprintf(value_buf, sizeof(value_buf), "%s", fmt);
+            }
+          } else {
+            snprintf(value_buf, sizeof(value_buf), "%s", number_buf);
+          }
+
+          int tw = cogito_text_width_size_node(n, value_buf, value_size);
+          int th = cogito_text_height_size(value_size);
+          int bubble_pad_x = 12;
+          int bubble_w = tw + bubble_pad_x * 2;
+          if (bubble_w < bubble_h) bubble_w = bubble_h;
+          int bubble_r = bubble_h / 2;
+          if (bubble_r > bubble_w / 2) bubble_r = bubble_w / 2;
+
+          int bubble_x = handle_x[idx] - bubble_w / 2;
+          int bubble_y = bubble_y_base;
+
+          int min_bx = n->x + 2;
+          int max_bx = n->x + n->w - bubble_w - 2;
+          if (max_bx < min_bx) {
+            bubble_x = min_bx;
+          } else {
+            if (bubble_x < min_bx) bubble_x = min_bx;
+            if (bubble_x > max_bx) bubble_x = max_bx;
+          }
+
+          cogito_draw_rect(bubble_x, bubble_y, bubble_w, bubble_h, bubble_bg, bubble_r);
+
+          int tx = bubble_x + (bubble_w - tw) / 2;
+          int ty = bubble_y + (bubble_h - th) / 2;
+          cogito_draw_text_size_node(n, tx, ty, value_buf, bubble_text, value_size, false, true);
+        }
       }
 
       if (cogito_spring_active(&n->spring_h, target_size)) {

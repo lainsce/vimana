@@ -10,7 +10,9 @@ case COGITO_SIDE_SHEET: {
   int pad_t = n->padding_top;
   int pad_r = n->padding_right;
   int pad_b = n->padding_bottom;
-  int handle_w = 28;
+  int handle_w = (n->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR)
+    ? 0
+    : COGITO_SIDE_SHEET_HANDLE_TOUCH_W;
   int gap = n->gap > 0 ? n->gap : 8;
   int content_x = r_x + handle_w + pad_l;
   int avail_w = r_w - handle_w - pad_l - pad_r;

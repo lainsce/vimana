@@ -62,6 +62,9 @@ case COGITO_SIDE_SHEET: {
 
   // Draw title (clipped so it does not overlap the close button)
   bool sheet_rtl = cogito_is_rtl();
+  int handle_w = (n->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR)
+    ? 0
+    : COGITO_SIDE_SHEET_HANDLE_TOUCH_W;
   if (n->text && n->text->data && n->text->data[0]) {
     int pad_l = n->padding_left;
     int pad_r = n->padding_right;
@@ -73,10 +76,10 @@ case COGITO_SIDE_SHEET: {
     if (sheet_rtl) {
       // RTL: close button on left, title on right
       title_x = r_x + btn_reserve;
-      max_title_w = r_x + r_w - pad_r - title_x;
+      max_title_w = r_x + r_w - handle_w - pad_r - title_x;
     } else {
       // LTR: close button on right, title on left
-      title_x = r_x + pad_l;
+      title_x = r_x + handle_w + pad_l;
       max_title_w = (r_x + r_w - btn_reserve) - title_x;
     }
     if (max_title_w > 0) {

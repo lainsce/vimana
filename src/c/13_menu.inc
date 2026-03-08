@@ -2,6 +2,7 @@ static void cogito_menu_close(void) {
   CogitoNode* owner = cogito_menu.owner;
   cogito_menu.open = false;
   cogito_menu.owner = NULL;
+  cogito_menu.presentation = 0;
   cogito_menu_kbd_index = -1;
   // Reset draping spring
   cogito_spring_snap(&cogito_menu.draping_spring, 0.0);
@@ -160,6 +161,9 @@ static void cogito_menu_open_for(CogitoNode* n) {
     win_w = cogito_active_window->w;
     win_h = cogito_active_window->h;
   }
+  CogitoNode* owner_win = cogito_node_window(n);
+  bool compact_mode = owner_win ? cogito_window_node_is_compact(owner_win) : false;
+  cogito_menu.presentation = compact_mode ? 1 : 0;
 
   int max_w = win_w - edge_inset * 2;
   int max_h = win_h - edge_inset * 2;
@@ -168,48 +172,59 @@ static void cogito_menu_open_for(CogitoNode* n) {
   if (w > max_w) w = max_w;
   if (h > max_h) h = max_h;
 
-  // Horizontal placement:
-  // LTR: prefer anchor-left alignment; RTL: prefer anchor-right alignment.
-  // If overflow, try opposite alignment. Clamp to edge inset bounds.
-  int right_aligned = n->x + n->w - w;
-  if (cogito_is_rtl()) {
-    // RTL: start right-aligned
-    x = right_aligned;
-    if (x < edge_inset) x = n->x;  // flip to left-aligned if overflow
-  } else {
-    if (x + w > win_w - edge_inset) {
-      x = right_aligned;
-    }
-  }
-
-  int min_x = edge_inset;
-  int max_x = win_w - edge_inset - w;
-  if (max_x < min_x) {
-    min_x = 0;
-    max_x = win_w - w;
-  }
-  if (x < min_x) x = min_x;
-  if (x > max_x) x = max_x;
-
-  // Vertical placement: prefer below anchor, then above, then clamp.
-  int below = n->y + n->h;
-  int above = n->y - h;
-  if (below + h <= win_h - edge_inset) {
-    y = below;
-  } else if (above >= edge_inset) {
-    y = above;
-  } else {
+  if (compact_mode) {
+    // Compact mode presents menus as a bottom sheet.
+    w = max_w;
+    x = (win_w - w) / 2;
     y = win_h - edge_inset - h;
+    if (y < edge_inset) y = edge_inset;
+    cogito_spring_snap(&cogito_menu.draping_spring, 1.0);
+  } else {
+    // Horizontal placement:
+    // LTR: prefer anchor-left alignment; RTL: prefer anchor-right alignment.
+    // If overflow, try opposite alignment. Clamp to edge inset bounds.
+    int right_aligned = n->x + n->w - w;
+    if (cogito_is_rtl()) {
+      // RTL: start right-aligned
+      x = right_aligned;
+      if (x < edge_inset) x = n->x;  // flip to left-aligned if overflow
+    } else {
+      if (x + w > win_w - edge_inset) {
+        x = right_aligned;
+      }
+    }
+
+    int min_x = edge_inset;
+    int max_x = win_w - edge_inset - w;
+    if (max_x < min_x) {
+      min_x = 0;
+      max_x = win_w - w;
+    }
+    if (x < min_x) x = min_x;
+    if (x > max_x) x = max_x;
+
+    // Vertical placement: prefer below anchor, then above, then clamp.
+    int below = n->y + n->h;
+    int above = n->y - h;
+    if (below + h <= win_h - edge_inset) {
+      y = below;
+    } else if (above >= edge_inset) {
+      y = above;
+    } else {
+      y = win_h - edge_inset - h;
+    }
+
+    int min_y = edge_inset;
+    int max_y = win_h - edge_inset - h;
+    if (max_y < min_y) {
+      min_y = 0;
+      max_y = win_h - h;
+    }
+    if (y < min_y) y = min_y;
+    if (y > max_y) y = max_y;
+    cogito_spring_snap(&cogito_menu.draping_spring, 0.0);
   }
 
-  int min_y = edge_inset;
-  int max_y = win_h - edge_inset - h;
-  if (max_y < min_y) {
-    min_y = 0;
-    max_y = win_h - h;
-  }
-  if (y < min_y) y = min_y;
-  if (y > max_y) y = max_y;
   cogito_menu.w = w;
   cogito_menu.h = h;
   cogito_menu.x = x;
