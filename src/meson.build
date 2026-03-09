@@ -107,3 +107,9 @@ install_data(
   'yis/cogito_bindings.inc',
   install_dir : get_option('datadir') / 'yis' / 'cogito'
 )
+
+# Install Cogito app packager hook used by Yis after compiling Cogito apps.
+install_data(
+  'yis/cogito_packager.sh',
+  install_dir : get_option('datadir') / 'yis' / 'cogito'
+)

@@ -31,17 +31,17 @@ card.victrola-album-card
   border-radius: 12
 
 image.victrola-album-art
-  min-width: 320
-  min-height: 320
-  max-width: 320
-  max-height: 320
+  min-width: 336
+  min-height: 336
+  max-width: 336
+  max-height: 336
   border-radius: 26
 
 image.victrola-cover-art
-  min-width: 320
-  min-height: 320
-  max-width: 320
-  max-height: 320
+  min-width: 336
+  min-height: 336
+  max-width: 336
+  max-height: 336
   border-radius: 26
 
 label.victrola-album-title-expressive
@@ -69,7 +69,7 @@ label.victrola-now-title
   font-variation: wdth 132, opsz 14
   font-weight: 600
   font-size: 32
-  max-width: 320
+  max-width: 336
 
 label.victrola-album-meta
   font-size: 14
@@ -116,13 +116,13 @@ hstack.victrola-seek-row
 hstack.victrola-duration
 hstack.victrola-main-controls
 hstack.victrola-secondary-controls
-  min-width: 320
-  max-width: 320
+  min-width: 336
+  max-width: 336
   background: transparent
 
 slider.victrola-seek
-  min-width: 320
-  max-width: 320
+  min-width: 336
+  max-width: 336
 
 hstack.victrola-song-row
 vstack.victrola-song-row
