@@ -274,7 +274,11 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
   }
   if (n->kind == COGITO_DIALOG_SLOT) {
     if (n->dialog && n->dialog_open) {
-      return cogito_find_clickable(n->dialog, x, y);
+      CogitoNode* dlg_hit = cogito_find_clickable(n->dialog, x, y);
+      if (dlg_hit) return dlg_hit;
+      // Click landed on the scrim (outside the dialog) — return the slot
+      // so the event loop can dismiss it.
+      return n;
     }
     return NULL;
   }

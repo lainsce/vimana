@@ -80,7 +80,9 @@ hstack.victrola-album-header
 vstack.victrola-player
   background: transparent
   min-width: 360
-  max-width: 360
+
+vstack.victrola-player-compact
+  background: transparent
 
 vstack.victrola-mix-panel
   background: transparent
@@ -90,15 +92,24 @@ fixed.victrola-mix-collage
   min-width: 741
   min-height: 452
 
+fixed.victrola-mix-collage-compact
+  background: transparent
+  min-width: 380
+  min-height: 480
+
 label.victrola-mix-subtitle
   font-size: 17
   font-weight: 500
   max-width: 420
 
+card.victrola-mini-player
+  border-radius: 18 18 0 0
+  elevation: 0
+
 hstack.victrola-queue-row
   background: transparent
 
-victrola-queue-list
+content-list.victrola-queue-list
   background: transparent
 
 hstack.victrola-seek-row
@@ -117,10 +128,17 @@ hstack.victrola-song-row
 vstack.victrola-song-row
   background: transparent
 
-textview.victrola-lyrics
+grid.victrola-lyrics-grid
   background: transparent
-  border-radius: 18
-  padding: 12
+
+label.victrola-lyric-line
+  color: #888888
+  font-size: 16
+
+label.victrola-lyric-active
+  color: #000000
+  font-size: 18
+  font-weight: 700
 
 vstack.victrola-lyrics-page
   background: transparent
@@ -128,3 +146,7 @@ vstack.victrola-lyrics-page
 scroller.victrola-lyrics-scroll
   background: transparent
   padding: 0
+
+@when dark
+  label.victrola-lyric-active
+    color: #ffffff

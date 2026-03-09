@@ -119,6 +119,19 @@ case COGITO_TEXTFIELD: {
         if (tf_rtl) text_x += icon_size + icon_gap;
         else text_right -= icon_size + icon_gap;
       }
+
+      // Prefix/suffix text (non-editable, On Surface Variant)
+      // Only show when field is focused or has text (label is floating)
+      const char* prefix_str = (n->textfield_prefix && n->textfield_prefix->data && n->textfield_prefix->data[0]) ? n->textfield_prefix->data : NULL;
+      const char* suffix_str = (n->textfield_suffix && n->textfield_suffix->data && n->textfield_suffix->data[0]) ? n->textfield_suffix->data : NULL;
+      bool show_affix = focused || has_text;
+      int prefix_w = (prefix_str && show_affix) ? cogito_text_width_size_node(n, prefix_str, size) : 0;
+      int suffix_w = (suffix_str && show_affix) ? cogito_text_width_size_node(n, suffix_str, size) : 0;
+      int prefix_text_x = text_x;
+      int suffix_text_x = text_right - suffix_w;
+      if (prefix_w > 0) text_x += prefix_w;
+      if (suffix_w > 0) text_right -= suffix_w;
+
       int text_w = text_right - text_x;
       if (text_w < 0) text_w = 0;
       int ty = n->y + (field_h - th) / 2;
@@ -133,7 +146,19 @@ case COGITO_TEXTFIELD: {
         CogitoColor warn_color = cogito_cached_error.a ? cogito_cached_error : text;
         int ix = tf_rtl ? (n->x + field_pad_lr_icon) : (n->x + n->w - field_pad_lr_icon - icon_size);
         int iy = n->y + (field_h - icon_size) / 2;
-        cogito_draw_icon_fallback(n, "exclamationmark.triangle", ix, iy, icon_size, warn_color);
+        cogito_draw_icon_fallback(n, "exclamationmark.circle", ix, iy, icon_size, warn_color);
+      }
+
+      // Draw prefix/suffix in On Surface Variant color
+      if (show_affix) {
+        CogitoColor affix_color = cogito_cached_on_surface_variant.a ? cogito_cached_on_surface_variant : text;
+        affix_color.a = (uint8_t)(affix_color.a * 0.78f);
+        if (prefix_str) {
+          cogito_draw_text_size_node(n, prefix_text_x, ty, prefix_str, affix_color, size, false, false);
+        }
+        if (suffix_str) {
+          cogito_draw_text_size_node(n, suffix_text_x, ty, suffix_str, affix_color, size, false, false);
+        }
       }
 
       bool float_placeholder = has_placeholder && (focused || has_text);

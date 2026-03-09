@@ -107,11 +107,11 @@ bring net
     let plain = stdr.str(json.get(root, "plainLyrics", ""))
     let synced = stdr.str(json.get(root, "syncedLyrics", ""))
 
-    if stdr.len(plain) > 0 {
-        return plain
-    }
     if stdr.len(synced) > 0 {
         return synced
+    }
+    if stdr.len(plain) > 0 {
+        return plain
     }
     return ""
 }
@@ -134,4 +134,147 @@ bring net
     embed_lyrics(path, online)
 
     return online
+}
+
+:: is_synced(text = string) (( bool )) {
+    let n = stdr.len(text)
+    let ?i = 0
+    for (; i < n - 5; i = i + 1) {
+        if stdr.slice(text, i, i + 1) == "[" {
+            let code1 = stdr.char_code(stdr.slice(text, i + 1, i + 2))
+            let code2 = stdr.char_code(stdr.slice(text, i + 2, i + 3))
+            let c3 = stdr.slice(text, i + 3, i + 4)
+            if code1 >= 48 && code1 <= 57 && code2 >= 48 && code2 <= 57 && c3 == ":" {
+                return true
+            }
+        }
+    }
+    return false
+}
+
+:: parse_lrc(text = string) (( any )) {
+    let ?lines = []: [any]
+    let n = stdr.len(text)
+    let ?start = 0
+    let ?i = 0
+
+    for (; i < n; i = i + 1) {
+        if stdr.slice(text, i, i + 1) == "\n" {
+            let line = stdr.trim(stdr.slice(text, start, i))
+            if stdr.len(line) > 0 {
+                let parsed = parse_lrc_line(line)
+                if !stdr.is_null(parsed) {
+                    lines[stdr.len(lines)] = parsed
+                }
+            }
+            start = i + 1
+        }
+    }
+    if start < n {
+        let line = stdr.trim(stdr.slice(text, start, n))
+        if stdr.len(line) > 0 {
+            let parsed = parse_lrc_line(line)
+            if !stdr.is_null(parsed) {
+                lines[stdr.len(lines)] = parsed
+            }
+        }
+    }
+
+    return lines
+}
+
+: parse_lrc_line(line = string) (( any )) {
+    let n = stdr.len(line)
+    if n < 5 { return null }
+    if stdr.slice(line, 0, 1) != "[" { return null }
+
+    let bracket = stdr.index_of(line, "]")
+    if bracket < 4 { return null }
+
+    let tag = stdr.slice(line, 1, bracket)
+    let colon = stdr.index_of(tag, ":")
+    if colon < 0 { return null }
+
+    let mm_str = stdr.slice(tag, 0, colon)
+    let mm = stdr.num(mm_str)
+    if mm == 0 && mm_str != "0" && mm_str != "00" {
+        return null
+    }
+
+    let rest = stdr.slice(tag, colon + 1, stdr.len(tag))
+    let dot = stdr.index_of(rest, ".")
+    let ?ss = 0
+    let ?frac_ms = 0
+
+    if dot >= 0 {
+        ss = stdr.num(stdr.slice(rest, 0, dot))
+        let frac_str = stdr.slice(rest, dot + 1, stdr.len(rest))
+        let frac_val = stdr.num(frac_str)
+        let frac_len = stdr.len(frac_str)
+        if frac_len == 2 {
+            frac_ms = frac_val * 10
+        } elif frac_len == 3 {
+            frac_ms = frac_val
+        } elif frac_len == 1 {
+            frac_ms = frac_val * 100
+        } else {
+            frac_ms = frac_val
+        }
+    } else {
+        ss = stdr.num(rest)
+    }
+
+    let ms = mm * 60000 + ss * 1000 + frac_ms
+    let lyric_text = stdr.trim(stdr.slice(line, bracket + 1, n))
+
+    return [ms, lyric_text]
+}
+
+:: strip_timestamps(text = string) (( string )) {
+    let ?result = ""
+    let n = stdr.len(text)
+    let ?start = 0
+    let ?i = 0
+
+    for (; i < n; i = i + 1) {
+        if stdr.slice(text, i, i + 1) == "\n" {
+            let line = stdr.trim(stdr.slice(text, start, i))
+            if stdr.len(line) > 0 {
+                let cleaned = strip_line_timestamp(line)
+                if stdr.len(cleaned) > 0 {
+                    if stdr.len(result) > 0 {
+                        result = stdr.str_concat(result, "\n")
+                    }
+                    result = stdr.str_concat(result, cleaned)
+                }
+            }
+            start = i + 1
+        }
+    }
+    if start < n {
+        let line = stdr.trim(stdr.slice(text, start, n))
+        if stdr.len(line) > 0 {
+            let cleaned = strip_line_timestamp(line)
+            if stdr.len(cleaned) > 0 {
+                if stdr.len(result) > 0 {
+                    result = stdr.str_concat(result, "\n")
+                }
+                result = stdr.str_concat(result, cleaned)
+            }
+        }
+    }
+
+    return result
+}
+
+: strip_line_timestamp(line = string) (( string )) {
+    let ?pos = 0
+    let n = stdr.len(line)
+    for (; pos < n;) {
+        if stdr.slice(line, pos, pos + 1) != "[" { return stdr.trim(stdr.slice(line, pos, n)) }
+        let bracket = stdr.index_of(stdr.slice(line, pos, n), "]")
+        if bracket < 0 { return stdr.trim(stdr.slice(line, pos, n)) }
+        pos = pos + bracket + 1
+    }
+    return ""
 }

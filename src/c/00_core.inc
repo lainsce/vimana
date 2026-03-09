@@ -691,6 +691,7 @@ typedef struct CogitoNode {
   YisFn* builder;
   YisFn* on_action;
   YisFn* on_draw;
+  YisFn* on_resize;
 
   // State
   YisVal group;
@@ -794,6 +795,8 @@ typedef struct CogitoNode {
   CogitoColor check_color;
   YisStr* textfield_regex;
   bool textfield_regex_invalid;
+  YisStr* textfield_prefix;
+  YisStr* textfield_suffix;
   // Switch handle inset configuration
   int switch_inset_x_unchecked; // Horizontal inset for unchecked (default: 8)
   int switch_inset_x_checked;   // Horizontal inset for checked (default: 4)

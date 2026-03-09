@@ -312,6 +312,8 @@ static void cogito_style_merge_into(const CogitoStyle* base, const CogitoStyle* 
     memcpy(out->font_variations, over->font_variations,
            sizeof(CogitoFontVariation) * over->font_variation_count);
   }
+  if (over->has_shadow) { out->has_shadow = true; out->shadow_level = over->shadow_level;
+  }
   if (over->has_box_shadow) {
     out->has_box_shadow = true;
     out->box_shadow = over->box_shadow;

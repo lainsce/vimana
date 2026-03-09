@@ -80,6 +80,50 @@ static YisVal cogito_textfield_get_hint(YisVal nodev) {
   yis_retain_val(YV_STR(s));
   return YV_STR(s);
 }
+static void cogito_textfield_set_prefix(YisVal nodev, YisVal prefixv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_set_prefix expects textfield");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  YisStr* ps = NULL;
+  if (prefixv.tag == EVT_STR) {
+    ps = (YisStr*)prefixv.as.p;
+  } else if (prefixv.tag != EVT_NULL) {
+    ps = stdr_to_string(prefixv);
+  }
+  if (ps && (!ps->data || !ps->data[0])) ps = NULL;
+  if (ps) yis_retain_val(YV_STR(ps));
+  if (n->textfield_prefix) yis_release_val(YV_STR(n->textfield_prefix));
+  n->textfield_prefix = ps;
+  cogito_window_relayout(cogito_node_window(n));
+}
+static YisVal cogito_textfield_get_prefix(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_get_prefix expects textfield");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  YisStr* s = n->textfield_prefix ? n->textfield_prefix : stdr_str_lit("");
+  yis_retain_val(YV_STR(s));
+  return YV_STR(s);
+}
+static void cogito_textfield_set_suffix(YisVal nodev, YisVal suffixv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_set_suffix expects textfield");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  YisStr* ss = NULL;
+  if (suffixv.tag == EVT_STR) {
+    ss = (YisStr*)suffixv.as.p;
+  } else if (suffixv.tag != EVT_NULL) {
+    ss = stdr_to_string(suffixv);
+  }
+  if (ss && (!ss->data || !ss->data[0])) ss = NULL;
+  if (ss) yis_retain_val(YV_STR(ss));
+  if (n->textfield_suffix) yis_release_val(YV_STR(n->textfield_suffix));
+  n->textfield_suffix = ss;
+  cogito_window_relayout(cogito_node_window(n));
+}
+static YisVal cogito_textfield_get_suffix(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_get_suffix expects textfield");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  YisStr* s = n->textfield_suffix ? n->textfield_suffix : stdr_str_lit("");
+  yis_retain_val(YV_STR(s));
+  return YV_STR(s);
+}
 static void cogito_textfield_on_change(YisVal nodev, YisVal handler) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.textfield_on_change expects textfield");
   if (handler.tag != EVT_FN) yis_trap("cogito.textfield_on_change expects function");

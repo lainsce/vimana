@@ -89,6 +89,22 @@ static void cogito_window_set_builder(YisVal winv, YisVal builder) {
   win->builder = (YisFn*)builder.as.p;
   yis_retain_val(YV_FN(win->builder));
 }
+static void cogito_window_on_resize(YisVal winv, YisVal handler) {
+  if (winv.tag != EVT_OBJ) yis_trap("cogito.window_on_resize expects window");
+  CogitoNode* win = (CogitoNode*)winv.as.p;
+  if (win->on_resize) yis_release_val(YV_FN(win->on_resize));
+  if (handler.tag == EVT_FN) {
+    win->on_resize = (YisFn*)handler.as.p;
+    yis_retain_val(YV_FN(win->on_resize));
+  } else {
+    win->on_resize = NULL;
+  }
+}
+static YisVal cogito_window_is_compact(YisVal winv) {
+  if (winv.tag != EVT_OBJ) return YV_BOOL(false);
+  CogitoNode* win = (CogitoNode*)winv.as.p;
+  return YV_BOOL(cogito_window_node_is_compact(win));
+}
 static void cogito_window_set_dialog(YisVal winv, YisVal dialogv) {
   if (winv.tag != EVT_OBJ) yis_trap("cogito.window_set_dialog expects window");
   if (dialogv.tag != EVT_OBJ) yis_trap("cogito.window_set_dialog expects dialog");

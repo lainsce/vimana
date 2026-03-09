@@ -261,6 +261,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_scroller_set_sync cogito_scroller_set_sync_yis
 #define cogito_scroller_set_min_content_width cogito_scroller_set_min_content_width_yis
 #define cogito_scroller_set_min_content_height cogito_scroller_set_min_content_height_yis
+#define cogito_scroller_set_scroll_y cogito_scroller_set_scroll_y_yis
 #define cogito_carousel_new cogito_carousel_new_yis
 #define cogito_carousel_set_active_index cogito_carousel_set_active_index_yis
 #define cogito_carousel_get_active_index cogito_carousel_get_active_index_yis
@@ -322,12 +323,16 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_tabs_set_selected cogito_tabs_set_selected_yis
 #define cogito_textfield_get_text cogito_textfield_get_text_yis
 #define cogito_textfield_get_hint cogito_textfield_get_hint_yis
+#define cogito_textfield_get_prefix cogito_textfield_get_prefix_yis
 #define cogito_textfield_get_regex cogito_textfield_get_regex_yis
+#define cogito_textfield_get_suffix cogito_textfield_get_suffix_yis
 #define cogito_textfield_is_valid cogito_textfield_is_valid_yis
 #define cogito_textfield_new cogito_textfield_new_yis
 #define cogito_textfield_on_change cogito_textfield_on_change_yis
 #define cogito_textfield_set_regex cogito_textfield_set_regex_yis
 #define cogito_textfield_set_hint cogito_textfield_set_hint_yis
+#define cogito_textfield_set_prefix cogito_textfield_set_prefix_yis
+#define cogito_textfield_set_suffix cogito_textfield_set_suffix_yis
 #define cogito_textfield_set_text cogito_textfield_set_text_yis
 #define cogito_textview_get_text cogito_textview_get_text_yis
 #define cogito_textview_new cogito_textview_new_yis
@@ -353,6 +358,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_window_set_a11y_label cogito_window_set_a11y_label_yis
 #define cogito_window_set_autosize cogito_window_set_autosize_yis
 #define cogito_window_set_builder cogito_window_set_builder_yis
+#define cogito_window_on_resize cogito_window_on_resize_yis
+#define cogito_window_is_compact cogito_window_is_compact_yis
 #define cogito_window_set_dialog cogito_window_set_dialog_yis
 #define cogito_window_set_side_sheet cogito_window_set_side_sheet_yis
 #define cogito_window_clear_side_sheet cogito_window_clear_side_sheet_yis
@@ -649,6 +656,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_scroller_set_sync
 #undef cogito_scroller_set_min_content_width
 #undef cogito_scroller_set_min_content_height
+#undef cogito_scroller_set_scroll_y
 #undef cogito_searchfield_get_text
 #undef cogito_searchfield_new
 #undef cogito_searchfield_on_change
@@ -707,12 +715,16 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_tabs_set_selected
 #undef cogito_textfield_get_text
 #undef cogito_textfield_get_hint
+#undef cogito_textfield_get_prefix
 #undef cogito_textfield_get_regex
+#undef cogito_textfield_get_suffix
 #undef cogito_textfield_is_valid
 #undef cogito_textfield_new
 #undef cogito_textfield_on_change
 #undef cogito_textfield_set_regex
 #undef cogito_textfield_set_hint
+#undef cogito_textfield_set_prefix
+#undef cogito_textfield_set_suffix
 #undef cogito_textfield_set_text
 #undef cogito_textview_get_text
 #undef cogito_textview_new
@@ -738,6 +750,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_window_set_a11y_label
 #undef cogito_window_set_autosize
 #undef cogito_window_set_builder
+#undef cogito_window_on_resize
+#undef cogito_window_is_compact
 #undef cogito_window_set_dialog
 #undef cogito_window_set_side_sheet
 #undef cogito_window_clear_side_sheet
@@ -1825,6 +1839,25 @@ void cogito_window_set_builder(cogito_window *window, cogito_node_fn builder,
   YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
   cogito_window_set_builder_yis(YV_OBJ(window), YV_FN(wrap));
   yis_release_val(YV_FN(wrap));
+}
+
+void cogito_window_on_resize(cogito_window *window, cogito_node_fn handler,
+                             void *user) {
+  if (!window || !handler)
+    return;
+  CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
+  env->fn = handler;
+  env->user = user;
+  YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
+  cogito_window_on_resize_yis(YV_OBJ(window), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
+}
+
+bool cogito_window_is_compact(cogito_window *window) {
+  if (!window)
+    return false;
+  YisVal v = cogito_window_is_compact_yis(YV_OBJ(window));
+  return v.tag == EVT_BOOL ? v.as.b : false;
 }
 
 void *cogito_window_get_native_handle(cogito_window *window) {
@@ -3500,6 +3533,38 @@ const char *cogito_textfield_get_hint(cogito_node *tf) {
   return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
 }
 
+void cogito_textfield_set_prefix(cogito_node *tf, const char *prefix) {
+  if (!tf)
+    return;
+  YisVal pv = cogito_val_from_cstr(prefix);
+  cogito_textfield_set_prefix_yis(YV_OBJ(tf), pv);
+  if (pv.tag == EVT_STR)
+    yis_release_val(pv);
+}
+
+const char *cogito_textfield_get_prefix(cogito_node *tf) {
+  if (!tf)
+    return NULL;
+  YisVal v = cogito_textfield_get_prefix_yis(YV_OBJ(tf));
+  return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
+}
+
+void cogito_textfield_set_suffix(cogito_node *tf, const char *suffix) {
+  if (!tf)
+    return;
+  YisVal sv = cogito_val_from_cstr(suffix);
+  cogito_textfield_set_suffix_yis(YV_OBJ(tf), sv);
+  if (sv.tag == EVT_STR)
+    yis_release_val(sv);
+}
+
+const char *cogito_textfield_get_suffix(cogito_node *tf) {
+  if (!tf)
+    return NULL;
+  YisVal v = cogito_textfield_get_suffix_yis(YV_OBJ(tf));
+  return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
+}
+
 void cogito_textfield_set_regex(cogito_node *tf, const char *pattern) {
   if (!tf)
     return;
@@ -4086,6 +4151,14 @@ void cogito_scroller_set_min_content_height(cogito_node *scroller, int h) {
   if (h < 0)
     h = 0;
   cogito_scroller_set_min_content_height_yis(YV_OBJ(scroller), YV_INT(h));
+}
+
+void cogito_scroller_set_scroll_y(cogito_node *scroller, int y) {
+  if (!scroller)
+    return;
+  if (y < 0)
+    y = 0;
+  cogito_scroller_set_scroll_y_yis(YV_OBJ(scroller), YV_INT(y));
 }
 
 void cogito_grid_set_cols(cogito_node *grid, int cols) {

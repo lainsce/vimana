@@ -1408,6 +1408,33 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_scroller_set_scroll_y")) {
+                        GenExpr sc, y;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &sc, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &y, err)) { gen_expr_free(&sc); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_scroller_set_scroll_y(%s, %s);", sc.tmp, y.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", sc.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", y.tmp);
+                        gen_expr_release_except(cg, &sc, sc.tmp);
+                        gen_expr_release_except(cg, &y, y.tmp);
+                        gen_expr_free(&sc);
+                        gen_expr_free(&y);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_grid_set_gap")) {
                         GenExpr grid, x, y;
                         if (!gen_expr(cg, path, e->as.call.args[

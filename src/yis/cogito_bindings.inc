@@ -264,13 +264,17 @@
 #undef cogito_tabs_set_items
 #undef cogito_tabs_set_selected
 #undef cogito_textfield_get_hint
+#undef cogito_textfield_get_prefix
 #undef cogito_textfield_get_regex
+#undef cogito_textfield_get_suffix
 #undef cogito_textfield_is_valid
 #undef cogito_textfield_get_text
 #undef cogito_textfield_new
 #undef cogito_textfield_on_change
 #undef cogito_textfield_set_regex
 #undef cogito_textfield_set_hint
+#undef cogito_textfield_set_prefix
+#undef cogito_textfield_set_suffix
 #undef cogito_textfield_set_text
 #undef cogito_textview_get_text
 #undef cogito_textview_new
@@ -301,6 +305,8 @@
 #undef cogito_window_set_a11y_label
 #undef cogito_window_set_autosize
 #undef cogito_window_set_builder
+#undef cogito_window_on_resize
+#undef cogito_window_is_compact
 #undef cogito_window_set_dialog
 #undef cogito_window_set_side_sheet
 #undef cogito_side_sheet_set_mode
@@ -341,6 +347,7 @@ typedef struct CogitoHandle {
   YisVal on_activate;
   YisVal on_action;
   YisVal on_draw;
+  YisVal on_resize;
   YisVal builder;
 } CogitoHandle;
 
@@ -524,6 +531,12 @@ static void cogito_cb_click(cogito_node* node, void* user) {
   CogitoHandle* h = (CogitoHandle*)user;
   if (!h) return;
   cogito_invoke_node_handler(h->on_click, node);
+}
+
+static void cogito_cb_resize(cogito_node* node, void* user) {
+  CogitoHandle* h = (CogitoHandle*)user;
+  if (!h) return;
+  cogito_invoke_node_handler(h->on_resize, node);
 }
 
 static void cogito_cb_change(cogito_node* node, void* user) {
@@ -757,6 +770,23 @@ static void __cogito_window_set_builder(YisVal winv, YisVal builder) {
   }
   cogito_set_handler(h, &h->builder, builder);
   cogito_window_set_builder(win, cogito_cb_builder, h);
+}
+
+static void __cogito_window_on_resize(YisVal winv, YisVal handler) {
+  cogito_node* win = cogito_node_from_val(winv);
+  CogitoHandle* h = (CogitoHandle*)winv.as.p;
+  if (handler.tag != EVT_FN) {
+    cogito_set_handler(h, &h->on_resize, handler);
+    cogito_window_on_resize(win, NULL, NULL);
+    return;
+  }
+  cogito_set_handler(h, &h->on_resize, handler);
+  cogito_window_on_resize(win, cogito_cb_resize, h);
+}
+
+static YisVal __cogito_window_is_compact(YisVal winv) {
+  cogito_window* win = cogito_window_from_val(winv);
+  return YV_BOOL(cogito_window_is_compact(win));
 }
 
 static YisVal __cogito_label(YisVal textv) {
@@ -2340,6 +2370,11 @@ static void __cogito_scroller_set_min_content_height(YisVal scv, YisVal hv) {
   cogito_scroller_set_min_content_height(sc, (int)yis_as_int(hv));
 }
 
+static void __cogito_scroller_set_scroll_y(YisVal scv, YisVal yv) {
+  cogito_node* sc = cogito_node_from_val(scv);
+  cogito_scroller_set_scroll_y(sc, (int)yis_as_int(yv));
+}
+
 static void __cogito_grid_set_gap(YisVal gridv, YisVal xv, YisVal yv) {
   cogito_node* grid = cogito_node_from_val(gridv);
   cogito_grid_set_gap(grid, (int)yis_as_int(xv), (int)yis_as_int(yv));
@@ -2714,6 +2749,34 @@ static YisVal __cogito_textfield_get_hint(YisVal tfv) {
   cogito_node* tf = cogito_node_from_val(tfv);
   const char* hint = cogito_textfield_get_hint(tf);
   return YV_STR(stdr_str_lit(hint ? hint : ""));
+}
+
+static void __cogito_textfield_set_prefix(YisVal tfv, YisVal prefixv) {
+  cogito_node* tf = cogito_node_from_val(tfv);
+  YisStr* tmp = NULL;
+  const char* prefix = cogito_required_cstr(prefixv, &tmp);
+  cogito_textfield_set_prefix(tf, prefix);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static YisVal __cogito_textfield_get_prefix(YisVal tfv) {
+  cogito_node* tf = cogito_node_from_val(tfv);
+  const char* prefix = cogito_textfield_get_prefix(tf);
+  return YV_STR(stdr_str_lit(prefix ? prefix : ""));
+}
+
+static void __cogito_textfield_set_suffix(YisVal tfv, YisVal suffixv) {
+  cogito_node* tf = cogito_node_from_val(tfv);
+  YisStr* tmp = NULL;
+  const char* suffix = cogito_required_cstr(suffixv, &tmp);
+  cogito_textfield_set_suffix(tf, suffix);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static YisVal __cogito_textfield_get_suffix(YisVal tfv) {
+  cogito_node* tf = cogito_node_from_val(tfv);
+  const char* suffix = cogito_textfield_get_suffix(tf);
+  return YV_STR(stdr_str_lit(suffix ? suffix : ""));
 }
 
 static void __cogito_textfield_set_regex(YisVal tfv, YisVal patternv) {
@@ -3723,6 +3786,8 @@ static YisVal __cogito_gst_last_tag_album(void) {
 #define cogito_window_set_size_request __cogito_window_set_size_request
 #define cogito_window_set_a11y_label __cogito_window_set_a11y_label
 #define cogito_window_set_builder __cogito_window_set_builder
+#define cogito_window_on_resize __cogito_window_on_resize
+#define cogito_window_is_compact __cogito_window_is_compact
 #define cogito_button_new __cogito_button
 #define cogito_iconbtn_new __cogito_iconbtn
 #define cogito_fab_new __cogito_fab
@@ -3794,6 +3859,7 @@ static YisVal __cogito_gst_last_tag_album(void) {
 #define cogito_scroller_set_sync __cogito_scroller_set_sync
 #define cogito_scroller_set_min_content_width __cogito_scroller_set_min_content_width
 #define cogito_scroller_set_min_content_height __cogito_scroller_set_min_content_height
+#define cogito_scroller_set_scroll_y __cogito_scroller_set_scroll_y
 #define cogito_grid_set_cols __cogito_grid_set_cols
 #define cogito_grid_clear __cogito_grid_clear
 #define cogito_grid_add __cogito_grid_add
@@ -3837,6 +3903,10 @@ static YisVal __cogito_gst_last_tag_album(void) {
 #define cogito_textfield_get_text __cogito_textfield_get_text
 #define cogito_textfield_set_hint __cogito_textfield_set_hint
 #define cogito_textfield_get_hint __cogito_textfield_get_hint
+#define cogito_textfield_set_prefix __cogito_textfield_set_prefix
+#define cogito_textfield_get_prefix __cogito_textfield_get_prefix
+#define cogito_textfield_set_suffix __cogito_textfield_set_suffix
+#define cogito_textfield_get_suffix __cogito_textfield_get_suffix
 #define cogito_textfield_set_regex __cogito_textfield_set_regex
 #define cogito_textfield_get_regex __cogito_textfield_get_regex
 #define cogito_textfield_is_valid __cogito_textfield_is_valid

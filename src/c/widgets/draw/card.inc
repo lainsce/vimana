@@ -44,7 +44,7 @@ case COGITO_CARD: {
 
   // Calculate animated shadow level
   int base_shadow = shadow;
-  int hover_shadow = shadow + 2;
+  int hover_shadow = (s.has_shadow && shadow <= 0) ? 0 : shadow + 2;
   if (hover_shadow > 5) hover_shadow = 5;
   int animated_shadow = base_shadow + (int)((hover_shadow - base_shadow) * elev_scale);
 

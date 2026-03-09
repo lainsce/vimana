@@ -32,7 +32,17 @@ case COGITO_DIALOG_SLOT:
         bool compact = win ? cogito_window_node_is_compact(win) : false;
         int dx = base_x;
         int dy = base_y;
-        if (compact) {
+        if (compact && n->dialog->kind == COGITO_BOTTOM_SHEET) {
+          dw = base_w;
+          int desired_h = n->dialog->bottom_sheet.desired_h;
+          if (desired_h <= 0) {
+            desired_h = (int)lround((double)base_h * COGITO_BOTTOM_SHEET_DEFAULT_RATIO);
+          }
+          if (desired_h < 200) desired_h = 200;
+          if (desired_h > base_h) desired_h = base_h;
+          dh = desired_h;
+          dy = base_y + base_h - desired_h;
+        } else if (compact) {
           dw = base_w;
           dh = base_h;
         } else {

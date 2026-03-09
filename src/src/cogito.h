@@ -198,6 +198,9 @@ void cogito_window_set_size_request(cogito_window *window, int w, int h);
 void cogito_window_set_a11y_label(cogito_window *window, const char *label);
 void cogito_window_set_builder(cogito_window *window, cogito_node_fn builder,
                                void *user);
+void cogito_window_on_resize(cogito_window *window, cogito_node_fn handler,
+                             void *user);
+bool cogito_window_is_compact(cogito_window *window);
 void *cogito_window_get_native_handle(cogito_window *window);
 bool cogito_window_has_native_handle(cogito_window *window);
 void cogito_window_set_hit_test(cogito_window *window,
@@ -461,6 +464,10 @@ void cogito_textfield_set_text(cogito_node *tf, const char *text);
 const char *cogito_textfield_get_text(cogito_node *tf);
 void cogito_textfield_set_hint(cogito_node *tf, const char *hint);
 const char *cogito_textfield_get_hint(cogito_node *tf);
+void cogito_textfield_set_prefix(cogito_node *tf, const char *prefix);
+const char *cogito_textfield_get_prefix(cogito_node *tf);
+void cogito_textfield_set_suffix(cogito_node *tf, const char *suffix);
+const char *cogito_textfield_get_suffix(cogito_node *tf);
 void cogito_textfield_set_regex(cogito_node *tf, const char *pattern);
 const char *cogito_textfield_get_regex(cogito_node *tf);
 bool cogito_textfield_is_valid(cogito_node *tf);
@@ -579,6 +586,7 @@ void cogito_scroller_set_axes(cogito_node *scroller, bool h, bool v);
 void cogito_scroller_set_sync(cogito_node *scroller, cogito_node *other);
 void cogito_scroller_set_min_content_width(cogito_node *scroller, int w);
 void cogito_scroller_set_min_content_height(cogito_node *scroller, int h);
+void cogito_scroller_set_scroll_y(cogito_node *scroller, int y);
 void cogito_carousel_set_active_index(cogito_node *carousel, int idx);
 int cogito_carousel_get_active_index(cogito_node *carousel);
 void cogito_grid_set_cols(cogito_node *grid, int cols);

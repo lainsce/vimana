@@ -372,12 +372,16 @@ macro chain() (( any )) {
 : __cogito_tabs_set_selected(tabs = Tabs, idx = num) (( -- )) { }
 : __cogito_tabs() (( Tabs )) { }
 : __cogito_textfield_get_hint(tf = TextField) (( string )) { }
+: __cogito_textfield_get_prefix(tf = TextField) (( string )) { }
 : __cogito_textfield_get_regex(tf = TextField) (( string )) { }
+: __cogito_textfield_get_suffix(tf = TextField) (( string )) { }
 : __cogito_textfield_get_text(tf = TextField) (( string )) { }
 : __cogito_textfield_is_valid(tf = TextField) (( bool )) { }
 : __cogito_textfield_on_change(tf = TextField, handler = any) (( -- )) { }
 : __cogito_textfield_set_hint(tf = TextField, hint = string) (( -- )) { }
+: __cogito_textfield_set_prefix(tf = TextField, prefix = string) (( -- )) { }
 : __cogito_textfield_set_regex(tf = TextField, pattern = any) (( -- )) { }
+: __cogito_textfield_set_suffix(tf = TextField, suffix = string) (( -- )) { }
 : __cogito_textfield_set_text(tf = TextField, text = string) (( -- )) { }
 : __cogito_textfield(text = string) (( TextField )) { }
 : __cogito_textview_get_text(tv = TextView) (( string )) { }
@@ -423,6 +427,8 @@ macro chain() (( any )) {
 : __cogito_welcome_screen(title = string) (( WelcomeScreen )) { }
 : __cogito_window_clear_dialog(win = Window) (( -- )) { }
 : __cogito_window_clear_side_sheet(win = Window) (( -- )) { }
+: __cogito_window_is_compact(win = Window) (( bool )) { }
+: __cogito_window_on_resize(win = Window, handler = any) (( -- )) { }
 : __cogito_window_set_autosize(win = Window, on = bool) (( -- )) { }
 : __cogito_window_set_builder(win = Window, builder = any) (( -- )) { }
 : __cogito_window_set_dialog(win = Window, dialog = any) (( -- )) { }
@@ -554,6 +560,13 @@ pub class Window {
     :: set_id(this, id = string) (( Window )) {
         __cogito_node_set_id(this, id)
         return this
+    }
+    :: on_resize(this, handler = any) (( Window )) {
+        __cogito_window_on_resize(this, handler)
+        return this
+    }
+    :: is_compact(this) (( bool )) {
+        return __cogito_window_is_compact(this)
     }
 }
 
@@ -1324,6 +1337,10 @@ pub class Scroller {
     }
     :: set_min_content_height(this, h = num) (( Scroller )) {
         __cogito_scroller_set_min_content_height(this, h)
+        return this
+    }
+    :: set_scroll_y(this, y = num) (( Scroller )) {
+        __cogito_scroller_set_scroll_y(this, y)
         return this
     }
     :: set_padding(this, top = num, right = num, bottom = num, left = num) (( Scroller )) {
@@ -2222,6 +2239,20 @@ pub class TextField {
     }
     :: hint(this) (( string )) {
         return __cogito_textfield_get_hint(this)
+    }
+    :: set_prefix(this, prefix = string) (( TextField )) {
+        __cogito_textfield_set_prefix(this, prefix)
+        return this
+    }
+    :: prefix(this) (( string )) {
+        return __cogito_textfield_get_prefix(this)
+    }
+    :: set_suffix(this, suffix = string) (( TextField )) {
+        __cogito_textfield_set_suffix(this, suffix)
+        return this
+    }
+    :: suffix(this) (( string )) {
+        return __cogito_textfield_get_suffix(this)
     }
     :: on_change(this, handler = any) (( TextField )) {
         __cogito_textfield_on_change(this, handler)
@@ -4350,6 +4381,10 @@ pub class State {
 
 :: dialog_slot_clear(slot = any) (( -- )) {
     __cogito_dialog_slot_clear(slot)
+}
+
+:: node_set_class(node = any, cls = string) (( -- )) {
+    __cogito_node_set_class(node, cls)
 }
 
 :: find_children(node = any) (( [any] )) {

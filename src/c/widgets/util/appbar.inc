@@ -137,6 +137,7 @@ static bool cogito_appbar_point_visible(const CogitoNode* appbar, int x, int y) 
 
 static CogitoNode* cogito_find_appbar_at_point_recursive(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_DIALOG && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;
   if ((n->kind == COGITO_SCROLLER || n->kind == COGITO_CONTENT_LIST || n->kind == COGITO_GRID) &&
       !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;
@@ -184,43 +185,6 @@ static bool cogito_is_first_appbar(CogitoNode* win, CogitoNode* appbar) {
   if (!win || !appbar) return false;
   CogitoNode* first = cogito_find_appbar(win);
   return first == appbar;
-}
-
-static bool cogito_hit_rect_min48_local(int px, int py, int rx, int ry, int rw, int rh) {
-  int hw = rw < 48 ? 48 : rw;
-  int hh = rh < 48 ? 48 : rh;
-  int hx = rx - (hw - rw) / 2;
-  int hy = ry - (hh - rh) / 2;
-  return cogito_hit_rect(px, py, hx, hy, hw, hh);
-}
-
-static bool cogito_point_over_appbar_buttons(CogitoNode* app, int x, int y) {
-  if (!app) return false;
-  int btn_hit_pad = 3;
-  int hit_size = app->appbar.btn_size + btn_hit_pad * 2;
-  if (app->appbar.btn_close_x >= 0 &&
-      cogito_hit_rect(x, y,
-                      app->appbar.btn_close_x - btn_hit_pad,
-                      app->appbar.btn_y - btn_hit_pad,
-                      hit_size,
-                      hit_size)) return true;
-  if (app->appbar.btn_min_x >= 0 &&
-      cogito_hit_rect(x, y,
-                      app->appbar.btn_min_x - btn_hit_pad,
-                      app->appbar.btn_y - btn_hit_pad,
-                      hit_size,
-                      hit_size)) return true;
-  if (app->appbar.btn_max_x >= 0 &&
-      cogito_hit_rect(x, y,
-                      app->appbar.btn_max_x - btn_hit_pad,
-                      app->appbar.btn_y - btn_hit_pad,
-                      hit_size,
-                      hit_size)) return true;
-  for (size_t i = 0; i < app->len; i++) {
-    CogitoNode* c = app->children[i];
-    if (cogito_hit_rect_min48_local(x, y, c->x, c->y, c->w, c->h)) return true;
-  }
-  return false;
 }
 
 static bool cogito_appbar_is_title_widget(const CogitoNode* c) {

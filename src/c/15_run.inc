@@ -1079,6 +1079,13 @@ static void cogito_run(YisVal appv, YisVal winv) {
       win->h = sh;
       cogito_window_relayout(win);
       window_resized = true;
+      if (win->on_resize) {
+        YisVal args[3];
+        args[0] = YV_OBJ(win);
+        args[1] = YV_INT(sw);
+        args[2] = YV_INT(sh);
+        cogito_invoke(win->on_resize, 3, args);
+      }
     }
     // GTK-style selective invalidation: only redraw when something visual changed.
     // Mouse motion alone doesn't trigger redraw — hover-change detection below handles it.
@@ -2065,6 +2072,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
           } else if (cogito_focused->icon && cogito_focused->icon->data && cogito_focused->icon->data[0]) {
             text_x = cogito_focused->x + (12 + 24 + 16);
           }
+          if (cogito_focused->textfield_prefix && cogito_focused->textfield_prefix->data && cogito_focused->textfield_prefix->data[0]) {
+            text_x += cogito_text_width_size_node(cogito_focused, cogito_focused->textfield_prefix->data, size);
+          }
           int rel_x = mx - text_x;
           if (rel_x < 0) rel_x = 0;
           int idx = cogito_text_index_from_x(cogito_focused, t, size, rel_x);
@@ -2378,7 +2388,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
         // Check if click is on ANY appbar for dragging (only if we didn't handle a button click)
         if (!handled && !active_dialog && !appbar_blocked_by_bottom_sheet) {
           CogitoNode* clicked_appbar = cogito_find_appbar_at_point(win, mx, my);
-          if (clicked_appbar && !cogito_point_over_appbar_buttons(clicked_appbar, mx, my)) {
+          // Use cogito_find_clickable on the appbar subtree directly — this
+          // applies the same min-48 hit expansion the normal click path uses,
+          // so a clickable widget always wins over the drag.
+          if (clicked_appbar && !cogito_find_clickable(clicked_appbar, mx, my)) {
             appbar_drag_swallow = true;
 #if defined(__APPLE__)
             cogito_macos_drag_window();
@@ -2411,7 +2424,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
             hit = cogito_find_clickable(win->popover, mx, my);
           }
           if (!hit) {
-            hit = (slot && slot->dialog_open && slot->dialog) ? cogito_find_clickable(slot->dialog, mx, my)
+            hit = (slot && slot->dialog_open && slot->dialog) ? cogito_find_clickable(slot, mx, my)
                                          : (win->dialog_open && win->dialog ? cogito_find_clickable(win->dialog, mx, my)
                                                                            : cogito_find_clickable(win, mx, my));
           }
@@ -2466,6 +2479,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
               text_x = focus_hit->x + (12 + 16 + 8);
             } else if (focus_hit->icon && focus_hit->icon->data && focus_hit->icon->data[0]) {
               text_x = focus_hit->x + (12 + 24 + 16);
+            }
+            if (focus_hit->textfield_prefix && focus_hit->textfield_prefix->data && focus_hit->textfield_prefix->data[0]) {
+              text_x += cogito_text_width_size_node(focus_hit, focus_hit->textfield_prefix->data, size);
             }
             int rel_x = mx - text_x;
             if (rel_x < 0) rel_x = 0;
@@ -2691,6 +2707,15 @@ static void cogito_run(YisVal appv, YisVal winv) {
               hit->bottom_sheet.desired_h = hit->h;
               cogito_bottom_sheet_active = hit;
               cogito_pointer_capture = hit;
+            } else if (!cogito_hit_node(hit, mx, my)) {
+              // Click on scrim (outside sheet body) — minimize
+              int min_h = cogito_bottom_sheet_min_height(hit);
+              hit->bottom_sheet.desired_h = min_h;
+              hit->bottom_sheet.expanded = false;
+              hit->bottom_sheet.dragging = false;
+              if (cogito_bottom_sheet_active == hit) cogito_bottom_sheet_active = NULL;
+              if (cogito_pointer_capture == hit) cogito_pointer_capture = NULL;
+              cogito_window_relayout(win);
             }
           } else if (hit->kind == COGITO_SIDE_SHEET) {
             int hx = 0, hy = 0, hw = 0, hh = 0;
@@ -2702,6 +2727,12 @@ static void cogito_run(YisVal appv, YisVal winv) {
               hit->side_sheet.desired_w = hit->w;
               cogito_side_sheet_active = hit;
               cogito_pointer_capture = hit;
+            } else if (!cogito_hit_node(hit, mx, my)) {
+              // Click on scrim (outside sheet body) — close
+              if (hit->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR) {
+                cogito_window_clear_side_sheet(YV_OBJ(win));
+                cogito_window_relayout(win);
+              }
             }
           } else if (hit->kind == COGITO_DRAWING_AREA) {
             hit->drawing_area.pressed = true;
@@ -2804,6 +2835,11 @@ static void cogito_run(YisVal appv, YisVal winv) {
                   }
                 }
               }
+            }
+          } else if (hit->kind == COGITO_DIALOG_SLOT) {
+            // Click on scrim (outside dialog) — dismiss
+            if (hit->dialog_open) {
+              cogito_dialog_slot_clear(YV_OBJ(hit));
             }
           } else if (hit->kind == COGITO_CARD) {
             cogito_invoke_click(hit);

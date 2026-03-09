@@ -142,6 +142,17 @@ static void cogito_scroller_set_min_content_height(YisVal scv, YisVal hv) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
+static void cogito_scroller_set_scroll_y(YisVal scv, YisVal yv) {
+  if (scv.tag != EVT_OBJ) yis_trap("cogito.scroller_set_scroll_y expects scroller");
+  CogitoNode* n = (CogitoNode*)scv.as.p;
+  if (!n || n->kind != COGITO_SCROLLER) yis_trap("cogito.scroller_set_scroll_y expects scroller");
+  int y = (int)yis_as_int(yv);
+  if (y < 0) y = 0;
+  if (n->scroller.scroll_y == y) return;
+  n->scroller.scroll_y = y;
+  cogito_window_relayout(cogito_node_window(n));
+}
+
 static void cogito_container_set_gap(YisVal nodev, YisVal gapv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_gap expects object");
   CogitoNode* node = (CogitoNode*)nodev.as.p;
@@ -266,6 +277,12 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
     temp = true;
   }
   const char* s = cs ? cs->data : "";
+  // Skip if class name is unchanged
+  const char* old = n->class_name ? n->class_name->data : "";
+  if (strcmp(s, old) == 0) {
+    if (temp && cs) yis_release_val(YV_STR(cs));
+    return;
+  }
   bool is_button = (n->kind == COGITO_BUTTON || n->kind == COGITO_ICONBTN);
   
   // Clear old class name

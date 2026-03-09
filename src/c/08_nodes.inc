@@ -98,6 +98,10 @@ static void cogito_node_drop(YisObj* o) {
     yis_release_val(YV_FN(n->on_draw));
     n->on_draw = NULL;
   }
+  if (n->on_resize) {
+    yis_release_val(YV_FN(n->on_resize));
+    n->on_resize = NULL;
+  }
   if (n->action_text) {
     yis_release_val(YV_STR(n->action_text));
     n->action_text = NULL;
@@ -184,6 +188,14 @@ static void cogito_node_drop(YisObj* o) {
   if (n->textfield_regex) {
     yis_release_val(YV_STR(n->textfield_regex));
     n->textfield_regex = NULL;
+  }
+  if (n->textfield_prefix) {
+    yis_release_val(YV_STR(n->textfield_prefix));
+    n->textfield_prefix = NULL;
+  }
+  if (n->textfield_suffix) {
+    yis_release_val(YV_STR(n->textfield_suffix));
+    n->textfield_suffix = NULL;
   }
   if (n->view_id) {
     yis_release_val(YV_STR(n->view_id));
