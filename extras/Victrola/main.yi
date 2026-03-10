@@ -13,6 +13,9 @@ bring victrola_library
 bring victrola_scanner
 bring victrola_lyrics
 bring victrola_artist_images
+bring victrola_mix
+bring victrola_queue
+bring victrola_playback
 
 def ?STATE_PATH = ""
 def APP_ACCENT = "#ff8c00"
@@ -125,22 +128,15 @@ def mini_play_btn = cogito.iconbtn("sf:play")
 def sidebar = cogito.vstack()
 def ?player_back_btn = cogito.button("")
 def player_panel = cogito.vstack()
+def ?player_bar_ref = cogito.appbar("", "")
+def ?now_revealer_ref = cogito.revealer()
+def ?lyrics_revealer_ref = cogito.revealer()
+def ?library_bar_ref = cogito.appbar("", "")
 def ?is_compact_mode = false
 def ?compact_player_open = false
 
 def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
-: sanitize_cover_path(path = string) (( string )) {
-    return victrola_util.sanitize_cover_path(path)
-}
-
-: format_ms(ms = num) (( string )) {
-    return victrola_util.format_ms(ms)
-}
-
-: album_cover_key(album = string, artist = string) (( string )) {
-    return victrola_model.album_cover_key(album, artist)
-}
 
 : album_cover_for(album = string, artist = string) (( string )) {
     return victrola_model.album_cover_for(album_cover_map, album, artist)
@@ -201,101 +197,12 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     return view_mode - 1
 }
 
-: artist_has_tracks(artist = string) (( bool )) {
-    for (let ?i = 0; i < len(tracks); i = i + 1) {
-        let t = tracks[i] ?? []: [string => any]
-        if str(t["artist"] ?? "") == artist {
-            return true
-        }
-    }
-    return false
-}
-
-: top_artist_subtitle(artists = any, limit = num) (( string )) {
-    let ?out = ""
-    let total = len(artists)
-    if limit < total {
-        total = limit
-    }
-    for (let ?i = 0; i < total; i = i + 1) {
-        let artist = str(artists[i] ?? "")
-        if len(artist) == 0 {
-            continue
-        }
-        if len(out) > 0 {
-            out = "$$out$$, "
-        }
-        out = "$$out$$$$artist$$"
-    }
-    return out
-}
-
 : get_top_artists(limit = num) (( any )) {
-    let ?top = []: [string]
-    let ?used = []: [string => any]
-    if limit <= 0 {
-        return top
-    }
-
-    for (let ?rank = 0; rank < limit; rank = rank + 1) {
-        let ?best_artist = ""
-        let ?best_count = -1
-
-        for (let ?i = 0; i < len(play_count_artists); i = i + 1) {
-            let artist = str(play_count_artists[i] ?? "")
-            if len(artist) == 0 || !stdr.is_null(used[artist]) || !artist_has_tracks(artist) {
-                continue
-            }
-
-            let count = stdr.num(play_counts[artist] ?? 0)
-            if count > best_count {
-                best_count = count
-                best_artist = artist
-            }
-        }
-
-        if len(best_artist) > 0 && best_count > 0 {
-            used[best_artist] = true
-            stdr.push(top, best_artist)
-        }
-    }
-
-    return top
+    return victrola_mix.get_top_artists(play_counts, play_count_artists, tracks, limit)
 }
 
 : collect_mix_covers(artists = any, limit = num) (( any )) {
-    let ?covers = []: [string]
-    let ?seen = []: [string => any]
-    if limit <= 0 {
-        return covers
-    }
-
-    for (let ?i = 0; i < len(artists); i = i + 1) {
-        let artist = str(artists[i] ?? "")
-        if len(artist) == 0 {
-            continue
-        }
-
-        for (let ?j = 0; j < len(tracks); j = j + 1) {
-            let t = tracks[j] ?? []: [string => any]
-            if str(t["artist"] ?? "") != artist {
-                continue
-            }
-
-            let cover = album_cover_for(str(t["album"] ?? "Unknown Album"), artist)
-            if len(cover) == 0 || !stdr.is_null(seen[cover]) {
-                continue
-            }
-
-            seen[cover] = true
-            stdr.push(covers, cover)
-            if len(covers) >= limit {
-                return covers
-            }
-        }
-    }
-
-    return covers
+    return victrola_mix.collect_mix_covers(tracks, album_cover_map, artists, limit)
 }
 
 : refresh_mix_view() (( -- )) {
@@ -323,7 +230,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     mix_empty.set_visible(false)
     mix_collage.set_visible(true)
     mix_play_btn.set_disabled(false)
-    mix_subtitle.set_text(top_artist_subtitle(top_artists, 3))
+    mix_subtitle.set_text(victrola_mix.top_artist_subtitle(top_artists, 3))
 
     let c1 = str(covers[0] ?? "")
     if len(c1) == 0 { c1 = "sf:music.note" }
@@ -347,24 +254,10 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : note_artist_play(track = any) (( -- )) {
-    let path = stdr.trim(str(track["path"] ?? ""))
-    if len(path) > 0 {
-        let track_count = stdr.num(track_play_counts[path] ?? 0)
-        track_play_counts[path] = track_count + 1
-    }
-
-    let artist = stdr.trim(str(track["artist"] ?? ""))
-    if len(artist) == 0 || artist == "Unknown Artist" {
-        save_state()
-        refresh_mix_view()
-        return
-    }
-
-    let count = stdr.num(play_counts[artist] ?? 0)
-    if count <= 0 {
-        stdr.push(play_count_artists, artist)
-    }
-    play_counts[artist] = count + 1
+    let result = victrola_mix.note_artist_play(track, play_counts, play_count_artists, track_play_counts)
+    play_counts = result["play_counts"] ?? []: [string => any]
+    play_count_artists = result["play_count_artists"] ?? []: [string]
+    track_play_counts = result["track_play_counts"] ?? []: [string => any]
     save_state()
     refresh_mix_view()
 }
@@ -501,78 +394,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : find_mix_queue_index(track_idx = num) (( num )) {
-    for (let ?i = 0; i < len(mix_queue); i = i + 1) {
-        if mix_queue[i] == track_idx {
-            return i
-        }
-    }
-    return -1
+    return victrola_queue.find_queue_index(mix_queue, track_idx)
 }
 
 : build_mix_queue(top_artists = any) (( any )) {
-    let ?queue = []: [num]
-    let ?artist_rank = []: [string => any]
-    let ?used = []: [string => any]
-    let queue_limit = 10
-
-    for (let ?i = 0; i < len(top_artists); i = i + 1) {
-        let artist = str(top_artists[i] ?? "")
-        if len(artist) == 0 || !stdr.is_null(artist_rank[artist]) {
-            continue
-        }
-        artist_rank[artist] = i
-    }
-
-    for (let ?pick = 0; pick < queue_limit; pick = pick + 1) {
-        let ?best_idx = -1
-        let ?best_count = -1
-        let ?best_rank = len(top_artists) + 1
-
-        for (let ?i = 0; i < len(tracks); i = i + 1) {
-            let t = tracks[i] ?? []: [string => any]
-            let track_artist = str(t["artist"] ?? "")
-            let artist_pos = artist_rank[track_artist] ?? null
-            if stdr.is_null(artist_pos) {
-                continue
-            }
-
-            let path = str(t["path"] ?? "")
-            let ?key = path
-            if len(key) == 0 {
-                key = "$$i$$"
-            }
-            if !stdr.is_null(used[key]) {
-                continue
-            }
-
-            let count = stdr.num(track_play_counts[path] ?? 0)
-            let rank = stdr.num(artist_pos)
-
-            if count > best_count {
-                best_idx = i
-                best_count = count
-                best_rank = rank
-            } elif count == best_count && rank < best_rank {
-                best_idx = i
-                best_rank = rank
-            }
-        }
-
-        if best_idx < 0 {
-            break
-        }
-
-        stdr.push(queue, best_idx)
-        let best_track = tracks[best_idx] ?? []: [string => any]
-        let best_path = str(best_track["path"] ?? "")
-        let ?best_key = best_path
-        if len(best_key) == 0 {
-            best_key = "$$best_idx$$"
-        }
-        used[best_key] = true
-    }
-
-    return queue
+    return victrola_mix.build_mix_queue(tracks, top_artists, track_play_counts)
 }
 
 : refresh_queue_button() (( -- )) {
@@ -599,37 +425,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : sync_queue_playing_position() (( -- )) {
-    if len(mix_queue) == 0 {
-        mix_queue_pos = -1
-        return
-    }
-
-    let playing_pos = find_mix_queue_index(playing_track)
-    if playing_pos >= 0 {
-        mix_queue_pos = playing_pos
-        return
-    }
-
-    if mix_queue_pos < 0 {
-        mix_queue_pos = 0
-    }
-    if mix_queue_pos >= len(mix_queue) {
-        mix_queue_pos = len(mix_queue) - 1
-    }
+    mix_queue_pos = victrola_queue.sync_playing_position(mix_queue, playing_track, mix_queue_pos)
 }
 
 : queue_remove_at(queue_pos = num) (( -- )) {
-    if queue_pos < 0 || queue_pos >= len(mix_queue) {
-        return
-    }
-
-    let ?next_queue = []: [num]
-    for (let ?i = 0; i < len(mix_queue); i = i + 1) {
-        if i != queue_pos {
-            stdr.push(next_queue, mix_queue[i] ?? -1)
-        }
-    }
-    mix_queue = next_queue
+    mix_queue = victrola_queue.queue_remove(mix_queue, queue_pos)
 
     if len(mix_queue) == 0 {
         clear_queue_context()
@@ -645,12 +445,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     if queue_pos <= 0 || queue_pos >= len(mix_queue) {
         return
     }
-
-    let above = queue_pos - 1
-    let tmp = mix_queue[above] ?? -1
-    mix_queue[above] = mix_queue[queue_pos] ?? -1
-    mix_queue[queue_pos] = tmp
-
+    mix_queue = victrola_queue.queue_swap(mix_queue, queue_pos - 1, queue_pos)
     sync_queue_playing_position()
     refresh_queue_sheet_open()
     refresh_queue_button()
@@ -660,73 +455,19 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     if queue_pos < 0 || queue_pos >= len(mix_queue) - 1 {
         return
     }
-
-    let below = queue_pos + 1
-    let tmp = mix_queue[below] ?? -1
-    mix_queue[below] = mix_queue[queue_pos] ?? -1
-    mix_queue[queue_pos] = tmp
-
+    mix_queue = victrola_queue.queue_swap(mix_queue, queue_pos, queue_pos + 1)
     sync_queue_playing_position()
     refresh_queue_sheet_open()
     refresh_queue_button()
 }
 
 : build_queue_row(track_idx = num, queue_pos = num) (( any )) {
-    let t = tracks[track_idx] ?? []: [string => any]
-    let title = str(t["title"] ?? "")
-    let artist = str(t["artist"] ?? "Unknown Artist")
-    let path = str(t["path"] ?? "")
-    if len(title) == 0 {
-        title = stdr.basename(path)
-    }
-
-    let row = cogito.hstack()
-    .set_gap(12)
-    .set_hexpand(true)
-    .set_padding(8, 0, 8, 0)
-    .set_class("victrola-queue-row")
-
-    if queue_pos == mix_queue_pos && (queue_active || track_idx == playing_track) {
-        row.set_class("victrola-queue-row victrola-queue-current")
-    }
-
-    let meta = cogito.vstack()
-    .set_gap(2)
-    .set_hexpand(true)
-    .add(cogito.label(title)
-        .set_text_align(0)
-        .set_max_width_chars(28)
-        .set_class("emphasized")
+    let is_current = queue_pos == mix_queue_pos && (queue_active || track_idx == playing_track)
+    return victrola_queue.build_queue_row(tracks, track_idx, queue_pos, is_current,
+        (pos = num) => { queue_move_up(pos) },
+        (pos = num) => { queue_move_down(pos) },
+        (pos = num) => { queue_remove_at(pos) }
     )
-    .add(cogito.label(artist)
-        .set_text_align(0)
-        .set_max_width_chars(32)
-        .set_class("caption")
-    )
-
-    row
-    .add(cogito.label(stdr.str(queue_pos + 1))
-        .set_class("caption tabular emphasized")
-        .set_text_align(2)
-    )
-    .add(meta)
-    .add(
-        cogito.menu_button("sf:ellipsis")
-        .set_class("iconic")
-        .set_shape(0)
-        .set_s()
-        .add_menu("Move Up", (b = any) => {
-            queue_move_up(queue_pos)
-        })
-        .add_menu("Move Down", (b = any) => {
-            queue_move_down(queue_pos)
-        })
-        .add_menu_section("Remove from Queue", (b = any) => {
-            queue_remove_at(queue_pos)
-        })
-    )
-
-    return row
 }
 
 : refresh_queue_sheet() (( -- )) {
@@ -754,40 +495,12 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : build_queue_content() (( any )) {
-    let queue_list = cogito.content_list()
-    .set_hexpand(true)
-    .set_padding(0,0,0,0)
-    .set_class("victrola-queue-list")
-
-    let ?queue_visible_positions = []: [num]
-
-    for (let ?i = 0; i < len(mix_queue); i = i + 1) {
-        let track_idx = mix_queue[i] ?? -1
-        if track_idx >= 0 {
-            queue_list.add(build_queue_row(track_idx, i))
-            stdr.push(queue_visible_positions, i)
-        }
-    }
-
-    queue_list.on_select((idx = num) => {
-        if idx >= 0 && idx < len(queue_visible_positions) {
-            let queue_pos = queue_visible_positions[idx] ?? -1
-            if queue_pos >= 0 {
-                play_mix_queue_at(queue_pos)
-            }
-        }
-    })
-
-    let queue_scroll = cogito.scroller()
-    .set_hexpand(true)
-    .set_vexpand(true)
-    .set_padding(0,0,0,0)
-    .set_axes(false, true)
-    .set_min_content_width(260)
-    .set_min_content_height(220)
-    .add(queue_list)
-
-    return queue_scroll
+    return victrola_queue.build_queue_content(tracks, mix_queue, mix_queue_pos, queue_active, playing_track,
+        (pos = num) => { queue_move_up(pos) },
+        (pos = num) => { queue_move_down(pos) },
+        (pos = num) => { queue_remove_at(pos) },
+        (pos = num) => { play_mix_queue_at(pos) }
+    )
 }
 
 : build_queue_sheet() (( any )) {
@@ -863,35 +576,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : build_queue_for_artist(artist = string) (( any )) {
-    let ?queue = []: [num]
-    if len(artist) == 0 {
-        return queue
-    }
-
-    for (let ?i = 0; i < len(tracks); i = i + 1) {
-        let t = tracks[i] ?? []: [string => any]
-        if str(t["artist"] ?? "") == artist {
-            stdr.push(queue, i)
-        }
-    }
-
-    return queue
+    return victrola_queue.build_queue_for_artist(tracks, artist)
 }
 
 : build_queue_for_album(album = string) (( any )) {
-    let ?queue = []: [num]
-    if len(album) == 0 {
-        return queue
-    }
-
-    for (let ?i = 0; i < len(tracks); i = i + 1) {
-        let t = tracks[i] ?? []: [string => any]
-        if str(t["album"] ?? "") == album {
-            stdr.push(queue, i)
-        }
-    }
-
-    return queue
+    return victrola_queue.build_queue_for_album(tracks, album)
 }
 
 : set_queue_and_play(queue = any, track_idx = num, source = num) (( -- )) {
@@ -947,67 +636,35 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     }
 }
 
-: set_player_lyrics_visible(show_lyrics = bool, player_bar = cogito.AppBar, now_revealer = cogito.Revealer, lyrics_revealer = cogito.Revealer) (( -- )) {
+: set_player_lyrics_visible(show_lyrics = bool) (( -- )) {
     lyrics_view_visible = show_lyrics
     if show_lyrics {
-        player_bar.set_title("Lyrics")
-        now_revealer.set_show_children(false)
-        now_revealer.set_vexpand(false)
-        lyrics_revealer.set_show_children(true)
-        lyrics_revealer.set_vexpand(true)
+        player_bar_ref.set_title("Lyrics")
+        now_revealer_ref.set_show_children(false)
+        now_revealer_ref.set_vexpand(false)
+        lyrics_revealer_ref.set_show_children(true)
+        lyrics_revealer_ref.set_vexpand(true)
     } else {
-        player_bar.set_title("Now Playing")
-        lyrics_revealer.set_show_children(false)
-        lyrics_revealer.set_vexpand(false)
-        now_revealer.set_show_children(true)
-        now_revealer.set_vexpand(true)
+        player_bar_ref.set_title("Now Playing")
+        lyrics_revealer_ref.set_show_children(false)
+        lyrics_revealer_ref.set_vexpand(false)
+        now_revealer_ref.set_show_children(true)
+        now_revealer_ref.set_vexpand(true)
     }
 }
 
 : sync_play_pause_button() (( -- )) {
-    let actually_playing = is_playing && playing_track >= 0
-    seek_slider.set_wavy(actually_playing)
-    lyrics_seek_slider.set_wavy(actually_playing)
-    if actually_playing {
-        play_pause_btn.set_icon("sf:pause")
-        play_pause_btn.set_class("filled")
-        play_pause_btn.set_shape(1)
-        lyrics_play_btn.set_icon("sf:pause")
-        lyrics_play_btn.set_class("tonal")
-        lyrics_play_btn.set_shape(1)
-        mini_play_btn.set_icon("sf:pause")
-    } else {
-        play_pause_btn.set_icon("sf:play")
-        play_pause_btn.set_class("tonal")
-        play_pause_btn.set_shape(0)
-        lyrics_play_btn.set_icon("sf:play")
-        lyrics_play_btn.set_class("iconic")
-        lyrics_play_btn.set_shape(0)
-        mini_play_btn.set_icon("sf:play")
-    }
+    victrola_playback.sync_play_pause(is_playing, playing_track, play_pause_btn, lyrics_play_btn, mini_play_btn, seek_slider, lyrics_seek_slider)
 }
 
 : sync_repeat_button() (( -- )) {
-    if repeat_one {
-        repeat_btn.set_class("tonal")
-        repeat_btn.set_shape(1)
-    } else {
-        repeat_btn.set_class("iconic")
-        repeat_btn.set_shape(0)
-    }
+    victrola_playback.sync_repeat(repeat_one, repeat_btn)
 }
 
 : next_shuffle_pick(limit = num) (( num )) {
-    if limit <= 0 {
-        return -1
-    }
-
-    -- Lightweight pseudo-random sequence so each shuffle click picks a different candidate.
-    shuffle_seed = (shuffle_seed * 193 + 17 + len(tracks)) % 104729
-    if shuffle_seed < 0 {
-        shuffle_seed = -shuffle_seed
-    }
-    return shuffle_seed % limit
+    let result = victrola_playback.next_shuffle_pick(shuffle_seed, len(tracks), limit)
+    shuffle_seed = stdr.num(result["seed"] ?? 0)
+    return stdr.num(result["pick"] ?? -1)
 }
 
 : set_search_visible(visible = bool) (( -- )) {
@@ -1109,7 +766,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : apply_now_playing_tint(path = string) (( -- )) {
-    let clean = sanitize_cover_path(path)
+    let clean = victrola_util.sanitize_cover_path(path)
     if len(clean) == 0 {
         clear_now_playing_tint()
         return
@@ -1134,7 +791,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : apply_cover_art(path = string) (( -- )) {
-    let clean = sanitize_cover_path(path)
+    let clean = victrola_util.sanitize_cover_path(path)
 
     if clean == current_cover_path {
         return
@@ -1157,7 +814,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
             let t = tracks[playing_track] ?? []: [string => any]
             let album = str(t["album"] ?? "Unknown Album")
             let artist = str(t["artist"] ?? "Unknown Artist")
-            let key = album_cover_key(album, artist)
+            let key = victrola_model.album_cover_key(album, artist)
             if len(album) > 0 && len(str(album_cover_map[key] ?? "")) == 0 {
                 album_cover_map[key] = clean
                 save_state()
@@ -1519,11 +1176,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         sync_play_pause_button()
         stop_poll_loop()
         apply_cover_art("")
-        seek_slider.set_value(0)
-        lyrics_seek_slider.set_value(0)
-        time_left.set_text("00:00")
-        time_right.set_text("00:00")
-        lyrics_time_left.set_text("00:00")
+        victrola_playback.reset_playback_ui(seek_slider, lyrics_seek_slider, time_left, time_right, lyrics_time_left)
         refresh_library_list()
         refresh_queue_sheet()
     } else {
@@ -1531,208 +1184,53 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : set_lyrics_placeholder(text = string) (( -- )) {
-    lyrics_grid.clear()
+    victrola_lyrics.set_placeholder(lyrics_grid, text)
     lyrics_line_labels = []: [any]
     lyrics_timestamps = []: [num]
     lyrics_current_line = -1
     lyrics_synced = false
-    let label = cogito.label(text)
-        .set_wrap(true)
-        .set_hexpand(true)
-        .set_text_align(1)
-        .set_class("victrola-lyric-line")
-        .set_padding(0,0,0,0)
-    lyrics_grid.add(label, 0, 0, 1, 1)
 }
 
 : populate_lyrics(text = string) (( -- )) {
-    lyrics_grid.clear()
-    lyrics_line_labels = []: [any]
-    lyrics_timestamps = []: [num]
+    let result = victrola_lyrics.populate_lyrics_grid(lyrics_grid, lyrics_scroll, text)
+    lyrics_line_labels = result["line_labels"] ?? []: [any]
+    lyrics_timestamps = result["timestamps"] ?? []: [num]
+    lyrics_synced = result["synced"] ?? false
     lyrics_current_line = -1
-    lyrics_synced = false
-    lyrics_scroll.set_scroll_y(0)
-
-    if !victrola_lyrics.is_synced(text) {
-        let cleaned = victrola_lyrics.strip_timestamps(text)
-        let label = cogito.label(cleaned)
-            .set_wrap(true)
-            .set_hexpand(true)
-            .set_text_align(1)
-            .set_padding(0,0,0,0)
-            .set_class("victrola-lyric-line")
-        lyrics_grid.add(label, 0, 0, 1, 1)
-        return
-    }
-
-    lyrics_synced = true
-    let parsed = victrola_lyrics.parse_lrc(text)
-    let count = len(parsed)
-    for (let ?i = 0; i < count; i = i + 1) {
-        let entry = parsed[i] ?? null
-        if !stdr.is_null(entry) {
-            let ts = stdr.num(entry[0] ?? 0)
-            let line_text = stdr.str(entry[1] ?? "")
-            if stdr.len(line_text) == 0 { line_text = "···" }
-            let label = cogito.label(line_text)
-                .set_wrap(true)
-                .set_hexpand(true)
-                .set_text_align(1)
-                .set_class("victrola-lyric-line")
-                .set_padding(0,0,0,0)
-            lyrics_grid.add(label, 0, i, 1, 1)
-            lyrics_line_labels[i] = label
-            lyrics_timestamps[i] = ts
-        }
-    }
 }
 
 : update_lyrics_position(elapsed_ms = num) (( -- )) {
     if !lyrics_synced { return }
-    let count = len(lyrics_timestamps)
-    if count == 0 { return }
-
-    let ?lo = 0
-    let ?hi = count - 1
-    let ?line_idx = -1
-    for (; lo <= hi;) {
-        let mid = (lo + hi) / 2
-        let ts = stdr.num(lyrics_timestamps[mid] ?? 0)
-        if ts <= elapsed_ms {
-            line_idx = mid
-            lo = mid + 1
-        } else {
-            hi = mid - 1
-        }
-    }
-
-    if line_idx == lyrics_current_line { return }
-
-    if lyrics_current_line >= 0 && lyrics_current_line < count {
-        let prev = lyrics_line_labels[lyrics_current_line] ?? null
-        if !stdr.is_null(prev) {
-            cogito.node_set_class(prev, "victrola-lyric-line")
-        }
-    }
-
-    lyrics_current_line = line_idx
-    if line_idx >= 0 && line_idx < count {
-        let curr = lyrics_line_labels[line_idx] ?? null
-        if !stdr.is_null(curr) {
-            cogito.node_set_class(curr, "victrola-lyric-active")
-        }
-        let target_y = line_idx * 48 - 200
-        if target_y < 0 { target_y = 0 }
-        lyrics_scroll.set_scroll_y(target_y)
-    }
+    lyrics_current_line = victrola_lyrics.update_lyrics_scroll(lyrics_timestamps, lyrics_line_labels, lyrics_scroll, elapsed_ms, lyrics_current_line)
 }
 
 : lyrics_cache_key(track_idx = num) (( string )) {
-    if track_idx < 0 || track_idx >= len(tracks) { return "" }
-    let t = tracks[track_idx] ?? []: [string => any]
-    let artist = str(t["artist"] ?? "")
-    let title = str(t["title"] ?? "")
-    return "$$artist$$|$$title$$"
+    return victrola_lyrics.cache_key(tracks, track_idx)
 }
 
 : check_lyrics_for_track(track_idx = num) (( -- )) {
-    if track_idx < 0 || track_idx >= len(tracks) {
-        show_lyrics_btn(false)
-        return
-    }
-    let key = lyrics_cache_key(track_idx)
-    let cached = str(lyrics_cache[key] ?? "")
-    if len(cached) > 0 {
-        show_lyrics_btn(cached != "__none__")
-        return
-    }
-    let t = tracks[track_idx] ?? []: [string => any]
-    let artist = str(t["artist"] ?? "")
-    let title = str(t["title"] ?? "")
-    let path = str(t["path"] ?? "")
-    let result = victrola_lyrics.fetch_lyrics(artist, title, path)
-    if result == "No lyrics found for this track." {
-        lyrics_cache[key] = "__none__"
-        show_lyrics_btn(false)
-    } else {
-        lyrics_cache[key] = result
-        show_lyrics_btn(true)
-    }
+    let result = victrola_lyrics.check_lyrics_cached(tracks, track_idx, lyrics_cache)
+    lyrics_cache = result["lyrics_cache"] ?? lyrics_cache
+    show_lyrics_btn(result["has_lyrics"] ?? false)
 }
 
 : fetch_lyrics_for_track(track_idx = num) (( -- )) {
-    if track_idx < 0 || track_idx >= len(tracks) {
-        set_lyrics_placeholder("Select a track to view lyrics.")
-        return
-    }
-    let key = lyrics_cache_key(track_idx)
-    let cached = str(lyrics_cache[key] ?? "")
-    if len(cached) > 0 && cached != "__none__" {
-        populate_lyrics(cached)
-        return
-    }
-    let t = tracks[track_idx] ?? []: [string => any]
-    let artist = str(t["artist"] ?? "")
-    let title = str(t["title"] ?? "")
-    let path = str(t["path"] ?? "")
-    let result = victrola_lyrics.fetch_lyrics(artist, title, path)
-    if result == "No lyrics found for this track." {
-        lyrics_cache[key] = "__none__"
-        show_lyrics_btn(false)
-    } else {
-        lyrics_cache[key] = result
-        show_lyrics_btn(true)
-    }
-    populate_lyrics(result)
+    let result = victrola_lyrics.fetch_and_cache(tracks, track_idx, lyrics_cache)
+    lyrics_cache = result["lyrics_cache"] ?? lyrics_cache
+    let has = result["has_lyrics"] ?? false
+    show_lyrics_btn(has)
+    populate_lyrics(str(result["text"] ?? ""))
 }
 
 : apply_tag_metadata() (( -- )) {
-    if playing_track < 0 || playing_track >= len(tracks) {
-        return
-    }
-
-    let tag_title = gst.last_tag_title()
-    let tag_artist = gst.last_tag_artist()
-    let tag_album = gst.last_tag_album()
-
-    if len(tag_title) == 0 && len(tag_artist) == 0 && len(tag_album) == 0 {
-        return
-    }
-
-    let ?t = tracks[playing_track] ?? []: [string => any]
-    let ?changed = false
-
-    if len(tag_title) > 0 && str(t["title"] ?? "") != tag_title {
-        t["title"] = tag_title
-        changed = true
-    }
-    if len(tag_artist) > 0 && str(t["artist"] ?? "") != tag_artist {
-        t["artist"] = tag_artist
-        changed = true
-    }
-    if len(tag_album) > 0 && str(t["album"] ?? "") != tag_album {
-        t["album"] = tag_album
-        changed = true
-    }
-
-    if changed {
-        let new_title = str(t["title"] ?? "")
-        let new_artist = str(t["artist"] ?? "")
-        let new_album = str(t["album"] ?? "")
-        let new_file = stdr.basename(str(t["path"] ?? ""))
-        t["search"] = "$$new_title$$ $$new_artist$$ $$new_album$$ $$new_file$$"
-        tracks[playing_track] = t
-
-        let path = str(t["path"] ?? "")
+    let result = victrola_playback.apply_tag_update(playing_track, tracks, track_meta_map)
+    if result["changed"] ?? false {
+        tracks = result["tracks"] ?? tracks
+        track_meta_map = result["track_meta_map"] ?? track_meta_map
+        let path = str(result["path"] ?? "")
         if len(path) > 0 {
-            let ?meta = []: [string => any]
-            meta["title"] = new_title
-            meta["artist"] = new_artist
-            meta["album"] = new_album
-            track_meta_map[path] = meta
             save_state()
         }
-
         set_now_playing(playing_track)
         refresh_library_list()
     }
@@ -1763,32 +1261,15 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     let pos = gst.position_ms()
     let dur = gst.duration_ms()
 
-    if pos >= 0 {
-        time_left.set_text(format_ms(pos))
-        lyrics_time_left.set_text(format_ms(pos))
-    }
-
-    if dur > 0 {
-        time_right.set_text(format_ms(dur))
-        let scale = dur / 1000.0
-        seek_slider.set_bubble_scale(scale)
-        lyrics_seek_slider.set_bubble_scale(scale)
-
-        let ?elapsed = pos
-        if elapsed < 0 {
-            elapsed = 0
-        }
-        if elapsed > dur {
-            elapsed = dur
-        }
-
-        -- Slider tracks actual elapsed/total fraction in per-mille.
-        let scaled = (elapsed * 1000) / dur
+    let seek_result = victrola_playback.update_seek_ui(pos, dur, seek_slider, lyrics_seek_slider, time_left, time_right, lyrics_time_left)
+    let scaled = stdr.num(seek_result["scaled"] ?? -1)
+    if scaled >= 0 {
         suspend_seek_callback = true
         seek_slider.set_value(scaled)
         lyrics_seek_slider.set_value(scaled)
         suspend_seek_callback = false
 
+        let elapsed = stdr.num(seek_result["elapsed"] ?? 0)
         if lyrics_synced && lyrics_view_visible {
             update_lyrics_position(elapsed)
         }
@@ -1817,24 +1298,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     }
 }
 
-entry() (( -- )) {
-    let app = cogito.app()
-    .set_appid("com.fyralabs.Victrola")
-    .set_app_name("Victrola")
-    .set_accent_color(APP_ACCENT, true)
-
-    app_ref = app
-
-    if !gst.init() {
-    }
-
-    let win = cogito.window_size("Victrola", 900, 680)
-    .set_resizable(true)
-    .set_size_request(412, 294)
-
-    cogito.load_sum("victrola.sum")
-
-    -- Configure module-level widgets
+: configure_widgets() (( -- )) {
     album_detail_art.set_size(128, 128).set_radius(26).set_hexpand(false).set_class("surface-container")
     album_detail_artist.set_class("caption").set_hexpand(true).set_text_align(0).set_max_width_chars(40)
     album_detail_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 0, 0, 0)
@@ -1907,11 +1371,19 @@ entry() (( -- )) {
     time_left.set_class("caption tabular emphasized").set_text_align(0)
     time_right.set_class("caption tabular emphasized").set_text_align(2)
     titles_revealer.set_show_children(true).set_hexpand(true).set_vexpand(true)
+    mini_cover.set_size(96, 96).set_radius(12)
+    mini_title_lbl.set_class("emphasized").set_text_align(0).set_max_width_chars(30).set_hexpand(true)
+    mini_artist_lbl.set_class("caption").set_text_align(0).set_max_width_chars(40).set_hexpand(true)
+    mini_play_btn.set_class("tonal").set_align(4).on_click((b = cogito.IconButton) => {
+        if is_playing {
+            pause_playback()
+        } else {
+            play_selected()
+        }
+    })
+}
 
-    let root = cogito.hstack()
-    .set_hexpand(true)
-    .set_vexpand(true)
-
+: build_sidebar(root = cogito.HStack) (( -- )) {
     let rail_bar = cogito.appbar("", "")
     .set_small()
     .set_hexpand(false)
@@ -1936,11 +1408,14 @@ entry() (( -- )) {
     )
     sidebar.add(library_rail)
     root.add(sidebar)
+}
 
+: build_library_center(root = cogito.HStack) (( -- )) {
     library_center.set_hexpand(true).set_vexpand(true)
     let center = library_center
 
     let library_bar = cogito.appbar("Your Mix", "")
+    library_bar_ref = library_bar
     library_bar
     .set_hexpand(true)
     .set_class("small victrola-library-bar")
@@ -2032,7 +1507,9 @@ entry() (( -- )) {
     library_scroll.add(library_stack)
     center.add(library_scroll)
     root.add(center)
+}
 
+: build_mix_panel(root = cogito.HStack) (( -- )) {
     mix_panel
     .add(
         cogito.hstack()
@@ -2056,7 +1533,9 @@ entry() (( -- )) {
         .add(mix_collage)
     )
     root.add(mix_panel)
+}
 
+: build_player_panel(root = cogito.HStack) (( -- )) {
     player_panel
     .set_hexpand(false)
     .set_vexpand(true)
@@ -2071,21 +1550,24 @@ entry() (( -- )) {
     let player_bar = cogito.appbar("Now Playing", "")
     .set_hexpand(true)
     .set_class("small victrola-player-bar")
+    player_bar_ref = player_bar
 
     let now_revealer = cogito.revealer()
     .set_show_children(true)
     .set_hexpand(true)
     .set_vexpand(true)
+    now_revealer_ref = now_revealer
 
     let lyrics_revealer = cogito.revealer()
     .set_show_children(false)
     .set_hexpand(true)
     .set_vexpand(false)
+    lyrics_revealer_ref = lyrics_revealer
 
     lyrics_btn = player_bar.add_trailing_menu_button("sf:quote.bubble")
     lyrics_btn.on_click((b = any) => {
         if ui_ready && !is_null(b) {
-            set_player_lyrics_visible(!lyrics_view_visible, player_bar, now_revealer, lyrics_revealer)
+            set_player_lyrics_visible(!lyrics_view_visible)
             if lyrics_view_visible {
                 fetch_lyrics_for_track(selected_track)
             }
@@ -2230,7 +1712,50 @@ entry() (( -- )) {
     player_panel.add(poll_anchor)
 
     root.add(player_tint)
+}
 
+: build_mini_player(outer = cogito.VStack) (( -- )) {
+    let mini_meta = cogito.vstack()
+    .set_gap(4)
+    .set_hexpand(true)
+    .add(mini_title_lbl)
+    .add(mini_artist_lbl)
+
+    let mini_row = cogito.hstack()
+    .set_gap(12)
+    .set_hexpand(true)
+    .set_align(3)
+    .add(mini_cover)
+    .add(mini_meta)
+    .add(mini_play_btn)
+
+    mini_player_card
+    .set_class("filled victrola-mini-player")
+    .set_gap(0)
+    .set_padding(16, 16, 0, 16)
+    .set_hexpand(true)
+    .set_visible(false)
+    .add(mini_row)
+    .on_click((c = cogito.Card) => {
+        if is_compact_mode && ui_ready {
+            open_compact_player()
+        }
+    })
+
+    outer.add(mini_player_card)
+}
+
+: build_bottom_nav(outer = cogito.VStack) (( -- )) {
+    bottom_nav
+    .set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:sparkles", "sf:music.note", "sf:person.2", "sf:square.stack"])
+    .set_selected(0)
+    .set_visible(false)
+    .set_hexpand(true)
+
+    outer.add(bottom_nav)
+}
+
+: wire_library_events() (( -- )) {
     library_rail.on_change((idx = num) => {
         if !is_null(idx) {
             if is_compact_mode {
@@ -2264,13 +1789,13 @@ entry() (( -- )) {
                 }
 
                 if view_mode == 0 {
-                    library_bar.set_title("Your Mix")
+                    library_bar_ref.set_title("Your Mix")
                 } elif view_mode == 1 {
-                    library_bar.set_title("Titles")
+                    library_bar_ref.set_title("Titles")
                 } elif view_mode == 2 {
-                    library_bar.set_title("Artists")
+                    library_bar_ref.set_title("Artists")
                 } else {
-                    library_bar.set_title("Albums")
+                    library_bar_ref.set_title("Albums")
                     if !album_detail_open {
                         set_album_detail_visible(false)
                     }
@@ -2312,8 +1837,6 @@ entry() (( -- )) {
     })
 
     library_list.on_activate((idx = num) => {
-        -- on_select already handles playback; on_activate is a no-op
-        -- to avoid double-play (song restarts) on every click.
     })
 
     search_input.on_change((tf = cogito.SearchField) => {
@@ -2323,6 +1846,47 @@ entry() (( -- )) {
         }
     })
 
+    bottom_nav.on_change((idx = num) => {
+        if !is_null(idx) {
+            query_text = ""
+            search_input.set_text("")
+            if idx != 1 {
+                set_search_visible(false)
+            }
+            close_compact_player()
+            view_mode = idx
+            library_rail.set_selected(idx)
+
+            close_artist_detail()
+            if idx != 3 {
+                close_album_detail()
+            }
+
+            let is_mix = idx == 0
+            library_center.set_visible(!is_mix)
+            library_center.set_hexpand(!is_mix)
+            mix_panel.set_visible(is_mix)
+
+            if view_mode == 0 {
+                library_bar_ref.set_title("Your Mix")
+            } elif view_mode == 1 {
+                library_bar_ref.set_title("Titles")
+            } elif view_mode == 2 {
+                library_bar_ref.set_title("Artists")
+            } else {
+                library_bar_ref.set_title("Albums")
+                if !album_detail_open {
+                    set_album_detail_visible(false)
+                }
+            }
+
+            refresh_library_list()
+            library_grid.set_cols(1)
+        }
+    })
+}
+
+: wire_seek_events() (( -- )) {
     seek_slider.on_change((sl = cogito.Slider) => {
         if !suspend_seek_callback {
             let dur = gst.duration_ms()
@@ -2362,95 +1926,41 @@ entry() (( -- )) {
             }
         }
     })
+}
+
+entry() (( -- )) {
+    let app = cogito.app()
+    .set_appid("com.fyralabs.Victrola")
+    .set_app_name("Victrola")
+    .set_accent_color(APP_ACCENT, true)
+
+    app_ref = app
+
+    if !gst.init() {
+    }
+
+    let win = cogito.window_size("Victrola", 900, 680)
+    .set_resizable(true)
+    .set_size_request(412, 294)
+
+    cogito.load_sum("victrola.sum")
+
+    configure_widgets()
+
+    let root = cogito.hstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    build_sidebar(root)
+    build_library_center(root)
+    build_mix_panel(root)
+    build_player_panel(root)
+
+    wire_library_events()
+    wire_seek_events()
 
     gst.set_volume(main_volume)
 
-    -- Configure mini-player card
-    mini_cover.set_size(96, 96).set_radius(12)
-    mini_title_lbl.set_class("emphasized").set_text_align(0).set_max_width_chars(30).set_hexpand(true)
-    mini_artist_lbl.set_class("caption").set_text_align(0).set_max_width_chars(40).set_hexpand(true)
-    mini_play_btn.set_class("tonal").set_align(4).on_click((b = cogito.IconButton) => {
-        if is_playing {
-            pause_playback()
-        } else {
-            play_selected()
-        }
-    })
-
-    let mini_meta = cogito.vstack()
-    .set_gap(4)
-    .set_hexpand(true)
-    .add(mini_title_lbl)
-    .add(mini_artist_lbl)
-
-    let mini_row = cogito.hstack()
-    .set_gap(12)
-    .set_hexpand(true)
-    .set_align(3)
-    .add(mini_cover)
-    .add(mini_meta)
-    .add(mini_play_btn)
-
-    mini_player_card
-    .set_class("filled victrola-mini-player")
-    .set_gap(0)
-    .set_padding(16, 16, 0, 16)
-    .set_hexpand(true)
-    .set_visible(false)
-    .add(mini_row)
-    .on_click((c = cogito.Card) => {
-        if is_compact_mode && ui_ready {
-            open_compact_player()
-        }
-    })
-
-    -- Configure bottom nav
-    bottom_nav
-    .set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:sparkles", "sf:music.note", "sf:person.2", "sf:square.stack"])
-    .set_selected(0)
-    .set_visible(false)
-    .set_hexpand(true)
-
-    bottom_nav.on_change((idx = num) => {
-        if !is_null(idx) {
-            query_text = ""
-            search_input.set_text("")
-            if idx != 1 {
-                set_search_visible(false)
-            }
-            close_compact_player()
-            view_mode = idx
-            library_rail.set_selected(idx)
-
-            close_artist_detail()
-            if idx != 3 {
-                close_album_detail()
-            }
-
-            let is_mix = idx == 0
-            library_center.set_visible(!is_mix)
-            library_center.set_hexpand(!is_mix)
-            mix_panel.set_visible(is_mix)
-
-            if view_mode == 0 {
-                library_bar.set_title("Your Mix")
-            } elif view_mode == 1 {
-                library_bar.set_title("Titles")
-            } elif view_mode == 2 {
-                library_bar.set_title("Artists")
-            } else {
-                library_bar.set_title("Albums")
-                if !album_detail_open {
-                    set_album_detail_visible(false)
-                }
-            }
-
-            refresh_library_list()
-            library_grid.set_cols(1)
-        }
-    })
-
-    -- Wire window resize for compact layout
     win.on_resize((node = any) => {
         let compact = win.is_compact()
         if compact != is_compact_mode {
@@ -2467,8 +1977,9 @@ entry() (( -- )) {
     .set_hexpand(true)
     .set_vexpand(true)
     .add(root)
-    .add(mini_player_card)
-    .add(bottom_nav)
+
+    build_mini_player(outer)
+    build_bottom_nav(outer)
 
     win.add(outer)
 

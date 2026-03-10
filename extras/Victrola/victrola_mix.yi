@@ -1,0 +1,190 @@
+cask victrola_mix
+
+bring stdr
+bring victrola_model
+
+: artist_has_tracks(tracks = any, artist = string) (( bool )) {
+    for (let ?i = 0; i < len(tracks); i = i + 1) {
+        let t = tracks[i] ?? []: [string => any]
+        if str(t["artist"] ?? "") == artist {
+            return true
+        }
+    }
+    return false
+}
+
+:: top_artist_subtitle(artists = any, limit = num) (( string )) {
+    let ?out = ""
+    let total = len(artists)
+    if limit < total {
+        total = limit
+    }
+    for (let ?i = 0; i < total; i = i + 1) {
+        let artist = str(artists[i] ?? "")
+        if len(artist) == 0 {
+            continue
+        }
+        if len(out) > 0 {
+            out = "$$out$$, "
+        }
+        out = "$$out$$$$artist$$"
+    }
+    return out
+}
+
+:: get_top_artists(play_counts = any, play_count_artists = any, tracks = any, limit = num) (( any )) {
+    let ?top = []: [string]
+    let ?used = []: [string => any]
+    if limit <= 0 {
+        return top
+    }
+
+    for (let ?rank = 0; rank < limit; rank = rank + 1) {
+        let ?best_artist = ""
+        let ?best_count = -1
+
+        for (let ?i = 0; i < len(play_count_artists); i = i + 1) {
+            let artist = str(play_count_artists[i] ?? "")
+            if len(artist) == 0 || !stdr.is_null(used[artist]) || !artist_has_tracks(tracks, artist) {
+                continue
+            }
+
+            let count = stdr.num(play_counts[artist] ?? 0)
+            if count > best_count {
+                best_count = count
+                best_artist = artist
+            }
+        }
+
+        if len(best_artist) > 0 && best_count > 0 {
+            used[best_artist] = true
+            stdr.push(top, best_artist)
+        }
+    }
+
+    return top
+}
+
+:: collect_mix_covers(tracks = any, album_cover_map = any, artists = any, limit = num) (( any )) {
+    let ?covers = []: [string]
+    let ?seen = []: [string => any]
+    if limit <= 0 {
+        return covers
+    }
+
+    for (let ?i = 0; i < len(artists); i = i + 1) {
+        let artist = str(artists[i] ?? "")
+        if len(artist) == 0 {
+            continue
+        }
+
+        for (let ?j = 0; j < len(tracks); j = j + 1) {
+            let t = tracks[j] ?? []: [string => any]
+            if str(t["artist"] ?? "") != artist {
+                continue
+            }
+
+            let cover = victrola_model.album_cover_for(album_cover_map, str(t["album"] ?? "Unknown Album"), artist)
+            if len(cover) == 0 || !stdr.is_null(seen[cover]) {
+                continue
+            }
+
+            seen[cover] = true
+            stdr.push(covers, cover)
+            if len(covers) >= limit {
+                return covers
+            }
+        }
+    }
+
+    return covers
+}
+
+:: build_mix_queue(tracks = any, top_artists = any, track_play_counts = any) (( any )) {
+    let ?queue = []: [num]
+    let ?artist_rank = []: [string => any]
+    let ?used = []: [string => any]
+    let queue_limit = 10
+
+    for (let ?i = 0; i < len(top_artists); i = i + 1) {
+        let artist = str(top_artists[i] ?? "")
+        if len(artist) == 0 || !stdr.is_null(artist_rank[artist]) {
+            continue
+        }
+        artist_rank[artist] = i
+    }
+
+    for (let ?pick = 0; pick < queue_limit; pick = pick + 1) {
+        let ?best_idx = -1
+        let ?best_count = -1
+        let ?best_rank = len(top_artists) + 1
+
+        for (let ?i = 0; i < len(tracks); i = i + 1) {
+            let t = tracks[i] ?? []: [string => any]
+            let track_artist = str(t["artist"] ?? "")
+            let artist_pos = artist_rank[track_artist] ?? null
+            if stdr.is_null(artist_pos) {
+                continue
+            }
+
+            let path = str(t["path"] ?? "")
+            let ?key = path
+            if len(key) == 0 {
+                key = "$$i$$"
+            }
+            if !stdr.is_null(used[key]) {
+                continue
+            }
+
+            let count = stdr.num(track_play_counts[path] ?? 0)
+            let rank = stdr.num(artist_pos)
+
+            if count > best_count {
+                best_idx = i
+                best_count = count
+                best_rank = rank
+            } elif count == best_count && rank < best_rank {
+                best_idx = i
+                best_rank = rank
+            }
+        }
+
+        if best_idx < 0 {
+            break
+        }
+
+        stdr.push(queue, best_idx)
+        let best_track = tracks[best_idx] ?? []: [string => any]
+        let best_path = str(best_track["path"] ?? "")
+        let ?best_key = best_path
+        if len(best_key) == 0 {
+            best_key = "$$best_idx$$"
+        }
+        used[best_key] = true
+    }
+
+    return queue
+}
+
+:: note_artist_play(track = any, play_counts = any, play_count_artists = any, track_play_counts = any) (( any )) {
+    let path = stdr.trim(str(track["path"] ?? ""))
+    if len(path) > 0 {
+        let track_count = stdr.num(track_play_counts[path] ?? 0)
+        track_play_counts[path] = track_count + 1
+    }
+
+    let artist = stdr.trim(str(track["artist"] ?? ""))
+    if len(artist) > 0 && artist != "Unknown Artist" {
+        let count = stdr.num(play_counts[artist] ?? 0)
+        if count <= 0 {
+            stdr.push(play_count_artists, artist)
+        }
+        play_counts[artist] = count + 1
+    }
+
+    let ?result = []: [string => any]
+    result["play_counts"] = play_counts
+    result["play_count_artists"] = play_count_artists
+    result["track_play_counts"] = track_play_counts
+    return result
+}

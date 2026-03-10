@@ -3,6 +3,7 @@ cask victrola_lyrics
 bring stdr
 bring json
 bring net
+bring cogito
 
 :: read_embedded_lyrics(path = string) (( string )) {
     if stdr.len(path) == 0 {
@@ -277,4 +278,175 @@ bring net
         pos = pos + bracket + 1
     }
     return ""
+}
+
+-- Display / caching / sync helpers
+
+:: cache_key(tracks = any, track_idx = num) (( string )) {
+    if track_idx < 0 || track_idx >= len(tracks) { return "" }
+    let t = tracks[track_idx] ?? []: [string => any]
+    let artist = str(t["artist"] ?? "")
+    let title = str(t["title"] ?? "")
+    return "$$artist$$|$$title$$"
+}
+
+:: check_lyrics_cached(tracks = any, track_idx = num, lyrics_cache = any) (( any )) {
+    let ?out = []: [string => any]
+    out["lyrics_cache"] = lyrics_cache
+    out["has_lyrics"] = false
+    if track_idx < 0 || track_idx >= len(tracks) {
+        return out
+    }
+    let key = cache_key(tracks, track_idx)
+    let cached = str(lyrics_cache[key] ?? "")
+    if len(cached) > 0 {
+        out["has_lyrics"] = cached != "__none__"
+        return out
+    }
+    let t = tracks[track_idx] ?? []: [string => any]
+    let ?artist = str(t["artist"] ?? "")
+    let ?title = str(t["title"] ?? "")
+    let ?path = str(t["path"] ?? "")
+    let ?result = fetch_lyrics(artist, title, path)
+    if result == "No lyrics found for this track." {
+        lyrics_cache[key] = "__none__"
+    } else {
+        lyrics_cache[key] = result
+        out["has_lyrics"] = true
+    }
+    out["lyrics_cache"] = lyrics_cache
+    return out
+}
+
+:: fetch_and_cache(tracks = any, track_idx = num, lyrics_cache = any) (( any )) {
+    let ?out = []: [string => any]
+    out["lyrics_cache"] = lyrics_cache
+    out["text"] = "Select a track to view lyrics."
+    out["has_lyrics"] = false
+    if track_idx < 0 || track_idx >= len(tracks) {
+        return out
+    }
+    let key = cache_key(tracks, track_idx)
+    let cached = str(lyrics_cache[key] ?? "")
+    if len(cached) > 0 && cached != "__none__" {
+        out["text"] = cached
+        out["has_lyrics"] = true
+        return out
+    }
+    let t = tracks[track_idx] ?? []: [string => any]
+    let artist = str(t["artist"] ?? "")
+    let title = str(t["title"] ?? "")
+    let path = str(t["path"] ?? "")
+    let result = fetch_lyrics(artist, title, path)
+    out["text"] = result
+    if result == "No lyrics found for this track." {
+        lyrics_cache[key] = "__none__"
+    } else {
+        lyrics_cache[key] = result
+        out["has_lyrics"] = true
+    }
+    out["lyrics_cache"] = lyrics_cache
+    return out
+}
+
+:: set_placeholder(lyrics_grid = cogito.Grid, text = string) (( -- )) {
+    lyrics_grid.clear()
+    let label = cogito.label(text)
+        .set_wrap(true)
+        .set_hexpand(true)
+        .set_text_align(1)
+        .set_class("victrola-lyric-line")
+        .set_padding(0,0,0,0)
+    lyrics_grid.add(label, 0, 0, 1, 1)
+}
+
+:: populate_lyrics_grid(lyrics_grid = cogito.Grid, lyrics_scroll = cogito.Scroller, text = string) (( any )) {
+    lyrics_grid.clear()
+    lyrics_scroll.set_scroll_y(0)
+
+    let ?line_labels = []: [any]
+    let ?timestamps = []: [num]
+    let ?synced = false
+    let ?out = []: [string => any]
+
+    if !is_synced(text) {
+        let cleaned = strip_timestamps(text)
+        let label = cogito.label(cleaned)
+            .set_wrap(true)
+            .set_hexpand(true)
+            .set_text_align(1)
+            .set_padding(0,0,0,0)
+            .set_class("victrola-lyric-line")
+        lyrics_grid.add(label, 0, 0, 1, 1)
+        out["line_labels"] = line_labels
+        out["timestamps"] = timestamps
+        out["synced"] = false
+        return out
+    }
+
+    synced = true
+    let parsed = parse_lrc(text)
+    let count = len(parsed)
+    for (let ?i = 0; i < count; i = i + 1) {
+        let lyric_entry = parsed[i] ?? null
+        if !stdr.is_null(lyric_entry) {
+            let ts = stdr.num(lyric_entry[0] ?? 0)
+            let line_text = stdr.str(lyric_entry[1] ?? "")
+            if stdr.len(line_text) == 0 { line_text = "···" }
+            let label = cogito.label(line_text)
+                .set_wrap(true)
+                .set_hexpand(true)
+                .set_text_align(1)
+                .set_class("victrola-lyric-line")
+                .set_padding(0,0,0,0)
+            lyrics_grid.add(label, 0, i, 1, 1)
+            line_labels[i] = label
+            timestamps[i] = ts
+        }
+    }
+
+    out["line_labels"] = line_labels
+    out["timestamps"] = timestamps
+    out["synced"] = true
+    return out
+}
+
+:: update_lyrics_scroll(timestamps = any, line_labels = any, lyrics_scroll = cogito.Scroller, elapsed_ms = num, current_line = num) (( num )) {
+    let count = len(timestamps)
+    if count == 0 { return current_line }
+
+    let ?lo = 0
+    let ?hi = count - 1
+    let ?line_idx = -1
+    for (; lo <= hi;) {
+        let mid = (lo + hi) / 2
+        let ts = stdr.num(timestamps[mid] ?? 0)
+        if ts <= elapsed_ms {
+            line_idx = mid
+            lo = mid + 1
+        } else {
+            hi = mid - 1
+        }
+    }
+
+    if line_idx == current_line { return current_line }
+
+    if current_line >= 0 && current_line < count {
+        let prev = line_labels[current_line] ?? null
+        if !stdr.is_null(prev) {
+            cogito.node_set_class(prev, "victrola-lyric-line")
+        }
+    }
+
+    if line_idx >= 0 && line_idx < count {
+        let curr = line_labels[line_idx] ?? null
+        if !stdr.is_null(curr) {
+            cogito.node_set_class(curr, "victrola-lyric-active")
+        }
+        let target_y = line_idx * 48 - 200
+        if target_y < 0 { target_y = 0 }
+        lyrics_scroll.set_scroll_y(target_y)
+    }
+
+    return line_idx
 }
