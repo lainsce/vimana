@@ -7,6 +7,7 @@
 #include <objc/objc.h>
 #include <objc/message.h>
 #include <objc/runtime.h>
+#include <mach-o/dyld.h>
 #endif
 
 // Versioning: numeric for build/config, user-visible string for titles and UI

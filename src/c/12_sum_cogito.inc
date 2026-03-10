@@ -1239,6 +1239,31 @@ static bool cogito_sum_resolve_user_path(const char* path, char* resolved, size_
     if (cogito_file_exists(resolved)) return true;
   }
 
+#if defined(__APPLE__)
+  // Try macOS .app bundle Resources directory
+  {
+    char exe_buf[PATH_MAX];
+    uint32_t exe_sz = sizeof(exe_buf);
+    if (_NSGetExecutablePath(exe_buf, &exe_sz) == 0) {
+      char real_exe[PATH_MAX];
+      if (realpath(exe_buf, real_exe)) {
+        char* last_slash = strrchr(real_exe, '/');
+        if (last_slash) {
+          *last_slash = 0; // now points to Contents/MacOS
+          char* macos_slash = strrchr(real_exe, '/');
+          if (macos_slash) {
+            snprintf(macos_slash, sizeof(real_exe) - (size_t)(macos_slash - real_exe), "/Resources/%s", rel_path);
+            if (cogito_file_exists(real_exe)) {
+              snprintf(resolved, resolved_cap, "%s", real_exe);
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+#endif
+
   snprintf(resolved, resolved_cap, "%s", rel_path);
   return cogito_file_exists(resolved);
 }

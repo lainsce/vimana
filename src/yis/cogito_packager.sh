@@ -139,6 +139,14 @@ package_macos() {
   resources_dir="$bundle_root/Contents/Resources"
   plist="$bundle_root/Contents/Info.plist"
 
+  # Copy .sum files to Resources
+  src_dir=$(dirname_path "$entry_path")
+  for sum_file in "$src_dir"/*.sum; do
+    [ -f "$sum_file" ] || continue
+    mkdir -p "$resources_dir"
+    cp -f "$sum_file" "$resources_dir/" || true
+  done
+
   icon_svg=$(find_icon_svg) || return 0
   if make_macos_icns "$icon_svg" "$resources_dir" "$app_name"; then
     insert_macos_icon_key "$plist" "$app_name.icns" || true
