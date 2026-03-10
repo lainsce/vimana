@@ -2432,6 +2432,19 @@ entry() (( -- )) {
             library_center.set_hexpand(!is_mix)
             mix_panel.set_visible(is_mix)
 
+            if view_mode == 0 {
+                library_bar.set_title("Your Mix")
+            } elif view_mode == 1 {
+                library_bar.set_title("Titles")
+            } elif view_mode == 2 {
+                library_bar.set_title("Artists")
+            } else {
+                library_bar.set_title("Albums")
+                if !album_detail_open {
+                    set_album_detail_visible(false)
+                }
+            }
+
             refresh_library_list()
             library_grid.set_cols(1)
         }
