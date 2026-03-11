@@ -2,17 +2,17 @@ case COGITO_ICONBTN: {
       bool hover = false;
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
-  // Keep menu trigger icon buttons visually engaged while their menu is open.
-  if (cogito_menu.open && cogito_menu.owner == n) {
-    active = true;
-  }
+      // Keep menu trigger icon buttons visually engaged while their menu is open.
+      if (cogito_menu.open && cogito_menu.owner == n) {
+        active = true;
+      }
 
       // Check if this icon button is in a ButtonGroup
       bool in_buttongroup = n->parent && n->parent->kind == COGITO_BUTTON_GROUP;
       bool is_selected = in_buttongroup && cogito_buttongroup_child_is_selected(n);
 
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-  CogitoStyle s_base = cogito_theme_resolve_node_state(n, false, false);
+      CogitoStyle s_base = cogito_theme_resolve_node_state(n, false, false);
       bool has_custom_class = n->class_name && n->class_name->data && n->class_name->data[0];
       bool iconic_class = n->class_name && n->class_name->data &&
                           strstr(n->class_name->data, "iconic") != NULL;

@@ -1,4 +1,4 @@
-cask victrola_lyrics
+cask lyrics
 
 bring stdr
 bring json
@@ -54,7 +54,7 @@ bring cogito
     let quoted_in = stdr.shell_quote(path)
     let quoted_out = stdr.shell_quote(tmp)
 
-    let lyrics_file = stdr.str_concat(path, ".victrola_lyrics.txt")
+    let lyrics_file = stdr.str_concat(path, ".lyrics.txt")
     let quoted_lf = stdr.shell_quote(lyrics_file)
     if !stdr.write_text_file(lyrics_file, lyrics) {
         return false
@@ -228,7 +228,10 @@ bring cogito
     let ms = mm * 60000 + ss * 1000 + frac_ms
     let lyric_text = stdr.trim(stdr.slice(line, bracket + 1, n))
 
-    return [ms, lyric_text]
+    let ?out = []: [any]
+    out[0] = ms
+    out[1] = lyric_text
+    return out
 }
 
 :: strip_timestamps(text = string) (( string )) {
@@ -290,7 +293,7 @@ bring cogito
     return "$$artist$$|$$title$$"
 }
 
-:: check_lyrics_cached(tracks = any, track_idx = num, lyrics_cache = any) (( any )) {
+:: check_lyrics_cached(tracks = any, track_idx = num, ?lyrics_cache = any) (( any )) {
     let ?out = []: [string => any]
     out["lyrics_cache"] = lyrics_cache
     out["has_lyrics"] = false
@@ -318,7 +321,7 @@ bring cogito
     return out
 }
 
-:: fetch_and_cache(tracks = any, track_idx = num, lyrics_cache = any) (( any )) {
+:: fetch_and_cache(tracks = any, track_idx = num, ?lyrics_cache = any) (( any )) {
     let ?out = []: [string => any]
     out["lyrics_cache"] = lyrics_cache
     out["text"] = "Select a track to view lyrics."
@@ -386,12 +389,12 @@ bring cogito
 
     synced = true
     let parsed = parse_lrc(text)
-    let count = len(parsed)
+    let ?count = len(parsed)
     for (let ?i = 0; i < count; i = i + 1) {
         let lyric_entry = parsed[i] ?? null
         if !stdr.is_null(lyric_entry) {
             let ts = stdr.num(lyric_entry[0] ?? 0)
-            let line_text = stdr.str(lyric_entry[1] ?? "")
+            let ?line_text = stdr.str(lyric_entry[1] ?? "")
             if stdr.len(line_text) == 0 { line_text = "···" }
             let label = cogito.label(line_text)
                 .set_wrap(true)
@@ -443,7 +446,7 @@ bring cogito
         if !stdr.is_null(curr) {
             cogito.node_set_class(curr, "victrola-lyric-active")
         }
-        let target_y = line_idx * 48 - 200
+        let ?target_y = line_idx * 48 - 200
         if target_y < 0 { target_y = 0 }
         lyrics_scroll.set_scroll_y(target_y)
     }

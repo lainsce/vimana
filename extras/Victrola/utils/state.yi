@@ -1,10 +1,10 @@
-cask victrola_state
+cask state
 
 bring stdr
 bring json
 
-bring victrola_model
-bring victrola_util
+bring utils.model
+bring utils.util
 
 :: save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any, track_meta_map = any, artist_image_map = any, play_counts = any, play_count_artists = any, track_play_counts = any) (( -- )) {
     let folder_esc = json.escape(current_folder)
@@ -15,16 +15,16 @@ bring victrola_util
         let t = tracks[i] ?? []: [string => any]
         let album = stdr.str(t["album"] ?? "Unknown Album")
         let artist = stdr.str(t["artist"] ?? "Unknown Artist")
-        let key = victrola_model.album_cover_key(album, artist)
+        let key = model.album_cover_key(album, artist)
 
         if !stdr.is_null(seen[key]) {
             continue
         }
         seen[key] = 1
 
-        let ?cover = victrola_util.sanitize_cover_path(stdr.str(album_cover_map[key] ?? ""))
+        let ?cover = util.sanitize_cover_path(stdr.str(album_cover_map[key] ?? ""))
         if stdr.len(cover) == 0 {
-            cover = victrola_util.sanitize_cover_path(stdr.str(album_cover_map[album] ?? ""))
+            cover = util.sanitize_cover_path(stdr.str(album_cover_map[album] ?? ""))
         }
         if stdr.len(cover) == 0 {
             continue
@@ -191,7 +191,7 @@ bring victrola_util
         let item = entries[i] ?? []: [string => any]
         let album = stdr.str(item["album"] ?? "")
         let artist = stdr.str(item["artist"] ?? "")
-        let cover = victrola_util.sanitize_cover_path(stdr.str(item["cover"] ?? ""))
+        let cover = util.sanitize_cover_path(stdr.str(item["cover"] ?? ""))
         if stdr.len(album) == 0 || stdr.len(cover) == 0 {
             continue
         }
@@ -199,7 +199,7 @@ bring victrola_util
             continue
         }
         if stdr.len(stdr.trim(artist)) > 0 {
-            covers[victrola_model.album_cover_key(album, artist)] = cover
+            covers[model.album_cover_key(album, artist)] = cover
         } else {
             covers[album] = cover
         }

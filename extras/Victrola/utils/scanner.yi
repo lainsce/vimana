@@ -1,8 +1,8 @@
-cask victrola_scanner
+cask scanner
 
 bring stdr
 
-bring victrola_util
+bring utils.util
 
 :: pick_folder_macos() (( string )) {
     let cmd = "osascript -e 'POSIX path of (choose folder with prompt \"Choose Music Folder\")'"
@@ -43,5 +43,5 @@ bring victrola_util
         return []: [string]
     }
 
-    return victrola_util.split_lines(stdr.str(run[1] ?? ""))
+    return util.split_lines(stdr.str(run[1] ?? ""))
 }

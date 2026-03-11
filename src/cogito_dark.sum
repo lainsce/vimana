@@ -293,6 +293,10 @@ appbar
 appbar .iconbtn
   background: transparent
 
+appbar .iconbtn:disabled
+  color: #e1e3e052
+  background: transparent
+
 appbar .window-close
   background: @primary-container
 

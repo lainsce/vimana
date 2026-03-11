@@ -1,9 +1,10 @@
-cask victrola_mix
+cask mix
 
 bring stdr
-bring victrola_model
 
-: artist_has_tracks(tracks = any, artist = string) (( bool )) {
+bring utils.model
+
+: artist_has_tracks(?tracks = any, ?artist = string) (( bool )) {
     for (let ?i = 0; i < len(tracks); i = i + 1) {
         let t = tracks[i] ?? []: [string => any]
         if str(t["artist"] ?? "") == artist {
@@ -13,9 +14,9 @@ bring victrola_model
     return false
 }
 
-:: top_artist_subtitle(artists = any, limit = num) (( string )) {
+:: top_artist_subtitle(?artists = any, ?limit = num) (( string )) {
     let ?out = ""
-    let total = len(artists)
+    let ?total = len(artists)
     if limit < total {
         total = limit
     }
@@ -32,7 +33,7 @@ bring victrola_model
     return out
 }
 
-:: get_top_artists(play_counts = any, play_count_artists = any, tracks = any, limit = num) (( any )) {
+:: get_top_artists(?play_counts = any, ?play_count_artists = any, ?tracks = any, ?limit = num) (( any )) {
     let ?top = []: [string]
     let ?used = []: [string => any]
     if limit <= 0 {
@@ -65,7 +66,7 @@ bring victrola_model
     return top
 }
 
-:: collect_mix_covers(tracks = any, album_cover_map = any, artists = any, limit = num) (( any )) {
+:: collect_mix_covers(?tracks = any, ?album_cover_map = any, ?artists = any, ?limit = num) (( any )) {
     let ?covers = []: [string]
     let ?seen = []: [string => any]
     if limit <= 0 {
@@ -84,7 +85,7 @@ bring victrola_model
                 continue
             }
 
-            let cover = victrola_model.album_cover_for(album_cover_map, str(t["album"] ?? "Unknown Album"), artist)
+            let cover = model.album_cover_for(album_cover_map, str(t["album"] ?? "Unknown Album"), artist)
             if len(cover) == 0 || !stdr.is_null(seen[cover]) {
                 continue
             }
@@ -100,7 +101,7 @@ bring victrola_model
     return covers
 }
 
-:: build_mix_queue(tracks = any, top_artists = any, track_play_counts = any) (( any )) {
+:: build_mix_queue(?tracks = any, ?top_artists = any, ?track_play_counts = any) (( any )) {
     let ?queue = []: [num]
     let ?artist_rank = []: [string => any]
     let ?used = []: [string => any]
@@ -166,7 +167,7 @@ bring victrola_model
     return queue
 }
 
-:: note_artist_play(track = any, play_counts = any, play_count_artists = any, track_play_counts = any) (( any )) {
+:: note_artist_play(?track = any, ?play_counts = any, ?play_count_artists = any, ?track_play_counts = any) (( any )) {
     let path = stdr.trim(str(track["path"] ?? ""))
     if len(path) > 0 {
         let track_count = stdr.num(track_play_counts[path] ?? 0)

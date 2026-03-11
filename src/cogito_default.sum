@@ -295,6 +295,10 @@ appbar
 appbar .iconbtn
   background: transparent
 
+appbar .iconbtn:disabled
+  color: #191c1a52
+  background: transparent
+
 appbar .window-close
   background: @error
 

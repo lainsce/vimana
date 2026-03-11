@@ -6,16 +6,17 @@ bring json
 bring net
 bring gst
 
-bring victrola_util
-bring victrola_model
-bring victrola_state
-bring victrola_library
-bring victrola_scanner
-bring victrola_lyrics
-bring victrola_artist_images
-bring victrola_mix
-bring victrola_queue
-bring victrola_playback
+bring utils.artist_images
+bring utils.model
+bring utils.scanner
+bring utils.state
+bring utils.util
+
+bring widgets.library
+bring widgets.lyrics
+bring widgets.mix
+bring widgets.playback
+bring widgets.queue
 
 def ?STATE_PATH = ""
 def APP_ACCENT = "#ff8c00"
@@ -139,11 +140,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 
 : album_cover_for(album = string, artist = string) (( string )) {
-    return victrola_model.album_cover_for(album_cover_map, album, artist)
+    return model.album_cover_for(album_cover_map, album, artist)
 }
 
 : album_artist_for(album = string) (( string )) {
-    return victrola_model.album_artist_for(album_artist_map, album)
+    return model.album_artist_for(album_artist_map, album)
 }
 
 : show_lyrics_btn(show = bool) (( -- )) {
@@ -159,16 +160,16 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     let dir = stdr.join_path(home, ".cache/victrola")
     let qdir = stdr.shell_quote(dir)
     stdr.run_command("mkdir -p $$qdir$$")
-    STATE_PATH = stdr.join_path(dir, "victrola_state.json")
+    STATE_PATH = stdr.join_path(dir, "state.json")
     return STATE_PATH
 }
 
 : save_state() (( -- )) {
-    victrola_state.save_state(ensure_state_path(), current_folder, tracks, album_cover_map, track_meta_map, artist_image_map, play_counts, play_count_artists, track_play_counts)
+    state.save_state(ensure_state_path(), current_folder, tracks, album_cover_map, track_meta_map, artist_image_map, play_counts, play_count_artists, track_play_counts)
 }
 
 : load_state() (( -- )) {
-    let loaded = victrola_state.load_state(ensure_state_path())
+    let loaded = state.load_state(ensure_state_path())
     album_cover_map = loaded["covers"] ?? []: [string => any]
     track_meta_map = loaded["track_meta"] ?? []: [string => any]
     artist_image_map = loaded["artist_images"] ?? []: [string => any]
@@ -198,11 +199,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : get_top_artists(limit = num) (( any )) {
-    return victrola_mix.get_top_artists(play_counts, play_count_artists, tracks, limit)
+    return mix.get_top_artists(play_counts, play_count_artists, tracks, limit)
 }
 
 : collect_mix_covers(artists = any, limit = num) (( any )) {
-    return victrola_mix.collect_mix_covers(tracks, album_cover_map, artists, limit)
+    return mix.collect_mix_covers(tracks, album_cover_map, artists, limit)
 }
 
 : refresh_mix_view() (( -- )) {
@@ -230,19 +231,19 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     mix_empty.set_visible(false)
     mix_collage.set_visible(true)
     mix_play_btn.set_disabled(false)
-    mix_subtitle.set_text(victrola_mix.top_artist_subtitle(top_artists, 3))
+    mix_subtitle.set_text(mix.top_artist_subtitle(top_artists, 3))
 
-    let c1 = str(covers[0] ?? "")
+    let ?c1 = str(covers[0] ?? "")
     if len(c1) == 0 { c1 = "sf:music.note" }
-    let c2 = str(covers[1] ?? "")
+    let ?c2 = str(covers[1] ?? "")
     if len(c2) == 0 { c2 = c1 }
-    let c3 = str(covers[2] ?? "")
+    let ?c3 = str(covers[2] ?? "")
     if len(c3) == 0 { c3 = c2 }
-    let c4 = str(covers[3] ?? "")
+    let ?c4 = str(covers[3] ?? "")
     if len(c4) == 0 { c4 = c3 }
-    let c5 = str(covers[4] ?? "")
+    let ?c5 = str(covers[4] ?? "")
     if len(c5) == 0 { c5 = c4 }
-    let c6 = str(covers[5] ?? "")
+    let ?c6 = str(covers[5] ?? "")
     if len(c6) == 0 { c6 = c5 }
 
     mix_art_1.set_source(c1)
@@ -254,7 +255,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : note_artist_play(track = any) (( -- )) {
-    let result = victrola_mix.note_artist_play(track, play_counts, play_count_artists, track_play_counts)
+    let result = mix.note_artist_play(track, play_counts, play_count_artists, track_play_counts)
     play_counts = result["play_counts"] ?? []: [string => any]
     play_count_artists = result["play_count_artists"] ?? []: [string]
     track_play_counts = result["track_play_counts"] ?? []: [string => any]
@@ -394,11 +395,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : find_mix_queue_index(track_idx = num) (( num )) {
-    return victrola_queue.find_queue_index(mix_queue, track_idx)
+    return queue.find_queue_index(mix_queue, track_idx)
 }
 
 : build_mix_queue(top_artists = any) (( any )) {
-    return victrola_mix.build_mix_queue(tracks, top_artists, track_play_counts)
+    return mix.build_mix_queue(tracks, top_artists, track_play_counts)
 }
 
 : refresh_queue_button() (( -- )) {
@@ -425,11 +426,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : sync_queue_playing_position() (( -- )) {
-    mix_queue_pos = victrola_queue.sync_playing_position(mix_queue, playing_track, mix_queue_pos)
+    mix_queue_pos = queue.sync_playing_position(mix_queue, playing_track, mix_queue_pos)
 }
 
 : queue_remove_at(queue_pos = num) (( -- )) {
-    mix_queue = victrola_queue.queue_remove(mix_queue, queue_pos)
+    mix_queue = queue.queue_remove(mix_queue, queue_pos)
 
     if len(mix_queue) == 0 {
         clear_queue_context()
@@ -445,7 +446,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     if queue_pos <= 0 || queue_pos >= len(mix_queue) {
         return
     }
-    mix_queue = victrola_queue.queue_swap(mix_queue, queue_pos - 1, queue_pos)
+    mix_queue = queue.queue_swap(mix_queue, queue_pos - 1, queue_pos)
     sync_queue_playing_position()
     refresh_queue_sheet_open()
     refresh_queue_button()
@@ -455,7 +456,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     if queue_pos < 0 || queue_pos >= len(mix_queue) - 1 {
         return
     }
-    mix_queue = victrola_queue.queue_swap(mix_queue, queue_pos, queue_pos + 1)
+    mix_queue = queue.queue_swap(mix_queue, queue_pos, queue_pos + 1)
     sync_queue_playing_position()
     refresh_queue_sheet_open()
     refresh_queue_button()
@@ -463,7 +464,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 : build_queue_row(track_idx = num, queue_pos = num) (( any )) {
     let is_current = queue_pos == mix_queue_pos && (queue_active || track_idx == playing_track)
-    return victrola_queue.build_queue_row(tracks, track_idx, queue_pos, is_current,
+    return queue.build_queue_row(tracks, track_idx, queue_pos, is_current,
         (pos = num) => { queue_move_up(pos) },
         (pos = num) => { queue_move_down(pos) },
         (pos = num) => { queue_remove_at(pos) }
@@ -495,7 +496,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : build_queue_content() (( any )) {
-    return victrola_queue.build_queue_content(tracks, mix_queue, mix_queue_pos, queue_active, playing_track,
+    return queue.build_queue_content(tracks, mix_queue, mix_queue_pos, queue_active, playing_track,
         (pos = num) => { queue_move_up(pos) },
         (pos = num) => { queue_move_down(pos) },
         (pos = num) => { queue_remove_at(pos) },
@@ -576,11 +577,11 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : build_queue_for_artist(artist = string) (( any )) {
-    return victrola_queue.build_queue_for_artist(tracks, artist)
+    return queue.build_queue_for_artist(tracks, artist)
 }
 
 : build_queue_for_album(album = string) (( any )) {
-    return victrola_queue.build_queue_for_album(tracks, album)
+    return queue.build_queue_for_album(tracks, album)
 }
 
 : set_queue_and_play(queue = any, track_idx = num, source = num) (( -- )) {
@@ -654,15 +655,15 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : sync_play_pause_button() (( -- )) {
-    victrola_playback.sync_play_pause(is_playing, playing_track, play_pause_btn, lyrics_play_btn, mini_play_btn, seek_slider, lyrics_seek_slider)
+    playback.sync_play_pause(is_playing, playing_track, play_pause_btn, lyrics_play_btn, mini_play_btn, seek_slider, lyrics_seek_slider)
 }
 
 : sync_repeat_button() (( -- )) {
-    victrola_playback.sync_repeat(repeat_one, repeat_btn)
+    playback.sync_repeat(repeat_one, repeat_btn)
 }
 
 : next_shuffle_pick(limit = num) (( num )) {
-    let result = victrola_playback.next_shuffle_pick(shuffle_seed, len(tracks), limit)
+    let result = playback.next_shuffle_pick(shuffle_seed, len(tracks), limit)
     shuffle_seed = stdr.num(result["seed"] ?? 0)
     return stdr.num(result["pick"] ?? -1)
 }
@@ -766,7 +767,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : apply_now_playing_tint(path = string) (( -- )) {
-    let clean = victrola_util.sanitize_cover_path(path)
+    let clean = util.sanitize_cover_path(path)
     if len(clean) == 0 {
         clear_now_playing_tint()
         return
@@ -791,7 +792,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : apply_cover_art(path = string) (( -- )) {
-    let clean = victrola_util.sanitize_cover_path(path)
+    let clean = util.sanitize_cover_path(path)
 
     if clean == current_cover_path {
         return
@@ -814,7 +815,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
             let t = tracks[playing_track] ?? []: [string => any]
             let album = str(t["album"] ?? "Unknown Album")
             let artist = str(t["artist"] ?? "Unknown Artist")
-            let key = victrola_model.album_cover_key(album, artist)
+            let key = model.album_cover_key(album, artist)
             if len(album) > 0 && len(str(album_cover_map[key] ?? "")) == 0 {
                 album_cover_map[key] = clean
                 save_state()
@@ -844,7 +845,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     let show_back = artist_detail_open || album_detail_open
     back_btn.set_visible(show_back)
 
-    let result = victrola_library.refresh_library_list(
+    let result = library.refresh_library_list(
         library_list,
         library_grid,
         groups_revealer,
@@ -898,7 +899,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 : fetch_artist_images() (( -- )) {
     let names = collect_artist_names()
-    artist_image_map = victrola_artist_images.fetch_missing(names, artist_image_map)
+    artist_image_map = artist_images.fetch_missing(names, artist_image_map)
     save_state()
     refresh_library_list()
 }
@@ -918,18 +919,18 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     current_folder = chosen
     save_state()
 
-    let lines = victrola_scanner.scan_folder(current_folder, AUDIO_EXTS)
+    let lines = scanner.scan_folder(current_folder, AUDIO_EXTS)
     tracks = []: [any]
     for (let ?i = 0; i < len(lines); i = i + 1) {
         let p = lines[i] ?? ""
         if len(p) > 0 {
-            tracks[len(tracks)] = victrola_model.make_track(p)
+            tracks[len(tracks)] = model.make_track(p)
         }
     }
 
-    victrola_model.apply_saved_meta(tracks, track_meta_map)
+    model.apply_saved_meta(tracks, track_meta_map)
 
-    let rebuilt = victrola_model.rebuild_album_indexes(tracks, album_cover_map)
+    let rebuilt = model.rebuild_album_indexes(tracks, album_cover_map)
     album_cover_map = rebuilt["covers"] ?? []: [string => any]
     album_artist_map = rebuilt["artists"] ?? []: [string => any]
     save_state()
@@ -953,7 +954,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : choose_and_scan() (( -- )) {
-    let folder = victrola_scanner.pick_folder_macos()
+    let folder = scanner.pick_folder_macos()
     if len(folder) == 0 {
         return
     }
@@ -1130,7 +1131,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
     for (let ?i = 0; i < len(tracks); i = i + 1) {
         let t = tracks[i] ?? []: [string => any]
-        if victrola_library.track_matches_query(t, query_text) {
+        if library.track_matches_query(t, query_text) {
             candidates[len(candidates)] = i
         }
     }
@@ -1176,7 +1177,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         sync_play_pause_button()
         stop_poll_loop()
         apply_cover_art("")
-        victrola_playback.reset_playback_ui(seek_slider, lyrics_seek_slider, time_left, time_right, lyrics_time_left)
+        playback.reset_playback_ui(seek_slider, lyrics_seek_slider, time_left, time_right, lyrics_time_left)
         refresh_library_list()
         refresh_queue_sheet()
     } else {
@@ -1184,7 +1185,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : set_lyrics_placeholder(text = string) (( -- )) {
-    victrola_lyrics.set_placeholder(lyrics_grid, text)
+    lyrics.set_placeholder(lyrics_grid, text)
     lyrics_line_labels = []: [any]
     lyrics_timestamps = []: [num]
     lyrics_current_line = -1
@@ -1192,7 +1193,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : populate_lyrics(text = string) (( -- )) {
-    let result = victrola_lyrics.populate_lyrics_grid(lyrics_grid, lyrics_scroll, text)
+    let result = lyrics.populate_lyrics_grid(lyrics_grid, lyrics_scroll, text)
     lyrics_line_labels = result["line_labels"] ?? []: [any]
     lyrics_timestamps = result["timestamps"] ?? []: [num]
     lyrics_synced = result["synced"] ?? false
@@ -1201,21 +1202,21 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 : update_lyrics_position(elapsed_ms = num) (( -- )) {
     if !lyrics_synced { return }
-    lyrics_current_line = victrola_lyrics.update_lyrics_scroll(lyrics_timestamps, lyrics_line_labels, lyrics_scroll, elapsed_ms, lyrics_current_line)
+    lyrics_current_line = lyrics.update_lyrics_scroll(lyrics_timestamps, lyrics_line_labels, lyrics_scroll, elapsed_ms, lyrics_current_line)
 }
 
 : lyrics_cache_key(track_idx = num) (( string )) {
-    return victrola_lyrics.cache_key(tracks, track_idx)
+    return lyrics.cache_key(tracks, track_idx)
 }
 
 : check_lyrics_for_track(track_idx = num) (( -- )) {
-    let result = victrola_lyrics.check_lyrics_cached(tracks, track_idx, lyrics_cache)
+    let result = lyrics.check_lyrics_cached(tracks, track_idx, lyrics_cache)
     lyrics_cache = result["lyrics_cache"] ?? lyrics_cache
     show_lyrics_btn(result["has_lyrics"] ?? false)
 }
 
 : fetch_lyrics_for_track(track_idx = num) (( -- )) {
-    let result = victrola_lyrics.fetch_and_cache(tracks, track_idx, lyrics_cache)
+    let result = lyrics.fetch_and_cache(tracks, track_idx, lyrics_cache)
     lyrics_cache = result["lyrics_cache"] ?? lyrics_cache
     let has = result["has_lyrics"] ?? false
     show_lyrics_btn(has)
@@ -1223,7 +1224,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : apply_tag_metadata() (( -- )) {
-    let result = victrola_playback.apply_tag_update(playing_track, tracks, track_meta_map)
+    let result = playback.apply_tag_update(playing_track, tracks, track_meta_map)
     if result["changed"] ?? false {
         tracks = result["tracks"] ?? tracks
         track_meta_map = result["track_meta_map"] ?? track_meta_map
@@ -1261,7 +1262,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     let pos = gst.position_ms()
     let dur = gst.duration_ms()
 
-    let seek_result = victrola_playback.update_seek_ui(pos, dur, seek_slider, lyrics_seek_slider, time_left, time_right, lyrics_time_left)
+    let seek_result = playback.update_seek_ui(pos, dur, seek_slider, lyrics_seek_slider, time_left, time_right, lyrics_time_left)
     let scaled = stdr.num(seek_result["scaled"] ?? -1)
     if scaled >= 0 {
         suspend_seek_callback = true
@@ -1304,7 +1305,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     album_detail_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 0, 0, 0)
     album_detail_title.set_class("view-title-expressive").set_hexpand(true).set_text_align(0).set_max_width_chars(40)
     artist_detail_art.set_size(128, 128).set_hexpand(false)
-    artist_detail_clip.set_size(128).set_clip(true).set_hexpand(false).add(artist_detail_art)
+    artist_detail_clip.set_size(128).set_clip(true).add(artist_detail_art)
     artist_detail_name.set_class("view-title-expressive").set_hexpand(true).set_text_align(0).set_max_width_chars(40)
     artist_detail_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 0, 0, 0)
     cover_art.set_radius(26).set_blur(6).set_class("surface-container victrola-cover-art")

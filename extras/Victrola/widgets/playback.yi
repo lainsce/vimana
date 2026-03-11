@@ -1,9 +1,10 @@
-cask victrola_playback
+cask playback
 
 bring stdr
 bring cogito
 bring gst
-bring victrola_util
+
+bring utils.util
 
 :: sync_play_pause(is_playing = bool, playing_track = num, play_pause_btn = cogito.IconButton, lyrics_play_btn = cogito.IconButton, mini_play_btn = cogito.IconButton, seek_slider = cogito.Slider, lyrics_seek_slider = cogito.Slider) (( -- )) {
     let actually_playing = is_playing && playing_track >= 0
@@ -54,7 +55,7 @@ bring victrola_util
     return out
 }
 
-:: apply_tag_update(playing_track = num, tracks = any, track_meta_map = any) (( any )) {
+:: apply_tag_update(playing_track = num, ?tracks = any, ?track_meta_map = any) (( any )) {
     let ?out = []: [string => any]
     out["changed"] = false
     out["tracks"] = tracks
@@ -116,14 +117,14 @@ bring victrola_util
 
 :: update_seek_ui(pos = num, dur = num, seek_slider = cogito.Slider, lyrics_seek_slider = cogito.Slider, time_left = cogito.Label, time_right = cogito.Label, lyrics_time_left = cogito.Label) (( any )) {
     if pos >= 0 {
-        let pos_text = victrola_util.format_ms(pos)
+        let pos_text = util.format_ms(pos)
         time_left.set_text(pos_text)
         lyrics_time_left.set_text(pos_text)
     }
 
     let ?scaled = -1
     if dur > 0 {
-        time_right.set_text(victrola_util.format_ms(dur))
+        time_right.set_text(util.format_ms(dur))
         let scale = dur / 1000.0
         seek_slider.set_bubble_scale(scale)
         lyrics_seek_slider.set_bubble_scale(scale)

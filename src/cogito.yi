@@ -19,6 +19,8 @@ macro chain() (( any )) {
 : __cogito_app_copy_to_clipboard(app = App, text = string) (( bool )) { }
 : __cogito_app_set_accent_color(app = App, color = any, follow_system = bool) (( -- )) { }
 : __cogito_app_set_dark_mode(app = App, dark = bool, follow_system = bool) (( -- )) { }
+: __cogito_app_set_baseline_font(app = App, path = string) (( -- )) { }
+: __cogito_app_set_emphasized_font(app = App, path = string) (( -- )) { }
 : __cogito_set_direction(dir = num) (( -- )) { }
 : __cogito_get_direction() (( num )) { }
 : __cogito_app_set_app_name(app = App, name = string) (( -- )) { }
@@ -295,6 +297,7 @@ macro chain() (( any )) {
 : __cogito_scroller_set_sync(scroller = Scroller, other = any) (( -- )) { }
 : __cogito_scroller_set_min_content_width(scroller = Scroller, w = num) (( -- )) { }
 : __cogito_scroller_set_min_content_height(scroller = Scroller, h = num) (( -- )) { }
+: __cogito_scroller_set_scroll_y(scroller = Scroller, y = num) (( -- )) { }
 : __cogito_scroller() (( Scroller )) { }
 : __cogito_searchfield_get_text(sf = SearchField) (( string )) { }
 : __cogito_searchfield_on_change(sf = SearchField, handler = any) (( -- )) { }

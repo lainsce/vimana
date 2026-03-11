@@ -1,10 +1,10 @@
-cask victrola_artist_images
+cask artist_images
 
 bring stdr
 bring json
 bring net
 
-def CACHE_DIR = ""
+def ?CACHE_DIR = ""
 
 : ensure_cache_dir() (( string )) {
     if stdr.len(CACHE_DIR) > 0 {
@@ -12,7 +12,7 @@ def CACHE_DIR = ""
     }
 
     let run = stdr.run_command("echo $HOME")
-    let home = stdr.trim(stdr.str(run[1] ?? ""))
+    let ?home = stdr.trim(stdr.str(run[1] ?? ""))
     if stdr.len(home) == 0 {
         home = "/tmp"
     }
@@ -104,19 +104,19 @@ def CACHE_DIR = ""
     return ""
 }
 
-:: fetch_missing(artist_names = any, artist_image_map = any) (( any )) {
+:: fetch_missing(artist_names = any, ?artist_image_map = any) (( any )) {
     for (let ?i = 0; i < stdr.len(artist_names); i = i + 1) {
-        let name = stdr.str(artist_names[i] ?? "")
+        let ?name = stdr.str(artist_names[i] ?? "")
         if stdr.len(name) == 0 || name == "Unknown Artist" {
             continue
         }
 
-        let existing = stdr.str(artist_image_map[name] ?? "")
+        let ?existing = stdr.str(artist_image_map[name] ?? "")
         if stdr.len(existing) > 0 && stdr.file_exists(existing) {
             continue
         }
 
-        let path = fetch_artist_image(name)
+        let ?path = fetch_artist_image(name)
         if stdr.len(path) > 0 {
             artist_image_map[name] = path
         }

@@ -1,4 +1,4 @@
-cask victrola_queue
+cask queue
 
 bring stdr
 bring cogito
@@ -26,7 +26,7 @@ bring cogito
     return next_queue
 }
 
-:: queue_swap(queue = any, pos_a = num, pos_b = num) (( any )) {
+:: queue_swap(?queue = any, pos_a = num, pos_b = num) (( any )) {
     if pos_a < 0 || pos_a >= len(queue) || pos_b < 0 || pos_b >= len(queue) {
         return queue
     }
@@ -90,9 +90,9 @@ bring cogito
 
 :: build_queue_row(tracks = any, track_idx = num, queue_pos = num, is_current = bool, on_move_up = any, on_move_down = any, on_remove = any) (( any )) {
     let t = tracks[track_idx] ?? []: [string => any]
-    let title = str(t["title"] ?? "")
-    let artist = str(t["artist"] ?? "Unknown Artist")
-    let path = str(t["path"] ?? "")
+    let ?title = str(t["title"] ?? "")
+    let ?artist = str(t["artist"] ?? "Unknown Artist")
+    let ?path = str(t["path"] ?? "")
     if len(title) == 0 {
         title = stdr.basename(path)
     }
@@ -155,7 +155,7 @@ bring cogito
     let ?queue_visible_positions = []: [num]
 
     for (let ?i = 0; i < len(queue); i = i + 1) {
-        let track_idx = queue[i] ?? -1
+        let track_idx = stdr.num(queue[i] ?? -1)
         if track_idx >= 0 {
             let is_current = i == queue_pos && (queue_active || track_idx == playing_track)
             queue_list.add(build_queue_row(tracks, track_idx, i, is_current, on_move_up, on_move_down, on_remove))
@@ -165,7 +165,7 @@ bring cogito
 
     queue_list.on_select((idx = num) => {
         if idx >= 0 && idx < len(queue_visible_positions) {
-            let qp = queue_visible_positions[idx] ?? -1
+            let qp = stdr.num(queue_visible_positions[idx] ?? -1)
             if qp >= 0 {
                 on_play_at(qp)
             }

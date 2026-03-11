@@ -1,9 +1,9 @@
-cask victrola_library
+cask library
 
 bring stdr
 bring cogito
 
-bring victrola_model
+bring utils.model
 
 def ?artist_click_handler = (artist = string) => {}
 def ?album_click_handler = (album = string) => {}
@@ -100,7 +100,7 @@ def ?album_click_handler = (album = string) => {}
 }
 
 : build_album_card(album = string, artist = string, subtitle = string, album_cover_map = any) (( any )) {
-    let cover = victrola_model.album_cover_for(album_cover_map, album, artist)
+    let cover = model.album_cover_for(album_cover_map, album, artist)
 
     let card = cogito.card("")
     .set_class("outlined victrola-album-card")
@@ -235,7 +235,7 @@ def ?album_click_handler = (album = string) => {}
             visible_group_keys[stdr.len(visible_group_keys)] = key
             visible_track_indexes[stdr.len(visible_track_indexes)] = first_indexes[j] ?? -1
 
-            let count = seen[key] ?? 0
+            let count = stdr.num(seen[key] ?? 0)
             let col = j % 2
             let row = (j - col) / 2
             let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
@@ -275,7 +275,7 @@ def ?album_click_handler = (album = string) => {}
             visible_group_keys[stdr.len(visible_group_keys)] = key
             visible_track_indexes[stdr.len(visible_track_indexes)] = first_indexes[j] ?? -1
 
-            let count = seen[key] ?? 0
+            let count = stdr.num(seen[key] ?? 0)
             let col = j % 2
             let row = (j - col) / 2
             let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
@@ -287,7 +287,7 @@ def ?album_click_handler = (album = string) => {}
                 if fi >= 0 && fi < stdr.len(tracks) {
                     let ft = tracks[fi] ?? []: [string => any]
                     let fa = stdr.str(ft["album"] ?? "Unknown Album")
-                    artist_cover = victrola_model.album_cover_for(album_cover_map, fa, key)
+                    artist_cover = model.album_cover_for(album_cover_map, fa, key)
                 }
             }
 
@@ -327,8 +327,8 @@ def ?album_click_handler = (album = string) => {}
             visible_group_keys[stdr.len(visible_group_keys)] = key
             visible_track_indexes[stdr.len(visible_track_indexes)] = first_indexes[j] ?? -1
 
-            let count = seen[key] ?? 0
-            let artist = victrola_model.album_artist_for(album_artist_map, key)
+            let count = stdr.num(seen[key] ?? 0)
+            let artist = model.album_artist_for(album_artist_map, key)
             let col = j % 2
             let row = (j - col) / 2
             let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
