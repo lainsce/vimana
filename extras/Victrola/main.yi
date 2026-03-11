@@ -1940,9 +1940,9 @@ entry() (( -- )) {
     if !gst.init() {
     }
 
-    let win = cogito.window_size("Victrola", 900, 680)
+    let win = cogito.window_size("Victrola", 900, 720)
     .set_resizable(true)
-    .set_size_request(412, 294)
+    .set_size_request(412, 380)
 
     cogito.load_sum("victrola.sum")
 

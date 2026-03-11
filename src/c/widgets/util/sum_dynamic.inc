@@ -296,9 +296,9 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "active_indicator\n  color: %s\n  padding: 0\n", p);
   cogito_sum_append(out, cap, &off,
-  "appbar .iconbtn:disabled\n  color: %s52\n", ons);
-  cogito_sum_append(out, cap, &off,
   "appbar .iconbtn\n  background: transparent\n");
+  cogito_sum_append(out, cap, &off,
+  "appbar .iconbtn:disabled\n  color: %s52\n  background: transparent\n", ons);
   cogito_sum_append(out, cap, &off,
   "appbar .window-close:active\n  background: %s\n", pc);
   cogito_sum_append(out, cap, &off,

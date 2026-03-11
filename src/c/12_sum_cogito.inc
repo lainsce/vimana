@@ -1161,7 +1161,8 @@ void cogito_sum_add_styles(const char* parent, const char* child, CogitoStyle** 
   }
   if (strcmp(child_base, "iconbtn") == 0 || strcmp(child_base, "icon-button") == 0) {
     CogitoStyle* style = NULL;
-    if (hover) style = &cogito_theme.appbar_child_iconbtn_hover;
+    if (strcmp(child_state, "disabled") == 0) style = &cogito_theme.appbar_child_iconbtn_disabled;
+    else if (hover) style = &cogito_theme.appbar_child_iconbtn_hover;
     else if (active) style = &cogito_theme.appbar_child_iconbtn_active;
     else style = &cogito_theme.appbar_child_iconbtn;
     if (*count < max) {

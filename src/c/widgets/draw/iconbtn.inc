@@ -41,15 +41,21 @@ case COGITO_ICONBTN: {
       }
 
       if (in_appbar_or_toolbar && !is_iconic_variant) {
-        bool down = over && down_state;
-        if (down) {
-          CogitoStyle appbar_active = cogito_theme.appbar_child_iconbtn_active;
-          cogito_apply_bin_scope_to_style(&appbar_active);
-          cogito_style_merge_into(&s, &appbar_active, &s);
-        } else if (over) {
-          CogitoStyle appbar_hover = cogito_theme.appbar_child_iconbtn_hover;
-          cogito_apply_bin_scope_to_style(&appbar_hover);
-          cogito_style_merge_into(&s, &appbar_hover, &s);
+        if (n->disabled) {
+          CogitoStyle appbar_disabled = cogito_theme.appbar_child_iconbtn_disabled;
+          cogito_apply_bin_scope_to_style(&appbar_disabled);
+          cogito_style_merge_into(&s, &appbar_disabled, &s);
+        } else {
+          bool down = over && down_state;
+          if (down) {
+            CogitoStyle appbar_active = cogito_theme.appbar_child_iconbtn_active;
+            cogito_apply_bin_scope_to_style(&appbar_active);
+            cogito_style_merge_into(&s, &appbar_active, &s);
+          } else if (over) {
+            CogitoStyle appbar_hover = cogito_theme.appbar_child_iconbtn_hover;
+            cogito_apply_bin_scope_to_style(&appbar_hover);
+            cogito_style_merge_into(&s, &appbar_hover, &s);
+          }
         }
       }
 
@@ -59,7 +65,7 @@ case COGITO_ICONBTN: {
       int border_w = n->border_width;
       int radius = n->border_radius;
       if (s_base.has_bg) bg = s_base.bg;
-      if (in_appbar_or_toolbar && !is_iconic_variant) {
+      if (in_appbar_or_toolbar && !is_iconic_variant && !n->disabled) {
         bool down = over && down_state;
         if (over || down) {
           CogitoStyle overlay = down ? cogito_theme.appbar_child_iconbtn_active : cogito_theme.appbar_child_iconbtn_hover;
@@ -70,6 +76,7 @@ case COGITO_ICONBTN: {
           }
         }
       }
+      if (n->disabled && s.has_bg) bg = s.bg;
       if (s.has_border) border = s.border;
       if (s.has_border_width) border_w = s.border_width;
       // Effective shape:
@@ -172,7 +179,7 @@ case COGITO_ICONBTN: {
       }
 
       // AppBar idle state: keep icons on primary for stronger affordance.
-      if (in_appbar) {
+      if (in_appbar && !n->disabled) {
         bool down = over && down_state;
         if (!hover && !active && !over && !down) {
           icon_color = cogito_bin_scope_remap_color(cogito_theme.iconbtn_filled.bg);

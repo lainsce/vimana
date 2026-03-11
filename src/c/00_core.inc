@@ -559,6 +559,7 @@ typedef struct CogitoTheme {
   CogitoStyle appbar_child_iconbtn;
   CogitoStyle appbar_child_iconbtn_hover;
   CogitoStyle appbar_child_iconbtn_active;
+  CogitoStyle appbar_child_iconbtn_disabled;
   CogitoStyle appbar_win_btn_all;
   CogitoStyle appbar_win_btn_hover_all;
   CogitoStyle appbar_win_btn_active_all;

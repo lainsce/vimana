@@ -705,6 +705,10 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
         }
       }
     }
+    if (disabled) s = cogito_style_merge(&s, &cogito_theme.per_kind_disabled[n->kind]);
+    if (n->parent && n->parent->kind == COGITO_APPBAR && disabled) {
+      s = cogito_style_merge(&s, &cogito_theme.appbar_child_iconbtn_disabled);
+    }
     cogito_apply_bin_scope_to_style(&s);
     return s; // Skip per_kind hover/active for iconbtn — color style handles it
   }
