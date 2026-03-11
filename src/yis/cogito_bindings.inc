@@ -184,6 +184,7 @@
 #undef cogito_gst_last_tag_title
 #undef cogito_gst_last_tag_artist
 #undef cogito_gst_last_tag_album
+#undef cogito_gst_last_tag_track_number
 #undef cogito_pointer_capture
 #undef cogito_pointer_release
 #undef cogito_progress_get_circular
@@ -3749,6 +3750,10 @@ static YisVal __cogito_gst_last_tag_album(void) {
   if (!s || !s[0]) return YV_STR(stdr_str_lit(""));
   return YV_STR(stdr_str_lit(s));
 }
+
+static YisVal __cogito_gst_last_tag_track_number(void) {
+  return YV_INT(cogito_gst_last_tag_track_number());
+}
 // ---- Codegen aliases ----
 #define cogito_app_new __cogito_app
 #define cogito_app_set_appid __cogito_app_set_appid
@@ -3780,6 +3785,7 @@ static YisVal __cogito_gst_last_tag_album(void) {
 #define cogito_gst_last_tag_title __cogito_gst_last_tag_title
 #define cogito_gst_last_tag_artist __cogito_gst_last_tag_artist
 #define cogito_gst_last_tag_album __cogito_gst_last_tag_album
+#define cogito_gst_last_tag_track_number __cogito_gst_last_tag_track_number
 #define cogito_window_new __cogito_window
 #define cogito_window_set_resizable __cogito_window_set_resizable
 #define cogito_window_set_autosize __cogito_window_set_autosize

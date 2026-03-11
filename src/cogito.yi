@@ -272,6 +272,7 @@ macro chain() (( any )) {
 : __cogito_gst_last_tag_title() (( string )) { }
 : __cogito_gst_last_tag_artist() (( string )) { }
 : __cogito_gst_last_tag_album() (( string )) { }
+: __cogito_gst_last_tag_track_number() (( num )) { }
 : __cogito_pointer_capture(node = any) (( -- )) { }
 : __cogito_pointer_release() (( -- )) { }
 : __cogito_progress_get_circular(p = Progress) (( bool )) { }
@@ -4084,6 +4085,9 @@ pub class State {
 }
 :: gst_last_tag_album() (( string )) {
     return __cogito_gst_last_tag_album()
+}
+:: gst_last_tag_track_number() (( num )) {
+    return __cogito_gst_last_tag_track_number()
 }
 :: set_timeout(ms = num, handler = any) (( num )) {
     return __cogito_timer_timeout(ms, handler)

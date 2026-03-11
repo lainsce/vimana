@@ -76,6 +76,10 @@ def ?tag_handler = null
     return cogito.gst_last_tag_album()
 }
 
+:: last_tag_track_number() (( num )) {
+    return cogito.gst_last_tag_track_number()
+}
+
 :: on_eos(handler = any) (( -- )) {
     eos_handler = handler
 }

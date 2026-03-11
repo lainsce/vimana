@@ -1122,6 +1122,7 @@ static char cogito_gst_cover_path[PATH_MAX] = "";
 static char cogito_gst_tag_title[512] = "";
 static char cogito_gst_tag_artist[512] = "";
 static char cogito_gst_tag_album[512] = "";
+static int cogito_gst_tag_track_number = 0;
 static uint32_t cogito_gst_cover_seq = 0;
 
 static void cogito_gst_set_error_msg(const char *msg) {
@@ -1469,6 +1470,7 @@ bool cogito_gst_load(const char *path_or_uri) {
   cogito_gst_tag_title[0] = '\0';
   cogito_gst_tag_artist[0] = '\0';
   cogito_gst_tag_album[0] = '\0';
+  cogito_gst_tag_track_number = 0;
   cogito_gst_pending_event = 0;
   return true;
 #else
@@ -1669,6 +1671,13 @@ int cogito_gst_poll_event(void) {
           str_val = NULL;
           ev = 3;
         }
+        {
+          guint track_num = 0;
+          if (gst_tag_list_get_uint(tags, GST_TAG_TRACK_NUMBER, &track_num)) {
+            cogito_gst_tag_track_number = (int)track_num;
+            ev = 3;
+          }
+        }
         gst_tag_list_unref(tags);
       }
       break;
@@ -1722,6 +1731,14 @@ const char *cogito_gst_last_tag_album(void) {
   return cogito_gst_tag_album;
 #else
   return "";
+#endif
+}
+
+int cogito_gst_last_tag_track_number(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  return cogito_gst_tag_track_number;
+#else
+  return 0;
 #endif
 }
 

@@ -56,6 +56,8 @@ def mix_clip_5 = cogito.shape(0)
 def mix_clip_6 = cogito.shape(0)
 def mix_collage = cogito.fixed()
 def mix_empty = cogito.label("Play a few songs to build a mix.")
+def mix_list = cogito.content_list()
+def ?mix_list_indexes = []: [num]
 def mix_panel = cogito.vstack()
 def mix_play_btn = cogito.iconbtn("sf:play")
 def mix_play_btn_compact = cogito.iconbtn("sf:play")
@@ -225,6 +227,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         mix_empty.set_visible(true)
         mix_collage.set_visible(false)
         mix_play_btn.set_disabled(true)
+        mix_list.clear()
+        mix_list_indexes = []: [num]
         return
     }
 
@@ -252,6 +256,60 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     mix_art_4.set_source(c4)
     mix_art_5.set_source(c5)
     mix_art_6.set_source(c6)
+
+    refresh_mix_list(top_artists)
+}
+
+: refresh_mix_list(top_artists = any) (( -- )) {
+    mix_list.clear()
+    mix_list_indexes = []: [num]
+    let queue = build_mix_queue(top_artists)
+    for (let ?i = 0; i < len(queue); i = i + 1) {
+        let idx = stdr.num(queue[i] ?? -1)
+        if idx < 0 || idx >= len(tracks) {
+            continue
+        }
+        let t = tracks[idx] ?? []: [string => any]
+        let title = str(t["title"] ?? "")
+        let artist = str(t["artist"] ?? "")
+        let row = cogito.hstack()
+            .set_class("victrola-song-row")
+            .set_hexpand(true)
+            .set_padding(12, 16, 12, 16)
+            .set_gap(8)
+        let num_label = i + 1
+        row.add(cogito.label("$$num_label$$")
+            .set_class("caption")
+            .set_align(4)
+        )
+        row.add(cogito.vstack()
+            .set_gap(4)
+            .set_hexpand(true)
+            .add(cogito.label(title)
+                .set_class("cb-title")
+                .set_align(0)
+                .set_text_align(0)
+                .set_hexpand(true)
+                .set_max_width_chars(60)
+            )
+            .add(cogito.label(artist)
+                .set_class("caption")
+                .set_align(0)
+                .set_text_align(0)
+                .set_hexpand(true)
+                .set_max_width_chars(80)
+            )
+        )
+        if idx == playing_track {
+            row.add(cogito.image("sf:speaker.wave.2")
+                .set_size(24, 24)
+                .set_halign(2)
+                .set_align(4)
+            )
+        }
+        mix_list.add(row)
+        mix_list_indexes[len(mix_list_indexes)] = idx
+    }
 }
 
 : note_artist_play(track = any) (( -- )) {
@@ -1312,7 +1370,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     groups_revealer.set_show_children(false).set_hexpand(true).set_vexpand(true).set_padding(0, 0, 0, 0)
     library_grid.set_gap(8, 8).set_padding(0, 0, 0, 0)
     library_list.set_padding(0, 0, 0, 0)
-    library_rail.set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:sparkles", "sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
+    library_rail.set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:star.hexagon", "sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
     library_scroll.set_hexpand(true).set_vexpand(true).set_min_content_width(360).set_min_content_height(294)
     lyrics_grid.set_gap(0, 20).set_padding(12, 12, 12, 12).set_hexpand(true).set_class("victrola-lyrics-grid")
     mix_art_1.set_hexpand(true).set_vexpand(true).set_class("surface-container")
@@ -1327,6 +1385,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     mix_clip_4.set_size(283).set_clip(true).set_preset(6).add(mix_art_4)
     mix_clip_5.set_size(140).set_clip(true).set_preset(0).add(mix_art_5)
     mix_clip_6.set_size(177).set_clip(true).set_preset(0).add(mix_art_6)
+    mix_list.set_padding(0, 0, 0, 0).set_hexpand(true)
     mix_collage.set_class("victrola-mix-collage").set_hexpand(true)
     mix_collage.add(mix_clip_1).set_pos(mix_clip_1, 0, 0)
     mix_collage.add(mix_clip_2).set_pos(mix_clip_2, 207, 0)
@@ -1511,6 +1570,32 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 }
 
 : build_mix_panel(root = cogito.HStack) (( -- )) {
+    let mix_scroll = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(
+        cogito.vstack()
+        .set_hexpand(true)
+        .add(
+            cogito.vstack()
+            .set_hexpand(true)
+            .set_align(4)
+            .add(mix_collage)
+        )
+        .add(
+            cogito.vstack()
+            .set_hexpand(true)
+            .set_gap(12)
+            .set_padding(24, 16, 24, 16)
+            .add(
+                cogito.hstack()
+                .set_hexpand(true)
+                .add(cogito.label("Top 10").set_class("view-title").set_text_align(0).set_hexpand(true))
+            )
+            .add(mix_list)
+        )
+    )
+
     mix_panel
     .add(
         cogito.hstack()
@@ -1526,13 +1611,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         )
         .add(mix_play_btn)
     )
-    .add(
-        cogito.vstack()
-        .set_hexpand(true)
-        .set_vexpand(true)
-        .set_align(4)
-        .add(mix_collage)
-    )
+    .add(mix_scroll)
     root.add(mix_panel)
 }
 
@@ -1748,7 +1827,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 : build_bottom_nav(outer = cogito.VStack) (( -- )) {
     bottom_nav
-    .set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:sparkles", "sf:music.note", "sf:person.2", "sf:square.stack"])
+    .set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:star.hexagon", "sf:music.note", "sf:person.2", "sf:square.stack"])
     .set_selected(0)
     .set_visible(false)
     .set_hexpand(true)
@@ -1837,7 +1916,19 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         }
     })
 
-    library_list.on_activate((idx = num) => {
+    mix_list.on_select((idx = num) => {
+        if idx >= 0 && idx < len(mix_list_indexes) {
+            let track_idx = stdr.num(mix_list_indexes[idx] ?? -1)
+            if track_idx >= 0 {
+                let top_artists = get_top_artists(5)
+                let queue = build_mix_queue(top_artists)
+                mix_queue = queue
+                queue_active = len(mix_queue) > 0
+                queue_source = 1
+                mix_queue_pos = find_mix_queue_index(track_idx)
+                play_track(track_idx)
+            }
+        }
     })
 
     search_input.on_change((tf = cogito.SearchField) => {

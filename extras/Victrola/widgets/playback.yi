@@ -68,8 +68,9 @@ bring utils.util
     let tag_title = gst.last_tag_title()
     let tag_artist = gst.last_tag_artist()
     let tag_album = gst.last_tag_album()
+    let tag_track_number = gst.last_tag_track_number()
 
-    if len(tag_title) == 0 && len(tag_artist) == 0 && len(tag_album) == 0 {
+    if len(tag_title) == 0 && len(tag_artist) == 0 && len(tag_album) == 0 && tag_track_number == 0 {
         return out
     }
 
@@ -86,6 +87,10 @@ bring utils.util
     }
     if len(tag_album) > 0 && str(t["album"] ?? "") != tag_album {
         t["album"] = tag_album
+        changed = true
+    }
+    if tag_track_number > 0 && num(t["track_number"] ?? 0) != tag_track_number {
+        t["track_number"] = tag_track_number
         changed = true
     }
 

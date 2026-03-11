@@ -1890,7 +1890,7 @@ macro clicked_message() (( string )) {
     .on_click((b = any) => {
         let ws = cogito.welcome_screen("Welcome to Cogito")
         .set_description("Build responsive desktop interfaces with familiar declarative patterns.")
-        .set_icon("sf:sparkles")
+        .set_icon("sf:star.hexagon")
         .set_action("Get Started", (n = any) => {
             status.set_text("Welcome action clicked.")
         })
@@ -2073,7 +2073,7 @@ macro clicked_message() (( string )) {
     show_btn.on_click((b = cogito.Button) => {
         let dlg = cogito.dialog("")
         let aw = cogito.about_window("Cogito Gallery", "1.0.0")
-        aw.set_icon("sf:sparkles")
+        aw.set_icon("sf:star.hexagon")
         aw.set_description("A showcase of Cogito widgets.")
         aw.set_website("https://github.com/lainsce/yis")
         aw.set_issue_url("https://github.com/lainsce/yis/issues")

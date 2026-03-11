@@ -163,6 +163,7 @@ const char *cogito_gst_last_cover_path(void);
 const char *cogito_gst_last_tag_title(void);
 const char *cogito_gst_last_tag_artist(void);
 const char *cogito_gst_last_tag_album(void);
+int cogito_gst_last_tag_track_number(void);
 
 cogito_timer_id cogito_timer_set_timeout(uint32_t delay_ms,
                                          cogito_timer_fn fn, void *user);

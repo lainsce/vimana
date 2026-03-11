@@ -35,6 +35,7 @@ bring utils.util
     track["title"] = title
     track["artist"] = artist
     track["album"] = album
+    track["track_number"] = 0
     track["search"] = "$$title$$ $$artist$$ $$album$$ $$file$$"
     return track
 }
