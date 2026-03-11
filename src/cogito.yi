@@ -226,6 +226,7 @@ macro chain() (( any )) {
 : __cogito_label_set_fade(label = Label, on = bool) (( -- )) { }
 : __cogito_label_set_marquee(label = Label, on = bool) (( -- )) { }
 : __cogito_label_set_max_width_chars(label = Label, max_chars = num) (( -- )) { }
+: __cogito_label_set_line_chars(label = Label, line_chars = num) (( -- )) { }
 : __cogito_label_set_text(label = Label, text = string) (( -- )) { }
 : __cogito_label_set_wrap(label = Label, on = bool) (( -- )) { }
 : __cogito_label(text = string) (( Label )) { }
@@ -1605,6 +1606,10 @@ pub class Label {
     }
     :: set_max_width_chars(this, max_chars = num) (( Label )) {
         __cogito_label_set_max_width_chars(this, max_chars)
+        return this
+    }
+    :: set_line_chars(this, line_chars = num) (( Label )) {
+        __cogito_label_set_line_chars(this, line_chars)
         return this
     }
     :: set_ellipsis(this, on = bool) (( Label )) {

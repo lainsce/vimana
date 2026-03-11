@@ -1,0 +1,175 @@
+cask detail_panel
+
+bring stdr
+bring cogito
+
+bring utils.dates
+bring utils.parse
+
+:: build_detail_panel(
+    detail_panel = cogito.VStack,
+    detail_bar = cogito.AppBar,
+    detail_scroll = cogito.Scroller,
+    detail_image = cogito.Image,
+    detail_caption = cogito.Label,
+    detail_chips = cogito.Grid,
+    detail_lede = cogito.Label,
+    detail_body = cogito.Label,
+    close_handler = any
+) (( cogito.Button )) {
+    detail_panel
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_gap(0)
+    .set_class("detail-panel")
+
+    -- Detail appbar with title/date
+    detail_bar
+    .set_hexpand(true)
+    .set_small()
+    let back_btn = detail_bar.leading_button("sf:chevron.backward", (b = any) => {
+        close_handler()
+    })
+    back_btn.set_visible(false)
+    detail_panel.add(detail_bar)
+
+    -- Scrollable body
+    detail_scroll
+    .set_vexpand(true)
+
+    detail_bar.pair_with_scroller(detail_scroll)
+
+    let body_content = cogito.vstack()
+    .set_class("body-content")
+    .set_gap(12)
+    .set_padding(0, 16, 16, 16)
+    .set_align(1)
+
+    detail_image
+    .set_vexpand(false)
+    .set_hexpand(true)
+    .set_class("detail-image")
+    .set_visible(false)
+    body_content.add(detail_image)
+
+    detail_caption
+    .set_class("caption")
+    .set_align(0)
+    .set_text_align(0)
+    .set_wrap(true)
+    .set_line_chars(80)
+    .set_padding(0, 0, 0, 0)
+    .set_visible(false)
+    body_content.add(detail_caption)
+
+    detail_chips
+    .set_gap(8, 8)
+    .set_padding(0, 0, 0, 0)
+    .set_visible(false)
+    body_content.add(detail_chips)
+
+    detail_lede
+    .set_class("detail-lede")
+    .set_align(0)
+    .set_text_align(0)
+    .set_wrap(true)
+    .set_line_chars(80)
+    .set_padding(0, 0, 12, 0)
+    .set_visible(false)
+    body_content.add(detail_lede)
+
+    detail_body
+    .set_class("detail-body")
+    .set_align(0)
+    .set_text_align(0)
+    .set_wrap(true)
+    .set_line_chars(80)
+    .set_padding(0, 0, 0, 0)
+    body_content.add(detail_body)
+
+    detail_scroll.add(body_content)
+    detail_panel.add(detail_scroll)
+
+    return back_btn
+}
+
+:: show_article(
+    index = num,
+    articles = any,
+    detail_bar = cogito.AppBar,
+    detail_image = cogito.Image,
+    detail_caption = cogito.Label,
+    detail_chips = cogito.Grid,
+    detail_lede = cogito.Label,
+    detail_body = cogito.Label,
+    detail_panel = cogito.VStack,
+    detail_back_btn = cogito.Button,
+    list_panel = cogito.VStack,
+    is_compact_mode = bool
+) (( -- )) {
+    if index < 0 || index >= len(articles) {
+        return
+    }
+    let a = articles[index] ?? []: [string => any]
+    let title = str(a["title"] ?? "")
+    let date = str(a["date"] ?? "")
+    let image_url = str(a["image"] ?? "")
+    let local_image = str(a["local_image"] ?? "")
+    let body = str(a["body"] ?? "")
+    let caption = str(a["caption"] ?? "")
+    let long_date = dates.format_date_long(date)
+
+    detail_bar.set_title(title)
+    detail_bar.set_subtitle(long_date)
+    let ?img_src = local_image
+    if len(img_src) == 0 {
+        img_src = image_url
+    }
+    if len(img_src) > 0 {
+        detail_image.set_icon(img_src)
+        detail_image.set_visible(true)
+    } else {
+        detail_image.set_visible(false)
+    }
+    if stdr.len(caption) > 0 {
+        detail_caption.set_text(caption)
+        detail_caption.set_visible(true)
+    } else {
+        detail_caption.set_visible(false)
+    }
+    let lede_sep = stdr.index_of(body, "\n\n")
+    if lede_sep > 0 {
+        let rest = stdr.slice(body, lede_sep + 2, stdr.len(body))
+        detail_lede.set_text(stdr.slice(body, 0, lede_sep))
+        detail_lede.set_visible(true)
+        detail_body.set_text(rest)
+        detail_body.set_visible(stdr.len(rest) > 0)
+    } else {
+        detail_lede.set_text(body)
+        detail_lede.set_visible(stdr.len(body) > 0)
+        detail_body.set_text("")
+        detail_body.set_visible(false)
+    }
+
+    -- Populate category chips
+    let categories = a["categories"] ?? []: [any]
+    let cat_count = stdr.len(categories)
+    detail_chips.clear()
+    let ?chip_i = 0
+    for (let ?ci = 0; ci < cat_count && ci < 8; ci += 1) {
+        let cat_text = str(categories[ci] ?? "")
+        if len(cat_text) > 0 {
+            detail_chips.add(cogito.chip(cat_text).set_class("category-chip").set_disabled(true), chip_i, 0, 1, 1)
+            chip_i += 1
+        }
+    }
+    detail_chips.set_visible(chip_i > 0)
+
+    if is_compact_mode {
+        detail_panel.set_visible(true)
+        detail_panel.set_hexpand(true)
+        detail_back_btn.set_visible(true)
+        list_panel.set_visible(false)
+        list_panel.set_hexpand(false)
+    }
+}

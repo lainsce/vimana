@@ -322,7 +322,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "appbar.view\n  background: %s\n  color: %s\n", bg, ons);
   cogito_sum_append(out, cap, &off,
-  "appbar\n  background: %s\n  color: %s\n", bg, ons);
+  "appbar\n  background: %s\n  color: %s\n  transition: 200ms\n", surf, ons);
   cogito_sum_append(out, cap, &off,
   "avatar\n  background: %s\n  color: %s\n  min-width: 64\n  min-height: 64\n  padding: 0\n", secc, osecc);
   cogito_sum_append(out, cap, &off,

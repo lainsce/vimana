@@ -1,0 +1,234 @@
+cask dates
+
+bring stdr
+
+:: format_date_short(raw = string) (( string )) {
+    -- Accept RFC 2822 (RSS) or ISO 8601 (Atom) dates
+    -- Return a short display like "Mar. 12 2030 - 9:34 AM"
+    if stdr.len(raw) == 0 {
+        return ""
+    }
+    if stdr.contains(raw, "T") {
+        return format_iso_date(raw)
+    }
+    return format_rfc_date(raw)
+}
+
+: month_abbr(m = string) (( string )) {
+    if m == "01" || m == "1" { return "Jan." }
+    if m == "02" || m == "2" { return "Feb." }
+    if m == "03" || m == "3" { return "Mar." }
+    if m == "04" || m == "4" { return "Apr." }
+    if m == "05" || m == "5" { return "May" }
+    if m == "06" || m == "6" { return "Jun." }
+    if m == "07" || m == "7" { return "Jul." }
+    if m == "08" || m == "8" { return "Aug." }
+    if m == "09" || m == "9" { return "Sep." }
+    if m == "10" { return "Oct." }
+    if m == "11" { return "Nov." }
+    if m == "12" { return "Dec." }
+    return m
+}
+
+: month_name_to_num(m = string) (( string )) {
+    if m == "Jan" { return "01" }
+    if m == "Feb" { return "02" }
+    if m == "Mar" { return "03" }
+    if m == "Apr" { return "04" }
+    if m == "May" { return "05" }
+    if m == "Jun" { return "06" }
+    if m == "Jul" { return "07" }
+    if m == "Aug" { return "08" }
+    if m == "Sep" { return "09" }
+    if m == "Oct" { return "10" }
+    if m == "Nov" { return "11" }
+    if m == "Dec" { return "12" }
+    return "01"
+}
+
+: month_full(m = string) (( string )) {
+    if m == "01" || m == "1" { return "January" }
+    if m == "02" || m == "2" { return "February" }
+    if m == "03" || m == "3" { return "March" }
+    if m == "04" || m == "4" { return "April" }
+    if m == "05" || m == "5" { return "May" }
+    if m == "06" || m == "6" { return "June" }
+    if m == "07" || m == "7" { return "July" }
+    if m == "08" || m == "8" { return "August" }
+    if m == "09" || m == "9" { return "September" }
+    if m == "10" { return "October" }
+    if m == "11" { return "November" }
+    if m == "12" { return "December" }
+    return m
+}
+
+: parse_num(s = string) (( num )) {
+    return stdr.num(s)
+}
+
+: format_hour_12(h = num) (( string )) {
+    let ?hour = h
+    let ?ampm = "AM"
+    if hour == 0 {
+        hour = 12
+    } elif hour == 12 {
+        ampm = "PM"
+    } elif hour > 12 {
+        hour = hour - 12
+        ampm = "PM"
+    }
+    return "$$hour$$"
+}
+
+: am_pm(h = num) (( string )) {
+    if h >= 12 {
+        return "PM"
+    }
+    return "AM"
+}
+
+: ordinal_suffix(day = num) (( string )) {
+    if day == 1 || day == 21 || day == 31 { return "st" }
+    if day == 2 || day == 22 { return "nd" }
+    if day == 3 || day == 23 { return "rd" }
+    return "th"
+}
+
+: format_iso_date(raw = string) (( string )) {
+    -- "2030-03-12T09:34:00Z" → "Mar. 12 2030 - 9:34 AM"
+    let n = stdr.len(raw)
+    if n < 10 { return raw }
+    let year = stdr.slice(raw, 0, 4)
+    let month = stdr.slice(raw, 5, 7)
+    let day = stdr.slice(raw, 8, 10)
+    let mab = month_abbr(month)
+    let day_num = parse_num(day)
+    let ?time_str = ""
+    if n >= 16 {
+        let hour = parse_num(stdr.slice(raw, 11, 13))
+        let minute = stdr.slice(raw, 14, 16)
+        let h12 = format_hour_12(hour)
+        let ap = am_pm(hour)
+        time_str = " - $$h12$$:$$minute$$ $$ap$$"
+    }
+    return "$$mab$$ $$day_num$$ $$year$$$$time_str$$"
+}
+
+: format_iso_date_long(raw = string) (( string )) {
+    -- "2030-03-12T09:34:00Z" → "Published March 12th, 2030 at 9:34 AM"
+    let n = stdr.len(raw)
+    if n < 10 { return raw }
+    let year = stdr.slice(raw, 0, 4)
+    let month = stdr.slice(raw, 5, 7)
+    let day = stdr.slice(raw, 8, 10)
+    let mfull = month_full(month)
+    let day_num = parse_num(day)
+    let suf = ordinal_suffix(day_num)
+    let ?time_str = ""
+    if n >= 16 {
+        let hour = parse_num(stdr.slice(raw, 11, 13))
+        let minute = stdr.slice(raw, 14, 16)
+        let h12 = format_hour_12(hour)
+        let ap = am_pm(hour)
+        time_str = " at $$h12$$:$$minute$$ $$ap$$"
+    }
+    return "Published $$mfull$$ $$day_num$$$$suf$$, $$year$$$$time_str$$"
+}
+
+: format_rfc_date(raw = string) (( string )) {
+    -- "Wed, 12 Mar 2030 09:34:00 GMT" → "Mar. 12 2030 - 9:34 AM"
+    let n = stdr.len(raw)
+    let ?start = 0
+    let comma = stdr.index_of(raw, ", ")
+    if comma >= 0 {
+        start = comma + 2
+    }
+    let rest = stdr.trim(stdr.slice(raw, start, n))
+    let rn = stdr.len(rest)
+
+    let sp1 = stdr.index_of(rest, " ")
+    if sp1 < 0 { return raw }
+    let day = stdr.slice(rest, 0, sp1)
+    let after_day = stdr.slice(rest, sp1 + 1, rn)
+
+    let sp2 = stdr.index_of(after_day, " ")
+    if sp2 < 0 { return raw }
+    let month_name = stdr.slice(after_day, 0, sp2)
+    let after_month = stdr.slice(after_day, sp2 + 1, stdr.len(after_day))
+
+    let sp3 = stdr.index_of(after_month, " ")
+    let ?year = after_month
+    let ?time_part = ""
+    if sp3 >= 0 {
+        year = stdr.slice(after_month, 0, sp3)
+        time_part = stdr.trim(stdr.slice(after_month, sp3 + 1, stdr.len(after_month)))
+    }
+
+    let month_num = month_name_to_num(month_name)
+    let mab = month_abbr(month_num)
+    let day_num = parse_num(day)
+
+    let ?time_str = ""
+    if stdr.len(time_part) >= 5 {
+        let hour = parse_num(stdr.slice(time_part, 0, 2))
+        let minute = stdr.slice(time_part, 3, 5)
+        let h12 = format_hour_12(hour)
+        let ap = am_pm(hour)
+        time_str = " - $$h12$$:$$minute$$ $$ap$$"
+    }
+    return "$$mab$$ $$day_num$$ $$year$$$$time_str$$"
+}
+
+: format_rfc_date_long(raw = string) (( string )) {
+    let n = stdr.len(raw)
+    let ?start = 0
+    let comma = stdr.index_of(raw, ", ")
+    if comma >= 0 {
+        start = comma + 2
+    }
+    let rest = stdr.trim(stdr.slice(raw, start, n))
+    let rn = stdr.len(rest)
+
+    let sp1 = stdr.index_of(rest, " ")
+    if sp1 < 0 { return raw }
+    let day = stdr.slice(rest, 0, sp1)
+    let after_day = stdr.slice(rest, sp1 + 1, rn)
+
+    let sp2 = stdr.index_of(after_day, " ")
+    if sp2 < 0 { return raw }
+    let month_name = stdr.slice(after_day, 0, sp2)
+    let after_month = stdr.slice(after_day, sp2 + 1, stdr.len(after_day))
+
+    let sp3 = stdr.index_of(after_month, " ")
+    let ?year = after_month
+    let ?time_part = ""
+    if sp3 >= 0 {
+        year = stdr.slice(after_month, 0, sp3)
+        time_part = stdr.trim(stdr.slice(after_month, sp3 + 1, stdr.len(after_month)))
+    }
+
+    let month_num = month_name_to_num(month_name)
+    let mfull = month_full(month_num)
+    let day_num = parse_num(day)
+    let suf = ordinal_suffix(day_num)
+
+    let ?time_str = ""
+    if stdr.len(time_part) >= 5 {
+        let hour = parse_num(stdr.slice(time_part, 0, 2))
+        let minute = stdr.slice(time_part, 3, 5)
+        let h12 = format_hour_12(hour)
+        let ap = am_pm(hour)
+        time_str = " at $$h12$$:$$minute$$ $$ap$$"
+    }
+    return "Published $$mfull$$ $$day_num$$$$suf$$, $$year$$$$time_str$$"
+}
+
+:: format_date_long(raw = string) (( string )) {
+    if stdr.len(raw) == 0 {
+        return ""
+    }
+    if stdr.contains(raw, "T") {
+        return format_iso_date_long(raw)
+    }
+    return format_rfc_date_long(raw)
+}

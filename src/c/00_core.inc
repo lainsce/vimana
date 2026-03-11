@@ -396,6 +396,7 @@ typedef struct CogitoStyle {
   bool has_check;
   bool has_font_weight;
   bool has_letter_spacing;
+  bool has_line_height;
   bool has_font_tabular;
   bool has_font_mono;
   bool has_font_family;
@@ -453,6 +454,7 @@ typedef struct CogitoStyle {
   int font_size;
   int font_weight;
   float letter_spacing;
+  float line_height;
   bool font_tabular;
   bool font_mono;
   char font_family[
@@ -600,6 +602,7 @@ typedef struct CogitoTheme {
   CogitoStyle content_list_item_last;
   CogitoStyle content_list_item_middle;
   CogitoStyle content_list_item_single;
+  CogitoStyle content_list_item_selected;
   CogitoStyle content_list_label;
   CogitoStyle button_outlined;
   CogitoStyle button_outlined_hover;
@@ -719,6 +722,8 @@ typedef struct CogitoNode {
   int text_align;
   int label_max_width_chars;
   bool label_max_width_chars_set;
+  int label_line_chars;
+  bool label_line_chars_set;
   bool font_mono;
   bool font_tabular;
   bool font_emphasized;
@@ -771,6 +776,7 @@ typedef struct CogitoNode {
   bool check_set;
   bool font_weight_set;
   bool letter_spacing_set;
+  bool line_height_set;
   bool min_w_set;
   bool min_h_set;
   bool max_w_set;
@@ -809,6 +815,7 @@ typedef struct CogitoNode {
   int font_size;
   int font_weight;
   float letter_spacing;
+  float line_height;
   int min_w, min_h;
   int max_w, max_h;
   int shadow_level;
@@ -2308,7 +2315,7 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
   double dt = cogito_spring_dt; // frame-rate-independent delta-time
 
   if (cogito_prefers_reduced_motion) {
-    float opacity = n->opacity_set ? n->opacity : 1.0f;
+    float opacity = s->has_opacity ? s->opacity : (n->opacity_set ? n->opacity : 1.0f);
     if (opacity < 0.0f) opacity = 0.0f;
     if (opacity > 1.0f) opacity = 1.0f;
     if (bg) *bg = cogito_apply_opacity(*bg, opacity);
@@ -2319,6 +2326,30 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
     return;
   }
 
+  // Time-based lerp path: when transition duration is set, use legacy timed animation
+  if (n->anim_ms > 0) {
+    float opacity = s->has_opacity ? s->opacity : (n->opacity_set ? n->opacity : 1.0f);
+    if (opacity < 0.0f) opacity = 0.0f;
+    if (opacity > 1.0f) opacity = 1.0f;
+    if (bg) {
+      *bg = cogito_anim_color(n, *bg, &n->anim_bg, &n->anim_bg_from, &n->anim_bg_target, &n->anim_bg_start, now);
+      *bg = cogito_apply_opacity(*bg, opacity);
+    }
+    if (text) {
+      *text = cogito_anim_color(n, *text, &n->anim_text, &n->anim_text_from, &n->anim_text_target, &n->anim_text_start, now);
+      *text = cogito_apply_opacity(*text, opacity);
+    }
+    if (border) {
+      *border = cogito_anim_color(n, *border, &n->anim_border, &n->anim_border_from, &n->anim_border_target, &n->anim_border_start, now);
+      *border = cogito_apply_opacity(*border, opacity);
+    }
+    if (selection) {
+      *selection = cogito_anim_color(n, *selection, &n->anim_selection, &n->anim_selection_from, &n->anim_selection_target, &n->anim_selection_start, now);
+      *selection = cogito_apply_opacity(*selection, opacity);
+    }
+    return;
+  }
+
   // Choose spring profile: expressive for UI elements, functional for opacity
   double k_color = COGITO_SPRING_K_EXPRESSIVE;
   double z_color = COGITO_SPRING_Z_EXPRESSIVE;
@@ -2326,17 +2357,18 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
   double z_op    = COGITO_SPRING_Z_FUNCTIONAL;
 
   // Animate opacity via functional spring (no overshoot on opacity)
-  float opacity = n->opacity;
-  if (n->opacity_set) {
-    cogito_spring_tick(&n->spring_opacity, (double)n->opacity, k_op, z_op, dt);
+  float opacity = s->has_opacity ? s->opacity : n->opacity;
+  float opacity_target = opacity;
+  if (n->opacity_set || s->has_opacity) {
+    cogito_spring_tick(&n->spring_opacity, (double)opacity_target, k_op, z_op, dt);
     float sp_op = (float)n->spring_opacity.x;
     if (sp_op < 0.0f) sp_op = 0.0f;
     if (sp_op > 1.0f) sp_op = 1.0f;
     opacity = sp_op;
     // Keep legacy float anim in sync for external readers
-    n->opacity_from = n->opacity;
-    n->opacity_target = n->opacity;
-    if (cogito_spring_active(&n->spring_opacity, (double)n->opacity)) {
+    n->opacity_from = opacity_target;
+    n->opacity_target = opacity_target;
+    if (cogito_spring_active(&n->spring_opacity, (double)opacity_target)) {
       double end_time = now + 0.6;
       if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
     }

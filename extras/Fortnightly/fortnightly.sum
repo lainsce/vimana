@@ -1,0 +1,112 @@
+@diagnostics: warn
+
+@on-surface-variant: #666666
+@on-surface: #000000
+
+window
+  background: #F9F9F9
+
+vstack
+hstack
+zstack
+  background: transparent
+
+content_list
+  background: transparent
+  border-radius: 0
+
+content_list=first
+content_list=last
+content_list=middle
+content_list=single
+  background: transparent
+  border-radius: 0
+
+content_list=selected
+  background: rgba(0, 0, 0, 0.05)
+  border-radius: 0
+
+label.article-title
+  font-size: 14
+  font-weight: bold
+
+label.detail-title
+  font-size: 32
+  font-variation: wdth 50, opsz 14
+  font-weight: bold
+
+label.detail-date
+  font-variation: wdth 50, opsz 14
+  font-size: 20
+
+label.detail-lede
+  font-size: 16
+  line-height: 1.5
+  color: @on-surface-variant
+
+label.detail-body
+  font-size: 16
+  line-height: 1.5
+  color: @on-surface
+
+label.source-name
+  font-size: 16
+  font-weight: bold
+
+label.caption
+  font-size: 12
+
+image.article-thumb
+  min-width: 64
+  min-height: 64
+  max-width: 64
+  max-height: 64
+  border-radius: 0
+
+vstack.body-content
+  max-width: 672
+
+image.detail-image
+  min-height: 264
+  max-height: 264
+  min-width: 672
+  max-width: 672
+  border-radius: 0
+
+vstack.list-panel
+  min-width: 280
+  max-width: 280
+
+hstack.article-row
+  border-radius: 0
+
+hstack.source-row
+  border-radius: 0
+
+scroller.sources-list
+  background: transparent
+
+dialog.sources-dialog
+  min-height: 440
+  max-height: 600
+  min-width: 440
+  max-width: 800
+  border-radius: 0
+
+button
+iconbtn
+  border-radius: 0
+
+card
+  border-radius: 0
+
+chip.category-chip:disabled
+  background: transparent
+  border: 1 solid @on-surface-variant
+  color: @on-surface
+  border-radius: 0
+  opacity: 1
+
+@when dark
+  window
+    background: #121212

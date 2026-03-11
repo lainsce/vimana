@@ -45,6 +45,7 @@ case COGITO_APPBAR: {
       for (size_t i = 0; i < n->len; i++) {
         CogitoNode* c = n->children[i];
         if (title_widget && c == title_widget) continue;
+        if (cogito_node_is_hidden(c)) continue;
         int cw = 0;
         int ch = 0;
         cogito_intrinsic_size(c, &cw, &ch);
@@ -158,6 +159,7 @@ case COGITO_APPBAR: {
         for (size_t i = 0; i < n->len; i++) {
           CogitoNode* c = n->children[i];
           if (title_widget && c == title_widget) continue;
+          if (cogito_node_is_hidden(c)) continue;
           if (cogito_appbar_is_leading_child(c)) continue;
           int cw = 0; int ch = 0;
           cogito_intrinsic_size(c, &cw, &ch);
@@ -170,6 +172,7 @@ case COGITO_APPBAR: {
         for (size_t i = 0; i < n->len; i++) {
           CogitoNode* c = n->children[i];
           if (title_widget && c == title_widget) continue;
+          if (cogito_node_is_hidden(c)) continue;
           if (!cogito_appbar_is_leading_child(c)) continue;
           int cw = 0; int ch = 0;
           cogito_intrinsic_size(c, &cw, &ch);
@@ -184,6 +187,7 @@ case COGITO_APPBAR: {
       for (size_t i = 0; i < n->len; i++) {
         CogitoNode* c = n->children[i];
         if (title_widget && c == title_widget) continue;
+        if (cogito_node_is_hidden(c)) continue;
         if (cogito_appbar_is_leading_child(c)) continue;
         int cw = 0;
         int ch = 0;
@@ -208,6 +212,7 @@ case COGITO_APPBAR: {
       for (size_t i = 0; i < n->len; i++) {
         CogitoNode* c = n->children[i];
         if (title_widget && c == title_widget) continue;
+        if (cogito_node_is_hidden(c)) continue;
         if (!cogito_appbar_is_leading_child(c)) continue;
         int cw = 0;
         int ch = 0;
@@ -228,7 +233,11 @@ case COGITO_APPBAR: {
       }
       } // end LTR else
       if (title_tx <= 0) {
-        title_tx = same_row ? (rtl ? (lx + btn_gap) : lx) : (rtl ? (x + w - 16) : (x + 16));
+        if (same_row && lead_count > 0) {
+          title_tx = rtl ? (lx + btn_gap) : lx;
+        } else {
+          title_tx = rtl ? (x + w - 16) : (x + 16);
+        }
       }
       n->appbar.title_x = title_tx;
       if (title_widget) {

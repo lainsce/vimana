@@ -196,6 +196,7 @@ static void cogito_theme_set_defaults(void) {
   cogito_style_clear(&cogito_theme.content_list_item_last);
   cogito_style_clear(&cogito_theme.content_list_item_middle);
   cogito_style_clear(&cogito_theme.content_list_item_single);
+  cogito_style_clear(&cogito_theme.content_list_item_selected);
   cogito_style_clear(&cogito_theme.content_list_label);
 }
 
@@ -248,6 +249,8 @@ static void cogito_style_merge_into(const CogitoStyle* base, const CogitoStyle* 
   if (over->has_font_weight) { out->has_font_weight = true; out->font_weight = over->font_weight;
   }
   if (over->has_letter_spacing) { out->has_letter_spacing = true; out->letter_spacing = over->letter_spacing;
+  }
+  if (over->has_line_height) { out->has_line_height = true; out->line_height = over->line_height;
   }
   if (over->has_font_tabular) { out->has_font_tabular = true; out->font_tabular = over->font_tabular;
   }
@@ -922,6 +925,13 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
   } else {
     n->letter_spacing_set = false;
     n->letter_spacing = 0.0f;
+  }
+  if (s.has_line_height) {
+    n->line_height = s.line_height;
+    n->line_height_set = true;
+  } else {
+    n->line_height_set = false;
+    n->line_height = 0.0f;
   }
   if (s.has_font_tabular) {
     n->font_tabular = s.font_tabular;

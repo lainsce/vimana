@@ -76,7 +76,7 @@ case COGITO_APPBAR:
       n->font_family[sizeof(n->font_family) - 1] = '\0';
     }
     if (max_w > 0) {
-      cogito_draw_text_ellipsis(n, tx, ty, max_w, n->text->data, tcol, tsz, tbold, tmedium, 0);
+      cogito_draw_text_wrapped(n, tx, ty, max_w, n->text->data, tcol, tsz, tbold, tmedium, 0, true, 2);
     }
     if (use_serif) {
       n->font_family_set = prev_family_set;

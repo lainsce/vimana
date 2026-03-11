@@ -518,6 +518,7 @@ void cogito_style_dump_button_demo(void);
 void cogito_label_set_text(cogito_node *label, const char *text);
 void cogito_label_set_wrap(cogito_node *label, bool on);
 void cogito_label_set_max_width_chars(cogito_node *label, int max_chars);
+void cogito_label_set_line_chars(cogito_node *label, int line_chars);
 void cogito_label_set_ellipsis(cogito_node *label, bool on);
 void cogito_label_set_fade(cogito_node *label, bool on);
 void cogito_label_set_marquee(cogito_node *label, bool on);

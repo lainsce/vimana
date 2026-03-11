@@ -1,0 +1,55 @@
+cask source_row
+
+bring stdr
+bring cogito
+
+bring utils.cache
+
+:: build_source_row(index = num, source = any, remove_handler = any) (( cogito.HStack )) {
+    let name = str(source["name"] ?? "")
+    let url = str(source["url"] ?? "")
+
+    let row = cogito.hstack()
+    .set_class("surface-container-high source-row")
+    .set_hexpand(true)
+    .set_padding(8, 12, 8, 12)
+    .set_gap(12)
+
+    let favicon_path = cache.download_favicon(url)
+    let ?favicon_src = favicon_path
+    if len(favicon_src) == 0 {
+        let domain = cache.extract_domain(url)
+        favicon_src = "https://www.google.com/s2/favicons?domain=$$domain$$&sz=64"
+    }
+    let icon = cogito.image(favicon_src)
+    .set_size(64, 64)
+    .set_radius(0)
+    row.add(icon)
+
+    let text_col = cogito.vstack()
+    .set_gap(2)
+    .set_hexpand(true)
+    .add(cogito.label(name)
+        .set_class("source-name")
+        .set_align(0)
+        .set_text_align(0)
+        .set_hexpand(true)
+    )
+    .add(cogito.label(url)
+        .set_class("caption")
+        .set_align(0)
+        .set_text_align(0)
+        .set_hexpand(true)
+        .set_ellipsis(true)
+    )
+    row.add(text_col)
+
+    let remove_btn = cogito.iconbtn("sf:line.3.horizontal")
+    .set_class("source-menu-btn")
+    remove_btn.add_menu("Remove", (b = any) => {
+        remove_handler(index)
+    })
+    row.add(remove_btn)
+
+    return row
+}

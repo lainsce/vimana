@@ -42,8 +42,8 @@ case COGITO_LABEL: {
         if (content_h < 0) content_h = 0;
         bool lbold = cogito_label_bold(n);
         bool lmedium = cogito_label_medium(n);
-        if (n->text_wrap) {
-          cogito_draw_text_wrapped(n, content_x, content_y, content_w, draw_text, text, size, lbold, lmedium, align, true);
+        if (n->text_wrap || n->label_line_chars_set) {
+          cogito_draw_text_wrapped(n, content_x, content_y, content_w, draw_text, text, size, lbold, lmedium, align, true, 0);
         } else if (n->text_ellipsis) {
           int th = cogito_text_height_size(size);
           int ty = content_y + (content_h - th) / 2;

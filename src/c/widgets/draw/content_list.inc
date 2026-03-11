@@ -25,6 +25,9 @@ case COGITO_CONTENT_LIST: {
   cogito_apply_bin_scope_to_style(&middle_style);
   cogito_apply_bin_scope_to_style(&single_style);
 
+  CogitoStyle selected_style = cogito_theme.content_list_item_selected;
+  cogito_apply_bin_scope_to_style(&selected_style);
+
   bool has_selection = n->selected >= 0 && (size_t)n->selected < n->len;
   bool plain_list = n->class_name && n->class_name->data &&
                     (cogito_class_has_token(n->class_name->data, "plain") ||
@@ -74,27 +77,40 @@ case COGITO_CONTENT_LIST: {
       cogito_clamp_corner_radii(child->w, child->h, &tl, &tr, &br, &bl);
     }
 
+    // Override unselected background if the position style specifies one
+    CogitoColor item_bg = unsel_bg;
+    if (item_style->has_bg) item_bg = item_style->bg;
+
     bool is_selected = has_selection && (size_t)n->selected == i;
 
     if (is_selected) {
         int sr = child->h / 2;
+        if (selected_style.has_radius) sr = selected_style.radius;
         CogitoColor sel_bg = cogito_cached_secondary_container;
-        cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, sel_bg, sr, sr, sr, sr);
-        cogito_has_selection_text = true;
-        CogitoColor sel_text = cogito_cached_on_secondary_container;
-        if (sel_text.a == 0) {
-          sel_text = cogito_cached_on_surface;
-          if (sel_text.a == 0) {
-            sel_text = cogito_on_color(sel_bg);
-          }
+        if (selected_style.has_bg) sel_bg = selected_style.bg;
+        if (sel_bg.a > 0) {
+          cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, sel_bg, sr, sr, sr, sr);
         }
-        cogito_selection_text = sel_text;
+        // Only override text color when using a solid selected background
+        bool solid_sel = !selected_style.has_bg || sel_bg.a > 128;
+        if (solid_sel) {
+          cogito_has_selection_text = true;
+          CogitoColor sel_text = cogito_cached_on_secondary_container;
+          if (selected_style.has_text) sel_text = selected_style.text;
+          else if (sel_text.a == 0) {
+            sel_text = cogito_cached_on_surface;
+            if (sel_text.a == 0) {
+              sel_text = cogito_on_color(sel_bg);
+            }
+          }
+          cogito_selection_text = sel_text;
+        }
         cogito_draw_node(child);
         cogito_has_selection_text = false;
     } else {
       // Draw unselected item background with position-specific rounded corners
-      if (unsel_bg.a > 0) {
-        cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, unsel_bg, tl, tr, br, bl);
+      if (item_bg.a > 0) {
+        cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, item_bg, tl, tr, br, bl);
       }
       // Draw the child
       cogito_draw_node(child);
@@ -103,9 +119,11 @@ case COGITO_CONTENT_LIST: {
     // Draw divider between items (not after last, not around selected items)
     if (i + 1 < n->len && !is_selected && !(has_selection && (size_t)n->selected == i + 1)) {
       CogitoColor div_color = border_color;
-      // Check if middle style has custom divider color
+      // Use outline_variant as fallback when no border color is set
       if (middle_style.has_border) {
         div_color = middle_style.border;
+      } else if (div_color.a == 0) {
+        div_color = cogito_cached_outline_variant;
       }
       div_color.a = (uint8_t)(div_color.a * 0.3f);
       int dy = child->y + child->h;

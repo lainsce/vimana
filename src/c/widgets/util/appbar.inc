@@ -340,6 +340,9 @@ static void cogito_appbar_apply_paired_surface(CogitoNode* appbar) {
   appbar->class_name = ns;
 }
 
+// Forward declaration (defined in 03_text.inc, included after 02_theme.inc)
+static int cogito_text_width_size_node(const CogitoNode* n, const char* s, int size);
+
 static void cogito_appbar_row_positions(
   CogitoNode* n,
   int* out_buttons_y,
@@ -371,19 +374,11 @@ static void cogito_appbar_row_positions(
   int title_size = cogito_appbar_title_font_size_for_type(appbar_type);
   int subtitle_size = cogito_appbar_subtitle_font_size_for_type(appbar_type);
 
-  if (has_title_widget) {
-    int tw = 0;
-    cogito_intrinsic_size(title_widget, &tw, &title_h);
-    if (title_h <= 0) title_h = btn_size;
-  } else if (has_title_text) {
-    title_h = cogito_text_height_size(title_size);
-  }
-  if (has_subtitle) {
-    subtitle_h = cogito_text_height_size(subtitle_size);
-  }
-
+  // Compute children sizes first (needed for title width estimation)
   int icon_row_h = 0;
   int has_children = 0;
+  int children_total_w = 0;
+  int children_count = 0;
   if (n->len > 0) {
     for (size_t i = 0; i < n->len; i++) {
       CogitoNode* c = n->children[i];
@@ -393,8 +388,35 @@ static void cogito_appbar_row_positions(
       int ch = 0;
       cogito_intrinsic_size(c, &cw, &ch);
       if (ch > icon_row_h) icon_row_h = ch;
+      children_total_w += cw;
+      children_count++;
     }
     if (icon_row_h == 0) icon_row_h = btn_size;
+    if (children_count > 1) children_total_w += (children_count - 1) * btn_gap;
+  }
+
+  if (has_title_widget) {
+    int tw = 0;
+    cogito_intrinsic_size(title_widget, &tw, &title_h);
+    if (title_h <= 0) title_h = btn_size;
+  } else if (has_title_text) {
+    int line_h = cogito_text_height_size(title_size);
+    title_h = line_h;
+    // Check if title needs 2 lines
+    bool same_row = (appbar_type == COGITO_APPBAR_TYPE_SMALL || appbar_type == COGITO_APPBAR_TYPE_SEARCH);
+    int avail_w = n->w - 48;
+    if (same_row && has_children) {
+      avail_w -= children_total_w + 12;
+    }
+    if (avail_w > 0 && n->text) {
+      int text_w = cogito_text_width_size_node(n, n->text->data, title_size);
+      if (text_w > avail_w) {
+        title_h = line_h * 2;
+      }
+    }
+  }
+  if (has_subtitle) {
+    subtitle_h = cogito_text_height_size(subtitle_size);
   }
 
   int y_buttons = n->y + btn_pad_top;
@@ -454,13 +476,13 @@ static void cogito_appbar_row_positions(
 
   int title_gap = 12;
   int subtitle_gap = 12;
-  int baseline_gap = 18;
+  int baseline_gap = 16;
   int bottom_pad = 12;
   int min_h = 64;
   if (appbar_type == COGITO_APPBAR_TYPE_SMALL) {
     title_gap = 12;
     subtitle_gap = 12;
-    baseline_gap = 18;
+    baseline_gap = 16;
     min_h = 104;
   } else if (appbar_type == COGITO_APPBAR_TYPE_LARGE) {
     title_gap = 14;
@@ -530,7 +552,8 @@ static void cogito_appbar_row_positions(
       }
     }
 
-    int top_lane_y = nav_top_inset;
+    bool title_multiline = has_title_text && title_h > cogito_text_height_size(title_size);
+    int top_lane_y = nav_top_inset + (appbar_type == COGITO_APPBAR_TYPE_SMALL && title_multiline ? baseline_gap : 0);
     if (has_actual_height) {
       int max_top_lane = node_bottom - block_h;
       if (max_top_lane < node_top) max_top_lane = node_top;

@@ -8,8 +8,8 @@ case COGITO_CHIP: {
   CogitoColor text_color = s.has_text   ? s.text   : n->text_color;
   CogitoColor border_color = s.has_border ? s.border : n->border_color;
   int border_w = s.has_border_width ? s.border_width : 0;
-  // Cogito: Chip — Full radius (h/2)
-  int radius = n->h / 2;
+  // Cogito: Chip — Full radius (h/2) unless overridden by style
+  int radius = s.has_radius ? s.radius : (n->h / 2);
 
   // Animate colors
   cogito_anim_apply(n, &s, &bg, &text_color, &border_color, NULL);

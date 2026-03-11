@@ -1427,6 +1427,7 @@ static int cogito_text_wrap_height(const CogitoNode* n, const char* text, int si
   if (!text || max_w <= 0) return 0;
   if (size <= 0) size = cogito_font_size();
   int line_h = cogito_text_height_size(size);
+  if (n && n->line_height_set && n->line_height > 0.0f) line_h = (int)lroundf(line_h * n->line_height);
   int lines = 0;
   const char* p = text;
   while (*p) {
@@ -1685,19 +1686,50 @@ static void cogito_draw_text_tabular(CogitoFont* f, const char* text, int x, int
   }
 }
 
-static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, const char* text, CogitoColor color, int size, bool bold, bool medium, int align, bool draw) {
+static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, const char* text, CogitoColor color, int size, bool bold, bool medium, int align, bool draw, int max_lines) {
   if (!text || w <= 0) return 0;
   if (size <= 0) size = cogito_font_size();
   int line_h = cogito_text_height_size(size);
+  if (n && n->line_height_set && n->line_height > 0.0f) line_h = (int)lroundf(line_h * n->line_height);
   int lines = 0;
   const char* p = text;
   while (*p) {
-    while (*p == '\n') { if (draw) { lines++; } else { lines++; } p++; }
+    if (max_lines > 0 && lines >= max_lines) break;
+    while (*p == '\n') { lines++; p++; if (max_lines > 0 && lines >= max_lines) goto wrapped_done; }
     if (!*p) break;
+    bool is_last_line = (max_lines > 0 && lines == max_lines - 1);
+    const char* start = p;
+    if (is_last_line) {
+      int para_len = 0;
+      while (start[para_len] && start[para_len] != '\n') para_len++;
+      int para_w = (para_len > 0) ? cogito_text_width_size_n_node(n, start, para_len, size) : 0;
+      bool has_more = (start[para_len] != '\0');
+      if (para_w > w || has_more) {
+        if (draw && para_len > 0) {
+          char buf[1024];
+          int len_n = para_len > 1000 ? 1000 : para_len;
+          memcpy(buf, start, (size_t)len_n);
+          buf[len_n] = '\0';
+          cogito_draw_text_ellipsis(n, x, y + lines * line_h, w, buf, color, size, bold, medium, align);
+        }
+      } else if (para_len > 0) {
+        int tx = x;
+        if (align == 1) tx = x + (w - para_w) / 2;
+        else if (align == 2) tx = x + (w - para_w);
+        if (draw) {
+          char buf[1024];
+          int len_n = para_len > 1000 ? 1000 : para_len;
+          memcpy(buf, start, (size_t)len_n);
+          buf[len_n] = '\0';
+          cogito_draw_text_size_node(n, tx, y + lines * line_h, buf, color, size, bold, medium);
+        }
+      }
+      lines++;
+      break;
+    }
     int line_len = 0;
     int last_space = -1;
     int last_space_w = 0;
-    const char* start = p;
     int line_w = 0;
     while (*p && *p != '\n') {
       int wcur = cogito_text_width_size_n_node(n, start, line_len + 1, size);
@@ -1735,6 +1767,7 @@ static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, co
     if (*p == '\n') p++;
     lines++;
   }
+  wrapped_done:
   if (lines == 0) lines = 1;
   return lines * line_h;
 }

@@ -665,7 +665,7 @@ static int cogito_webview_render(const CogitoNode* n, const char* html,
         int text_h = 0;
         if (tag == COGITO_WV_TAG_CODE) {
           text_h = cogito_draw_text_wrapped(n, draw_x + code_pad, y + cursor_y + code_pad,
-                                            draw_w - code_pad * 2, buf, text_color, fs, false, false, 0, false);
+                                            draw_w - code_pad * 2, buf, text_color, fs, false, false, 0, false, 0);
         } else {
           text_h = cogito_wv_draw_inline(n, buf, (int)strlen(buf),
                                          draw_x + code_pad, y + cursor_y + code_pad,
@@ -694,7 +694,7 @@ static int cogito_webview_render(const CogitoNode* n, const char* html,
             CogitoColor code_text = text_color;
             code_text.a = (uint8_t)(text_color.a * 0.85f);
             cogito_draw_text_wrapped(n, draw_x + code_pad, y + cursor_y + code_pad,
-                                     draw_w - code_pad * 2, buf, code_text, fs, false, false, 0, true);
+                                     draw_w - code_pad * 2, buf, code_text, fs, false, false, 0, true, 0);
           } else {
             cogito_wv_draw_inline(n, buf, (int)strlen(buf),
                                   draw_x, y + cursor_y,

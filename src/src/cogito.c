@@ -211,6 +211,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_label_set_text cogito_label_set_text_yis
 #define cogito_label_set_wrap cogito_label_set_wrap_yis
 #define cogito_label_set_max_width_chars cogito_label_set_max_width_chars_yis
+#define cogito_label_set_line_chars cogito_label_set_line_chars_yis
 #define cogito_load_sum cogito_load_sum_yis
 #define cogito_load_sum_file cogito_load_sum_file_yis
 #define cogito_nav_rail_get_selected cogito_nav_rail_get_selected_yis
@@ -607,6 +608,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_label_set_text
 #undef cogito_label_set_wrap
 #undef cogito_label_set_max_width_chars
+#undef cogito_label_set_line_chars
 #undef cogito_load_sum
 #undef cogito_load_sum_file
 #undef cogito_nav_rail_get_selected
@@ -3863,6 +3865,14 @@ void cogito_label_set_max_width_chars(cogito_node *label, int max_chars) {
   if (max_chars < 0)
     max_chars = 0;
   cogito_label_set_max_width_chars_yis(YV_OBJ(label), YV_INT(max_chars));
+}
+
+void cogito_label_set_line_chars(cogito_node *label, int line_chars) {
+  if (!label)
+    return;
+  if (line_chars < 0)
+    line_chars = 0;
+  cogito_label_set_line_chars_yis(YV_OBJ(label), YV_INT(line_chars));
 }
 
 void cogito_label_set_ellipsis(cogito_node *label, bool on) {

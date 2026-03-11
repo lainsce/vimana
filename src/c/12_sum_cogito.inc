@@ -170,6 +170,11 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
     if (cogito_css_read_number(p, &v)) { style->has_letter_spacing = true; style->letter_spacing = (float)v; }
     return;
   }
+  if (strcmp(prop, "line-height") == 0) {
+    double v;
+    if (cogito_css_read_number(p, &v)) { style->has_line_height = true; style->line_height = (float)v; }
+    return;
+  }
   if (strcmp(prop, "min-width") == 0 || strcmp(prop, "min-content-width") == 0) {
     double v;
     if (cogito_css_read_number(p, &v)) { style->has_min_w = true; style->min_w = (int)lround(v); }
@@ -1015,12 +1020,14 @@ void cogito_sum_add_styles(const char* parent, const char* child, CogitoStyle** 
         else style = &cogito_theme.label_class[label_class];
       } else if (kind == COGITO_CONTENT_LIST && state[0] &&
                  (strcmp(state, "first") == 0 || strcmp(state, "last") == 0 ||
-                  strcmp(state, "middle") == 0 || strcmp(state, "single") == 0)) {
+                  strcmp(state, "middle") == 0 || strcmp(state, "single") == 0 ||
+                  strcmp(state, "selected") == 0)) {
         // Handle element position selectors: content-list=first
         if (strcmp(state, "first") == 0) style = &cogito_theme.content_list_item_first;
         else if (strcmp(state, "last") == 0) style = &cogito_theme.content_list_item_last;
         else if (strcmp(state, "middle") == 0) style = &cogito_theme.content_list_item_middle;
         else if (strcmp(state, "single") == 0) style = &cogito_theme.content_list_item_single;
+        else if (strcmp(state, "selected") == 0) style = &cogito_theme.content_list_item_selected;
       } else if (is_menu) {
         style = &cogito_theme.menu;
       } else {

@@ -905,6 +905,14 @@ static void __cogito_chip_set_selected(YisVal chipv, YisVal sel) {
   cogito_chip_set_selected(n, yis_as_bool(sel));
 }
 
+static void __cogito_chip_set_text(YisVal chipv, YisVal textv) {
+  cogito_node* n = cogito_node_from_val(chipv);
+  YisStr* tmp = NULL;
+  const char* text = cogito_optional_cstr(textv, &tmp);
+  if (text) cogito_node_set_text(n, text);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
 static YisVal __cogito_chip_get_selected(YisVal chipv) {
   cogito_node* n = cogito_node_from_val(chipv);
   return YV_BOOL(cogito_chip_get_selected(n));
@@ -1938,6 +1946,11 @@ static void __cogito_label_set_wrap(YisVal labelv, YisVal onv) {
 static void __cogito_label_set_max_width_chars(YisVal labelv, YisVal maxv) {
   cogito_node* n = cogito_node_from_val(labelv);
   cogito_label_set_max_width_chars(n, (int)yis_as_int(maxv));
+}
+
+static void __cogito_label_set_line_chars(YisVal labelv, YisVal maxv) {
+  cogito_node* n = cogito_node_from_val(labelv);
+  cogito_label_set_line_chars(n, (int)yis_as_int(maxv));
 }
 
 static void __cogito_label_set_ellipsis(YisVal labelv, YisVal onv) {
@@ -3876,6 +3889,7 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_label_set_text __cogito_label_set_text
 #define cogito_label_set_wrap __cogito_label_set_wrap
 #define cogito_label_set_max_width_chars __cogito_label_set_max_width_chars
+#define cogito_label_set_line_chars __cogito_label_set_line_chars
 #define cogito_label_set_ellipsis __cogito_label_set_ellipsis
 #define cogito_label_set_fade __cogito_label_set_fade
 #define cogito_label_set_marquee __cogito_label_set_marquee
@@ -4065,6 +4079,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_chip_set_closable __cogito_chip_set_closable
 #define cogito_chip_on_click __cogito_chip_on_click
 #define cogito_chip_on_close __cogito_chip_on_close
+#define cogito_chip_set_text __cogito_chip_set_text
 #define cogito_divider_new __cogito_divider
 #define cogito_card_new __cogito_card
 #define cogito_avatar_new __cogito_avatar
