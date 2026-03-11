@@ -196,7 +196,13 @@
             "0": {
               "name": "punctuation.definition.string.end.sum"
             }
-          }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.sum",
+              "match": "\\\\."
+            }
+          ]
         },
         {
           "name": "constant.other.color.rgb-value.sum",
