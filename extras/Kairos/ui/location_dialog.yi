@@ -1,0 +1,199 @@
+cask location_dialog
+
+bring stdr
+bring cogito
+bring api.open_meteo
+
+: _result_row(item = any) (( any )) {
+    let name = str(item["name"] ?? "")
+    let subtitle = str(item["subtitle"] ?? "")
+
+    let text_col = cogito.vstack()
+    .set_gap(2)
+    .set_hexpand(true)
+
+    text_col.add(cogito.label(name).set_class("kairos-location-name"))
+    text_col.add(cogito.label(subtitle).set_class("kairos-location-subtitle"))
+
+    let row = cogito.hstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_padding(8, 8, 8, 8)
+    .set_class("kairos-dialog-result-row")
+
+    row.add(cogito.image("sf:mappin.and.ellipse").set_class("kairos-location-pin"))
+    row.add(text_col)
+    return row
+}
+
+: _num_or(value = any, fallback = num) (( num )) {
+    if is_null(value) {
+        return fallback
+    }
+    return num(value)
+}
+
+: _rebuild_results_ui(state = any, list = cogito.ContentList, add_btn = cogito.Button) (( -- )) {
+    let results = state["results"] ?? []: [any]
+    let selected = _num_or(state["selected"] ?? null, -1.0)
+
+    list.clear()
+
+    if len(results) == 0 {
+        let placeholder = cogito.hstack()
+        .set_hexpand(true)
+        .set_vexpand(true)
+        .set_class("kairos-dialog-placeholder")
+        list.add(placeholder)
+        add_btn.set_disabled(true)
+        return
+    }
+
+    for (let ?i = 0; i < len(results); i += 1) {
+        let item = results[i] ?? []: [string => any]
+        list.add(_result_row(item))
+    }
+
+    if selected >= 0 && selected < len(results) {
+        list.set_selected(selected)
+        add_btn.set_disabled(false)
+    } else {
+        add_btn.set_disabled(true)
+    }
+}
+
+: _run_search(
+    state = any,
+    search = cogito.SearchField,
+    info = cogito.Label,
+    list = cogito.ContentList,
+    add_btn = cogito.Button
+) (( -- )) {
+    state["selected"] = -1
+    let query = stdr.trim(search.text())
+    state["query"] = query
+
+    if len(query) < 2 {
+        info.set_text("Type at least 2 letters to search")
+        state["results"] = []: [any]
+        _rebuild_results_ui(state, list, add_btn)
+        return
+    }
+
+    info.set_text("Searching...")
+    let resp = open_meteo.search_locations(query, 8)
+    if !(resp["ok"] ?? false) {
+        state["results"] = []: [any]
+        info.set_text(str(resp["error"] ?? "Search failed"))
+        _rebuild_results_ui(state, list, add_btn)
+        return
+    }
+
+    let results = resp["results"] ?? []: [any]
+    state["results"] = results
+
+    if len(results) == 0 {
+        info.set_text("No locations found")
+    } else {
+        info.set_text("Select a location")
+        state["selected"] = 0
+    }
+
+    _rebuild_results_ui(state, list, add_btn)
+}
+
+:: build_add_dialog(on_added = any) (( cogito.Dialog )) {
+    let dlg = cogito.dialog("")
+    .set_class("kairos-add-dialog")
+
+    let ?state = []: [string => any]
+    state["query"] = ""
+    state["results"] = []: [any]
+    state["selected"] = -1
+
+    let title = cogito.label("Add Location")
+    .set_class("kairos-dialog-title")
+
+    let top = cogito.hstack()
+    .set_hexpand(true)
+    .set_gap(8)
+    .add(title)
+
+    let search = cogito.searchfield("Search location...")
+    .set_hexpand(true)
+    .set_class("kairos-dialog-search")
+
+    let info = cogito.label("")
+    .set_class("kairos-dialog-hint")
+
+    let list = cogito.content_list()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_gap(6)
+    .set_class("kairos-dialog-results")
+
+    let list_scroll = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(list)
+
+    let cancel_btn = cogito.button("Cancel")
+    .set_class("text")
+
+    let add_btn = cogito.button("Add Location")
+    .set_class("text")
+    .set_disabled(true)
+
+    search.on_change((field = cogito.SearchField) => {
+        _run_search(state, field, info, list, add_btn)
+    })
+
+    list.on_activate((idx = any) => {
+        let picked = _num_or(idx, -1.0)
+        state["selected"] = picked
+        let results = state["results"] ?? []: [any]
+        if picked >= 0 && picked < len(results) {
+            list.set_selected(picked)
+            add_btn.set_disabled(false)
+        } else {
+            add_btn.set_disabled(true)
+        }
+    })
+
+    cancel_btn.on_click((b = cogito.Button) => {
+        dlg.close()
+    })
+
+    add_btn.on_click((b = cogito.Button) => {
+        let selected = _num_or(state["selected"] ?? null, -1.0)
+        let results = state["results"] ?? []: [any]
+        if selected >= 0 && selected < len(results) {
+            let loc = results[selected] ?? []: [string => any]
+            on_added(loc)
+            dlg.close()
+        }
+    })
+
+    let actions = cogito.hstack()
+    .set_hexpand(true)
+    .halign(2)
+    .set_gap(12)
+    .add(cancel_btn)
+    .add(add_btn)
+
+    let body = cogito.vstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_gap(10)
+    .set_padding(6, 12, 10, 12)
+
+    body.add(top)
+    body.add(search)
+    body.add(info)
+    body.add(list_scroll)
+    body.add(actions)
+
+    dlg.add(body)
+    _rebuild_results_ui(state, list, add_btn)
+    return dlg
+}

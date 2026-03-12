@@ -1,0 +1,153 @@
+cask weather_fmt
+
+bring stdr
+
+:: c_to_f(value_c = num) (( num )) {
+    return (value_c * 9.0 / 5.0) + 32.0
+}
+
+:: value_temp(value_c = num, use_fahrenheit = bool) (( num )) {
+    if use_fahrenheit {
+        return c_to_f(value_c)
+    }
+    return value_c
+}
+
+:: unit_suffix(use_fahrenheit = bool) (( string )) {
+    if use_fahrenheit {
+        return "°F"
+    }
+    return "°C"
+}
+
+:: format_temp(value_c = num, use_fahrenheit = bool) (( string )) {
+    let v = value_temp(value_c, use_fahrenheit)
+    let rounded = stdr.floor(v + 0.5)
+    let suffix = unit_suffix(use_fahrenheit)
+    return "$$rounded$$ $$suffix$$"
+}
+
+:: format_temp_compact(value_c = num, use_fahrenheit = bool) (( string )) {
+    let v = value_temp(value_c, use_fahrenheit)
+    let rounded = stdr.floor(v + 0.5)
+    let suffix = unit_suffix(use_fahrenheit)
+    return "$$rounded$$$$suffix$$"
+}
+
+:: format_humidity(value = num) (( string )) {
+    let rounded = stdr.floor(value + 0.5)
+    return "$$rounded$$%"
+}
+
+:: format_pressure(value = num, use_fahrenheit = bool) (( string )) {
+    if use_fahrenheit {
+        let rounded = stdr.floor(value + 0.5)
+        return "$$rounded$$ hPa"
+    }
+    let mmhg = value * 0.750062
+    let rounded = stdr.floor(mmhg + 0.5)
+    return "$$rounded$$ mmHg"
+}
+
+:: format_speed(value = num, use_fahrenheit = bool) (( string )) {
+    if use_fahrenheit {
+        let mph = value * 0.621371
+        let rounded = stdr.floor(mph + 0.5)
+        return "$$rounded$$ mph"
+    }
+    let rounded = stdr.floor(value + 0.5)
+    return "$$rounded$$ km/h"
+}
+
+:: direction_cardinal(deg = num) (( string )) {
+    let ?d = deg
+    for (; d < 0.0; ) {
+        d += 360.0
+    }
+    for (; d >= 360.0; ) {
+        d -= 360.0
+    }
+
+    let idx = stdr.floor((d + 22.5) / 45.0)
+    if idx >= 8 {
+        idx = 0
+    }
+
+    let names = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    return str(names[idx] ?? "N")
+}
+
+:: weather_accent(code = num, is_day = num) (( string )) {
+    if is_day == 0 { return "#222266" }
+    if code == 0 || code == 1 { return "#77AADD" }
+    if code == 2 || code == 3 { return "#7799BB" }
+    if code == 45 || code == 48 { return "#AA88BB" }
+    if code == 71 || code == 73 || code == 75 || code == 77 || code == 85 || code == 86 { return "#889999" }
+    if code == 51 || code == 53 || code == 55 || code == 61 || code == 63 || code == 65 || code == 66 || code == 67 || code == 80 || code == 81 || code == 82 || code == 95 || code == 96 || code == 99 { return "#556699" }
+    return "#77AADD"
+}
+
+:: weather_label(code = num) (( string )) {
+    if code == 0 { return "Clear Sky" }
+    if code == 1 { return "Mainly Clear" }
+    if code == 2 { return "Partly Cloudy" }
+    if code == 3 { return "Cloudy" }
+    if code == 45 || code == 48 { return "Fog" }
+    if code == 51 || code == 53 || code == 55 { return "Drizzle" }
+    if code == 61 || code == 63 || code == 65 { return "Rain" }
+    if code == 66 || code == 67 { return "Freezing Rain" }
+    if code == 71 || code == 73 || code == 75 || code == 77 { return "Snow" }
+    if code == 80 || code == 81 || code == 82 { return "Showers" }
+    if code == 85 || code == 86 { return "Snow Showers" }
+    if code == 95 || code == 96 || code == 99 { return "Thunderstorm" }
+    return "Unknown"
+}
+
+:: weather_icon(code = num, is_day = num) (( string )) {
+    if code == 0 {
+        return if is_day == 0 { "sf:moon.stars.fill" } else { "sf:sun.max.fill" }
+    }
+    if code == 1 || code == 2 {
+        return if is_day == 0 { "sf:cloud.moon.fill" } else { "sf:cloud.sun.fill" }
+    }
+    if code == 3 {
+        return "sf:cloud.fill"
+    }
+    if code == 45 || code == 48 {
+        return "sf:cloud.fog.fill"
+    }
+    if code == 51 || code == 53 || code == 55 {
+        return "sf:cloud.drizzle.fill"
+    }
+    if code == 61 || code == 63 || code == 65 || code == 80 || code == 81 || code == 82 {
+        return "sf:cloud.rain.fill"
+    }
+    if code == 71 || code == 73 || code == 75 || code == 77 || code == 85 || code == 86 {
+        return "sf:cloud.snow.fill"
+    }
+    if code == 95 || code == 96 || code == 99 {
+        return "sf:cloud.bolt.rain.fill"
+    }
+    return "sf:cloud.fill"
+}
+
+:: hour_label(iso = string, mark_now = bool) (( string )) {
+    if mark_now {
+        return "Now"
+    }
+
+    if len(iso) >= 13 {
+        let hh = stdr.slice(iso, 11, 13)
+        return "$$hh$$:00"
+    }
+    return "--:--"
+}
+
+:: short_location_label(loc = any) (( string )) {
+    let name = str(loc["name"] ?? "")
+    let country = str(loc["country"] ?? "")
+    if len(country) == 0 {
+        return name
+    }
+    return "$$name$$, $$country$$"
+}

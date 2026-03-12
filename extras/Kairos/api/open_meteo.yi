@@ -1,0 +1,308 @@
+cask open_meteo
+
+bring stdr
+bring net
+bring json
+
+: _response_error(error = string) (( any )) {
+    let ?out = []: [string => any]
+    out["ok"] = false
+    out["error"] = error
+    out["results"] = []: [any]
+    out["current"] = []: [string => any]
+    out["hours"] = []: [any]
+    out["sunrise"] = ""
+    out["sunset"] = ""
+    out["sunrise_next"] = ""
+    return out
+}
+
+: _http_error_message(resp = any, fallback = string) (( string )) {
+    let raw_error = str(resp["error"] ?? "")
+    let err = stdr.trim(raw_error)
+    if len(err) > 0 {
+        return err
+    }
+
+    let body = str(resp["body"] ?? "")
+    if len(stdr.trim(body)) == 0 {
+        return fallback
+    }
+
+    let parsed = json.parse_result(body)
+    if parsed["ok"] ?? false {
+        let root = parsed["value"]
+        let reason = str(json.get(root, "reason", ""))
+        if len(stdr.trim(reason)) > 0 {
+            return reason
+        }
+        let message = str(json.get(root, "message", ""))
+        if len(stdr.trim(message)) > 0 {
+            return message
+        }
+    }
+
+    return fallback
+}
+
+: _hour_item(
+    time = string,
+    temp_c = num,
+    humidity = num,
+    code = num,
+    wind_speed_kmh = num,
+    wind_direction_deg = num,
+    dew_point_c = num,
+    pressure_hpa = num,
+    is_day = num
+) (( any )) {
+    let ?row = []: [string => any]
+    row["time"] = time
+    row["temp_c"] = temp_c
+    row["humidity"] = humidity
+    row["code"] = code
+    row["wind_speed_kmh"] = wind_speed_kmh
+    row["wind_direction_deg"] = wind_direction_deg
+    row["dew_point_c"] = dew_point_c
+    row["pressure_hpa"] = pressure_hpa
+    row["is_day"] = is_day
+    return row
+}
+
+: _location_item(item = any) (( any )) {
+    let ?loc = []: [string => any]
+
+    let name = str(json.get(item, "name", ""))
+    let country = str(json.get(item, "country", ""))
+    let admin = str(json.get(item, "admin1", ""))
+    let latitude = num(json.get(item, "latitude", 0.0))
+    let longitude = num(json.get(item, "longitude", 0.0))
+
+    let ?subtitle = country
+    if len(admin) > 0 {
+        subtitle = "$$admin$$, $$country$$"
+    }
+
+    loc["name"] = name
+    loc["country"] = country
+    loc["admin"] = admin
+    loc["subtitle"] = subtitle
+    loc["latitude"] = latitude
+    loc["longitude"] = longitude
+    loc["label"] = "$$name$$, $$country$$"
+    loc["id"] = "$$name$$:$$latitude$$:$$longitude$$"
+    return loc
+}
+
+: _read_array_value(arr = any, idx = num, fallback = any) (( any )) {
+    if idx < 0 || idx >= len(arr) {
+        return fallback
+    }
+    let v = arr[idx]
+    if is_null(v) {
+        return fallback
+    }
+    return v
+}
+
+: _find_hour_start(times = any, current_time = string) (( num )) {
+    if len(current_time) == 0 {
+        return 0
+    }
+    for (let ?i = 0; i < len(times); i += 1) {
+        let t = str(times[i] ?? "")
+        if t == current_time {
+            return i
+        }
+    }
+    return 0
+}
+
+:: search_locations(query = string, count = num) (( any )) {
+    let q = stdr.trim(query)
+    if len(q) < 2 {
+        let ?empty = []: [string => any]
+        empty["ok"] = true
+        empty["error"] = ""
+        empty["results"] = []: [any]
+        return empty
+    }
+
+    let params = [
+        ["name", q],
+        ["count", str(count)],
+        ["language", "en"],
+        ["format", "json"]
+    ]
+
+    let resp = net.get(
+        "https://geocoding-api.open-meteo.com/v1/search",
+        params,
+        [["Accept", "application/json"]],
+        20
+    )
+
+    if !(resp["ok"] ?? false) {
+        let err_msg = _http_error_message(resp, "Could not fetch locations")
+        return _response_error(err_msg)
+    }
+
+    let parsed = json.parse_result(str(resp["body"] ?? ""))
+    if !(parsed["ok"] ?? false) {
+        return _response_error("Could not parse location response")
+    }
+
+    let root = parsed["value"]
+    let raw = json.get(root, "results", []: [any])
+
+    let ?results = []: [any]
+    for (let ?i = 0; i < len(raw); i += 1) {
+        let it = raw[i] ?? null
+        if is_null(it) {
+            continue
+        }
+        results[len(results)] = _location_item(it)
+    }
+
+    let ?out = []: [string => any]
+    out["ok"] = true
+    out["error"] = ""
+    out["results"] = results
+    return out
+}
+
+:: fetch_forecast(latitude = num, longitude = num) (( any )) {
+    let params = [
+        ["latitude", str(latitude)],
+        ["longitude", str(longitude)],
+        ["current", "temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,wind_direction_10m,dew_point_2m,surface_pressure,is_day"],
+        ["hourly", "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,dew_point_2m,surface_pressure,is_day"],
+        ["daily", "sunrise,sunset"],
+        ["forecast_days", "3"],
+        ["temperature_unit", "celsius"],
+        ["windspeed_unit", "kmh"],
+        ["timezone", "auto"]
+    ]
+
+    let resp = net.get(
+        "https://api.open-meteo.com/v1/forecast",
+        params,
+        [["Accept", "application/json"]],
+        25
+    )
+
+    if !(resp["ok"] ?? false) {
+        let err_msg = _http_error_message(resp, "Could not fetch forecast")
+        return _response_error(err_msg)
+    }
+
+    let parsed = json.parse_result(str(resp["body"] ?? ""))
+    if !(parsed["ok"] ?? false) {
+        return _response_error("Could not parse forecast response")
+    }
+
+    let root = parsed["value"]
+    let current_raw = json.get(root, "current", []: [string => any])
+    let hourly_raw = json.get(root, "hourly", []: [string => any])
+    let daily_raw = json.get(root, "daily", []: [string => any])
+
+    let current_time = str(json.get(current_raw, "time", ""))
+    let current_temp_c = num(json.get(current_raw, "temperature_2m", 0.0))
+    let current_feels_c = num(json.get(current_raw, "apparent_temperature", current_temp_c))
+    let current_code = num(json.get(current_raw, "weather_code", 0))
+    let current_humidity = num(json.get(current_raw, "relative_humidity_2m", 0))
+    let current_wind_speed = num(json.get(current_raw, "wind_speed_10m", 0.0))
+    let current_wind_dir = num(json.get(current_raw, "wind_direction_10m", 0.0))
+    let current_dew_c = num(json.get(current_raw, "dew_point_2m", current_temp_c))
+    let current_pressure = num(json.get(current_raw, "surface_pressure", 0.0))
+    let current_is_day = num(json.get(current_raw, "is_day", 1))
+
+    let hourly_time = json.get(hourly_raw, "time", []: [any])
+    let hourly_temp = json.get(hourly_raw, "temperature_2m", []: [any])
+    let hourly_humidity = json.get(hourly_raw, "relative_humidity_2m", []: [any])
+    let hourly_code = json.get(hourly_raw, "weather_code", []: [any])
+    let hourly_wind = json.get(hourly_raw, "wind_speed_10m", []: [any])
+    let hourly_wind_dir = json.get(hourly_raw, "wind_direction_10m", []: [any])
+    let hourly_dew = json.get(hourly_raw, "dew_point_2m", []: [any])
+    let hourly_pressure = json.get(hourly_raw, "surface_pressure", []: [any])
+    let hourly_is_day = json.get(hourly_raw, "is_day", []: [any])
+
+    let start_idx = _find_hour_start(hourly_time, current_time)
+    let ?hours = []: [any]
+    let ?taken = 0
+
+    for (let ?i = start_idx; i < len(hourly_time) && taken < 24; i += 1) {
+        let t = str(_read_array_value(hourly_time, i, current_time))
+        let temp_c = num(_read_array_value(hourly_temp, i, current_temp_c))
+        let humidity = num(_read_array_value(hourly_humidity, i, current_humidity))
+        let code = num(_read_array_value(hourly_code, i, current_code))
+        let wind_speed = num(_read_array_value(hourly_wind, i, current_wind_speed))
+        let wind_dir = num(_read_array_value(hourly_wind_dir, i, current_wind_dir))
+        let dew_c = num(_read_array_value(hourly_dew, i, current_dew_c))
+        let pressure = num(_read_array_value(hourly_pressure, i, current_pressure))
+        let is_day = num(_read_array_value(hourly_is_day, i, current_is_day))
+
+        hours[len(hours)] = _hour_item(
+            t,
+            temp_c,
+            humidity,
+            code,
+            wind_speed,
+            wind_dir,
+            dew_c,
+            pressure,
+            is_day
+        )
+        taken += 1
+    }
+
+    if len(hours) == 0 {
+        hours[0] = _hour_item(
+            current_time,
+            current_temp_c,
+            current_humidity,
+            current_code,
+            current_wind_speed,
+            current_wind_dir,
+            current_dew_c,
+            current_pressure,
+            current_is_day
+        )
+    }
+
+    let sunrise_arr = json.get(daily_raw, "sunrise", []: [any])
+    let sunset_arr = json.get(daily_raw, "sunset", []: [any])
+
+    let sunrise = str(_read_array_value(sunrise_arr, 0, ""))
+    let sunset = str(_read_array_value(sunset_arr, 0, ""))
+    let sunrise_next = str(_read_array_value(sunrise_arr, 1, ""))
+
+    if len(sunrise_next) == 0 {
+        sunrise_next = sunrise
+    }
+
+    let ?current = []: [string => any]
+    current["time"] = current_time
+    current["temp_c"] = current_temp_c
+    current["feels_c"] = current_feels_c
+    current["humidity"] = current_humidity
+    current["code"] = current_code
+    current["wind_speed_kmh"] = current_wind_speed
+    current["wind_direction_deg"] = current_wind_dir
+    current["dew_point_c"] = current_dew_c
+    current["pressure_hpa"] = current_pressure
+    current["is_day"] = current_is_day
+
+    let ?out = []: [string => any]
+    out["ok"] = true
+    out["error"] = ""
+    out["timezone"] = str(json.get(root, "timezone", ""))
+    out["latitude"] = num(json.get(root, "latitude", latitude))
+    out["longitude"] = num(json.get(root, "longitude", longitude))
+    out["current"] = current
+    out["hours"] = hours
+    out["sunrise"] = sunrise
+    out["sunset"] = sunset
+    out["sunrise_next"] = sunrise_next
+    return out
+}

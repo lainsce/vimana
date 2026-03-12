@@ -1,0 +1,443 @@
+cask line_chart
+
+bring stdr
+bring cogito
+
+: _num_or(value = any, fallback = num) (( num )) {
+    if is_null(value) {
+        return fallback
+    }
+    return num(value)
+}
+
+: _series_value(series = any, idx = num) (( num )) {
+    if idx < 0 || idx >= len(series) {
+        return 0.0
+    }
+    let row = series[idx] ?? []: [string => any]
+    return _num_or(row["value"] ?? null, 0.0)
+}
+
+: _series_label(series = any, idx = num) (( string )) {
+    if idx < 0 || idx >= len(series) {
+        return ""
+    }
+    let row = series[idx] ?? []: [string => any]
+    return str(row["label"] ?? "")
+}
+
+: _min_value(series = any) (( num )) {
+    if len(series) == 0 {
+        return 0.0
+    }
+    let ?m = _series_value(series, 0)
+    for (let ?i = 1; i < len(series); i += 1) {
+        let v = _series_value(series, i)
+        if v < m {
+            m = v
+        }
+    }
+    return m
+}
+
+: _max_value(series = any) (( num )) {
+    if len(series) == 0 {
+        return 0.0
+    }
+    let ?m = _series_value(series, 0)
+    for (let ?i = 1; i < len(series); i += 1) {
+        let v = _series_value(series, i)
+        if v > m {
+            m = v
+        }
+    }
+    return m
+}
+
+: _clamp(value = num, min_v = num, max_v = num) (( num )) {
+    if value < min_v {
+        return min_v
+    }
+    if value > max_v {
+        return max_v
+    }
+    return value
+}
+
+: _hex_digit(v = num) (( string )) {
+    if v < 10 { return str(v) }
+    if v == 10 { return "A" }
+    if v == 11 { return "B" }
+    if v == 12 { return "C" }
+    if v == 13 { return "D" }
+    if v == 14 { return "E" }
+    return "F"
+}
+
+: _hex_byte(v = num) (( string )) {
+    let ?hi = stdr.floor(v / 16)
+    let ?lo = stdr.floor(v - (hi * 16))
+    let ?hi_hex = _hex_digit(hi)
+    let ?lo_hex = _hex_digit(lo)
+    return "$$hi_hex$$$$lo_hex$$"
+}
+
+: _lerp_y(x = num, x1 = num, y1 = num, x2 = num, y2 = num) (( num )) {
+    if x2 == x1 { return y1 }
+    let t = (x - x1) / (x2 - x1)
+    return y1 + (t * (y2 - y1))
+}
+
+: _lerp_x(y = num, x1 = num, y1 = num, x2 = num, y2 = num) (( num )) {
+    if y2 == y1 { return x1 }
+    let t = (y - y1) / (y2 - y1)
+    return x1 + (t * (x2 - x1))
+}
+
+: _point_x(i = num, n = num, pad = num, usable_w = num) (( num )) {
+    let safe_i = _num_or(i, 0.0)
+    let safe_n = _num_or(n, 1.0)
+    let safe_pad = _num_or(pad, 0.0)
+    let safe_usable_w = _num_or(usable_w, 0.0)
+
+    if safe_n <= 1 {
+        return safe_pad
+    }
+
+    let denom = safe_n - 1
+    if denom <= 0 {
+        return safe_pad
+    }
+
+    let delta = (safe_usable_w * safe_i) / denom
+    return safe_pad + delta
+}
+
+: _default_formatter(value = num, idx = num, label = string) (( string )) {
+    let rounded = stdr.floor(value + 0.5)
+    return "$$rounded$$"
+}
+
+: _invoke_formatter(chart = any, value = num, idx = num, label = string) (( string )) {
+    let fn = chart["formatter"] ?? null
+    if is_null(fn) {
+        return _default_formatter(value, idx, label)
+    }
+    let shown = fn(value, idx, label)
+    if is_null(shown) {
+        return _default_formatter(value, idx, label)
+    }
+    return str(shown)
+}
+
+: _set_tooltip_position(chart = any, fixed = cogito.Fixed, tooltip = cogito.Label, idx = num) (( -- )) {
+    let points_x = chart["points_x"] ?? []: [any]
+    let points_y = chart["points_y"] ?? []: [any]
+    if idx < 0 || idx >= len(points_x) || idx >= len(points_y) {
+        return
+    }
+
+    let width = _num_or(chart["last_w"] ?? null, 320.0)
+
+    let px = _num_or(points_x[idx] ?? null, 0.0)
+    let py = _num_or(points_y[idx] ?? null, 0.0)
+
+    let ?tooltip_x = px - 42
+    let max_x = width - 86
+    if max_x < 0 { max_x = 0 }
+    tooltip_x = _clamp(tooltip_x, 0, max_x)
+
+    let ?tooltip_y = py - 30
+    if tooltip_y < 4 {
+        tooltip_y = 4
+    }
+
+    fixed.set_pos(tooltip, tooltip_x, tooltip_y)
+}
+
+: _set_hover(chart = any, fixed = cogito.Fixed, tooltip = cogito.Label, hover_x = any) (( -- )) {
+    let series = chart["series"] ?? []: [any]
+    if len(series) == 0 {
+        chart["hover_index"] = -1.0
+        return
+    }
+
+    let w = _num_or(chart["last_w"] ?? null, 320.0)
+    let pad = _num_or(chart["pad"] ?? null, 12.0)
+    let usable = w - (pad * 2.0)
+    if usable < 1.0 {
+        usable = 1.0
+    }
+
+    let n = len(series)
+    let cursor_x = _num_or(hover_x, 0.0)
+    let ?idx = 0.0
+    if n > 1 {
+        let rel = _clamp(cursor_x - pad, 0.0, usable)
+        let ratio = rel / usable
+        idx = stdr.floor((ratio * (n - 1)) + 0.5)
+    }
+
+    idx = _clamp(idx, 0.0, n - 1)
+    chart["hover_index"] = idx
+
+    let value = _series_value(series, idx)
+    let label = _series_label(series, idx)
+    let shown = _invoke_formatter(chart, value, idx, label)
+
+    tooltip.set_visible(true)
+    tooltip.set_text(shown)
+
+    _set_tooltip_position(chart, fixed, tooltip, idx)
+}
+
+: _draw_chart(chart = any, fixed = cogito.Fixed, tooltip = cogito.Label, zero_lbl = cogito.Label, area = cogito.DrawingArea, w = num, h = num) (( -- )) {
+    chart["last_w"] = w
+    chart["last_h"] = h
+
+    let series = chart["series"] ?? []: [any]
+    if len(series) == 0 {
+        tooltip.set_visible(false)
+        return
+    }
+
+    let pad = _num_or(chart["pad"] ?? null, 12.0)
+    let base_y = h - 10.0
+    let usable_w = w - (pad * 2.0)
+    let usable_h = h - 22.0
+    if usable_w < 1.0 { usable_w = 1.0 }
+    if usable_h < 1.0 { usable_h = 1.0 }
+
+    let ?min_v = _num_or(chart["range_min"] ?? null, 0.0)
+    let ?max_v = _num_or(chart["range_max"] ?? null, 0.0)
+    let has_range = !is_null(chart["range_min"] ?? null)
+    if !has_range {
+        min_v = _min_value(series)
+        max_v = _max_value(series)
+    }
+    let ?span = max_v - min_v
+    if span < 0.0001 {
+        min_v -= 1.0
+        max_v += 1.0
+        span = max_v - min_v
+    }
+    let neg_min = 0.0 - min_v
+
+    let n = len(series)
+    let ?points_x = []: [any]
+    let ?points_y = []: [any]
+
+    for (let ?i = 0; i < n; i += 1) {
+        let x = _point_x(i, n, pad, usable_w)
+
+        let v = _series_value(series, i)
+        let offset = v + neg_min
+        let raw_ratio = offset / span
+        let ratio = _clamp(raw_ratio, 0.0, 1.0)
+        let y = (base_y - (ratio * usable_h))
+
+        points_x[len(points_x)] = stdr.floor(x + 0.5)
+        points_y[len(points_y)] = stdr.floor(y + 0.5)
+    }
+
+    chart["points_x"] = points_x
+    chart["points_y"] = points_y
+
+    area.set_color(chart["grid_color"] ?? "#A7C5EA")
+    .set_line_width(1)
+    .line(pad, base_y, w - pad, base_y)
+
+    let fill_base = chart["fill_color"] ?? "#000000"
+    let top_alpha = 160.0
+
+    let ?global_top = base_y
+    for (let ?i = 0; i < n; i += 1) {
+        let py = _num_or(points_y[i] ?? null, base_y)
+        if py < global_top { global_top = py }
+    }
+    let total_h = base_y - global_top
+    if total_h > 0 {
+        let step = if total_h > 64 { 2 } else { 1 }
+        for (let ?sy = stdr.floor(global_top); sy < base_y; sy += step) {
+            let frac = (sy - global_top) / total_h
+            let ?a = stdr.floor(top_alpha * (1.0 - frac) + 0.5)
+            if a < 1 { a = 0 }
+            let hex_a = _hex_byte(a)
+            area.set_color("$$fill_base$$$$hex_a$$")
+            let ?span_left = -1.0
+            let ?span_right = -1.0
+            for (let ?i = 0; i < n - 1; i += 1) {
+                let x1 = _num_or(points_x[i] ?? null, 0.0)
+                let x2 = _num_or(points_x[i + 1] ?? null, 0.0)
+                let y1 = _num_or(points_y[i] ?? null, base_y)
+                let y2 = _num_or(points_y[i + 1] ?? null, base_y)
+                let ?seg_left = -1.0
+                let ?seg_right = -1.0
+                if sy >= y1 && sy >= y2 {
+                    seg_left = x1
+                    seg_right = x2
+                } else if sy >= y1 || sy >= y2 {
+                    let ix = _lerp_x(sy, x1, y1, x2, y2)
+                    seg_left = if sy >= y1 { x1 } else { ix }
+                    seg_right = if sy >= y1 { ix } else { x2 }
+                    if seg_left > seg_right {
+                        let tmp = seg_left
+                        seg_left = seg_right
+                        seg_right = tmp
+                    }
+                }
+                if seg_left >= 0 {
+                    if span_left < 0 || seg_left < span_left { span_left = seg_left }
+                    if span_right < 0 || seg_right > span_right { span_right = seg_right }
+                }
+            }
+            if span_left >= 0 && span_right >= span_left {
+                let rx = stdr.floor(span_left)
+                let rw = stdr.floor(span_right) - rx + 1
+                if rw > 0 {
+                    area.fill_rect(rx, sy, rw, step)
+                }
+            }
+        }
+    }
+
+    area.set_color(chart["line_color"] ?? "#EAF3FF")
+    .set_line_width(2)
+
+    for (let ?i = 1; i < n; i += 1) {
+        area.line(
+            points_x[i - 1] ?? 0.0,
+            points_y[i - 1] ?? 0.0,
+            points_x[i] ?? 0.0,
+            points_y[i] ?? 0.0
+        )
+    }
+
+    let hover = _num_or(chart["hover_index"] ?? null, -1.0)
+    if hover >= 0 && hover < n {
+        let value = _series_value(series, hover)
+        let label = _series_label(series, hover)
+        let shown = _invoke_formatter(chart, value, hover, label)
+
+        tooltip.set_visible(true)
+        tooltip.set_text(shown)
+
+        let hx = _num_or(points_x[hover] ?? null, 0.0)
+        let hy = _num_or(points_y[hover] ?? null, 0.0)
+
+        area.set_color(chart["cursor_color"] ?? "#EAF3FF")
+        .set_line_width(1)
+        .line(hx, 8, hx, base_y)
+
+        area.set_color(chart["line_color"] ?? "#EAF3FF")
+        .fill_rect(hx - 3, hy - 3, 6, 6)
+
+        _set_tooltip_position(chart, fixed, tooltip, hover)
+    } else {
+        tooltip.set_visible(false)
+    }
+}
+
+:: new_chart() (( any )) {
+    let area = cogito.drawing_area()
+    .set_class("kairos-chart-area")
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let tooltip = cogito.label("")
+    .set_class("kairos-chart-tooltip")
+    .set_visible(false)
+
+    let zero_lbl = cogito.label("")
+    .set_class("kairos-chart-zero-label")
+    .set_visible(false)
+
+    let fixed = cogito.fixed()
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    fixed.add(tooltip)
+    fixed.set_pos(tooltip, 0, 0)
+    fixed.add(zero_lbl)
+    fixed.set_pos(zero_lbl, 0, 0)
+
+    let container = cogito.zstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_class("kairos-chart-fixed")
+
+    container.add(area)
+    container.add(fixed)
+
+    let ?chart = []: [string => any]
+    chart["fixed"] = container
+    chart["overlay"] = fixed
+    chart["area"] = area
+    chart["tooltip"] = tooltip
+    chart["series"] = []: [any]
+    chart["points_x"] = []: [any]
+    chart["points_y"] = []: [any]
+    chart["hover_index"] = -1.0
+    chart["last_w"] = 320.0
+    chart["last_h"] = 140.0
+    chart["pad"] = 14.0
+    chart["line_color"] = "#EAF3FF"
+    chart["fill_color"] = "#B7D0F2"
+    chart["grid_color"] = "#9FBCE2"
+    chart["cursor_color"] = "#D9EAFE"
+    chart["formatter"] = null
+    chart["zero_label_widget"] = zero_lbl
+
+    area.on_draw((a = cogito.DrawingArea, w = any, h = any) => {
+        let dw = _num_or(w, 0.0)
+        let dh = _num_or(h, 0.0)
+        _draw_chart(chart, fixed, tooltip, zero_lbl, a, dw, dh)
+    })
+
+    area.on_press((a = cogito.DrawingArea) => {
+        _set_hover(chart, fixed, tooltip, a.get_x())
+    })
+
+    area.on_drag((a = cogito.DrawingArea) => {
+        _set_hover(chart, fixed, tooltip, a.get_x())
+    })
+
+    area.on_release((a = cogito.DrawingArea) => {
+        _set_hover(chart, fixed, tooltip, a.get_x())
+    })
+
+    return chart
+}
+
+:: widget(chart = any) (( any )) {
+    return chart["fixed"]
+}
+
+:: set_series(chart = any, series = any) (( -- )) {
+    chart["series"] = series
+    if len(series) > 0 {
+        chart["hover_index"] = 0.0
+    } else {
+        chart["hover_index"] = -1.0
+    }
+}
+
+:: set_formatter(chart = any, formatter = any) (( -- )) {
+    chart["formatter"] = formatter
+}
+
+:: set_colors(chart = any, line_color = string, fill_color = string, grid_color = string, cursor_color = string) (( -- )) {
+    chart["line_color"] = line_color
+    chart["fill_color"] = fill_color
+    chart["grid_color"] = grid_color
+    chart["cursor_color"] = cursor_color
+}
+
+:: set_range(chart = any, min_val = num, max_val = num) (( -- )) {
+    chart["range_min"] = min_val
+    chart["range_max"] = max_val
+}
+
+:: set_zero_label(chart = any, label = string) (( -- )) {
+    chart["zero_label"] = label
+}

@@ -520,8 +520,8 @@ static void cogito_invoke_index_handler(YisVal handler, int idx) {
 static void cogito_invoke_draw_handler(YisVal handler, cogito_node* node,
                                        int width, int height) {
   if (handler.tag != EVT_FN) return;
-  YisVal args[3] = {cogito_wrap_node(node, COGITO_HANDLE_NODE), YV_INT(width),
-                     YV_INT(height)};
+  YisVal args[3] = {cogito_wrap_node(node, COGITO_HANDLE_NODE), YV_FLOAT(width),
+                     YV_FLOAT(height)};
   yis_retain_val(args[0]);
   YisVal ret = yis_call(handler, 3, args);
   yis_release_val(args[0]);

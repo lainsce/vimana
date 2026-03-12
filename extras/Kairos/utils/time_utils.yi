@@ -1,0 +1,57 @@
+cask time_utils
+
+bring stdr
+
+: _to_num_text(text = string, fallback = num) (( num )) {
+    let t = stdr.trim(text)
+    if len(t) == 0 {
+        return fallback
+    }
+    return num(t)
+}
+
+:: now_epoch() (( num )) {
+    let run = stdr.run_command("date +%s")
+    let code = num(run[0] ?? 1)
+    if code != 0 {
+        return -1
+    }
+    return _to_num_text(str(run[1] ?? ""), -1)
+}
+
+:: iso_to_epoch(iso = string) (( num )) {
+    let t = stdr.trim(iso)
+    if len(t) < 16 {
+        return -1
+    }
+
+    let quoted = stdr.shell_quote(t)
+    let cmd = "date -j -f '%Y-%m-%dT%H:%M' $$quoted$$ +%s"
+    let run = stdr.run_command(cmd)
+    let code = num(run[0] ?? 1)
+    if code != 0 {
+        return -1
+    }
+    return _to_num_text(str(run[1] ?? ""), -1)
+}
+
+:: format_hhmm(iso = string) (( string )) {
+    if len(iso) >= 16 {
+        return stdr.slice(iso, 11, 16)
+    }
+    return "--:--"
+}
+
+:: ratio_between(now = num, start = num, finish = num) (( num )) {
+    if finish <= start {
+        return 0.0
+    }
+    let r = (now - start) * 1.0 / (finish - start)
+    if r < 0.0 {
+        return 0.0
+    }
+    if r > 1.0 {
+        return 1.0
+    }
+    return r
+}

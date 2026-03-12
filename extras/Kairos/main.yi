@@ -1,0 +1,889 @@
+cask main
+
+bring stdr
+bring json
+bring cogito
+
+bring api.open_meteo
+bring utils.weather_fmt
+bring ui.line_chart
+bring ui.sun_orbit
+bring ui.location_dialog
+
+-- App state
+
+def ?locations = []: [any]
+def ?selected_location = -1
+def ?forecast_data = []: [string => any]
+def ?use_fahrenheit = false
+def ?KAIROS_STATE_PATH = ""
+
+-- Shared widgets
+
+def location_list = cogito.content_list()
+def add_location_btn = cogito.iconbtn("sf:plus")
+def sidebar_panel = cogito.vstack()
+def sidebar_bar = cogito.appbar("Locations", "")
+
+def empty_page = cogito.empty_page("No Locations")
+def content_panel = cogito.vstack()
+def content_bar = cogito.appbar("", "")
+def forecast_content = cogito.vstack()
+def ?content_tint_bin = cogito.bin()
+
+def place_label = cogito.label("")
+def current_icon = cogito.image("sf:sun.max.fill")
+def current_temp = cogito.label("--o")
+def current_desc = cogito.label("Clear Sky")
+def current_feels = cogito.label("Feels like --")
+def refresh_btn = cogito.iconbtn("sf:arrow.clockwise")
+def unit_btn = cogito.button("°C")
+
+def tabs = cogito.tabs()
+def views = cogito.view_switcher()
+
+def temp_chart = line_chart.new_chart()
+def humidity_chart = line_chart.new_chart()
+def weather_timeline_grid = cogito.grid(24)
+def humidity_timeline_grid = cogito.grid(24)
+def weather_timeline_scroll = cogito.scroller()
+def humidity_timeline_scroll = cogito.scroller()
+def hourly_list = cogito.content_list()
+
+def wind_value = cogito.label("--")
+def dew_value = cogito.label("--")
+def pressure_value = cogito.label("--")
+def orbit_widget = sun_orbit.new_orbit()
+
+def status_text = cogito.label("Add a location to start")
+
+: _bool(on = bool) (( string )) {
+    return if on { "true" } else { "false" }
+}
+
+: _num_or(value = any, fallback = num) (( num )) {
+    if is_null(value) {
+        return fallback
+    }
+    return num(value)
+}
+
+: _valid_index(idx = num, n = num) (( bool )) {
+    return idx >= 0 && idx < n
+}
+
+: _selected_loc() (( any )) {
+    if !_valid_index(selected_location, len(locations)) {
+        return null
+    }
+    return locations[selected_location] ?? null
+}
+
+: _temp_short(v_c = num) (( string )) {
+    let v = weather_fmt.value_temp(v_c, use_fahrenheit)
+    let rounded = stdr.floor(v + 0.5)
+    let suffix = weather_fmt.unit_suffix(use_fahrenheit)
+    return "$$rounded$$$$suffix$$"
+}
+
+: _temp_verbose(v_c = num) (( string )) {
+    let v = weather_fmt.value_temp(v_c, use_fahrenheit)
+    let rounded = stdr.floor(v + 0.5)
+    let suffix = weather_fmt.unit_suffix(use_fahrenheit)
+    return "$$rounded$$ $$suffix$$"
+}
+
+: _timeline_cell(hour_text = string, icon = string, value_text = string) (( any )) {
+    let cell = cogito.vstack()
+    .set_gap(4)
+    .set_class("kairos-hour-cell")
+    .set_padding(12, 12, 12, 12)
+
+    cell.add(cogito.label(hour_text).set_class("kairos-hour-label"))
+    cell.add(cogito.image(icon).set_class("kairos-hour-icon"))
+    cell.add(cogito.label(value_text).set_class("kairos-hour-value"))
+    return cell
+}
+
+: _hourly_row(hour = any, hour_text = string) (( any )) {
+    let code = _num_or(hour["code"] ?? null, 0.0)
+    let is_day = _num_or(hour["is_day"] ?? null, 1.0)
+    let icon = weather_fmt.weather_icon(code, is_day)
+
+    let temp = _temp_short(_num_or(hour["temp_c"] ?? null, 0.0))
+    let humidity = weather_fmt.format_humidity(_num_or(hour["humidity"] ?? null, 0.0))
+    let label = weather_fmt.weather_label(code)
+
+    let left = cogito.hstack()
+    .set_gap(8)
+    .set_hexpand(true)
+
+    left.add(cogito.image(icon).set_class("kairos-hourly-icon"))
+
+    let text_col = cogito.vstack()
+    .set_gap(2)
+    .set_hexpand(true)
+    .add(cogito.label(hour_text).set_class("kairos-hourly-time"))
+    .add(cogito.label(label).set_class("kairos-hourly-label"))
+
+    left.add(text_col)
+
+    let right = cogito.hstack()
+    .set_gap(10)
+    .add(cogito.label(temp).set_class("kairos-hourly-temp"))
+    .add(cogito.label(humidity).set_class("kairos-hourly-humidity"))
+
+    let row = cogito.hstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_padding(8, 10, 8, 10)
+    .set_class("kairos-hourly-row")
+
+    row.add(left)
+    row.add(right)
+    return row
+}
+
+: _set_empty_mode(on = bool) (( -- )) {
+    empty_page.set_visible(on)
+    forecast_content.set_visible(!on)
+    sidebar_panel.set_visible(!on)
+    content_bar.set_visible(!on)
+}
+
+: _ensure_state_path() (( string )) {
+    if len(KAIROS_STATE_PATH) > 0 { return KAIROS_STATE_PATH }
+    let run = stdr.run_command("echo $HOME")
+    let ?home = stdr.trim(str(run[1] ?? ""))
+    if len(home) == 0 { home = "/tmp" }
+    let dir = stdr.join_path(home, ".cache/kairos")
+    let qdir = stdr.shell_quote(dir)
+    stdr.run_command("mkdir -p $$qdir$$")
+    KAIROS_STATE_PATH = stdr.join_path(dir, "state.json")
+    return KAIROS_STATE_PATH
+}
+
+: _serialize_weather_obj(obj = any) (( string )) {
+    let time_esc = json.escape(str(obj["time"] ?? ""))
+    let temp_c = _num_or(obj["temp_c"] ?? null, 0.0)
+    let feels_c = _num_or(obj["feels_c"] ?? null, 0.0)
+    let humidity = _num_or(obj["humidity"] ?? null, 0.0)
+    let code = _num_or(obj["code"] ?? null, 0.0)
+    let wind_speed = _num_or(obj["wind_speed_kmh"] ?? null, 0.0)
+    let wind_dir = _num_or(obj["wind_direction_deg"] ?? null, 0.0)
+    let dew = _num_or(obj["dew_point_c"] ?? null, 0.0)
+    let pressure = _num_or(obj["pressure_hpa"] ?? null, 0.0)
+    let is_day = _num_or(obj["is_day"] ?? null, 1.0)
+    let ?s = "{\"time\":\"$$time_esc$$\""
+    s = "$$s$$,\"temp_c\":$$temp_c$$"
+    s = "$$s$$,\"feels_c\":$$feels_c$$"
+    s = "$$s$$,\"humidity\":$$humidity$$"
+    s = "$$s$$,\"code\":$$code$$"
+    s = "$$s$$,\"wind_speed_kmh\":$$wind_speed$$"
+    s = "$$s$$,\"wind_direction_deg\":$$wind_dir$$"
+    s = "$$s$$,\"dew_point_c\":$$dew$$"
+    s = "$$s$$,\"pressure_hpa\":$$pressure$$"
+    s = "$$s$$,\"is_day\":$$is_day$$}"
+    return s
+}
+
+: _save_state() (( -- )) {
+    let path = _ensure_state_path()
+    let ?payload = "{\"locations\":["
+    for (let ?i = 0; i < len(locations); i += 1) {
+        if i > 0 { payload = "$$payload$$," }
+        let loc = locations[i] ?? []: [string => any]
+        let id_esc = json.escape(str(loc["id"] ?? ""))
+        let name_esc = json.escape(str(loc["name"] ?? ""))
+        let country_esc = json.escape(str(loc["country"] ?? ""))
+        let admin_esc = json.escape(str(loc["admin"] ?? ""))
+        let subtitle_esc = json.escape(str(loc["subtitle"] ?? ""))
+        let label_esc = json.escape(str(loc["label"] ?? ""))
+        let lat = _num_or(loc["latitude"] ?? null, 0.0)
+        let lon = _num_or(loc["longitude"] ?? null, 0.0)
+        let ?o = "{\"id\":\"$$id_esc$$\""
+        o = "$$o$$,\"name\":\"$$name_esc$$\""
+        o = "$$o$$,\"country\":\"$$country_esc$$\""
+        o = "$$o$$,\"admin\":\"$$admin_esc$$\""
+        o = "$$o$$,\"subtitle\":\"$$subtitle_esc$$\""
+        o = "$$o$$,\"label\":\"$$label_esc$$\""
+        o = "$$o$$,\"latitude\":$$lat$$"
+        o = "$$o$$,\"longitude\":$$lon$$}"
+        payload = "$$payload$$$$o$$"
+    }
+    payload = "$$payload$$]"
+    payload = "$$payload$$,\"selected\":$$selected_location$$"
+    payload = if use_fahrenheit { "$$payload$$,\"fahrenheit\":true" } else { "$$payload$$,\"fahrenheit\":false" }
+
+    let ok = forecast_data["ok"] ?? false
+    if ok {
+        let cur = forecast_data["current"] ?? []: [string => any]
+        let hrs = forecast_data["hours"] ?? []: [any]
+        let sr_esc = json.escape(str(forecast_data["sunrise"] ?? ""))
+        let ss_esc = json.escape(str(forecast_data["sunset"] ?? ""))
+        let sn_esc = json.escape(str(forecast_data["sunrise_next"] ?? ""))
+        let tz_esc = json.escape(str(forecast_data["timezone"] ?? ""))
+        let f_lat = _num_or(forecast_data["latitude"] ?? null, 0.0)
+        let f_lon = _num_or(forecast_data["longitude"] ?? null, 0.0)
+        let ?fc = ",\"forecast\":{\"ok\":true"
+        fc = "$$fc$$,\"timezone\":\"$$tz_esc$$\""
+        fc = "$$fc$$,\"latitude\":$$f_lat$$"
+        fc = "$$fc$$,\"longitude\":$$f_lon$$"
+        fc = "$$fc$$,\"sunrise\":\"$$sr_esc$$\""
+        fc = "$$fc$$,\"sunset\":\"$$ss_esc$$\""
+        fc = "$$fc$$,\"sunrise_next\":\"$$sn_esc$$\""
+        fc = "$$fc$$,\"current\":" + _serialize_weather_obj(cur)
+        fc = "$$fc$$,\"hours\":["
+        for (let ?j = 0; j < len(hrs); j += 1) {
+            if j > 0 { fc = "$$fc$$," }
+            fc = "$$fc$$" + _serialize_weather_obj(hrs[j] ?? []: [string => any])
+        }
+        fc = "$$fc$$]}"
+        payload = "$$payload$$$$fc$$"
+    }
+
+    payload = "$$payload$$}"
+    stdr.write_text_file(path, payload)
+}
+
+: _restore_weather_obj(raw = any) (( any )) {
+    let ?obj = []: [string => any]
+    obj["time"] = str(json.get(raw, "time", ""))
+    obj["temp_c"] = num(json.get(raw, "temp_c", 0.0))
+    obj["feels_c"] = num(json.get(raw, "feels_c", 0.0))
+    obj["humidity"] = num(json.get(raw, "humidity", 0.0))
+    obj["code"] = num(json.get(raw, "code", 0.0))
+    obj["wind_speed_kmh"] = num(json.get(raw, "wind_speed_kmh", 0.0))
+    obj["wind_direction_deg"] = num(json.get(raw, "wind_direction_deg", 0.0))
+    obj["dew_point_c"] = num(json.get(raw, "dew_point_c", 0.0))
+    obj["pressure_hpa"] = num(json.get(raw, "pressure_hpa", 0.0))
+    obj["is_day"] = num(json.get(raw, "is_day", 1.0))
+    return obj
+}
+
+: _load_state() (( -- )) {
+    let path = _ensure_state_path()
+    let raw = stdr.read_text_file(path)
+    if is_null(raw) { return }
+
+    let parsed = json.parse_result(str(raw))
+    if !(parsed["ok"] ?? false) { return }
+
+    let root = parsed["value"]
+
+    let loaded_locs = json.get(root, "locations", []: [any])
+    locations = []: [any]
+    for (let ?i = 0; i < len(loaded_locs); i += 1) {
+        let raw_loc = loaded_locs[i] ?? []: [string => any]
+        let ?loc = []: [string => any]
+        loc["id"] = str(json.get(raw_loc, "id", ""))
+        loc["name"] = str(json.get(raw_loc, "name", ""))
+        loc["country"] = str(json.get(raw_loc, "country", ""))
+        loc["admin"] = str(json.get(raw_loc, "admin", ""))
+        loc["subtitle"] = str(json.get(raw_loc, "subtitle", ""))
+        loc["label"] = str(json.get(raw_loc, "label", ""))
+        loc["latitude"] = num(json.get(raw_loc, "latitude", 0.0))
+        loc["longitude"] = num(json.get(raw_loc, "longitude", 0.0))
+        locations[len(locations)] = loc
+    }
+
+    selected_location = num(json.get(root, "selected", -1))
+    use_fahrenheit = json.get(root, "fahrenheit", false) == true
+    unit_btn.set_text(if use_fahrenheit { "°F" } else { "°C" })
+
+    let fc_raw = json.get(root, "forecast", null)
+    if !is_null(fc_raw) {
+        let ?fc = []: [string => any]
+        fc["ok"] = json.get(fc_raw, "ok", false) == true
+        fc["error"] = ""
+        fc["timezone"] = str(json.get(fc_raw, "timezone", ""))
+        fc["latitude"] = num(json.get(fc_raw, "latitude", 0.0))
+        fc["longitude"] = num(json.get(fc_raw, "longitude", 0.0))
+        fc["sunrise"] = str(json.get(fc_raw, "sunrise", ""))
+        fc["sunset"] = str(json.get(fc_raw, "sunset", ""))
+        fc["sunrise_next"] = str(json.get(fc_raw, "sunrise_next", ""))
+        fc["current"] = _restore_weather_obj(json.get(fc_raw, "current", []: [string => any]))
+        let loaded_hrs = json.get(fc_raw, "hours", []: [any])
+        let ?hrs = []: [any]
+        for (let ?j = 0; j < len(loaded_hrs); j += 1) {
+            hrs[len(hrs)] = _restore_weather_obj(loaded_hrs[j] ?? []: [string => any])
+        }
+        fc["hours"] = hrs
+        forecast_data = fc
+    }
+
+    _rebuild_location_list()
+    if len(locations) > 0 {
+        _set_empty_mode(false)
+        _apply_forecast()
+    }
+}
+
+: _remove_location(index = num) (( -- )) {
+    if !_valid_index(index, len(locations)) {
+        return
+    }
+
+    let ?next = []: [any]
+    for (let ?i = 0; i < len(locations); i += 1) {
+        if i == index {
+            continue
+        }
+        next[len(next)] = locations[i]
+    }
+    locations = next
+
+    if len(locations) == 0 {
+        selected_location = -1
+        forecast_data = []: [string => any]
+        _set_empty_mode(true)
+    } else {
+        if selected_location >= len(locations) {
+            selected_location = len(locations) - 1
+        }
+        _set_empty_mode(false)
+        _refresh_forecast()
+    }
+
+    _rebuild_location_list()
+    _save_state()
+}
+
+: _location_row(index = num, loc = any) (( any )) {
+    let name = str(loc["name"] ?? "")
+    let subtitle = str(loc["subtitle"] ?? "")
+
+    let text_col = cogito.vstack()
+    .set_gap(4)
+    .valign(1)
+    .set_hexpand(true)
+
+    text_col.add(cogito.label(name).set_class("kairos-location-name"))
+    text_col.add(cogito.label(subtitle).set_class("kairos-location-subtitle").set_max_width_chars(30).set_fade(true))
+
+    let remove_btn = cogito.iconbtn("sf:trash")
+    .set_class("kairos-location-delete")
+    .set_class("iconic")
+
+    remove_btn.on_click((b = cogito.IconButton) => {
+        _remove_location(index)
+    })
+
+    let row = cogito.hstack()
+    .set_hexpand(true)
+    .set_gap(12)
+    .set_padding(0, 0, 0, 16)
+    .set_class("kairos-location-row")
+
+    let location_image = cogito.image("sf:mappin.and.ellipse")
+    .set_class("kairos-location-pin")
+    .set_hexpand(false)
+    .set_vexpand(false)
+    .set_align(4)
+
+    row.add(location_image)
+    row.add(text_col)
+    row.add(remove_btn)
+    return row
+}
+
+: _rebuild_location_list() (( -- )) {
+    location_list.clear()
+
+    for (let ?i = 0; i < len(locations); i += 1) {
+        location_list.add(_location_row(i, locations[i]))
+    }
+
+    if _valid_index(selected_location, len(locations)) {
+        location_list.set_selected(selected_location)
+    }
+}
+
+: _build_series(hours = any, key = string, converter = any) (( any )) {
+    let ?series = []: [any]
+    for (let ?i = 0; i < len(hours); i += 1) {
+        let hour = hours[i] ?? []: [string => any]
+        let time_iso = str(hour["time"] ?? "")
+
+        let ?row = []: [string => any]
+        row["label"] = weather_fmt.hour_label(time_iso, i == 0)
+
+        let base_v = _num_or(hour[key] ?? null, 0.0)
+        if is_null(converter) {
+            row["value"] = base_v
+        } else {
+            row["value"] = converter(base_v)
+        }
+
+        series[len(series)] = row
+    }
+    return series
+}
+
+: _refresh_timelines(hours = any) (( -- )) {
+    weather_timeline_grid.clear()
+    humidity_timeline_grid.clear()
+    hourly_list.clear()
+
+    for (let ?i = 0; i < len(hours); i += 1) {
+        let hour = hours[i] ?? []: [string => any]
+        let time_iso = str(hour["time"] ?? "")
+        let code = _num_or(hour["code"] ?? null, 0.0)
+        let is_day = _num_or(hour["is_day"] ?? null, 1.0)
+        let label = weather_fmt.hour_label(time_iso, i == 0)
+
+        let temp_text = _temp_short(_num_or(hour["temp_c"] ?? null, 0.0))
+        let humidity_text = weather_fmt.format_humidity(_num_or(hour["humidity"] ?? null, 0.0))
+
+        let weather_icon = weather_fmt.weather_icon(code, is_day)
+
+        weather_timeline_grid.add(_timeline_cell(label, weather_icon, temp_text), i, 0, 1, 1)
+        humidity_timeline_grid.add(_timeline_cell(label, "sf:drop.fill", humidity_text), i, 0, 1, 1)
+
+        hourly_list.add(_hourly_row(hour, label))
+    }
+
+    let min_w = len(hours) * 74
+    if min_w < 480 {
+        min_w = 480
+    }
+    weather_timeline_scroll.set_min_content_width(min_w)
+}
+
+: _apply_forecast() (( -- )) {
+    let ok = forecast_data["ok"] ?? false
+    if !ok {
+        current_desc.set_text("Could not fetch weather")
+        return
+    }
+
+    let loc = _selected_loc()
+    if !is_null(loc) {
+        let place = str(loc["label"] ?? "")
+        place_label.set_text(place)
+    }
+
+    let current = forecast_data["current"] ?? []: [string => any]
+    let hours = forecast_data["hours"] ?? []: [any]
+
+    let temp_c = _num_or(current["temp_c"] ?? null, 0.0)
+    let feels_c = _num_or(current["feels_c"] ?? null, temp_c)
+    let humidity = _num_or(current["humidity"] ?? null, 0.0)
+    let code = _num_or(current["code"] ?? null, 0.0)
+    let is_day = _num_or(current["is_day"] ?? null, 1.0)
+
+    let accent = weather_fmt.weather_accent(code, is_day)
+    content_tint_bin.set_accent_color(accent)
+    sun_orbit.set_color(orbit_widget, accent, "$$accent$$2E", "#FFFDE79A", "#1A237E18")
+    line_chart.set_colors(temp_chart, accent, accent, accent, accent)
+    line_chart.set_colors(humidity_chart, accent, accent, accent, accent)
+
+    current_icon.set_icon(weather_fmt.weather_icon(code, is_day))
+    current_temp.set_text(_temp_short(temp_c))
+    current_desc.set_text(weather_fmt.weather_label(code))
+    let feels_text = weather_fmt.format_temp(feels_c, use_fahrenheit)
+    current_feels.set_text("Feels like $$feels_text$$")
+
+    let wind_dir = _num_or(current["wind_direction_deg"] ?? null, 0.0)
+    let wind_speed = _num_or(current["wind_speed_kmh"] ?? null, 0.0)
+    let dew_c = _num_or(current["dew_point_c"] ?? null, temp_c)
+    let pressure = _num_or(current["pressure_hpa"] ?? null, 0.0)
+
+    let card = weather_fmt.direction_cardinal(wind_dir)
+    let wind_deg = stdr.floor(wind_dir + 0.5)
+    let wind_speed_text = weather_fmt.format_speed(wind_speed, use_fahrenheit)
+    wind_value.set_text("$$card$$ ($$wind_deg$$°)  $$wind_speed_text$$")
+    dew_value.set_text(_temp_verbose(dew_c))
+    pressure_value.set_text(weather_fmt.format_pressure(pressure, use_fahrenheit))
+
+    let sunrise = str(forecast_data["sunrise"] ?? "")
+    let sunset = str(forecast_data["sunset"] ?? "")
+    let sunrise_next = str(forecast_data["sunrise_next"] ?? "")
+    sun_orbit.set_times(orbit_widget, sunrise, sunset, sunrise_next)
+
+    let temp_series = _build_series(hours, "temp_c", (v = num) => weather_fmt.value_temp(v, use_fahrenheit))
+    let humidity_series = _build_series(hours, "humidity", null)
+
+    line_chart.set_series(temp_chart, temp_series)
+    line_chart.set_series(humidity_chart, humidity_series)
+
+    empty_page.set_vexpand(false)
+
+    _refresh_timelines(hours)
+    _save_state()
+}
+
+: _refresh_forecast() (( -- )) {
+    let loc = _selected_loc()
+    if is_null(loc) {
+        _set_empty_mode(true)
+        return
+    }
+
+    _set_empty_mode(false)
+
+    let lat = _num_or(loc["latitude"] ?? null, 0.0)
+    let lon = _num_or(loc["longitude"] ?? null, 0.0)
+
+    forecast_data = open_meteo.fetch_forecast(lat, lon)
+    _apply_forecast()
+}
+
+: _add_location(loc = any) (( -- )) {
+    if is_null(loc) {
+        return
+    }
+
+    let incoming_id = str(loc["id"] ?? "")
+    for (let ?i = 0; i < len(locations); i += 1) {
+        let ex = locations[i] ?? []: [string => any]
+        if str(ex["id"] ?? "") == incoming_id {
+            selected_location = i
+            _rebuild_location_list()
+            _refresh_forecast()
+            return
+        }
+    }
+
+    locations[len(locations)] = loc
+    selected_location = len(locations) - 1
+    _rebuild_location_list()
+    _refresh_forecast()
+}
+
+: _open_add_dialog(win = cogito.Window) (( -- )) {
+    let dlg = location_dialog.build_add_dialog((loc = any) => {
+        _add_location(loc)
+    })
+    win.set_dialog(dlg)
+}
+
+: _update_chart_range() (( -- )) {
+    if use_fahrenheit {
+        line_chart.set_range(temp_chart, -104.0, 104.0)
+    } else {
+        line_chart.set_range(temp_chart, -40.0, 40.0)
+    }
+}
+
+: _toggle_units() (( -- )) {
+    use_fahrenheit = !use_fahrenheit
+    unit_btn.set_text(if use_fahrenheit { "°F" } else { "°C" })
+    _update_chart_range()
+    _apply_forecast()
+    _save_state()
+}
+
+: _build_summary_page() (( any )) {
+    let root = cogito.vstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_gap(12)
+
+    let chart_card = cogito.vstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_class("kairos-card")
+    .set_padding(12, 16, 16, 16)
+
+    chart_card.add(line_chart.widget(temp_chart))
+
+    humidity_timeline_grid
+    .set_cols(24)
+    .set_gap(12, 12)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+    .set_class("kairos-timeline-grid")
+
+    humidity_timeline_scroll
+    .set_axes(true, false)
+    .set_hexpand(true)
+    .set_vexpand(false)
+    .set_min_content_height(118)
+    .add(humidity_timeline_grid)
+
+    chart_card.add(humidity_timeline_scroll)
+
+    root.add(chart_card)
+
+    let attribution = cogito.label("Weather data from OpenMeteo.")
+    .set_padding(16, 16, 16, 16)
+    .set_class("kairos-attribution")
+    .halign(2)
+    root.add(attribution)
+
+    let scroller = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(root)
+
+    return scroller
+}
+
+: _build_hourly_page() (( any )) {
+    let card = cogito.vstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_class("kairos-card")
+    .set_padding(10, 10, 10, 10)
+
+    card.add(cogito.label("Hourly Conditions").set_class("kairos-section-title"))
+
+    hourly_list
+    .set_gap(6)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_class("kairos-hourly-list")
+
+    let inner_scroll = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(hourly_list)
+
+    card.add(inner_scroll)
+
+    let root = cogito.vstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_gap(12)
+
+    root.add(card)
+
+    let scroller = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(root)
+
+    return scroller
+}
+
+: _metric_card(title = string, value_label = cogito.Label) (( any )) {
+    let card = cogito.vstack()
+    .set_gap(6)
+    .set_hexpand(true)
+    .set_class("kairos-chart-card")
+    .set_padding(10, 10, 10, 10)
+
+    card.add(cogito.label(title).set_class("kairos-metric-title"))
+    card.add(value_label.set_class("kairos-metric-value"))
+    return card
+}
+
+: _build_details_page() (( any )) {
+    let root = cogito.vstack()
+    .set_gap(10)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let metrics = cogito.grid(3)
+    .set_gap(8, 8)
+    .set_hexpand(true)
+
+    metrics.add(_metric_card("Wind Direction", wind_value), 0, 0, 1, 1)
+    metrics.add(_metric_card("Dew Point", dew_value), 1, 0, 1, 1)
+    metrics.add(_metric_card("Pressure", pressure_value), 2, 0, 1, 1)
+
+    root.add(metrics)
+    root.add(sun_orbit.widget(orbit_widget))
+
+    let scroller = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(root)
+
+    return scroller
+}
+
+: _build_content_panel(win = cogito.Window) (( any )) {
+    content_bar
+    .set_small()
+    .set_class("kairos-content-bar")
+    .set_window_controls("close,minimize,maximize:")
+
+    content_bar.add_trailing_button("sf:arrow.clockwise", (n = any) => {
+        _refresh_forecast()
+    })
+
+    let top_row = cogito.hstack()
+    .set_gap(12)
+    .set_hexpand(true)
+    .set_padding(14, 8, 14, 14)
+    .set_class("kairos-header")
+
+    current_icon
+    .set_class("kairos-current-icon")
+
+    current_temp.set_class("kairos-current-temp")
+
+    let info_col = cogito.vstack()
+    .set_gap(2)
+    .set_hexpand(true)
+
+    current_desc.set_class("kairos-current-desc")
+    current_feels.set_class("kairos-current-feels")
+
+    info_col.add(current_desc)
+    info_col.add(current_feels)
+
+    top_row.add(current_icon)
+    top_row.add(current_temp)
+    top_row.add(info_col)
+
+    tabs
+    .set_items(["Summary", "Hourly", "More Details"])
+    .set_ids(["summary", "hourly", "details"])
+    .set_selected(0)
+    .set_hexpand(true)
+
+    views
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add("summary", (vs = cogito.ViewSwitcher) => _build_summary_page())
+    .add("hourly", (vs = cogito.ViewSwitcher) => _build_hourly_page())
+    .add("details", (vs = cogito.ViewSwitcher) => _build_details_page())
+    .set_active("summary")
+
+    tabs.bind(views)
+
+    forecast_content
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    forecast_content.add(top_row)
+    forecast_content.add(tabs)
+    forecast_content.add(views)
+
+    empty_page
+    .set_description("Add a location to start checking weather")
+    .set_icon("sf:location.slash")
+    .set_action("Add Location", (n = any) => {
+        _open_add_dialog(win)
+    })
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_class("kairos-empty")
+
+    content_panel
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    content_panel.add(content_bar)
+    content_panel.add(empty_page)
+    content_panel.add(forecast_content)
+
+    content_tint_bin
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(content_panel)
+
+    return content_tint_bin
+}
+
+: _build_sidebar(win = cogito.Window) (( any )) {
+    sidebar_bar
+    .set_small()
+    .set_hexpand(true)
+    .set_class("kairos-sidebar-bar")
+    .set_window_controls("")
+
+    let gear_btn = sidebar_bar.add_trailing_menu_button("sf:gearshape")
+    gear_btn.add_menu("Toggle °C / °F", (b = any) => {
+        _toggle_units()
+    })
+
+    location_list
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_class("kairos-location-list")
+
+    location_list.on_activate((idx = any) => {
+        let picked = _num_or(idx, -1.0)
+        if _valid_index(picked, len(locations)) {
+            selected_location = picked
+            _rebuild_location_list()
+            _refresh_forecast()
+        }
+    })
+
+    let list_scroll = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .add(location_list)
+
+    add_location_btn
+    .set_class("kairos-add-location")
+    .set_class("tonal")
+    .on_click((b = cogito.IconButton) => {
+        _open_add_dialog(win)
+    })
+
+    let footer = cogito.hstack()
+    .set_hexpand(true)
+    .halign(1)
+    .add(add_location_btn)
+
+    sidebar_panel
+    .set_gap(8)
+    .set_class("kairos-sidebar")
+    .set_padding(0, 12, 12, 12)
+    .set_hexpand(false)
+    .set_vexpand(true)
+
+    sidebar_panel.add(sidebar_bar)
+    sidebar_panel.add(list_scroll)
+    sidebar_panel.add(footer)
+
+    return sidebar_panel
+}
+
+entry() (( -- )) {
+    cogito.load_sum("kairos.sum")
+
+    let win = cogito.window_size("Kairos", 1024, 645)
+    .set_resizable(true)
+    .set_size_request(360, 360)
+
+    let app = cogito.app()
+    .set_appid("com.fyralabs.Kairos")
+    .set_app_name("Kairos")
+    .set_accent_color("#8DB4D7", true)
+
+    line_chart.set_colors(temp_chart, "#8DB4D7", "#8DB4D7", "#8DB4D7", "#8DB4D7")
+    line_chart.set_colors(humidity_chart, "#8DB4D7", "#8DB4D7", "#8DB4D7", "#8DB4D7")
+    sun_orbit.set_color(orbit_widget, "#8DB4D7", "#8DB4D72E", "#FFFDE79A", "#1A237E18")
+    _update_chart_range()
+
+    line_chart.set_formatter(temp_chart, (value = any, idx = any, label = string) => {
+        let n = _num_or(value, 0.0)
+        let rounded = stdr.floor(n + 0.5)
+        let suffix = weather_fmt.unit_suffix(use_fahrenheit)
+        return "$$rounded$$ $$suffix$$"
+    })
+
+    line_chart.set_formatter(humidity_chart, (value = any, idx = any, label = string) => {
+        let n = _num_or(value, 0.0)
+        let rounded = stdr.floor(n + 0.5)
+        return "$$rounded$$%"
+    })
+
+    let root = cogito.hstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    root.add(_build_sidebar(win))
+    root.add(_build_content_panel(win))
+
+    win.add(root)
+
+    _set_empty_mode(true)
+    _rebuild_location_list()
+    _load_state()
+
+    app.run(win)
+}
