@@ -17,7 +17,7 @@ def TAU = 6.283185307179586
 
 : _wrap_angle(x = num) (( num )) {
     let ?y = x
-    for (let ?i = 0; i < 128; i += 1) {
+    for (let ?i = 0; i < 8; i += 1) {
         if !(y > PI || y < -PI) {
             break
         }
@@ -171,12 +171,9 @@ def TAU = 6.283185307179586
         let dy = y - cy
         let dx_sq = (r * r) - (dy * dy)
         if dx_sq > 0 {
-            let ?approx = r
-            for (let ?j = 0; j < 16; j += 1) {
-                approx = (approx + dx_sq / approx) / 2.0
-            }
-            let x0 = stdr.floor(cx - approx)
-            let x1 = stdr.floor(cx + approx)
+            let dx = _sqrt(dx_sq)
+            let x0 = stdr.floor(cx - dx)
+            let x1 = stdr.floor(cx + dx)
             area.fill_rect(x0, y, x1 - x0 + 1, 1)
         }
     }
@@ -204,6 +201,10 @@ def TAU = 6.283185307179586
     if x <= 0 { return 0.0 }
     let ?a = x
     for (let ?i = 0; i < 16; i += 1) {
+        if a * a <= x * 4.0 { break }
+        a = a / 2.0
+    }
+    for (let ?i = 0; i < 8; i += 1) {
         a = (a + x / a) / 2.0
     }
     return a
@@ -235,11 +236,13 @@ def TAU = 6.283185307179586
 : _aa_circle(area = cogito.DrawingArea, cx = num, cy = num, r = num, base_color = string) (( -- )) {
     let outer = r + 1.0
     let inner = r - 1.0
+    let outer_sq = outer * outer
+    let band = 4.0 * r
     let ?y = stdr.floor(cy - outer)
     let y_end = stdr.floor(cy + outer)
     for (; y <= y_end; y += 1) {
         let dy = y - cy
-        let dx_sq_outer = (outer * outer) - (dy * dy)
+        let dx_sq_outer = outer_sq - (dy * dy)
         let dx_sq_inner = (inner * inner) - (dy * dy)
         if dx_sq_outer > 0 {
             let dx_o = _sqrt(dx_sq_outer)
@@ -252,8 +255,8 @@ def TAU = 6.283185307179586
             let rx0 = stdr.floor(cx + dx_i)
             let rx1 = stdr.floor(cx + dx_o)
             for (let ?px = lx0; px <= lx1; px += 1) {
-                let dist = _sqrt((px - cx) * (px - cx) + dy * dy)
-                let ?frac = (outer - dist) / 2.0
+                let dist_sq = (px - cx) * (px - cx) + dy * dy
+                let ?frac = (outer_sq - dist_sq) / band
                 if frac < 0 { frac = 0.0 }
                 if frac > 1 { frac = 1.0 }
                 let alpha = stdr.floor(frac * 255.0 + 0.5)
@@ -262,8 +265,8 @@ def TAU = 6.283185307179586
                 area.fill_rect(px, y, 1, 1)
             }
             for (let ?px = rx0; px <= rx1; px += 1) {
-                let dist = _sqrt((px - cx) * (px - cx) + dy * dy)
-                let ?frac = (outer - dist) / 2.0
+                let dist_sq = (px - cx) * (px - cx) + dy * dy
+                let ?frac = (outer_sq - dist_sq) / band
                 if frac < 0 { frac = 0.0 }
                 if frac > 1 { frac = 1.0 }
                 let alpha = stdr.floor(frac * 255.0 + 0.5)
@@ -300,8 +303,8 @@ def TAU = 6.283185307179586
     _fill_semicircle(area, cx, cy, radius, day_color, true)
     _fill_semicircle(area, cx, cy, radius, night_color, false)
 
-    _draw_arc(area, cx, cy, radius, PI, 0.0, 48, orbit_arc_color, 2)
-    _draw_arc(area, cx, cy, radius, 0.0, -PI, 48, orbit_arc_color, 2)
+    _draw_arc(area, cx, cy, radius, PI, 0.0, 32, orbit_arc_color, 2)
+    _draw_arc(area, cx, cy, radius, 0.0, -PI, 32, orbit_arc_color, 2)
 
     area.set_color(orbit_arc_color)
     .set_line_width(1)
@@ -416,14 +419,14 @@ def TAU = 6.283185307179586
     return orbit["root"]
 }
 
-:: set_times(orbit = any, sunrise_iso = string, sunset_iso = string, sunrise_next_iso = string) (( -- )) {
+:: set_times(orbit = any, sunrise_iso = string, sunset_iso = string, sunrise_next_iso = string, tz = string) (( -- )) {
     orbit["sunrise_iso"] = sunrise_iso
     orbit["sunset_iso"] = sunset_iso
     orbit["sunrise_next_iso"] = sunrise_next_iso
 
-    orbit["sunrise_epoch"] = time_utils.iso_to_epoch(sunrise_iso)
-    orbit["sunset_epoch"] = time_utils.iso_to_epoch(sunset_iso)
-    orbit["sunrise_next_epoch"] = time_utils.iso_to_epoch(sunrise_next_iso)
+    orbit["sunrise_epoch"] = time_utils.iso_to_epoch(sunrise_iso, tz)
+    orbit["sunset_epoch"] = time_utils.iso_to_epoch(sunset_iso, tz)
+    orbit["sunrise_next_epoch"] = time_utils.iso_to_epoch(sunrise_next_iso, tz)
 
     let refresh = orbit["refresh"] ?? null
     if !is_null(refresh) {

@@ -315,6 +315,12 @@ def status_text = cogito.label("Add a location to start")
     _rebuild_location_list()
     if len(locations) > 0 {
         _set_empty_mode(false)
+        if _valid_index(selected_location, len(locations)) {
+            let sel_loc = locations[selected_location]
+            if forecast_data["ok"] ?? false {
+                sel_loc["forecast"] = forecast_data
+            }
+        }
         _apply_forecast()
     }
 }
@@ -342,7 +348,7 @@ def status_text = cogito.label("Add a location to start")
             selected_location = len(locations) - 1
         }
         _set_empty_mode(false)
-        _refresh_forecast()
+        _switch_location()
     }
 
     _rebuild_location_list()
@@ -499,7 +505,8 @@ def status_text = cogito.label("Add a location to start")
     let sunrise = str(forecast_data["sunrise"] ?? "")
     let sunset = str(forecast_data["sunset"] ?? "")
     let sunrise_next = str(forecast_data["sunrise_next"] ?? "")
-    sun_orbit.set_times(orbit_widget, sunrise, sunset, sunrise_next)
+    let tz = str(forecast_data["timezone"] ?? "")
+    sun_orbit.set_times(orbit_widget, sunrise, sunset, sunrise_next, tz)
 
     let temp_series = _build_series(hours, "temp_c", (v = num) => weather_fmt.value_temp(v, use_fahrenheit))
     let humidity_series = _build_series(hours, "humidity", null)
@@ -526,7 +533,24 @@ def status_text = cogito.label("Add a location to start")
     let lon = _num_or(loc["longitude"] ?? null, 0.0)
 
     forecast_data = open_meteo.fetch_forecast(lat, lon)
+    loc["forecast"] = forecast_data
     _apply_forecast()
+}
+
+: _switch_location() (( -- )) {
+    let loc = _selected_loc()
+    if is_null(loc) {
+        _set_empty_mode(true)
+        return
+    }
+    _set_empty_mode(false)
+    let cached = loc["forecast"] ?? null
+    if !is_null(cached) {
+        forecast_data = cached
+        _apply_forecast()
+    } else {
+        _refresh_forecast()
+    }
 }
 
 : _add_location(loc = any) (( -- )) {
@@ -540,7 +564,7 @@ def status_text = cogito.label("Add a location to start")
         if str(ex["id"] ?? "") == incoming_id {
             selected_location = i
             _rebuild_location_list()
-            _refresh_forecast()
+            _switch_location()
             return
         }
     }
@@ -806,7 +830,7 @@ def status_text = cogito.label("Add a location to start")
         if _valid_index(picked, len(locations)) {
             selected_location = picked
             _rebuild_location_list()
-            _refresh_forecast()
+            _switch_location()
         }
     })
 

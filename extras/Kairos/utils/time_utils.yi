@@ -19,14 +19,19 @@ bring stdr
     return _to_num_text(str(run[1] ?? ""), -1)
 }
 
-:: iso_to_epoch(iso = string) (( num )) {
+:: iso_to_epoch(iso = string, tz = string) (( num )) {
     let t = stdr.trim(iso)
     if len(t) < 16 {
         return -1
     }
 
     let quoted = stdr.shell_quote(t)
-    let cmd = "date -j -f '%Y-%m-%dT%H:%M' $$quoted$$ +%s"
+    let tz_prefix = ""
+    if len(stdr.trim(tz)) > 0 {
+        let tz_q = stdr.shell_quote(tz)
+        tz_prefix = "TZ=$$tz_q$$ "
+    }
+    let cmd = "$$tz_prefix$$date -j -f '%Y-%m-%dT%H:%M' $$quoted$$ +%s"
     let run = stdr.run_command(cmd)
     let code = num(run[0] ?? 1)
     if code != 0 {
