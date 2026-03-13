@@ -54,7 +54,8 @@ bring json
     wind_direction_deg = num,
     dew_point_c = num,
     pressure_hpa = num,
-    is_day = num
+    is_day = num,
+    precip_prob = num
 ) (( any )) {
     let ?row = []: [string => any]
     row["time"] = time
@@ -66,6 +67,7 @@ bring json
     row["dew_point_c"] = dew_point_c
     row["pressure_hpa"] = pressure_hpa
     row["is_day"] = is_day
+    row["precip_prob"] = precip_prob
     return row
 }
 
@@ -75,8 +77,8 @@ bring json
     let name = str(json.get(item, "name", ""))
     let country = str(json.get(item, "country", ""))
     let admin = str(json.get(item, "admin1", ""))
-    let latitude = num(json.get(item, "latitude", 0.0))
-    let longitude = num(json.get(item, "longitude", 0.0))
+    let latitude = stdr.num(json.get(item, "latitude", 0.0))
+    let longitude = stdr.num(json.get(item, "longitude", 0.0))
 
     let ?subtitle = country
     if len(admin) > 0 {
@@ -175,8 +177,8 @@ bring json
     let params = [
         ["latitude", str(latitude)],
         ["longitude", str(longitude)],
-        ["current", "temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,wind_direction_10m,dew_point_2m,surface_pressure,is_day"],
-        ["hourly", "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,dew_point_2m,surface_pressure,is_day"],
+        ["current", "temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,wind_direction_10m,dew_point_2m,surface_pressure,is_day,uv_index"],
+        ["hourly", "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,dew_point_2m,surface_pressure,is_day,precipitation_probability"],
         ["daily", "sunrise,sunset"],
         ["forecast_days", "3"],
         ["temperature_unit", "celsius"],
@@ -207,15 +209,16 @@ bring json
     let daily_raw = json.get(root, "daily", []: [string => any])
 
     let current_time = str(json.get(current_raw, "time", ""))
-    let current_temp_c = num(json.get(current_raw, "temperature_2m", 0.0))
-    let current_feels_c = num(json.get(current_raw, "apparent_temperature", current_temp_c))
-    let current_code = num(json.get(current_raw, "weather_code", 0))
-    let current_humidity = num(json.get(current_raw, "relative_humidity_2m", 0))
-    let current_wind_speed = num(json.get(current_raw, "wind_speed_10m", 0.0))
-    let current_wind_dir = num(json.get(current_raw, "wind_direction_10m", 0.0))
-    let current_dew_c = num(json.get(current_raw, "dew_point_2m", current_temp_c))
-    let current_pressure = num(json.get(current_raw, "surface_pressure", 0.0))
-    let current_is_day = num(json.get(current_raw, "is_day", 1))
+    let current_temp_c = stdr.num(json.get(current_raw, "temperature_2m", 0.0))
+    let current_feels_c = stdr.num(json.get(current_raw, "apparent_temperature", current_temp_c))
+    let current_code = stdr.num(json.get(current_raw, "weather_code", 0))
+    let current_humidity = stdr.num(json.get(current_raw, "relative_humidity_2m", 0))
+    let current_wind_speed = stdr.num(json.get(current_raw, "wind_speed_10m", 0.0))
+    let current_wind_dir = stdr.num(json.get(current_raw, "wind_direction_10m", 0.0))
+    let current_dew_c = stdr.num(json.get(current_raw, "dew_point_2m", current_temp_c))
+    let current_pressure = stdr.num(json.get(current_raw, "surface_pressure", 0.0))
+    let current_is_day = stdr.num(json.get(current_raw, "is_day", 1))
+    let current_uv_index = stdr.num(json.get(current_raw, "uv_index", 0.0))
 
     let hourly_time = json.get(hourly_raw, "time", []: [any])
     let hourly_temp = json.get(hourly_raw, "temperature_2m", []: [any])
@@ -226,21 +229,23 @@ bring json
     let hourly_dew = json.get(hourly_raw, "dew_point_2m", []: [any])
     let hourly_pressure = json.get(hourly_raw, "surface_pressure", []: [any])
     let hourly_is_day = json.get(hourly_raw, "is_day", []: [any])
+    let hourly_precip_prob = json.get(hourly_raw, "precipitation_probability", []: [any])
 
     let start_idx = _find_hour_start(hourly_time, current_time)
     let ?hours = []: [any]
     let ?taken = 0
 
-    for (let ?i = start_idx; i < len(hourly_time) && taken < 24; i += 1) {
+    for (let ?i = start_idx; i < len(hourly_time); i += 1) {
         let t = str(_read_array_value(hourly_time, i, current_time))
-        let temp_c = num(_read_array_value(hourly_temp, i, current_temp_c))
-        let humidity = num(_read_array_value(hourly_humidity, i, current_humidity))
-        let code = num(_read_array_value(hourly_code, i, current_code))
-        let wind_speed = num(_read_array_value(hourly_wind, i, current_wind_speed))
-        let wind_dir = num(_read_array_value(hourly_wind_dir, i, current_wind_dir))
-        let dew_c = num(_read_array_value(hourly_dew, i, current_dew_c))
-        let pressure = num(_read_array_value(hourly_pressure, i, current_pressure))
-        let is_day = num(_read_array_value(hourly_is_day, i, current_is_day))
+        let temp_c = stdr.num(_read_array_value(hourly_temp, i, current_temp_c))
+        let humidity = stdr.num(_read_array_value(hourly_humidity, i, current_humidity))
+        let code = stdr.num(_read_array_value(hourly_code, i, current_code))
+        let wind_speed = stdr.num(_read_array_value(hourly_wind, i, current_wind_speed))
+        let wind_dir = stdr.num(_read_array_value(hourly_wind_dir, i, current_wind_dir))
+        let dew_c = stdr.num(_read_array_value(hourly_dew, i, current_dew_c))
+        let pressure = stdr.num(_read_array_value(hourly_pressure, i, current_pressure))
+        let is_day = stdr.num(_read_array_value(hourly_is_day, i, current_is_day))
+        let precip_prob = stdr.num(_read_array_value(hourly_precip_prob, i, 0.0))
 
         hours[len(hours)] = _hour_item(
             t,
@@ -251,7 +256,8 @@ bring json
             wind_dir,
             dew_c,
             pressure,
-            is_day
+            is_day,
+            precip_prob
         )
         taken += 1
     }
@@ -266,7 +272,8 @@ bring json
             current_wind_dir,
             current_dew_c,
             current_pressure,
-            current_is_day
+            current_is_day,
+            0.0
         )
     }
 
@@ -275,7 +282,7 @@ bring json
 
     let sunrise = str(_read_array_value(sunrise_arr, 0, ""))
     let sunset = str(_read_array_value(sunset_arr, 0, ""))
-    let sunrise_next = str(_read_array_value(sunrise_arr, 1, ""))
+    let ?sunrise_next = str(_read_array_value(sunrise_arr, 1, ""))
 
     if len(sunrise_next) == 0 {
         sunrise_next = sunrise
@@ -292,13 +299,14 @@ bring json
     current["dew_point_c"] = current_dew_c
     current["pressure_hpa"] = current_pressure
     current["is_day"] = current_is_day
+    current["uv_index"] = current_uv_index
 
     let ?out = []: [string => any]
     out["ok"] = true
     out["error"] = ""
     out["timezone"] = str(json.get(root, "timezone", ""))
-    out["latitude"] = num(json.get(root, "latitude", latitude))
-    out["longitude"] = num(json.get(root, "longitude", longitude))
+    out["latitude"] = stdr.num(json.get(root, "latitude", latitude))
+    out["longitude"] = stdr.num(json.get(root, "longitude", longitude))
     out["current"] = current
     out["hours"] = hours
     out["sunrise"] = sunrise

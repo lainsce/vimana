@@ -59,6 +59,20 @@ bring stdr
     return "$$rounded$$ km/h"
 }
 
+:: format_uv(value = num) (( string )) {
+    let ?level = "Low"
+    if value >= 11.0 {
+        level = "Extreme"
+    } elif value >= 8.0 {
+        level = "Very High"
+    } elif value >= 6.0 {
+        level = "High"
+    } elif value >= 3.0 {
+        level = "Moderate"
+    }
+    return "$$value$$ ($$level$$)"
+}
+
 :: direction_cardinal(deg = num) (( string )) {
     let ?d = deg
     for (; d < 0.0; ) {
@@ -68,7 +82,7 @@ bring stdr
         d -= 360.0
     }
 
-    let idx = stdr.floor((d + 22.5) / 45.0)
+    let ?idx = stdr.floor((d + 22.5) / 45.0)
     if idx >= 8 {
         idx = 0
     }

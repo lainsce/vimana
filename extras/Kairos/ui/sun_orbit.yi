@@ -12,7 +12,7 @@ def TAU = 6.283185307179586
     if is_null(value) {
         return fallback
     }
-    return num(value)
+    return stdr.num(value)
 }
 
 : _wrap_angle(x = num) (( num )) {
@@ -158,7 +158,7 @@ def TAU = 6.283185307179586
     sunset_lbl.set_text(sunset_hhmm)
 }
 
-: _tick(orbit = any, status = cogito.Label, sunrise_lbl = cogito.Label, sunset_lbl = cogito.Label) (( -- )) {
+: _tick(?orbit = any, status = cogito.Label, sunrise_lbl = cogito.Label, sunset_lbl = cogito.Label) (( -- )) {
     orbit["now_epoch"] = time_utils.now_epoch()
     _update_status(orbit, status, sunrise_lbl, sunset_lbl)
 }
@@ -290,7 +290,7 @@ def TAU = 6.283185307179586
     let cx = w / 2.0
     let cy = h / 2.0 + 6.0
 
-    let radius = (if w < h { w } else { h }) / 2.0 - 18.0
+    let ?radius = (if w < h { w } else { h }) / 2.0 - 18.0
     if radius < 16.0 {
         radius = 16.0
     }
@@ -419,7 +419,7 @@ def TAU = 6.283185307179586
     return orbit["root"]
 }
 
-:: set_times(orbit = any, sunrise_iso = string, sunset_iso = string, sunrise_next_iso = string, tz = string) (( -- )) {
+:: set_times(?orbit = any, sunrise_iso = string, sunset_iso = string, sunrise_next_iso = string, tz = string) (( -- )) {
     orbit["sunrise_iso"] = sunrise_iso
     orbit["sunset_iso"] = sunset_iso
     orbit["sunrise_next_iso"] = sunrise_next_iso
@@ -434,7 +434,7 @@ def TAU = 6.283185307179586
     }
 }
 
-:: set_color(orbit = any, color = string, arc_color = string, day_color = string, night_color = string) (( -- )) {
+:: set_color(?orbit = any, color = string, arc_color = string, day_color = string, night_color = string) (( -- )) {
     orbit["color"] = color
     orbit["arc_color"] = arc_color
     orbit["day_color"] = day_color

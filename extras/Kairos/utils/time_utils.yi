@@ -7,12 +7,12 @@ bring stdr
     if len(t) == 0 {
         return fallback
     }
-    return num(t)
+    return stdr.num(t)
 }
 
 :: now_epoch() (( num )) {
     let run = stdr.run_command("date +%s")
-    let code = num(run[0] ?? 1)
+    let code = stdr.num(run[0] ?? 1)
     if code != 0 {
         return -1
     }
@@ -26,14 +26,14 @@ bring stdr
     }
 
     let quoted = stdr.shell_quote(t)
-    let tz_prefix = ""
+    let ?tz_prefix = ""
     if len(stdr.trim(tz)) > 0 {
         let tz_q = stdr.shell_quote(tz)
         tz_prefix = "TZ=$$tz_q$$ "
     }
     let cmd = "$$tz_prefix$$date -j -f '%Y-%m-%dT%H:%M' $$quoted$$ +%s"
     let run = stdr.run_command(cmd)
-    let code = num(run[0] ?? 1)
+    let code = stdr.num(run[0] ?? 1)
     if code != 0 {
         return -1
     }

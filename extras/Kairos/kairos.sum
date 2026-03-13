@@ -43,11 +43,18 @@ vstack.kairos-chart-card
   border-radius: 10
   background: alpha(#000000, 5%)
 
-hstack.kairos-header
+zstack.kairos-header
   background: transparent
+  min-height: 120
+  max-height: 120
+
+drawing_area.kairos-header-canvas
+  min-height: 120
+  max-height: 120
 
 label.kairos-current-temp
   font-size: 48
+  font-variation: wdth 150, opsz 14
   font-weight: bold
 
 label.kairos-current-place
@@ -69,27 +76,52 @@ image.kairos-current-icon
   min-height: 52
   max-height: 52
 
+label.kairos-header-on-dark
+  color: white
+
+image.kairos-header-on-dark
+  color: white
+
+appbar.kairos-header-on-dark
+  color: white
+
+iconbtn.kairos-header-on-dark
+  color: white
+
+label.kairos-header-on-light
+  color: black
+
+image.kairos-header-on-light
+  color: black
+
+appbar.kairos-header-on-light
+  color: black
+
+iconbtn.kairos-header-on-light
+  color: black
+
 label.kairos-section-title
   font-size: 20
   font-weight: bold
 
 zstack.kairos-chart-fixed
-  min-height: 170
-  max-height: 170
+  min-height: 180
+  max-height: 180
 
 drawing_area.kairos-chart-area
-  min-height: 170
-  max-height: 170
+  min-height: 180
+  max-height: 180
+  background: transparent
 
-label.kairos-chart-tooltip
-  font-size: 14
+label.kairos-chart-point-label
+  font-size: 13
   font-weight: bold
-  min-width: 80
-  max-width: 80
 
-label.kairos-chart-zero-label
-  font-size: 12
-  color: alpha(#000000, 40%)
+image.kairos-chart-point-icon
+  min-width: 20
+  max-width: 20
+  min-height: 20
+  max-height: 20
 
 grid.kairos-timeline-grid
   background: transparent
@@ -181,6 +213,12 @@ image.kairos-location-pin
   max-height: 24
 
 image.kairos-orbit-icon
+  min-width: 24
+  max-width: 24
+  min-height: 24
+  max-height: 24
+
+image.kairos-precip-icon
   min-width: 24
   max-width: 24
   min-height: 24

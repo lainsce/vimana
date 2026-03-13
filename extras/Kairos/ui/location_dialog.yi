@@ -30,7 +30,7 @@ bring api.open_meteo
     if is_null(value) {
         return fallback
     }
-    return num(value)
+    return stdr.num(value)
 }
 
 : _rebuild_results_ui(state = any, list = cogito.ContentList, add_btn = cogito.Button) (( -- )) {
@@ -63,7 +63,7 @@ bring api.open_meteo
 }
 
 : _run_search(
-    state = any,
+    ?state = any,
     search = cogito.SearchField,
     info = cogito.Label,
     list = cogito.ContentList,

@@ -6,8 +6,10 @@ bring cogito
 
 bring api.open_meteo
 bring utils.weather_fmt
+bring utils.color_utils
 bring ui.line_chart
 bring ui.sun_orbit
+bring ui.weather_header
 bring ui.location_dialog
 
 -- App state
@@ -36,8 +38,10 @@ def current_icon = cogito.image("sf:sun.max.fill")
 def current_temp = cogito.label("--o")
 def current_desc = cogito.label("Clear Sky")
 def current_feels = cogito.label("Feels like --")
-def refresh_btn = cogito.iconbtn("sf:arrow.clockwise")
-def unit_btn = cogito.button("°C")
+def ?header_state = weather_header.new_header()
+def header_gradient = weather_header.widget(header_state)
+def ?refreshbtn = cogito.iconbtn("")
+def unitbtn = cogito.button("°C")
 
 def tabs = cogito.tabs()
 def views = cogito.view_switcher()
@@ -53,6 +57,7 @@ def hourly_list = cogito.content_list()
 def wind_value = cogito.label("--")
 def dew_value = cogito.label("--")
 def pressure_value = cogito.label("--")
+def uv_value = cogito.label("--")
 def orbit_widget = sun_orbit.new_orbit()
 
 def status_text = cogito.label("Add a location to start")
@@ -61,11 +66,29 @@ def status_text = cogito.label("Add a location to start")
     return if on { "true" } else { "false" }
 }
 
+: _hex_digit(v = num) (( string )) {
+    if v < 10 { return str(v) }
+    if v == 10 { return "A" }
+    if v == 11 { return "B" }
+    if v == 12 { return "C" }
+    if v == 13 { return "D" }
+    if v == 14 { return "E" }
+    return "F"
+}
+
+: _hex_byte(v = num) (( string )) {
+    let ?hi = stdr.floor(v / 16)
+    let ?lo = stdr.floor(v - (hi * 16))
+    let hi_hex = _hex_digit(hi)
+    let lo_hex = _hex_digit(lo)
+    return "$$hi_hex$$$$lo_hex$$"
+}
+
 : _num_or(value = any, fallback = num) (( num )) {
     if is_null(value) {
         return fallback
     }
-    return num(value)
+    return stdr.num(value)
 }
 
 : _valid_index(idx = num, n = num) (( bool )) {
@@ -111,14 +134,15 @@ def status_text = cogito.label("Add a location to start")
     let icon = weather_fmt.weather_icon(code, is_day)
 
     let temp = _temp_short(_num_or(hour["temp_c"] ?? null, 0.0))
-    let humidity = weather_fmt.format_humidity(_num_or(hour["humidity"] ?? null, 0.0))
+    let precip = _num_or(hour["precip_prob"] ?? null, 0.0)
+    let precip_rounded = stdr.floor(precip + 0.5)
     let label = weather_fmt.weather_label(code)
 
     let left = cogito.hstack()
     .set_gap(8)
     .set_hexpand(true)
 
-    left.add(cogito.image(icon).set_class("kairos-hourly-icon"))
+    left.add(cogito.image(icon).set_class("kairos-hourly-icon").set_hexpand(false).set_vexpand(false))
 
     let text_col = cogito.vstack()
     .set_gap(2)
@@ -128,10 +152,20 @@ def status_text = cogito.label("Add a location to start")
 
     left.add(text_col)
 
+    let precip_box = cogito.hstack()
+    .set_gap(4)
+    .set_padding(4, 8, 4, 8)
+    .set_class("kairos-precip-box")
+    .add(cogito.image("sf:drop.fill").set_class("kairos-precip-icon").set_align(4).set_hexpand(false).set_vexpand(false))
+    .add(cogito.label("$$precip_rounded$$%").set_class("kairos-precip-label"))
+
     let right = cogito.hstack()
     .set_gap(10)
     .add(cogito.label(temp).set_class("kairos-hourly-temp"))
-    .add(cogito.label(humidity).set_class("kairos-hourly-humidity"))
+
+    let outer = cogito.hstack()
+    .set_gap(6)
+    .set_hexpand(true)
 
     let row = cogito.hstack()
     .set_gap(8)
@@ -141,7 +175,10 @@ def status_text = cogito.label("Add a location to start")
 
     row.add(left)
     row.add(right)
-    return row
+
+    outer.add(row)
+    outer.add(precip_box)
+    return outer
 }
 
 : _set_empty_mode(on = bool) (( -- )) {
@@ -174,6 +211,7 @@ def status_text = cogito.label("Add a location to start")
     let dew = _num_or(obj["dew_point_c"] ?? null, 0.0)
     let pressure = _num_or(obj["pressure_hpa"] ?? null, 0.0)
     let is_day = _num_or(obj["is_day"] ?? null, 1.0)
+    let precip_prob = _num_or(obj["precip_prob"] ?? null, 0.0)
     let ?s = "{\"time\":\"$$time_esc$$\""
     s = "$$s$$,\"temp_c\":$$temp_c$$"
     s = "$$s$$,\"feels_c\":$$feels_c$$"
@@ -183,7 +221,8 @@ def status_text = cogito.label("Add a location to start")
     s = "$$s$$,\"wind_direction_deg\":$$wind_dir$$"
     s = "$$s$$,\"dew_point_c\":$$dew$$"
     s = "$$s$$,\"pressure_hpa\":$$pressure$$"
-    s = "$$s$$,\"is_day\":$$is_day$$}"
+    s = "$$s$$,\"is_day\":$$is_day$$"
+    s = "$$s$$,\"precip_prob\":$$precip_prob$$}"
     return s
 }
 
@@ -249,15 +288,16 @@ def status_text = cogito.label("Add a location to start")
 : _restore_weather_obj(raw = any) (( any )) {
     let ?obj = []: [string => any]
     obj["time"] = str(json.get(raw, "time", ""))
-    obj["temp_c"] = num(json.get(raw, "temp_c", 0.0))
-    obj["feels_c"] = num(json.get(raw, "feels_c", 0.0))
-    obj["humidity"] = num(json.get(raw, "humidity", 0.0))
-    obj["code"] = num(json.get(raw, "code", 0.0))
-    obj["wind_speed_kmh"] = num(json.get(raw, "wind_speed_kmh", 0.0))
-    obj["wind_direction_deg"] = num(json.get(raw, "wind_direction_deg", 0.0))
-    obj["dew_point_c"] = num(json.get(raw, "dew_point_c", 0.0))
-    obj["pressure_hpa"] = num(json.get(raw, "pressure_hpa", 0.0))
-    obj["is_day"] = num(json.get(raw, "is_day", 1.0))
+    obj["temp_c"] = stdr.num(json.get(raw, "temp_c", 0.0))
+    obj["feels_c"] = stdr.num(json.get(raw, "feels_c", 0.0))
+    obj["humidity"] = stdr.num(json.get(raw, "humidity", 0.0))
+    obj["code"] = stdr.num(json.get(raw, "code", 0.0))
+    obj["wind_speed_kmh"] = stdr.num(json.get(raw, "wind_speed_kmh", 0.0))
+    obj["wind_direction_deg"] = stdr.num(json.get(raw, "wind_direction_deg", 0.0))
+    obj["dew_point_c"] = stdr.num(json.get(raw, "dew_point_c", 0.0))
+    obj["pressure_hpa"] = stdr.num(json.get(raw, "pressure_hpa", 0.0))
+    obj["is_day"] = stdr.num(json.get(raw, "is_day", 1.0))
+    obj["precip_prob"] = stdr.num(json.get(raw, "precip_prob", 0.0))
     return obj
 }
 
@@ -282,14 +322,14 @@ def status_text = cogito.label("Add a location to start")
         loc["admin"] = str(json.get(raw_loc, "admin", ""))
         loc["subtitle"] = str(json.get(raw_loc, "subtitle", ""))
         loc["label"] = str(json.get(raw_loc, "label", ""))
-        loc["latitude"] = num(json.get(raw_loc, "latitude", 0.0))
-        loc["longitude"] = num(json.get(raw_loc, "longitude", 0.0))
+        loc["latitude"] = stdr.num(json.get(raw_loc, "latitude", 0.0))
+        loc["longitude"] = stdr.num(json.get(raw_loc, "longitude", 0.0))
         locations[len(locations)] = loc
     }
 
-    selected_location = num(json.get(root, "selected", -1))
+    selected_location = stdr.num(json.get(root, "selected", -1))
     use_fahrenheit = json.get(root, "fahrenheit", false) == true
-    unit_btn.set_text(if use_fahrenheit { "°F" } else { "°C" })
+    unitbtn.set_text(if use_fahrenheit { "°F" } else { "°C" })
 
     let fc_raw = json.get(root, "forecast", null)
     if !is_null(fc_raw) {
@@ -297,8 +337,8 @@ def status_text = cogito.label("Add a location to start")
         fc["ok"] = json.get(fc_raw, "ok", false) == true
         fc["error"] = ""
         fc["timezone"] = str(json.get(fc_raw, "timezone", ""))
-        fc["latitude"] = num(json.get(fc_raw, "latitude", 0.0))
-        fc["longitude"] = num(json.get(fc_raw, "longitude", 0.0))
+        fc["latitude"] = stdr.num(json.get(fc_raw, "latitude", 0.0))
+        fc["longitude"] = stdr.num(json.get(fc_raw, "longitude", 0.0))
         fc["sunrise"] = str(json.get(fc_raw, "sunrise", ""))
         fc["sunset"] = str(json.get(fc_raw, "sunset", ""))
         fc["sunrise_next"] = str(json.get(fc_raw, "sunrise_next", ""))
@@ -316,9 +356,11 @@ def status_text = cogito.label("Add a location to start")
     if len(locations) > 0 {
         _set_empty_mode(false)
         if _valid_index(selected_location, len(locations)) {
-            let sel_loc = locations[selected_location]
-            if forecast_data["ok"] ?? false {
-                sel_loc["forecast"] = forecast_data
+            let ?sel_loc = _selected_loc()
+            if sel_loc != null {
+                if forecast_data["ok"] ?? false {
+                    sel_loc["forecast"] = forecast_data
+                }
             }
         }
         _apply_forecast()
@@ -410,9 +452,12 @@ def status_text = cogito.label("Add a location to start")
     for (let ?i = 0; i < len(hours); i += 1) {
         let hour = hours[i] ?? []: [string => any]
         let time_iso = str(hour["time"] ?? "")
+        let code = _num_or(hour["code"] ?? null, 0.0)
+        let is_day = _num_or(hour["is_day"] ?? null, 1.0)
 
         let ?row = []: [string => any]
         row["label"] = weather_fmt.hour_label(time_iso, i == 0)
+        row["icon"] = weather_fmt.weather_icon(code, is_day)
 
         let base_v = _num_or(hour[key] ?? null, 0.0)
         if is_null(converter) {
@@ -449,7 +494,7 @@ def status_text = cogito.label("Add a location to start")
         hourly_list.add(_hourly_row(hour, label))
     }
 
-    let min_w = len(hours) * 74
+    let ?min_w = len(hours) * 74
     if min_w < 480 {
         min_w = 480
     }
@@ -481,10 +526,20 @@ def status_text = cogito.label("Add a location to start")
     let accent = weather_fmt.weather_accent(code, is_day)
     content_tint_bin.set_accent_color(accent)
     sun_orbit.set_color(orbit_widget, accent, "$$accent$$2E", "#FFFDE79A", "#1A237E18")
-    line_chart.set_colors(temp_chart, accent, accent, accent, accent)
-    line_chart.set_colors(humidity_chart, accent, accent, accent, accent)
+    line_chart.set_colors(temp_chart, accent, accent, accent, "$$accent$$80")
+    line_chart.set_colors(humidity_chart, accent, accent, accent, "$$accent$$80")
 
     current_icon.set_icon(weather_fmt.weather_icon(code, is_day))
+    weather_header.set_weather(header_state, code, is_day, accent)
+
+    let hdr_cls = if color_utils.is_dark(accent) { "kairos-header-on-dark" } else { "kairos-header-on-light" }
+    current_icon.set_class("kairos-current-icon $$hdr_cls$$")
+    current_temp.set_class("kairos-current-temp $$hdr_cls$$")
+    current_desc.set_class("kairos-current-desc $$hdr_cls$$")
+    current_feels.set_class("kairos-current-feels $$hdr_cls$$")
+    content_bar.set_class("small kairos-content-bar $$hdr_cls$$")
+    refreshbtn.set_class("trailing $$hdr_cls$$")
+
     current_temp.set_text(_temp_short(temp_c))
     current_desc.set_text(weather_fmt.weather_label(code))
     let feels_text = weather_fmt.format_temp(feels_c, use_fahrenheit)
@@ -502,6 +557,10 @@ def status_text = cogito.label("Add a location to start")
     dew_value.set_text(_temp_verbose(dew_c))
     pressure_value.set_text(weather_fmt.format_pressure(pressure, use_fahrenheit))
 
+    let uv = _num_or(current["uv_index"] ?? null, 0.0)
+    let uv_rounded = stdr.floor(uv * 10.0 + 0.5) / 10.0
+    uv_value.set_text(weather_fmt.format_uv(uv_rounded))
+
     let sunrise = str(forecast_data["sunrise"] ?? "")
     let sunset = str(forecast_data["sunset"] ?? "")
     let sunrise_next = str(forecast_data["sunrise_next"] ?? "")
@@ -511,6 +570,21 @@ def status_text = cogito.label("Add a location to start")
     let temp_series = _build_series(hours, "temp_c", (v = num) => weather_fmt.value_temp(v, use_fahrenheit))
     let humidity_series = _build_series(hours, "humidity", null)
 
+    -- Detect day boundaries (indices where the date portion changes).
+    let ?day_breaks = []: [any]
+    let ?prev_date = ""
+    for (let ?hi = 0; hi < len(hours); hi += 1) {
+        let hour = hours[hi] ?? []: [string => any]
+        let t = str(hour["time"] ?? "")
+        let d = if len(t) >= 10 { stdr.slice(t, 0, 10) } else { "" }
+        if len(prev_date) > 0 && d != prev_date {
+            day_breaks[len(day_breaks)] = hi
+        }
+        prev_date = d
+    }
+
+    line_chart.set_day_breaks(temp_chart, day_breaks)
+    line_chart.set_day_breaks(humidity_chart, day_breaks)
     line_chart.set_series(temp_chart, temp_series)
     line_chart.set_series(humidity_chart, humidity_series)
 
@@ -521,7 +595,7 @@ def status_text = cogito.label("Add a location to start")
 }
 
 : _refresh_forecast() (( -- )) {
-    let loc = _selected_loc()
+    let ?loc = _selected_loc()
     if is_null(loc) {
         _set_empty_mode(true)
         return
@@ -592,7 +666,7 @@ def status_text = cogito.label("Add a location to start")
 
 : _toggle_units() (( -- )) {
     use_fahrenheit = !use_fahrenheit
-    unit_btn.set_text(if use_fahrenheit { "°F" } else { "°C" })
+    unitbtn.set_text(if use_fahrenheit { "°F" } else { "°C" })
     _update_chart_range()
     _apply_forecast()
     _save_state()
@@ -639,6 +713,7 @@ def status_text = cogito.label("Add a location to start")
     let scroller = cogito.scroller()
     .set_hexpand(true)
     .set_vexpand(true)
+    .set_axes(false, true)
     .add(root)
 
     return scroller
@@ -677,6 +752,7 @@ def status_text = cogito.label("Add a location to start")
     let scroller = cogito.scroller()
     .set_hexpand(true)
     .set_vexpand(true)
+    .set_axes(false, true)
     .add(root)
 
     return scroller
@@ -700,13 +776,14 @@ def status_text = cogito.label("Add a location to start")
     .set_hexpand(true)
     .set_vexpand(true)
 
-    let metrics = cogito.grid(3)
+    let metrics = cogito.grid(4)
     .set_gap(8, 8)
     .set_hexpand(true)
 
     metrics.add(_metric_card("Wind Direction", wind_value), 0, 0, 1, 1)
     metrics.add(_metric_card("Dew Point", dew_value), 1, 0, 1, 1)
     metrics.add(_metric_card("Pressure", pressure_value), 2, 0, 1, 1)
+    metrics.add(_metric_card("UV Index", uv_value), 3, 0, 1, 1)
 
     root.add(metrics)
     root.add(sun_orbit.widget(orbit_widget))
@@ -714,6 +791,7 @@ def status_text = cogito.label("Add a location to start")
     let scroller = cogito.scroller()
     .set_hexpand(true)
     .set_vexpand(true)
+    .set_axes(false, true)
     .add(root)
 
     return scroller
@@ -721,38 +799,48 @@ def status_text = cogito.label("Add a location to start")
 
 : _build_content_panel(win = cogito.Window) (( any )) {
     content_bar
-    .set_small()
-    .set_class("kairos-content-bar")
+    .set_class("small kairos-content-bar kairos-header-on-dark")
     .set_window_controls("close,minimize,maximize:")
 
-    content_bar.add_trailing_button("sf:arrow.clockwise", (n = any) => {
+    refreshbtn = content_bar.add_trailing_menu_button("sf:arrow.clockwise")
+    refreshbtn.on_click((n = any) => {
         _refresh_forecast()
     })
+    refreshbtn.set_class("trailing kairos-header-on-dark")
 
-    let top_row = cogito.hstack()
+    let title_row = cogito.hstack()
     .set_gap(12)
     .set_hexpand(true)
-    .set_padding(14, 8, 14, 14)
-    .set_class("kairos-header")
 
     current_icon
-    .set_class("kairos-current-icon")
+    .set_class("kairos-current-icon kairos-header-on-dark")
+    .set_align(4)
 
-    current_temp.set_class("kairos-current-temp")
+    current_temp.set_class("kairos-current-temp kairos-header-on-dark")
+    .set_align(4)
 
     let info_col = cogito.vstack()
-    .set_gap(2)
+    .set_gap(4)
+    .set_align(3)
     .set_hexpand(true)
 
-    current_desc.set_class("kairos-current-desc")
-    current_feels.set_class("kairos-current-feels")
+    current_desc.set_class("kairos-current-desc kairos-header-on-dark")
+    current_feels.set_class("kairos-current-feels kairos-header-on-dark")
 
     info_col.add(current_desc)
     info_col.add(current_feels)
 
-    top_row.add(current_icon)
-    top_row.add(current_temp)
-    top_row.add(info_col)
+    title_row.add(current_icon)
+    title_row.add(current_temp)
+    title_row.add(info_col)
+
+    content_bar.set_title_widget(title_row)
+
+    let header_stack = cogito.zstack()
+    .set_hexpand(true)
+    .set_class("kairos-header")
+    .add(header_gradient)
+    .add(content_bar)
 
     tabs
     .set_items(["Summary", "Hourly", "More Details"])
@@ -776,7 +864,7 @@ def status_text = cogito.label("Add a location to start")
     .set_hexpand(true)
     .set_vexpand(true)
 
-    forecast_content.add(top_row)
+    forecast_content.add(header_stack)
     forecast_content.add(tabs)
     forecast_content.add(views)
 
@@ -795,7 +883,6 @@ def status_text = cogito.label("Add a location to start")
     .set_hexpand(true)
     .set_vexpand(true)
 
-    content_panel.add(content_bar)
     content_panel.add(empty_page)
     content_panel.add(forecast_content)
 
@@ -809,9 +896,8 @@ def status_text = cogito.label("Add a location to start")
 
 : _build_sidebar(win = cogito.Window) (( any )) {
     sidebar_bar
-    .set_small()
     .set_hexpand(true)
-    .set_class("kairos-sidebar-bar")
+    .set_class("small kairos-sidebar-bar")
     .set_window_controls("")
 
     let gear_btn = sidebar_bar.add_trailing_menu_button("sf:gearshape")
@@ -877,8 +963,8 @@ entry() (( -- )) {
     .set_app_name("Kairos")
     .set_accent_color("#8DB4D7", true)
 
-    line_chart.set_colors(temp_chart, "#8DB4D7", "#8DB4D7", "#8DB4D7", "#8DB4D7")
-    line_chart.set_colors(humidity_chart, "#8DB4D7", "#8DB4D7", "#8DB4D7", "#8DB4D7")
+    line_chart.set_colors(temp_chart, "#8DB4D7", "#8DB4D7", "#8DB4D7", "#8DB4D780")
+    line_chart.set_colors(humidity_chart, "#8DB4D7", "#8DB4D7", "#8DB4D7", "#8DB4D780")
     sun_orbit.set_color(orbit_widget, "#8DB4D7", "#8DB4D72E", "#FFFDE79A", "#1A237E18")
     _update_chart_range()
 
@@ -886,7 +972,7 @@ entry() (( -- )) {
         let n = _num_or(value, 0.0)
         let rounded = stdr.floor(n + 0.5)
         let suffix = weather_fmt.unit_suffix(use_fahrenheit)
-        return "$$rounded$$ $$suffix$$"
+        return "$$rounded$$$$suffix$$"
     })
 
     line_chart.set_formatter(humidity_chart, (value = any, idx = any, label = string) => {

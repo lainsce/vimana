@@ -1,0 +1,673 @@
+cask weather_header
+
+bring stdr
+bring cogito
+bring utils.color_utils
+
+-- Constants
+def WH_PI = 3.141592653589793
+def WH_TAU = 6.283185307179586
+def TICK_MS = 50
+def MAX_PARTICLES = 30
+
+-- Weather category IDs (internal)
+def CAT_CLEAR_DAY = 0
+def CAT_CLEAR_NIGHT = 1
+def CAT_PARTLY_CLOUDY = 2
+def CAT_CLOUDY = 3
+def CAT_FOG = 4
+def CAT_DRIZZLE = 5
+def CAT_RAIN = 6
+def CAT_FREEZING_RAIN = 7
+def CAT_SNOW = 8
+def CAT_SHOWERS = 9
+def CAT_SNOW_SHOWERS = 10
+def CAT_THUNDERSTORM = 11
+
+-- Pseudo-random state
+def ?_rand_state = 12345.0
+
+-- ----- Utility helpers -----
+
+: _hex_digit(v = num) (( string )) {
+    if v < 10 { return str(v) }
+    if v == 10 { return "A" }
+    if v == 11 { return "B" }
+    if v == 12 { return "C" }
+    if v == 13 { return "D" }
+    if v == 14 { return "E" }
+    return "F"
+}
+
+: _hex_byte(v = num) (( string )) {
+    let ?hi = stdr.floor(v / 16)
+    let ?lo = stdr.floor(v - (hi * 16))
+    let hi_hex = _hex_digit(hi)
+    let lo_hex = _hex_digit(lo)
+    return "$$hi_hex$$$$lo_hex$$"
+}
+
+: _num_or(value = any, fallback = num) (( num )) {
+    if is_null(value) { return fallback }
+    return stdr.num(value)
+}
+
+: _clamp(v = num, lo = num, hi = num) (( num )) {
+    if v < lo { return lo }
+    if v > hi { return hi }
+    return v
+}
+
+: _abs(v = num) (( num )) {
+    if v < 0 { return 0.0 - v }
+    return v
+}
+
+-- Simple pseudo-random number generator (LCG)
+: _fmod(a = num, b = num) (( num )) {
+    return a - stdr.floor(a / b) * b
+}
+
+: _rand() (( num )) {
+    _rand_state = _fmod(stdr.floor(_rand_state * 1103515245.0 + 12345.0), 2147483648.0)
+    if _rand_state < 0 { _rand_state = 0.0 - _rand_state }
+    return _rand_state / 2147483648.0
+}
+
+: _rand_range(lo = num, hi = num) (( num )) {
+    return lo + (_rand() * (hi - lo))
+}
+
+-- Trig helpers (Taylor series approximations)
+: _sin_taylor(x = num) (( num )) {
+    let x2 = x * x
+    let ?term = x
+    let ?sum = x
+    for (let ?i = 0; i < 7; i += 1) {
+        let denom = (2.0 * i + 2.0) * (2.0 * i + 3.0)
+        term = -term * x2 / denom
+        sum += term
+    }
+    return sum
+}
+
+: _cos_taylor(x = num) (( num )) {
+    let x2 = x * x
+    let ?term = 1.0
+    let ?sum = 1.0
+    for (let ?i = 0; i < 7; i += 1) {
+        let denom = (2.0 * i + 1.0) * (2.0 * i + 2.0)
+        term = -term * x2 / denom
+        sum += term
+    }
+    return sum
+}
+
+: _wrap_angle(x = num) (( num )) {
+    let ?y = x
+    for (let ?i = 0; i < 8; i += 1) {
+        if !(y > WH_PI || y < -WH_PI) { break }
+        if y > WH_PI { y -= WH_TAU }
+        elif y < -WH_PI { y += WH_TAU }
+    }
+    return y
+}
+
+: _sin(x = num) (( num )) {
+    let ?y = _wrap_angle(x)
+    let ?sign = 1.0
+    if y > WH_PI / 2.0 {
+        y = WH_PI - y
+    } elif y < -(WH_PI / 2.0) {
+        y = WH_PI + y
+        sign = -1.0
+    }
+    return sign * _sin_taylor(y)
+}
+
+: _cos(x = num) (( num )) {
+    let ?y = _wrap_angle(x)
+    if y < 0.0 { y = -y }
+    let ?sign = 1.0
+    if y > WH_PI / 2.0 {
+        y = WH_PI - y
+        sign = -1.0
+    }
+    return sign * _cos_taylor(y)
+}
+
+-- ----- Weather category mapping -----
+
+: _weather_category(code = num, is_day = num) (( num )) {
+    if code == 0 {
+        return if is_day == 0 { CAT_CLEAR_NIGHT } else { CAT_CLEAR_DAY }
+    }
+    if code == 1 || code == 2 { return CAT_PARTLY_CLOUDY }
+    if code == 3 { return CAT_CLOUDY }
+    if code == 45 || code == 48 { return CAT_FOG }
+    if code == 51 || code == 53 || code == 55 { return CAT_DRIZZLE }
+    if code == 61 || code == 63 || code == 65 { return CAT_RAIN }
+    if code == 66 || code == 67 { return CAT_FREEZING_RAIN }
+    if code == 71 || code == 73 || code == 75 || code == 77 { return CAT_SNOW }
+    if code == 80 || code == 81 || code == 82 { return CAT_SHOWERS }
+    if code == 85 || code == 86 { return CAT_SNOW_SHOWERS }
+    if code == 95 || code == 96 || code == 99 { return CAT_THUNDERSTORM }
+    return CAT_CLEAR_DAY
+}
+
+-- ----- Gradient background -----
+
+: _draw_bg(area = cogito.DrawingArea, w = num, h = num, accent = string, is_day = num) (( -- )) {
+    let ?hex_a = "B0"
+    if is_day == 0 { hex_a = "D0" }
+    area.set_color("$$accent$$$$hex_a$$")
+    area.fill_rect(0, 0, w, h)
+}
+
+-- ----- Particle initializers -----
+
+: _make_particle(x = num, y = num, speed = num, alpha = num, size = num, drift = num) (( any )) {
+    let ?p = []: [string => any]
+    p["x"] = x
+    p["y"] = y
+    p["speed"] = speed
+    p["alpha"] = alpha
+    p["size"] = size
+    p["drift"] = drift
+    p["phase"] = _rand() * WH_TAU
+    return p
+}
+
+: _init_rain(?header = any, count = num, w = num, h = num, speed_lo = num, speed_hi = num, size_lo = num, size_hi = num) (( -- )) {
+    let ?particles = []: [any]
+    for (let ?i = 0; i < count; i += 1) {
+        let x = _rand_range(0.0, w)
+        let y = _rand_range(0.0 - 20.0, h)
+        let speed = _rand_range(speed_lo, speed_hi)
+        let alpha = _rand_range(120.0, 220.0)
+        let size = _rand_range(size_lo, size_hi)
+        particles[len(particles)] = _make_particle(x, y, speed, alpha, size, _rand_range(-0.3, 0.3))
+    }
+    header["particles"] = particles
+}
+
+: _init_snow(?header = any, count = num, w = num, h = num) (( -- )) {
+    let ?particles = []: [any]
+    for (let ?i = 0; i < count; i += 1) {
+        let x = _rand_range(0.0, w)
+        let y = _rand_range(0.0 - 10.0, h)
+        let speed = _rand_range(0.3, 1.2)
+        let alpha = _rand_range(140.0, 240.0)
+        let size = _rand_range(1.0, 3.0)
+        particles[len(particles)] = _make_particle(x, y, speed, alpha, size, _rand_range(-0.5, 0.5))
+    }
+    header["particles"] = particles
+}
+
+: _init_stars(?header = any, count = num, w = num, h = num) (( -- )) {
+    let ?particles = []: [any]
+    for (let ?i = 0; i < count; i += 1) {
+        let x = _rand_range(4.0, w - 4.0)
+        let y = _rand_range(4.0, h - 4.0)
+        let alpha = _rand_range(80.0, 220.0)
+        let size = _rand_range(1.0, 2.0)
+        particles[len(particles)] = _make_particle(x, y, 0.0, alpha, size, 0.0)
+    }
+    header["particles"] = particles
+}
+
+: _init_clouds(?header = any, count = num, w = num, h = num) (( -- )) {
+    let ?particles = []: [any]
+    for (let ?i = 0; i < count; i += 1) {
+        let x = _rand_range(0.0 - 60.0, w + 60.0)
+        let y = _rand_range(8.0, h * 0.6)
+        let speed = _rand_range(0.15, 0.5)
+        let alpha = _rand_range(30.0, 80.0)
+        let size = _rand_range(40.0, 90.0)
+        particles[len(particles)] = _make_particle(x, y, speed, alpha, size, 0.0)
+    }
+    header["particles"] = particles
+}
+
+: _init_fog(?header = any, count = num, w = num, h = num) (( -- )) {
+    let ?particles = []: [any]
+    for (let ?i = 0; i < count; i += 1) {
+        let x = _rand_range(0.0 - 40.0, w)
+        let y = _rand_range(0.0, h)
+        let speed = _rand_range(0.1, 0.4)
+        let alpha = _rand_range(20.0, 60.0)
+        let size = _rand_range(60.0, 160.0)
+        particles[len(particles)] = _make_particle(x, y, speed, alpha, size, 0.0)
+    }
+    header["particles"] = particles
+}
+
+: _init_sun_rays(?header = any, count = num) (( -- )) {
+    let ?particles = []: [any]
+    for (let ?i = 0; i < count; i += 1) {
+        let angle = (stdr.num(i) / stdr.num(count)) * WH_TAU
+        let alpha = _rand_range(40.0, 90.0)
+        let size = _rand_range(20.0, 50.0)
+        particles[len(particles)] = _make_particle(angle, 0.0, 0.01, alpha, size, 0.0)
+    }
+    header["particles"] = particles
+}
+
+: _init_particles(?header = any, cat = num, w = num, h = num) (( -- )) {
+    if cat == CAT_CLEAR_DAY {
+        _init_sun_rays(header, 12)
+    } elif cat == CAT_CLEAR_NIGHT {
+        _init_stars(header, 25, w, h)
+    } elif cat == CAT_PARTLY_CLOUDY {
+        _init_clouds(header, 5, w, h)
+    } elif cat == CAT_CLOUDY {
+        _init_clouds(header, 8, w, h)
+    } elif cat == CAT_FOG {
+        _init_fog(header, 10, w, h)
+    } elif cat == CAT_DRIZZLE {
+        _init_rain(header, 15, w, h, 1.0, 2.5, 4.0, 8.0)
+    } elif cat == CAT_RAIN || cat == CAT_SHOWERS {
+        _init_rain(header, 25, w, h, 3.0, 6.0, 8.0, 16.0)
+    } elif cat == CAT_FREEZING_RAIN {
+        _init_rain(header, 20, w, h, 2.0, 4.5, 6.0, 12.0)
+    } elif cat == CAT_SNOW || cat == CAT_SNOW_SHOWERS {
+        _init_snow(header, 20, w, h)
+    } elif cat == CAT_THUNDERSTORM {
+        _init_rain(header, 25, w, h, 4.0, 7.0, 10.0, 18.0)
+        header["flash_timer"] = 0.0
+        header["flash_on"] = false
+    }
+}
+
+-- ----- Particle tick (advance positions) -----
+
+: _tick_rain(?header = any, w = num, h = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    for (let ?i = 0; i < n; i += 1) {
+        let ?p = particles[i] ?? []: [string => any]
+        let ?y = _num_or(p["y"] ?? null, 0.0)
+        let ?x = _num_or(p["x"] ?? null, 0.0)
+        let speed = _num_or(p["speed"] ?? null, 3.0)
+        let drift = _num_or(p["drift"] ?? null, 0.0)
+        y += speed
+        x += drift
+        if y > h + 20.0 {
+            y = _rand_range(0.0 - 20.0, 0.0 - 5.0)
+            x = _rand_range(0.0, w)
+        }
+        if x < -10.0 { x = w + 5.0 }
+        if x > w + 10.0 { x = -5.0 }
+        p["y"] = y
+        p["x"] = x
+        particles[i] = p
+    }
+    header["particles"] = particles
+}
+
+: _tick_snow(?header = any, w = num, h = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    let ?tick = _num_or(header["tick"] ?? null, 0.0)
+    for (let ?i = 0; i < n; i += 1) {
+        let ?p = particles[i] ?? []: [string => any]
+        let ?y = _num_or(p["y"] ?? null, 0.0)
+        let ?x = _num_or(p["x"] ?? null, 0.0)
+        let speed = _num_or(p["speed"] ?? null, 0.5)
+        let phase = _num_or(p["phase"] ?? null, 0.0)
+        y += speed
+        x += _sin(tick * 0.05 + phase) * 0.4
+        if y > h + 10.0 {
+            y = _rand_range(0.0 - 10.0, -2.0)
+            x = _rand_range(0.0, w)
+        }
+        if x < -10.0 { x = w + 5.0 }
+        if x > w + 10.0 { x = -5.0 }
+        p["y"] = y
+        p["x"] = x
+        particles[i] = p
+    }
+    header["particles"] = particles
+}
+
+: _tick_stars(?header = any) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    let tick = _num_or(header["tick"] ?? null, 0.0)
+    for (let ?i = 0; i < n; i += 1) {
+        let ?p = particles[i] ?? []: [string => any]
+        let base_alpha = _num_or(p["alpha"] ?? null, 160.0)
+        let phase = _num_or(p["phase"] ?? null, 0.0)
+        let twinkle = _sin(tick * 0.08 + phase) * 0.5 + 0.5
+        let new_alpha = base_alpha * (0.3 + twinkle * 0.7)
+        p["draw_alpha"] = new_alpha
+        particles[i] = p
+    }
+    header["particles"] = particles
+}
+
+: _tick_clouds(?header = any, w = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    for (let ?i = 0; i < n; i += 1) {
+        let ?p = particles[i] ?? []: [string => any]
+        let ?x = _num_or(p["x"] ?? null, 0.0)
+        let speed = _num_or(p["speed"] ?? null, 0.2)
+        let size = _num_or(p["size"] ?? null, 60.0)
+        x += speed
+        if x > w + size {
+            x = 0.0 - size - _rand_range(10.0, 60.0)
+        }
+        p["x"] = x
+        particles[i] = p
+    }
+    header["particles"] = particles
+}
+
+: _tick_fog(?header = any, w = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    for (let ?i = 0; i < n; i += 1) {
+        let ?p = particles[i] ?? []: [string => any]
+        let ?x = _num_or(p["x"] ?? null, 0.0)
+        let speed = _num_or(p["speed"] ?? null, 0.2)
+        let size = _num_or(p["size"] ?? null, 100.0)
+        x += speed
+        if x > w + 20.0 {
+            x = 0.0 - size
+        }
+        p["x"] = x
+        particles[i] = p
+    }
+    header["particles"] = particles
+}
+
+: _tick_sun_rays(?header = any) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    for (let ?i = 0; i < n; i += 1) {
+        let ?p = particles[i] ?? []: [string => any]
+        let ?angle = _num_or(p["x"] ?? null, 0.0)
+        let speed = _num_or(p["speed"] ?? null, 0.01)
+        angle += speed
+        p["x"] = angle
+        particles[i] = p
+    }
+    header["particles"] = particles
+}
+
+: _tick_thunderstorm(?header = any, w = num, h = num) (( -- )) {
+    _tick_rain(header, w, h)
+    let ?flash_timer = _num_or(header["flash_timer"] ?? null, 0.0)
+    flash_timer += 1.0
+    if _num_or(header["flash_on"] ?? null, 0.0) > 0 {
+        if flash_timer > 2.0 {
+            header["flash_on"] = false
+            header["flash_timer"] = 0.0
+        } else {
+            header["flash_timer"] = flash_timer
+        }
+    } else {
+        if flash_timer > 40.0 + _rand_range(0.0, 60.0) {
+            header["flash_on"] = true
+            header["flash_timer"] = 0.0
+        } else {
+            header["flash_timer"] = flash_timer
+        }
+    }
+}
+
+: _tick(?header = any, w = num, h = num) (( -- )) {
+    let ?tick = _num_or(header["tick"] ?? null, 0.0)
+    tick += 1.0
+    header["tick"] = tick
+
+    let cat = _num_or(header["category"] ?? null, 0.0)
+    if cat == CAT_CLEAR_DAY {
+        _tick_sun_rays(header)
+    } elif cat == CAT_CLEAR_NIGHT {
+        _tick_stars(header)
+    } elif cat == CAT_PARTLY_CLOUDY || cat == CAT_CLOUDY {
+        _tick_clouds(header, w)
+    } elif cat == CAT_FOG {
+        _tick_fog(header, w)
+    } elif cat == CAT_DRIZZLE || cat == CAT_RAIN || cat == CAT_SHOWERS || cat == CAT_FREEZING_RAIN {
+        _tick_rain(header, w, h)
+    } elif cat == CAT_SNOW || cat == CAT_SNOW_SHOWERS {
+        _tick_snow(header, w, h)
+    } elif cat == CAT_THUNDERSTORM {
+        _tick_thunderstorm(header, w, h)
+    }
+}
+
+-- ----- Weather-specific renderers -----
+
+: _draw_rain(area = cogito.DrawingArea, ?header = any, w = num, h = num, base = string) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    area.set_line_width(1)
+    for (let ?i = 0; i < n; i += 1) {
+        let p = particles[i] ?? []: [string => any]
+        let x = _num_or(p["x"] ?? null, 0.0)
+        let y = _num_or(p["y"] ?? null, 0.0)
+        let alpha = _num_or(p["alpha"] ?? null, 180.0)
+        let size = _num_or(p["size"] ?? null, 10.0)
+        let hex_a = _hex_byte(_clamp(alpha, 0.0, 255.0))
+        area.set_color("$$base$$$$hex_a$$")
+        area.line(stdr.floor(x), stdr.floor(y), stdr.floor(x + 0.5), stdr.floor(y + size))
+    }
+}
+
+: _draw_snow(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    for (let ?i = 0; i < n; i += 1) {
+        let p = particles[i] ?? []: [string => any]
+        let x = _num_or(p["x"] ?? null, 0.0)
+        let y = _num_or(p["y"] ?? null, 0.0)
+        let alpha = _num_or(p["alpha"] ?? null, 200.0)
+        let size = _num_or(p["size"] ?? null, 2.0)
+        let hex_a = _hex_byte(_clamp(alpha, 0.0, 255.0))
+        let base = str(header["pcolor"] ?? "#FFFFFF")
+        area.set_color("$$base$$$$hex_a$$")
+        let s = stdr.floor(size)
+        area.fill_rect(stdr.floor(x), stdr.floor(y), s, s)
+    }
+}
+
+: _draw_stars(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    for (let ?i = 0; i < n; i += 1) {
+        let p = particles[i] ?? []: [string => any]
+        let x = _num_or(p["x"] ?? null, 0.0)
+        let y = _num_or(p["y"] ?? null, 0.0)
+        let alpha = _num_or(p["draw_alpha"] ?? null, _num_or(p["alpha"] ?? null, 160.0))
+        let size = _num_or(p["size"] ?? null, 1.0)
+        let hex_a = _hex_byte(_clamp(alpha, 0.0, 255.0))
+        let base = str(header["pcolor"] ?? "#FFFFFF")
+        area.set_color("$$base$$$$hex_a$$")
+        let s = stdr.floor(size)
+        area.fill_rect(stdr.floor(x), stdr.floor(y), s, s)
+    }
+}
+
+: _draw_clouds(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    for (let ?i = 0; i < n; i += 1) {
+        let p = particles[i] ?? []: [string => any]
+        let x = _num_or(p["x"] ?? null, 0.0)
+        let y = _num_or(p["y"] ?? null, 0.0)
+        let alpha = _num_or(p["alpha"] ?? null, 50.0)
+        let size = _num_or(p["size"] ?? null, 60.0)
+        let hex_a = _hex_byte(_clamp(alpha, 0.0, 255.0))
+        let base = str(header["pcolor"] ?? "#FFFFFF")
+        area.set_color("$$base$$$$hex_a$$")
+        let bw = stdr.floor(size)
+        let bh = stdr.floor(size * 0.35)
+        let bx = stdr.floor(x)
+        let by = stdr.floor(y)
+        area.fill_rect(bx, by, bw, bh)
+        let bump_w = stdr.floor(size * 0.45)
+        let bump_h = stdr.floor(size * 0.3)
+        area.fill_rect(bx + stdr.floor(size * 0.1), by - bump_h + 2, bump_w, bump_h)
+        area.fill_rect(bx + stdr.floor(size * 0.4), by - stdr.floor(bump_h * 0.8) + 2, stdr.floor(bump_w * 0.8), stdr.floor(bump_h * 0.8))
+    }
+}
+
+: _draw_fog(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    for (let ?i = 0; i < n; i += 1) {
+        let p = particles[i] ?? []: [string => any]
+        let x = _num_or(p["x"] ?? null, 0.0)
+        let y = _num_or(p["y"] ?? null, 0.0)
+        let alpha = _num_or(p["alpha"] ?? null, 40.0)
+        let size = _num_or(p["size"] ?? null, 100.0)
+        let hex_a = _hex_byte(_clamp(alpha, 0.0, 255.0))
+        let base = str(header["pcolor"] ?? "#FFFFFF")
+        area.set_color("$$base$$$$hex_a$$")
+        area.fill_rect(stdr.floor(x), stdr.floor(y), stdr.floor(size), 3)
+    }
+}
+
+: _draw_sun_rays(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
+    let particles = header["particles"] ?? []: [any]
+    let n = len(particles)
+    let cx = w * 0.75
+    let cy = h * 0.3
+    for (let ?i = 0; i < n; i += 1) {
+        let p = particles[i] ?? []: [string => any]
+        let angle = _num_or(p["x"] ?? null, 0.0)
+        let alpha = _num_or(p["alpha"] ?? null, 60.0)
+        let size = _num_or(p["size"] ?? null, 30.0)
+        let hex_a = _hex_byte(_clamp(alpha, 0.0, 255.0))
+        let base = str(header["pcolor"] ?? "#FFFFFF")
+        area.set_color("$$base$$$$hex_a$$")
+        area.set_line_width(2)
+        let inner_r = 12.0
+        let x1 = cx + _cos(angle) * inner_r
+        let y1 = cy - _sin(angle) * inner_r
+        let x2 = cx + _cos(angle) * (inner_r + size)
+        let y2 = cy - _sin(angle) * (inner_r + size)
+        area.line(stdr.floor(x1), stdr.floor(y1), stdr.floor(x2), stdr.floor(y2))
+    }
+    let base = str(header["pcolor"] ?? "#FFFFFF")
+    area.set_color("$$base$$60")
+    let core = 10
+    area.fill_rect(stdr.floor(cx - core), stdr.floor(cy - core), core * 2, core * 2)
+    area.set_color("$$base$$40")
+    area.fill_rect(stdr.floor(cx - core - 2), stdr.floor(cy - core - 2), core * 2 + 4, core * 2 + 4)
+}
+
+: _draw_lightning_flash(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
+    let flash_on = header["flash_on"] ?? false
+    if flash_on {
+        let base = str(header["pcolor"] ?? "#FFFFFF")
+        area.set_color("$$base$$30")
+        area.fill_rect(0, 0, w, h)
+    }
+}
+
+-- ----- Main draw dispatcher -----
+
+: _draw_header(?header = any, area = cogito.DrawingArea, w = num, h = num) (( -- )) {
+    let accent = str(header["accent"] ?? "#6750A4")
+    let is_day = _num_or(header["is_day"] ?? null, 1.0)
+    let cat = _num_or(header["category"] ?? null, 0.0)
+
+    let ?last_w = _num_or(header["last_w"] ?? null, 0.0)
+    let ?last_h = _num_or(header["last_h"] ?? null, 0.0)
+    if _abs(last_w - w) > 2.0 || _abs(last_h - h) > 2.0 {
+        header["last_w"] = w
+        header["last_h"] = h
+        _init_particles(header, cat, w, h)
+    }
+
+    _tick(header, w, h)
+    _draw_bg(area, w, h, accent, is_day)
+
+    let pc = color_utils.contrast_color(accent)
+    header["pcolor"] = pc
+
+    if cat == CAT_CLEAR_DAY {
+        _draw_sun_rays(area, header, w, h)
+    } elif cat == CAT_CLEAR_NIGHT {
+        _draw_stars(area, header, w, h)
+    } elif cat == CAT_PARTLY_CLOUDY || cat == CAT_CLOUDY {
+        _draw_clouds(area, header, w, h)
+    } elif cat == CAT_FOG {
+        _draw_fog(area, header, w, h)
+    } elif cat == CAT_DRIZZLE {
+        _draw_rain(area, header, w, h, pc)
+    } elif cat == CAT_RAIN || cat == CAT_SHOWERS {
+        _draw_rain(area, header, w, h, pc)
+    } elif cat == CAT_FREEZING_RAIN {
+        _draw_rain(area, header, w, h, pc)
+        let particles = header["particles"] ?? []: [any]
+        let n = len(particles)
+        for (let ?i = 0; i < n; i += 3) {
+            let p = particles[i] ?? []: [string => any]
+            let px = _num_or(p["x"] ?? null, 0.0)
+            let py = _num_or(p["y"] ?? null, 0.0)
+            area.set_color("$$pc$$80")
+            area.fill_rect(stdr.floor(px + 2.0), stdr.floor(py), 2, 2)
+        }
+    } elif cat == CAT_SNOW || cat == CAT_SNOW_SHOWERS {
+        _draw_snow(area, header, w, h)
+    } elif cat == CAT_THUNDERSTORM {
+        _draw_rain(area, header, w, h, pc)
+        _draw_lightning_flash(area, header, w, h)
+    }
+}
+
+-- ----- Public API -----
+
+:: new_header() (( any )) {
+    let area = cogito.drawing_area()
+    .set_hexpand(true)
+    .set_class("kairos-header-canvas")
+
+    let ?header = []: [string => any]
+    header["area"] = area
+    header["category"] = CAT_CLEAR_DAY
+    header["accent"] = "#6750A4"
+    header["is_day"] = 1.0
+    header["tick"] = 0.0
+    header["last_w"] = 0.0
+    header["last_h"] = 0.0
+    header["particles"] = []: [any]
+    header["flash_timer"] = 0.0
+    header["flash_on"] = false
+
+    area.on_draw((a = cogito.DrawingArea, w = any, h = any) => {
+        let dw = _num_or(w, 0.0)
+        let dh = _num_or(h, 0.0)
+        if dw > 0 && dh > 0 {
+            _draw_header(header, a, dw, dh)
+        }
+    })
+
+    cogito.set_interval_for(area, TICK_MS, () => {
+    })
+
+    return header
+}
+
+:: widget(header = any) (( any )) {
+    return header["area"]
+}
+
+:: set_weather(?header = any, code = num, is_day = num, accent = string) (( -- )) {
+    let cat = _weather_category(code, is_day)
+    header["category"] = cat
+    header["accent"] = accent
+    header["is_day"] = is_day
+    header["tick"] = 0.0
+    header["flash_timer"] = 0.0
+    header["flash_on"] = false
+    header["last_w"] = 0.0
+    header["last_h"] = 0.0
+    header["particles"] = []: [any]
+}
