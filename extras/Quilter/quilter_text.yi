@@ -1,10 +1,12 @@
 cask quilter_text
 
+bring stdr
+
 : is_blank_char(ch = string) (( bool )) {
     return ch == " " || ch == "\t" || ch == "\n" || ch == "\r"
 }
 
-: trim_text(text = string) (( string )) {
+:: trim_text(text = string) (( string )) {
     let n = len(text)
     if n == 0 {
         return ""
@@ -34,7 +36,7 @@ cask quilter_text
     return out
 }
 
-: starts_with(text = string, prefix = string) (( bool )) {
+:: starts_with(text = string, prefix = string) (( bool )) {
     if len(prefix) > len(text) {
         return false
     }
@@ -46,7 +48,7 @@ cask quilter_text
     return true
 }
 
-: slice_between(text = string, start = num, end = num) (( string )) {
+:: slice_between(text = string, ?start = num, ?end = num) (( string )) {
     let n = len(text)
     if start < 0 {
         start = 0
@@ -65,11 +67,11 @@ cask quilter_text
     return out
 }
 
-: slice_from(text = string, from = num) (( string )) {
+:: slice_from(text = string, from = num) (( string )) {
     return slice_between(text, from, len(text))
 }
 
-: basename(path = string) (( string )) {
+:: basename(path = string) (( string )) {
     let n = len(path)
     let ?last = -1
     for (let ?i = 0; i < n; i += 1) {
@@ -84,7 +86,7 @@ cask quilter_text
     return slice_between(path, last + 1, n)
 }
 
-: ends_with_md(path = string) (( bool )) {
+:: ends_with_md(path = string) (( bool )) {
     let n = len(path)
     if n < 3 || path[n - 3] != "." {
         return false
@@ -94,14 +96,14 @@ cask quilter_text
     return (c1 == "m" || c1 == "M") && (c2 == "d" || c2 == "D")
 }
 
-: ensure_md(path = string) (( string )) {
+:: ensure_md(path = string) (( string )) {
     if ends_with_md(path) {
         return path
     }
     return "$$path$$.md"
 }
 
-: count_words(text = string) (( num )) {
+:: count_words(text = string) (( num )) {
     let ?count = 0
     let ?in_word = false
 
@@ -121,7 +123,7 @@ cask quilter_text
     return count
 }
 
-: count_sentences(text = string) (( num )) {
+:: count_sentences(text = string) (( num )) {
     let ?count = 0
     for (let ?i = 0; i < len(text); i += 1) {
         let ch = text[i]
@@ -132,7 +134,7 @@ cask quilter_text
     return count
 }
 
-: find_from(haystack = string, needle = string, from = num) (( num )) {
+:: find_from(haystack = string, needle = string, ?from = num) (( num )) {
     let n = len(haystack)
     let m = len(needle)
 
@@ -162,7 +164,7 @@ cask quilter_text
     return -1
 }
 
-: count_matches(haystack = string, needle = string) (( num )) {
+:: count_matches(haystack = string, needle = string) (( num )) {
     if len(needle) == 0 {
         return 0
     }
@@ -181,7 +183,7 @@ cask quilter_text
     return count
 }
 
-: replace_at(text = string, at = num, old_len = num, replacement = string) (( string )) {
+:: replace_at(text = string, at = num, old_len = num, replacement = string) (( string )) {
     let left = slice_between(text, 0, at)
     let right = slice_between(text, at + old_len, len(text))
     return "$$left$$$$replacement$$$$right$$"

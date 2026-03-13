@@ -5,11 +5,11 @@ bring cogito
 
 def app = cogito.app()
 def ?drawing_tool = "Pen"
-def shape_phase = 0.0
-def shape_paused = true
-def shape_armed = false
-def shape_timer_id = 0
-def shape_instruction_text = "5 - Inhale"
+def ?shape_phase = 0.0
+def ?shape_paused = true
+def ?shape_armed = false
+def ?shape_timer_id = 0
+def ?shape_instruction_text = "5 - Inhale"
 
 macro clicked_message() (( string )) {
     "Button clicked."
@@ -1671,7 +1671,7 @@ macro clicked_message() (( string )) {
             let phase01 = if shifted < 0.5 { shifted * 2.0 } else { (1.0 - shifted) * 2.0 }
             let mult = min_multiplier + phase01 * (1.0 - min_multiplier)
             let radius_factor = 1.0 - (0.9 * idx / (layer_count - 1.0))
-            let layer_size = base_size * radius_factor * mult
+            let ?layer_size = base_size * radius_factor * mult
             if layer_size < 24.0 { layer_size = 24.0 }
             let scale = layer_size / base_size
             session_apply_scaled_vertices(layer, base, scale)

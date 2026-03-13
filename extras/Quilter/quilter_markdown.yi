@@ -1,5 +1,6 @@
 cask quilter_markdown
 
+bring stdr
 bring quilter_text
 
 : escape_char(ch = string) (( string )) {
@@ -21,7 +22,7 @@ bring quilter_text
     return ch
 }
 
-: escape_html(text = string) (( string )) {
+:: escape_html(text = string) (( string )) {
     let ?out = ""
     for (let ?i = 0; i < len(text); i += 1) {
         let ch = text[i]
@@ -226,7 +227,7 @@ bring quilter_text
     return out
 }
 
-: markdown_to_html(md = string) (( string )) {
+:: markdown_to_html(md = string) (( string )) {
     let ?out = ""
     let ?line = ""
     let ?in_list = false
@@ -334,7 +335,7 @@ bring quilter_text
     return out
 }
 
-: outline_from_markdown(md = string) (( string )) {
+:: outline_from_markdown(md = string) (( string )) {
     let ?out = ""
     let ?line = ""
     let ?in_code = false
@@ -385,6 +386,6 @@ bring quilter_text
     return out
 }
 
-: markdown_to_preview(md = string) (( string )) {
+:: markdown_to_preview(md = string) (( string )) {
     return markdown_to_html(md)
 }

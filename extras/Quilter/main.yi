@@ -1053,7 +1053,7 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     .set_vexpand(true)
     .set_padding(8, 8, 8, 8)
 
-    files_list.on_select((idx) => {
+    files_list.on_select((idx = num) => {
         if !suspend_file_select && idx >= 0 && idx < len(open_paths) {
             let p = open_paths[idx] ?? ""
             if idx != active_open_index {

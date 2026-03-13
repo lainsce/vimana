@@ -50,7 +50,7 @@ bring cogito
     .set_gap(12)
     .set_hexpand(true)
     let switch_label = cogito.label("Switch (knob mirrors):")
-    let sw = cogito.switch(false)
+    let sw = cogito.switch("")
     switch_row.add(switch_label)
     switch_row.add(sw)
     vstack.add(switch_row)

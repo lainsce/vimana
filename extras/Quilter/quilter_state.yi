@@ -10,7 +10,7 @@ bring json
     return "false"
 }
 
-: save(
+:: save(
     state_path = string,
     current_path = string,
     dirty = bool,
@@ -66,7 +66,7 @@ bring json
     stdr.write_text_file(state_path, payload)
 }
 
-: load(state_path = string) (( any )) {
+:: load(state_path = string) (( any )) {
     let raw = stdr.read_text_file(state_path)
     if is_null(raw) {
         return null
