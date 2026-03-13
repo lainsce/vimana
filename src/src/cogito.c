@@ -232,6 +232,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_node_set_a11y_role cogito_node_set_a11y_role_yis
 #define cogito_node_set_class cogito_node_set_class_yis
 #define cogito_node_set_disabled cogito_node_set_disabled_yis
+#define cogito_node_set_opacity cogito_node_set_opacity_yis
 #define cogito_node_set_visible cogito_node_set_visible_yis
 #define cogito_node_get_visible cogito_node_get_visible_yis
 #define cogito_node_set_editable cogito_node_set_editable_yis
@@ -629,6 +630,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_node_set_a11y_role
 #undef cogito_node_set_class
 #undef cogito_node_set_disabled
+#undef cogito_node_set_opacity
 #undef cogito_node_set_visible
 #undef cogito_node_get_visible
 #undef cogito_node_set_editable
@@ -3003,6 +3005,12 @@ void cogito_node_set_gap(cogito_node *node, int gap) {
   cogito_container_set_gap(YV_OBJ(node), YV_INT(gap));
 }
 
+void cogito_node_set_homogeneous(cogito_node *node, bool on) {
+  if (!node)
+    return;
+  cogito_container_set_homogeneous(YV_OBJ(node), YV_BOOL(on));
+}
+
 void cogito_node_set_id(cogito_node *node, const char *id) {
   if (!node)
     return;
@@ -3083,6 +3091,12 @@ void cogito_node_set_disabled(cogito_node *node, bool on) {
   if (!node)
     return;
   cogito_node_set_disabled_yis(YV_OBJ(node), YV_BOOL(on));
+}
+
+void cogito_node_set_opacity(cogito_node *node, float opacity) {
+  if (!node)
+    return;
+  cogito_node_set_opacity_yis(YV_OBJ(node), YV_FLOAT(opacity));
 }
 
 void cogito_node_set_visible(cogito_node *node, bool on) {

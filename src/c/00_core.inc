@@ -738,6 +738,7 @@ typedef struct CogitoNode {
   bool hexpand_set;
   bool vexpand_set;
   int gap;
+  bool homogeneous;
   bool auto_size;
   uint8_t window_size_class;
   int resize_min_w;

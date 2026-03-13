@@ -54,7 +54,15 @@ static void cogito_layout_vstack(CogitoNode* n, int x, int y) {
   int total_gaps = (count > 0) ? (int)(count - 1) * pad : 0;
   int avail_content_h = avail_h - total_margins - total_gaps;
   if (avail_content_h < 0) avail_content_h = 0;
-  cogito_distribute_axis_sizes(count, intrinsic_h, expand, avail_content_h, assigned_h);
+  if (n->homogeneous && count > 0) {
+    int cell = avail_content_h / (int)count;
+    int rem  = avail_content_h - cell * (int)count;
+    for (size_t i = 0; i < count; i++) {
+      assigned_h[i] = cell + (((int)i < rem) ? 1 : 0);
+    }
+  } else {
+    cogito_distribute_axis_sizes(count, intrinsic_h, expand, avail_content_h, assigned_h);
+  }
   // Appbars reserve hard vertical space; shrink siblings first.
   int appbar_restore = 0;
   for (size_t i = 0; i < count; i++) {

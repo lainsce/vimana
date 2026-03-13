@@ -158,6 +158,7 @@
 #undef cogito_node_set_class
 #undef cogito_node_set_disabled
 #undef cogito_node_set_editable
+#undef cogito_node_set_opacity
 #undef cogito_node_set_halign
 #undef cogito_node_set_id
 #undef cogito_node_set_margins
@@ -2347,6 +2348,11 @@ static void __cogito_container_set_gap(YisVal nodev, YisVal gap) {
   cogito_node_set_gap(node, (int)yis_as_int(gap));
 }
 
+static void __cogito_container_set_homogeneous(YisVal nodev, YisVal hv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_homogeneous(node, yis_as_bool(hv));
+}
+
 static void __cogito_container_set_padding(YisVal nodev, YisVal top, YisVal right, YisVal bottom, YisVal left) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_padding(node, (int)yis_as_int(top), (int)yis_as_int(right), (int)yis_as_int(bottom), (int)yis_as_int(left));
@@ -2423,6 +2429,12 @@ static void __cogito_grid_set_align(YisVal childv, YisVal halign, YisVal valign)
 static void __cogito_node_set_disabled(YisVal nodev, YisVal onv) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_disabled(node, onv.tag == EVT_BOOL ? onv.as.b : false);
+}
+
+static void __cogito_node_set_opacity(YisVal nodev, YisVal opacityv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  float opacity = opacityv.tag == EVT_FLOAT ? (float)opacityv.as.f : (opacityv.tag == EVT_INT ? (float)opacityv.as.i : 1.0f);
+  cogito_node_set_opacity(node, opacity);
 }
 
 static void __cogito_node_set_visible(YisVal nodev, YisVal onv) {
@@ -3870,6 +3882,7 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_container_set_vexpand __cogito_container_set_vexpand
 #define cogito_container_set_vexpand_set __cogito_container_set_vexpand_set
 #define cogito_container_set_gap __cogito_container_set_gap
+#define cogito_container_set_homogeneous __cogito_container_set_homogeneous
 #define cogito_dialog_slot_show __cogito_dialog_slot_show
 #define cogito_dialog_slot_clear __cogito_dialog_slot_clear
 #define cogito_container_set_padding __cogito_container_set_padding
@@ -3895,6 +3908,7 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_label_set_marquee __cogito_label_set_marquee
 #define cogito_label_set_align __cogito_label_set_align
 #define cogito_node_set_disabled __cogito_node_set_disabled
+#define cogito_node_set_opacity __cogito_node_set_opacity
 #define cogito_node_set_visible __cogito_node_set_visible
 #define cogito_node_set_editable __cogito_node_set_editable
 #define cogito_node_get_editable __cogito_node_get_editable

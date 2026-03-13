@@ -32,11 +32,8 @@ typedef struct {
   CogitoColor shadow, scrim;
 } CogitoEnsorScheme;
 
-#include "ensor_palette.inc"
 #include "ensor_schemes.inc"
 #include "ensor_quantize.inc"
 #include "ensor_score.inc"
-#include "ensor_keycolor.inc"
-#include "ensor_temperature.inc"
 #include "ensor_accent.inc"
 #include "ensor_dynamic.inc"

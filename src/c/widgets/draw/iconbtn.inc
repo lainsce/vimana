@@ -178,8 +178,9 @@ case COGITO_ICONBTN: {
         if (icon_color.a < 8) icon_color = n->text_color;
       }
 
-      // AppBar idle state: keep icons on primary for stronger affordance.
-      if (in_appbar && !n->disabled) {
+      // AppBar idle state: keep icons on primary for stronger affordance,
+      // unless a stylesheet explicitly set a color.
+      if (in_appbar && !n->disabled && !s.has_icon_color && !s.has_text) {
         bool down = over && down_state;
         if (!hover && !active && !over && !down) {
           icon_color = cogito_bin_scope_remap_color(cogito_theme.iconbtn_filled.bg);

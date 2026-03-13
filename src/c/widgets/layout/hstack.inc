@@ -54,7 +54,15 @@ static void cogito_layout_hstack(CogitoNode* n, int x, int y) {
   int total_gaps = (count > 0) ? (int)(count - 1) * pad : 0;
   int avail_content_w = avail_w - total_margins - total_gaps;
   if (avail_content_w < 0) avail_content_w = 0;
-  cogito_distribute_axis_sizes(count, intrinsic_w, expand, avail_content_w, assigned_w);
+  if (n->homogeneous && count > 0) {
+    int cell = avail_content_w / (int)count;
+    int rem  = avail_content_w - cell * (int)count;
+    for (size_t i = 0; i < count; i++) {
+      assigned_w[i] = cell + (((int)i < rem) ? 1 : 0);
+    }
+  } else {
+    cogito_distribute_axis_sizes(count, intrinsic_w, expand, avail_content_w, assigned_w);
+  }
 
   bool rtl = cogito_is_rtl();
   int cx;

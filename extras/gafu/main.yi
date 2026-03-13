@@ -176,6 +176,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
 
     let top = cogito.hstack()
     .set_hexpand(true)
+    .set_homogeneous(true)
     top.add(swatch(a, ca))
     top.add(swatch(b, cb))
 
@@ -212,6 +213,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     let tones = cogito.hstack()
     .set_gap(12)
     .set_hexpand(true)
+    .set_homogeneous(true)
     .add(tone_column("Primary", "primary", "On Primary", "on-primary", "Primary Container", "primary-container", "On Primary Container", "on-primary-container"))
     .add(tone_column("Secondary", "secondary", "On Secondary", "on-secondary", "Secondary Container", "secondary-container", "On Secondary Container", "on-secondary-container"))
     .add(tone_column("Tertiary", "tertiary", "On Tertiary", "on-tertiary", "Tertiary Container", "tertiary-container", "On Tertiary Container", "on-tertiary-container"))
@@ -220,6 +222,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     let fixed = cogito.hstack()
     .set_gap(12)
     .set_hexpand(true)
+    .set_homogeneous(true)
     .add(fixed_column("Primary Fixed", "primary-fixed", "Primary Fixed Dim", "primary-fixed-dim", "On Primary Fixed", "on-primary-fixed", "On Primary Fixed Variant", "on-primary-fixed-variant"))
     .add(fixed_column("Secondary Fixed", "secondary-fixed", "Secondary Fixed Dim", "secondary-fixed-dim", "On Secondary Fixed", "on-secondary-fixed", "On Secondary Fixed Variant", "on-secondary-fixed-variant"))
     .add(fixed_column("Tertiary Fixed", "tertiary-fixed", "Tertiary Fixed Dim", "tertiary-fixed-dim", "On Tertiary Fixed", "on-tertiary-fixed", "On Tertiary Fixed Variant", "on-tertiary-fixed-variant"))
@@ -234,12 +237,14 @@ def GAFU_STATE_PATH = ".gafu_state.json"
 
     let surfaces = cogito.hstack()
     .set_hexpand(true)
+    .set_homogeneous(true)
     .add(swatch("Surface Dim", "surface-dim"))
     .add(swatch("Surface", "surface"))
     .add(swatch("Surface Bright", "surface-bright"))
 
     let containers = cogito.hstack()
     .set_hexpand(true)
+    .set_homogeneous(true)
     .add(swatch("Surface Container Lowest", "surface-container-lowest"))
     .add(swatch("Surface Container Low", "surface-container-low"))
     .add(swatch("Surface Container", "surface-container"))
@@ -248,6 +253,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
 
     let on_surface = cogito.hstack()
     .set_hexpand(true)
+    .set_homogeneous(true)
     .add(swatch("On Surface", "on-surface"))
     .add(swatch("On Surface Variant", "on-surface-variant"))
     .add(swatch("Outline", "outline-fill"))

@@ -161,6 +161,13 @@ static void cogito_container_set_gap(YisVal nodev, YisVal gapv) {
   cogito_window_relayout(cogito_node_window(node));
 }
 
+static void cogito_container_set_homogeneous(YisVal nodev, YisVal hv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_homogeneous expects object");
+  CogitoNode* node = (CogitoNode*)nodev.as.p;
+  node->homogeneous = yis_as_bool(hv);
+  cogito_window_relayout(cogito_node_window(node));
+}
+
 static void cogito_container_set_padding(YisVal nodev, YisVal top, YisVal right, YisVal bottom, YisVal left) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_padding expects object");
   CogitoNode* node = (CogitoNode*)nodev.as.p;
@@ -179,6 +186,17 @@ static void cogito_node_set_disabled(YisVal nodev, YisVal onv) {
     cogito_focused = NULL;
     cogito_focus_visible = false;
   }
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static void cogito_node_set_opacity(YisVal nodev, YisVal opacityv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_set_opacity expects object");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  float v = opacityv.tag == EVT_INT ? (float)opacityv.as.i : (opacityv.tag == EVT_FLOAT ? (float)opacityv.as.f : 1.0f);
+  if (v < 0.0f) v = 0.0f;
+  if (v > 1.0f) v = 1.0f;
+  n->opacity = v;
+  n->opacity_set = true;
   cogito_window_relayout(cogito_node_window(n));
 }
 

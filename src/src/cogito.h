@@ -361,6 +361,7 @@ void cogito_node_set_vexpand(cogito_node *node, bool expand);
 void cogito_node_set_hexpand_set(cogito_node *node, bool set);
 void cogito_node_set_vexpand_set(cogito_node *node, bool set);
 void cogito_node_set_gap(cogito_node *node, int gap);
+void cogito_node_set_homogeneous(cogito_node *node, bool on);
 void cogito_node_set_id(cogito_node *node, const char *id);
 
 // Common props
@@ -368,6 +369,7 @@ void cogito_node_set_text(cogito_node *node, const char *text);
 const char *cogito_node_get_text(cogito_node *node);
 void cogito_node_set_subtitle(cogito_node *node, const char *text);
 void cogito_node_set_disabled(cogito_node *node, bool on);
+void cogito_node_set_opacity(cogito_node *node, float opacity);
 void cogito_node_set_visible(cogito_node *node, bool on);
 bool cogito_node_get_visible(cogito_node *node);
 void cogito_node_set_editable(cogito_node *node, bool on);

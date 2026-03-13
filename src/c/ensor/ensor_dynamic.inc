@@ -905,6 +905,8 @@ static CogitoDynToneChoice cogito_dyn_pick_contrasting_tone(
 // ---- Snap background tones (from DynamicColor.vala) ----
 // Avoids tones 50-64 for is_background colors.
 static double cogito_dyn_snap_bg(double tone) {
+  if (tone < 0.0) tone = 0.0;
+  if (tone > 100.0) tone = 100.0;
   if (tone >= 57.0) {
     return tone < 65.0 ? 65.0 : tone;
   } else {
@@ -935,15 +937,19 @@ static double cogito_dyn_tdp_accent(double accent_init, double container_init, d
   // absolute_delta = dark ? -delta : +delta (RELATIVE_LIGHTER)
   // For accent (role_b), relative_delta = absolute_delta * -1
   double rel = dark ? delta : -delta;
+  double result;
   if (rel > 0) {
     // FARTHER: self_tone = max(container_init + rel, accent_init)
     double bound = container_init + rel;
-    return accent_init > bound ? accent_init : bound;
+    result = accent_init > bound ? accent_init : bound;
   } else {
     // FARTHER: self_tone = min(container_init + rel, accent_init)
     double bound = container_init + rel;
-    return accent_init < bound ? accent_init : bound;
+    result = accent_init < bound ? accent_init : bound;
   }
+  if (result < 0.0) result = 0.0;
+  if (result > 100.0) result = 100.0;
+  return result;
 }
 
 // ---- Primary role tones (from Scheme.vala) ----
@@ -971,6 +977,7 @@ static double cogito_dyn_primary_init(const CogitoEnsorDyn* s) {
   const CogitoEnsorPal* p = &s->primary;
   switch (s->variant) {
     case COGITO_ENSOR_MONOCHROME: return s->dark ? 100.0 : 0.0;
+    case COGITO_ENSOR_CONTENT:
     case COGITO_ENSOR_MUTED: return s->dark ? 80.0 : 40.0;
     case COGITO_ENSOR_DEFAULT: return s->dark ? 80.0 : 40.0;
     case COGITO_ENSOR_SALAD:
@@ -1019,6 +1026,7 @@ static double cogito_dyn_secondary_init(const CogitoEnsorDyn* s) {
   const CogitoEnsorPal* p = &s->secondary;
   switch (s->variant) {
     case COGITO_ENSOR_MONOCHROME: return s->dark ? 80.0 : 40.0;
+    case COGITO_ENSOR_CONTENT: return s->dark ? 80.0 : 40.0;
     case COGITO_ENSOR_DEFAULT:
       return s->dark ? 80.0 : cogito_dyn_tmax_c(p->hue, p->chroma, 0, 100);
     case COGITO_ENSOR_MUTED:
@@ -1134,10 +1142,11 @@ static CogitoEnsorRoleTones cogito_dyn_resolve_accent(
 {
   CogitoEnsorRoleTones r;
 
-  // --- Container: snap for is_background, contrast if ratio > 1 ---
-  r.container = cogito_dyn_snap_bg(container_init);
+  // --- Container: contrast if ratio > 1, then snap for is_background ---
+  r.container = container_init;
   if (container_ratio > 1.0)
     r.container = cogito_dyn_ensure_contrast(r.container, bg_tone, container_ratio, contrast_level);
+  r.container = cogito_dyn_snap_bg(r.container);
 
   // --- Accent: TDP(container, accent, 5, RELATIVE_LIGHTER, FARTHER) ---
   double acc = cogito_dyn_tdp_accent(accent_init, container_init, 5.0, dark);
@@ -1170,10 +1179,11 @@ static CogitoEnsorRoleTones cogito_dyn_resolve_accent_content(
 {
   CogitoEnsorRoleTones r;
 
-  // Container: snap, contrast if ratio > 1
-  r.container = cogito_dyn_snap_bg(container_init);
+  // Container: contrast if ratio > 1, then snap
+  r.container = container_init;
   if (container_ratio > 1.0)
     r.container = cogito_dyn_ensure_contrast(r.container, bg_tone, container_ratio, contrast_level);
+  r.container = cogito_dyn_snap_bg(r.container);
 
   // Accent with TDP
   double acc = cogito_dyn_tdp_accent(accent_init, container_init, 5.0, dark);
@@ -1231,7 +1241,7 @@ static CogitoEnsorScheme cogito_ensor_build_dynamic_scheme_impl(
   double r_accent      = cogito_contrast_curve_get(cogito_dyn_curve(4.5), cl);
   double r_on_accent   = cogito_contrast_curve_get(cogito_dyn_curve(6.0), cl);
   double r_on_cont     = cogito_contrast_curve_get(cogito_dyn_curve(6.0), cl);
-  double r_on_err_cont = cogito_contrast_curve_get(cogito_dyn_curve(4.5), cl);
+  double r_on_err_cont = cogito_contrast_curve_get(cogito_dyn_curve(6.0), cl);
   double r_on_surface  = cogito_contrast_curve_get(cogito_dyn_curve(dark ? 11.0 : 9.0), cl);
   double r_on_sv       = cogito_contrast_curve_get(cogito_dyn_curve(dark ? 6.0 : 4.5), cl);
   double r_outline     = cogito_contrast_curve_get(cogito_dyn_curve(3.0), cl);
@@ -1372,10 +1382,11 @@ static CogitoEnsorScheme cogito_ensor_build_dynamic_scheme_impl(
     double oe_init = cogito_dyn_on_error_init(&s);
     if (prof) p_init_oe += cogito_ensor_prof_now() - init_t0;
 
-    // error_container: snap + contrast if ratio > 1
-    double ec_tone = cogito_dyn_snap_bg(ec_init);
+    // error_container: contrast if ratio > 1, then snap
+    double ec_tone = ec_init;
     if (r_container > 1.0)
       ec_tone = cogito_dyn_ensure_contrast(ec_tone, bg_tone, r_container, cl);
+    ec_tone = cogito_dyn_snap_bg(ec_tone);
 
     // error: TDP(error_container, error, 5, RELATIVE_LIGHTER, FARTHER)
     double er_tone = cogito_dyn_tdp_accent(er_init, ec_init, 5.0, dark);
@@ -1520,13 +1531,13 @@ static CogitoEnsorScheme cogito_ensor_build_dynamic_scheme_impl(
     double r_on_fixed_variant = cogito_contrast_curve_get(cogito_dyn_curve(4.5), cl);
 
     double pf_tone = cogito_dyn_tone_of_rgb(light_base.primary_container);
-    double pfd_tone = fmax(0.0, pf_tone - 10.0);
+    double pfd_tone = fmax(0.0, pf_tone - 5.0);
     CogitoColor pf_color = cogito_dyn_pal_color(s.primary, pf_tone, 1.0);
     CogitoColor pfd_color = cogito_dyn_pal_color(s.primary, pfd_tone, 1.0);
-    double opf_tone = cogito_dyn_ensure_contrast(pf_tone, pf_tone, r_on_fixed, cl);
+    double opf_tone = cogito_dyn_ensure_contrast(pfd_tone, pfd_tone, r_on_fixed, cl);
     double opfv_tone = cogito_dyn_ensure_contrast(pfd_tone, pfd_tone, r_on_fixed_variant, cl);
     CogitoDynToneChoice opf_choice = cogito_dyn_pick_contrasting_tone(
-        s.primary, opf_tone, pf_color, r_on_fixed);
+        s.primary, opf_tone, pfd_color, r_on_fixed);
     CogitoDynToneChoice opfv_choice = cogito_dyn_pick_contrasting_tone(
         s.primary, opfv_tone, pfd_color, r_on_fixed_variant);
     out.primary_fixed = pf_color;
@@ -1535,13 +1546,13 @@ static CogitoEnsorScheme cogito_ensor_build_dynamic_scheme_impl(
     out.on_primary_fixed_variant = cogito_dyn_pal_color(s.primary, opfv_choice.tone, opfv_choice.cmult);
 
     double sf_tone = cogito_dyn_tone_of_rgb(light_base.secondary_container);
-    double sfd_tone = fmax(0.0, sf_tone - 10.0);
+    double sfd_tone = fmax(0.0, sf_tone - 5.0);
     CogitoColor sf_color = cogito_dyn_pal_color(s.secondary, sf_tone, 1.0);
     CogitoColor sfd_color = cogito_dyn_pal_color(s.secondary, sfd_tone, 1.0);
-    double osf_tone = cogito_dyn_ensure_contrast(sf_tone, sf_tone, r_on_fixed, cl);
+    double osf_tone = cogito_dyn_ensure_contrast(sfd_tone, sfd_tone, r_on_fixed, cl);
     double osfv_tone = cogito_dyn_ensure_contrast(sfd_tone, sfd_tone, r_on_fixed_variant, cl);
     CogitoDynToneChoice osf_choice = cogito_dyn_pick_contrasting_tone(
-        s.secondary, osf_tone, sf_color, r_on_fixed);
+        s.secondary, osf_tone, sfd_color, r_on_fixed);
     CogitoDynToneChoice osfv_choice = cogito_dyn_pick_contrasting_tone(
         s.secondary, osfv_tone, sfd_color, r_on_fixed_variant);
     out.secondary_fixed = sf_color;
@@ -1550,13 +1561,13 @@ static CogitoEnsorScheme cogito_ensor_build_dynamic_scheme_impl(
     out.on_secondary_fixed_variant = cogito_dyn_pal_color(s.secondary, osfv_choice.tone, osfv_choice.cmult);
 
     double tf_tone = cogito_dyn_tone_of_rgb(light_base.tertiary_container);
-    double tfd_tone = fmax(0.0, tf_tone - 10.0);
+    double tfd_tone = fmax(0.0, tf_tone - 5.0);
     CogitoColor tf_color = cogito_dyn_pal_color(s.tertiary, tf_tone, 1.0);
     CogitoColor tfd_color = cogito_dyn_pal_color(s.tertiary, tfd_tone, 1.0);
-    double otf_tone = cogito_dyn_ensure_contrast(tf_tone, tf_tone, r_on_fixed, cl);
+    double otf_tone = cogito_dyn_ensure_contrast(tfd_tone, tfd_tone, r_on_fixed, cl);
     double otfv_tone = cogito_dyn_ensure_contrast(tfd_tone, tfd_tone, r_on_fixed_variant, cl);
     CogitoDynToneChoice otf_choice = cogito_dyn_pick_contrasting_tone(
-        s.tertiary, otf_tone, tf_color, r_on_fixed);
+        s.tertiary, otf_tone, tfd_color, r_on_fixed);
     CogitoDynToneChoice otfv_choice = cogito_dyn_pick_contrasting_tone(
         s.tertiary, otfv_tone, tfd_color, r_on_fixed_variant);
     out.tertiary_fixed = tf_color;

@@ -109,6 +109,7 @@ macro chain() (( any )) {
 : __cogito_container_set_halign(node = any, align = num) (( -- )) { }
 : __cogito_container_set_hexpand(node = any, expand = bool) (( -- )) { }
 : __cogito_container_set_hexpand_set(node = any, set = bool) (( -- )) { }
+: __cogito_container_set_homogeneous(node = any, on = bool) (( -- )) { }
 : __cogito_container_set_margins(node = any, top = num, right = num, bottom = num, left = num) (( -- )) { }
 : __cogito_container_set_padding(node = any, top = num, right = num, bottom = num, left = num) (( -- )) { }
 : __cogito_container_set_valign(node = any, align = num) (( -- )) { }
@@ -250,6 +251,7 @@ macro chain() (( any )) {
 : __cogito_node_set_class(node = any, cls = string) (( -- )) { }
 : __cogito_node_set_disabled(node = any, on = bool) (( -- )) { }
 : __cogito_node_set_editable(node = any, on = bool) (( -- )) { }
+: __cogito_node_set_opacity(node = any, opacity = num) (( -- )) { }
 : __cogito_node_set_visible(node = any, on = bool) (( -- )) { }
 : __cogito_node_get_visible(node = any) (( bool )) { }
 : __cogito_node_set_id(node = any, id = string) (( -- )) { }
@@ -768,6 +770,10 @@ pub class Image {
         __cogito_node_set_disabled(this, on)
         return this
     }
+    :: set_opacity(this, opacity = num) (( Image )) {
+        __cogito_node_set_opacity(this, opacity)
+        return this
+    }
     :: set_visible(this, on = bool) (( Image )) {
         __cogito_node_set_visible(this, on)
         return this
@@ -997,6 +1003,10 @@ pub class VStack {
         __cogito_container_set_gap(this, gap)
         return this
     }
+    :: set_homogeneous(this, on = bool) (( VStack )) {
+        __cogito_container_set_homogeneous(this, on)
+        return this
+    }
     :: align_begin(this) (( VStack )) {
         __cogito_container_set_align(this, 0)
         return this
@@ -1168,6 +1178,10 @@ pub class HStack {
     }
     :: set_gap(this, gap = num) (( HStack )) {
         __cogito_container_set_gap(this, gap)
+        return this
+    }
+    :: set_homogeneous(this, on = bool) (( HStack )) {
+        __cogito_container_set_homogeneous(this, on)
         return this
     }
     :: align_begin(this) (( HStack )) {
@@ -4835,6 +4849,10 @@ pub class EmptyPage {
     }
     :: set_class(this, cls = string) (( EmptyPage )) {
         __cogito_node_set_class(this, cls)
+        return this
+    }
+    :: set_visible(this, on = bool) (( EmptyPage )) {
+        __cogito_node_set_visible(this, on)
         return this
     }
     :: set_id(this, id = string) (( EmptyPage )) {

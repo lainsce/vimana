@@ -318,7 +318,7 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
       n->kind == COGITO_TIMEPICKER || n->kind == COGITO_BANNER ||
       n->kind == COGITO_BOTTOM_SHEET || n->kind == COGITO_SIDE_SHEET ||
       n->kind == COGITO_SWITCHBAR || n->kind == COGITO_SPLIT_BUTTON ||
-      n->kind == COGITO_DRAWING_AREA ||
+      (n->kind == COGITO_DRAWING_AREA && (n->on_click || n->on_change || n->on_action)) ||
       n->kind == COGITO_WEBVIEW ||
       n->kind == COGITO_VIEW_CHOOSER || n->kind == COGITO_VIEW_DUAL ||
       n->kind == COGITO_SETTINGS_WINDOW ||
