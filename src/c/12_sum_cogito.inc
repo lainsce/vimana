@@ -552,21 +552,6 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
     }
     return;
   }
-  if (strcmp(prop, "track-height") == 0) {
-    double v;
-    if (cogito_css_read_number(p, &v)) { style->has_track_height = true; style->track_height = (int)lround(v); }
-    return;
-  }
-  if (strcmp(prop, "track-color") == 0 || strcmp(prop, "track") == 0) {
-    CogitoColor c;
-    if (cogito_css_parse_color(p, &c)) { style->has_track = true; style->track = c; }
-    return;
-  }
-  if (strcmp(prop, "knob-color") == 0 || strcmp(prop, "knob") == 0) {
-    CogitoColor c;
-    if (cogito_css_parse_color(p, &c)) { style->has_knob = true; style->knob = c; }
-    return;
-  }
   if (strcmp(prop, "knob-width") == 0 || strcmp(prop, "knob-w") == 0) {
     double v;
     if (cogito_css_read_number(p, &v)) { style->has_min_w = true; style->min_w = (int)lround(v); }
@@ -1126,6 +1111,60 @@ void cogito_sum_add_styles(const char* parent, const char* child, CogitoStyle** 
     else if (hover) style = &cogito_theme.switch_knob_hover;
     else if (active) style = &cogito_theme.switch_knob_active;
     else style = &cogito_theme.switch_knob;
+    if (*count < max) {
+      styles[(*count)] = style;
+      if (flags && strcmp(child_state, "selection") == 0) flags[(*count)] = 1;
+      (*count)++;
+    }
+    return;
+  }
+  bool parent_slider = strcmp(parent_base, "slider") == 0 || cogito_sum_selector_has_class(parent, "slider");
+  if (parent_slider && strcmp(child_base, "track") == 0) {
+    CogitoStyle* style = NULL;
+    if (hover) style = &cogito_theme.slider_track_hover;
+    else if (active) style = &cogito_theme.slider_track_active;
+    else style = &cogito_theme.slider_track;
+    if (*count < max) {
+      styles[(*count)] = style;
+      if (flags && strcmp(child_state, "selection") == 0) flags[(*count)] = 1;
+      (*count)++;
+    }
+    return;
+  }
+  if (parent_slider && (strcmp(child_base, "thumb") == 0 || strcmp(child_base, "knob") == 0)) {
+    CogitoStyle* style = NULL;
+    if (hover) style = &cogito_theme.slider_thumb_hover;
+    else if (active) style = &cogito_theme.slider_thumb_active;
+    else style = &cogito_theme.slider_thumb;
+    if (*count < max) {
+      styles[(*count)] = style;
+      if (flags && strcmp(child_state, "selection") == 0) flags[(*count)] = 1;
+      (*count)++;
+    }
+    return;
+  }
+  bool parent_progress = strcmp(parent_base, "progress") == 0 || cogito_sum_selector_has_class(parent, "progress");
+  if (parent_progress && strcmp(child_base, "track") == 0) {
+    CogitoStyle* style = &cogito_theme.progress_track;
+    if (*count < max) {
+      styles[(*count)] = style;
+      if (flags && strcmp(child_state, "selection") == 0) flags[(*count)] = 1;
+      (*count)++;
+    }
+    return;
+  }
+  if (parent_progress && (strcmp(child_base, "fill") == 0 || strcmp(child_base, "indicator") == 0)) {
+    CogitoStyle* style = &cogito_theme.progress_fill;
+    if (*count < max) {
+      styles[(*count)] = style;
+      if (flags && strcmp(child_state, "selection") == 0) flags[(*count)] = 1;
+      (*count)++;
+    }
+    return;
+  }
+  bool parent_tabs = strcmp(parent_base, "tabs") == 0 || cogito_sum_selector_has_class(parent, "tabs");
+  if (parent_tabs && strcmp(child_base, "indicator") == 0) {
+    CogitoStyle* style = &cogito_theme.tabs_indicator;
     if (*count < max) {
       styles[(*count)] = style;
       if (flags && strcmp(child_state, "selection") == 0) flags[(*count)] = 1;

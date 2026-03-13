@@ -598,6 +598,15 @@ typedef struct CogitoTheme {
   CogitoStyle switch_knob_hover;
   CogitoStyle switch_knob_active;
   CogitoStyle switch_knob_checked;
+  CogitoStyle slider_track;
+  CogitoStyle slider_track_hover;
+  CogitoStyle slider_track_active;
+  CogitoStyle slider_thumb;
+  CogitoStyle slider_thumb_hover;
+  CogitoStyle slider_thumb_active;
+  CogitoStyle progress_track;
+  CogitoStyle progress_fill;
+  CogitoStyle tabs_indicator;
   CogitoStyle content_list_item_first;
   CogitoStyle content_list_item_last;
   CogitoStyle content_list_item_middle;

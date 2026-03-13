@@ -594,6 +594,56 @@ static CogitoStyle cogito_switch_knob_style(bool checked, bool hover, bool activ
   return base;
 }
 
+static CogitoStyle cogito_slider_track_style(bool hover, bool active) {
+  CogitoStyle base = cogito_theme.slider_track;
+  if (active) {
+    CogitoStyle out = cogito_style_merge(&base, &cogito_theme.slider_track_active);
+    cogito_apply_bin_scope_to_style(&out);
+    return out;
+  }
+  if (hover) {
+    CogitoStyle out = cogito_style_merge(&base, &cogito_theme.slider_track_hover);
+    cogito_apply_bin_scope_to_style(&out);
+    return out;
+  }
+  cogito_apply_bin_scope_to_style(&base);
+  return base;
+}
+
+static CogitoStyle cogito_slider_thumb_style(bool hover, bool active) {
+  CogitoStyle base = cogito_theme.slider_thumb;
+  if (active) {
+    CogitoStyle out = cogito_style_merge(&base, &cogito_theme.slider_thumb_active);
+    cogito_apply_bin_scope_to_style(&out);
+    return out;
+  }
+  if (hover) {
+    CogitoStyle out = cogito_style_merge(&base, &cogito_theme.slider_thumb_hover);
+    cogito_apply_bin_scope_to_style(&out);
+    return out;
+  }
+  cogito_apply_bin_scope_to_style(&base);
+  return base;
+}
+
+static CogitoStyle cogito_progress_track_style(void) {
+  CogitoStyle base = cogito_theme.progress_track;
+  cogito_apply_bin_scope_to_style(&base);
+  return base;
+}
+
+static CogitoStyle cogito_progress_fill_style(void) {
+  CogitoStyle base = cogito_theme.progress_fill;
+  cogito_apply_bin_scope_to_style(&base);
+  return base;
+}
+
+static CogitoStyle cogito_tabs_indicator_style(void) {
+  CogitoStyle base = cogito_theme.tabs_indicator;
+  cogito_apply_bin_scope_to_style(&base);
+  return base;
+}
+
 static void cogito_node_hover_state(CogitoNode* n, bool* out_hover, bool* out_active) {
   if (!out_hover || !out_active) return;
   *out_hover = false;

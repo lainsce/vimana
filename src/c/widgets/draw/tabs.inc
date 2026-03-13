@@ -3,11 +3,12 @@ case COGITO_TABS: {
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+      CogitoStyle ind_s = cogito_tabs_indicator_style();
       CogitoColor bg = n->bg;
       if (s.has_bg) bg = s.bg;
       // Cogito: tab label — Title Small, 14sp
       CogitoColor text = s.has_text ? s.text : n->text_color;
-      CogitoColor sel  = s.has_selection ? s.selection : n->selection_color;
+      CogitoColor sel  = ind_s.has_bg ? ind_s.bg : (s.has_selection ? s.selection : n->selection_color);
       cogito_anim_apply(n, &s, &bg, &text, NULL, &sel);
       if (n->bg_set || s.has_bg) {
         cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, n->border_radius);
@@ -20,8 +21,8 @@ case COGITO_TABS: {
       const int icon_size  = 24;
       const int icon_gap   = 4;
       // Cogito: active indicator — 3dp height, Full (1.5dp = 2dp) radius
-      const int indicator_h      = 3;
-      const int indicator_radius = 2;
+      int indicator_h      = ind_s.has_min_h ? ind_s.min_h : 3;
+      int indicator_radius = ind_s.has_radius ? ind_s.radius : 2;
       // Cogito Title Small = 14sp
       int size    = 14;
       int label_h = cogito_text_height_size(size);

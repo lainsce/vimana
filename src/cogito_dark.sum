@@ -785,11 +785,13 @@ popover
 progress
   background: @outline-variant
   border-radius: 100
-  track-height: 4
   min-height: 12
   min-width: 120
 
-progress:selection
+progress .track
+  min-height: 4
+
+progress .fill
   background: @primary
 
 radio
@@ -892,9 +894,11 @@ side-sheet.sidebar
 slider
   background: @surface-variant
   color: @primary
-  track-height: 4
   min-height: 48
   min-width: 200
+
+slider .track
+  min-height: 4
 
 slider:disabled
   color: alpha(@on-surface, 32%)
@@ -980,7 +984,7 @@ tabs
   border-radius: 0
   min-height: 48
 
-tabs:selection
+tabs .indicator
   background: @primary
 
 textfield

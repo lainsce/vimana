@@ -9,12 +9,18 @@ case COGITO_SLIDER: {
         cogito_node_hover_state(n, &hover, &active);
       }
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-      CogitoColor inactive_track = s.has_track
-        ? s.track
-        : (n->track_set
-          ? n->track_color
-          : (cogito_cached_surface_container_high.a ? cogito_cached_surface_container_high : n->bg));
-      CogitoColor active_track = s.has_text ? s.text : (s.has_knob ? s.knob : n->text_color);
+      CogitoStyle track_s = cogito_slider_track_style(hover, active);
+      CogitoStyle thumb_s = cogito_slider_thumb_style(hover, active);
+      CogitoColor inactive_track = track_s.has_bg
+        ? track_s.bg
+        : (s.has_track
+          ? s.track
+          : (n->track_set
+            ? n->track_color
+            : (cogito_cached_surface_container_high.a ? cogito_cached_surface_container_high : n->bg)));
+      CogitoColor active_track = thumb_s.has_bg
+        ? thumb_s.bg
+        : (s.has_text ? s.text : (s.has_knob ? s.knob : n->text_color));
       cogito_anim_apply(n, &s, &inactive_track, &active_track, NULL, NULL);
       inactive_track = cogito_bin_scope_remap_color(inactive_track);
       active_track = cogito_bin_scope_remap_color(active_track);
@@ -400,7 +406,7 @@ case COGITO_SLIDER: {
         int icon_y = cy - icon_size / 2;
         int need_w = (icon_x - active_start) + icon_size + 8;
         if ((active_end - active_start) >= need_w) {
-          CogitoColor icon_col = s.has_knob ? s.knob : n->knob_color;
+          CogitoColor icon_col = thumb_s.has_bg ? thumb_s.bg : (s.has_knob ? s.knob : n->knob_color);
           cogito_draw_icon_fallback(n, n->icon->data, icon_x, icon_y, icon_size, icon_col);
         }
       }

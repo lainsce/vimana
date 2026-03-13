@@ -3,8 +3,14 @@ case COGITO_PROGRESS: {
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
-      CogitoColor track = s.has_bg ? s.bg : (n->bg_set ? n->bg : (s.has_track ? s.track : n->bg));
-      CogitoColor fill = s.has_selection ? s.selection : (s.has_text ? s.text : (s.has_knob ? s.knob : n->text_color));
+      CogitoStyle ptrack_s = cogito_progress_track_style();
+      CogitoStyle pfill_s = cogito_progress_fill_style();
+      CogitoColor track = ptrack_s.has_bg
+        ? ptrack_s.bg
+        : (s.has_bg ? s.bg : (n->bg_set ? n->bg : (s.has_track ? s.track : n->bg)));
+      CogitoColor fill = pfill_s.has_bg
+        ? pfill_s.bg
+        : (s.has_selection ? s.selection : (s.has_text ? s.text : (s.has_knob ? s.knob : n->text_color)));
       cogito_anim_apply(n, &s, &track, &fill, NULL, NULL);
 
       CogitoColor container_bg = n->bg_set
@@ -15,7 +21,9 @@ case COGITO_PROGRESS: {
       surface_bg = cogito_bin_scope_remap_color(surface_bg);
       bool require_stop_indicator = cogito_track_needs_stop_indicator(track, container_bg, surface_bg);
 
-      int thickness = n->track_height_set ? n->track_height : (s.has_track_height ? s.track_height : 4);
+      int thickness = n->track_height_set ? n->track_height
+        : (ptrack_s.has_min_h ? ptrack_s.min_h
+          : (s.has_track_height ? s.track_height : 4));
       if (thickness < 1) thickness = 1;
       int cap = thickness / 2;
       if (cap < 1) cap = 1;

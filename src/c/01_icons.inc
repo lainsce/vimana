@@ -492,48 +492,110 @@ static void cogito_icon_add_candidate(char out[][128], int* count, int max, cons
   (*count)++;
 }
 
-static const char* cogito_icon_alias_sf(const char* token) {
-  if (!token || !token[0]) return token;
-  if (strcmp(token, "bold") == 0) return "textformat.bold";
-  if (strcmp(token, "italic") == 0) return "textformat.italic";
-  if (strcmp(token, "underline") == 0) return "textformat.underline";
-  if (strcmp(token, "character") == 0) return "textformat";
-  if (strcmp(token, "x") == 0 || strcmp(token, "close") == 0 || strcmp(token, "window-close") == 0) return "xmark";
-  if (strcmp(token, "window-min") == 0 || strcmp(token, "minimize") == 0) return "minus";
-  if (strcmp(token, "window-max") == 0 || strcmp(token, "maximize") == 0) return "plus.square";
-  if (strcmp(token, "search") == 0 || strcmp(token, "system-search") == 0) return "magnifyingglass";
-  if (strcmp(token, "chevron-down") == 0 || strcmp(token, "pan-down") == 0) return "chevron.down";
-  if (strcmp(token, "chevron-up") == 0 || strcmp(token, "pan-up") == 0) return "chevron.up";
-  if (strcmp(token, "chevron-left") == 0 || strcmp(token, "pan-start") == 0) return "chevron.left";
-  if (strcmp(token, "chevron-right") == 0 || strcmp(token, "pan-end") == 0) return "chevron.right";
-  if (strcmp(token, "add") == 0) return "plus";
-  if (strcmp(token, "remove") == 0) return "minus";
-  if (strcmp(token, "question") == 0) return "questionmark";
-  if (strcmp(token, "check") == 0) return "checkmark";
-  if (strcmp(token, "exclamationmark.triangle") == 0) return "exclamationmark.triangle";
-  return token;
-}
-
 #if !defined(__APPLE__)
 static const char* cogito_icon_alias_theme(const char* token) {
   if (!token || !token[0]) return token;
+  // Window controls
+  if (strcmp(token, "x") == 0 || strcmp(token, "xmark") == 0 || strcmp(token, "close") == 0 || strcmp(token, "window-close") == 0) return "window-close-symbolic";
+  if (strcmp(token, "window-min") == 0 || strcmp(token, "minimize") == 0) return "window-minimize-symbolic";
+  if (strcmp(token, "window-max") == 0 || strcmp(token, "maximize") == 0) return "window-maximize-symbolic";
+  // Arithmetic / list ops
+  if (strcmp(token, "plus") == 0 || strcmp(token, "add") == 0 || strcmp(token, "list-add") == 0) return "list-add-symbolic";
+  if (strcmp(token, "minus") == 0 || strcmp(token, "remove") == 0 || strcmp(token, "list-remove") == 0) return "list-remove-symbolic";
+  // Navigation chevrons
+  if (strcmp(token, "chevron.down") == 0 || strcmp(token, "chevron-down") == 0 || strcmp(token, "pan-down") == 0) return "pan-down-symbolic";
+  if (strcmp(token, "chevron.up") == 0 || strcmp(token, "chevron-up") == 0 || strcmp(token, "pan-up") == 0) return "pan-up-symbolic";
+  if (strcmp(token, "chevron.left") == 0 || strcmp(token, "chevron-left") == 0 || strcmp(token, "pan-start") == 0 || strcmp(token, "chevron.backward") == 0) return "go-previous-symbolic";
+  if (strcmp(token, "chevron.right") == 0 || strcmp(token, "chevron-right") == 0 || strcmp(token, "pan-end") == 0) return "go-next-symbolic";
+  // Search
+  if (strcmp(token, "search") == 0 || strcmp(token, "magnifyingglass") == 0 || strcmp(token, "system-search") == 0) return "system-search-symbolic";
+  // Text formatting
   if (strcmp(token, "bold") == 0 || strcmp(token, "textformat.bold") == 0) return "format-text-bold-symbolic";
   if (strcmp(token, "italic") == 0 || strcmp(token, "textformat.italic") == 0) return "format-text-italic-symbolic";
   if (strcmp(token, "underline") == 0 || strcmp(token, "textformat.underline") == 0) return "format-text-underline-symbolic";
-  if (strcmp(token, "character") == 0 || strcmp(token, "textformat") == 0) return "format-text-size-symbolic";
-  if (strcmp(token, "x") == 0 || strcmp(token, "xmark") == 0 || strcmp(token, "close") == 0 || strcmp(token, "window-close") == 0) return "window-close-symbolic";
-  if (strcmp(token, "window-min") == 0 || strcmp(token, "minimize") == 0 || strcmp(token, "minus") == 0) return "window-minimize-symbolic";
-  if (strcmp(token, "window-max") == 0 || strcmp(token, "maximize") == 0) return "window-maximize-symbolic";
-  if (strcmp(token, "search") == 0 || strcmp(token, "magnifyingglass") == 0 || strcmp(token, "system-search") == 0) return "system-search-symbolic";
-  if (strcmp(token, "chevron.down") == 0 || strcmp(token, "chevron-down") == 0 || strcmp(token, "pan-down") == 0) return "pan-down-symbolic";
-  if (strcmp(token, "chevron.up") == 0 || strcmp(token, "chevron-up") == 0 || strcmp(token, "pan-up") == 0) return "pan-up-symbolic";
-  if (strcmp(token, "chevron.left") == 0 || strcmp(token, "chevron-left") == 0 || strcmp(token, "pan-start") == 0) return "pan-start-symbolic";
-  if (strcmp(token, "chevron.right") == 0 || strcmp(token, "chevron-right") == 0 || strcmp(token, "pan-end") == 0) return "pan-end-symbolic";
-  if (strcmp(token, "plus") == 0 || strcmp(token, "add") == 0 || strcmp(token, "list-add") == 0) return "list-add-symbolic";
-  if (strcmp(token, "minus") == 0 || strcmp(token, "remove") == 0 || strcmp(token, "list-remove") == 0) return "list-remove-symbolic";
-  if (strcmp(token, "check") == 0 || strcmp(token, "checkmark") == 0) return "object-select-symbolic";
+  if (strcmp(token, "character") == 0 || strcmp(token, "textformat") == 0) return "font-select-symbolic";
+  // Media playback
+  if (strcmp(token, "play") == 0) return "media-playback-start-symbolic";
+  if (strcmp(token, "pause") == 0) return "media-playback-pause-symbolic";
+  if (strcmp(token, "backward") == 0) return "media-seek-backward-symbolic";
+  if (strcmp(token, "forward") == 0) return "media-seek-forward-symbolic";
+  if (strcmp(token, "repeat") == 0) return "media-playlist-repeat-symbolic";
+  if (strcmp(token, "shuffle") == 0) return "media-playlist-shuffle-symbolic";
+  if (strcmp(token, "speaker.wave.2") == 0) return "audio-volume-high-symbolic";
+  if (strcmp(token, "music.note") == 0) return "emblem-music-symbolic";
+  // Time & date
+  if (strcmp(token, "clock") == 0) return "clock-symbolic";
+  if (strcmp(token, "calendar") == 0) return "calendar-symbolic";
+  // Settings / system
+  if (strcmp(token, "gearshape") == 0) return "preferences-system-symbolic";
+  if (strcmp(token, "keyboard") == 0) return "input-keyboard-symbolic";
+  if (strcmp(token, "laptopcomputer") == 0) return "computer-laptop-symbolic";
+  // People
+  if (strcmp(token, "person") == 0) return "avatar-default-symbolic";
+  if (strcmp(token, "person.2") == 0) return "system-users-symbolic";
+  if (strcmp(token, "person.circle.fill") == 0) return "avatar-default-symbolic";
+  // Color & paint
+  if (strcmp(token, "paintpalette") == 0) return "preferences-color-symbolic";
+  if (strcmp(token, "paintbrush") == 0) return "color-select-symbolic";
+  // Documents & files
+  if (strcmp(token, "doc") == 0 || strcmp(token, "doc.text") == 0) return "text-x-generic-symbolic";
+  if (strcmp(token, "doc.on.doc") == 0) return "edit-copy-symbolic";
+  if (strcmp(token, "folder") == 0) return "folder-symbolic";
+  if (strcmp(token, "folder.badge.gearshape") == 0) return "document-open-symbolic";
+  if (strcmp(token, "newspaper") == 0) return "application-rss+xml-symbolic";
+  if (strcmp(token, "books.vertical") == 0) return "x-office-document-symbolic";
+  // Images & media
   if (strcmp(token, "photo") == 0 || strcmp(token, "image") == 0) return "image-x-generic-symbolic";
+  if (strcmp(token, "photo.badge.plus") == 0) return "insert-image-symbolic";
+  if (strcmp(token, "mic") == 0) return "audio-input-microphone-symbolic";
+  // Actions
+  if (strcmp(token, "check") == 0 || strcmp(token, "checkmark") == 0) return "object-select-symbolic";
+  if (strcmp(token, "checkmark.square") == 0) return "checkbox-checked-symbolic";
+  if (strcmp(token, "trash") == 0) return "user-trash-symbolic";
+  if (strcmp(token, "pencil") == 0) return "document-edit-symbolic";
+  if (strcmp(token, "eraser") == 0) return "edit-clear-symbolic";
+  if (strcmp(token, "arrow.clockwise") == 0) return "view-refresh-symbolic";
+  if (strcmp(token, "arrow.up.arrow.down") == 0) return "view-sort-ascending-symbolic";
+  if (strcmp(token, "arrow.left.arrow.right") == 0) return "object-flip-horizontal-symbolic";
+  // Favorites & bookmarks
+  if (strcmp(token, "star") == 0) return "non-starred-symbolic";
+  if (strcmp(token, "star.fill") == 0) return "starred-symbolic";
+  if (strcmp(token, "star.hexagon") == 0) return "media-playlist-shuffle-symbolic";
+  if (strcmp(token, "heart") == 0) return "emblem-favorite-symbolic";
+  if (strcmp(token, "bookmark") == 0) return "user-bookmarks-symbolic";
+  if (strcmp(token, "bookmark.fill") == 0) return "user-bookmarks-filled-symbolic";
+  // Lists & layout
+  if (strcmp(token, "list.bullet") == 0) return "view-list-bullet-symbolic";
+  if (strcmp(token, "checklist") == 0) return "view-list-ordered-symbolic";
+  if (strcmp(token, "line.3.horizontal") == 0) return "open-menu-symbolic";
+  if (strcmp(token, "ellipsis") == 0) return "view-more-horizontal-symbolic";
+  if (strcmp(token, "equal") == 0) return "view-dual-symbolic";
+  if (strcmp(token, "rectangle.split.2x1") == 0) return "view-dual-symbolic";
+  if (strcmp(token, "square.stack") == 0) return "view-paged-symbolic";
+  // Help & alerts
   if (strcmp(token, "question") == 0 || strcmp(token, "questionmark") == 0 || strcmp(token, "help") == 0) return "help-browser-symbolic";
+  if (strcmp(token, "exclamationmark.triangle") == 0) return "dialog-warning-symbolic";
+  if (strcmp(token, "quote.bubble") == 0) return "chat-message-new-symbolic";
+  // Weather
+  if (strcmp(token, "sun.max") == 0 || strcmp(token, "sun.max.fill") == 0) return "weather-clear-symbolic";
+  if (strcmp(token, "sun.lefthalf.filled") == 0) return "display-brightness-medium-symbolic";
+  if (strcmp(token, "moon") == 0 || strcmp(token, "moon.stars.fill") == 0) return "weather-clear-night-symbolic";
+  if (strcmp(token, "cloud.fill") == 0) return "weather-overcast-symbolic";
+  if (strcmp(token, "cloud.sun.fill") == 0) return "weather-few-clouds-symbolic";
+  if (strcmp(token, "cloud.moon.fill") == 0) return "weather-few-clouds-night-symbolic";
+  if (strcmp(token, "cloud.fog.fill") == 0) return "weather-fog-symbolic";
+  if (strcmp(token, "cloud.drizzle.fill") == 0) return "weather-showers-scattered-symbolic";
+  if (strcmp(token, "cloud.rain.fill") == 0) return "weather-showers-symbolic";
+  if (strcmp(token, "cloud.snow.fill") == 0) return "weather-snow-symbolic";
+  if (strcmp(token, "cloud.bolt.rain.fill") == 0) return "weather-storm-symbolic";
+  if (strcmp(token, "sunrise.fill") == 0) return "daytime-sunrise-symbolic";
+  if (strcmp(token, "sunset.fill") == 0) return "daytime-sunset-symbolic";
+  if (strcmp(token, "drop.fill") == 0) return "display-brightness-symbolic";
+  // Location
+  if (strcmp(token, "mappin.and.ellipse") == 0) return "find-location-symbolic";
+  if (strcmp(token, "location.slash") == 0) return "location-disabled-symbolic";
+  // Misc
+  if (strcmp(token, "house") == 0) return "go-home-symbolic";
   return token;
 }
 #endif
@@ -548,14 +610,8 @@ static int cogito_icon_candidates(const char* name, char out[][128], int max) {
 
 #if defined(__APPLE__)
   char sf_name[128];
-  const char* sf = cogito_icon_alias_sf(token);
-  snprintf(sf_name, sizeof(sf_name), "sf:%s", sf);
+  snprintf(sf_name, sizeof(sf_name), "sf:%s", token);
   cogito_icon_add_candidate(out, &count, max, sf_name);
-  if (strcmp(sf, token) != 0) {
-    char sf_orig[128];
-    snprintf(sf_orig, sizeof(sf_orig), "sf:%s", token);
-    cogito_icon_add_candidate(out, &count, max, sf_orig);
-  }
 #else
   const char* themed = cogito_icon_alias_theme(token);
   cogito_icon_add_candidate(out, &count, max, themed);
