@@ -98,13 +98,37 @@ static void cogito_draw_window_button_stroke_icon(int btn_x, int btn_y, int btn,
 
 static void cogito_draw_traffic_light_glyph(int lx, int ly, int d, const char* sf_name, CogitoColor color) {
   if (d <= 0 || !sf_name) return;
-  int glyph_size = (d * 6) / 10;
-  if (glyph_size < 2) glyph_size = 2;
+  int glyph_size = 10;
   int gx = lx + (d - glyph_size) / 2;
   int gy = ly + (d - glyph_size) / 2;
   CogitoTexture* tex = NULL;
   int tw = 0, th = 0;
-  if (cogito_icon_load_texture(sf_name, glyph_size, &tex, &tw, &th) && tex && cogito_backend && cogito_backend->draw_texture) {
+#if defined(__APPLE__)
+  // Load SF symbol with bold weight for traffic-light glyphs.
+  // Use "sf-bold" cache theme to keep bold variants separate from regular icons.
+  const char* symbol = sf_name;
+  if (symbol[0] == 's' && symbol[1] == 'f' && symbol[2] == ':') symbol += 3;
+  int cache_size = cogito_sf_optimized_size(glyph_size);
+  bool cached = false;
+  for (int i = 0; i < cogito_icon_cache_len; i++) {
+    CogitoIconCacheEntry* e = &cogito_icon_cache[i];
+    if (e->used && e->size == cache_size && strcmp(e->name, sf_name) == 0 && strcmp(e->theme, "sf-bold") == 0) {
+      e->last_used = cogito_icon_cache_frame;
+      tex = e->tex; tw = e->w; th = e->h;
+      cached = true;
+      break;
+    }
+  }
+  if (!cached) {
+    // NSFontWeight: 0.0 = regular, ~0.23 = medium, ~0.40 = semibold, ~0.56 = bold
+    if (cogito_sf_symbol_load_weight(symbol, cache_size, 0.56, &tex, &tw, &th)) {
+      cogito_icon_cache_store(sf_name, "sf-bold", cache_size, tex, tw, th);
+    }
+  }
+#else
+  (void)cogito_icon_load_texture(sf_name, glyph_size, &tex, &tw, &th);
+#endif
+  if (tex && cogito_backend && cogito_backend->draw_texture) {
     int dw = glyph_size, dh = glyph_size;
     int dx = gx, dy = gy;
     if (tw > 0 && th > 0) {
@@ -163,15 +187,18 @@ static void cogito_draw_traffic_lights_styled(const CogitoStyle* base_style,
     if (!st->over_cluster) return;
 
     if (close_x >= 0) {
-      CogitoColor g = s->has_text ? s->text : cogito_on_color(close_bg);
+      CogitoColor g = s->has_text ? s->text
+        : (cogito_cached_on_close.a ? cogito_cached_on_close : cogito_on_color(close_bg));
       cogito_draw_traffic_light_glyph(st->close_lx, st->lights_y, st->light_d, "sf:xmark", g);
     }
     if (min_x >= 0) {
-      CogitoColor g = s->has_text ? s->text : cogito_on_color(min_bg);
+      CogitoColor g = s->has_text ? s->text
+        : (cogito_cached_on_minimize.a ? cogito_cached_on_minimize : cogito_on_color(min_bg));
       cogito_draw_traffic_light_glyph(st->min_lx, st->lights_y, st->light_d, "sf:minus", g);
     }
     if (max_x >= 0) {
-      CogitoColor g = s->has_text ? s->text : cogito_on_color(max_bg);
+      CogitoColor g = s->has_text ? s->text
+        : (cogito_cached_on_maximize.a ? cogito_cached_on_maximize : cogito_on_color(max_bg));
       cogito_draw_traffic_light_glyph(st->max_lx, st->lights_y, st->light_d, "sf:plus", g);
     }
     return;
@@ -182,14 +209,20 @@ static void cogito_draw_traffic_lights_styled(const CogitoStyle* base_style,
   CogitoStyle max_s = cogito_appbar_win_btn_style(2, st->state_max);
 
   CogitoColor close_bg = close_s.has_bg ? close_s.bg
-    : (s->has_appbar_btn_close_color ? s->appbar_btn_close_color : fallback_btn);
+    : (s->has_appbar_btn_close_color ? s->appbar_btn_close_color
+    : (cogito_cached_close.a ? cogito_cached_close : fallback_btn));
   CogitoColor min_bg = min_s.has_bg ? min_s.bg
-    : (s->has_appbar_btn_min_color ? s->appbar_btn_min_color : fallback_btn);
+    : (s->has_appbar_btn_min_color ? s->appbar_btn_min_color
+    : (cogito_cached_minimize.a ? cogito_cached_minimize : fallback_btn));
   CogitoColor max_bg = max_s.has_bg ? max_s.bg
-    : (s->has_appbar_btn_max_color ? s->appbar_btn_max_color : fallback_btn);
-  CogitoColor close_glyph = close_s.has_text ? close_s.text : cogito_on_color(close_bg);
-  CogitoColor min_glyph = min_s.has_text ? min_s.text : cogito_on_color(min_bg);
-  CogitoColor max_glyph = max_s.has_text ? max_s.text : cogito_on_color(max_bg);
+    : (s->has_appbar_btn_max_color ? s->appbar_btn_max_color
+    : (cogito_cached_maximize.a ? cogito_cached_maximize : fallback_btn));
+  CogitoColor close_glyph = close_s.has_text ? close_s.text
+    : (cogito_cached_on_close.a ? cogito_cached_on_close : cogito_on_color(close_bg));
+  CogitoColor min_glyph = min_s.has_text ? min_s.text
+    : (cogito_cached_on_minimize.a ? cogito_cached_on_minimize : cogito_on_color(min_bg));
+  CogitoColor max_glyph = max_s.has_text ? max_s.text
+    : (cogito_cached_on_maximize.a ? cogito_cached_on_maximize : cogito_on_color(max_bg));
 
   if (close_x >= 0) {
     cogito_draw_rect(st->close_lx, st->lights_y, st->light_d, st->light_d, close_bg, st->light_rad);

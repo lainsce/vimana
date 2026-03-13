@@ -30,6 +30,8 @@ typedef struct {
   CogitoColor outline, outline_variant;
   CogitoColor surface_variant, on_surface_variant;
   CogitoColor shadow, scrim;
+  CogitoColor close, minimize, maximize;
+  CogitoColor on_close, on_minimize, on_maximize;
 } CogitoEnsorScheme;
 
 #include "ensor_schemes.inc"

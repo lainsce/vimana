@@ -300,24 +300,6 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "appbar .iconbtn:disabled\n  color: %s52\n  background: transparent\n", ons);
   cogito_sum_append(out, cap, &off,
-  "appbar .window-close:active\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
-  "appbar .window-close:hover\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
-  "appbar .window-close\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
-  "appbar .window-max:active\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
-  "appbar .window-max:hover\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
-  "appbar .window-max\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
-  "appbar .window-min:active\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
-  "appbar .window-min:hover\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
-  "appbar .window-min\n  background: %s\n", pc);
-  cogito_sum_append(out, cap, &off,
   "appbar.sidebar\n  background: %s\n  color: %s\n", sc, ons);
   cogito_sum_append(out, cap, &off,
   "appbar.view\n  background: %s\n  color: %s\n", bg, ons);

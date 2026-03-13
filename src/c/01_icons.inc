@@ -575,7 +575,7 @@ static int cogito_sf_optimized_size(int size) {
 }
 
 #if defined(__APPLE__)
-static bool cogito_sf_symbol_load(const char* symbol, int size, CogitoTexture** out, int* out_w, int* out_h) {
+static bool cogito_sf_symbol_load_weight(const char* symbol, int size, double weight, CogitoTexture** out, int* out_w, int* out_h) {
   if (!symbol || !symbol[0] || size <= 0) return false;
   id nsimage = (id)objc_getClass("NSImage");
   if (!nsimage) return false;
@@ -586,7 +586,7 @@ static bool cogito_sf_symbol_load(const char* symbol, int size, CogitoTexture** 
   int raster_size = size * 2;
   if (raster_size < size) raster_size = size;
   if (raster_size > 1024) raster_size = 1024;
-  // Configure SF symbol at the requested size so we do not upscale tiny rasters.
+  // Configure SF symbol at the requested size and weight.
   id cfg_cls = (id)objc_getClass("NSImageSymbolConfiguration");
   if (cfg_cls) {
     SEL sel_apply = sel_registerName("imageWithSymbolConfiguration:");
@@ -597,14 +597,13 @@ static bool cogito_sf_symbol_load(const char* symbol, int size, CogitoTexture** 
       SEL sel_cfg3 = sel_registerName("configurationWithPointSize:weight:scale:");
       BOOL can_cfg3 = ((BOOL (*)(id, SEL, SEL))objc_msgSend)(cfg_cls, sel_responds, sel_cfg3);
       if (can_cfg3) {
-        // 0.0 = regular weight, 2 = medium symbol scale.
-        cfg = ((id (*)(id, SEL, CGFloat, CGFloat, CogitoNSInteger))objc_msgSend)(cfg_cls, sel_cfg3, (CGFloat)raster_size, (CGFloat)0.0, (CogitoNSInteger)1);
+        cfg = ((id (*)(id, SEL, CGFloat, CGFloat, CogitoNSInteger))objc_msgSend)(cfg_cls, sel_cfg3, (CGFloat)raster_size, (CGFloat)weight, (CogitoNSInteger)1);
       }
       if (!cfg) {
         SEL sel_cfg2 = sel_registerName("configurationWithPointSize:weight:");
         BOOL can_cfg2 = ((BOOL (*)(id, SEL, SEL))objc_msgSend)(cfg_cls, sel_responds, sel_cfg2);
         if (can_cfg2) {
-          cfg = ((id (*)(id, SEL, CGFloat, CGFloat))objc_msgSend)(cfg_cls, sel_cfg2, (CGFloat)raster_size, (CGFloat)0.0);
+          cfg = ((id (*)(id, SEL, CGFloat, CGFloat))objc_msgSend)(cfg_cls, sel_cfg2, (CGFloat)raster_size, (CGFloat)weight);
         }
       }
       if (!cfg) {
@@ -661,6 +660,11 @@ static bool cogito_sf_symbol_load(const char* symbol, int size, CogitoTexture** 
   if (out_w) *out_w = (int)w;
   if (out_h) *out_h = (int)h;
   return true;
+}
+
+static bool cogito_sf_symbol_load(const char* symbol, int size, CogitoTexture** out, int* out_w, int* out_h) {
+  if (!symbol || !symbol[0] || size <= 0) return false;
+  return cogito_sf_symbol_load_weight(symbol, size, 0.0, out, out_w, out_h);
 }
 #endif
 

@@ -37,6 +37,12 @@ static CogitoColor cogito_cached_outline_variant = {0};
 static CogitoColor cogito_cached_inverse_surface = {0};
 static CogitoColor cogito_cached_inverse_on_surface = {0};
 static CogitoColor cogito_cached_inverse_primary = {0};
+static CogitoColor cogito_cached_close = {0};
+static CogitoColor cogito_cached_minimize = {0};
+static CogitoColor cogito_cached_maximize = {0};
+static CogitoColor cogito_cached_on_close = {0};
+static CogitoColor cogito_cached_on_minimize = {0};
+static CogitoColor cogito_cached_on_maximize = {0};
 
 typedef struct CogitoThemePaletteSnapshot {
   CogitoColor primary;
@@ -72,6 +78,12 @@ typedef struct CogitoThemePaletteSnapshot {
   CogitoColor inverse_surface;
   CogitoColor inverse_on_surface;
   CogitoColor inverse_primary;
+  CogitoColor close;
+  CogitoColor minimize;
+  CogitoColor maximize;
+  CogitoColor on_close;
+  CogitoColor on_minimize;
+  CogitoColor on_maximize;
 } CogitoThemePaletteSnapshot;
 
 #define COGITO_THEME_PALETTE_SCOPE_MAX 16
@@ -113,6 +125,12 @@ static void cogito_theme_palette_snapshot_capture(CogitoThemePaletteSnapshot* ou
   out->inverse_surface = cogito_cached_inverse_surface;
   out->inverse_on_surface = cogito_cached_inverse_on_surface;
   out->inverse_primary = cogito_cached_inverse_primary;
+  out->close = cogito_cached_close;
+  out->minimize = cogito_cached_minimize;
+  out->maximize = cogito_cached_maximize;
+  out->on_close = cogito_cached_on_close;
+  out->on_minimize = cogito_cached_on_minimize;
+  out->on_maximize = cogito_cached_on_maximize;
 }
 
 static void cogito_theme_palette_snapshot_apply(const CogitoThemePaletteSnapshot* snapshot) {
@@ -150,6 +168,12 @@ static void cogito_theme_palette_snapshot_apply(const CogitoThemePaletteSnapshot
   cogito_cached_inverse_surface = snapshot->inverse_surface;
   cogito_cached_inverse_on_surface = snapshot->inverse_on_surface;
   cogito_cached_inverse_primary = snapshot->inverse_primary;
+  cogito_cached_close = snapshot->close;
+  cogito_cached_minimize = snapshot->minimize;
+  cogito_cached_maximize = snapshot->maximize;
+  cogito_cached_on_close = snapshot->on_close;
+  cogito_cached_on_minimize = snapshot->on_minimize;
+  cogito_cached_on_maximize = snapshot->on_maximize;
 }
 
 static void cogito_theme_palette_apply_scheme(const CogitoEnsorScheme* scheme) {
@@ -187,6 +211,12 @@ static void cogito_theme_palette_apply_scheme(const CogitoEnsorScheme* scheme) {
   cogito_cached_inverse_surface = scheme->inverse_surface;
   cogito_cached_inverse_on_surface = scheme->inverse_on_surface;
   cogito_cached_inverse_primary = scheme->inverse_primary;
+  cogito_cached_close = scheme->close;
+  cogito_cached_minimize = scheme->minimize;
+  cogito_cached_maximize = scheme->maximize;
+  cogito_cached_on_close = scheme->on_close;
+  cogito_cached_on_minimize = scheme->on_minimize;
+  cogito_cached_on_maximize = scheme->on_maximize;
 }
 
 static bool cogito_theme_palette_scope_push_scheme(const CogitoEnsorScheme* scheme) {
@@ -241,6 +271,12 @@ static void cogito_cache_tertiary_colors(CogitoEnsorScheme* scheme) {
   cogito_cached_inverse_surface = scheme->inverse_surface;
   cogito_cached_inverse_on_surface = scheme->inverse_on_surface;
   cogito_cached_inverse_primary = scheme->inverse_primary;
+  cogito_cached_close = scheme->close;
+  cogito_cached_minimize = scheme->minimize;
+  cogito_cached_maximize = scheme->maximize;
+  cogito_cached_on_close = scheme->on_close;
+  cogito_cached_on_minimize = scheme->on_minimize;
+  cogito_cached_on_maximize = scheme->on_maximize;
 }
 
 // Get tertiary colors from cached values (set when theme was applied).

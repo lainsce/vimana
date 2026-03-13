@@ -902,6 +902,15 @@ static CogitoDynToneChoice cogito_dyn_pick_contrasting_tone(
   return best_ratio_choice;
 }
 
+// ---- Harmonize hue (Material Design algorithm) ----
+// Rotates from_hue toward to_hue by min(abs(diff)*0.5, 15) degrees.
+static double cogito_dyn_harmonize_hue(double from_hue, double to_hue) {
+  double diff = fmod(to_hue - from_hue + 540.0, 360.0) - 180.0;
+  double rotation = fmin(fabs(diff) * 0.5, 15.0);
+  double result = from_hue + (diff > 0 ? rotation : -rotation);
+  return cogito_ensor_sanitize_deg(result);
+}
+
 // ---- Snap background tones (from DynamicColor.vala) ----
 // Avoids tones 50-64 for is_background colors.
 static double cogito_dyn_snap_bg(double tone) {
@@ -1583,6 +1592,35 @@ static CogitoEnsorScheme cogito_ensor_build_dynamic_scheme_impl(
   // ---- shadow / scrim ----
   out.shadow = cogito_hct_to_rgb(s.neutral.hue, 0.0, 0.0);
   out.scrim  = cogito_hct_to_rgb(s.neutral.hue, 0.0, 0.0);
+
+  // ---- traffic light colors (harmonized toward surface) ----
+  {
+    if (s.variant == COGITO_ENSOR_MONOCHROME) {
+      // Graphite: all three buttons are the same neutral gray with white glyphs.
+      CogitoColor graphite = cogito_hct_to_rgb(s.neutral.hue, 6.0, dark ? 70.0 : 55.0);
+      out.close    = graphite;
+      out.minimize = graphite;
+      out.maximize = graphite;
+      out.on_close    = (CogitoColor){255, 255, 255, 255};
+      out.on_minimize = (CogitoColor){255, 255, 255, 255};
+      out.on_maximize = (CogitoColor){255, 255, 255, 255};
+    } else {
+      double pri_hue = s.neutral.hue;
+      double close_hue = cogito_dyn_harmonize_hue(20.0, pri_hue);
+      double min_hue   = cogito_dyn_harmonize_hue(79.0, pri_hue);
+      double max_hue   = cogito_dyn_harmonize_hue(135.0, pri_hue);
+      // Hand-tuned HCT per hue to approximate traffic-light vibrancy.
+      // Red is naturally darker, yellow brighter, green mid.
+      out.close    = cogito_hct_to_rgb(close_hue, 55.0, 62.0);
+      out.minimize = cogito_hct_to_rgb(min_hue,   55.0, 84.0);
+      out.maximize = cogito_hct_to_rgb(max_hue,   60.0, 72.0);
+      // Dark glyphs on saturated traffic-light backgrounds.
+      CogitoColor dark_glyph = (CogitoColor){0, 0, 0, (uint8_t)(255 * 0.65)};
+      out.on_close    = dark_glyph;
+      out.on_minimize = dark_glyph;
+      out.on_maximize = dark_glyph;
+    }
+  }
   p_end = prof ? cogito_ensor_prof_now() : p_end;
 
   if (prof) {
