@@ -108,7 +108,7 @@ def MAX_POINTS = 24
                 let cur_v  = _series_value(series, src)
                 let next_v = _series_value(series, src_next)
                 let mid_v = (prev_v + next_v) / 2.0
-                let diff = cur_v - mid_v
+                let ?diff = cur_v - mid_v
                 if diff < 0 { diff = 0.0 - diff }
                 -- Protect must-keep indices from trimming.
                 let ?is_mk = false
@@ -449,7 +449,7 @@ def MAX_POINTS = 24
             let bx = 18 + (t * 500)
             let ?dy = stdr.floor(curve_top)
             for (; dy < curve_bottom; dy += 6) {
-                let seg_end = dy + 3
+                let ?seg_end = dy + 3
                 if seg_end > curve_bottom { seg_end = curve_bottom }
                 area.line(bx, dy, bx, seg_end)
             }

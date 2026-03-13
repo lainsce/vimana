@@ -40,7 +40,7 @@ def current_desc = cogito.label("Clear Sky")
 def current_feels = cogito.label("Feels like --")
 def ?header_state = weather_header.new_header()
 def header_gradient = weather_header.widget(header_state)
-def ?refreshbtn = cogito.iconbtn("")
+def ?refreshbtn = cogito.button("")
 def unitbtn = cogito.button("°C")
 
 def tabs = cogito.tabs()

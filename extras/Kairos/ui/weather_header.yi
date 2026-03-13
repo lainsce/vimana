@@ -282,7 +282,7 @@ def ?_rand_state = 12345.0
 -- ----- Particle tick (advance positions) -----
 
 : _tick_rain(?header = any, w = num, h = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     for (let ?i = 0; i < n; i += 1) {
         let ?p = particles[i] ?? []: [string => any]
@@ -306,7 +306,7 @@ def ?_rand_state = 12345.0
 }
 
 : _tick_snow(?header = any, w = num, h = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     let ?tick = _num_or(header["tick"] ?? null, 0.0)
     for (let ?i = 0; i < n; i += 1) {
@@ -331,7 +331,7 @@ def ?_rand_state = 12345.0
 }
 
 : _tick_stars(?header = any) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     let tick = _num_or(header["tick"] ?? null, 0.0)
     for (let ?i = 0; i < n; i += 1) {
@@ -347,7 +347,7 @@ def ?_rand_state = 12345.0
 }
 
 : _tick_clouds(?header = any, w = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     for (let ?i = 0; i < n; i += 1) {
         let ?p = particles[i] ?? []: [string => any]
@@ -365,7 +365,7 @@ def ?_rand_state = 12345.0
 }
 
 : _tick_fog(?header = any, w = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     for (let ?i = 0; i < n; i += 1) {
         let ?p = particles[i] ?? []: [string => any]
@@ -383,7 +383,7 @@ def ?_rand_state = 12345.0
 }
 
 : _tick_sun_rays(?header = any) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     for (let ?i = 0; i < n; i += 1) {
         let ?p = particles[i] ?? []: [string => any]
@@ -443,7 +443,7 @@ def ?_rand_state = 12345.0
 -- ----- Weather-specific renderers -----
 
 : _draw_rain(area = cogito.DrawingArea, ?header = any, w = num, h = num, base = string) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     area.set_line_width(1)
     for (let ?i = 0; i < n; i += 1) {
@@ -459,7 +459,7 @@ def ?_rand_state = 12345.0
 }
 
 : _draw_snow(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     for (let ?i = 0; i < n; i += 1) {
         let p = particles[i] ?? []: [string => any]
@@ -476,7 +476,7 @@ def ?_rand_state = 12345.0
 }
 
 : _draw_stars(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     for (let ?i = 0; i < n; i += 1) {
         let p = particles[i] ?? []: [string => any]
@@ -493,7 +493,7 @@ def ?_rand_state = 12345.0
 }
 
 : _draw_clouds(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     for (let ?i = 0; i < n; i += 1) {
         let p = particles[i] ?? []: [string => any]
@@ -517,7 +517,7 @@ def ?_rand_state = 12345.0
 }
 
 : _draw_fog(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     for (let ?i = 0; i < n; i += 1) {
         let p = particles[i] ?? []: [string => any]
@@ -533,7 +533,7 @@ def ?_rand_state = 12345.0
 }
 
 : _draw_sun_rays(area = cogito.DrawingArea, ?header = any, w = num, h = num) (( -- )) {
-    let particles = header["particles"] ?? []: [any]
+    let ?particles = header["particles"] ?? []: [any]
     let n = len(particles)
     let cx = w * 0.75
     let cy = h * 0.3
@@ -605,7 +605,7 @@ def ?_rand_state = 12345.0
         _draw_rain(area, header, w, h, pc)
     } elif cat == CAT_FREEZING_RAIN {
         _draw_rain(area, header, w, h, pc)
-        let particles = header["particles"] ?? []: [any]
+        let ?particles = header["particles"] ?? []: [any]
         let n = len(particles)
         for (let ?i = 0; i < n; i += 3) {
             let p = particles[i] ?? []: [string => any]
