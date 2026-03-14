@@ -2838,7 +2838,14 @@ static void cogito_run(YisVal appv, YisVal winv) {
             }
           } else if (hit->kind == COGITO_DIALOG_SLOT) {
             // Click on scrim (outside dialog) — dismiss
-            if (hit->dialog_open) {
+            if (hit->dialog_open && hit->dialog) {
+              CogitoNode* dlg = hit->dialog;
+              bool inside_dialog = (mx >= dlg->x && mx < dlg->x + dlg->w &&
+                                    my >= dlg->y && my < dlg->y + dlg->h);
+              if (!inside_dialog) {
+                cogito_dialog_slot_clear(YV_OBJ(hit));
+              }
+            } else if (hit->dialog_open) {
               cogito_dialog_slot_clear(YV_OBJ(hit));
             }
           } else if (hit->kind == COGITO_CARD) {

@@ -1,7 +1,6 @@
 cask main
 
 bring stdr
-bring json
 bring cogito
 
 bring utils.calendar
@@ -42,32 +41,88 @@ def rebuild_state = cogito.state(false)
         return SOLAR_STATE_PATH
     }
     let run = stdr.run_command("echo $HOME")
-    let home = stdr.trim(str(run ?? ""))
+    let home = stdr.trim(str(run[1] ?? ""))
     let dir = stdr.join_path(home, ".cache/solar")
     stdr.run_command("mkdir -p $$dir$$")
-    SOLAR_STATE_PATH = stdr.join_path(dir, "events.json")
+    SOLAR_STATE_PATH = stdr.join_path(dir, "events.ics")
     return SOLAR_STATE_PATH
+}
+
+: _join_lines(arr = any) (( string )) {
+    let ?parts = []: [any]
+    for (let ?i = 0; i < len(arr); i += 1) {
+        if i > 0 { stdr.push(parts, "\n") }
+        stdr.push(parts, str(arr[i]))
+    }
+    return stdr.join(parts)
+}
+
+: _split_lines(text = string) (( [any] )) {
+    let ?result = []: [any]
+    let ?start = 0
+    let total = stdr.len(text)
+    for (let ?i = 0; i < total; i += 1) {
+        let ch = stdr.char_at(text, i)
+        if ch == "\n" {
+            stdr.push(result, stdr.slice(text, start, i))
+            start = i + 1
+        }
+    }
+    if start <= total {
+        stdr.push(result, stdr.slice(text, start, total))
+    }
+    return result
+}
+
+: _ical_escape(s = string) (( string )) {
+    let ?out = stdr.replace(s, "\\", "\\\\")
+    out = stdr.replace(out, ";", "\\;")
+    out = stdr.replace(out, ",", "\\,")
+    out = stdr.replace(out, "\n", "\\n")
+    return out
+}
+
+: _pad2(n = num) (( string )) {
+    if n < 10 { return "0$$n$$" }
+    return str(n)
 }
 
 : save_events() (( -- )) {
     let path = _ensure_state_path()
-    let ?parts = []: [any]
-    stdr.push(parts, "[")
+    let ?lines = []: [any]
+    stdr.push(lines, "BEGIN:VCALENDAR")
+    stdr.push(lines, "VERSION:2.0")
+    stdr.push(lines, "PRODID:-//Solar//EN")
     for (let ?i = 0; i < len(events); i += 1) {
-        if i > 0 { stdr.push(parts, ",") }
         let ev = events[i] ?? []: [string => any]
-        let t = stdr.replace(str(ev["title"] ?? ""), "\"", "\\\"")
-        let d = stdr.replace(str(ev["description"] ?? ""), "\"", "\\\"")
+        let t = _ical_escape(str(ev["title"] ?? ""))
+        let d = _ical_escape(str(ev["description"] ?? ""))
         let c = str(ev["color"] ?? "#6B38FB")
         let yr = str(stdr.num(ev["year"] ?? 0))
-        let mo = str(stdr.num(ev["month"] ?? 0))
-        let dy = str(stdr.num(ev["day"] ?? 0))
-        let hr = str(stdr.num(ev["hour"] ?? 0))
-        let mn = str(stdr.num(ev["minute"] ?? 0))
-        stdr.push(parts, "{\"title\":\"$$t$$\",\"description\":\"$$d$$\",\"color\":\"$$c$$\",\"year\":$$yr$$,\"month\":$$mo$$,\"day\":$$dy$$,\"hour\":$$hr$$,\"minute\":$$mn$$}")
+        let mo = _pad2(stdr.num(ev["month"] ?? 0))
+        let dy = _pad2(stdr.num(ev["day"] ?? 0))
+        let allday = stdr.num(ev["allday"] ?? 0)
+        stdr.push(lines, "BEGIN:VEVENT")
+        stdr.push(lines, "SUMMARY:$$t$$")
+        if stdr.len(d) > 0 {
+            stdr.push(lines, "DESCRIPTION:$$d$$")
+        }
+        if allday == 1 {
+            stdr.push(lines, "DTSTART;VALUE=DATE:$$yr$$$$mo$$$$dy$$")
+            stdr.push(lines, "DTEND;VALUE=DATE:$$yr$$$$mo$$$$dy$$")
+        } else {
+            let sh = _pad2(stdr.num(ev["start_hour"] ?? 9))
+            let sm = _pad2(stdr.num(ev["start_min"] ?? 0))
+            let eh = _pad2(stdr.num(ev["end_hour"] ?? 10))
+            let em = _pad2(stdr.num(ev["end_min"] ?? 0))
+            stdr.push(lines, "DTSTART:$$yr$$$$mo$$$$dy$$T$$sh$$$$sm$$00")
+            stdr.push(lines, "DTEND:$$yr$$$$mo$$$$dy$$T$$eh$$$$em$$00")
+        }
+        stdr.push(lines, "X-SOLAR-COLOR:$$c$$")
+        stdr.push(lines, "END:VEVENT")
     }
-    stdr.push(parts, "]")
-    stdr.write_text_file(path, stdr.join(parts))
+    stdr.push(lines, "END:VCALENDAR")
+    stdr.write_text_file(path, _join_lines(lines))
 }
 
 : load_events() (( -- )) {
@@ -75,12 +130,52 @@ def rebuild_state = cogito.state(false)
     if !stdr.file_exists(path) { return }
     let raw = stdr.read_text_file(path)
     if stdr.is_null(raw) { return }
-    let parsed = json.parse_result(str(raw))
-    if !(parsed["ok"] ?? false) { return }
-    let data = parsed["value"] ?? []: [any]
+    let content = str(raw)
+    let all_lines = _split_lines(content)
     events = []: [any]
-    for (let ?i = 0; i < len(data); i += 1) {
-        stdr.push(events, data[i])
+    let ?ev = []: [string => any]
+    let ?in_event = false
+    for (let ?i = 0; i < len(all_lines); i += 1) {
+        let line = str(all_lines[i] ?? "")
+        if line == "BEGIN:VEVENT" {
+            ev = []: [string => any]
+            in_event = true
+        }
+        if !in_event { continue }
+        if stdr.starts_with(line, "SUMMARY:") {
+            ev["title"] = stdr.slice(line, 8, stdr.len(line))
+        }
+        if stdr.starts_with(line, "DESCRIPTION:") {
+            ev["description"] = stdr.slice(line, 12, stdr.len(line))
+        }
+        if stdr.starts_with(line, "X-SOLAR-COLOR:") {
+            ev["color"] = stdr.slice(line, 14, stdr.len(line))
+        }
+        if stdr.starts_with(line, "DTSTART;VALUE=DATE:") {
+            let ds = stdr.slice(line, 19, stdr.len(line))
+            ev["year"] = stdr.num(stdr.slice(ds, 0, 4))
+            ev["month"] = stdr.num(stdr.slice(ds, 4, 6))
+            ev["day"] = stdr.num(stdr.slice(ds, 6, 8))
+            ev["allday"] = 1
+        }
+        if stdr.starts_with(line, "DTSTART:") {
+            let ds = stdr.slice(line, 8, stdr.len(line))
+            ev["year"] = stdr.num(stdr.slice(ds, 0, 4))
+            ev["month"] = stdr.num(stdr.slice(ds, 4, 6))
+            ev["day"] = stdr.num(stdr.slice(ds, 6, 8))
+            ev["start_hour"] = stdr.num(stdr.slice(ds, 9, 11))
+            ev["start_min"] = stdr.num(stdr.slice(ds, 11, 13))
+            ev["allday"] = 0
+        }
+        if stdr.starts_with(line, "DTEND:") {
+            let ds = stdr.slice(line, 6, stdr.len(line))
+            ev["end_hour"] = stdr.num(stdr.slice(ds, 9, 11))
+            ev["end_min"] = stdr.num(stdr.slice(ds, 11, 13))
+        }
+        if line == "END:VEVENT" {
+            stdr.push(events, ev)
+            in_event = false
+        }
     }
 }
 
@@ -150,15 +245,22 @@ def rebuild_state = cogito.state(false)
 
 -- ── Event CRUD ───────────────────────────────────────────────
 
-: add_event(title = string, description = string, hour = num, minute = num, color = string) (( -- )) {
+: add_event(title = string, description = string, start_hour = num, start_min = num, end_hour = num, end_min = num, allday = bool, color = string) (( -- )) {
     let ?ev = []: [string => any]
     ev["title"] = title
     ev["description"] = description
     ev["year"] = view_year
     ev["month"] = view_month
     ev["day"] = selected_day
-    ev["hour"] = hour
-    ev["minute"] = minute
+    ev["start_hour"] = start_hour
+    ev["start_min"] = start_min
+    ev["end_hour"] = end_hour
+    ev["end_min"] = end_min
+    if allday {
+        ev["allday"] = 1
+    } else {
+        ev["allday"] = 0
+    }
     ev["color"] = color
     stdr.push(events, ev)
     save_events()
@@ -199,53 +301,98 @@ def rebuild_state = cogito.state(false)
     let dlg = cogito.dialog("New Event")
 
     let form = cogito.vstack()
-    .set_gap(12)
+    .set_gap(24)
     .set_padding(24, 24, 24, 24)
     .set_hexpand(true)
 
     let title_field = cogito.textfield("Event title")
     .set_hexpand(true)
+    .set_class("outlined")
     form.add(title_field)
 
     let desc_field = cogito.textfield("Description (optional)")
     .set_hexpand(true)
+    .set_class("outlined")
     form.add(desc_field)
 
-    let time_row = cogito.hstack()
+    let allday_row = cogito.hstack()
     .set_gap(8)
     .set_hexpand(true)
+    .set_align(3)
 
-    let hour_field = cogito.textfield("Hour (0-23)")
+    let allday_label = cogito.label("All Day")
     .set_hexpand(true)
-    .set_text("9")
-    time_row.add(hour_field)
+    allday_row.add(allday_label)
 
-    let min_field = cogito.textfield("Minute (0-59)")
+    let start_tp = cogito.timepicker()
+    .set_time(9, 0)
+    let end_tp = cogito.timepicker()
+    .set_time(10, 0)
+
+    let allday_switch = cogito.switch("")
+    .set_checked(false)
+    .on_change((s = cogito.Switch) => {
+        let on = s.checked()
+        start_tp.set_disabled(on)
+        end_tp.set_disabled(on)
+    })
+    allday_row.add(allday_switch)
+    form.add(allday_row)
+
+    let start_row = cogito.hstack()
+    .set_gap(8)
     .set_hexpand(true)
-    .set_text("00")
-    time_row.add(min_field)
+    .set_align(3)
+    let start_label = cogito.label("Start")
+    .set_hexpand(true)
+    start_row.add(start_label)
+    start_row.add(start_tp)
+    form.add(start_row)
 
-    form.add(time_row)
+    let end_row = cogito.hstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_align(3)
+    let end_label = cogito.label("End")
+    .set_hexpand(true)
+    end_row.add(end_label)
+    end_row.add(end_tp)
+    form.add(end_row)
 
     let color_row = cogito.hstack()
-    .set_gap(8)
+    .set_gap(12)
     .set_align(3)
 
     let color_label = cogito.label("Color:")
     .set_class("caption")
     color_row.add(color_label)
 
-    let ?picked_color = EVENT_COLORS[0]
-    let ?color_buttons = []: [any]
+    let ?picked_color = str(EVENT_COLORS[0])
+
+    let gcb = cogito.checkbox("", "")
 
     for (let ?ci = 0; ci < len(EVENT_COLORS); ci += 1) {
-        let c = EVENT_COLORS[ci]
-        let cbtn = cogito.shape(0)
-        .set_size(24)
+        let c = str(EVENT_COLORS[ci])
+
+        let pip = cogito.shape(0)
+        .set_size(12)
         .set_color(c)
 
-        stdr.push(color_buttons, cbtn)
-        color_row.add(cbtn)
+        let cb = cogito.checkbox("", gcb)
+        .set_checked(ci == 0)
+        .on_change((x = cogito.Checkbox) => {
+            if x.checked() {
+                picked_color = c
+            }
+        })
+
+        let pair = cogito.hstack()
+        .set_gap(4)
+        .set_align(3)
+        pair.add(pip)
+        pair.add(cb)
+
+        color_row.add(pair)
     }
 
     form.add(color_row)
@@ -267,9 +414,12 @@ def rebuild_state = cogito.state(false)
         let t = title_field.text()
         if stdr.len(stdr.trim(t)) > 0 {
             let d = desc_field.text()
-            let h = stdr.num(hour_field.text())
-            let m = stdr.num(min_field.text())
-            add_event(stdr.trim(t), stdr.trim(d), h, m, picked_color)
+            let is_allday = allday_switch.checked()
+            let sh = start_tp.hour()
+            let sm = start_tp.minute()
+            let eh = end_tp.hour()
+            let em = end_tp.minute()
+            add_event(stdr.trim(t), stdr.trim(d), sh, sm, eh, em, is_allday, picked_color)
             dlg.close()
         }
     })

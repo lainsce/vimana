@@ -144,11 +144,20 @@ bring utils.calendar
 
 : _build_event_row(ev = any, index = num, on_event_click = any, on_delete_event = any) (( cogito.HStack )) {
     let title = str(ev["title"] ?? "Untitled")
-    let hour = stdr.num(ev["hour"] ?? 0)
-    let minute = stdr.num(ev["minute"] ?? 0)
-    let time_str = calendar.format_time_12h(hour, minute)
+    let allday = stdr.num(ev["allday"] ?? 0)
     let color = str(ev["color"] ?? "#6B38FB")
     let desc = str(ev["description"] ?? "")
+
+    let ?time_str = "All Day"
+    if allday != 1 {
+        let sh = stdr.num(ev["start_hour"] ?? 0)
+        let sm = stdr.num(ev["start_min"] ?? 0)
+        let eh = stdr.num(ev["end_hour"] ?? 0)
+        let em = stdr.num(ev["end_min"] ?? 0)
+        let start_str = calendar.format_time_12h(sh, sm)
+        let end_str = calendar.format_time_12h(eh, em)
+        time_str = "$$start_str$$ – $$end_str$$"
+    }
 
     let row = cogito.hstack()
     .set_class("solar-event-row")
@@ -198,7 +207,39 @@ bring utils.calendar
     .set_size(0)
     .set_align(4)
     .on_click((b = cogito.Button) => {
-        on_delete_event(index)
+        let win = b.window()
+        let confirm_dlg = cogito.dialog("Delete Event?")
+        let confirm_body = cogito.vstack()
+        .set_gap(16)
+        .set_padding(24, 24, 24, 24)
+        .set_hexpand(true)
+
+        let msg = cogito.label("Are you sure you want to delete \"$$title$$\"?")
+        .set_hexpand(true)
+        confirm_body.add(msg)
+
+        let confirm_btns = cogito.hstack()
+        .set_gap(8)
+        .set_align(5)
+
+        let keep_btn = cogito.button("Cancel")
+        .set_class("text")
+        .on_click((kb = cogito.Button) => {
+            confirm_dlg.close()
+        })
+        confirm_btns.add(keep_btn)
+
+        let del_btn = cogito.button("Delete")
+        .set_class("filled")
+        .on_click((db = cogito.Button) => {
+            on_delete_event(index)
+            confirm_dlg.close()
+        })
+        confirm_btns.add(del_btn)
+
+        confirm_body.add(confirm_btns)
+        confirm_dlg.add(confirm_body)
+        win.set_dialog(confirm_dlg)
     })
     row.add(overflow_btn)
 

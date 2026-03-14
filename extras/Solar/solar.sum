@@ -19,11 +19,13 @@ appbar.solar-cal-bar
   max-height: 106
 
 label.solar-appbar-title
-  font-size: 20
+  font-size: 32
+  font-variation: wdth 130, opsz 20
   font-weight: bold
 
 label.solar-evt-title
-  font-size: 22
+  font-size: 32
+  font-variation: opsz 20
   font-weight: bold
 
 label.solar-evt-subtitle
@@ -51,12 +53,16 @@ hstack.solar-day-cell
   border: 1 solid #00000020
   min-width: 128
   max-width: 128
+  min-height: 128
+  max-height: 128
 
 hstack.solar-trailing
   border-radius: 0
   border: 1 solid #00000010
   min-width: 128
   max-width: 128
+  min-height: 128
+  max-height: 128
   opacity: 0.45
 
 label.solar-day-num
@@ -82,12 +88,15 @@ button.day-pill
 
 ; ── Event pills in day cells ─────────────────────────────────
 
-label.solar-event-pill
+hstack.solar-event-pill
   min-height: 18
   max-height: 18
   border-radius: 4
-  font-size: 10
   padding: 0 4 0 4
+
+label.solar-event-pill-label
+  font-size: 12
+  font-weight: bold
 
 ; ── Event list panel ──────────────────────────────────────────
 
@@ -110,3 +119,13 @@ label.solar-event-title
 label.solar-event-desc
   font-size: 12
   opacity: 0.5
+
+@when dark
+  hstack.solar-day-cell
+      border: 1 solid #ffffff20
+    
+  hstack.solar-trailing
+      border: 1 solid #ffffff10
+    
+  hstack.solar-event-row
+      border: 1 solid #ffffff10

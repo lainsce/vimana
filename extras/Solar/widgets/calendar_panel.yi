@@ -243,17 +243,34 @@ bring utils.calendar
     for (let ?e = 0; e < max_show; e += 1) {
         let ev = day_events[e] ?? []: [string => any]
         let title = str(ev["title"] ?? "")
-        let hour = stdr.num(ev["hour"] ?? 0)
-        let display_h = if hour == 0 { 12 } else { if hour > 12 { hour - 12 } else { hour } }
-        let suffix = if hour >= 12 { "pm" } else { "am" }
-        let pill_text = "$$display_h$$$$suffix$$ $$title$$"
+        let color = str(ev["color"] ?? "#6B38FB")
+        let allday = stdr.num(ev["allday"] ?? 0)
+        let ?pill_text = "All Day $$title$$"
+        if allday != 1 {
+            let hour = stdr.num(ev["start_hour"] ?? 0)
+            let display_h = if hour == 0 { 12 } else { if hour > 12 { hour - 12 } else { hour } }
+            let suffix = if hour >= 12 { "pm" } else { "am" }
+            pill_text = "$$display_h$$$$suffix$$ $$title$$"
+        }
 
-        let ev_pill = cogito.label(pill_text)
+        let pill_wrap = cogito.hstack()
         .set_class("solar-event-pill")
         .set_align(0)
+        .set_gap(4)
+
+        let pip = cogito.shape(0)
+        .set_size(8)
+        .set_color(color)
+        pill_wrap.add(pip)
+
+        let ev_pill = cogito.label(pill_text)
+        .set_class("solar-event-pill-label")
+        .set_align(3)
         .set_text_align(0)
         .set_ellipsis(true)
-        inner.add(ev_pill)
+        pill_wrap.add(ev_pill)
+
+        inner.add(pill_wrap)
     }
 
     cell.add(inner)
