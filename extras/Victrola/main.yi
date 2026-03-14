@@ -1007,8 +1007,6 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
     refresh_library_list()
     let n = len(tracks)
-
-    fetch_artist_images()
 }
 
 : choose_and_scan() (( -- )) {
@@ -1017,6 +1015,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         return
     }
     scan_folder(folder)
+    fetch_artist_images()
 }
 
 : find_visible_index(track_idx = num) (( num )) {
@@ -2076,6 +2075,13 @@ entry() (( -- )) {
     win.add(outer)
 
     ui_ready = true
+
+    -- Defer artist image fetching until after the window is shown
+    if len(current_folder) > 0 {
+        cogito.set_timeout(0, () => {
+            fetch_artist_images()
+        })
+    }
 
     app.run(win)
 
