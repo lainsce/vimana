@@ -4711,6 +4711,14 @@ pub class Shape {
         __cogito_container_set_padding(this, top, right, bottom, left)
         return this
     }
+    :: set_hexpand(this, expand = bool) (( Shape )) {
+        __cogito_container_set_hexpand(this, expand)
+        return this
+    }
+    :: set_vexpand(this, expand = bool) (( Shape )) {
+        __cogito_container_set_vexpand(this, expand)
+        return this
+    }
     :: set_visible(this, on = bool) (( Shape )) {
         __cogito_node_set_visible(this, on)
         return this

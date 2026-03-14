@@ -1,0 +1,351 @@
+cask main
+
+bring stdr
+bring json
+bring cogito
+
+bring utils.calendar
+bring widgets.calendar_panel
+bring widgets.event_panel
+
+-- ── State ────────────────────────────────────────────────────
+
+def ?events = []: [any]
+def ?view_year = 0
+def ?view_month = 0
+def ?selected_day = 0
+def ?is_compact_mode = false
+def ?SOLAR_STATE_PATH = ""
+
+def EVENT_COLORS = ["#6B38FB", "#E53935", "#43A047", "#1E88E5", "#FB8C00", "#8E24AA"]
+
+-- ── Module widgets ───────────────────────────────────────────
+
+def cal_panel = cogito.vstack()
+def cal_bar = cogito.appbar("Solar", "")
+def month_label = cogito.label("")
+def day_grid = cogito.grid(7)
+
+def evt_panel = cogito.vstack()
+def evt_bar = cogito.appbar("", "")
+def evt_title_label = cogito.label("")
+def evt_subtitle_label = cogito.label("")
+def evt_empty_holder = cogito.vstack()
+def event_list = cogito.content_list()
+
+def rebuild_state = cogito.state(false)
+
+-- ── Persistence ──────────────────────────────────────────────
+
+: _ensure_state_path() (( string )) {
+    if stdr.len(SOLAR_STATE_PATH) > 0 {
+        return SOLAR_STATE_PATH
+    }
+    let run = stdr.run_command("echo $HOME")
+    let home = stdr.trim(str(run ?? ""))
+    let dir = stdr.join_path(home, ".cache/solar")
+    stdr.run_command("mkdir -p $$dir$$")
+    SOLAR_STATE_PATH = stdr.join_path(dir, "events.json")
+    return SOLAR_STATE_PATH
+}
+
+: save_events() (( -- )) {
+    let path = _ensure_state_path()
+    let ?parts = []: [any]
+    stdr.push(parts, "[")
+    for (let ?i = 0; i < len(events); i += 1) {
+        if i > 0 { stdr.push(parts, ",") }
+        let ev = events[i] ?? []: [string => any]
+        let t = stdr.replace(str(ev["title"] ?? ""), "\"", "\\\"")
+        let d = stdr.replace(str(ev["description"] ?? ""), "\"", "\\\"")
+        let c = str(ev["color"] ?? "#6B38FB")
+        let yr = str(stdr.num(ev["year"] ?? 0))
+        let mo = str(stdr.num(ev["month"] ?? 0))
+        let dy = str(stdr.num(ev["day"] ?? 0))
+        let hr = str(stdr.num(ev["hour"] ?? 0))
+        let mn = str(stdr.num(ev["minute"] ?? 0))
+        stdr.push(parts, "{\"title\":\"$$t$$\",\"description\":\"$$d$$\",\"color\":\"$$c$$\",\"year\":$$yr$$,\"month\":$$mo$$,\"day\":$$dy$$,\"hour\":$$hr$$,\"minute\":$$mn$$}")
+    }
+    stdr.push(parts, "]")
+    stdr.write_text_file(path, stdr.join(parts))
+}
+
+: load_events() (( -- )) {
+    let path = _ensure_state_path()
+    if !stdr.file_exists(path) { return }
+    let raw = stdr.read_text_file(path)
+    if stdr.is_null(raw) { return }
+    let parsed = json.parse_result(str(raw))
+    if !(parsed["ok"] ?? false) { return }
+    let data = parsed["value"] ?? []: [any]
+    events = []: [any]
+    for (let ?i = 0; i < len(data); i += 1) {
+        stdr.push(events, data[i])
+    }
+}
+
+-- ── Navigation ───────────────────────────────────────────────
+
+: go_prev_month() (( -- )) {
+    view_month -= 1
+    if view_month < 1 {
+        view_month = 12
+        view_year -= 1
+    }
+    selected_day = 1
+    update_calendar()
+}
+
+: go_next_month() (( -- )) {
+    view_month += 1
+    if view_month > 12 {
+        view_month = 1
+        view_year += 1
+    }
+    selected_day = 1
+    update_calendar()
+}
+
+: go_today() (( -- )) {
+    view_year = calendar.current_year()
+    view_month = calendar.current_month()
+    selected_day = calendar.current_day()
+    update_calendar()
+}
+
+: select_day(day = num) (( -- )) {
+    if day == -1 {
+        go_today()
+        return
+    }
+    selected_day = day
+    update_calendar()
+}
+
+-- ── Calendar Refresh ─────────────────────────────────────────
+
+: update_calendar() (( -- )) {
+    let mn = calendar.month_name(view_month)
+    let label_text = "$$mn$$ $$view_year$$"
+    month_label.set_text(label_text)
+
+    let today_y = calendar.current_year()
+    let today_m = calendar.current_month()
+    let today_d = calendar.current_day()
+
+    calendar_panel.populate_days(
+        day_grid, view_year, view_month, selected_day,
+        today_d, today_m, today_y, events,
+        (day = num) => { select_day(day) }
+    )
+
+    let date_label = calendar.format_date_label(view_year, view_month, selected_day)
+
+    event_panel.refresh_events(
+        event_list, evt_empty_holder, evt_title_label, evt_subtitle_label, events, view_year, view_month, selected_day,
+        (idx = num) => { },
+        (idx = num) => { delete_event_at(idx) }
+    )
+}
+
+-- ── Event CRUD ───────────────────────────────────────────────
+
+: add_event(title = string, description = string, hour = num, minute = num, color = string) (( -- )) {
+    let ?ev = []: [string => any]
+    ev["title"] = title
+    ev["description"] = description
+    ev["year"] = view_year
+    ev["month"] = view_month
+    ev["day"] = selected_day
+    ev["hour"] = hour
+    ev["minute"] = minute
+    ev["color"] = color
+    stdr.push(events, ev)
+    save_events()
+    update_calendar()
+}
+
+: delete_event_at(visible_index = num) (( -- )) {
+    let ?day_idx = 0
+    let ?target = -1
+    for (let ?i = 0; i < len(events); i += 1) {
+        let ev = events[i] ?? []: [string => any]
+        let ey = stdr.num(ev["year"] ?? 0)
+        let em = stdr.num(ev["month"] ?? 0)
+        let ed = stdr.num(ev["day"] ?? 0)
+        if ey == view_year && em == view_month && ed == selected_day {
+            if day_idx == visible_index {
+                target = i
+                break
+            }
+            day_idx += 1
+        }
+    }
+    if target < 0 { return }
+    let ?next = []: [any]
+    for (let ?i = 0; i < len(events); i += 1) {
+        if i != target {
+            stdr.push(next, events[i])
+        }
+    }
+    events = next
+    save_events()
+    update_calendar()
+}
+
+-- ── Add Event Dialog ─────────────────────────────────────────
+
+: open_add_event(win = cogito.Window) (( -- )) {
+    let dlg = cogito.dialog("New Event")
+
+    let form = cogito.vstack()
+    .set_gap(12)
+    .set_padding(24, 24, 24, 24)
+    .set_hexpand(true)
+
+    let title_field = cogito.textfield("Event title")
+    .set_hexpand(true)
+    form.add(title_field)
+
+    let desc_field = cogito.textfield("Description (optional)")
+    .set_hexpand(true)
+    form.add(desc_field)
+
+    let time_row = cogito.hstack()
+    .set_gap(8)
+    .set_hexpand(true)
+
+    let hour_field = cogito.textfield("Hour (0-23)")
+    .set_hexpand(true)
+    .set_text("9")
+    time_row.add(hour_field)
+
+    let min_field = cogito.textfield("Minute (0-59)")
+    .set_hexpand(true)
+    .set_text("00")
+    time_row.add(min_field)
+
+    form.add(time_row)
+
+    let color_row = cogito.hstack()
+    .set_gap(8)
+    .set_align(3)
+
+    let color_label = cogito.label("Color:")
+    .set_class("caption")
+    color_row.add(color_label)
+
+    let ?picked_color = EVENT_COLORS[0]
+    let ?color_buttons = []: [any]
+
+    for (let ?ci = 0; ci < len(EVENT_COLORS); ci += 1) {
+        let c = EVENT_COLORS[ci]
+        let cbtn = cogito.shape(0)
+        .set_size(24)
+        .set_color(c)
+
+        stdr.push(color_buttons, cbtn)
+        color_row.add(cbtn)
+    }
+
+    form.add(color_row)
+
+    let btn_row = cogito.hstack()
+    .set_gap(8)
+    .set_align(5)
+
+    let cancel_btn = cogito.button("Cancel")
+    .set_class("text")
+    .on_click((b = cogito.Button) => {
+        dlg.close()
+    })
+    btn_row.add(cancel_btn)
+
+    let save_btn = cogito.button("Save")
+    .set_class("filled")
+    .on_click((b = cogito.Button) => {
+        let t = title_field.text()
+        if stdr.len(stdr.trim(t)) > 0 {
+            let d = desc_field.text()
+            let h = stdr.num(hour_field.text())
+            let m = stdr.num(min_field.text())
+            add_event(stdr.trim(t), stdr.trim(d), h, m, picked_color)
+            dlg.close()
+        }
+    })
+    btn_row.add(save_btn)
+
+    form.add(btn_row)
+    dlg.add(form)
+    win.set_dialog(dlg)
+}
+
+-- ── Compact Layout ───────────────────────────────────────────
+
+: apply_compact_layout(compact = bool) (( -- )) {
+    is_compact_mode = compact
+    if compact {
+        evt_panel.set_visible(false)
+        evt_panel.set_hexpand(false)
+        cal_panel.set_visible(true)
+        cal_panel.set_hexpand(true)
+    } else {
+        evt_panel.set_visible(true)
+        evt_panel.set_hexpand(true)
+        cal_panel.set_visible(true)
+        cal_panel.set_hexpand(false)
+    }
+}
+
+-- ── Entry Point ──────────────────────────────────────────────
+
+entry() (( -- )) {
+    load_events()
+
+    view_year = calendar.current_year()
+    view_month = calendar.current_month()
+    selected_day = calendar.current_day()
+
+    let app = cogito.app()
+    .set_appid("com.fyralabs.Solar")
+    .set_app_name("Solar")
+    .set_accent_color("#FF6F00", true)
+
+    let win = cogito.window_size("Solar", 900, 720)
+    .set_resizable(true)
+    .set_size_request(360, 380)
+
+    let main_content = cogito.hstack()
+    .set_gap(0)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    calendar_panel.build_panel(
+        cal_panel, cal_bar, month_label, day_grid,
+        () => { go_prev_month() },
+        () => { go_next_month() },
+        (day = num) => { select_day(day) }
+    )
+    main_content.add(cal_panel)
+
+    event_panel.build_panel(
+        evt_panel, evt_bar, evt_title_label, evt_subtitle_label, evt_empty_holder, event_list,
+        () => { open_add_event(win) }
+    )
+    main_content.add(evt_panel)
+
+    win.add(main_content)
+
+    win.on_resize((node = any) => {
+        let compact = win.is_compact()
+        if compact != is_compact_mode {
+            apply_compact_layout(compact)
+        }
+    })
+
+    cogito.load_sum("solar.sum")
+    update_calendar()
+
+    app.run(win)
+}

@@ -1,0 +1,261 @@
+cask calendar_panel
+
+bring stdr
+bring cogito
+bring datetime
+
+bring utils.calendar
+
+:: build_panel(
+    panel = cogito.VStack,
+    bar = cogito.AppBar,
+    month_label = cogito.Label,
+    day_grid = cogito.Grid,
+    on_prev_month = any,
+    on_next_month = any,
+    on_day_click = any
+) (( -- )) {
+    panel
+    .set_gap(0)
+    .set_padding(0, 0, 0, 0)
+    .set_vexpand(true)
+    .set_hexpand(true)
+
+    bar.set_class("small solar-cal-bar")
+
+    let title_row = cogito.hstack()
+    .set_padding(0, 0, 0, 0)
+    .set_gap(8)
+    .set_align(4)
+
+    month_label
+    .set_class("solar-appbar-title")
+    .set_align(4)
+    .set_wrap(true)
+    .set_line_chars(15)
+
+    let nav_col = cogito.hstack()
+    .set_gap(6)
+    .set_align(4)
+
+    let up_btn = cogito.iconbtn("sf:chevron.up")
+    .set_shape(1)
+    .set_size(0)
+    .on_click((b = cogito.Button) => {
+        on_prev_month()
+    })
+
+    let down_btn = cogito.iconbtn("sf:chevron.down")
+    .set_shape(1)
+    .set_size(0)
+    .on_click((b = cogito.Button) => {
+        on_next_month()
+    })
+
+    nav_col.add(up_btn)
+    nav_col.add(down_btn)
+
+    title_row.add(month_label)
+    title_row.add(nav_col)
+    bar.set_title_widget(title_row)
+
+    let today_btn = bar.add_trailing_button("sf:calendar.badge.clock", (b = cogito.Button) => {
+        on_day_click(-1)
+    })
+
+    panel.add(bar)
+
+    let scroll = cogito.scroller()
+    .set_vexpand(true)
+    .set_hexpand(true)
+    bar.pair_with_scroller(scroll)
+
+    let content = cogito.vstack()
+    .set_gap(0)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let weekday_row = cogito.hstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_homogeneous(true)
+    .set_padding(0, 0, 4, 16)
+    for (let ?wi = 0; wi < 7; wi += 1) {
+        let hdr = cogito.label(calendar.day_name(wi))
+        .set_class("solar-weekday")
+        .set_align(0)
+        .set_hexpand(true)
+        .set_padding(8, 4, 4, 4)
+        weekday_row.add(hdr)
+    }
+    content.add(weekday_row)
+
+    day_grid
+    .set_class("solar-grid")
+    .set_gap(4, 4)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    content.add(day_grid)
+    scroll.add(content)
+    panel.add(scroll)
+}
+
+:: populate_days(
+    day_grid = cogito.Grid,
+    year = num,
+    month = num,
+    selected_day = num,
+    today_day = num,
+    today_month = num,
+    today_year = num,
+    events = any,
+    on_day_click = any
+) (( -- )) {
+    day_grid.clear()
+
+    let first_wd = calendar.first_weekday_of_month(year, month)
+    let num_days = calendar.days_in_month(year, month)
+
+    let ?prev_month = month - 1
+    let ?prev_year = year
+    if prev_month < 1 {
+        prev_month = 12
+        prev_year = year - 1
+    }
+    let prev_days = calendar.days_in_month(prev_year, prev_month)
+
+    let ?col = 0
+    let ?row = 0
+
+    for (let ?p = first_wd - 1; p >= 0; p -= 1) {
+        let d = prev_days - p
+        let cell = _build_trailing_cell(d)
+        day_grid.add(cell, col, row, 1, 1)
+        col += 1
+    }
+
+    for (let ?d = 1; d <= num_days; d += 1) {
+        let is_today = (d == today_day && month == today_month && year == today_year)
+        let is_selected = (d == selected_day)
+        let day_events = _get_day_events(d, month, year, events)
+
+        let cell = _build_day_cell(d, is_today, is_selected, day_events, on_day_click)
+        day_grid.add(cell, col, row, 1, 1)
+
+        col += 1
+        if col >= 7 {
+            col = 0
+            row += 1
+        }
+    }
+
+    let ?next_d = 1
+    if col > 0 {
+        for (let ?i = col; i < 7; i += 1) {
+            let cell = _build_trailing_cell(next_d)
+            day_grid.add(cell, i, row, 1, 1)
+            next_d += 1
+        }
+    }
+}
+
+: _get_day_events(day = num, month = num, year = num, events = any) (( [any] )) {
+    let ?result = []: [any]
+    let n = len(events)
+    for (let ?i = 0; i < n; i += 1) {
+        let ev = events[i] ?? []: [string => any]
+        if stdr.num(ev["day"] ?? 0) == day && stdr.num(ev["month"] ?? 0) == month && stdr.num(ev["year"] ?? 0) == year {
+            stdr.push(result, ev)
+        }
+    }
+    return result
+}
+
+: _build_trailing_cell(day = num) (( cogito.HStack )) {
+    let cell = cogito.hstack()
+    .set_class("solar-day-cell solar-trailing")
+    .set_padding(6, 6, 6, 6)
+    .set_hexpand(true)
+
+    let inner = cogito.vstack()
+    .set_gap(2)
+    .set_hexpand(true)
+
+    let day_str = str(day)
+    let lbl = cogito.label(day_str)
+    .set_class("solar-trailing-day")
+    .set_align(0)
+    .set_text_align(0)
+    inner.add(lbl)
+
+    cell.add(inner)
+    return cell
+}
+
+: _build_day_cell(day = num, is_today = bool, is_selected = bool, day_events = any, on_day_click = any) (( cogito.HStack )) {
+    let cell = cogito.hstack()
+    .set_class("solar-day-cell")
+    .set_padding(4, 4, 4, 4)
+    .set_hexpand(true)
+
+    let inner = cogito.vstack()
+    .set_gap(2)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let day_str = str(day)
+    let pill = cogito.button(day_str)
+    .set_class("day-pill")
+    .set_size(0)
+    .set_align(0)
+    .set_vexpand(false)
+
+    if is_selected {
+        pill.set_class("day-pill filled")
+        .on_click((b = cogito.Button) => {
+            on_day_click(day)
+        })
+        inner.add(pill)
+    } elif is_today {
+        pill.set_class("day-pill outlined")
+        .on_click((b = cogito.Button) => {
+            on_day_click(day)
+        })
+        inner.add(pill)
+    } else {
+        let lbl = cogito.button(day_str)
+        .set_class("day-pill text")
+        .set_size(0)
+        .set_align(0)
+        .set_vexpand(false)
+        .on_click((b = cogito.Button) => {
+            on_day_click(day)
+        })
+        inner.add(lbl)
+    }
+
+    let ev_count = len(day_events)
+    let ?max_show = 3
+    if ev_count < max_show { max_show = ev_count }
+
+    for (let ?e = 0; e < max_show; e += 1) {
+        let ev = day_events[e] ?? []: [string => any]
+        let title = str(ev["title"] ?? "")
+        let hour = stdr.num(ev["hour"] ?? 0)
+        let display_h = if hour == 0 { 12 } else { if hour > 12 { hour - 12 } else { hour } }
+        let suffix = if hour >= 12 { "pm" } else { "am" }
+        let pill_text = "$$display_h$$$$suffix$$ $$title$$"
+
+        let ev_pill = cogito.label(pill_text)
+        .set_class("solar-event-pill")
+        .set_align(0)
+        .set_text_align(0)
+        .set_ellipsis(true)
+        inner.add(ev_pill)
+    }
+
+    cell.add(inner)
+    return cell
+}

@@ -1,0 +1,206 @@
+cask event_panel
+
+bring stdr
+bring cogito
+
+bring utils.calendar
+
+:: build_panel(
+    panel = cogito.VStack,
+    bar = cogito.AppBar,
+    title_label = cogito.Label,
+    subtitle_label = cogito.Label,
+    empty_holder = cogito.VStack,
+    event_list = cogito.ContentList,
+    on_add_event = any
+) (( -- )) {
+    panel
+    .set_gap(0)
+    .set_padding(0, 0, 0, 0)
+    .set_vexpand(true)
+    .set_hexpand(true)
+
+    bar
+    .set_hexpand(true)
+    .set_class("small solar-evt-bar")
+
+    let title_col = cogito.vstack()
+    .set_gap(4)
+    .set_padding(6, 0, 0, 0)
+
+    title_label
+    .set_class("solar-evt-title")
+    .set_align(0)
+    .set_text_align(0)
+    title_col.add(title_label)
+
+    subtitle_label
+    .set_class("solar-evt-subtitle")
+    .set_align(0)
+    .set_text_align(0)
+    title_col.add(subtitle_label)
+
+    bar.set_title_widget(title_col)
+
+    panel.add(bar)
+
+    let body = cogito.zstack()
+    .set_vexpand(true)
+    .set_hexpand(true)
+
+    let scroll = cogito.scroller()
+    .set_vexpand(true)
+    .set_hexpand(true)
+    bar.pair_with_scroller(scroll)
+
+    event_list
+    .set_class("solar-event-list")
+    .set_gap(4)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(8, 8, 8, 8)
+
+    scroll.add(event_list)
+    body.add(scroll)
+
+    let empty = cogito.empty_page("No Events")
+    .set_description("Tap + to add an event for this day.")
+    .set_icon("sf:calendar.badge.plus")
+    empty_holder
+    .set_vexpand(true)
+    .set_hexpand(true)
+    .set_align(4)
+    .add(empty)
+    .set_visible(false)
+    body.add(empty_holder)
+
+    let fab = cogito.fab("sf:plus")
+    .set_extended(true, "New Event")
+    .set_align(8)
+    .set_margins(0, 16, 16, 0)
+    fab.on_click((f = cogito.FAB) => {
+        on_add_event()
+    })
+    body.add(fab)
+
+    panel.add(body)
+}
+
+:: refresh_events(
+    event_list = cogito.ContentList,
+    empty_holder = cogito.VStack,
+    title_label = cogito.Label,
+    subtitle_label = cogito.Label,
+    events = any,
+    sel_year = num,
+    sel_month = num,
+    sel_day = num,
+    on_event_click = any,
+    on_delete_event = any
+) (( -- )) {
+    event_list.clear()
+
+    let today_y = calendar.current_year()
+    let today_m = calendar.current_month()
+    let today_d = calendar.current_day()
+
+    if sel_day == today_d && sel_month == today_m && sel_year == today_y {
+        title_label.set_text("Today")
+    } else {
+        let date_str = calendar.format_date_label(sel_year, sel_month, sel_day)
+        title_label.set_text(date_str)
+    }
+
+    let sub = calendar.format_day_subtitle(sel_year, sel_month, sel_day)
+    subtitle_label.set_text(sub)
+
+    let ?day_events = []: [any]
+    let n = len(events)
+    for (let ?i = 0; i < n; i += 1) {
+        let ev = events[i] ?? []: [string => any]
+        let ey = stdr.num(ev["year"] ?? 0)
+        let em = stdr.num(ev["month"] ?? 0)
+        let ed = stdr.num(ev["day"] ?? 0)
+        if ey == sel_year && em == sel_month && ed == sel_day {
+            stdr.push(day_events, ev)
+        }
+    }
+
+    if len(day_events) == 0 {
+        empty_holder.set_visible(true)
+        event_list.set_visible(false)
+        return
+    }
+
+    empty_holder.set_visible(false)
+    event_list.set_visible(true)
+
+    for (let ?j = 0; j < len(day_events); j += 1) {
+        let ev = day_events[j] ?? []: [string => any]
+        let row = _build_event_row(ev, j, on_event_click, on_delete_event)
+        event_list.add(row)
+    }
+}
+
+: _build_event_row(ev = any, index = num, on_event_click = any, on_delete_event = any) (( cogito.HStack )) {
+    let title = str(ev["title"] ?? "Untitled")
+    let hour = stdr.num(ev["hour"] ?? 0)
+    let minute = stdr.num(ev["minute"] ?? 0)
+    let time_str = calendar.format_time_12h(hour, minute)
+    let color = str(ev["color"] ?? "#6B38FB")
+    let desc = str(ev["description"] ?? "")
+
+    let row = cogito.hstack()
+    .set_class("solar-event-row")
+    .set_gap(0)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+    .set_align(0)
+
+    let accent = cogito.shape(1)
+    .set_size(4)
+    .set_size_h(56)
+    .set_color(color)
+    row.add(accent)
+
+    let info_col = cogito.vstack()
+    .set_gap(2)
+    .set_hexpand(true)
+    .set_padding(12, 12, 12, 12)
+    .set_align(0)
+
+    let time_label = cogito.label(time_str)
+    .set_class("solar-event-time")
+    .set_align(0)
+    .set_text_align(0)
+    info_col.add(time_label)
+
+    let title_label = cogito.label(title)
+    .set_class("solar-event-title")
+    .set_align(0)
+    .set_text_align(0)
+    .set_ellipsis(true)
+    info_col.add(title_label)
+
+    if stdr.len(desc) > 0 {
+        let desc_label = cogito.label(desc)
+        .set_class("solar-event-desc")
+        .set_align(0)
+        .set_text_align(0)
+        .set_ellipsis(true)
+        info_col.add(desc_label)
+    }
+
+    row.add(info_col)
+
+    let overflow_btn = cogito.iconbtn("sf:ellipsis")
+    .set_shape(1)
+    .set_size(0)
+    .set_align(4)
+    .on_click((b = cogito.Button) => {
+        on_delete_event(index)
+    })
+    row.add(overflow_btn)
+
+    return row
+}
