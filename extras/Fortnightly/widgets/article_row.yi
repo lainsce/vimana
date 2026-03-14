@@ -5,6 +5,34 @@ bring cogito
 
 bring utils.dates
 
+:: build_skeleton_row() (( cogito.HStack )) {
+    let row = cogito.hstack()
+    .set_class("article-row")
+    .set_hexpand(true)
+    .set_padding(12, 16, 12, 16)
+    .set_gap(12)
+
+    let thumb = cogito.shape(1)
+    .set_size(64).set_size_h(64)
+    .set_color("#80808030")
+    row.add(thumb)
+
+    let text_col = cogito.vstack()
+    .set_gap(4)
+    .set_hexpand(true)
+    .set_align(0)
+    .add(cogito.shape(6)
+        .set_size(200).set_size_h(14)
+        .set_color("#80808020")
+    )
+    .add(cogito.shape(6)
+        .set_size(140).set_size_h(10)
+        .set_color("#80808018")
+    )
+    row.add(text_col)
+    return row
+}
+
 :: build_article_row(index = num, article = any) (( cogito.HStack )) {
     let title = str(article["title"] ?? "")
     let date = str(article["date"] ?? "")

@@ -1157,6 +1157,7 @@ typedef struct CogitoNode {
     struct {
       int preset;
       int size_dp;
+      int size_h_dp;
       int color_style; // 0=custom, 1=primary, 2=secondary, 3=tertiary
       bool custom_color_set;
       bool clip_children;

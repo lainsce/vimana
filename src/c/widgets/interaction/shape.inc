@@ -286,6 +286,8 @@ static void cogito_shape_apply_preset_node(CogitoNode* n, int preset) {
 static CogitoNode* cogito_shape_new_obj(int preset) {
   CogitoNode* n = cogito_node_new(COGITO_SHAPE);
   n->shape.size_dp = 96;
+  n->shape.size_h_dp = 0;
+  n->shape.size_h_dp = 0;
   n->shape.color_style = 0;
   n->shape.custom_color_set = false;
   n->shape.custom_color = cogito_color(24, 24, 33, 255);
@@ -319,6 +321,16 @@ static void cogito_shape_set_size(YisVal shapev, YisVal sizev) {
   if (size_dp < 1) size_dp = 1;
   if (n->shape.size_dp == size_dp) return;
   n->shape.size_dp = size_dp;
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static void cogito_shape_set_size_h(YisVal shapev, YisVal hv) {
+  if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_set_size_h expects shape");
+  CogitoNode* n = (CogitoNode*)shapev.as.p;
+  int h = (int)yis_as_int(hv);
+  if (h < 0) h = 0;
+  if (n->shape.size_h_dp == h) return;
+  n->shape.size_h_dp = h;
   cogito_window_relayout(cogito_node_window(n));
 }
 

@@ -194,6 +194,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_shape_set_preset cogito_shape_set_preset_yis
 #define cogito_shape_get_preset cogito_shape_get_preset_yis
 #define cogito_shape_set_size cogito_shape_set_size_yis
+#define cogito_shape_set_size_h cogito_shape_set_size_h_yis
 #define cogito_shape_get_size cogito_shape_get_size_yis
 #define cogito_shape_set_color cogito_shape_set_color_yis
 #define cogito_shape_set_color_style cogito_shape_set_color_style_yis
@@ -592,6 +593,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_shape_set_preset
 #undef cogito_shape_get_preset
 #undef cogito_shape_set_size
+#undef cogito_shape_set_size_h
 #undef cogito_shape_get_size
 #undef cogito_shape_set_color
 #undef cogito_shape_set_color_style
@@ -2506,6 +2508,11 @@ void cogito_shape_set_size(cogito_node *shape, int size_dp) {
   if (!shape)
     return;
   cogito_shape_set_size_yis(YV_OBJ(shape), YV_INT(size_dp));
+}
+void cogito_shape_set_size_h(cogito_node *shape, int size_h_dp) {
+  if (!shape)
+    return;
+  cogito_shape_set_size_h_yis(YV_OBJ(shape), YV_INT(size_h_dp));
 }
 int cogito_shape_get_size(cogito_node *shape) {
   if (!shape)

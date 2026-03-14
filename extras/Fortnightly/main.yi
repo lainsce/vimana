@@ -122,10 +122,19 @@ def sources_state = cogito.state(false)
             state.save_state(sources)
             sources_open = false
             dlg.close()
-            articles = feed.fetch_all_feeds(sources, articles)
-            refresh_article_list()
-            if len(articles) > 0 && selected_article < 0 {
-                show_article(0)
+            articles = []: [any]
+            selected_article = -1
+            feed_index = 0
+            if len(sources) > 0 {
+                article_list.clear()
+                for (let ?sk = 0; sk < 8; sk += 1) {
+                    article_list.add(article_row.build_skeleton_row())
+                }
+                cogito.set_timeout(0, () => {
+                    fetch_next_feed()
+                })
+            } else {
+                refresh_article_list()
             }
         }
     )
@@ -152,6 +161,39 @@ def sources_state = cogito.state(false)
     }
 }
 
+-- ── Incremental Feed Loading ─────────────────────────────────
+
+def ?feed_index = 0
+
+: fetch_next_feed() (( -- )) {
+    if feed_index >= len(sources) {
+        return
+    }
+    let prev_count = len(articles)
+    let items = feed.fetch_single_feed(sources[feed_index])
+    for (let ?j = 0; j < len(items); j += 1) {
+        articles[len(articles)] = items[j]
+    }
+    feed_index += 1
+    if prev_count == 0 {
+        refresh_article_list()
+        if len(articles) > 0 {
+            selected_article = 0
+            show_article(0)
+        }
+    } else {
+        for (let ?k = prev_count; k < len(articles); k += 1) {
+            let a = articles[k] ?? []: [string => any]
+            article_list.add(article_row.build_article_row(k, a))
+        }
+    }
+    if feed_index < len(sources) {
+        cogito.set_timeout(0, () => {
+            fetch_next_feed()
+        })
+    }
+}
+
 -- ── Entry Point ──────────────────────────────────────────────
 
 entry() (( -- )) {
@@ -167,9 +209,13 @@ entry() (( -- )) {
 
     cogito.load_sum("fortnightly.sum")
 
-    -- Fetch feeds on startup
+    -- Fetch first feed synchronously so the appbar has a title at first layout
     if len(sources) > 0 {
-        articles = feed.fetch_all_feeds(sources, articles)
+        let items = feed.fetch_single_feed(sources[0])
+        for (let ?j = 0; j < len(items); j += 1) {
+            articles[len(articles)] = items[j]
+        }
+        feed_index = 1
     }
 
     let win = cogito.window_size("Fortnightly", 885, 720)
@@ -183,7 +229,7 @@ entry() (( -- )) {
         detail_lede, detail_body,
         () => { open_sources(win) },
         (idx = num) => {
-            if idx >= 0 && idx < len(articles) {
+            if idx >= 0 && idx < len(articles) && idx != selected_article {
                 show_article(idx)
             }
         },
@@ -193,16 +239,27 @@ entry() (( -- )) {
     -- Wire up responsive layout
     win.on_resize((node = any) => {
         let compact = win.is_compact()
-        if compact == is_compact_mode {
+        if compact != is_compact_mode {
             apply_compact_layout(compact)
         }
     })
 
-    -- Populate the list
-    refresh_article_list()
+    -- Populate the list with first feed data (or skeletons if still loading)
     if len(articles) > 0 {
+        refresh_article_list()
         selected_article = 0
         show_article(0)
+    } elif len(sources) > 0 {
+        for (let ?i = 0; i < 8; i += 1) {
+            article_list.add(article_row.build_skeleton_row())
+        }
+    }
+
+    -- Fetch remaining feeds incrementally
+    if feed_index < len(sources) {
+        cogito.set_timeout(0, () => {
+            fetch_next_feed()
+        })
     }
 
     app.run(win)

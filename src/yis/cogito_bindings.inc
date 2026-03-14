@@ -106,6 +106,7 @@
 #undef cogito_shape_set_preset
 #undef cogito_shape_get_preset
 #undef cogito_shape_set_size
+#undef cogito_shape_set_size_h
 #undef cogito_shape_get_size
 #undef cogito_shape_set_color
 #undef cogito_shape_set_color_style
@@ -1328,6 +1329,10 @@ static YisVal __cogito_shape_get_preset(YisVal shapev) {
 static void __cogito_shape_set_size(YisVal shapev, YisVal sizev) {
   cogito_node* n = cogito_node_from_val(shapev);
   cogito_shape_set_size(n, (int)yis_as_int(sizev));
+}
+static void __cogito_shape_set_size_h(YisVal shapev, YisVal hv) {
+  cogito_node* n = cogito_node_from_val(shapev);
+  cogito_shape_set_size_h(n, (int)yis_as_int(hv));
 }
 static YisVal __cogito_shape_get_size(YisVal shapev) {
   cogito_node* n = cogito_node_from_val(shapev);
@@ -4152,6 +4157,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_shape_set_preset __cogito_shape_set_preset
 #define cogito_shape_get_preset __cogito_shape_get_preset
 #define cogito_shape_set_size __cogito_shape_set_size
+#define cogito_shape_set_size_h __cogito_shape_set_size_h
 #define cogito_shape_get_size __cogito_shape_get_size
 #define cogito_shape_set_color __cogito_shape_set_color
 #define cogito_shape_set_color_style __cogito_shape_set_color_style

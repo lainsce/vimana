@@ -171,6 +171,41 @@ bring utils.cache
     return parse.extract_article_content(html)
 }
 
+:: fetch_single_feed(source = any) (( any )) {
+    let ?result = []: [any]
+    let s = source ?? []: [string => any]
+    let url = str(s["url"] ?? "")
+    let name = str(s["name"] ?? "")
+    if len(url) == 0 {
+        return result
+    }
+    let resp = net.get(url, []: [any], []: [any], 15)
+    if resp["ok"] {
+        let body = str(resp["body"] ?? "")
+        let items = parse_feed(body, name)
+        for (let ?j = 0; j < len(items); j += 1) {
+            let ?article = items[j] ?? []: [string => any]
+            let img_url = str(article["image"] ?? "")
+            if len(img_url) > 0 {
+                let local_path = cache.download_image(img_url)
+                if len(local_path) > 0 {
+                    article["local_image"] = local_path
+                }
+            }
+            let cur_body = str(article["body"] ?? "")
+            let link = str(article["link"] ?? "")
+            if is_body_truncated(cur_body) && len(link) > 0 {
+                let full = fetch_full_article(link)
+                if len(full) > len(cur_body) {
+                    article["body"] = full
+                }
+            }
+            result[len(result)] = article
+        }
+    }
+    return result
+}
+
 :: fetch_all_feeds(sources = any, articles = any) (( any )) {
     let ?result = []: [any]
     for (let ?i = 0; i < len(sources); i += 1) {

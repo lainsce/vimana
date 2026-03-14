@@ -558,6 +558,7 @@ void cogito_canvas_fill_rect(cogito_node *area, int x, int y, int w, int h);
 void cogito_shape_set_preset(cogito_node *shape, int preset);
 int cogito_shape_get_preset(cogito_node *shape);
 void cogito_shape_set_size(cogito_node *shape, int size_dp);
+void cogito_shape_set_size_h(cogito_node *shape, int size_h_dp);
 int cogito_shape_get_size(cogito_node *shape);
 void cogito_shape_set_color(cogito_node *shape, const char *color);
 void cogito_shape_set_color_style(cogito_node *shape, int style);
