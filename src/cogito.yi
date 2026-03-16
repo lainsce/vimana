@@ -128,6 +128,8 @@ macro chain() (( any )) {
 : __cogito_dialog_slot() (( DialogSlot )) { }
 : __cogito_dialog(title = string) (( Dialog )) { }
 : __cogito_divider(orientation = string, is_inset = bool) (( Divider )) { }
+: __cogito_divider_set_wavy(d = Divider, on = bool) (( -- )) { }
+: __cogito_divider_get_wavy(d = Divider) (( bool )) { }
 : __cogito_dropdown_get_selected(dd = Dropdown) (( num )) { }
 : __cogito_dropdown_on_change(dd = Dropdown, handler = any) (( -- )) { }
 : __cogito_dropdown_set_items(dd = Dropdown, items = [any]) (( -- )) { }
@@ -579,10 +581,6 @@ pub class Window {
 }
 
 pub class AppBar {
-    :: add_leading_button(this, icon = string, handler = any) (( AppBar )) {
-        __cogito_appbar_add_button(this, icon, handler).set_class("appbar-leading")
-        return this
-    }
     :: set_type(this, appbar_type = num) (( AppBar )) {
         if appbar_type == 0 {
             __cogito_node_set_class(this, "search")
@@ -607,6 +605,10 @@ pub class AppBar {
     :: set_large(this) (( AppBar )) {
         return this.set_type(3)
     }
+    :: add_leading_button(this, icon = string, handler = any) (( AppBar )) {
+        __cogito_appbar_add_button(this, icon, handler).set_class("appbar-leading")
+        return this
+    }
     :: add_trailing_button(this, icon = string, handler = any) (( AppBar )) {
         __cogito_appbar_add_button(this, icon, handler).set_class("trailing")
         return this
@@ -614,8 +616,21 @@ pub class AppBar {
     :: leading_button(this, icon = string, handler = any) (( Button )) {
         return __cogito_appbar_add_button(this, icon, handler).set_class("appbar-leading")
     }
+    :: add_leading_menu_button(this, icon = string) (( Button )) {
+        return __cogito_appbar_add_button(this, icon, null).set_class("appbar-leading")
+    }
     :: add_trailing_menu_button(this, icon = string) (( Button )) {
         return __cogito_appbar_add_button(this, icon, null).set_class("trailing")
+    }
+    :: add_leading_widget(this, widget = any) (( AppBar )) {
+        __cogito_node_set_class(widget, "appbar-leading")
+        __cogito_container_add(this, widget)
+        return this
+    }
+    :: add_trailing_widget(this, widget = any) (( AppBar )) {
+        __cogito_node_set_class(widget, "trailing")
+        __cogito_container_add(this, widget)
+        return this
     }
     :: pair_with_scroller(this, scroller = Scroller) (( AppBar )) {
         __cogito_appbar_pair_scroller(this, scroller)
@@ -3099,6 +3114,13 @@ pub class Divider {
     :: set_id(this, id = string) (( Divider )) {
         __cogito_node_set_id(this, id)
         return this
+    }
+    :: set_wavy(this, on = bool) (( Divider )) {
+        __cogito_divider_set_wavy(this, on)
+        return this
+    }
+    :: wavy(this) (( bool )) {
+        return __cogito_divider_get_wavy(this)
     }
 }
 

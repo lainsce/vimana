@@ -972,6 +972,14 @@ static YisVal __cogito_divider(YisVal orientationv, YisVal insetv) {
   if (tmp) yis_release_val(YV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
+static void __cogito_divider_set_wavy(YisVal dv, YisVal onv) {
+  cogito_node* d = cogito_node_from_val(dv);
+  cogito_divider_set_wavy(d, yis_as_bool(onv));
+}
+static YisVal __cogito_divider_get_wavy(YisVal dv) {
+  cogito_node* d = cogito_node_from_val(dv);
+  return YV_BOOL(cogito_divider_get_wavy(d));
+}
 // --- Card ---
 static YisVal __cogito_card(YisVal titlev) {
   YisStr* tmp = NULL;
@@ -4213,6 +4221,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_chip_on_close __cogito_chip_on_close
 #define cogito_chip_set_text __cogito_chip_set_text
 #define cogito_divider_new __cogito_divider
+#define cogito_divider_set_wavy __cogito_divider_set_wavy
+#define cogito_divider_get_wavy __cogito_divider_get_wavy
 #define cogito_card_new __cogito_card
 #define cogito_avatar_new __cogito_avatar
 #define cogito_avatar_set_image __cogito_avatar_set_image

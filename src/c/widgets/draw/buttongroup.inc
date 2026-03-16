@@ -62,10 +62,11 @@ case COGITO_BUTTON_GROUP: {
 
       // If animation is active, extend animation time and trigger relayout
       if (any_anim_active) {
-        double end_time = cogito_now() + 0.6;
+        double end_time = cogito_now() + 0.6; // Extend for 600ms to allow spring to settle
         if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
-        // Trigger relayout for next frame
-        cogito_window_relayout(cogito_node_window(n));
+        // Relayout only the buttongroup subtree (not the entire window) to avoid
+        // the parent AppBar re-querying intrinsic and potentially resizing us.
+        cogito_relayout_subtree(n);
       }
 
       // Draw children

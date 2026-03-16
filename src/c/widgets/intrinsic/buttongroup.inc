@@ -1,12 +1,13 @@
 case COGITO_BUTTON_GROUP: {
       // ButtonGroup intrinsic size is based on children (Button/IconButton)
-      // Sum of child widths + gaps
+      // Sum of child widths + gaps (must match layout gap values)
       
-      int gap = n->gap;
+      int btn_size_i = (n->buttongroup.size >= 0 && n->buttongroup.size <= 4) ? n->buttongroup.size : 2;
+      int buttongroup_gaps_i[] = {12, 12, 8, 8, 8}; // XS, S, M, L, XL
       bool is_connected = (n->buttongroup.connected == 1);
-      int actual_gap = is_connected ? 0 : gap;
+      int actual_gap = is_connected ? 2 : buttongroup_gaps_i[btn_size_i];
       
-      int total_w = n->padding_left + n->padding_right;
+      int total_w = 0;
       int max_h = 0;
       
       for (size_t i = 0; i < n->len; i++) {
@@ -23,15 +24,14 @@ case COGITO_BUTTON_GROUP: {
       }
       
       total_w += n->margin_left + n->margin_right;
-      max_h += n->padding_top + n->padding_bottom + n->margin_top + n->margin_bottom;
+      max_h += n->margin_top + n->margin_bottom;
       
       w = total_w;
       h = max_h;
       
-      // Minimum height based on button size tier
-      int btn_size = (n->buttongroup.size >= 0 && n->buttongroup.size <= 4) ? n->buttongroup.size : 2;
+      // Minimum height based on button size tier (padding added by outer cogito_intrinsic_size)
       int button_heights[] = {32, 40, 56, 96, 136};
-      int min_h = button_heights[btn_size] + n->padding_top + n->padding_bottom;
+      int min_h = button_heights[btn_size_i];
       if (h < min_h) h = min_h;
       break;
     }

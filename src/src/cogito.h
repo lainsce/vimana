@@ -253,6 +253,8 @@ cogito_node *cogito_tabs_new(void);
 cogito_node *cogito_view_switcher_new(void);
 cogito_node *cogito_progress_new(double value);
 cogito_node *cogito_divider_new(const char *orientation, bool is_inset);
+void cogito_divider_set_wavy(cogito_node *divider, bool on);
+bool cogito_divider_get_wavy(cogito_node *divider);
 cogito_node *cogito_card_new(const char *title);
 void cogito_card_set_variant(cogito_node *card, int variant);
 void cogito_card_set_header_image(cogito_node *card, const char *url);

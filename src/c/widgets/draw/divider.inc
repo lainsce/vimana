@@ -15,9 +15,15 @@ case COGITO_DIVIDER: {
         int y1 = n->y + n->h - 1 - inset;
         if (y1 < y0) break;
         int x = n->x + n->w / 2;
-        int start_x = x - (thickness - 1) / 2;
-        for (int i = 0; i < thickness; i++) {
-          cogito_draw_line(start_x + i, y0, start_x + i, y1, line);
+        if (n->divider.wavy) {
+          double amp = thickness * 2.0;
+          double period = 12.0;
+          cogito_draw_wavy_line_aa(y0, y1, x, (double)thickness, amp, period, 0.0, line);
+        } else {
+          int start_x = x - (thickness - 1) / 2;
+          for (int i = 0; i < thickness; i++) {
+            cogito_draw_line(start_x + i, y0, start_x + i, y1, line);
+          }
         }
       } else {
         int max_inset = (n->w - 1) / 2;
@@ -26,9 +32,15 @@ case COGITO_DIVIDER: {
         int x1 = n->x + n->w - 1 - inset;
         if (x1 < x0) break;
         int y = n->y + n->h / 2;
-        int start_y = y - (thickness - 1) / 2;
-        for (int i = 0; i < thickness; i++) {
-          cogito_draw_line(x0, start_y + i, x1, start_y + i, line);
+        if (n->divider.wavy) {
+          double amp = thickness * 2.0;
+          double period = 12.0;
+          cogito_draw_wavy_line_aa(x0, x1, y, (double)thickness, amp, period, 0.0, line);
+        } else {
+          int start_y = y - (thickness - 1) / 2;
+          for (int i = 0; i < thickness; i++) {
+            cogito_draw_line(x0, start_y + i, x1, start_y + i, line);
+          }
         }
       }
       break;

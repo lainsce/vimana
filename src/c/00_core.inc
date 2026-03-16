@@ -125,10 +125,10 @@ static void cogito_apply_theme(bool dark, CogitoColor accent);
 #define COGITO_EASING_EMPHASIZED 5 // Spring with overshoot (in-back)
 #define COGITO_EASING_EMPHASIZED_OUT 6 // Spring decelerate (out-back)
 
-// Physics Spring Tokens — Material Motion spec
+// Physics Spring Tokens — Cogito Motion spec
 // Expressive: Spatial Fast (k=800, z=0.6) — small components like switches, buttons
 #define COGITO_SPRING_K_EXPRESSIVE   800.0
-#define COGITO_SPRING_Z_EXPRESSIVE   0.6
+#define COGITO_SPRING_Z_EXPRESSIVE   1.0
 // Functional: Effects Default (k=1600, z=1.0) — opacity, color, font-weight
 #define COGITO_SPRING_K_FUNCTIONAL   1600.0
 #define COGITO_SPRING_Z_FUNCTIONAL   1.0
@@ -1118,7 +1118,7 @@ typedef struct CogitoNode {
         float items_t;           // Current progress
         double items_anim_start; // Animation start time
     } fab_menu;
-    struct { bool vertical, inset;
+    struct { bool vertical, inset, wavy;
     } divider;
     struct { int cls;
     } label;

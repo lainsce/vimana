@@ -2221,6 +2221,14 @@ cogito_node *cogito_divider_new(const char *orientation, bool is_inset) {
     yis_release_val(ov);
   return cogito_from_val(v);
 }
+void cogito_divider_set_wavy(cogito_node *divider, bool on) {
+  if (!divider) return;
+  divider->divider.wavy = on;
+}
+bool cogito_divider_get_wavy(cogito_node *divider) {
+  if (!divider) return false;
+  return divider->divider.wavy;
+}
 cogito_node *cogito_card_new(const char *title) {
   YisVal tv = title ? cogito_val_from_cstr(title) : YV_NULLV;
   YisVal v = cogito_card_new_yis(tv);
