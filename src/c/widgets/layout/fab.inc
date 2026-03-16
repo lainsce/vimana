@@ -47,11 +47,11 @@ case COGITO_FAB: {
       CogitoNode* win = cogito_node_window(n);
       if (!win) break;
 
-      // Count FAB siblings and find this FAB's index among them
+      // Collect FAB siblings (up to 3) and identify this FAB's index.
       int fab_count = 0;
       int fab_index = -1;
-      CogitoNode* fabs[2] = {NULL, NULL};
-      for (size_t i = 0; i < p->len && fab_count < 2; i++) {
+      CogitoNode* fabs[3] = {NULL, NULL, NULL};
+      for (size_t i = 0; i < p->len && fab_count < 3; i++) {
         CogitoNode* sibling = p->children[i];
         if (sibling && sibling->kind == COGITO_FAB) {
           if (sibling == n) fab_index = fab_count;
@@ -60,58 +60,71 @@ case COGITO_FAB: {
         }
       }
 
-      // Single FAB: use original positioning logic
+      // Compute intrinsic sizes for all collected FABs.
+      int ext_count = 0;
+      for (int i = 0; i < fab_count; i++) {
+        int iw = 0, ih = 0;
+        cogito_intrinsic_size(fabs[i], &iw, &ih);
+        if (iw > 0) fabs[i]->w = iw;
+        if (ih > 0) fabs[i]->h = ih;
+        if (fabs[i]->fab.extended) ext_count++;
+      }
+
+      int gap = 16;
+      int margin = 16;
+      bool vertical = (p->kind == COGITO_VSTACK);
+
+      // ── Single FAB ────────────────────────────────────────────────
       if (fab_count <= 1) {
         int col = n->align % 3;
-        if (col < 0 || col > 2) col = 2;  // FAB defaults to right lane.
-        if (col == 0) {
+        if (col < 0 || col > 2) col = 2;  // Default: right lane.
+        if (col == 0)
           n->x = win->x + n->w + n->margin_left;
-        } else if (col == 1) {
-          n->x = win->x + (win->w - n->w) / 2 + n->margin_left - n->margin_right;
-        } else {
-          n->x = win->x + win->w - 16 - n->w - n->margin_right;
-        }
-        n->y = win->y + win->h - 16 - n->h - n->margin_bottom;
+        else if (col == 1)
+          n->x = win->x + (win->w - n->w) / 2
+                 + n->margin_left - n->margin_right;
+        else
+          n->x = win->x + win->w - margin - n->w - n->margin_right;
+        n->y = win->y + win->h - margin - n->h - n->margin_bottom;
         break;
       }
 
-      // Two FABs: position them side by side at bottom-right
-      // Layout: [extended FAB] [gap] [normal FAB] or [normal FAB] [gap] [extended FAB]
-      // Extended FAB takes more space, normal FAB is compact
-      CogitoNode* left_fab = fabs[0];
-      CogitoNode* right_fab = fabs[1];
+      // ── Vertical combos (VSTACK parent): all-small only ──────────
+      //    Supported: 2 small  |  3 small
+      //    Stack bottom-up, right edges aligned.
+      if (vertical) {
+        int cy = win->y + win->h - margin;
+        for (int i = fab_count - 1; i >= 0; i--) {
+          cy -= fabs[i]->h + fabs[i]->margin_bottom;
+          fabs[i]->x = win->x + win->w - margin
+                        - fabs[i]->w - fabs[i]->margin_right;
+          fabs[i]->y = cy;
+          cy -= gap + fabs[i]->margin_top;
+        }
+      }
 
-      // Get intrinsic sizes for both FABs
-      int left_w = 0, left_h = 0;
-      int right_w = 0, right_h = 0;
-      cogito_intrinsic_size(left_fab, &left_w, &left_h);
-      cogito_intrinsic_size(right_fab, &right_w, &right_h);
+      // ── Horizontal combos (non-VSTACK parent) ────────────────────
+      //    Supported: 3 small  |  1 extended + 1 small  |  1 small + 1 extended
+      //    Lay out right-to-left, bottom edges aligned.
+      else {
+        int bottom_y = win->y + win->h - margin;
+        int cx = win->x + win->w - margin;
 
-      // Apply intrinsic sizes
-      if (left_w > 0) left_fab->w = left_w;
-      if (left_h > 0) left_fab->h = left_h;
-      if (right_w > 0) right_fab->w = right_w;
-      if (right_h > 0) right_fab->h = right_h;
+        // extended + small mixed pair: use a smaller inner gap
+        int inner_gap = (fab_count == 2 && ext_count == 1) ? 12 : gap;
 
-      // Calculate positions
-      int gap = 16;  // Gap between FABs
-      int margin = 16;  // Margin from screen edges
+        for (int i = fab_count - 1; i >= 0; i--) {
+          cx -= fabs[i]->w + fabs[i]->margin_right;
+          fabs[i]->x = cx;
+          fabs[i]->y = bottom_y - fabs[i]->h - fabs[i]->margin_bottom;
+          cx -= inner_gap + fabs[i]->margin_left;
+        }
+      }
 
-      // Right FAB is always at the right edge
-      int right_x = win->x + win->w - margin - right_fab->w - right_fab->margin_right;
-      int right_y = win->y + win->h - margin - right_fab->h - right_fab->margin_bottom;
-
-      // Left FAB is positioned with gap from right FAB
-      int left_x = right_x - gap - left_fab->w;
-      int left_y = win->y + win->h - margin - left_fab->h - left_fab->margin_bottom;
-
-      // Apply positions based on which FAB this is
-      if (fab_index == 0) {
-        n->x = left_x;
-        n->y = left_y;
-      } else {
-        n->x = right_x;
-        n->y = right_y;
+      // Write back whichever position belongs to the current FAB.
+      if (fab_index >= 0 && fab_index < fab_count) {
+        n->x = fabs[fab_index]->x;
+        n->y = fabs[fab_index]->y;
       }
       break;
     }

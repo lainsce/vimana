@@ -43,25 +43,47 @@ vstack.kairos-chart-card
   border-radius: 10
   background: alpha(#000000, 5%)
 
+vstack.kairos-chart-card-compact
+  border-radius: 16
+  background: alpha(#000000, 5%)
+
 zstack.kairos-header
   background: transparent
   min-height: 120
   max-height: 120
 
+zstack.kairos-header-compact
+  background: transparent
+  min-height: 200
+  max-height: 200
+
 drawing_area.kairos-header-canvas
   min-height: 120
-  max-height: 120
 
 label.kairos-current-temp
   font-size: 48
   font-variation: wdth 150, opsz 14
   font-weight: bold
 
+label.kairos-current-temp-compact
+  font-size: 56
+  font-variation: wdth 150, opsz 14
+  font-weight: 800
+
 label.kairos-current-place
   font-size: 20
 
+label.kairos-place-compact
+  font-size: 14
+  font-weight: 500
+  opacity: 0.85
+
 label.kairos-current-desc
   font-size: 24
+  font-weight: bold
+
+label.kairos-current-desc-compact
+  font-size: 16
   font-weight: bold
 
 label.kairos-current-feels
@@ -187,7 +209,7 @@ label.kairos-attribution
   font-size: 13
 
 dialog.kairos-add-dialog
-  min-width: 420
+  min-width: 340
   max-width: 460
   min-height: 420
   max-height: 520

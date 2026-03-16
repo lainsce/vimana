@@ -68,7 +68,15 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
   if (avail_col_w < 0) avail_col_w = 0;
   int* col_widths = (int*)calloc((size_t)cols, sizeof(int));
   if (col_widths) {
-    cogito_distribute_axis_sizes((size_t)cols, col_min_w, col_expand, avail_col_w, col_widths);
+    if ((n->homogeneous || n->col_homogeneous) && cols > 0) {
+      int cell = avail_col_w / cols;
+      int rem  = avail_col_w - cell * cols;
+      for (int c = 0; c < cols; c++) {
+        col_widths[c] = cell + (c < rem ? 1 : 0);
+      }
+    } else {
+      cogito_distribute_axis_sizes((size_t)cols, col_min_w, col_expand, avail_col_w, col_widths);
+    }
   } else {
     free(col_min_w);
     free(col_expand);
@@ -105,7 +113,16 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
       if (cogito_layout_effective_vexpand(c)) row_expand[row_idx] = true;
     }
   }
-  if (row_expand) {
+  if ((n->homogeneous || n->row_homogeneous) && row_count > 0) {
+    int total_gap_h = row_count > 0 ? (row_count - 1) * gap_y : 0;
+    int avail_row_h = inner_h - total_gap_h;
+    if (avail_row_h < 0) avail_row_h = 0;
+    int cell = avail_row_h / row_count;
+    int rem  = avail_row_h - cell * row_count;
+    for (int r = 0; r < row_count; r++) {
+      row_heights[r] = cell + (r < rem ? 1 : 0);
+    }
+  } else if (row_expand) {
     bool any_expand = false;
     for (int r = 0; r < row_count; r++) {
       if (row_expand[r]) {
@@ -135,8 +152,8 @@ static void cogito_layout_grid(CogitoNode* n, int x, int y) {
     }
   }
 
-  // Similarly for horizontal expand
-  if (col_expand) {
+  // Similarly for horizontal expand (skip if homogeneous already handled)
+  if (!(n->homogeneous || n->col_homogeneous) && col_expand) {
     bool any_hexpand = false;
     for (int c = 0; c < cols; c++) {
       if (col_expand[c]) {

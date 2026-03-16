@@ -2234,6 +2234,23 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_view_switcher_get_active")) {
+                        GenExpr node;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_view_switcher_get_active(%s);", t, node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_view_switcher_add_lazy")) {
                         GenExpr node, idv, builderv;
                         if (!gen_expr(cg, path, e->as.call.args[
@@ -4456,6 +4473,182 @@
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w,
                         "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_buttongroup_set_size")) {
+                        GenExpr button_group, sizev;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &button_group, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &sizev, err)) { gen_expr_free(&button_group); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_buttongroup_set_size(%s, %s);", button_group.tmp, sizev.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", button_group.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", sizev.tmp);
+                        gen_expr_release_except(cg, &button_group, button_group.tmp);
+                        gen_expr_release_except(cg, &sizev, sizev.tmp);
+                        gen_expr_free(&button_group);
+                        gen_expr_free(&sizev);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_buttongroup_get_size")) {
+                        GenExpr button_group;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &button_group, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_buttongroup_get_size(%s);", t, button_group.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", button_group.tmp);
+                        gen_expr_release_except(cg, &button_group, button_group.tmp);
+                        gen_expr_free(&button_group);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_buttongroup_set_shape")) {
+                        GenExpr button_group, shapev;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &button_group, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &shapev, err)) { gen_expr_free(&button_group); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_buttongroup_set_shape(%s, %s);", button_group.tmp, shapev.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", button_group.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", shapev.tmp);
+                        gen_expr_release_except(cg, &button_group, button_group.tmp);
+                        gen_expr_release_except(cg, &shapev, shapev.tmp);
+                        gen_expr_free(&button_group);
+                        gen_expr_free(&shapev);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_buttongroup_get_shape")) {
+                        GenExpr button_group;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &button_group, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_buttongroup_get_shape(%s);", t, button_group.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", button_group.tmp);
+                        gen_expr_release_except(cg, &button_group, button_group.tmp);
+                        gen_expr_free(&button_group);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_buttongroup_set_connected")) {
+                        GenExpr button_group, connectedv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &button_group, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &connectedv, err)) { gen_expr_free(&button_group); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_buttongroup_set_connected(%s, %s);", button_group.tmp, connectedv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", button_group.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", connectedv.tmp);
+                        gen_expr_release_except(cg, &button_group, button_group.tmp);
+                        gen_expr_release_except(cg, &connectedv, connectedv.tmp);
+                        gen_expr_free(&button_group);
+                        gen_expr_free(&connectedv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_buttongroup_get_connected")) {
+                        GenExpr button_group;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &button_group, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_buttongroup_get_connected(%s);", t, button_group.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", button_group.tmp);
+                        gen_expr_release_except(cg, &button_group, button_group.tmp);
+                        gen_expr_free(&button_group);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_buttongroup_set_selected")) {
+                        GenExpr button_group, idxv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &button_group, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &idxv, err)) { gen_expr_free(&button_group); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_buttongroup_set_selected(%s, %s);", button_group.tmp, idxv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", button_group.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", idxv.tmp);
+                        gen_expr_release_except(cg, &button_group, button_group.tmp);
+                        gen_expr_release_except(cg, &idxv, idxv.tmp);
+                        gen_expr_free(&button_group);
+                        gen_expr_free(&idxv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
+                    "__cogito_buttongroup_get_selected")) {
+                        GenExpr button_group;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &button_group, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_buttongroup_get_selected(%s);", t, button_group.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", button_group.tmp);
+                        gen_expr_release_except(cg, &button_group, button_group.tmp);
+                        gen_expr_free(&button_group);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;

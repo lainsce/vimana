@@ -227,7 +227,10 @@ static bool cogito_keyboard_move_indexed_selection(CogitoNode* n, int dir) {
       if (next >= (int)n->tab_len) next = (int)n->tab_len - 1;
       if (next == prev) return false;
       cogito_tabs_set_selected(YV_OBJ(n), YV_INT(next));
-      cogito_invoke_select(n, next, false);
+      if (n->on_select) {
+        YisVal arg = YV_OBJ(n);
+        cogito_invoke(n->on_select, 1, &arg);
+      }
       return true;
     }
     case COGITO_NAV_RAIL: {
@@ -2645,7 +2648,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
             int idx = cogito_tabs_hit_index(hit, mx, my);
             if (idx >= 0) {
               cogito_tabs_set_selected(YV_OBJ(hit), YV_INT(idx));
-              cogito_invoke_select(hit, idx, false);
+              if (hit->on_select) {
+                YisVal arg = YV_OBJ(hit);
+                cogito_invoke(hit->on_select, 1, &arg);
+              }
             }
           } else if (hit->kind == COGITO_DATEPICKER) {
             cogito_datepicker_click(hit, mx, my);

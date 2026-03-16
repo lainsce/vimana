@@ -16,12 +16,15 @@ static YisVal cogito_buttongroup_new(void) {
 
 static void cogito_buttongroup_on_select(YisVal nodev, YisVal handler) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.buttongroup_on_select expects buttongroup");
-  if (handler.tag != EVT_FN) yis_trap("cogito.buttongroup_on_select expects function");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_BUTTON_GROUP) yis_trap("cogito.buttongroup_on_select expects buttongroup");
   if (n->on_select) yis_release_val(YV_FN(n->on_select));
-  n->on_select = (YisFn*)handler.as.p;
-  yis_retain_val(YV_FN(n->on_select));
+  if (handler.tag == EVT_FN) {
+    n->on_select = (YisFn*)handler.as.p;
+    yis_retain_val(YV_FN(n->on_select));
+  } else {
+    n->on_select = NULL;
+  }
 }
 
 // Handle click from a child button - update selection
@@ -43,9 +46,12 @@ static void cogito_buttongroup_child_clicked(CogitoNode* buttongroup, CogitoNode
   int prev = buttongroup->selected;
   buttongroup->selected = idx;
   
-  if (buttongroup->selected != prev && buttongroup->on_select) {
-    YisVal arg = YV_INT(idx);
-    cogito_invoke(buttongroup->on_select, 1, &arg);
+  if (buttongroup->selected != prev) {
+    if (buttongroup->on_select) {
+      YisVal arg = YV_INT(idx);
+      cogito_invoke(buttongroup->on_select, 1, &arg);
+    }
+    cogito_window_relayout(cogito_node_window(buttongroup));
   }
 }
 
@@ -185,4 +191,29 @@ static YisVal cogito_buttongroup_get_connected(YisVal nodev) {
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_BUTTON_GROUP) yis_trap("cogito.buttongroup_get_connected expects buttongroup");
   return YV_BOOL(n->buttongroup.connected == 1);
+}
+
+static void cogito_buttongroup_set_selected(YisVal nodev, YisVal idxv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.buttongroup_set_selected expects buttongroup");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  if (n->kind != COGITO_BUTTON_GROUP) yis_trap("cogito.buttongroup_set_selected expects buttongroup");
+
+  int idx = (int)yis_as_int(idxv);
+  if (n->len == 0) {
+    idx = -1;
+  } else {
+    if (idx < 0) idx = -1;
+    if (idx >= (int)n->len) idx = (int)n->len - 1;
+  }
+
+  if (n->selected == idx) return;
+  n->selected = idx;
+  cogito_window_relayout(cogito_node_window(n));
+}
+
+static YisVal cogito_buttongroup_get_selected(YisVal nodev) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.buttongroup_get_selected expects buttongroup");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  if (n->kind != COGITO_BUTTON_GROUP) yis_trap("cogito.buttongroup_get_selected expects buttongroup");
+  return YV_INT(n->selected);
 }

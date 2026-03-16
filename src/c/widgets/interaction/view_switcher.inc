@@ -117,3 +117,12 @@ static void cogito_view_switcher_set_active(YisVal vsv, YisVal idv) {
   if (n->view_active_id) yis_retain_val(YV_STR(n->view_active_id));
   cogito_window_relayout(cogito_node_window(n));
 }
+
+static YisVal cogito_view_switcher_get_active(YisVal vsv) {
+  if (vsv.tag != EVT_OBJ) yis_trap("cogito.view_switcher_get_active expects view_switcher");
+  CogitoNode* n = (CogitoNode*)vsv.as.p;
+  if (n->kind != COGITO_VIEWSWITCHER) yis_trap("cogito.view_switcher_get_active expects view_switcher");
+  YisStr* s = n->view_active_id ? n->view_active_id : stdr_str_lit("");
+  yis_retain_val(YV_STR(s));
+  return YV_STR(s);
+}

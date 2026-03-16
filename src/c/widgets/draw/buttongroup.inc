@@ -23,7 +23,7 @@ case COGITO_BUTTON_GROUP: {
       // Spring animation for width expansion (Fast spatial: k=800, z=0.6)
       double dt = cogito_spring_dt;
       double k_spring = 800.0;
-      double z_spring = 0.6;
+      double z_spring = 1.0;
       bool any_anim_active = false;
 
       for (size_t i = 0; i < n->len; i++) {

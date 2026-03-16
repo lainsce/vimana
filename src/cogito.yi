@@ -214,7 +214,6 @@ macro chain() (( any )) {
 : __cogito_shape_get_preset(shape = Shape) (( num )) { }
 : __cogito_shape_set_size(shape = Shape, size = num) (( -- )) { }
 : __cogito_shape_set_size_h(shape = Shape, h = num) (( -- )) { }
-: __cogito_shape_set_size_h(shape = Shape, h = num) (( -- )) { }
 : __cogito_shape_get_size(shape = Shape) (( num )) { }
 : __cogito_shape_set_color(shape = Shape, color = any) (( -- )) { }
 : __cogito_shape_set_color_style(shape = Shape, style = num) (( -- )) { }

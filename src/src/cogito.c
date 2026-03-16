@@ -171,6 +171,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_image_set_size cogito_image_set_size_yis
 #define cogito_image_set_radius cogito_image_set_radius_yis
 #define cogito_image_set_alt_text cogito_image_set_alt_text_yis
+#define cogito_image_set_fit cogito_image_set_fit_yis
 #define cogito_webview_new cogito_webview_new_yis
 #define cogito_webview_set_url cogito_webview_set_url_yis
 #define cogito_webview_get_url cogito_webview_get_url_yis
@@ -190,6 +191,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_canvas_line cogito_canvas_line_yis
 #define cogito_canvas_rect cogito_canvas_rect_yis
 #define cogito_canvas_fill_rect cogito_canvas_fill_rect_yis
+#define cogito_canvas_circle cogito_canvas_circle_yis
+#define cogito_canvas_fill_circle cogito_canvas_fill_circle_yis
 #define cogito_shape_new cogito_shape_new_yis
 #define cogito_shape_set_preset cogito_shape_set_preset_yis
 #define cogito_shape_get_preset cogito_shape_get_preset_yis
@@ -280,6 +283,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_buttongroup_get_shape cogito_buttongroup_get_shape_yis
 #define cogito_buttongroup_set_connected cogito_buttongroup_set_connected_yis
 #define cogito_buttongroup_get_connected cogito_buttongroup_get_connected_yis
+#define cogito_buttongroup_set_selected cogito_buttongroup_set_selected_yis
+#define cogito_buttongroup_get_selected cogito_buttongroup_get_selected_yis
 #define cogito_slider_get_centered cogito_slider_get_centered_yis
 #define cogito_slider_get_range_end cogito_slider_get_range_end_yis
 #define cogito_slider_get_range_start cogito_slider_get_range_start_yis
@@ -354,6 +359,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_treeview_new cogito_treeview_new_yis
 #define cogito_view_switcher_new cogito_view_switcher_new_yis
 #define cogito_view_switcher_set_active cogito_view_switcher_set_active_yis
+#define cogito_view_switcher_get_active cogito_view_switcher_get_active_yis
 #define cogito_view_switcher_add_lazy cogito_view_switcher_add_lazy_yis
 #define cogito_vstack_new cogito_vstack_new_yis
 #define cogito_window_clear_dialog cogito_window_clear_dialog_yis
@@ -572,6 +578,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_image_set_size
 #undef cogito_image_set_radius
 #undef cogito_image_set_alt_text
+#undef cogito_image_set_fit
 #undef cogito_webview_new
 #undef cogito_webview_set_url
 #undef cogito_webview_get_url
@@ -589,6 +596,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_canvas_line
 #undef cogito_canvas_rect
 #undef cogito_canvas_fill_rect
+#undef cogito_canvas_circle
+#undef cogito_canvas_fill_circle
 #undef cogito_shape_new
 #undef cogito_shape_set_preset
 #undef cogito_shape_get_preset
@@ -675,6 +684,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_buttongroup_get_shape
 #undef cogito_buttongroup_set_connected
 #undef cogito_buttongroup_get_connected
+#undef cogito_buttongroup_set_selected
+#undef cogito_buttongroup_get_selected
 #undef cogito_slider_get_value
 #undef cogito_slider_new
 #undef cogito_slider_range_new
@@ -749,6 +760,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_treeview_new
 #undef cogito_view_switcher_new
 #undef cogito_view_switcher_set_active
+#undef cogito_view_switcher_get_active
 #undef cogito_view_switcher_add_lazy
 #undef cogito_vstack_new
 #undef cogito_window_clear_dialog
@@ -2657,6 +2669,18 @@ void cogito_canvas_fill_rect(cogito_node *area, int x, int y, int w, int h) {
                                YV_INT(h));
 }
 
+void cogito_canvas_circle(cogito_node *area, int cx, int cy, int r) {
+  if (!area)
+    return;
+  cogito_canvas_circle_yis(YV_OBJ(area), YV_INT(cx), YV_INT(cy), YV_INT(r));
+}
+
+void cogito_canvas_fill_circle(cogito_node *area, int cx, int cy, int r) {
+  if (!area)
+    return;
+  cogito_canvas_fill_circle_yis(YV_OBJ(area), YV_INT(cx), YV_INT(cy), YV_INT(r));
+}
+
 cogito_node *cogito_active_indicator_new(void) {
   return cogito_from_val(cogito_active_indicator_new_yis());
 }
@@ -3018,6 +3042,18 @@ void cogito_node_set_homogeneous(cogito_node *node, bool on) {
   cogito_container_set_homogeneous(YV_OBJ(node), YV_BOOL(on));
 }
 
+void cogito_node_set_col_homogeneous(cogito_node *node, bool on) {
+  if (!node)
+    return;
+  cogito_container_set_col_homogeneous(YV_OBJ(node), YV_BOOL(on));
+}
+
+void cogito_node_set_row_homogeneous(cogito_node *node, bool on) {
+  if (!node)
+    return;
+  cogito_container_set_row_homogeneous(YV_OBJ(node), YV_BOOL(on));
+}
+
 void cogito_node_set_id(cogito_node *node, const char *id) {
   if (!node)
     return;
@@ -3104,6 +3140,61 @@ void cogito_node_set_opacity(cogito_node *node, float opacity) {
   if (!node)
     return;
   cogito_node_set_opacity_yis(YV_OBJ(node), YV_FLOAT(opacity));
+}
+
+void cogito_node_set_font_size(cogito_node *node, int size) {
+  if (!node) return;
+  node->font_size = size;
+  node->font_size_set = true;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_node_set_font_weight(cogito_node *node, int weight) {
+  if (!node) return;
+  node->font_weight = weight;
+  node->font_weight_set = true;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_node_set_font_family(cogito_node *node, const char *family) {
+  if (!node || !family) return;
+  strncpy(node->font_family, family, sizeof(node->font_family) - 1);
+  node->font_family[sizeof(node->font_family) - 1] = '\0';
+  node->font_family_set = true;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_node_set_shadow(cogito_node *node, int level) {
+  if (!node) return;
+  if (level < 0) level = 0;
+  if (level > 5) level = 5;
+  node->shadow_level = level;
+  node->shadow_set = true;
+}
+
+void cogito_node_set_border_width(cogito_node *node, int width) {
+  if (!node) return;
+  node->border_width = width;
+  node->border_width_set = true;
+}
+
+void cogito_node_set_border_radius(cogito_node *node, int radius) {
+  if (!node) return;
+  node->border_radius = radius;
+  node->radius_set = true;
+}
+
+void cogito_node_set_border_color(cogito_node *node, const char *hex) {
+  if (!node || !hex) return;
+  const char *p = hex;
+  CogitoColor c;
+  if (cogito_css_parse_color(&p, &c)) {
+    node->border_color = c;
+    node->border_color_set = true;
+  }
 }
 
 void cogito_node_set_visible(cogito_node *node, bool on) {
@@ -3818,6 +3909,19 @@ bool cogito_buttongroup_get_connected(cogito_node *bg) {
   return yis_as_bool(v);
 }
 
+void cogito_buttongroup_set_selected(cogito_node *bg, int idx) {
+  if (!bg)
+    return;
+  cogito_buttongroup_set_selected_yis(YV_OBJ(bg), YV_INT(idx));
+}
+
+int cogito_buttongroup_get_selected(cogito_node *bg) {
+  if (!bg)
+    return -1;
+  YisVal v = cogito_buttongroup_get_selected_yis(YV_OBJ(bg));
+  return (int)yis_as_int(v);
+}
+
 void cogito_load_sum_file(const char *path) {
   if (!path)
     return;
@@ -3954,6 +4058,12 @@ void cogito_image_set_radius(cogito_node *image, int radius) {
   if (!image)
     return;
   cogito_image_set_radius_yis(YV_OBJ(image), YV_INT(radius));
+}
+
+void cogito_image_set_fit(cogito_node *image, int fit) {
+  if (!image)
+    return;
+  cogito_image_set_fit_yis(YV_OBJ(image), YV_INT(fit));
 }
 
 void cogito_image_set_alt_text(cogito_node *image, const char *alt_text) {
@@ -4973,6 +5083,13 @@ void cogito_view_switcher_set_active(cogito_node *view_switcher,
   cogito_view_switcher_set_active_yis(YV_OBJ(view_switcher), iv);
   if (iv.tag == EVT_STR)
     yis_release_val(iv);
+}
+
+const char *cogito_view_switcher_get_active(cogito_node *view_switcher) {
+  if (!view_switcher)
+    return NULL;
+  YisVal v = cogito_view_switcher_get_active_yis(YV_OBJ(view_switcher));
+  return v.tag == EVT_STR ? ((YisStr *)v.as.p)->data : NULL;
 }
 
 void cogito_view_switcher_add_lazy(cogito_node *view_switcher, const char *id,

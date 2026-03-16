@@ -362,6 +362,8 @@ void cogito_node_set_hexpand_set(cogito_node *node, bool set);
 void cogito_node_set_vexpand_set(cogito_node *node, bool set);
 void cogito_node_set_gap(cogito_node *node, int gap);
 void cogito_node_set_homogeneous(cogito_node *node, bool on);
+void cogito_node_set_col_homogeneous(cogito_node *node, bool on);
+void cogito_node_set_row_homogeneous(cogito_node *node, bool on);
 void cogito_node_set_id(cogito_node *node, const char *id);
 
 // Common props
@@ -371,6 +373,13 @@ void cogito_node_set_subtitle(cogito_node *node, const char *text);
 void cogito_node_set_disabled(cogito_node *node, bool on);
 void cogito_node_set_opacity(cogito_node *node, float opacity);
 void cogito_node_set_visible(cogito_node *node, bool on);
+void cogito_node_set_font_size(cogito_node *node, int size);
+void cogito_node_set_font_weight(cogito_node *node, int weight);
+void cogito_node_set_font_family(cogito_node *node, const char *family);
+void cogito_node_set_shadow(cogito_node *node, int level);
+void cogito_node_set_border_width(cogito_node *node, int width);
+void cogito_node_set_border_radius(cogito_node *node, int radius);
+void cogito_node_set_border_color(cogito_node *node, const char *hex);
 bool cogito_node_get_visible(cogito_node *node);
 void cogito_node_set_editable(cogito_node *node, bool on);
 bool cogito_node_get_editable(cogito_node *node);
@@ -502,6 +511,8 @@ void cogito_buttongroup_set_shape(cogito_node *bg, int shape);
 int cogito_buttongroup_get_shape(cogito_node *bg);
 void cogito_buttongroup_set_connected(cogito_node *bg, bool connected);
 bool cogito_buttongroup_get_connected(cogito_node *bg);
+void cogito_buttongroup_set_selected(cogito_node *bg, int idx);
+int cogito_buttongroup_get_selected(cogito_node *bg);
 
 // Theming
 void cogito_load_sum_file(const char *path);
@@ -533,6 +544,7 @@ void cogito_image_set_blur(cogito_node *image, float sigma);
 void cogito_image_set_size(cogito_node *image, int w, int h);
 void cogito_image_set_radius(cogito_node *image, int radius);
 void cogito_image_set_alt_text(cogito_node *image, const char *alt_text);
+void cogito_image_set_fit(cogito_node *image, int fit); // 0=cover, 1=contain
 void cogito_webview_set_url(cogito_node *webview, const char *url);
 const char *cogito_webview_get_url(cogito_node *webview);
 void cogito_webview_set_open_external_on_click(cogito_node *webview, bool on);
@@ -555,6 +567,8 @@ void cogito_canvas_set_line_width(cogito_node *area, int width);
 void cogito_canvas_line(cogito_node *area, int x1, int y1, int x2, int y2);
 void cogito_canvas_rect(cogito_node *area, int x, int y, int w, int h);
 void cogito_canvas_fill_rect(cogito_node *area, int x, int y, int w, int h);
+void cogito_canvas_circle(cogito_node *area, int cx, int cy, int r);
+void cogito_canvas_fill_circle(cogito_node *area, int cx, int cy, int r);
 void cogito_shape_set_preset(cogito_node *shape, int preset);
 int cogito_shape_get_preset(cogito_node *shape);
 void cogito_shape_set_size(cogito_node *shape, int size_dp);
@@ -676,6 +690,7 @@ void cogito_grid_on_activate(cogito_node *grid, cogito_index_fn fn, void *user);
 
 void cogito_view_switcher_set_active(cogito_node *view_switcher,
                                      const char *id);
+const char *cogito_view_switcher_get_active(cogito_node *view_switcher);
 void cogito_view_switcher_add_lazy(cogito_node *view_switcher, const char *id,
                                    cogito_node_fn builder);
 

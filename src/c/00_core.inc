@@ -748,6 +748,8 @@ typedef struct CogitoNode {
   bool vexpand_set;
   int gap;
   bool homogeneous;
+  bool col_homogeneous;
+  bool row_homogeneous;
   bool auto_size;
   uint8_t window_size_class;
   int resize_min_w;
@@ -1031,6 +1033,7 @@ typedef struct CogitoNode {
       float glow_sigma;
       bool loaded;
       float avg_lum;
+      uint8_t fit;  // 0 = cover (default), 1 = contain
     } image;
 
     struct {

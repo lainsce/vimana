@@ -1,0 +1,194 @@
+cask home
+
+bring stdr
+bring cogito
+
+bring widgets.pdf_card
+
+:: build_home(
+    panel = cogito.VStack,
+    bar = cogito.AppBar,
+    search = cogito.SearchField,
+    continue_label = cogito.Label,
+    continue_scroll = cogito.Scroller,
+    continue_grid = cogito.Grid,
+    continue_divider = cogito.Divider,
+    recents_label = cogito.Label,
+    recents_scroll = cogito.Scroller,
+    recents_grid = cogito.Grid,
+    add_fab = cogito.FAB,
+    on_search = any,
+    on_add = any
+) (( -- )) {
+    panel
+    .set_gap(0)
+    .set_vexpand(true)
+    .set_hexpand(true)
+    .set_class("corpus-home")
+
+    bar
+    .set_class("corpus-home-bar")
+
+    let title_row = cogito.hstack()
+    .set_hexpand(true)
+    .set_gap(12)
+
+    let title_lbl = cogito.label("Home")
+    .set_class("corpus-home-title")
+    .set_hexpand(true)
+    .set_align(3)
+    title_row.add(title_lbl)
+
+    search
+    .set_class("corpus-search")
+    .set_hexpand(false)
+    .on_change((sf = cogito.SearchField) => {
+        let query = sf.text()
+        on_search(query)
+    })
+    title_row.add(search)
+
+    bar.set_title_widget(title_row)
+    panel.add(bar)
+
+    let body = cogito.vstack()
+    .set_gap(16)
+    .set_padding(0, 16, 16, 16)
+    .set_vexpand(true)
+    .set_hexpand(true)
+
+    continue_label
+    .set_text("Continue Reading")
+    .set_class("corpus-section-label")
+    .set_align(0)
+    .set_text_align(0)
+    body.add(continue_label)
+
+    continue_scroll
+    .set_axes(true, false)
+    .set_hexpand(true)
+    .set_class("corpus-continue-scroll")
+
+    continue_grid
+    .set_gap(12, 12)
+
+    continue_scroll.add(continue_grid)
+    body.add(continue_scroll)
+
+    continue_divider
+    .set_class("corpus-indicator")
+    .set_hexpand(true)
+    body.add(continue_divider)
+
+    recents_label
+    .set_text("Recents View")
+    .set_class("corpus-section-label")
+    .set_align(0)
+    .set_text_align(0)
+    body.add(recents_label)
+
+    recents_scroll
+    .set_vexpand(true)
+    .set_hexpand(true)
+
+    recents_grid
+    .set_gap(12, 12)
+    .set_hexpand(true)
+    .set_class("corpus-recents-grid")
+
+    recents_scroll.add(recents_grid)
+    body.add(recents_scroll)
+
+    let scroll_body = cogito.scroller()
+    .set_vexpand(true)
+    .set_hexpand(true)
+    bar.pair_with_scroller(scroll_body)
+    scroll_body.add(body)
+    panel.add(scroll_body)
+
+    let fab_holder = cogito.hstack()
+    .set_align(8)
+    .set_padding(0, 16, 16, 0)
+
+    add_fab
+    .on_click((f = cogito.FAB) => {
+        on_add()
+    })
+    fab_holder.add(add_fab)
+    panel.add(fab_holder)
+}
+
+:: refresh_continue_reading(
+    continue_grid = cogito.Grid,
+    continue_label = cogito.Label,
+    continue_reading = any,
+    on_open = any
+) (( -- )) {
+    continue_grid.clear()
+    let count = len(continue_reading)
+    continue_label.set_visible(count > 0)
+
+    for (let ?i = 0; i < count && i < 10; i += 1) {
+        let item = continue_reading[i] ?? []: [string => any]
+        let idx = stdr.num(item["index"] ?? 0)
+        let pdf_item = item["pdf_item"] ?? []: [string => any]
+        let title = str(pdf_item["title"] ?? "Untitled")
+        let thumb = str(pdf_item["thumb"] ?? "")
+        let lp = stdr.num(pdf_item["last_page"] ?? 0)
+        let total = stdr.num(pdf_item["pages"] ?? 0)
+        let page_info = "Page $$lp$$ of $$total$$"
+
+        let card = pdf_card.build_continue_card(title, thumb, page_info, () => {
+            on_open(idx)
+        })
+        continue_grid.add(card, i, 0, 1, 1)
+    }
+}
+
+:: refresh_recents(
+    recents_grid = cogito.Grid,
+    pdfs = any,
+    filter_tag = string,
+    search_query = string,
+    on_open = any
+) (( -- )) {
+    recents_grid.clear()
+    let count = len(pdfs)
+    let ?col = 0
+    let ?row = 0
+    let ?placed = 0
+
+    for (let ?i = count - 1; i >= 0; i -= 1) {
+        let pdf_item = pdfs[i] ?? []: [string => any]
+
+        if stdr.len(filter_tag) > 0 {
+            let tags = pdf_item["tags"] ?? []: [any]
+            let ?found = false
+            for (let ?t = 0; t < len(tags); t += 1) {
+                if str(tags[t] ?? "") == filter_tag { found = true }
+            }
+            if !found { continue }
+        }
+
+        if stdr.len(search_query) > 0 {
+            let title = str(pdf_item["title"] ?? "")
+            if !stdr.contains(title, search_query) { continue }
+        }
+
+        let title = str(pdf_item["title"] ?? "Untitled")
+        let thumb = str(pdf_item["thumb"] ?? "")
+        let is_first = placed == 0
+
+        let card = pdf_card.build_recent_card(title, thumb, is_first, () => {
+            on_open(i)
+        })
+        recents_grid.add(card, col, row, 1, 1)
+
+        col += 1
+        if col >= 3 {
+            col = 0
+            row += 1
+        }
+        placed += 1
+    }
+}

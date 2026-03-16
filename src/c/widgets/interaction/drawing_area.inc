@@ -250,3 +250,34 @@ static void cogito_canvas_fill_rect(YisVal ctxv, YisVal xv, YisVal yv, YisVal wv
   cogito_draw_rect(x, y, w, h, n->drawing_area.canvas_color, 0);
   cogito_canvas_scissor_end(clipped);
 }
+
+static void cogito_canvas_circle(YisVal ctxv, YisVal cxv, YisVal cyv, YisVal rv) {
+  CogitoNode* n = cogito_canvas_active_node(ctxv);
+  if (!n) return;
+  int cx = n->x + cogito_canvas_int(cxv);
+  int cy = n->y + cogito_canvas_int(cyv);
+  int r = cogito_canvas_int(rv);
+  if (r <= 0) return;
+  bool clipped = false;
+  cogito_canvas_scissor_begin(n, &clipped);
+  if (cogito_backend && cogito_backend->draw_circle_lines) {
+    cogito_backend->draw_circle_lines(cx, cy, (float)r,
+      n->drawing_area.canvas_color, n->drawing_area.canvas_line_width);
+  }
+  cogito_canvas_scissor_end(clipped);
+}
+
+static void cogito_canvas_fill_circle(YisVal ctxv, YisVal cxv, YisVal cyv, YisVal rv) {
+  CogitoNode* n = cogito_canvas_active_node(ctxv);
+  if (!n) return;
+  int cx = n->x + cogito_canvas_int(cxv);
+  int cy = n->y + cogito_canvas_int(cyv);
+  int r = cogito_canvas_int(rv);
+  if (r <= 0) return;
+  bool clipped = false;
+  cogito_canvas_scissor_begin(n, &clipped);
+  if (cogito_backend && cogito_backend->draw_circle) {
+    cogito_backend->draw_circle(cx, cy, (float)r, n->drawing_area.canvas_color);
+  }
+  cogito_canvas_scissor_end(clipped);
+}

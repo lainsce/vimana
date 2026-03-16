@@ -89,6 +89,16 @@ static void cogito_image_set_blur(YisVal imgv, YisVal sigmav) {
   cogito_window_relayout(cogito_node_window(img));
 }
 
+static void cogito_image_set_fit(YisVal imgv, YisVal fitv) {
+  if (imgv.tag != EVT_OBJ) yis_trap("cogito.image_set_fit expects image");
+  CogitoNode* img = (CogitoNode*)imgv.as.p;
+  int fit = (int)yis_as_int(fitv);
+  if (fit < 0) fit = 0;
+  if (fit > 1) fit = 1;
+  img->image.fit = (uint8_t)fit;
+  cogito_window_relayout(cogito_node_window(img));
+}
+
 static void cogito_image_set_alt_text(YisVal imgv, YisVal alt_text) {
   if (imgv.tag != EVT_OBJ) yis_trap("cogito.image_set_alt_text expects image");
   CogitoNode* img = (CogitoNode*)imgv.as.p;

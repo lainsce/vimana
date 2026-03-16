@@ -14,9 +14,12 @@ def ?view_year = 0
 def ?view_month = 0
 def ?selected_day = 0
 def ?is_compact_mode = false
+def ?viewing_events_compact = false
+def ?view_mode = 2
 def ?SOLAR_STATE_PATH = ""
 
 def EVENT_COLORS = ["#6B38FB", "#E53935", "#43A047", "#1E88E5", "#FB8C00", "#8E24AA"]
+def ?picked_color = "#6B38FB"
 
 -- ── Module widgets ───────────────────────────────────────────
 
@@ -24,6 +27,12 @@ def cal_panel = cogito.vstack()
 def cal_bar = cogito.appbar("Solar", "")
 def month_label = cogito.label("")
 def day_grid = cogito.grid(7)
+def cal_title_expanded = cogito.hstack()
+def cal_title_compact = cogito.hstack()
+
+def view_tabs = cogito.tabs()
+def month_dropdown = cogito.view_chooser()
+def ?month_dropdown_updating = false
 
 def evt_panel = cogito.vstack()
 def evt_bar = cogito.appbar("", "")
@@ -32,7 +41,13 @@ def evt_subtitle_label = cogito.label("")
 def evt_empty_holder = cogito.vstack()
 def event_list = cogito.content_list()
 
+def ?evt_back_btn = cogito.button("")
 def rebuild_state = cogito.state(false)
+
+def date_hero = cogito.vstack()
+def hero_weekday = cogito.label("")
+def hero_day_num = cogito.label("")
+def hero_month = cogito.label("")
 
 -- ── Persistence ──────────────────────────────────────────────
 
@@ -182,22 +197,73 @@ def rebuild_state = cogito.state(false)
 -- ── Navigation ───────────────────────────────────────────────
 
 : go_prev_month() (( -- )) {
-    view_month -= 1
-    if view_month < 1 {
-        view_month = 12
+    if view_mode == 3 {
         view_year -= 1
+    } elif view_mode == 0 {
+        selected_day -= 1
+        if selected_day < 1 {
+            view_month -= 1
+            if view_month < 1 {
+                view_month = 12
+                view_year -= 1
+            }
+            selected_day = calendar.days_in_month(view_year, view_month)
+        }
+    } elif view_mode == 1 {
+        selected_day -= 7
+        if selected_day < 1 {
+            view_month -= 1
+            if view_month < 1 {
+                view_month = 12
+                view_year -= 1
+            }
+            let pm_days = calendar.days_in_month(view_year, view_month)
+            selected_day = pm_days + selected_day
+        }
+    } else {
+        view_month -= 1
+        if view_month < 1 {
+            view_month = 12
+            view_year -= 1
+        }
+        selected_day = 1
     }
-    selected_day = 1
     update_calendar()
 }
 
 : go_next_month() (( -- )) {
-    view_month += 1
-    if view_month > 12 {
-        view_month = 1
+    if view_mode == 3 {
         view_year += 1
+    } elif view_mode == 0 {
+        let max_d = calendar.days_in_month(view_year, view_month)
+        selected_day += 1
+        if selected_day > max_d {
+            selected_day = 1
+            view_month += 1
+            if view_month > 12 {
+                view_month = 1
+                view_year += 1
+            }
+        }
+    } elif view_mode == 1 {
+        let max_d = calendar.days_in_month(view_year, view_month)
+        selected_day += 7
+        if selected_day > max_d {
+            selected_day = selected_day - max_d
+            view_month += 1
+            if view_month > 12 {
+                view_month = 1
+                view_year += 1
+            }
+        }
+    } else {
+        view_month += 1
+        if view_month > 12 {
+            view_month = 1
+            view_year += 1
+        }
+        selected_day = 1
     }
-    selected_day = 1
     update_calendar()
 }
 
@@ -215,24 +281,65 @@ def rebuild_state = cogito.state(false)
     }
     selected_day = day
     update_calendar()
+    if is_compact_mode {
+        show_events_compact()
+    }
 }
 
 -- ── Calendar Refresh ─────────────────────────────────────────
 
 : update_calendar() (( -- )) {
     let mn = calendar.month_name(view_month)
-    let label_text = "$$mn$$ $$view_year$$"
-    month_label.set_text(label_text)
+    if view_mode == 3 {
+        month_label.set_text(str(view_year))
+    } elif view_mode == 0 {
+        let day_label = calendar.format_day_subtitle(view_year, view_month, selected_day)
+        month_label.set_text(day_label)
+    } else {
+        let label_text = "$$mn$$ $$view_year$$"
+        month_label.set_text(label_text)
+    }
+
+    month_dropdown_updating = true
+    month_dropdown.set_selected(view_month - 1)
+    month_dropdown_updating = false
 
     let today_y = calendar.current_year()
     let today_m = calendar.current_month()
     let today_d = calendar.current_day()
 
-    calendar_panel.populate_days(
-        day_grid, view_year, view_month, selected_day,
-        today_d, today_m, today_y, events,
-        (day = num) => { select_day(day) }
-    )
+    if view_mode == 0 {
+        calendar_panel.populate_day_view(
+            day_grid, view_year, view_month, selected_day,
+            today_d, today_m, today_y,
+            events, is_compact_mode
+        )
+    } elif view_mode == 1 {
+        calendar_panel.populate_week_view(
+            day_grid, view_year, view_month, selected_day,
+            today_d, today_m, today_y,
+            events, is_compact_mode,
+            (day = num) => { select_day(day) }
+        )
+    } elif view_mode == 3 {
+        calendar_panel.populate_year_view(
+            day_grid, view_year,
+            today_m, today_y,
+            is_compact_mode,
+            (m = num) => {
+                view_month = m
+                view_mode = 2
+                view_tabs.set_selected(2)
+                update_calendar()
+            }
+        )
+    } else {
+        calendar_panel.populate_days(
+            day_grid, view_year, view_month, selected_day,
+            today_d, today_m, today_y, events, is_compact_mode,
+            (day = num) => { select_day(day) }
+        )
+    }
 
     let date_label = calendar.format_date_label(view_year, view_month, selected_day)
 
@@ -241,6 +348,10 @@ def rebuild_state = cogito.state(false)
         (idx = num) => { },
         (idx = num) => { delete_event_at(idx) }
     )
+
+    if viewing_events_compact {
+        _populate_date_hero()
+    }
 }
 
 -- ── Event CRUD ───────────────────────────────────────────────
@@ -305,23 +416,36 @@ def rebuild_state = cogito.state(false)
     .set_padding(24, 24, 24, 24)
     .set_hexpand(true)
 
+    let fields_section = cogito.vstack()
+    .set_gap(12)
+    .set_hexpand(true)
+
     let title_field = cogito.textfield("Event title")
     .set_hexpand(true)
     .set_class("outlined")
-    form.add(title_field)
+    fields_section.add(title_field)
 
     let desc_field = cogito.textfield("Description (optional)")
     .set_hexpand(true)
     .set_class("outlined")
-    form.add(desc_field)
+    fields_section.add(desc_field)
+
+    form.add(fields_section)
+
+    let time_section = cogito.vstack()
+    .set_gap(4)
+    .set_hexpand(true)
 
     let allday_row = cogito.hstack()
     .set_gap(8)
     .set_hexpand(true)
     .set_align(3)
+    .set_class("surface-container-low")
+    .set_padding(12, 16, 12, 16)
 
     let allday_label = cogito.label("All Day")
     .set_hexpand(true)
+    .set_align(3)
     allday_row.add(allday_label)
 
     let start_tp = cogito.timepicker()
@@ -337,65 +461,61 @@ def rebuild_state = cogito.state(false)
         end_tp.set_disabled(on)
     })
     allday_row.add(allday_switch)
-    form.add(allday_row)
+    time_section.add(allday_row)
 
     let start_row = cogito.hstack()
     .set_gap(8)
     .set_hexpand(true)
     .set_align(3)
+    .set_class("surface-container-low")
+    .set_padding(12, 16, 12, 16)
     let start_label = cogito.label("Start")
     .set_hexpand(true)
+    .set_align(3)
     start_row.add(start_label)
     start_row.add(start_tp)
-    form.add(start_row)
+    time_section.add(start_row)
 
     let end_row = cogito.hstack()
     .set_gap(8)
     .set_hexpand(true)
     .set_align(3)
+    .set_class("surface-container-low")
+    .set_padding(12, 16, 12, 16)
     let end_label = cogito.label("End")
     .set_hexpand(true)
+    .set_align(3)
     end_row.add(end_label)
     end_row.add(end_tp)
-    form.add(end_row)
+    time_section.add(end_row)
 
-    let color_row = cogito.hstack()
-    .set_gap(12)
-    .set_align(3)
+    form.add(time_section)
 
-    let color_label = cogito.label("Color:")
+    let color_section = cogito.vstack()
+    .set_gap(4)
+    .set_hexpand(true)
+
+    let color_label = cogito.label("Color")
     .set_class("caption")
-    color_row.add(color_label)
+    color_section.add(color_label)
 
-    let ?picked_color = str(EVENT_COLORS[0])
+    picked_color = str(EVENT_COLORS[0])
 
-    let gcb = cogito.checkbox("", "")
+    let color_names = ["Purple", "Red", "Green", "Blue", "Orange", "Violet"]
+    let color_group = cogito.buttongroup()
+    .set_size(1)
 
     for (let ?ci = 0; ci < len(EVENT_COLORS); ci += 1) {
-        let c = str(EVENT_COLORS[ci])
-
-        let pip = cogito.shape(0)
-        .set_size(12)
-        .set_color(c)
-
-        let cb = cogito.checkbox("", gcb)
-        .set_checked(ci == 0)
-        .on_change((x = cogito.Checkbox) => {
-            if x.checked() {
-                picked_color = c
-            }
-        })
-
-        let pair = cogito.hstack()
-        .set_gap(4)
-        .set_align(3)
-        pair.add(pip)
-        pair.add(cb)
-
-        color_row.add(pair)
+        let name = str(color_names[ci])
+        color_group.add(cogito.button(name))
     }
 
-    form.add(color_row)
+    color_group.on_select((idx) => {
+        picked_color = str(EVENT_COLORS[idx])
+    })
+
+    color_section.add(color_group)
+    form.add(color_section)
 
     let btn_row = cogito.hstack()
     .set_gap(8)
@@ -432,19 +552,87 @@ def rebuild_state = cogito.state(false)
 
 -- ── Compact Layout ───────────────────────────────────────────
 
+: _populate_date_hero() (( -- )) {
+    let wd = calendar.weekday_of_date(view_year, view_month, selected_day)
+    hero_weekday.set_text(calendar.day_name(wd))
+    hero_day_num.set_text(str(selected_day))
+    let mn = calendar.month_name(view_month)
+    hero_month.set_text("$$mn$$ $$view_year$$")
+}
+
+: show_events_compact() (( -- )) {
+    viewing_events_compact = true
+    cal_panel.set_visible(false)
+    evt_panel.set_visible(true)
+    evt_panel.set_hexpand(true)
+    evt_back_btn.set_visible(true)
+    evt_title_label.set_class("solar-evt-title-expressive")
+    evt_title_label.set_text("Events")
+    evt_subtitle_label.set_visible(false)
+    date_hero.set_visible(true)
+    _populate_date_hero()
+    evt_bar.set_window_controls("close,minimize,maximize:")
+    cal_bar.set_window_controls("")
+}
+
+: close_events_compact() (( -- )) {
+    viewing_events_compact = false
+    evt_panel.set_visible(false)
+    evt_panel.set_hexpand(false)
+    cal_panel.set_visible(true)
+    cal_panel.set_hexpand(true)
+    evt_back_btn.set_visible(false)
+    evt_title_label.set_class("solar-evt-title")
+    evt_subtitle_label.set_visible(true)
+    date_hero.set_visible(false)
+    evt_bar.set_window_controls("")
+    cal_bar.set_window_controls("close,minimize,maximize:")
+}
+
 : apply_compact_layout(compact = bool) (( -- )) {
     is_compact_mode = compact
     if compact {
-        evt_panel.set_visible(false)
-        evt_panel.set_hexpand(false)
-        cal_panel.set_visible(true)
-        cal_panel.set_hexpand(true)
+        cal_title_compact.set_visible(true)
+        cal_title_expanded.set_visible(false)
+        if viewing_events_compact {
+            cal_panel.set_visible(false)
+            evt_panel.set_visible(true)
+            evt_panel.set_hexpand(true)
+            evt_panel.set_class("")
+            evt_back_btn.set_visible(true)
+            evt_title_label.set_class("solar-evt-title-expressive")
+            evt_title_label.set_text("Events")
+            evt_subtitle_label.set_visible(false)
+            date_hero.set_visible(true)
+            _populate_date_hero()
+            evt_bar.set_window_controls("close,minimize,maximize:")
+            cal_bar.set_window_controls("")
+        } else {
+            evt_panel.set_visible(false)
+            evt_panel.set_hexpand(false)
+            cal_panel.set_visible(true)
+            cal_panel.set_hexpand(true)
+            date_hero.set_visible(false)
+            cal_bar.set_window_controls("close,minimize,maximize:")
+            evt_bar.set_window_controls("")
+        }
     } else {
+        cal_title_compact.set_visible(false)
+        cal_title_expanded.set_visible(true)
+        viewing_events_compact = false
         evt_panel.set_visible(true)
         evt_panel.set_hexpand(true)
+        evt_panel.set_class("solar-evt-panel")
         cal_panel.set_visible(true)
-        cal_panel.set_hexpand(false)
+        cal_panel.set_hexpand(true)
+        evt_back_btn.set_visible(false)
+        evt_title_label.set_class("solar-evt-title")
+        evt_subtitle_label.set_visible(true)
+        date_hero.set_visible(false)
+        cal_bar.set_window_controls("")
+        evt_bar.set_window_controls("")
     }
+    update_calendar()
 }
 
 -- ── Entry Point ──────────────────────────────────────────────
@@ -461,9 +649,9 @@ entry() (( -- )) {
     .set_app_name("Solar")
     .set_accent_color("#FF6F00", true)
 
-    let win = cogito.window_size("Solar", 900, 720)
+    let win = cogito.window_size("Solar", 1024, 720)
     .set_resizable(true)
-    .set_size_request(360, 380)
+    .set_size_request(412, 720)
 
     let main_content = cogito.hstack()
     .set_gap(0)
@@ -471,18 +659,63 @@ entry() (( -- )) {
     .set_hexpand(true)
     .set_vexpand(true)
 
+    let month_names = [
+        "January", "February", "March", "April",
+        "May", "June", "July", "August",
+        "September", "October", "November", "December"
+    ]
+    month_dropdown
+    .set_class("solar-appbar-title")
+    .set_items(month_names)
+    .set_selected(view_month - 1)
+    .on_change((dd = cogito.ViewChooser) => {
+        if !month_dropdown_updating {
+            let idx = dd.selected()
+            view_month = idx + 1
+            selected_day = 1
+            update_calendar()
+        }
+    })
+
+    cal_title_compact
+    .set_gap(8)
+    .set_align(4)
+    .set_hexpand(true)
+    cal_title_compact.add(month_dropdown)
+
+    view_tabs
+    .set_items(["Day", "Week", "Month", "Year"])
+    .set_selected(2)
+    .set_hexpand(true)
+    .on_change((t = cogito.Tabs) => {
+        let idx = t.selected()
+        view_mode = idx
+        update_calendar()
+    })
+
     calendar_panel.build_panel(
         cal_panel, cal_bar, month_label, day_grid,
+        cal_title_expanded, cal_title_compact,
+        view_tabs,
         () => { go_prev_month() },
         () => { go_next_month() },
         (day = num) => { select_day(day) }
     )
+    cal_panel.set_hexpand(true)
+    cal_bar.add_trailing_button("sf:calendar.badge.clock", (b = cogito.Button) => {
+        select_day(-1)
+    })
     main_content.add(cal_panel)
 
-    event_panel.build_panel(
+    evt_back_btn = event_panel.build_panel(
         evt_panel, evt_bar, evt_title_label, evt_subtitle_label, evt_empty_holder, event_list,
-        () => { open_add_event(win) }
+        () => { open_add_event(win) },
+        () => { close_events_compact() },
+        date_hero, hero_weekday, hero_day_num, hero_month
     )
+    evt_panel.set_class("solar-evt-panel")
+    evt_panel.set_hexpand(true)
+    evt_panel.set_padding(0, 0, 0, 0)
     main_content.add(evt_panel)
 
     win.add(main_content)

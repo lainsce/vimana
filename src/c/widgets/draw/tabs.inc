@@ -87,8 +87,8 @@ case COGITO_TABS: {
           n->tabs_anim_target = (float)target_idx;
         }
 
-        // Tick spring: Spatial Default for tab indicator (k=360, z=0.8)
-        cogito_spring_tick(&n->spring_x, target_idx, 360.0, 0.8, dt);
+        // Tick spring: Spatial Default for tab indicator (k=360, z=1.0)
+        cogito_spring_tick(&n->spring_x, target_idx, 360.0, 1.0, dt);
 
         // Compute actual indicator position from visual tab index
         float visual_idx = (float)n->spring_x.x;

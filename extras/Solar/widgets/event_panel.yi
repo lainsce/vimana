@@ -12,8 +12,13 @@ bring utils.calendar
     subtitle_label = cogito.Label,
     empty_holder = cogito.VStack,
     event_list = cogito.ContentList,
-    on_add_event = any
-) (( -- )) {
+    on_add_event = any,
+    close_handler = any,
+    date_hero = cogito.VStack,
+    hero_weekday = cogito.Label,
+    hero_day_num = cogito.Label,
+    hero_month = cogito.Label
+) (( cogito.Button )) {
     panel
     .set_gap(0)
     .set_padding(0, 0, 0, 0)
@@ -22,7 +27,12 @@ bring utils.calendar
 
     bar
     .set_hexpand(true)
-    .set_class("small solar-evt-bar")
+    .set_class("small solar-evt-bar surface-container-high")
+
+    let back_btn = bar.leading_button("sf:chevron.backward", (b = any) => {
+        close_handler()
+    })
+    back_btn.set_visible(false)
 
     let title_col = cogito.vstack()
     .set_gap(4)
@@ -44,13 +54,52 @@ bring utils.calendar
 
     panel.add(bar)
 
+    hero_weekday
+    .set_class("solar-hero-weekday")
+    .set_align(0)
+    .set_text_align(0)
+
+    hero_day_num
+    .set_class("solar-hero-day")
+    .set_align(2)
+    .set_text_align(2)
+
+    hero_month
+    .set_class("solar-hero-month")
+    .set_align(0)
+    .set_text_align(0)
+
+    let hero_text = cogito.vstack()
+    .set_gap(0)
+    .set_align(6)
+    hero_text.add(hero_weekday)
+    hero_text.add(hero_month)
+
+    let hero_row = cogito.hstack()
+    .set_hexpand(true)
+    hero_row.add(hero_text)
+    hero_row.add(hero_day_num)
+
+    date_hero
+    .set_gap(0)
+    .set_padding(12, 0, 0, 12)
+    .set_hexpand(true)
+    .set_visible(false)
+    .add(hero_row)
+
+    panel.add(date_hero)
+
     let body = cogito.zstack()
     .set_vexpand(true)
     .set_hexpand(true)
+    .set_padding(0, 0, 0, 0)
+    .set_class("surface-container-high")
 
     let scroll = cogito.scroller()
     .set_vexpand(true)
     .set_hexpand(true)
+    .set_padding(0, 0, 0, 0)
+    .set_class("transparent")
     bar.pair_with_scroller(scroll)
 
     event_list
@@ -58,7 +107,7 @@ bring utils.calendar
     .set_gap(4)
     .set_hexpand(true)
     .set_vexpand(true)
-    .set_padding(8, 8, 8, 8)
+    .set_padding(0, 0, 0, 0)
 
     scroll.add(event_list)
     body.add(scroll)
@@ -77,13 +126,14 @@ bring utils.calendar
     let fab = cogito.fab("sf:plus")
     .set_extended(true, "New Event")
     .set_align(8)
-    .set_margins(0, 16, 16, 0)
     fab.on_click((f = cogito.FAB) => {
         on_add_event()
     })
     body.add(fab)
 
     panel.add(body)
+
+    return back_btn
 }
 
 :: refresh_events(
@@ -160,20 +210,18 @@ bring utils.calendar
     }
 
     let row = cogito.hstack()
-    .set_class("solar-event-row")
     .set_gap(0)
-    .set_padding(0, 0, 0, 0)
+    .set_padding(0, 16, 0, 16)
     .set_hexpand(true)
     .set_align(0)
 
     let accent = cogito.shape(1)
-    .set_size(4)
-    .set_size_h(56)
+    .set_size(8)
     .set_color(color)
     row.add(accent)
 
     let info_col = cogito.vstack()
-    .set_gap(2)
+    .set_gap(4)
     .set_hexpand(true)
     .set_padding(12, 12, 12, 12)
     .set_align(0)
@@ -210,7 +258,7 @@ bring utils.calendar
         let win = b.window()
         let confirm_dlg = cogito.dialog("Delete Event?")
         let confirm_body = cogito.vstack()
-        .set_gap(16)
+        .set_gap(24)
         .set_padding(24, 24, 24, 24)
         .set_hexpand(true)
 
@@ -219,7 +267,7 @@ bring utils.calendar
         confirm_body.add(msg)
 
         let confirm_btns = cogito.hstack()
-        .set_gap(8)
+        .set_gap(12)
         .set_align(5)
 
         let keep_btn = cogito.button("Cancel")
@@ -230,7 +278,7 @@ bring utils.calendar
         confirm_btns.add(keep_btn)
 
         let del_btn = cogito.button("Delete")
-        .set_class("filled")
+        .set_class("text")
         .on_click((db = cogito.Button) => {
             on_delete_event(index)
             confirm_dlg.close()

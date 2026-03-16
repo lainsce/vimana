@@ -293,6 +293,9 @@
 #undef cogito_view_chooser_bind
 #undef cogito_view_chooser_new
 #undef cogito_view_chooser_set_items
+#undef cogito_view_chooser_set_selected
+#undef cogito_view_chooser_get_selected
+#undef cogito_view_chooser_on_change
 #undef cogito_view_dual_new
 #undef cogito_view_dual_set_ratio
 #undef cogito_view_switcher_new
@@ -325,6 +328,15 @@
 #undef cogito_card_add_action
 #undef cogito_card_add_overflow
 #undef cogito_bottom_sheet_add_action
+#undef cogito_node_set_font_size
+#undef cogito_node_set_font_weight
+#undef cogito_node_set_font_family
+#undef cogito_node_set_shadow
+#undef cogito_node_set_border_width
+#undef cogito_node_set_border_radius
+#undef cogito_node_set_border_color
+#undef cogito_canvas_circle
+#undef cogito_canvas_fill_circle
 
 #ifndef COGITO_DEFINED_COGITO_DEBUG_ENABLED
 static bool cogito_debug_enabled(void) {
@@ -1313,6 +1325,18 @@ static void __cogito_canvas_fill_rect(YisVal dav, YisVal xv, YisVal yv,
   cogito_canvas_fill_rect(da, (int)yis_as_int(xv), (int)yis_as_int(yv),
                           (int)yis_as_int(wv), (int)yis_as_int(hv));
 }
+static void __cogito_canvas_circle(YisVal dav, YisVal cxv, YisVal cyv,
+                                   YisVal rv) {
+  cogito_node* da = cogito_node_from_val(dav);
+  cogito_canvas_circle(da, (int)yis_as_int(cxv), (int)yis_as_int(cyv),
+                       (int)yis_as_int(rv));
+}
+static void __cogito_canvas_fill_circle(YisVal dav, YisVal cxv, YisVal cyv,
+                                        YisVal rv) {
+  cogito_node* da = cogito_node_from_val(dav);
+  cogito_canvas_fill_circle(da, (int)yis_as_int(cxv), (int)yis_as_int(cyv),
+                            (int)yis_as_int(rv));
+}
 // --- Shape ---
 static YisVal __cogito_shape(YisVal presetv) {
   cogito_node* n = cogito_shape_new((int)yis_as_int(presetv));
@@ -1569,6 +1593,25 @@ static void __cogito_view_chooser_bind(YisVal vcv, YisVal vsv) {
   cogito_node* vs = cogito_node_from_val(vsv);
   cogito_view_chooser_bind(vc, vs);
 }
+static void __cogito_view_chooser_set_selected(YisVal vcv, YisVal idxv) {
+  cogito_node* vc = cogito_node_from_val(vcv);
+  cogito_dropdown_set_selected(vc, (int)yis_as_int(idxv));
+}
+static YisVal __cogito_view_chooser_get_selected(YisVal vcv) {
+  cogito_node* vc = cogito_node_from_val(vcv);
+  return YV_INT(cogito_dropdown_get_selected(vc));
+}
+static void __cogito_view_chooser_on_change(YisVal vcv, YisVal handler) {
+  cogito_node* vc = cogito_node_from_val(vcv);
+  CogitoHandle* h = (CogitoHandle*)vcv.as.p;
+  if (handler.tag != EVT_FN) {
+    cogito_set_handler(h, &h->on_change, handler);
+    cogito_dropdown_on_change(vc, NULL, NULL);
+    return;
+  }
+  cogito_set_handler(h, &h->on_change, handler);
+  cogito_dropdown_on_change(vc, cogito_cb_change, h);
+}
 // --- AboutWindow ---
 static YisVal __cogito_about_window(YisVal namev, YisVal versionv) {
   YisStr* tmp1 = NULL;
@@ -1704,6 +1747,12 @@ static void __cogito_image_set_radius(YisVal imgv, YisVal rv) {
   cogito_node* n = cogito_node_from_val(imgv);
   int r = (int)yis_as_int(rv);
   cogito_image_set_radius(n, r);
+}
+
+static void __cogito_image_set_fit(YisVal imgv, YisVal fitv) {
+  cogito_node* n = cogito_node_from_val(imgv);
+  int fit = (int)yis_as_int(fitv);
+  cogito_image_set_fit(n, fit);
 }
 
 static void __cogito_image_set_alt_text(YisVal imgv, YisVal altv) {
@@ -2358,6 +2407,16 @@ static void __cogito_container_set_homogeneous(YisVal nodev, YisVal hv) {
   cogito_node_set_homogeneous(node, yis_as_bool(hv));
 }
 
+static void __cogito_container_set_col_homogeneous(YisVal nodev, YisVal hv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_col_homogeneous(node, yis_as_bool(hv));
+}
+
+static void __cogito_container_set_row_homogeneous(YisVal nodev, YisVal hv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_row_homogeneous(node, yis_as_bool(hv));
+}
+
 static void __cogito_container_set_padding(YisVal nodev, YisVal top, YisVal right, YisVal bottom, YisVal left) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_padding(node, (int)yis_as_int(top), (int)yis_as_int(right), (int)yis_as_int(bottom), (int)yis_as_int(left));
@@ -2442,6 +2501,40 @@ static void __cogito_node_set_opacity(YisVal nodev, YisVal opacityv) {
   cogito_node_set_opacity(node, opacity);
 }
 
+static void __cogito_node_set_font_size(YisVal nodev, YisVal sizev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_font_size(node, (int)yis_as_int(sizev));
+}
+static void __cogito_node_set_font_weight(YisVal nodev, YisVal weightv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_font_weight(node, (int)yis_as_int(weightv));
+}
+static void __cogito_node_set_font_family(YisVal nodev, YisVal familyv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  YisStr* tmp = NULL;
+  const char* fam = cogito_required_cstr(familyv, &tmp);
+  cogito_node_set_font_family(node, fam);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+static void __cogito_node_set_shadow(YisVal nodev, YisVal levelv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_shadow(node, (int)yis_as_int(levelv));
+}
+static void __cogito_node_set_border_width(YisVal nodev, YisVal widthv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_border_width(node, (int)yis_as_int(widthv));
+}
+static void __cogito_node_set_border_radius(YisVal nodev, YisVal radiusv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_border_radius(node, (int)yis_as_int(radiusv));
+}
+static void __cogito_node_set_border_color(YisVal nodev, YisVal colorv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  YisStr* tmp = NULL;
+  const char* hex = cogito_required_cstr(colorv, &tmp);
+  cogito_node_set_border_color(node, hex);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
 static void __cogito_node_set_visible(YisVal nodev, YisVal onv) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_visible(node, onv.tag == EVT_BOOL ? onv.as.b : false);
@@ -3146,6 +3239,16 @@ static YisVal __cogito_buttongroup_get_connected(YisVal bgv) {
   return YV_BOOL(cogito_buttongroup_get_connected(bg));
 }
 
+static void __cogito_buttongroup_set_selected(YisVal bgv, YisVal idxv) {
+  cogito_node* bg = cogito_node_from_val(bgv);
+  cogito_buttongroup_set_selected(bg, (int)yis_as_int(idxv));
+}
+
+static YisVal __cogito_buttongroup_get_selected(YisVal bgv) {
+  cogito_node* bg = cogito_node_from_val(bgv);
+  return YV_INT(cogito_buttongroup_get_selected(bg));
+}
+
 static void __cogito_tabs_set_items(YisVal tabsv, YisVal itemsv) {
   cogito_node* tabs = cogito_node_from_val(tabsv);
   if (itemsv.tag != EVT_ARR) yis_trap("cogito.tabs_set_items expects array");
@@ -3416,6 +3519,12 @@ static void __cogito_view_switcher_set_active(YisVal viewv, YisVal idv) {
   const char* id = cogito_required_cstr(idv, &tmp);
   cogito_view_switcher_set_active(view, id);
   if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static YisVal __cogito_view_switcher_get_active(YisVal viewv) {
+  cogito_node* view = cogito_node_from_val(viewv);
+  const char* id = cogito_view_switcher_get_active(view);
+  return YV_STR(stdr_str_lit(id ? id : ""));
 }
 
 static void __cogito_view_switcher_add(YisVal vsv, YisVal idv, YisVal builderv) {
@@ -3888,6 +3997,8 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_container_set_vexpand_set __cogito_container_set_vexpand_set
 #define cogito_container_set_gap __cogito_container_set_gap
 #define cogito_container_set_homogeneous __cogito_container_set_homogeneous
+#define cogito_container_set_col_homogeneous __cogito_container_set_col_homogeneous
+#define cogito_container_set_row_homogeneous __cogito_container_set_row_homogeneous
 #define cogito_dialog_slot_show __cogito_dialog_slot_show
 #define cogito_dialog_slot_clear __cogito_dialog_slot_clear
 #define cogito_container_set_padding __cogito_container_set_padding
@@ -3937,6 +4048,7 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_pointer_capture_set __cogito_pointer_capture
 #define cogito_pointer_capture_clear __cogito_pointer_release
 #define cogito_view_switcher_set_active __cogito_view_switcher_set_active
+#define cogito_view_switcher_get_active __cogito_view_switcher_get_active
 #define cogito_view_switcher_add __cogito_view_switcher_add
 #define cogito_textfield_set_text __cogito_textfield_set_text
 #define cogito_textfield_get_text __cogito_textfield_get_text
@@ -4053,6 +4165,7 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_webview_open __cogito_webview_open
 #define cogito_image_set_size __cogito_image_set_size
 #define cogito_image_set_radius __cogito_image_set_radius
+#define cogito_image_set_fit __cogito_image_set_fit
 #define cogito_image_set_alt_text __cogito_image_set_alt_text
 #define cogito_checkbox_set_checked __cogito_checkbox_set_checked
 #define cogito_checkbox_get_checked __cogito_checkbox_get_checked
@@ -4153,6 +4266,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_canvas_line __cogito_canvas_line
 #define cogito_canvas_rect __cogito_canvas_rect
 #define cogito_canvas_fill_rect __cogito_canvas_fill_rect
+#define cogito_canvas_circle __cogito_canvas_circle
+#define cogito_canvas_fill_circle __cogito_canvas_fill_circle
 #define cogito_shape_new __cogito_shape
 #define cogito_shape_set_preset __cogito_shape_set_preset
 #define cogito_shape_get_preset __cogito_shape_get_preset
@@ -4194,6 +4309,9 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_view_chooser_new __cogito_view_chooser
 #define cogito_view_chooser_set_items __cogito_view_chooser_set_items
 #define cogito_view_chooser_bind __cogito_view_chooser_bind
+#define cogito_view_chooser_set_selected __cogito_view_chooser_set_selected
+#define cogito_view_chooser_get_selected __cogito_view_chooser_get_selected
+#define cogito_view_chooser_on_change __cogito_view_chooser_on_change
 #define cogito_about_window_new __cogito_about_window
 #define cogito_about_window_set_icon __cogito_about_window_set_icon
 #define cogito_about_window_set_description __cogito_about_window_set_description
@@ -4215,6 +4333,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_buttongroup_get_shape __cogito_buttongroup_get_shape
 #define cogito_buttongroup_set_connected __cogito_buttongroup_set_connected
 #define cogito_buttongroup_get_connected __cogito_buttongroup_get_connected
+#define cogito_buttongroup_set_selected __cogito_buttongroup_set_selected
+#define cogito_buttongroup_get_selected __cogito_buttongroup_get_selected
 #define cogito_card_set_subtitle __cogito_card_set_subtitle
 #define cogito_card_on_click __cogito_card_on_click
 #define cogito_card_set_variant __cogito_card_set_variant
@@ -4222,4 +4342,13 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_card_add_action __cogito_card_add_action
 #define cogito_card_add_overflow __cogito_card_add_overflow
 #define cogito_bottom_sheet_add_action __cogito_bottom_sheet_add_action
+#define cogito_node_set_font_size __cogito_node_set_font_size
+#define cogito_node_set_font_weight __cogito_node_set_font_weight
+#define cogito_node_set_font_family __cogito_node_set_font_family
+#define cogito_node_set_shadow __cogito_node_set_shadow
+#define cogito_node_set_border_width __cogito_node_set_border_width
+#define cogito_node_set_border_radius __cogito_node_set_border_radius
+#define cogito_node_set_border_color __cogito_node_set_border_color
+#define cogito_canvas_circle __cogito_canvas_circle
+#define cogito_canvas_fill_circle __cogito_canvas_fill_circle
 // cogito_set_script_dir is provided by the cogito library

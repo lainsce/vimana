@@ -4,14 +4,12 @@
 
 vstack
 hstack
-zstack
 grid
   background: transparent
 
 ; ── AppBars ───────────────────────────────────────────────────
 
 appbar.solar-cal-bar
-appbar.solar-evt-bar
   background: transparent
 
 appbar.solar-cal-bar
@@ -23,46 +21,87 @@ label.solar-appbar-title
   font-variation: wdth 130, opsz 20
   font-weight: bold
 
+view-chooser.solar-appbar-title
+  font-size: 32
+  font-variation: wdth 130, opsz 20
+  font-weight: bold
+  background: transparent
+  border-width: 0
+
 label.solar-evt-title
   font-size: 32
   font-variation: opsz 20
   font-weight: bold
 
+label.solar-evt-title-expressive
+  font-size: 28
+  font-variation: wdth 132, opsz 14
+  font-weight: 600
+  text-overflow: fade
+
 label.solar-evt-subtitle
   font-size: 13
   opacity: 0.6
 
+vstack.solar-evt-panel
+  min-width: 412
+  max-width: 412
+
+; ── Compact date hero ─────────────────────────────────────────
+
+label.solar-hero-weekday
+  font-size: 42
+  font-variation: wdth 132, opsz 14
+  font-weight: 700
+
+label.solar-hero-day
+  font-size: 96
+  font-variation: wdth 150, opsz 14
+  font-weight: 800
+  opacity: 0.08
+
+label.solar-hero-month
+  font-size: 16
+  font-variation: wdth 110, opsz 14
+  font-weight: 500
+  opacity: 0.6
+
+hstack.solar-event-row-compact
+  border-radius: 16
+  border: 1 solid #00000010
+
 ; ── Calendar grid ─────────────────────────────────────────────
 
 grid.solar-grid
-  border-radius: 12
+  border-radius: 0
 
 label.solar-weekday
   font-size: 12
   font-weight: bold
   opacity: 0.66
-  max-width: 128
-  min-width: 128
-  max-height: 16
-  min-height: 16
 
 ; ── Day cells ─────────────────────────────────────────────────
 
 hstack.solar-day-cell
   border-radius: 0
   border: 1 solid #00000020
-  min-width: 128
-  max-width: 128
-  min-height: 128
-  max-height: 128
+  min-height: 100
+
+hstack.solar-day-cell-compact
+  border-radius: 0
+  border: 1 solid #00000020
+  min-height: 56
 
 hstack.solar-trailing
   border-radius: 0
   border: 1 solid #00000010
-  min-width: 128
-  max-width: 128
-  min-height: 128
-  max-height: 128
+  min-height: 100
+  opacity: 0.45
+
+hstack.solar-trailing-compact
+  border-radius: 0
+  border: 1 solid #00000010
+  min-height: 56
   opacity: 0.45
 
 label.solar-day-num
@@ -72,6 +111,45 @@ label.solar-trailing-day
   min-width: 0
   min-height: 0
   max-width: 24
+
+; ── Year view ─────────────────────────────────────────────────
+
+vstack.solar-year-cell
+  border: 1 solid #00000010
+  border-radius: 0
+
+button.solar-year-month-current
+  font-weight: bold
+
+label.solar-mini-weekday
+  font-size: 10
+  opacity: 0.5
+
+label.solar-mini-day
+  font-size: 10
+
+; ── Day view ──────────────────────────────────────────────────
+
+label.solar-day-view-header
+  font-size: 22
+  font-weight: bold
+  font-variation: wdth 120, opsz 14
+
+label.solar-day-view-empty
+  font-size: 14
+  opacity: 0.45
+
+hstack.solar-day-event-row
+  border: 1 solid #00000010
+  border-radius: 12
+
+label.solar-day-event-title
+  font-size: 15
+  font-weight: 500
+
+label.solar-day-event-time
+  font-size: 12
+  opacity: 0.55
   max-height: 24
   padding: 4 4 4 4
   font-size: 16
@@ -128,4 +206,7 @@ label.solar-event-desc
       border: 1 solid #ffffff10
     
   hstack.solar-event-row
+      border: 1 solid #ffffff10
+    
+  hstack.solar-event-row-compact
       border: 1 solid #ffffff10

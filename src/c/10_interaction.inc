@@ -61,7 +61,7 @@ static void cogito_invoke_click(CogitoNode* n) {
 
 static void cogito_invoke_menu(CogitoNode* n, size_t idx) {
   if (!n || idx >= n->menu_len) return;
-  if (n->kind == COGITO_DROPDOWN) {
+  if (n->kind == COGITO_DROPDOWN || n->kind == COGITO_VIEW_CHOOSER) {
     n->selected = (int)idx;
     cogito_invoke_change(n);
     return;

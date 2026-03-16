@@ -168,6 +168,20 @@ static void cogito_container_set_homogeneous(YisVal nodev, YisVal hv) {
   cogito_window_relayout(cogito_node_window(node));
 }
 
+static void cogito_container_set_col_homogeneous(YisVal nodev, YisVal hv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_col_homogeneous expects object");
+  CogitoNode* node = (CogitoNode*)nodev.as.p;
+  node->col_homogeneous = yis_as_bool(hv);
+  cogito_window_relayout(cogito_node_window(node));
+}
+
+static void cogito_container_set_row_homogeneous(YisVal nodev, YisVal hv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_row_homogeneous expects object");
+  CogitoNode* node = (CogitoNode*)nodev.as.p;
+  node->row_homogeneous = yis_as_bool(hv);
+  cogito_window_relayout(cogito_node_window(node));
+}
+
 static void cogito_container_set_padding(YisVal nodev, YisVal top, YisVal right, YisVal bottom, YisVal left) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_padding expects object");
   CogitoNode* node = (CogitoNode*)nodev.as.p;

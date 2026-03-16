@@ -1,0 +1,65 @@
+cask pdf_card
+
+bring stdr
+bring cogito
+
+:: build_continue_card(title = string, thumb = string, page_info = string, on_click = any) (( cogito.Card )) {
+    let card = cogito.card(title)
+    .set_variant(2)
+    .set_subtitle(page_info)
+    .set_class("corpus-continue-card")
+    .on_click((c = cogito.Card) => {
+        on_click()
+    })
+
+    if stdr.len(thumb) > 0 {
+        card.set_header_image(thumb)
+    }
+
+    return card
+}
+
+:: build_recent_card(title = string, thumb = string, is_highlighted = bool, on_click = any) (( cogito.Card )) {
+    let ?variant = 1
+    if !is_highlighted { variant = 2 }
+
+    let card = cogito.card(title)
+    .set_variant(variant)
+    .on_click((c = cogito.Card) => {
+        on_click()
+    })
+
+    if is_highlighted {
+        card.set_class("corpus-recent-card-highlight")
+    } else {
+        card.set_class("corpus-recent-card")
+    }
+
+    if stdr.len(thumb) > 0 {
+        card.set_header_image(thumb)
+    }
+
+    return card
+}
+
+:: build_tag_row(name = string, selected = bool) (( cogito.HStack )) {
+    let row = cogito.hstack()
+    .set_gap(8)
+    .set_padding(12, 16, 12, 16)
+    .set_hexpand(true)
+
+    if selected {
+        row.set_class("corpus-tag-row-selected")
+    } else {
+        row.set_class("corpus-tag-row")
+    }
+
+    let label = cogito.label(name)
+    .set_align(3)
+    .set_text_align(0)
+    .set_hexpand(true)
+    .set_class("corpus-tag-label")
+    row.add(label)
+
+    return row
+}

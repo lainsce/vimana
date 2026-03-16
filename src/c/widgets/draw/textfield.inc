@@ -103,8 +103,21 @@ case COGITO_TEXTFIELD: {
         int iy = n->y + field_h - indicator_w;
         if (iy < n->y) iy = n->y;
         cogito_draw_rect(n->x, iy, n->w, indicator_w, indicator, 0);
-      } else if (border_w > 0) {
-        cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, field_h, border, radius, border_w);
+      } else {
+        int ol_bw = border_w > 0 ? border_w : 1;
+        int ol_r = radius > 0 ? radius : 8;
+        CogitoColor ol_border = border;
+        if (ol_border.a == 0) {
+          ol_border = cogito_cached_outline.a ? cogito_cached_outline : cogito_rgba(120, 120, 120, 255);
+        }
+        if (n->textfield_regex_invalid && cogito_cached_error.a) {
+          ol_border = cogito_cached_error;
+        }
+        if (focused && cogito_cached_primary.a) {
+          ol_border = cogito_cached_primary;
+          if (ol_bw < 2) ol_bw = 2;
+        }
+        cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, field_h, ol_border, ol_r, ol_bw);
       }
 
       bool tf_rtl = cogito_is_rtl();
@@ -212,14 +225,16 @@ case COGITO_TEXTFIELD: {
         int py_float = is_outlined ? (n->y - (ph_h_cur / 2)) : (n->y + field_pad_y);
         int py = (int)lround((double)py_inline + ((double)py_float - (double)py_inline) * (double)label_t);
 
-        if (is_outlined && n->tf_label_anim_target > 0.0f && border_w > 0) {
+        if (is_outlined && n->tf_label_anim_target > 0.0f) {
+          int ol_notch_bw = border_w > 0 ? border_w : 1;
+          if (focused) { if (ol_notch_bw < 2) ol_notch_bw = 2; }
           int notch_label_size = hint_size;
           int label_w = cogito_text_width_size_node(n, placeholder, notch_label_size);
           if (label_w < 0) label_w = 0;
           int notch_pad = 4;
           int notch_x = text_x - notch_pad;
           int notch_w = label_w + notch_pad * 2;
-          int notch_h = border_w + 2;
+          int notch_h = ol_notch_bw + 2;
           int notch_y = n->y - (notch_h / 2);
           if (notch_x < n->x) notch_x = n->x;
           if (notch_x + notch_w > n->x + n->w) notch_w = (n->x + n->w) - notch_x;

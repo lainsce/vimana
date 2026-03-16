@@ -111,7 +111,7 @@ case COGITO_SWITCH: {
   // Expressive profile: slight physical bounce on toggle — satisfying confirmation.
       double dt = cogito_spring_dt;
       cogito_spring_tick(&n->spring_x, (double)center_target,
-                         COGITO_SPRING_K_EXPRESSIVE, COGITO_SPRING_Z_EXPRESSIVE, dt);
+                         COGITO_SPRING_K_EXPRESSIVE, COGITO_SPRING_Z_FUNCTIONAL, dt);
       cogito_spring_tick(&n->spring_h, (double)knob_h_target,
                          COGITO_SPRING_K_FUNCTIONAL, COGITO_SPRING_Z_FUNCTIONAL, dt);
 

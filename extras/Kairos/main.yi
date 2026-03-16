@@ -18,6 +18,7 @@ def ?locations = []: [any]
 def ?selected_location = -1
 def ?forecast_data = []: [string => any]
 def ?use_fahrenheit = false
+def ?is_compact_mode = false
 def ?KAIROS_STATE_PATH = ""
 
 -- Shared widgets
@@ -33,7 +34,6 @@ def content_bar = cogito.appbar("", "")
 def forecast_content = cogito.vstack()
 def ?content_tint_bin = cogito.bin()
 
-def place_label = cogito.label("")
 def current_icon = cogito.image("sf:sun.max.fill")
 def current_temp = cogito.label("--o")
 def current_desc = cogito.label("Clear Sky")
@@ -42,6 +42,14 @@ def ?header_state = weather_header.new_header()
 def header_gradient = weather_header.widget(header_state)
 def ?refreshbtn = cogito.button("")
 def unitbtn = cogito.button("°C")
+def ?loc_nav_btn = cogito.button("")
+def metrics = cogito.grid(2)
+def header_stack = cogito.zstack()
+def title_expanded = cogito.hstack()
+def title_compact = cogito.vstack()
+def compact_temp = cogito.label("--°")
+def compact_desc = cogito.label("")
+def compact_place = cogito.label("")
 
 def tabs = cogito.tabs()
 def views = cogito.view_switcher()
@@ -184,7 +192,7 @@ def status_text = cogito.label("Add a location to start")
 : _set_empty_mode(on = bool) (( -- )) {
     empty_page.set_visible(on)
     forecast_content.set_visible(!on)
-    sidebar_panel.set_visible(!on)
+    sidebar_panel.set_visible(!on && !is_compact_mode)
     content_bar.set_visible(!on)
 }
 
@@ -505,13 +513,14 @@ def status_text = cogito.label("Add a location to start")
     let ok = forecast_data["ok"] ?? false
     if !ok {
         current_desc.set_text("Could not fetch weather")
+        compact_desc.set_text("Could not fetch weather")
         return
     }
 
     let loc = _selected_loc()
     if !is_null(loc) {
         let place = str(loc["label"] ?? "")
-        place_label.set_text(place)
+        compact_place.set_text(place)
     }
 
     let current = forecast_data["current"] ?? []: [string => any]
@@ -542,6 +551,11 @@ def status_text = cogito.label("Add a location to start")
 
     current_temp.set_text(_temp_short(temp_c))
     current_desc.set_text(weather_fmt.weather_label(code))
+    compact_temp.set_text(_temp_short(temp_c))
+    compact_desc.set_text(weather_fmt.weather_label(code))
+    compact_temp.set_class("kairos-current-temp-compact $$hdr_cls$$")
+    compact_desc.set_class("kairos-current-desc-compact $$hdr_cls$$")
+    compact_place.set_class("kairos-place-compact $$hdr_cls$$")
     let feels_text = weather_fmt.format_temp(feels_c, use_fahrenheit)
     current_feels.set_text("Feels like $$feels_text$$")
 
@@ -776,14 +790,14 @@ def status_text = cogito.label("Add a location to start")
     .set_hexpand(true)
     .set_vexpand(true)
 
-    let metrics = cogito.grid(4)
+    metrics
     .set_gap(8, 8)
     .set_hexpand(true)
 
     metrics.add(_metric_card("Wind Direction", wind_value), 0, 0, 1, 1)
     metrics.add(_metric_card("Dew Point", dew_value), 1, 0, 1, 1)
-    metrics.add(_metric_card("Pressure", pressure_value), 2, 0, 1, 1)
-    metrics.add(_metric_card("UV Index", uv_value), 3, 0, 1, 1)
+    metrics.add(_metric_card("Pressure", pressure_value), 0, 1, 1, 1)
+    metrics.add(_metric_card("UV Index", uv_value), 1, 1, 1, 1)
 
     root.add(metrics)
     root.add(sun_orbit.widget(orbit_widget))
@@ -802,15 +816,16 @@ def status_text = cogito.label("Add a location to start")
     .set_class("small kairos-content-bar kairos-header-on-dark")
     .set_window_controls("close,minimize,maximize:")
 
+    loc_nav_btn = content_bar.leading_button("sf:mappin.and.ellipse", (b = any) => {
+        _open_add_dialog(win)
+    })
+    loc_nav_btn.set_visible(false)
+
     refreshbtn = content_bar.add_trailing_menu_button("sf:arrow.clockwise")
     refreshbtn.on_click((n = any) => {
         _refresh_forecast()
     })
     refreshbtn.set_class("trailing kairos-header-on-dark")
-
-    let title_row = cogito.hstack()
-    .set_gap(12)
-    .set_hexpand(true)
 
     current_icon
     .set_class("kairos-current-icon kairos-header-on-dark")
@@ -825,18 +840,44 @@ def status_text = cogito.label("Add a location to start")
     .set_hexpand(true)
 
     current_desc.set_class("kairos-current-desc kairos-header-on-dark")
+    .set_ellipsis(true)
     current_feels.set_class("kairos-current-feels kairos-header-on-dark")
+    .set_ellipsis(true)
 
     info_col.add(current_desc)
     info_col.add(current_feels)
 
-    title_row.add(current_icon)
-    title_row.add(current_temp)
-    title_row.add(info_col)
+    title_expanded
+    .set_gap(12)
+    .set_hexpand(true)
+    title_expanded.add(current_icon)
+    title_expanded.add(current_temp)
+    title_expanded.add(info_col)
 
-    content_bar.set_title_widget(title_row)
+    compact_temp.set_class("kairos-current-temp-compact kairos-header-on-dark")
+    .set_align(3)
+    compact_desc.set_class("kairos-current-desc-compact kairos-header-on-dark")
+    .set_ellipsis(true)
+    compact_place.set_class("kairos-place-compact kairos-header-on-dark")
+    .set_visible(true)
 
-    let header_stack = cogito.zstack()
+    title_compact
+    .set_gap(4)
+    .set_hexpand(true)
+    .set_align(3)
+    .set_visible(false)
+    title_compact.add(compact_temp)
+    title_compact.add(compact_desc)
+    title_compact.add(compact_place)
+
+    let title_wrapper = cogito.zstack()
+    .set_hexpand(true)
+    title_wrapper.add(title_expanded)
+    title_wrapper.add(title_compact)
+
+    content_bar.set_title_widget(title_wrapper)
+
+    header_stack
     .set_hexpand(true)
     .set_class("kairos-header")
     .add(header_gradient)
@@ -951,12 +992,35 @@ def status_text = cogito.label("Add a location to start")
     return sidebar_panel
 }
 
+: apply_compact_layout(compact = bool) (( -- )) {
+    is_compact_mode = compact
+    if compact {
+        sidebar_panel.set_visible(false)
+        sidebar_panel.set_hexpand(false)
+        loc_nav_btn.set_visible(true)
+        content_bar.set_window_controls("close,minimize,maximize:")
+        sidebar_bar.set_window_controls("")
+        header_stack.set_class("kairos-header-compact")
+        title_expanded.set_visible(false)
+        title_compact.set_visible(true)
+    } else {
+        sidebar_panel.set_visible(true)
+        sidebar_panel.set_hexpand(false)
+        loc_nav_btn.set_visible(false)
+        content_bar.set_window_controls("close,minimize,maximize:")
+        sidebar_bar.set_window_controls("")
+        header_stack.set_class("kairos-header")
+        title_expanded.set_visible(true)
+        title_compact.set_visible(false)
+    }
+}
+
 entry() (( -- )) {
     cogito.load_sum("kairos.sum")
 
-    let win = cogito.window_size("Kairos", 1024, 645)
+    let win = cogito.window_size("Kairos", 1024, 720)
     .set_resizable(true)
-    .set_size_request(360, 360)
+    .set_size_request(412, 720)
 
     let app = cogito.app()
     .set_appid("com.fyralabs.Kairos")
@@ -990,6 +1054,13 @@ entry() (( -- )) {
     root.add(_build_content_panel(win))
 
     win.add(root)
+
+    win.on_resize((node = any) => {
+        let compact = win.is_compact()
+        if compact != is_compact_mode {
+            apply_compact_layout(compact)
+        }
+    })
 
     _set_empty_mode(true)
     _rebuild_location_list()

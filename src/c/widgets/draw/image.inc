@@ -58,19 +58,28 @@ case COGITO_IMAGE: {
         int draw_x = n->x;
         int draw_y = n->y;
         
-        // Scale to fill while maintaining aspect ratio (cover mode)
         float img_aspect = (float)n->image.w / (float)n->image.h;
         float widget_aspect = (n->h > 0) ? (float)n->w / (float)n->h : 1.0f;
         int src_x = 0, src_y = 0, src_w = n->image.w, src_h = n->image.h;
-        
-        if (img_aspect > widget_aspect && widget_aspect > 0) {
-          // Image is wider - crop sides
-          src_w = (int)(n->image.h * widget_aspect);
-          src_x = (n->image.w - src_w) / 2;
-        } else if (img_aspect < widget_aspect && img_aspect > 0) {
-          // Image is taller - crop top/bottom
-          src_h = (int)(n->image.w / widget_aspect);
-          src_y = (n->image.h - src_h) / 2;
+
+        if (n->image.fit == 1) {
+          // Contain mode: scale to fit entirely within widget, center result
+          float scale = ((float)n->w / (float)n->image.w < (float)n->h / (float)n->image.h)
+                      ? (float)n->w / (float)n->image.w
+                      : (float)n->h / (float)n->image.h;
+          draw_w = (int)(n->image.w * scale);
+          draw_h = (int)(n->image.h * scale);
+          draw_x = n->x + (n->w - draw_w) / 2;
+          draw_y = n->y + (n->h - draw_h) / 2;
+        } else {
+          // Cover mode: crop source to fill widget
+          if (img_aspect > widget_aspect && widget_aspect > 0) {
+            src_w = (int)(n->image.h * widget_aspect);
+            src_x = (n->image.w - src_w) / 2;
+          } else if (img_aspect < widget_aspect && img_aspect > 0) {
+            src_h = (int)(n->image.w / widget_aspect);
+            src_y = (n->image.h - src_h) / 2;
+          }
         }
         
         // --- Parallax effect for images inside carousel items ---
