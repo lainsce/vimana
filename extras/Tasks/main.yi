@@ -301,6 +301,19 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     return content
 }
 
+: show_about_window(win = cogito.Window) (( -- )) {
+    let dlg = cogito.dialog("")
+    let content = cogito.vstack()
+    content.align_center()
+    let aw = cogito.about_window("Tasks", "GPLv3 License")
+    .set_icon("sf:checklist")
+    .set_website("https://github.com/nickvdl/cogito")
+    .set_issue_url("https://github.com/nickvdl/cogito/issues")
+    content.add(aw)
+    dlg.add(content)
+    win.set_dialog(dlg)
+}
+
 : build_window(win = cogito.Window) (( -- )) {
     let total = len(tasks)
     let done = completed_count()
@@ -309,6 +322,9 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     let bar = cogito.appbar("Tasks", "$$done$$ of $$total$$ Done")
     .set_medium()
     .set_hexpand(true)
+    bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+        show_about_window(win)
+    })
     win.add(bar)
 
     win.add(build_main_content())

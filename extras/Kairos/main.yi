@@ -945,6 +945,18 @@ def status_text = cogito.label("Add a location to start")
     gear_btn.add_menu("Toggle °C / °F", (b = any) => {
         _toggle_units()
     })
+    gear_btn.add_menu("About Kairos", (b = any) => {
+        let dlg = cogito.dialog("")
+        let about_content = cogito.vstack()
+        about_content.align_center()
+        let aw = cogito.about_window("Kairos", "GPLv3 License")
+        .set_icon("sf:cloud.sun")
+        .set_website("https://github.com/nickvdl/cogito")
+        .set_issue_url("https://github.com/nickvdl/cogito/issues")
+        about_content.add(aw)
+        dlg.add(about_content)
+        win.set_dialog(dlg)
+    })
 
     location_list
     .set_gap(8)

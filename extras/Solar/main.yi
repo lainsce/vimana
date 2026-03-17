@@ -705,6 +705,18 @@ entry() (( -- )) {
     cal_bar.add_trailing_button("sf:calendar.badge.clock", (b = cogito.Button) => {
         select_day(-1)
     })
+    cal_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+        let dlg = cogito.dialog("")
+        let about_content = cogito.vstack()
+        about_content.align_center()
+        let aw = cogito.about_window("Solar", "GPLv3 License")
+        .set_icon("sf:calendar")
+        .set_website("https://github.com/nickvdl/cogito")
+        .set_issue_url("https://github.com/nickvdl/cogito/issues")
+        about_content.add(aw)
+        dlg.add(about_content)
+        win.set_dialog(dlg)
+    })
     main_content.add(cal_panel)
 
     evt_back_btn = event_panel.build_panel(

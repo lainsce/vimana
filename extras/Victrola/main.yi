@@ -2044,6 +2044,18 @@ entry() (( -- )) {
 
     build_sidebar(root)
     build_library_center(root)
+    library_bar_ref.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+        let dlg = cogito.dialog("")
+        let about_content = cogito.vstack()
+        about_content.align_center()
+        let aw = cogito.about_window("Victrola", "GPLv3 License")
+        .set_icon("sf:music.note")
+        .set_website("https://github.com/nickvdl/cogito")
+        .set_issue_url("https://github.com/nickvdl/cogito/issues")
+        about_content.add(aw)
+        dlg.add(about_content)
+        win.set_dialog(dlg)
+    })
     build_mix_panel(root)
     build_player_panel(root)
 

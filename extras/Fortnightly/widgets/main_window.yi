@@ -39,6 +39,18 @@ bring widgets.article_row
     sidebar_bar.add_trailing_button("sf:bookmark", (b = cogito.Button) => {
         on_sources()
     })
+    sidebar_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+        let dlg = cogito.dialog("")
+        let about_content = cogito.vstack()
+        about_content.align_center()
+        let aw = cogito.about_window("Fortnightly", "GPLv3 License")
+        .set_icon("sf:newspaper")
+        .set_website("https://github.com/nickvdl/cogito")
+        .set_issue_url("https://github.com/nickvdl/cogito/issues")
+        about_content.add(aw)
+        dlg.add(about_content)
+        win.set_dialog(dlg)
+    })
     list_panel.add(sidebar_bar)
 
     let list_scroll = cogito.scroller()

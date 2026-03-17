@@ -472,6 +472,18 @@ entry() (( -- )) {
     bar.add_trailing_button("sf:arrow.clockwise", (b = cogito.Button) => {
         reset_everything()
     })
+    bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+        let dlg = cogito.dialog("")
+        let about_content = cogito.vstack()
+        about_content.align_center()
+        let aw = cogito.about_window("Gafu", "GPLv3 License")
+        .set_icon("sf:paintpalette")
+        .set_website("https://github.com/nickvdl/cogito")
+        .set_issue_url("https://github.com/nickvdl/cogito/issues")
+        about_content.add(aw)
+        dlg.add(about_content)
+        win.set_dialog(dlg)
+    })
 
     right.add(bar)
     right.add(build_right_panel())

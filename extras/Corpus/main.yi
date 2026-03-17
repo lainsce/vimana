@@ -465,6 +465,18 @@ entry() (( -- )) {
         sidebar_panel, sidebar_bar, tag_list, tag_scroll, tag_fab,
         () => { show_tag_dialog(win) }
     )
+    sidebar_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+        let dlg = cogito.dialog("")
+        let about_content = cogito.vstack()
+        about_content.align_center()
+        let aw = cogito.about_window("Corpus", "GPLv3 License")
+        .set_icon("sf:book")
+        .set_website("https://github.com/nickvdl/cogito")
+        .set_issue_url("https://github.com/nickvdl/cogito/issues")
+        about_content.add(aw)
+        dlg.add(about_content)
+        win.set_dialog(dlg)
+    })
     home_layout.add(sidebar_panel)
 
     home.build_home(
