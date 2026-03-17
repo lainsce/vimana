@@ -2328,14 +2328,24 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
   double now = cogito_now();
   double dt = cogito_spring_dt; // frame-rate-independent delta-time
 
+  // disabled opacity: 12% container, 38% content (when no explicit opacity is set)
+  bool apply_disabled_opacity = n->disabled && !s->has_opacity && !n->opacity_set;
+
   if (cogito_prefers_reduced_motion) {
     float opacity = s->has_opacity ? s->opacity : (n->opacity_set ? n->opacity : 1.0f);
     if (opacity < 0.0f) opacity = 0.0f;
     if (opacity > 1.0f) opacity = 1.0f;
-    if (bg) *bg = cogito_apply_opacity(*bg, opacity);
-    if (text) *text = cogito_apply_opacity(*text, opacity);
-    if (border) *border = cogito_apply_opacity(*border, opacity);
-    if (selection) *selection = cogito_apply_opacity(*selection, opacity);
+    if (apply_disabled_opacity) {
+      if (bg) *bg = cogito_apply_opacity(*bg, 0.12f);
+      if (text) *text = cogito_apply_opacity(*text, 0.38f);
+      if (border) *border = cogito_apply_opacity(*border, 0.12f);
+      if (selection) *selection = cogito_apply_opacity(*selection, 0.38f);
+    } else {
+      if (bg) *bg = cogito_apply_opacity(*bg, opacity);
+      if (text) *text = cogito_apply_opacity(*text, opacity);
+      if (border) *border = cogito_apply_opacity(*border, opacity);
+      if (selection) *selection = cogito_apply_opacity(*selection, opacity);
+    }
     n->anim_inited = true;
     return;
   }
@@ -2360,6 +2370,12 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
     if (selection) {
       *selection = cogito_anim_color(n, *selection, &n->anim_selection, &n->anim_selection_from, &n->anim_selection_target, &n->anim_selection_start, now);
       *selection = cogito_apply_opacity(*selection, opacity);
+    }
+    if (apply_disabled_opacity) {
+      if (bg) *bg = cogito_apply_opacity(*bg, 0.12f);
+      if (text) *text = cogito_apply_opacity(*text, 0.38f);
+      if (border) *border = cogito_apply_opacity(*border, 0.12f);
+      if (selection) *selection = cogito_apply_opacity(*selection, 0.38f);
     }
     return;
   }
@@ -2439,6 +2455,13 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
       if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
     }
   }
+  // M3 disabled opacity: 12% container, 38% content (when no explicit opacity/disabled style)
+  if (apply_disabled_opacity) {
+    if (bg) *bg = cogito_apply_opacity(*bg, 0.12f);
+    if (text) *text = cogito_apply_opacity(*text, 0.38f);
+    if (border) *border = cogito_apply_opacity(*border, 0.12f);
+    if (selection) *selection = cogito_apply_opacity(*selection, 0.38f);
+  }
   (void)now; // used via cogito_anim_end_time
   // ---- State-Driven Typography: font weight spring (wght axis) ----
   // Hover/Focus/Selection states trigger a weight-axis shift instead of color-only.
@@ -2480,6 +2503,10 @@ static void cogito_anim_apply(CogitoNode* n, const CogitoStyle* s, CogitoColor* 
 // or if it's a button-like element with Surface variant
 static bool cogito_node_should_ripple(const CogitoNode* n) {
   if (!n) return false;
+
+  // Interactive components always ripple
+  if (n->kind == COGITO_CHECKBOX || n->kind == COGITO_SWITCH) return true;
+  if (n->kind == COGITO_CARD && n->on_action) return true;
 
   // Check class name for color variants
   if (n->class_name && n->class_name->data && n->class_name->data[0]) {

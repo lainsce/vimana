@@ -184,5 +184,19 @@ case COGITO_CHECKBOX: {
       0);
     }
   }
+      // Ripple effect (circular ripple centered on the box)
+      if (cogito_ripple_update(n)) {
+        float r_radius, r_alpha;
+        cogito_ripple_get(n, &r_radius, &r_alpha);
+        if (r_radius > 0 && r_alpha > 0) {
+          CogitoColor ripple_color = box_bg.a > 10 ? cogito_on_color(box_bg) : resolved_text;
+          ripple_color.a = (uint8_t)(255 * r_alpha);
+          int rcx = n->x + box / 2;
+          int rcy = cy + box / 2;
+          int clip_r = box + 12;
+          cogito_draw_circle_clipped(rcx, rcy, r_radius,
+            rcx - clip_r, rcy - clip_r, clip_r * 2, clip_r * 2, ripple_color);
+        }
+      }
       break;
 }

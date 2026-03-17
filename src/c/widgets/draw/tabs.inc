@@ -28,6 +28,19 @@ case COGITO_TABS: {
       int label_h = cogito_text_height_size(size);
       int indicator_target_w = 0;
 
+      // Per-tab hover detection
+      int tab_mx = 0, tab_my = 0;
+      bool tab_have_mouse = cogito_pointer_query(&tab_mx, &tab_my, NULL, NULL);
+      int hovered_tab = -1;
+      if (tab_have_mouse && !n->disabled && cogito_hit_rect(tab_mx, tab_my, n->x, n->y, n->w, n->h)) {
+        for (size_t ti = 0; ti < n->tab_len; ti++) {
+          int tvi = tabs_rtl ? (int)(n->tab_len - 1 - ti) : (int)ti;
+          int tsx0 = n->x + (n->w * tvi) / slot_count;
+          int tsx1 = n->x + (n->w * (tvi + 1)) / slot_count;
+          if (tab_mx >= tsx0 && tab_mx < tsx1) { hovered_tab = (int)ti; break; }
+        }
+      }
+
       for (size_t i = 0; i < n->tab_len; i++) {
         int vi = tabs_rtl ? (int)(n->tab_len - 1 - i) : (int)i;
         int sx0 = n->x + (n->w * vi) / slot_count;
@@ -54,6 +67,15 @@ case COGITO_TABS: {
         int label_y      = content_top + (has_icon ? (icon_size + icon_gap) : 0);
         bool is_sel      = (n->selected == (int)i);
         CogitoColor item_col = is_sel ? sel : text;
+
+        // Per-tab hover state layer (M3: 8% on-surface overlay)
+        bool tab_hovered = (hovered_tab == (int)i && !is_sel);
+        bool tab_pressed = (hovered_tab == (int)i && active);
+        if (tab_hovered || tab_pressed) {
+          CogitoColor state = cogito_node_state_layer_seed(n);
+          state.a = tab_pressed ? 28 : 20;
+          cogito_draw_rect(sx0, n->y, sw, n->h, state, 0);
+        }
 
         if (has_icon) {
           int icon_x = sx0 + (sw - icon_size) / 2;

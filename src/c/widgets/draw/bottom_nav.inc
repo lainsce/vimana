@@ -33,7 +33,8 @@ case COGITO_BOTTOM_NAV: {
   int label_size = medium_mode ? 14 : 12;
   int mx = 0;
   int my = 0;
-  bool have_mouse = cogito_pointer_query(&mx, &my, NULL, NULL);
+  bool button_down = false;
+  bool have_mouse = cogito_pointer_query(&mx, &my, &button_down, NULL);
 
   // ---- Selection indicator animation using spring_w ----
   double dt = cogito_spring_dt;
@@ -73,10 +74,12 @@ case COGITO_BOTTOM_NAV: {
     }
 
     // Get colors
-    CogitoColor hover_tint = s.has_text ? s.text : n->text_color;
     CogitoColor item_bg = selected
       ? (s.has_selection ? s.selection : n->selection_color)
-      : (s.has_bg ? cogito_mix(s.bg, hover_tint, 0.1f) : n->bg);
+      : (s.has_bg ? s.bg : n->bg);
+    // hover state layer: on-surface at 8% opacity
+    CogitoColor hover_state = cogito_node_state_layer_seed(n);
+    hover_state.a = (hover && button_down) ? 28 : 20;
     CogitoColor text_color = s.has_text ? s.text : n->text_color;
     CogitoColor icon_color = s.has_text ? s.text : n->text_color;
     if (selected) {
@@ -128,9 +131,9 @@ case COGITO_BOTTOM_NAV: {
             cogito_draw_rect(pill_x, pill_y, pill_w, pill_h, animated_bg, pill_h / 2);
           }
         } else if (hover) {
-          // Static hover pill
+          // M3 hover state layer pill
           int pill_x = item_x + (item_w - target_pill_w) / 2;
-          cogito_draw_rect(pill_x, n->y + pill_pad, target_pill_w, content_h, item_bg, content_h / 2);
+          cogito_draw_rect(pill_x, n->y + pill_pad, target_pill_w, content_h, hover_state, content_h / 2);
         }
       }
 
@@ -193,7 +196,7 @@ case COGITO_BOTTOM_NAV: {
             cogito_draw_rect(indicator_x, indicator_y, animated_w, animated_h, animated_bg, animated_h / 2);
           }
         } else if (hover) {
-          cogito_draw_rect(indicator_x, n->y + 8, base_indicator_w, base_indicator_h, item_bg, 16);
+          cogito_draw_rect(indicator_x, n->y + 8, base_indicator_w, base_indicator_h, hover_state, 16);
         }
       }
 

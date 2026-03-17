@@ -159,6 +159,13 @@ case COGITO_NAV_RAIL: {
       int indicator_h = COGITO_NAV_RAIL_EXPANDED_INDICATOR_HEIGHT;
       int bg_y = item_y + (item_step - indicator_h) / 2;
 
+      // Per-item hover state layer
+      if (hover && !selected) {
+        CogitoColor state = cogito_node_state_layer_seed(n);
+        state.a = 20;
+        cogito_draw_rect(expanded_lane_x, bg_y, expanded_lane_w, indicator_h, state, 99);
+      }
+
       bool has_icon = (n->nav_rail.icons && n->nav_rail.icons[i
       ]);
       bool has_label = (n->nav_rail.labels && n->nav_rail.labels[i
@@ -256,6 +263,16 @@ case COGITO_NAV_RAIL: {
     } else {
       int icon_x = n->x + (rail_w - icon_size) / 2;
       int icon_y = item_y + (n->nav_rail.no_label ? COGITO_NAV_RAIL_COLLAPSED_ICON_Y_OFFSET_NO_LABEL : COGITO_NAV_RAIL_COLLAPSED_ICON_Y_OFFSET);
+
+      // Per-item hover state layer for collapsed mode (M3)
+      if (hover && !selected) {
+        int base_indicator_h_hover = n->nav_rail.no_label ? COGITO_NAV_RAIL_COLLAPSED_INDICATOR_NO_LABEL_HEIGHT : COGITO_NAV_RAIL_COLLAPSED_INDICATOR_HEIGHT;
+        int base_indicator_w_hover = COGITO_NAV_RAIL_COLLAPSED_INDICATOR_WIDTH;
+        int hover_x = n->x + (rail_w - base_indicator_w_hover) / 2;
+        CogitoColor state = cogito_node_state_layer_seed(n);
+        state.a = 20;
+        cogito_draw_rect(hover_x, item_y, base_indicator_w_hover, base_indicator_h_hover, state, base_indicator_h_hover / 2);
+      }
 
       // Apply spring animation to collapsed indicator
       float scale = n->nav_rail.item_springs ? (float)n->nav_rail.item_springs[i].x : (selected ? 1.0f : 0.0f);

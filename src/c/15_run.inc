@@ -3097,6 +3097,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
 
     cogito_tooltip_hovered = NULL;
     cogito_draw_node(win);
+    cogito_draw_focus_ring();
     if (cogito_menu.open) cogito_draw_menu();
     if (cogito_inspector_open) {
       cogito_draw_inspector_highlight();

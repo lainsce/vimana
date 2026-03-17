@@ -142,6 +142,21 @@ case COGITO_SWITCH: {
       if (knob_r > knob_h / 2) knob_r = knob_h / 2;
       cogito_draw_rect(kx, ky, knob_w, knob_h, knob_col, knob_r);
 
+      // Ripple effect (circular ripple centered on knob)
+      if (cogito_ripple_update(n)) {
+        float r_radius, r_alpha;
+        cogito_ripple_get(n, &r_radius, &r_alpha);
+        if (r_radius > 0 && r_alpha > 0) {
+          CogitoColor ripple_color = cogito_on_color(knob_col);
+          ripple_color.a = (uint8_t)(255 * r_alpha);
+          int rcx = kx + knob_w / 2;
+          int rcy = ky + knob_h / 2;
+          int clip_r = 20; // 40dp state layer circle
+          cogito_draw_circle_clipped(rcx, rcy, r_radius,
+            rcx - clip_r, rcy - clip_r, clip_r * 2, clip_r * 2, ripple_color);
+        }
+      }
+
       // Keep animation ticking while springs are active
       if (cogito_spring_active(&n->spring_x, (double)center_target) ||
           cogito_spring_active(&n->spring_h, (double)knob_h_target)) {

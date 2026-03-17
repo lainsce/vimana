@@ -41,6 +41,11 @@ case COGITO_CONTENT_LIST: {
                                     : cogito_cached_surface_container;
   if (plain_list) unsel_bg = cogito_rgba(0, 0, 0, 0);
 
+  // Per-item hover detection
+  int cl_mx = 0, cl_my = 0;
+  bool cl_button_down = false;
+  bool cl_have_mouse = cogito_pointer_query(&cl_mx, &cl_my, &cl_button_down, NULL);
+
   // Draw children with proper rounded corners based on position
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* child = n->children[i];
@@ -111,6 +116,14 @@ case COGITO_CONTENT_LIST: {
       // Draw unselected item background with position-specific rounded corners
       if (item_bg.a > 0) {
         cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, item_bg, tl, tr, br, bl);
+      }
+      // Per-item hover state layer (M3)
+      bool item_hover = cl_have_mouse && !n->disabled &&
+                         cogito_hit_rect(cl_mx, cl_my, child->x, child->y, child->w, child->h);
+      if (item_hover) {
+        CogitoColor state = cogito_node_state_layer_seed(n);
+        state.a = cl_button_down ? 28 : 20;
+        cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, state, tl, tr, br, bl);
       }
       // Draw the child
       cogito_draw_node(child);

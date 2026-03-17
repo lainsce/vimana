@@ -126,6 +126,17 @@ case COGITO_CARD: {
     }
   }
 
+  // Ripple effect for clickable cards
+  if (n->on_action && cogito_ripple_update(n)) {
+    float r_radius, r_alpha;
+    cogito_ripple_get(n, &r_radius, &r_alpha);
+    if (r_radius > 0 && r_alpha > 0) {
+      CogitoColor ripple_color = text_color;
+      ripple_color.a = (uint8_t)(255 * r_alpha);
+      cogito_draw_circle_clipped_node(n, &s, radius, n->x + n->ripple_x, n->y + n->ripple_y, r_radius, ripple_color);
+    }
+  }
+
   if (can_clip) {
     cogito_backend->end_scissor();
   }

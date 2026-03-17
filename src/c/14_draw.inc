@@ -1295,6 +1295,33 @@ static void cogito_bin_scope_end_for_node(const CogitoBinOverlayScopeState* stat
 
 static void cogito_draw_node(CogitoNode* n);
 
+// Keyboard Focus Indicator: draws a 3dp ring around the focused node
+// with 2dp offset, using the Secondary color from the current theme.
+static void cogito_draw_focus_ring(void) {
+  if (!cogito_focused || !cogito_focus_visible) return;
+  if (cogito_focused->disabled) return;
+  CogitoNode* n = cogito_focused;
+  // Ring parameters: 3dp thick, 2dp offset from component bounds
+  int offset = 2;
+  int thickness = 3;
+  int rx = n->x - offset;
+  int ry = n->y - offset;
+  int rw = n->w + offset * 2;
+  int rh = n->h + offset * 2;
+  if (rw < 1 || rh < 1) return;
+  // Use Secondary color as the focus ring color
+  CogitoColor ring_color = cogito_cached_secondary;
+  if (ring_color.a == 0) ring_color = cogito_rgba(103, 80, 164, 255); // fallback purple
+  // Determine radius from node — add offset so the ring follows the component shape
+  int r = n->radius_set ? n->border_radius : 0;
+  CogitoStyle ns = cogito_theme_resolve_node(n);
+  if (ns.has_radius) r = ns.radius;
+  // For pill-shaped components (radius >= h/2), keep the pill shape
+  if (r >= n->h / 2) r = rh / 2;
+  else if (r > 0) r = r + offset;
+  cogito_draw_rect_lines(rx, ry, rw, rh, ring_color, r, thickness);
+}
+
 #include "widgets/draw/toasts.inc"
 
 static int cogito_shape_intersections(const float* px, const float* py, int point_count, int y, float* out_xs, int max_xs) {

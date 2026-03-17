@@ -502,7 +502,12 @@ pub class App {
     }
 }
 
-pub class Window {
+.: Component() (( -- )) {
+    :: set_class(cls = string) (( any )) {}
+    :: set_id(id = string) (( any )) {}
+}
+
+pub class Window : Component {
     :: add(this, child = any) (( Window )) {
         __cogito_container_add(this, child)
         return this
@@ -581,7 +586,7 @@ pub class Window {
     }
 }
 
-pub class AppBar {
+pub class AppBar : Component {
     :: set_type(this, appbar_type = num) (( AppBar )) {
         if appbar_type == 0 {
             __cogito_node_set_class(this, "search")
@@ -681,7 +686,7 @@ pub class AppBar {
     }
 }
 
-pub class FABMenu {
+pub class FABMenu : Component {
     :: add_item(this, label = string, icon = any, handler = any) (( FABMenu )) {
         __cogito_fab_menu_add_item(this, label, icon, handler)
         return this
@@ -720,7 +725,7 @@ pub class FABMenu {
     }
 }
 
-pub class Image {
+pub class Image : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Image )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -805,7 +810,7 @@ pub class Image {
     }
 }
 
-pub class WebView {
+pub class WebView : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( WebView )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -885,7 +890,7 @@ pub class WebView {
     }
 }
 
-pub class Dialog {
+pub class Dialog : Component {
     :: add(this, child = any) (( Dialog )) {
         __cogito_container_add(this, child)
         return this
@@ -940,7 +945,7 @@ pub class Dialog {
     }
 }
 
-pub class DialogSlot {
+pub class DialogSlot : Component {
     :: show(this, dialog = any) (( DialogSlot )) {
         __cogito_dialog_slot_show(this, dialog)
         return this
@@ -975,7 +980,7 @@ pub class DialogSlot {
     }
 }
 
-pub class VStack {
+pub class VStack : Component {
     :: add(this, child = any) (( VStack )) {
         __cogito_container_add(this, child)
         return this
@@ -1058,7 +1063,7 @@ pub class VStack {
     }
 }
 
-pub class Revealer {
+pub class Revealer : Component {
     :: add(this, child = any) (( Revealer )) {
         __cogito_container_add(this, child)
         return this
@@ -1105,7 +1110,7 @@ pub class Revealer {
     }
 }
 
-pub class Bin {
+pub class Bin : Component {
     :: add(this, child = any) (( Bin )) {
         __cogito_container_add(this, child)
         return this
@@ -1152,7 +1157,7 @@ pub class Bin {
     }
 }
 
-pub class HStack {
+pub class HStack : Component {
     :: add(this, child = any) (( HStack )) {
         __cogito_container_add(this, child)
         return this
@@ -1235,7 +1240,7 @@ pub class HStack {
     }
 }
 
-pub class ZStack {
+pub class ZStack : Component {
     :: add(this, child = any) (( ZStack )) {
         __cogito_container_add(this, child)
         return this
@@ -1303,7 +1308,7 @@ pub class ZStack {
     }
 }
 
-pub class Fixed {
+pub class Fixed : Component {
     :: add(this, child = any) (( Fixed )) {
         __cogito_container_add(this, child)
         return this
@@ -1354,7 +1359,7 @@ pub class Fixed {
     }
 }
 
-pub class Scroller {
+pub class Scroller : Component {
     :: add(this, child = any) (( Scroller )) {
         __cogito_container_add(this, child)
         return this
@@ -1421,7 +1426,7 @@ pub class Scroller {
     }
 }
 
-pub class Carousel {
+pub class Carousel : Component {
     :: add(this, child = any) (( Carousel )) {
         __cogito_container_add(this, child)
         return this
@@ -1451,7 +1456,7 @@ pub class Carousel {
     }
 }
 
-pub class CarouselItem {
+pub class CarouselItem : Component {
     :: add(this, child = any) (( CarouselItem )) {
         __cogito_container_add(this, child)
         return this
@@ -1486,7 +1491,7 @@ pub class CarouselItem {
     }
 }
 
-pub class Grid {
+pub class Grid : Component {
     :: add(this, child = any, col = num, row = num, w = num, h = num) (( Grid )) {
         __cogito_grid_add(this, child, col, row, w, h)
         return this
@@ -1586,7 +1591,7 @@ pub class Grid {
     }
 }
 
-pub class Label {
+pub class Label : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Label )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -1686,7 +1691,7 @@ pub class Label {
     }
 }
 
-pub class Button {
+pub class Button : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Button )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -1836,7 +1841,7 @@ pub class Button {
     }
 }
     -- Icon Button specific methods
-pub class IconButton {
+pub class IconButton : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( IconButton )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2021,7 +2026,7 @@ pub class IconButton {
     }
 }
 
-pub class Checkbox {
+pub class Checkbox : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Checkbox )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2095,7 +2100,7 @@ pub class Checkbox {
     }
 }
 
-pub class Switch {
+pub class Switch : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Switch )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2168,7 +2173,7 @@ pub class Switch {
     }
 }
 
-pub class SearchField {
+pub class SearchField : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( SearchField )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2230,7 +2235,7 @@ pub class SearchField {
     }
 }
 
-pub class TextField {
+pub class TextField : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( TextField )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2345,7 +2350,7 @@ pub class TextField {
     }
 }
 
-pub class TextView {
+pub class TextView : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( TextView )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2423,7 +2428,7 @@ pub class TextView {
     }
 }
 
-pub class DatePicker {
+pub class DatePicker : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( DatePicker )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2486,7 +2491,7 @@ pub class DatePicker {
     }
 }
 
-pub class Stepper {
+pub class Stepper : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Stepper )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2537,7 +2542,7 @@ pub class Stepper {
     }
 }
 
-pub class Dropdown {
+pub class Dropdown : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Dropdown )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2612,7 +2617,7 @@ pub class Dropdown {
     }
 }
 
-pub class Slider {
+pub class Slider : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Slider )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2799,7 +2804,7 @@ pub class Slider {
     }
 }
 
-pub class Tabs {
+pub class Tabs : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Tabs )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -2870,7 +2875,7 @@ pub class Tabs {
     }
 }
 
-pub class ButtonGroup {
+pub class ButtonGroup : Component {
     :: add(this, child = any) (( ButtonGroup )) {
         __cogito_container_add(this, child)
         return this
@@ -2932,7 +2937,7 @@ pub class ButtonGroup {
     }
 }
 
-pub class ViewSwitcher {
+pub class ViewSwitcher : Component {
     :: add(this, id = string, builder = any) (( ViewSwitcher )) {
         __cogito_view_switcher_add_lazy(this, id, builder)
         return this
@@ -2992,7 +2997,7 @@ pub class ViewSwitcher {
     }
 }
 
-pub class Progress {
+pub class Progress : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Progress )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3075,7 +3080,7 @@ pub class Progress {
     }
 }
 
-pub class Divider {
+pub class Divider : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Divider )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3129,7 +3134,7 @@ pub class Divider {
     }
 }
 
-pub class Card {
+pub class Card : Component {
     :: add(this, child = any) (( Card )) {
         __cogito_container_add(this, child)
         return this
@@ -3212,7 +3217,7 @@ pub class Card {
     }
 }
 
-pub class Avatar {
+pub class Avatar : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Avatar )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3251,7 +3256,7 @@ pub class Avatar {
     }
 }
 
-pub class Badge {
+pub class Badge : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Badge )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3285,7 +3290,7 @@ pub class Badge {
     }
 }
 
-pub class Banner {
+pub class Banner : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Banner )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3328,7 +3333,7 @@ pub class Banner {
     }
 }
 
-pub class BottomSheet {
+pub class BottomSheet : Component {
     :: add(this, child = any) (( BottomSheet )) {
         __cogito_container_add(this, child)
         return this
@@ -3371,7 +3376,7 @@ pub class BottomSheet {
     }
 }
 
-pub class SideSheet {
+pub class SideSheet : Component {
     :: add(this, child = any) (( SideSheet )) {
         __cogito_container_add(this, child)
         return this
@@ -3414,7 +3419,7 @@ pub class SideSheet {
     }
 }
 
-pub class TimePicker {
+pub class TimePicker : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( TimePicker )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3471,7 +3476,7 @@ pub class TimePicker {
     }
 }
 
-pub class TreeView {
+pub class TreeView : Component {
     :: add(this, child = any) (( TreeView )) {
         __cogito_container_add(this, child)
         return this
@@ -3515,7 +3520,7 @@ pub class TreeView {
     }
 }
 
-pub class ColorPicker {
+pub class ColorPicker : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( ColorPicker )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3582,7 +3587,7 @@ pub class ColorPicker {
     }
 }
 
-pub class FontButton {
+pub class FontButton : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( FontButton )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3648,7 +3653,7 @@ pub class FontButton {
     }
 }
 
-pub class Toasts {
+pub class Toasts : Component {
     :: add(this, child = any) (( Toasts )) {
         __cogito_container_add(this, child)
         return this
@@ -3696,7 +3701,7 @@ pub class Toasts {
     }
 }
 
-pub class Toast {
+pub class Toast : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Toast )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3752,7 +3757,7 @@ pub class Toast {
     }
 }
 
-pub class Toolbar {
+pub class Toolbar : Component {
     :: add(this, child = any) (( Toolbar )) {
         __cogito_container_add(this, child)
         return this
@@ -3789,7 +3794,7 @@ pub class Toolbar {
     }
 }
 
-pub class Chip {
+pub class Chip : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Chip )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3855,7 +3860,7 @@ pub class Chip {
     }
 }
 
-pub class FAB {
+pub class FAB : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( FAB )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -3930,7 +3935,7 @@ pub class FAB {
     }
 }
 
-pub class NavRail {
+pub class NavRail : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( NavRail )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -4000,7 +4005,7 @@ pub class NavRail {
     }
 }
 
-pub class BottomNav {
+pub class BottomNav : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( BottomNav )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -4521,7 +4526,7 @@ pub class State {
 
 -- --- New Widget Classes ---
 
-pub class ActiveIndicator {
+pub class ActiveIndicator : Component {
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( ActiveIndicator )) {
         __cogito_container_set_margins(this, top, right, bottom, left)
         return this
@@ -4540,7 +4545,7 @@ pub class ActiveIndicator {
     }
 }
 
-pub class SwitchBar {
+pub class SwitchBar : Component {
     :: set_checked(this, checked = bool) (( SwitchBar )) {
         __cogito_switchbar_set_checked(this, checked)
         return this
@@ -4582,7 +4587,7 @@ pub class SwitchBar {
     }
 }
 
-pub class DrawingArea {
+pub class DrawingArea : Component {
     :: on_press(this, handler = any) (( DrawingArea )) {
         __cogito_drawing_area_on_press(this, handler)
         return this
@@ -4681,7 +4686,7 @@ pub class Canvas {
     }
 }
 
-pub class Shape {
+pub class Shape : Component {
     :: add(this, child = any) (( Shape )) {
         __cogito_container_add(this, child)
         return this
@@ -4759,7 +4764,7 @@ pub class Shape {
     }
 }
 
-pub class ContentList {
+pub class ContentList : Component {
     :: add(this, child = any) (( ContentList )) {
         __cogito_container_add(this, child)
         return this
@@ -4850,7 +4855,7 @@ pub class ContentList {
     }
 }
 
-pub class EmptyPage {
+pub class EmptyPage : Component {
     :: set_description(this, desc = string) (( EmptyPage )) {
         __cogito_empty_page_set_description(this, desc)
         return this
@@ -4901,7 +4906,7 @@ pub class EmptyPage {
     }
 }
 
-pub class TipView {
+pub class TipView : Component {
     :: set_title(this, title = string) (( TipView )) {
         __cogito_tip_view_set_title(this, title)
         return this
@@ -4928,7 +4933,7 @@ pub class TipView {
     }
 }
 
-pub class SettingsWindow {
+pub class SettingsWindow : Component {
     :: add(this, child = any) (( SettingsWindow )) {
         __cogito_container_add(this, child)
         return this
@@ -4963,7 +4968,7 @@ pub class SettingsWindow {
     }
 }
 
-pub class SettingsPage {
+pub class SettingsPage : Component {
     :: add(this, child = any) (( SettingsPage )) {
         __cogito_container_add(this, child)
         return this
@@ -4998,7 +5003,7 @@ pub class SettingsPage {
     }
 }
 
-pub class SettingsList {
+pub class SettingsList : Component {
     :: add(this, child = any) (( SettingsList )) {
         __cogito_container_add(this, child)
         return this
@@ -5029,7 +5034,7 @@ pub class SettingsList {
     }
 }
 
-pub class SettingsRow {
+pub class SettingsRow : Component {
     :: add(this, child = any) (( SettingsRow )) {
         __cogito_container_add(this, child)
         return this
@@ -5060,7 +5065,7 @@ pub class SettingsRow {
     }
 }
 
-pub class WelcomeScreen {
+pub class WelcomeScreen : Component {
     :: set_description(this, desc = string) (( WelcomeScreen )) {
         __cogito_welcome_screen_set_description(this, desc)
         return this
@@ -5111,7 +5116,7 @@ pub class WelcomeScreen {
     }
 }
 
-pub class ViewDual {
+pub class ViewDual : Component {
     :: add(this, child = any) (( ViewDual )) {
         __cogito_container_add(this, child)
         return this
@@ -5161,7 +5166,7 @@ pub class ViewDual {
     }
 }
 
-pub class ViewChooser {
+pub class ViewChooser : Component {
     :: set_items(this, items = [string]) (( ViewChooser )) {
         __cogito_view_chooser_set_items(this, items)
         return this
@@ -5188,7 +5193,7 @@ pub class ViewChooser {
     }
 }
 
-pub class AboutWindow {
+pub class AboutWindow : Component {
     :: set_icon(this, icon = string) (( AboutWindow )) {
         __cogito_about_window_set_icon(this, icon)
         return this
@@ -5223,7 +5228,7 @@ pub class AboutWindow {
     }
 }
 
-pub class SplitButton {
+pub class SplitButton : Component {
     :: add_menu(this, label = string, handler = any) (( SplitButton )) {
         __cogito_split_button_add_menu(this, label, handler)
         return this
