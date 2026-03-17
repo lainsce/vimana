@@ -32,6 +32,10 @@ gst_dep = dependency('gstreamer-1.0', required : false)
 # FriBidi for Unicode Bidirectional Algorithm (RTL text support)
 fribidi_dep = dependency('fribidi', required : false)
 
+# librsvg + Cairo for full-fidelity SVG rendering on Linux
+rsvg_dep = dependency('librsvg-2.0', version : '>=2.46', required : false)
+cairo_dep = dependency('cairo', required : false)
+
 cogito_c_args = []
 if sdl3_image_dep.found()
   cogito_c_args += ['-DCOGITO_HAS_SDL3_IMAGE=1']
@@ -41,6 +45,9 @@ if gst_dep.found()
 endif
 if fribidi_dep.found()
   cogito_c_args += ['-DCOGITO_HAS_FRIBIDI=1']
+endif
+if rsvg_dep.found() and cairo_dep.found()
+  cogito_c_args += ['-DCOGITO_HAS_RSVG=1']
 endif
 
 cogito_deps = [
@@ -56,6 +63,9 @@ if gst_dep.found()
 endif
 if fribidi_dep.found()
   cogito_deps += fribidi_dep
+endif
+if rsvg_dep.found() and cairo_dep.found()
+  cogito_deps += [rsvg_dep, cairo_dep]
 endif
 
 # Detect target platform
@@ -73,8 +83,13 @@ cogito_link_args = []
 
 # macOS-specific: Objective-C autorelease pool and Cocoa frameworks
 if target_system == 'darwin'
-  cogito_src += files('c/backend/cocoa_autoreleasepool.mm', 'c/backend/font_dialog_macos.mm')
+  cogito_src += files('c/backend/cocoa_autoreleasepool.mm', 'c/backend/font_dialog_macos.mm', 'c/backend/svg_native_macos.mm')
   cogito_link_args += ['-framework', 'Cocoa', '-framework', 'CoreGraphics', '-framework', 'Foundation', '-framework', 'AppKit', '-framework', 'CoreText']
+endif
+
+# Linux-specific: librsvg SVG renderer
+if target_system == 'linux' and rsvg_dep.found() and cairo_dep.found()
+  cogito_src += files('c/backend/svg_native_linux.c')
 endif
 
 # Build shared library

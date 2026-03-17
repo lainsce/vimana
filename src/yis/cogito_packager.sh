@@ -2,6 +2,98 @@
 
 set -u
 
+# ---- Embed resources mode: read *.cogresource.toml, generate _cogito_embedded_svgs.h ----
+if [ "${1:-}" = "--embed-resources" ]; then
+  embed_entry=${2:-}
+  embed_outdir=${3:-"."}
+  if [ -z "$embed_entry" ]; then
+    exit 0
+  fi
+
+  case "$embed_entry" in
+    */*) embed_srcdir=$(dirname "$embed_entry") ;;
+    *) embed_srcdir="." ;;
+  esac
+
+  header_path="$embed_outdir/_cogito_embedded_svgs.h"
+
+  # Find *.cogresource.toml in the entry's directory
+  toml_file=""
+  for f in "$embed_srcdir"/*.cogresource.toml; do
+    [ -f "$f" ] || continue
+    toml_file="$f"
+    break
+  done
+
+  if [ -z "$toml_file" ]; then
+    rm -f "$header_path"
+    exit 0
+  fi
+
+  # Parse TOML: extract file paths from [[cogresource.file]] entries (src = "",")
+  # Simple line-by-line parser sufficient for this structured format.
+  svg_files=""
+  svg_count=0
+  while IFS= read -r line; do
+    # Strip leading/trailing whitespace
+    line=$(printf '%s' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    # Skip comments and empty lines
+    case "$line" in
+      ""|\#*) continue ;;
+    esac
+    # Match: src = "path"
+    case "$line" in
+      src\ =\ \"*\"|src=\"*\")
+        fpath=$(printf '%s' "$line" | sed 's/^src[[:space:]]*=[[:space:]]*"//;s/"[[:space:]]*$//')
+        if [ -n "$fpath" ]; then
+          # Resolve relative to the TOML file's directory
+          case "$fpath" in
+            /*) full="$fpath" ;;
+            *) full="$embed_srcdir/$fpath" ;;
+          esac
+          if [ -f "$full" ]; then
+            svg_files="$svg_files $full"
+            svg_count=$((svg_count + 1))
+          fi
+        fi
+        ;;
+    esac
+  done < "$toml_file"
+
+  if [ "$svg_count" -eq 0 ]; then
+    rm -f "$header_path"
+    exit 0
+  fi
+
+  # Generate the header
+  {
+    printf '// Auto-generated from %s\n' "$(basename "$toml_file")"
+    printf '// Do not edit.\n\n'
+
+    for f in $svg_files; do
+      bname=$(basename "$f")
+      cid=$(printf '%s' "$bname" | sed 's/[^A-Za-z0-9_]/_/g')
+      printf 'static const char _cogito_esvg_%s_b64[] =\n' "$cid"
+      base64 < "$f" | while IFS= read -r line; do
+        printf '  "%s"\n' "$line"
+      done
+      printf ';\n\n'
+    done
+
+    printf 'static const struct { const char *name; const char *b64; } _cogito_esvg_table[] = {\n'
+    for f in $svg_files; do
+      bname=$(basename "$f")
+      cid=$(printf '%s' "$bname" | sed 's/[^A-Za-z0-9_]/_/g')
+      printf '  { "%s", _cogito_esvg_%s_b64 },\n' "$bname" "$cid"
+    done
+    printf '};\n'
+    printf '#define COGITO_ESVG_COUNT %d\n' "$svg_count"
+  } > "$header_path"
+
+  exit 0
+fi
+# ---- End embed resources mode ----
+
 entry_path=${1:-}
 out_path=${2:-}
 app_name=${3:-}

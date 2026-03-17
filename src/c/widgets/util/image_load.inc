@@ -1,5 +1,34 @@
 // Image loading (preserves original colors, no white mask conversion)
 
+// --- Embedded resource registry (SVGs baked into the binary as base64) ---
+typedef struct {
+  const char *name;
+  const unsigned char *data;
+  size_t len;
+} CogitoEmbeddedResource;
+
+#define COGITO_MAX_EMBEDDED 64
+static CogitoEmbeddedResource cogito_embedded_resources[COGITO_MAX_EMBEDDED];
+static size_t cogito_embedded_count = 0;
+
+void cogito_register_embedded_resource(const char* name, const unsigned char* data, size_t len) {
+  if (!name || !data || len == 0) return;
+  if (cogito_embedded_count >= COGITO_MAX_EMBEDDED) return;
+  cogito_embedded_resources[cogito_embedded_count++] =
+    (CogitoEmbeddedResource){ name, data, len };
+}
+
+static const unsigned char* cogito_find_embedded_resource(const char* name, size_t* out_len) {
+  if (!name) return NULL;
+  for (size_t i = 0; i < cogito_embedded_count; i++) {
+    if (strcmp(cogito_embedded_resources[i].name, name) == 0) {
+      if (out_len) *out_len = cogito_embedded_resources[i].len;
+      return cogito_embedded_resources[i].data;
+    }
+  }
+  return NULL;
+}
+
 static char cogito_script_dir[PATH_MAX] = {0};
 
 void cogito_set_script_dir(const char* dir) {
@@ -93,6 +122,63 @@ static bool cogito_image_resolve_path(const char* path, char* resolved, size_t r
       }
     }
   }
+
+  // Try app bundle Resources directory (macOS .app/Contents/Resources/,
+  // Linux executable sibling directory ../share/ or ../Resources/)
+#if defined(__APPLE__)
+  {
+    char exe_path[PATH_MAX];
+    uint32_t exe_size = sizeof(exe_path);
+    if (_NSGetExecutablePath(exe_path, &exe_size) == 0) {
+      // exe is at <bundle>/Contents/MacOS/<name>, Resources is at <bundle>/Contents/Resources/
+      char* last_slash = strrchr(exe_path, '/');
+      if (last_slash) {
+        *last_slash = 0;  // now <bundle>/Contents/MacOS
+        char* macos_slash = strrchr(exe_path, '/');
+        if (macos_slash) {
+          *macos_slash = 0;  // now <bundle>/Contents
+          char res_dir[PATH_MAX];
+          snprintf(res_dir, sizeof(res_dir), "%s/Resources", exe_path);
+          for (int i = 0; i < 2; i++) {
+            const char* c = candidates[i];
+            if (!c || !c[0]) continue;
+            if (i == 1 && strcmp(candidates[0], c) == 0) continue;
+            if (cogito_try_join_path(res_dir, c, resolved, resolved_cap)) return true;
+          }
+        }
+      }
+    }
+  }
+#elif defined(__linux__)
+  {
+    char exe_path[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len > 0) {
+      exe_path[len] = 0;
+      char* last_slash = strrchr(exe_path, '/');
+      if (last_slash) {
+        *last_slash = 0;  // directory containing executable
+        // Try sibling Resources/ directory
+        char res_dir[PATH_MAX];
+        snprintf(res_dir, sizeof(res_dir), "%s/Resources", exe_path);
+        for (int i = 0; i < 2; i++) {
+          const char* c = candidates[i];
+          if (!c || !c[0]) continue;
+          if (i == 1 && strcmp(candidates[0], c) == 0) continue;
+          if (cogito_try_join_path(res_dir, c, resolved, resolved_cap)) return true;
+        }
+        // Try ../share/<path> for XDG-style layout
+        snprintf(res_dir, sizeof(res_dir), "%s/../share", exe_path);
+        for (int i = 0; i < 2; i++) {
+          const char* c = candidates[i];
+          if (!c || !c[0]) continue;
+          if (i == 1 && strcmp(candidates[0], c) == 0) continue;
+          if (cogito_try_join_path(res_dir, c, resolved, resolved_cap)) return true;
+        }
+      }
+    }
+  }
+#endif
 
   // Try current working directory
   if (getcwd(resolved, resolved_cap)) {
@@ -268,6 +354,64 @@ static bool cogito_image_load_file_texture(const char* path, int target_w, int t
                                            float* out_avg_lum) {
   if (!path || !path[0] || !cogito_backend || !cogito_backend->texture_create) return false;
 
+  // Check for embedded SVG resources before file resolution
+  size_t embedded_len = 0;
+  const unsigned char* embedded_data = cogito_find_embedded_resource(path, &embedded_len);
+
+#if defined(__APPLE__) || defined(COGITO_HAS_RSVG)
+  if (embedded_data && embedded_len > 0) {
+    int bucket_w = cogito_image_bucket_dim(target_w);
+    int bucket_h = cogito_image_bucket_dim(target_h);
+    char cache_key[PATH_MAX + 64];
+    if (bucket_w > 0 || bucket_h > 0) {
+      snprintf(cache_key, sizeof(cache_key), "embedded:%s#%d:%d", path, bucket_w, bucket_h);
+    } else {
+      snprintf(cache_key, sizeof(cache_key), "embedded:%s#orig", path);
+    }
+    CogitoImageCacheEntry* cached_e = cogito_image_cache_find(cache_key);
+    if (cached_e && cached_e->texture) {
+      cached_e->refcount++;
+      if (out) *out = cached_e->texture;
+      if (out_w) *out_w = cached_e->w;
+      if (out_h) *out_h = cached_e->h;
+      if (out_avg_lum) *out_avg_lum = cached_e->avg_lum;
+      return true;
+    }
+    extern unsigned char* cogito_svg_render_native_from_data(const unsigned char*, size_t, int, int, int*, int*);
+    int render_w = (bucket_w > 0) ? bucket_w : 256;
+    int render_h = (bucket_h > 0) ? bucket_h : 256;
+    int sw = 0, sh = 0;
+    unsigned char* pixels = cogito_svg_render_native_from_data(embedded_data, embedded_len, render_w, render_h, &sw, &sh);
+    if (pixels && sw > 0 && sh > 0) {
+      float avg_lum = 0.5f;
+      {
+        double total = 0.0; int count = 0;
+        int step = (sw > 64 || sh > 64) ? 8 : 2;
+        for (int sy = 0; sy < sh; sy += step) {
+          for (int sx = 0; sx < sw; sx += step) {
+            const unsigned char* px = pixels + ((size_t)sy * (size_t)sw + (size_t)sx) * 4u;
+            total += 0.299 * px[0] + 0.587 * px[1] + 0.114 * px[2];
+            count++;
+          }
+        }
+        avg_lum = (count > 0) ? (float)(total / (count * 255.0)) : 0.5f;
+      }
+      CogitoTexture* tex = cogito_backend->texture_create(sw, sh, pixels, 4);
+      free(pixels);
+      if (tex) {
+        (void)cogito_image_cache_add(cache_key, tex, sw, sh, avg_lum);
+        if (out) *out = tex;
+        if (out_w) *out_w = sw;
+        if (out_h) *out_h = sh;
+        if (out_avg_lum) *out_avg_lum = avg_lum;
+        return true;
+      }
+    } else {
+      free(pixels);
+    }
+  }
+#endif
+
   // Resolve the path
   char resolved_path[PATH_MAX];
   if (!cogito_image_resolve_path(path, resolved_path, sizeof(resolved_path))) {
@@ -293,6 +437,54 @@ static bool cogito_image_load_file_texture(const char* path, int target_w, int t
     if (out_avg_lum) *out_avg_lum = cached->avg_lum;
     return true;
   }
+
+  // Detect SVG files and try native rendering (macOS: NSImage) for full
+  // filter/gradient/mask support that nanosvg drops.
+  bool is_svg = false;
+  {
+    size_t pl = strlen(resolved_path);
+    if (pl >= 4 && strcasecmp(resolved_path + pl - 4, ".svg") == 0) is_svg = true;
+  }
+
+#if defined(__APPLE__) || defined(COGITO_HAS_RSVG)
+  if (is_svg) {
+    extern unsigned char* cogito_svg_render_native(const char*, int, int, int*, int*);
+    int render_w = (bucket_w > 0) ? bucket_w : 256;
+    int render_h = (bucket_h > 0) ? bucket_h : 256;
+    int sw = 0, sh = 0;
+    unsigned char* pixels = cogito_svg_render_native(resolved_path, render_w, render_h, &sw, &sh);
+    if (pixels && sw > 0 && sh > 0) {
+      // Compute average luminance
+      float avg_lum = 0.5f;
+      {
+        double total = 0.0; int count = 0;
+        int step = (sw > 64 || sh > 64) ? 8 : 2;
+        for (int sy = 0; sy < sh; sy += step) {
+          for (int sx = 0; sx < sw; sx += step) {
+            const unsigned char* px = pixels + ((size_t)sy * (size_t)sw + (size_t)sx) * 4u;
+            total += 0.299 * px[0] + 0.587 * px[1] + 0.114 * px[2];
+            count++;
+          }
+        }
+        avg_lum = (count > 0) ? (float)(total / (count * 255.0)) : 0.5f;
+      }
+      CogitoTexture* tex = cogito_backend->texture_create(sw, sh, pixels, 4);
+      free(pixels);
+      if (tex) {
+        (void)cogito_image_cache_add(cache_key, tex, sw, sh, avg_lum);
+        if (out) *out = tex;
+        if (out_w) *out_w = sw;
+        if (out_h) *out_h = sh;
+        if (out_avg_lum) *out_avg_lum = avg_lum;
+        return true;
+      }
+    } else {
+      free(pixels);
+    }
+  }
+#else
+  (void)is_svg;
+#endif
 
 #if defined(COGITO_HAS_SDL3_IMAGE)
   SDL_Surface* src = IMG_Load(resolved_path);

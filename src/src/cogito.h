@@ -522,6 +522,9 @@ void cogito_load_sum_file(const char *path);
 void cogito_load_sum_inline(const char *src);
 void cogito_set_script_dir(const char *dir);
 const char *cogito_get_script_dir(void);
+
+// Embedded resources (SVGs baked into binaries as base64)
+void cogito_register_embedded_resource(const char *name, const unsigned char *data, size_t len);
 bool cogito_debug_style(void);
 void cogito_style_dump(cogito_node *node);
 void cogito_style_dump_tree(cogito_node *root, int depth);

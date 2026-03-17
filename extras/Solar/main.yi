@@ -710,7 +710,7 @@ entry() (( -- )) {
         let about_content = cogito.vstack()
         about_content.align_center()
         let aw = cogito.about_window("Solar", "GPLv3 License")
-        .set_icon("sf:calendar")
+        .set_icon("com.fyralabs.Solar.svg")
         .set_website("https://github.com/nickvdl/cogito")
         .set_issue_url("https://github.com/nickvdl/cogito/issues")
         about_content.add(aw)

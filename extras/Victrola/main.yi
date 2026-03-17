@@ -2049,7 +2049,7 @@ entry() (( -- )) {
         let about_content = cogito.vstack()
         about_content.align_center()
         let aw = cogito.about_window("Victrola", "GPLv3 License")
-        .set_icon("sf:music.note")
+        .set_icon("com.fyralabs.Victrola.svg")
         .set_website("https://github.com/nickvdl/cogito")
         .set_issue_url("https://github.com/nickvdl/cogito/issues")
         about_content.add(aw)

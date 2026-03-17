@@ -12,6 +12,7 @@
 
 #if defined(__APPLE__)
 #include <CoreGraphics/CoreGraphics.h>
+#include <mach-o/dyld.h>
 #endif
 
 #if defined(COGITO_HAS_GSTREAMER)

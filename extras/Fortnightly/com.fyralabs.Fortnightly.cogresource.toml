@@ -1,0 +1,5 @@
+[cogresource]
+prefix = "/com/fyralabs/Fortnightly"
+
+[[cogresource.file]]
+src = "com.fyralabs.Fortnightly.svg"

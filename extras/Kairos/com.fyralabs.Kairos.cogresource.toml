@@ -1,0 +1,5 @@
+[cogresource]
+prefix = "/com/fyralabs/Kairos"
+
+[[cogresource.file]]
+src = "com.fyralabs.Kairos.svg"

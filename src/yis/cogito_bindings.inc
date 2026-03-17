@@ -4369,3 +4369,53 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_canvas_circle __cogito_canvas_circle
 #define cogito_canvas_fill_circle __cogito_canvas_fill_circle
 // cogito_set_script_dir is provided by the cogito library
+
+// ---- Embedded SVG auto-registration ----
+#if defined(__has_include)
+#if __has_include("_cogito_embedded_svgs.h")
+#include "_cogito_embedded_svgs.h"
+
+static size_t _cogito_b64_decode(const char *in, unsigned char *out) {
+  static const signed char T[128] = {
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,62,-1,-1,-1,63,
+    52,53,54,55,56,57,58,59,60,61,-1,-1,-1,-1,-1,-1,
+    -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,
+    15,16,17,18,19,20,21,22,23,24,25,-1,-1,-1,-1,-1,
+    -1,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,
+    41,42,43,44,45,46,47,48,49,50,51,-1,-1,-1,-1,-1,
+  };
+  size_t olen = 0;
+  unsigned int buf = 0;
+  int bits = 0;
+  for (const char *p = in; *p; p++) {
+    unsigned char c = (unsigned char)*p;
+    if (c == '=' || c == '\n' || c == '\r' || c == ' ') continue;
+    if (c >= 128 || T[c] < 0) continue;
+    buf = (buf << 6) | (unsigned int)T[c];
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      if (out) out[olen] = (unsigned char)(buf >> bits);
+      olen++;
+    }
+  }
+  return olen;
+}
+
+__attribute__((constructor))
+static void _cogito_register_embedded_svgs(void) {
+  for (int i = 0; i < COGITO_ESVG_COUNT; i++) {
+    const char *b64 = _cogito_esvg_table[i].b64;
+    size_t raw_len = _cogito_b64_decode(b64, NULL);
+    if (raw_len == 0) continue;
+    unsigned char *raw = (unsigned char *)malloc(raw_len);
+    if (!raw) continue;
+    _cogito_b64_decode(b64, raw);
+    cogito_register_embedded_resource(_cogito_esvg_table[i].name, raw, raw_len);
+  }
+}
+
+#endif /* __has_include("_cogito_embedded_svgs.h") */
+#endif /* defined(__has_include) */

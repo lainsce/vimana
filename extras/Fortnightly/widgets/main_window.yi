@@ -44,7 +44,7 @@ bring widgets.article_row
         let about_content = cogito.vstack()
         about_content.align_center()
         let aw = cogito.about_window("Fortnightly", "GPLv3 License")
-        .set_icon("sf:newspaper")
+        .set_icon("com.fyralabs.Fortnightly.svg")
         .set_website("https://github.com/nickvdl/cogito")
         .set_issue_url("https://github.com/nickvdl/cogito/issues")
         about_content.add(aw)

@@ -766,7 +766,7 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "hstack.about-window-actions\n  background: transparent\n  padding: 4 0 0 0\n");
   cogito_sum_append(out, cap, &off,
-  "image.about-window-icon\n  min-width: 128\n  min-height: 128\n");
+  "image.about-window-icon\n  min-width: 128\n  min-height: 128\n  border-radius: 24\n");
   cogito_sum_append(out, cap, &off,
   "menu_section\n  background: transparent\n");
   cogito_sum_append(out, cap, &off,
