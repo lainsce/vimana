@@ -5,9 +5,6 @@ bring cogito
 
 bring utils.model
 
-def ?artist_click_handler = (artist = string) => {}
-def ?album_click_handler = (album = string) => {}
-
 : set_library_view_shows_groups(groups_revealer = cogito.Revealer, titles_revealer = cogito.Revealer, show_groups = bool) (( -- )) {
     groups_revealer.set_show_children(show_groups)
     groups_revealer.set_vexpand(show_groups)
@@ -72,7 +69,7 @@ def ?album_click_handler = (album = string) => {}
     return row
 }
 
-: build_artist_card(name = string, subtitle = string, cover = string) (( any )) {
+: build_artist_card(name = string, subtitle = string, cover = string, on_artist_click = any) (( any )) {
     let card = cogito.card("")
     .set_class("outlined victrola-artist-card")
     .set_gap(4)
@@ -93,13 +90,13 @@ def ?album_click_handler = (album = string) => {}
         .set_max_width_chars(44)
     )
     .on_click((c = any) => {
-        artist_click_handler(name)
+        on_artist_click(name)
     })
 
     return card
 }
 
-: build_album_card(album = string, artist = string, subtitle = string, album_cover_map = any) (( any )) {
+: build_album_card(album = string, artist = string, subtitle = string, album_cover_map = any, on_album_click = any) (( any )) {
     let cover = model.album_cover_for(album_cover_map, album, artist)
 
     let card = cogito.card("")
@@ -122,7 +119,7 @@ def ?album_click_handler = (album = string) => {}
         .set_max_width_chars(44)
     )
     .on_click((c = any) => {
-        album_click_handler(album)
+        on_album_click(album)
     })
 
     return card
@@ -183,9 +180,6 @@ def ?album_click_handler = (album = string) => {}
     on_artist_click = any,
     on_album_click = any
 ) (( any )) {
-    artist_click_handler = on_artist_click
-    album_click_handler = on_album_click
-
     library_list.clear()
     library_grid.clear()
 
@@ -307,7 +301,7 @@ def ?album_click_handler = (album = string) => {}
             let col = j % 2
             let row = (j - col) / 2
             let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
-            library_grid.add(build_album_card(key, artist_detail_key, subtitle, album_cover_map), col, row, 1, 1)
+            library_grid.add(build_album_card(key, artist_detail_key, subtitle, album_cover_map, on_album_click), col, row, 1, 1)
         }
     } elif mode == 1 {
         library_grid.set_cols(2)
@@ -359,7 +353,7 @@ def ?album_click_handler = (album = string) => {}
                 }
             }
 
-            library_grid.add(build_artist_card(key, subtitle, artist_cover), col, row, 1, 1)
+            library_grid.add(build_artist_card(key, subtitle, artist_cover, on_artist_click), col, row, 1, 1)
         }
     } else {
         library_grid.set_cols(2)
@@ -400,7 +394,7 @@ def ?album_click_handler = (album = string) => {}
             let col = j % 2
             let row = (j - col) / 2
             let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
-            library_grid.add(build_album_card(key, artist, subtitle, album_cover_map), col, row, 1, 1)
+            library_grid.add(build_album_card(key, artist, subtitle, album_cover_map, on_album_click), col, row, 1, 1)
         }
     }
 

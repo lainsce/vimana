@@ -8,10 +8,6 @@ pub def EVENT_EOS = 1
 pub def EVENT_ERROR = 2
 pub def EVENT_TAG = 3
 
-def ?eos_handler = null
-def ?error_handler = null
-def ?tag_handler = null
-
 :: init() (( bool )) {
     return cogito.gst_init()
 }
@@ -78,18 +74,6 @@ def ?tag_handler = null
 
 :: last_tag_track_number() (( num )) {
     return cogito.gst_last_tag_track_number()
-}
-
-:: on_eos(handler = any) (( -- )) {
-    eos_handler = handler
-}
-
-:: on_error(handler = any) (( -- )) {
-    error_handler = handler
-}
-
-:: on_tag(handler = any) (( -- )) {
-    tag_handler = handler
 }
 
 :: poll() (( num )) {
