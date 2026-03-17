@@ -164,7 +164,7 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 : show_about_window(win = cogito.Window) (( -- )) {
     let dlg = cogito.dialog("")
 
-    let aw = cogito.about_window("Yis Text Editor", "MIT License")
+    let aw = cogito.about_window("Enigma", "GPLv3 License")
     .set_icon("sf:doc.text")
     .set_website(ABOUT_MORE_INFO_URL)
     .set_issue_url(ABOUT_REPORT_BUG_URL)
@@ -186,8 +186,9 @@ entry() (( -- )) {
     -- Configure module-level widgets
     bar.set_medium()
 
-    let win = cogito.window_size("Enigma", 900, 640)
+    let win = cogito.window_size("Enigma", 1024, 720)
     .set_resizable(true)
+    .set_size_request(412, 720)
 
     let root = cogito.vstack()
     .set_gap(0)

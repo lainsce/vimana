@@ -559,7 +559,7 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     let content = cogito.vstack()
     content.align_center()
 
-    let aw = cogito.about_window("YisCalc", "MIT License")
+    let aw = cogito.about_window("Abacus", "GPLv3 License")
     .set_icon("sf:equal")
     .set_website(ABOUT_MORE_INFO_URL)
     .set_issue_url(ABOUT_REPORT_BUG_URL)
@@ -583,7 +583,7 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     let about_btn = bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         show_about_window(win)
     })
-    cogito.set_tooltip(about_btn, "About YisCalc")
+    cogito.set_tooltip(about_btn, "About Abacus")
     let toggle_btn = bar.add_trailing_button("sf:arrow.left.arrow.right", (b = cogito.Button) => {
         showing_converter = !showing_converter
         if showing_converter {
@@ -677,9 +677,10 @@ entry () (( -- )) {
     .set_accent_color("#8C56BF", false)
     .set_appid("com.fyralabs.Abacus")
     .set_app_name("Abacus")
-    let win = cogito.window_size("Abacus", 360, 480)
+    let win = cogito.window_size("Abacus", 412, 412)
     .build(build_ui)
     .set_resizable(false)
     .set_autosize(false)
+    .set_size_request(412, 412)
     app.run(win)
 }

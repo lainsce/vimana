@@ -437,6 +437,7 @@ void cogito_bottom_nav_on_change(cogito_node *nav, cogito_index_fn fn,
 
 double cogito_slider_get_value(cogito_node *slider);
 void cogito_slider_set_value(cogito_node *slider, double value);
+void cogito_slider_set_bounds(cogito_node *slider, double min, double max);
 void cogito_slider_set_size(cogito_node *slider, int size);
 int cogito_slider_get_size(cogito_node *slider);
 void cogito_slider_set_icon(cogito_node *slider, const char *icon);

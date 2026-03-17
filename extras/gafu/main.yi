@@ -448,9 +448,10 @@ entry() (( -- )) {
     -- Configure module-level widgets
     source_picker.set_hex("#65558F")
 
-    let win = cogito.window_size("Gafu", 1720, 760)
+    let win = cogito.window_size("Gafu", 1024, 720)
     .set_autosize(false)
     .set_resizable(true)
+    .set_size_request(412, 720)
 
     let root = cogito.hstack()
     .set_hexpand(true)

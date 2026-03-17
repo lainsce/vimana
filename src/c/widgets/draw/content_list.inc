@@ -96,6 +96,8 @@ case COGITO_CONTENT_LIST: {
         if (sel_bg.a > 0) {
           cogito_draw_rect_radii_aa(child->x, child->y, child->w, child->h, sel_bg, sr, sr, sr, sr);
         }
+        // Set override bg so descendant label fades resolve to selection color
+        if (sel_bg.a > 0) { cogito_override_bg = sel_bg; cogito_override_bg_active = true; }
         // Only override text color when using a solid selected background
         bool solid_sel = !selected_style.has_bg || sel_bg.a > 128;
         if (solid_sel) {
@@ -111,6 +113,7 @@ case COGITO_CONTENT_LIST: {
           cogito_selection_text = sel_text;
         }
         cogito_draw_node(child);
+        cogito_override_bg_active = false;
         cogito_has_selection_text = false;
     } else {
       // Draw unselected item background with position-specific rounded corners

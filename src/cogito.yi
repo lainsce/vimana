@@ -352,6 +352,7 @@ macro chain() (( any )) {
 : __cogito_slider_set_range_end(sl = Slider, end = num) (( -- )) { }
 : __cogito_slider_set_range_start(sl = Slider, start = num) (( -- )) { }
 : __cogito_slider_set_range(sl = Slider, start = num, end = num) (( -- )) { }
+: __cogito_slider_set_bounds(sl = Slider, min = num, max = num) (( -- )) { }
 : __cogito_slider_set_size(sl = Slider, size = num) (( -- )) { }
 : __cogito_slider_set_value(sl = Slider, value = num) (( -- )) { }
 : __cogito_slider(min = num, max = num, value = num) (( Slider )) { }
@@ -2722,6 +2723,10 @@ pub class Slider : Component {
     }
     :: set_range(this, start = num, end = num) (( Slider )) {
         __cogito_slider_set_range(this, start, end)
+        return this
+    }
+    :: set_bounds(this, min = num, max = num) (( Slider )) {
+        __cogito_slider_set_bounds(this, min, max)
         return this
     }
     :: set_range_start(this, start = num) (( Slider )) {

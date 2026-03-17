@@ -6,6 +6,22 @@ static bool cogito_rect_visible(int cx, int cy, int cw, int ch,
            cy + ch <= py || cy >= py + ph);
 }
 
+// Resolve the visible background behind a node by walking ancestors.
+// Checks explicit bg_set first (runtime overrides like selection highlights),
+// then theme-resolved bg, up the tree, falling back to cogito_cached_surface.
+static CogitoColor cogito_override_bg = {0};
+static bool cogito_override_bg_active = false;
+static CogitoColor cogito_resolve_ancestor_bg(const CogitoNode* n) {
+  if (cogito_override_bg_active && cogito_override_bg.a > 0) return cogito_override_bg;
+  for (const CogitoNode* p = n; p; p = p->parent) {
+    if (p->bg_set && p->bg.a > 0) return p->bg;
+    CogitoStyle ps = cogito_theme_resolve_node(p);
+    if (ps.has_bg && ps.bg.a > 0) return ps.bg;
+  }
+  if (cogito_cached_surface.a > 0) return cogito_cached_surface;
+  return cogito_rgba(255, 255, 255, 255);
+}
+
 static float cogito_roundness_for(int w, int h, int radius) {
   if (radius <= 0) return 0.0f;
   float min = (float)(w < h ? w : h);
@@ -1301,6 +1317,11 @@ static void cogito_draw_focus_ring(void) {
   if (!cogito_focused || !cogito_focus_visible) return;
   if (cogito_focused->disabled) return;
   CogitoNode* n = cogito_focused;
+
+  // TextFields have their own focus indicators (indicator line or border
+  // thickening), so skip the generic focus ring entirely.
+  if (n->kind == COGITO_TEXTFIELD) return;
+
   // Ring parameters: 3dp thick, 2dp offset from component bounds
   int offset = 2;
   int thickness = 3;

@@ -239,14 +239,7 @@ case COGITO_TEXTFIELD: {
           if (notch_x < n->x) notch_x = n->x;
           if (notch_x + notch_w > n->x + n->w) notch_w = (n->x + n->w) - notch_x;
           if (notch_w > 0) {
-            CogitoColor notch_bg = bg;
-            if (notch_bg.a == 0) {
-              if (n->parent) {
-                CogitoStyle ps = cogito_theme_resolve_node(n->parent);
-                if (ps.has_bg) notch_bg = ps.bg;
-              }
-              if (notch_bg.a == 0 && cogito_cached_surface.a) notch_bg = cogito_cached_surface;
-            }
+            CogitoColor notch_bg = cogito_resolve_ancestor_bg(n->parent ? n->parent : n);
             cogito_draw_rect(notch_x, notch_y, notch_w, notch_h, notch_bg, 0);
           }
         }

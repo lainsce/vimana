@@ -34,7 +34,8 @@ case COGITO_HSTACK: {
 				}
 			}
 			for (size_t i = 0; i < n->len; i++) {
-				if (!cogito_rect_visible(n->children[i]->x, n->children[i]->y, n->children[i]->w, n->children[i]->h, n->x, n->y, n->w, n->h)) continue;
+				if (n->children[i]->kind != COGITO_FAB && n->children[i]->kind != COGITO_FAB_MENU &&
+				    !cogito_rect_visible(n->children[i]->x, n->children[i]->y, n->children[i]->w, n->children[i]->h, n->x, n->y, n->w, n->h)) continue;
 				cogito_draw_node(n->children[i]);
 			}
 			break;

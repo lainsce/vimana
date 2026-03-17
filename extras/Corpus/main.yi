@@ -175,7 +175,7 @@ def rebuild_state = cogito.state(false)
     viewer_bar.set_subtitle(title)
 
     if total_pages > 1 {
-        page_slider.set_range(1, total_pages)
+        page_slider.set_bounds(1, total_pages)
         page_slider.set_value(current_page)
         page_slider.set_visible(true)
     } else {
@@ -450,7 +450,7 @@ entry() (( -- )) {
 
     let win = cogito.window_size("Corpus", 1080, 720)
     .set_resizable(true)
-    .set_size_request(412, 600)
+    .set_size_request(412, 720)
 
     let root = cogito.zstack()
     .set_hexpand(true)

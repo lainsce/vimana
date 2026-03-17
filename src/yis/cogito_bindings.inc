@@ -237,6 +237,7 @@
 #undef cogito_slider_set_step
 #undef cogito_slider_set_step_dots
 #undef cogito_slider_set_icon
+#undef cogito_slider_set_bounds
 #undef cogito_slider_set_range
 #undef cogito_slider_set_range_end
 #undef cogito_slider_set_range_start
@@ -3022,6 +3023,11 @@ static void __cogito_slider_set_value(YisVal slv, YisVal valuev) {
   cogito_slider_set_value(sl, yis_as_float(valuev));
 }
 
+static void __cogito_slider_set_bounds(YisVal slv, YisVal minv, YisVal maxv) {
+  cogito_node* sl = cogito_node_from_val(slv);
+  cogito_slider_set_bounds(sl, yis_as_float(minv), yis_as_float(maxv));
+}
+
 static YisVal __cogito_slider_get_value(YisVal slv) {
   cogito_node* sl = cogito_node_from_val(slv);
   return YV_FLOAT(cogito_slider_get_value(sl));
@@ -4102,6 +4108,7 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_slider_get_step __cogito_slider_get_step
 #define cogito_slider_set_step_dots __cogito_slider_set_step_dots
 #define cogito_slider_get_step_dots __cogito_slider_get_step_dots
+#define cogito_slider_set_bounds __cogito_slider_set_bounds
 #define cogito_slider_set_range __cogito_slider_set_range
 #define cogito_slider_set_range_start __cogito_slider_set_range_start
 #define cogito_slider_set_range_end __cogito_slider_set_range_end

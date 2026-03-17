@@ -87,10 +87,7 @@ case COGITO_LABEL: {
             cogito_backend->begin_scissor(content_x, n->y, content_w, n->h);
             cogito_draw_text_size_node(n, tx, ty, draw_text, text, size, lbold, lmedium);
             // Find ancestor background for gradient overlay
-            CogitoColor fade_bg = cogito_color(255, 255, 255, 255);
-            for (const CogitoNode* p = n->parent; p; p = p->parent) {
-              if (p->bg_set && p->bg.a > 0) { fade_bg = p->bg; break; }
-            }
+            CogitoColor fade_bg = cogito_resolve_ancestor_bg(n->parent ? n->parent : n);
             int fade_w = content_w / 5;
             if (fade_w < 16) fade_w = 16;
             if (fade_w > 48) fade_w = 48;

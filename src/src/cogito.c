@@ -293,6 +293,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_slider_new cogito_slider_new_yis
 #define cogito_slider_range_new cogito_slider_range_new_yis
 #define cogito_slider_on_change cogito_slider_on_change_yis
+#define cogito_slider_set_bounds cogito_slider_set_bounds_yis
 #define cogito_slider_set_centered cogito_slider_set_centered_yis
 #define cogito_slider_set_end_dots cogito_slider_set_end_dots_yis
 #define cogito_slider_get_end_dots cogito_slider_get_end_dots_yis
@@ -690,6 +691,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_slider_new
 #undef cogito_slider_range_new
 #undef cogito_slider_on_change
+#undef cogito_slider_set_bounds
 #undef cogito_slider_set_centered
 #undef cogito_slider_get_centered
 #undef cogito_slider_set_end_dots
@@ -3435,6 +3437,12 @@ void cogito_slider_set_value(cogito_node *slider, double value) {
   if (!slider)
     return;
   cogito_slider_set_value_yis(YV_OBJ(slider), YV_FLOAT(value));
+}
+
+void cogito_slider_set_bounds(cogito_node *slider, double min, double max) {
+  if (!slider)
+    return;
+  cogito_slider_set_bounds_yis(YV_OBJ(slider), YV_FLOAT(min), YV_FLOAT(max));
 }
 
 void cogito_slider_set_size(cogito_node *slider, int size) {

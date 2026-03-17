@@ -128,6 +128,26 @@ static YisVal cogito_slider_get_value(YisVal nodev) {
   return YV_FLOAT(n->slider.value);
 }
 
+static void cogito_slider_set_bounds(YisVal nodev, YisVal minv, YisVal maxv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_bounds expects slider");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  n->slider.min = yis_as_float(minv);
+  n->slider.max = yis_as_float(maxv);
+  if (n->slider.max < n->slider.min) {
+    double tmp = n->slider.min;
+    n->slider.min = n->slider.max;
+    n->slider.max = tmp;
+  }
+  n->slider.value = cogito_slider_snap_to_step(n, n->slider.value);
+  n->slider.value2 = cogito_slider_snap_to_step(n, n->slider.value2);
+  if (n->slider.mode == COGITO_SLIDER_MODE_RANGE && n->slider.value2 < n->slider.value) {
+    double tmp = n->slider.value;
+    n->slider.value = n->slider.value2;
+    n->slider.value2 = tmp;
+  }
+  cogito_window_relayout(cogito_node_window(n));
+}
+
 static void cogito_slider_set_centered(YisVal nodev, YisVal onv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.slider_set_centered expects slider");
   CogitoNode* n = (CogitoNode*)nodev.as.p;

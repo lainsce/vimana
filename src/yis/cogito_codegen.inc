@@ -3187,6 +3187,41 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_slider_set_bounds")) {
+                        GenExpr node, minv, maxv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &minv, err)) { gen_expr_free(&node); return false;
+                        }
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            2
+                        ], &maxv, err)) { gen_expr_free(&node); gen_expr_free(&minv); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_slider_set_bounds(%s, %s, %s);", node.tmp, minv.tmp, maxv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", minv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", maxv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &minv, minv.tmp);
+                        gen_expr_release_except(cg, &maxv, maxv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&minv);
+                        gen_expr_free(&maxv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_slider_set_range_start")) {
                         GenExpr node, startv;
                         if (!gen_expr(cg, path, e->as.call.args[

@@ -306,7 +306,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     let done = completed_count()
     let is_sheet_open = sheet_open_state.get() == true
 
-    let bar = cogito.appbar("YisTask", "$$done$$ of $$total$$ Done")
+    let bar = cogito.appbar("Tasks", "$$done$$ of $$total$$ Done")
     .set_medium()
     .set_hexpand(true)
     win.add(bar)
@@ -349,8 +349,9 @@ entry() (( -- )) {
 
     cogito.load_sum("tasks.sum")
 
-    let win = cogito.window_size("Tasks", 400, 720)
+    let win = cogito.window_size("Tasks", 412, 720)
     .set_resizable(true)
+    .set_size_request(412, 720)
     .build((w = cogito.Window) => {
         build_window(w)
     })

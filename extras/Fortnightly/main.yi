@@ -218,9 +218,9 @@ entry() (( -- )) {
         feed_index = 1
     }
 
-    let win = cogito.window_size("Fortnightly", 885, 720)
+    let win = cogito.window_size("Fortnightly", 1024, 720)
     .set_resizable(true)
-    .set_size_request(360, 480)
+    .set_size_request(412, 720)
 
     detail_back_btn = main_window.build_window(
         win, list_panel, sidebar_bar, article_list,
