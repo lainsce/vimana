@@ -50,24 +50,24 @@ macro clicked_message() (( string )) {
     .set_gap(12)
     .set_hexpand(true)
 
+    : make_style_handler(label = string) (( -> )) {
+        return (b = cogito.Button) => {
+            status.set_text(label !clicked_message)
+        }
+    }
+
     let filled = cogito.button("Filled")
-    .on_click((b = cogito.Button) => {
-        status.set_text("Filled" !clicked_message)
-    })
+    .on_click(make_style_handler("Filled"))
     styles_row.add(filled)
 
     let outlined = cogito.button("Outlined")
     .set_class("outlined")
-    .on_click((b = cogito.Button) => {
-        status.set_text("Outlined" !clicked_message)
-    })
+    .on_click(make_style_handler("Outlined"))
     styles_row.add(outlined)
 
     let text_btn = cogito.button("Text")
     .set_class("text")
-    .on_click((b = cogito.Button) => {
-        status.set_text("Text" !clicked_message)
-    })
+    .on_click(make_style_handler("Text"))
     styles_row.add(text_btn)
 
     vstack.add(styles_row)

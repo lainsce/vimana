@@ -787,6 +787,18 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     }
 }
 
+: make_snippet_handler(snippet = string, msg = string) (( -> )) {
+    return (b = cogito.Button) => {
+        insert_markdown_snippet(snippet, msg)
+    }
+}
+
+: make_heading_handler(level = num) (( -> )) {
+    return (b = cogito.Button) => {
+        insert_heading(level)
+    }
+}
+
 : toggle_focus_mode() (( -- )) {
     focus_mode = !focus_mode
     apply_visibility_states()
@@ -1167,41 +1179,15 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     .set_hexpand(true)
     .set_vexpand(false)
 
-    format_toolbar.add(cogito.button("B").set_class("text").on_click((b = cogito.Button) => {
-        insert_markdown_snippet("**bold text**", "Inserted bold markup")
-    }))
-
-    format_toolbar.add(cogito.button("I").set_class("text").on_click((b = cogito.Button) => {
-        insert_markdown_snippet("*italic text*", "Inserted italic markup")
-    }))
-
-    format_toolbar.add(cogito.button("H1").set_class("text").on_click((b = cogito.Button) => {
-        insert_heading(1)
-    }))
-
-    format_toolbar.add(cogito.button("H2").set_class("text").on_click((b = cogito.Button) => {
-        insert_heading(2)
-    }))
-
-    format_toolbar.add(cogito.button("H3").set_class("text").on_click((b = cogito.Button) => {
-        insert_heading(3)
-    }))
-
-    format_toolbar.add(cogito.button("Link").set_class("text").on_click((b = cogito.Button) => {
-        insert_markdown_snippet("[label](https://example.com)", "Inserted link markup")
-    }))
-
-    format_toolbar.add(cogito.button("Code").set_class("text").on_click((b = cogito.Button) => {
-        insert_markdown_snippet("`inline code`", "Inserted code markup")
-    }))
-
-    format_toolbar.add(cogito.button("Quote").set_class("text").on_click((b = cogito.Button) => {
-        insert_markdown_snippet("> quote", "Inserted block quote")
-    }))
-
-    format_toolbar.add(cogito.button("List").set_class("text").on_click((b = cogito.Button) => {
-        insert_markdown_snippet("- item", "Inserted list item")
-    }))
+    format_toolbar.add(cogito.button("B").set_class("text").on_click(make_snippet_handler("**bold text**", "Inserted bold markup")))
+    format_toolbar.add(cogito.button("I").set_class("text").on_click(make_snippet_handler("*italic text*", "Inserted italic markup")))
+    format_toolbar.add(cogito.button("H1").set_class("text").on_click(make_heading_handler(1)))
+    format_toolbar.add(cogito.button("H2").set_class("text").on_click(make_heading_handler(2)))
+    format_toolbar.add(cogito.button("H3").set_class("text").on_click(make_heading_handler(3)))
+    format_toolbar.add(cogito.button("Link").set_class("text").on_click(make_snippet_handler("[label](https://example.com)", "Inserted link markup")))
+    format_toolbar.add(cogito.button("Code").set_class("text").on_click(make_snippet_handler("`inline code`", "Inserted code markup")))
+    format_toolbar.add(cogito.button("Quote").set_class("text").on_click(make_snippet_handler("> quote", "Inserted block quote")))
+    format_toolbar.add(cogito.button("List").set_class("text").on_click(make_snippet_handler("- item", "Inserted list item")))
 
     let toolbar_row = cogito.hstack()
     .set_hexpand(true)
