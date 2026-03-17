@@ -122,6 +122,7 @@ static YisVal cogito_node_parent(YisVal nodev) {
 }
 static CogitoNode* cogito_find_dialog_slot(CogitoNode* n) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_DIALOG_SLOT && n->dialog_open && n->dialog) return n;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* hit = cogito_find_dialog_slot(n->children[i]);

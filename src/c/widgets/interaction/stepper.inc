@@ -43,6 +43,7 @@ static void cogito_stepper_hit_test(CogitoNode* n, int mx, int my) {
 
 static CogitoNode* cogito_find_stepper_hit(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_STEPPER) {
     if (x >= n->x && x < n->x + n->w && y >= n->y && y < n->y + n->h) {
       return n;

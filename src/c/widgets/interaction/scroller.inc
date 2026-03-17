@@ -84,6 +84,7 @@ static CogitoNode* cogito_scroller_sync_from(CogitoNode* src) {
 
 static CogitoNode* cogito_find_scroller(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_WINDOW && n->side_sheet_open && n->side_sheet_node) {
     CogitoNode* ss = n->side_sheet_node;
     CogitoNode* ss_hit = cogito_find_scroller(ss, x, y);
@@ -113,6 +114,7 @@ static CogitoNode* cogito_find_scroller(CogitoNode* n, int x, int y) {
 // Find the deepest COGITO_CAROUSEL under the cursor (for wheel scrolling).
 static CogitoNode* cogito_find_carousel(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_WINDOW && n->side_sheet_open && n->side_sheet_node) {
     CogitoNode* ss = n->side_sheet_node;
     CogitoNode* ss_hit = cogito_find_carousel(ss, x, y);

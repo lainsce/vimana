@@ -1,5 +1,6 @@
 static void cogito_draw_toasts_overlay(CogitoNode* n) {
   if (!n) return;
+  if (cogito_node_is_hidden(n)) return;
   if (n->kind == COGITO_TOASTS) {
     CogitoBinOverlayScopeState bin_scope_state = {0};
     cogito_bin_scope_begin_for_node(n, &bin_scope_state);
@@ -9,8 +10,13 @@ static void cogito_draw_toasts_overlay(CogitoNode* n) {
     cogito_bin_scope_end_for_node(&bin_scope_state);
     return;
   }
-  for (size_t i = 0; i < n->len; i++) {
-    cogito_draw_toasts_overlay(n->children[i]);
+  if (n->kind == COGITO_VIEWSWITCHER) {
+    CogitoNode* active = cogito_view_switcher_active_child(n);
+    if (active) cogito_draw_toasts_overlay(active);
+  } else {
+    for (size_t i = 0; i < n->len; i++) {
+      cogito_draw_toasts_overlay(n->children[i]);
+    }
   }
   if ((n->kind == COGITO_WINDOW || n->kind == COGITO_DIALOG_SLOT) &&
       n->dialog && n->dialog_open) {
@@ -20,6 +26,7 @@ static void cogito_draw_toasts_overlay(CogitoNode* n) {
 
 static void cogito_draw_fab_overlay(CogitoNode* n) {
   if (!n) return;
+  if (cogito_node_is_hidden(n)) return;
   if (n->kind == COGITO_FAB_MENU) {
     // Only use the overlay when the popup is open, so menu items float above
     // all content. When closed, the FAB draws normally in the regular pass
@@ -34,8 +41,13 @@ static void cogito_draw_fab_overlay(CogitoNode* n) {
     }
     return;
   }
-  for (size_t i = 0; i < n->len; i++) {
-    cogito_draw_fab_overlay(n->children[i]);
+  if (n->kind == COGITO_VIEWSWITCHER) {
+    CogitoNode* active = cogito_view_switcher_active_child(n);
+    if (active) cogito_draw_fab_overlay(active);
+  } else {
+    for (size_t i = 0; i < n->len; i++) {
+      cogito_draw_fab_overlay(n->children[i]);
+    }
   }
 }
 

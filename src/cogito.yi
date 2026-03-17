@@ -105,6 +105,7 @@ macro chain() (( any )) {
 : __cogito_colorpicker_get_hex(cp = ColorPicker) (( string )) { }
 : __cogito_container_add(parent = any, child = any) (( -- )) { }
 : __cogito_container_set_align(node = any, align = num) (( -- )) { }
+: __cogito_container_set_col_homogeneous(node = any, on = bool) (( -- )) { }
 : __cogito_container_set_gap(node = any, gap = num) (( -- )) { }
 : __cogito_container_set_halign(node = any, align = num) (( -- )) { }
 : __cogito_container_set_hexpand(node = any, expand = bool) (( -- )) { }
@@ -1504,6 +1505,10 @@ pub class Grid {
     }
     :: set_cols(this, cols = num) (( Grid )) {
         __cogito_grid_set_cols(this, cols)
+        return this
+    }
+    :: set_col_homogeneous(this, on = bool) (( Grid )) {
+        __cogito_container_set_col_homogeneous(this, on)
         return this
     }
     :: clear(this) (( Grid )) {

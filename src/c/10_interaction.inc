@@ -341,6 +341,7 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
 
 static CogitoNode* cogito_find_overlay_toast(CogitoNode* n, int x, int y) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if ((n->kind == COGITO_WINDOW || n->kind == COGITO_DIALOG_SLOT) &&
       n->dialog && n->dialog_open) {
     CogitoNode* d = cogito_find_overlay_toast(n->dialog, x, y);
@@ -362,7 +363,7 @@ static CogitoNode* cogito_find_overlay_toast(CogitoNode* n, int x, int y) {
 }
 
 static bool cogito_node_focusable(const CogitoNode* n) {
-  if (!n || n->disabled) return false;
+  if (!n || n->disabled || cogito_node_is_hidden(n)) return false;
   switch (n->kind) {
     #include "widgets/interaction/focusable/textfield.inc"
     #include "widgets/interaction/focusable/textview.inc"
@@ -397,6 +398,7 @@ static bool cogito_node_focusable(const CogitoNode* n) {
 
 static CogitoNode* cogito_focus_next(CogitoNode* n, CogitoNode* current, bool* found_current) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n == current) *found_current = true;
   else if (*found_current && cogito_node_focusable(n)) return n;
   if (n->kind == COGITO_VIEWSWITCHER) {
@@ -418,6 +420,7 @@ static CogitoNode* cogito_focus_next(CogitoNode* n, CogitoNode* current, bool* f
 
 static CogitoNode* cogito_focus_prev(CogitoNode* n, CogitoNode* current, bool* found_current) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_VIEWSWITCHER) {
     CogitoNode* active = cogito_view_switcher_active_child(n);
     if (active) {
@@ -442,6 +445,7 @@ static CogitoNode* cogito_focus_prev(CogitoNode* n, CogitoNode* current, bool* f
 
 static CogitoNode* cogito_focus_first(CogitoNode* n) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (cogito_node_focusable(n)) return n;
   if (n->kind == COGITO_VIEWSWITCHER) {
     CogitoNode* active = cogito_view_switcher_active_child(n);
@@ -459,6 +463,7 @@ static CogitoNode* cogito_focus_first(CogitoNode* n) {
 
 static CogitoNode* cogito_focus_last(CogitoNode* n) {
   if (!n) return NULL;
+  if (cogito_node_is_hidden(n)) return NULL;
   if (n->kind == COGITO_VIEWSWITCHER) {
     CogitoNode* active = cogito_view_switcher_active_child(n);
     if (active) return cogito_focus_last(active);

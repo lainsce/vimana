@@ -34,6 +34,7 @@ case COGITO_VSTACK: {
 				}
 			}
 			for (size_t i = 0; i < n->len; i++) {
+				if (!cogito_rect_visible(n->children[i]->x, n->children[i]->y, n->children[i]->w, n->children[i]->h, n->x, n->y, n->w, n->h)) continue;
 				cogito_draw_node(n->children[i]);
 			}
 			break;

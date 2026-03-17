@@ -31,7 +31,7 @@ def cal_title_expanded = cogito.hstack()
 def cal_title_compact = cogito.hstack()
 
 def view_tabs = cogito.tabs()
-def month_dropdown = cogito.view_chooser()
+def month_dropdown = cogito.dropdown()
 def ?month_dropdown_updating = false
 
 def evt_panel = cogito.vstack()
@@ -668,7 +668,7 @@ entry() (( -- )) {
     .set_class("solar-appbar-title")
     .set_items(month_names)
     .set_selected(view_month - 1)
-    .on_change((dd = cogito.ViewChooser) => {
+    .on_change((dd = cogito.Dropdown) => {
         if !month_dropdown_updating {
             let idx = dd.selected()
             view_month = idx + 1

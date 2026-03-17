@@ -1470,7 +1470,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
       cogito_focused = next;
       cogito_focus_visible = (next != NULL);
     }
-    if (cogito_focused && !cogito_focus_is_text_editing(cogito_focused) && !cogito_focused->disabled && !inspector_text_editing) {
+    if (cogito_focused && !cogito_focus_is_text_editing(cogito_focused) && !cogito_focused->disabled && !cogito_node_is_hidden(cogito_focused) && !inspector_text_editing) {
       bool relayout = false;
       int dir = 0;
       if (cogito_backend->is_key_pressed(SDL_SCANCODE_LEFT) ||
@@ -1507,7 +1507,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
       cogito_focused->editable;
     bool focused_color_hex_edit = cogito_focused &&
       cogito_focused->kind == COGITO_COLORPICKER && cogito_focused->colorpicker.hex_editing;
-    if (cogito_focused && !cogito_focused->disabled && (focused_text_editable || focused_color_hex_edit) && !inspector_text_editing) {
+    if (cogito_focused && !cogito_focused->disabled && !cogito_node_is_hidden(cogito_focused) && (focused_text_editable || focused_color_hex_edit) && !inspector_text_editing) {
       bool changed = false;
       bool caret_changed = false;
       int ch = cogito_backend->get_char_pressed();
@@ -2060,7 +2060,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
       }
     }
     // Text selection handling
-    if (cogito_focused && !cogito_focused->disabled && (focused_text_editable || focused_color_hex_edit)) {
+    if (cogito_focused && !cogito_focused->disabled && !cogito_node_is_hidden(cogito_focused) && (focused_text_editable || focused_color_hex_edit)) {
       bool selecting = (cogito_focused->kind == COGITO_COLORPICKER)
         ? cogito_focused->colorpicker.selecting
         : cogito_focused->text_input.selecting;
