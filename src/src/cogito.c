@@ -2226,11 +2226,11 @@ cogito_node *cogito_divider_new(const char *orientation, bool is_inset) {
 }
 void cogito_divider_set_wavy(cogito_node *divider, bool on) {
   if (!divider) return;
-  divider->divider.wavy = on;
+  divider->kd->divider.wavy = on;
 }
 bool cogito_divider_get_wavy(cogito_node *divider) {
   if (!divider) return false;
-  return divider->divider.wavy;
+  return divider->kd->divider.wavy;
 }
 cogito_node *cogito_card_new(const char *title) {
   YisVal tv = title ? cogito_val_from_cstr(title) : YV_NULLV;
@@ -2244,9 +2244,9 @@ void cogito_card_set_variant(cogito_node *card, int variant) {
   if (!card)
     return;
   CogitoNode *n = (CogitoNode *)card;
-  n->card.variant = (uint8_t)(variant < 0 ? 0 : variant > 2 ? 2 : variant);
+  n->kd->card.variant = (uint8_t)(variant < 0 ? 0 : variant > 2 ? 2 : variant);
   const char *variant_class =
-      (n->card.variant == 1) ? "filled" : (n->card.variant == 2) ? "outlined" : "elevated";
+      (n->kd->card.variant == 1) ? "filled" : (n->kd->card.variant == 2) ? "outlined" : "elevated";
   const char *existing_class =
       (n->class_name && n->class_name->data) ? n->class_name->data : "";
   bool existing_is_variant_class =
@@ -2258,7 +2258,7 @@ void cogito_card_set_variant(cogito_node *card, int variant) {
   }
   // Update shadow level based on variant
   if (!n->shadow_set) {
-    n->shadow_level = (n->card.variant == 0) ? 1 : 0;
+    n->shadow_level = (n->kd->card.variant == 0) ? 1 : 0;
   }
 }
 
@@ -2270,9 +2270,9 @@ void cogito_card_set_header_image(cogito_node *card, const char *url) {
   if (n->kind != COGITO_CARD)
     return;
 
-  if (n->card.header_image) {
-    yis_release_val(YV_OBJ(n->card.header_image));
-    n->card.header_image = NULL;
+  if (n->kd->card.header_image) {
+    yis_release_val(YV_OBJ(n->kd->card.header_image));
+    n->kd->card.header_image = NULL;
   }
 
   if (url && url[0]) {
@@ -2280,7 +2280,7 @@ void cogito_card_set_header_image(cogito_node *card, const char *url) {
     if (img) {
       cogito_image_set_source(img, url);
       img->parent = n;
-      n->card.header_image = (CogitoNode *)img;
+      n->kd->card.header_image = (CogitoNode *)img;
     }
   }
 
@@ -2391,9 +2391,9 @@ void cogito_colorpicker_set_hex(cogito_node *colorpicker, const char *hex) {
     return;
   double h = 0.0, cc = 0.0, t = 0.0;
   cogito_rgb_to_hct(c, &h, &cc, &t);
-  colorpicker->colorpicker.h = h;
-  colorpicker->colorpicker.c = cc;
-  colorpicker->colorpicker.t = t;
+  colorpicker->kd->colorpicker.h = h;
+  colorpicker->kd->colorpicker.c = cc;
+  colorpicker->kd->colorpicker.t = t;
   cogito_colorpicker_sync_hex((CogitoNode *)colorpicker);
 }
 
@@ -3837,11 +3837,11 @@ void cogito_stepper_set_value(cogito_node *stepper, double value) {
   if (!stepper)
     return;
   CogitoNode *n = (CogitoNode *)stepper;
-  if (value < n->stepper.min)
-    value = n->stepper.min;
-  if (value > n->stepper.max)
-    value = n->stepper.max;
-  n->stepper.value = value;
+  if (value < n->kd->stepper.min)
+    value = n->kd->stepper.min;
+  if (value > n->kd->stepper.max)
+    value = n->kd->stepper.max;
+  n->kd->stepper.value = value;
   cogito_invoke_change(n);
 }
 
@@ -4210,14 +4210,14 @@ void cogito_appbar_pair_scroller(cogito_node *appbar, cogito_node *scroller) {
   if (appbar->kind != COGITO_APPBAR || scroller->kind != COGITO_SCROLLER)
     return;
 
-  appbar->appbar.paired_scroller = scroller;
+  appbar->kd->appbar.paired_scroller = scroller;
 
   const char *ab_cls = (appbar->class_name && appbar->class_name->data)
                            ? appbar->class_name->data
                            : "";
-  strncpy(appbar->appbar.pair_base_class, ab_cls,
-          sizeof(appbar->appbar.pair_base_class) - 1);
-  appbar->appbar.pair_base_class[sizeof(appbar->appbar.pair_base_class) - 1] = 0;
+  strncpy(appbar->kd->appbar.pair_base_class, ab_cls,
+          sizeof(appbar->kd->appbar.pair_base_class) - 1);
+  appbar->kd->appbar.pair_base_class[sizeof(appbar->kd->appbar.pair_base_class) - 1] = 0;
 
   const char *sc_cls = (scroller->class_name && scroller->class_name->data)
                            ? scroller->class_name->data
@@ -4232,7 +4232,7 @@ void cogito_appbar_pair_scroller(cogito_node *appbar, cogito_node *scroller) {
     target_level = 3;
   if (target_level > 4)
     target_level = 4;
-  appbar->appbar.paired_surface_level = target_level;
+  appbar->kd->appbar.paired_surface_level = target_level;
 
   cogito_appbar_apply_paired_surface(appbar);
 }

@@ -58,8 +58,8 @@ static int cogito_bottom_sheet_target_height(CogitoNode* n, int host_y, int host
   int top_inset = cogito_bottom_sheet_top_inset(host_y);
   int max_h = host_h - top_inset;
   if (max_h < min_h) max_h = min_h;
-  int target_h = n->bottom_sheet.desired_h > 0
-    ? n->bottom_sheet.desired_h
+  int target_h = n->kd->bottom_sheet.desired_h > 0
+    ? n->kd->bottom_sheet.desired_h
     : cogito_bottom_sheet_settle_height(n, host_y, host_h);
   if (target_h < min_h) target_h = min_h;
   if (target_h > max_h) target_h = max_h;
@@ -100,11 +100,11 @@ static CogitoNode* cogito_bottom_sheet_new_obj(YisStr* title) {
   }
   n->hexpand = true;
   n->gap = 8;
-  n->bottom_sheet.dragging = false;
-  n->bottom_sheet.expanded = false;
-  n->bottom_sheet.drag_start_y = 0;
-  n->bottom_sheet.drag_start_h = 0;
-  n->bottom_sheet.desired_h = 0;
+  n->kd->bottom_sheet.dragging = false;
+  n->kd->bottom_sheet.expanded = false;
+  n->kd->bottom_sheet.drag_start_y = 0;
+  n->kd->bottom_sheet.drag_start_h = 0;
+  n->kd->bottom_sheet.desired_h = 0;
   return n;
 }
 

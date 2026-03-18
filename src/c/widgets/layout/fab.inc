@@ -11,13 +11,13 @@ case COGITO_FAB: {
 
       if (p->kind == COGITO_NAV_RAIL) {
         int rail_w = p->w > 0 ? p->w : COGITO_NAV_RAIL_COLLAPSED_WIDTH;
-        int top_offset = p->nav_rail.expanded
+        int top_offset = p->kd->nav_rail.expanded
           ? COGITO_NAV_RAIL_EXPANDED_TOP_OFFSET
           : COGITO_NAV_RAIL_COLLAPSED_TOP_OFFSET;
-        int section_gap = p->nav_rail.expanded
+        int section_gap = p->kd->nav_rail.expanded
           ? COGITO_NAV_RAIL_EXPANDED_SECTION_GAP
           : COGITO_NAV_RAIL_COLLAPSED_SECTION_GAP;
-        if (p->nav_rail.expanded) {
+        if (p->kd->nav_rail.expanded) {
           int indicator_w = rail_w - (COGITO_NAV_RAIL_EXPANDED_SIDE_PADDING * 2);
           if (indicator_w < COGITO_NAV_RAIL_EXPANDED_INDICATOR_MIN_WIDTH) {
             indicator_w = COGITO_NAV_RAIL_EXPANDED_INDICATOR_MIN_WIDTH;
@@ -31,7 +31,7 @@ case COGITO_FAB: {
           n->x = p->x + (rail_w - n->w) / 2 + n->margin_left - n->margin_right;
         }
         int y = p->y + p->padding_top + top_offset + n->margin_top;
-        if (p->nav_rail.show_toggle) {
+        if (p->kd->nav_rail.show_toggle) {
           y += COGITO_NAV_RAIL_SHARED_TOGGLE_BUTTON_SIZE + section_gap;
         }
         n->y = y;
@@ -67,7 +67,7 @@ case COGITO_FAB: {
         cogito_intrinsic_size(fabs[i], &iw, &ih);
         if (iw > 0) fabs[i]->w = iw;
         if (ih > 0) fabs[i]->h = ih;
-        if (fabs[i]->fab.extended) ext_count++;
+        if (fabs[i]->kd->fab.extended) ext_count++;
       }
 
       int gap = 16;

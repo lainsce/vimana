@@ -60,8 +60,8 @@ case COGITO_APPBAR:
   {
     int title_cls = (appbar_type == COGITO_APPBAR_TYPE_LARGE) ? COGITO_LABEL_CLASS_DISPLAY : COGITO_LABEL_CLASS_TITLE;
     int tsz = cogito_appbar_title_font_size_for_type(appbar_type);
-    int ty = n->appbar.title_y ? n->appbar.title_y : (n->y + 12);
-    int tx = n->appbar.title_x ? n->appbar.title_x : (n->x + 16);
+    int ty = n->kd->appbar.title_y ? n->kd->appbar.title_y : (n->y + 12);
+    int tx = n->kd->appbar.title_x ? n->kd->appbar.title_x : (n->x + 16);
     int max_w = text_right_bound - tx;
     CogitoColor tcol = cogito_label_class_color(title_cls, text);
     bool tbold = cogito_label_class_bold(title_cls, false);
@@ -91,8 +91,8 @@ case COGITO_APPBAR:
     int ssz = (appbar_type == COGITO_APPBAR_TYPE_SMALL)
       ? cogito_label_class_font_size(COGITO_LABEL_CLASS_CONTENT_TITLE, 16)
       : cogito_appbar_subtitle_font_size_for_type(appbar_type);
-    int sy = n->appbar.subtitle_y ? n->appbar.subtitle_y : (n->y + 12 + t_h + 4);
-    int tx = n->appbar.title_x ? n->appbar.title_x : (n->x + 16);
+    int sy = n->kd->appbar.subtitle_y ? n->kd->appbar.subtitle_y : (n->y + 12 + t_h + 4);
+    int tx = n->kd->appbar.title_x ? n->kd->appbar.title_x : (n->x + 16);
     int max_w = text_right_bound - tx;
     CogitoColor scol = cogito_label_class_color(subtitle_cls, text);
     bool sbold = cogito_label_class_bold(subtitle_cls, false);

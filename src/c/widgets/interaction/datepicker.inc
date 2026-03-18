@@ -18,15 +18,15 @@ static CogitoNode* cogito_datepicker_open_panel(CogitoNode* owner) {
 
   CogitoNode* panel = cogito_node_new(COGITO_DATEPICKER);
   panel->editable = false;
-  panel->datepicker.popover_panel = true;
-  panel->datepicker.owner = owner;
-  panel->datepicker.year = owner->datepicker.year;
-  panel->datepicker.month = owner->datepicker.month;
-  panel->datepicker.day = owner->datepicker.day;
-  panel->datepicker.view_year = owner->datepicker.year;
-  panel->datepicker.view_month = owner->datepicker.month;
-  panel->datepicker.list_start = 0;
-  panel->datepicker.mode = COGITO_DATEPICKER_MODE_CALENDAR;
+  panel->kd->datepicker.popover_panel = true;
+  panel->kd->datepicker.owner = owner;
+  panel->kd->datepicker.year = owner->kd->datepicker.year;
+  panel->kd->datepicker.month = owner->kd->datepicker.month;
+  panel->kd->datepicker.day = owner->kd->datepicker.day;
+  panel->kd->datepicker.view_year = owner->kd->datepicker.year;
+  panel->kd->datepicker.view_month = owner->kd->datepicker.month;
+  panel->kd->datepicker.list_start = 0;
+  panel->kd->datepicker.mode = COGITO_DATEPICKER_MODE_CALENDAR;
   panel->radius_set = true;
   panel->border_radius = 20;
 
@@ -47,10 +47,10 @@ static void cogito_datepicker_show_popover(CogitoNode* anchor) {
 }
 
 static bool cogito_datepicker_hit_panel(CogitoNode* panel, int mx, int my) {
-  if (!panel || panel->kind != COGITO_DATEPICKER || !panel->datepicker.popover_panel) return false;
+  if (!panel || panel->kind != COGITO_DATEPICKER || !panel->kd->datepicker.popover_panel) return false;
   cogito_datepicker_ensure_date(panel);
 
-  CogitoNode* owner = panel->datepicker.owner;
+  CogitoNode* owner = panel->kd->datepicker.owner;
   CogitoNode* win = cogito_node_window(panel);
   CogitoDatePickerPanelLayout ly;
   cogito_datepicker_panel_layout(panel, &ly);
@@ -71,13 +71,13 @@ static bool cogito_datepicker_hit_panel(CogitoNode* panel, int mx, int my) {
       bool changed = false;
       if (owner && owner->kind == COGITO_DATEPICKER) {
         cogito_datepicker_ensure_date(owner);
-        changed = !cogito_datepicker_same_date(owner->datepicker.year, owner->datepicker.month, owner->datepicker.day,
-                                               panel->datepicker.year, panel->datepicker.month, panel->datepicker.day);
-        owner->datepicker.year = panel->datepicker.year;
-        owner->datepicker.month = panel->datepicker.month;
-        owner->datepicker.day = panel->datepicker.day;
-        owner->datepicker.view_year = owner->datepicker.year;
-        owner->datepicker.view_month = owner->datepicker.month;
+        changed = !cogito_datepicker_same_date(owner->kd->datepicker.year, owner->kd->datepicker.month, owner->kd->datepicker.day,
+                                               panel->kd->datepicker.year, panel->kd->datepicker.month, panel->kd->datepicker.day);
+        owner->kd->datepicker.year = panel->kd->datepicker.year;
+        owner->kd->datepicker.month = panel->kd->datepicker.month;
+        owner->kd->datepicker.day = panel->kd->datepicker.day;
+        owner->kd->datepicker.view_year = owner->kd->datepicker.year;
+        owner->kd->datepicker.view_month = owner->kd->datepicker.month;
       }
       if (win) cogito_popover_close(YV_OBJ(win));
       if (changed && owner) cogito_invoke_change(owner);
@@ -107,8 +107,8 @@ static bool cogito_datepicker_hit_panel(CogitoNode* panel, int mx, int my) {
       bool in_view = false;
       if (cogito_datepicker_panel_hit_day(panel, mx, my, &y, &m, &d, &in_view)) {
         cogito_datepicker_set_selected(panel, y, m, d);
-        panel->datepicker.view_year = y;
-        panel->datepicker.view_month = m;
+        panel->kd->datepicker.view_year = y;
+        panel->kd->datepicker.view_month = m;
         needs_relayout = true;
         (void)in_view;
       }
@@ -158,7 +158,7 @@ static bool cogito_datepicker_hit_panel(CogitoNode* panel, int mx, int my) {
 }
 
 static bool cogito_datepicker_wheel(CogitoNode* panel, int mx, int my, float wheel) {
-  if (!panel || panel->kind != COGITO_DATEPICKER || !panel->datepicker.popover_panel) return false;
+  if (!panel || panel->kind != COGITO_DATEPICKER || !panel->kd->datepicker.popover_panel) return false;
   if (wheel == 0.0f) return false;
 
   cogito_datepicker_ensure_date(panel);
@@ -177,20 +177,20 @@ static bool cogito_datepicker_wheel(CogitoNode* panel, int mx, int my, float whe
   if (total <= rows) return false;
 
   cogito_datepicker_selector_clamp_start(panel, mode, rows);
-  int old_start = panel->datepicker.list_start;
+  int old_start = panel->kd->datepicker.list_start;
 
   int notches = (int)lroundf(wheel);
   if (notches == 0) notches = (wheel > 0.0f) ? 1 : -1;
-  panel->datepicker.list_start -= notches;
+  panel->kd->datepicker.list_start -= notches;
   cogito_datepicker_selector_clamp_start(panel, mode, rows);
 
-  return panel->datepicker.list_start != old_start;
+  return panel->kd->datepicker.list_start != old_start;
 }
 
 static bool cogito_datepicker_hit(CogitoNode* n, int mx, int my, bool clicked) {
   if (!n || n->kind != COGITO_DATEPICKER || !clicked) return false;
 
-  if (n->datepicker.popover_panel) {
+  if (n->kd->datepicker.popover_panel) {
     return cogito_datepicker_hit_panel(n, mx, my);
   }
 
@@ -207,10 +207,10 @@ static bool cogito_datepicker_hit(CogitoNode* n, int mx, int my, bool clicked) {
 static CogitoNode* cogito_datepicker_new_obj(void) {
   CogitoNode* dp = cogito_node_new(COGITO_DATEPICKER);
   dp->editable = false;
-  dp->datepicker.popover_panel = false;
-  dp->datepicker.owner = NULL;
-  dp->datepicker.mode = COGITO_DATEPICKER_MODE_CALENDAR;
-  dp->datepicker.list_start = 0;
+  dp->kd->datepicker.popover_panel = false;
+  dp->kd->datepicker.owner = NULL;
+  dp->kd->datepicker.mode = COGITO_DATEPICKER_MODE_CALENDAR;
+  dp->kd->datepicker.list_start = 0;
   cogito_datepicker_ensure_date(dp);
   return dp;
 }

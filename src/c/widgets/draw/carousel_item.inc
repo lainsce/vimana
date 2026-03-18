@@ -77,8 +77,8 @@ case COGITO_CAROUSEL_ITEM: {
         }
         if (label_in_bounds && tw + lbl_pad * 2 <= n->w) {
           CogitoColor lbl_color;
-          if (image_child && image_child->image.loaded) {
-            lbl_color = (image_child->image.avg_lum < 0.55f)
+          if (image_child && image_child->kd->image.loaded) {
+            lbl_color = (image_child->kd->image.avg_lum < 0.55f)
               ? (cogito_cached_inverse_on_surface.a ? cogito_cached_inverse_on_surface : cogito_on_color(bg))
               : (cogito_cached_on_surface.a ? cogito_cached_on_surface : cogito_on_color(bg));
           } else {

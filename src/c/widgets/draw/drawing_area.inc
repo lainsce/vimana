@@ -8,12 +8,12 @@ case COGITO_DRAWING_AREA: {
       if (radius < 0) radius = 0;
       cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
       CogitoColor stroke = s.has_text ? s.text : (n->text_color_set ? n->text_color : cogito_color(0, 0, 0, 255));
-      int pc = n->drawing_area.point_count;
+      int pc = n->kd->drawing_area.point_count;
       for (int i = 1; i < pc; i++) {
-        int x0 = n->drawing_area.points_x[i - 1];
-        int y0 = n->drawing_area.points_y[i - 1];
-        int x1 = n->drawing_area.points_x[i];
-        int y1 = n->drawing_area.points_y[i];
+        int x0 = n->kd->drawing_area.points_x[i - 1];
+        int y0 = n->kd->drawing_area.points_y[i - 1];
+        int x1 = n->kd->drawing_area.points_x[i];
+        int y1 = n->kd->drawing_area.points_y[i];
         if (x0 < 0 || y0 < 0 || x1 < 0 || y1 < 0) continue;
         cogito_draw_line(n->x + x0, n->y + y0, n->x + x1, n->y + y1, stroke);
       }

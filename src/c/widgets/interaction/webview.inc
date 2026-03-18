@@ -1,7 +1,7 @@
 static CogitoNode* cogito_webview_new_obj(YisStr* url) {
   CogitoNode* n = cogito_node_new(COGITO_WEBVIEW);
   cogito_node_set_icon(n, url);
-  n->webview.open_external_on_click = false;
+  n->kd->webview.open_external_on_click = false;
   return n;
 }
 
@@ -32,14 +32,14 @@ static void cogito_webview_set_open_external_on_click(YisVal wvv, YisVal onv) {
   if (wvv.tag != EVT_OBJ) yis_trap("cogito.webview_set_open_external_on_click expects webview");
   CogitoNode* n = (CogitoNode*)wvv.as.p;
   if (!n || n->kind != COGITO_WEBVIEW) yis_trap("cogito.webview_set_open_external_on_click expects webview");
-  n->webview.open_external_on_click = yis_as_bool(onv);
+  n->kd->webview.open_external_on_click = yis_as_bool(onv);
 }
 
 static YisVal cogito_webview_get_open_external_on_click(YisVal wvv) {
   if (wvv.tag != EVT_OBJ) yis_trap("cogito.webview_get_open_external_on_click expects webview");
   CogitoNode* n = (CogitoNode*)wvv.as.p;
   if (!n || n->kind != COGITO_WEBVIEW) yis_trap("cogito.webview_get_open_external_on_click expects webview");
-  return YV_BOOL(n->webview.open_external_on_click);
+  return YV_BOOL(n->kd->webview.open_external_on_click);
 }
 
 static YisVal cogito_webview_open(YisVal wvv) {

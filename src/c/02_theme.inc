@@ -387,9 +387,9 @@ static CogitoStyle cogito_theme_resolve(CogitoKind kind) {
 static CogitoStyle cogito_theme_resolve_node(const CogitoNode* n) {
   CogitoStyle s = cogito_theme_resolve(n->kind);
   if (n->kind == COGITO_LABEL &&
-      n->label.cls > COGITO_LABEL_CLASS_NONE &&
-      n->label.cls < COGITO_LABEL_CLASS_COUNT) {
-    s = cogito_style_merge(&s, &cogito_theme.label_class[n->label.cls
+      n->kd->label.cls > COGITO_LABEL_CLASS_NONE &&
+      n->kd->label.cls < COGITO_LABEL_CLASS_COUNT) {
+    s = cogito_style_merge(&s, &cogito_theme.label_class[n->kd->label.cls
     ]);
   }
   if (n->font_mono) {
@@ -399,14 +399,14 @@ static CogitoStyle cogito_theme_resolve_node(const CogitoNode* n) {
     s = cogito_style_merge(&s, &cogito_theme.class_tabular);
   }
   if (n->kind == COGITO_BUTTON) {
-    if (n->button.outlined) {
+    if (n->kd->button.outlined) {
       s = cogito_style_merge(&s, &cogito_theme.button_outlined);
     }
-    if (n->button.text_style) {
+    if (n->kd->button.text_style) {
       s = cogito_style_merge(&s, &cogito_theme.button_text);
     }
   } else if (n->kind == COGITO_ICONBTN) {
-    if (n->button.outlined) {
+    if (n->kd->button.outlined) {
       s = cogito_style_merge(&s, &cogito_theme.iconbtn_outlined);
     }
   }
@@ -683,7 +683,7 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
   bool disabled = cogito_node_disabled(n);
   bool focused = (!disabled && n && n == cogito_focused && cogito_focus_visible);
   if (n && (n->kind == COGITO_CHECKBOX || n->kind == COGITO_SWITCH)) checked = n->checked;
-  else if (n && n->kind == COGITO_CHIP) checked = n->chip.selected;
+  else if (n && n->kind == COGITO_CHIP) checked = n->kd->chip.selected;
   // Apply iconbtn color style base BEFORE per_kind hover/active so color style wins
   bool iconbtn_has_custom_class = false;
   bool iconbtn_class_is_filled = false;
@@ -705,7 +705,7 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
   if (n->kind == COGITO_ICONBTN && !iconbtn_has_custom_class) {
     // Determine style: class name takes precedence over icon_color_style
     // If outlined property is set, always use outlined style
-    if (n->button.outlined || iconbtn_class_is_outlined) {
+    if (n->kd->button.outlined || iconbtn_class_is_outlined) {
       s = cogito_style_merge(&s, &cogito_theme.iconbtn_outlined);
       if (!disabled) {
         if (active) s = cogito_style_merge(&s, &cogito_theme.iconbtn_outlined_active);
@@ -731,7 +731,7 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
       }
     } else {
       // No class specified, use icon_color_style
-      int cs = n->button.icon_color_style;
+      int cs = n->kd->button.icon_color_style;
       if (cs == 0) {
         s = cogito_style_merge(&s, &cogito_theme.iconbtn_filled);
         if (!disabled) {
@@ -779,20 +779,20 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
     ]);
   }
   if (n->kind == COGITO_LABEL &&
-      n->label.cls > COGITO_LABEL_CLASS_NONE &&
-      n->label.cls < COGITO_LABEL_CLASS_COUNT) {
-    if (checked) s = cogito_style_merge(&s, &cogito_theme.label_class_checked[n->label.cls
+      n->kd->label.cls > COGITO_LABEL_CLASS_NONE &&
+      n->kd->label.cls < COGITO_LABEL_CLASS_COUNT) {
+    if (checked) s = cogito_style_merge(&s, &cogito_theme.label_class_checked[n->kd->label.cls
     ]);
     if (disabled) {
-      s = cogito_style_merge(&s, &cogito_theme.label_class_disabled[n->label.cls
+      s = cogito_style_merge(&s, &cogito_theme.label_class_disabled[n->kd->label.cls
       ]);
     }
     if (!disabled) {
-      if (focused) s = cogito_style_merge(&s, &cogito_theme.label_class_focused[n->label.cls
+      if (focused) s = cogito_style_merge(&s, &cogito_theme.label_class_focused[n->kd->label.cls
       ]);
-      if (active) s = cogito_style_merge(&s, &cogito_theme.label_class_active[n->label.cls
+      if (active) s = cogito_style_merge(&s, &cogito_theme.label_class_active[n->kd->label.cls
       ]);
-      else if (hover) s = cogito_style_merge(&s, &cogito_theme.label_class_hover[n->label.cls
+      else if (hover) s = cogito_style_merge(&s, &cogito_theme.label_class_hover[n->kd->label.cls
       ]);
     }
   }
@@ -819,7 +819,7 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
     }
   }
   if (n->kind == COGITO_BUTTON) {
-    if (n->button.outlined) {
+    if (n->kd->button.outlined) {
       if (disabled) {
         s = cogito_style_merge(&s, &cogito_theme.button_outlined_disabled);
       }
@@ -829,7 +829,7 @@ static CogitoStyle cogito_theme_resolve_node_state(const CogitoNode* n, bool hov
         else if (hover) s = cogito_style_merge(&s, &cogito_theme.button_outlined_hover);
       }
     }
-    if (n->button.text_style) {
+    if (n->kd->button.text_style) {
       if (disabled) {
         s = cogito_style_merge(&s, &cogito_theme.button_text_disabled);
       }
@@ -1249,7 +1249,7 @@ static int cogito_font_size(void) {
 static int cogito_label_font_size(const CogitoNode* n) {
   if (!n) return cogito_font_size();
   if (n->font_size_set && n->font_size > 0) return n->font_size;
-  switch (n->label.cls) {
+  switch (n->kd->label.cls) {
     case COGITO_LABEL_CLASS_BIG_DISPLAY: return 56;
     case COGITO_LABEL_CLASS_DISPLAY: return 36;
     case COGITO_LABEL_CLASS_VIEW_TITLE:
@@ -1314,7 +1314,7 @@ static int cogito_label_baseline_weight(const CogitoNode* n) {
   if (!n) return 400;
   if (n->font_weight_set) return n->font_weight;
   int base;
-  switch (n->label.cls) {
+  switch (n->kd->label.cls) {
     case COGITO_LABEL_CLASS_VIEW_TITLE:
     case COGITO_LABEL_CLASS_TITLE:
     case COGITO_LABEL_CLASS_CONTENT_TITLE:

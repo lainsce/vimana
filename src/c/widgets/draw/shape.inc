@@ -4,12 +4,12 @@ case COGITO_SHAPE: {
       cogito_node_hover_state(n, &hover, &active);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
       CogitoColor fill = s.has_bg ? s.bg : (n->bg_set ? n->bg : cogito_color(24, 24, 33, 255));
-      if (n->shape.custom_color_set) {
-        fill = n->shape.custom_color;
+      if (n->kd->shape.custom_color_set) {
+        fill = n->kd->shape.custom_color;
       }
       CogitoColor stroke = s.has_border ? s.border : (n->border_color_set ? n->border_color : fill);
       int stroke_w = s.has_border_width ? s.border_width : (n->border_width_set ? n->border_width : 0);
-      if (n->shape.color_style > 0 && !n->shape.custom_color_set) {
+      if (n->kd->shape.color_style > 0 && !n->kd->shape.custom_color_set) {
         CogitoColor primary = cogito_color(103, 80, 164, 255);
         CogitoColor secondary = cogito_color(98, 91, 113, 255);
         CogitoColor tertiary = cogito_color(39, 116, 125, 255);
@@ -31,23 +31,23 @@ case COGITO_SHAPE: {
         }
 
         // Prefer explicit SUM custom classes when present.
-        const char* tone_name = (n->shape.color_style == 1)
+        const char* tone_name = (n->kd->shape.color_style == 1)
             ? "primary"
-            : ((n->shape.color_style == 2) ? "secondary" : "tertiary");
+            : ((n->kd->shape.color_style == 2) ? "secondary" : "tertiary");
         for (int i = 0; i < cogito_theme.custom_class_count; i++) {
           if (strcmp(cogito_theme.custom_classes[i].name, tone_name) != 0) continue;
           if (cogito_theme.custom_classes[i].kind != COGITO_KIND_COUNT &&
               cogito_theme.custom_classes[i].kind != COGITO_SHAPE) continue;
           CogitoStyle cs = cogito_theme.custom_classes[i].style;
           if (cs.has_bg && cs.bg.a > 0) {
-            if (n->shape.color_style == 1) primary = cs.bg;
-            else if (n->shape.color_style == 2) secondary = cs.bg;
+            if (n->kd->shape.color_style == 1) primary = cs.bg;
+            else if (n->kd->shape.color_style == 2) secondary = cs.bg;
             else tertiary = cs.bg;
             break;
           }
           if (cs.has_text && cs.text.a > 0) {
-            if (n->shape.color_style == 1) primary = cs.text;
-            else if (n->shape.color_style == 2) secondary = cs.text;
+            if (n->kd->shape.color_style == 1) primary = cs.text;
+            else if (n->kd->shape.color_style == 2) secondary = cs.text;
             else tertiary = cs.text;
             break;
           }
@@ -66,21 +66,21 @@ case COGITO_SHAPE: {
         if (primary.a == 0) primary = cogito_color(103, 80, 164, 255);
         if (secondary.a == 0) secondary = primary;
         if (tertiary.a == 0) tertiary = cogito_color(39, 116, 125, 255);
-        if (n->shape.color_style == 1) fill = primary;
-        else if (n->shape.color_style == 2) fill = secondary;
-        else if (n->shape.color_style == 3) fill = tertiary;
+        if (n->kd->shape.color_style == 1) fill = primary;
+        else if (n->kd->shape.color_style == 2) fill = secondary;
+        else if (n->kd->shape.color_style == 3) fill = tertiary;
         stroke = fill;
       }
 
       float px[COGITO_SHAPE_SVG_POLY_MAX];
       float py[COGITO_SHAPE_SVG_POLY_MAX];
-      int point_count = n->shape.svg_poly_count;
+      int point_count = n->kd->shape.svg_poly_count;
       bool use_svg_poly = (point_count >= 3);
       if (!use_svg_poly) point_count = COGITO_SHAPE_VERTEX_COUNT;
       if (point_count > COGITO_SHAPE_SVG_POLY_MAX) point_count = COGITO_SHAPE_SVG_POLY_MAX;
       for (int i = 0; i < point_count; i++) {
-        float vx = use_svg_poly ? n->shape.svg_poly[i * 2 + 0] : n->shape.vertices[i * 2 + 0];
-        float vy = use_svg_poly ? n->shape.svg_poly[i * 2 + 1] : n->shape.vertices[i * 2 + 1];
+        float vx = use_svg_poly ? n->kd->shape.svg_poly[i * 2 + 0] : n->kd->shape.vertices[i * 2 + 0];
+        float vy = use_svg_poly ? n->kd->shape.svg_poly[i * 2 + 1] : n->kd->shape.vertices[i * 2 + 1];
         if (vx < 0.0f) vx = 0.0f;
         if (vx > 1.0f) vx = 1.0f;
         if (vy < 0.0f) vy = 0.0f;
@@ -89,8 +89,8 @@ case COGITO_SHAPE: {
         py[i] = (float)n->y + vy * (float)(n->h - 1);
       }
 
-      bool pixel_shape = (n->shape.preset == COGITO_SHAPE_PIXEL_CIRCLE ||
-                          n->shape.preset == COGITO_SHAPE_PIXEL_TRIANGLE);
+      bool pixel_shape = (n->kd->shape.preset == COGITO_SHAPE_PIXEL_CIRCLE ||
+                          n->kd->shape.preset == COGITO_SHAPE_PIXEL_TRIANGLE);
       bool smooth_points = !pixel_shape && !use_svg_poly;
       bool antialias = !pixel_shape;
       if (antialias &&
@@ -104,7 +104,7 @@ case COGITO_SHAPE: {
       }
       cogito_draw_shape_polygon(px, py, point_count, fill, stroke, stroke_w, smooth_points, antialias);
       // --- Clip children through shape polygon ---
-      if (n->shape.clip_children && n->len > 0 && cogito_backend &&
+      if (n->kd->shape.clip_children && n->len > 0 && cogito_backend &&
           cogito_backend->render_target_create &&
           cogito_backend->set_render_target &&
           cogito_backend->draw_texture_polygon &&
@@ -125,8 +125,8 @@ case COGITO_SHAPE: {
           float uvx[COGITO_SHAPE_SVG_POLY_MAX];
           float uvy[COGITO_SHAPE_SVG_POLY_MAX];
           for (int i = 0; i < point_count; i++) {
-            float vx = use_svg_poly ? n->shape.svg_poly[i * 2 + 0] : n->shape.vertices[i * 2 + 0];
-            float vy = use_svg_poly ? n->shape.svg_poly[i * 2 + 1] : n->shape.vertices[i * 2 + 1];
+            float vx = use_svg_poly ? n->kd->shape.svg_poly[i * 2 + 0] : n->kd->shape.vertices[i * 2 + 0];
+            float vy = use_svg_poly ? n->kd->shape.svg_poly[i * 2 + 1] : n->kd->shape.vertices[i * 2 + 1];
             if (vx < 0.0f) vx = 0.0f;
             if (vx > 1.0f) vx = 1.0f;
             if (vy < 0.0f) vy = 0.0f;

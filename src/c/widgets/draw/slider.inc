@@ -2,7 +2,7 @@ case COGITO_SLIDER: {
       bool hover = false;
       bool active = false;
       // If slider is being dragged, force active state
-      if (n->slider.dragging) {
+      if (n->kd->slider.dragging) {
         hover = true;
         active = true;
       } else {
@@ -36,13 +36,13 @@ case COGITO_SLIDER: {
       bool cp_panel_slider = false;
       int cp_slider_channel = -1;
       CogitoNode* cp_panel = NULL;
-      if (n->parent && n->parent->kind == COGITO_COLORPICKER && n->parent->colorpicker.popover_panel) {
+      if (n->parent && n->parent->kind == COGITO_COLORPICKER && n->parent->kd->colorpicker.popover_panel) {
         cp_panel = n->parent;
         cp_slider_channel = cogito_colorpicker_panel_slider_channel(cp_panel, n);
         cp_panel_slider = (cp_slider_channel >= 0);
       }
 
-      int slider_size = (int)n->slider.size;
+      int slider_size = (int)n->kd->slider.size;
       if (slider_size < COGITO_SLIDER_SIZE_XS || slider_size > COGITO_SLIDER_SIZE_XL) {
         slider_size = COGITO_SLIDER_SIZE_XS;
       }
@@ -52,7 +52,7 @@ case COGITO_SLIDER: {
       const int endpoint_pad_y = 6;
       const int thumb_w = 6;
       int thumb_w_active = thumb_w;
-      if (active || n->slider.dragging) thumb_w_active = 2;
+      if (active || n->kd->slider.dragging) thumb_w_active = 2;
       int rail_h = 16;
       int thumb_h = 44;
       int track_r = 8;
@@ -85,7 +85,7 @@ case COGITO_SLIDER: {
       int cy = n->y + n->h / 2;
       int x0 = n->x + pad;
       int x1 = n->x + n->w - pad;
-      if (n->slider.shape == COGITO_SLIDER_SHAPE_WAVY) {
+      if (n->kd->slider.shape == COGITO_SLIDER_SHAPE_WAVY) {
         x0 += 4;
         x1 -= 4;
       }
@@ -96,10 +96,10 @@ case COGITO_SLIDER: {
 
       double t0 = 0.0;
       double t1 = 0.0;
-      double span = n->slider.max - n->slider.min;
+      double span = n->kd->slider.max - n->kd->slider.min;
       if (span > 0.0) {
-        t0 = (n->slider.value - n->slider.min) / span;
-        t1 = (n->slider.value2 - n->slider.min) / span;
+        t0 = (n->kd->slider.value - n->kd->slider.min) / span;
+        t1 = (n->kd->slider.value2 - n->kd->slider.min) / span;
       }
       if (t0 < 0.0) t0 = 0.0;
       if (t0 > 1.0) t0 = 1.0;
@@ -117,8 +117,8 @@ case COGITO_SLIDER: {
       }
 
       int zero_k = x0 + (x1 - x0) / 2;
-      if (span > 0.0 && n->slider.min < 0.0 && n->slider.max > 0.0) {
-        double tz = (0.0 - n->slider.min) / span;
+      if (span > 0.0 && n->kd->slider.min < 0.0 && n->kd->slider.max > 0.0) {
+        double tz = (0.0 - n->kd->slider.min) / span;
         if (tz < 0.0) tz = 0.0;
         if (tz > 1.0) tz = 1.0;
         zero_k = x0 + (int)lround((double)(x1 - x0) * tz);
@@ -141,13 +141,13 @@ case COGITO_SLIDER: {
       int active_rl = inner_r;
       int active_rr = inner_r;
 
-      if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
+      if (n->kd->slider.mode == COGITO_SLIDER_MODE_RANGE) {
         inactive_left_end = k0_left - gap;
         inactive_right_start = k1_right + gap;
         active_start = k0_right + gap;
         active_end = k1_left - gap;
         draw_active = active_end > active_start;
-      } else if (n->slider.mode == COGITO_SLIDER_MODE_CENTERED) {
+      } else if (n->kd->slider.mode == COGITO_SLIDER_MODE_CENTERED) {
         int center_gap = 2;
         if (k0 < zero_k) {
           inactive_left_end = k0_left - gap;
@@ -182,8 +182,8 @@ case COGITO_SLIDER: {
         const double hue_track_max_deg = 300.0; // red -> ... -> magenta
         const double hue_track_chroma = 100.0;
         const double hue_track_tone = 50.0;
-        double hue = cp_panel->colorpicker.h;
-        double tone = cp_panel->colorpicker.t;
+        double hue = cp_panel->kd->colorpicker.h;
+        double tone = cp_panel->kd->colorpicker.t;
         if (tone < 0.0) tone = 0.0;
         if (tone > 100.0) tone = 100.0;
         CogitoColor chroma_gray = cogito_hct_to_rgb(hue, 0.0, tone);
@@ -261,7 +261,7 @@ case COGITO_SLIDER: {
                                     active_rl, active_rr, active_rr, active_rl);
         }
       } else {
-        bool wavy = (n->slider.shape == COGITO_SLIDER_SHAPE_WAVY);
+        bool wavy = (n->kd->slider.shape == COGITO_SLIDER_SHAPE_WAVY);
 
         double wave_thickness = (double)rail_h;
         double wave_amp = 0.0;
@@ -295,7 +295,7 @@ case COGITO_SLIDER: {
         // In wavy NORMAL mode the left inactive segment covers the same region
         // as the active wave, so skip it. In RANGE/CENTERED modes the left
         // inactive is outside the active region and should always render.
-        bool hide_inactive_left = wavy && (n->slider.mode == COGITO_SLIDER_MODE_NORMAL);
+        bool hide_inactive_left = wavy && (n->kd->slider.mode == COGITO_SLIDER_MODE_NORMAL);
         if (!hide_inactive_left && inactive_left_end > rx0) {
           int seg_w = inactive_left_end - rx0;
           cogito_draw_rect_radii_aa(rx0, cy - inactive_h / 2, seg_w, inactive_h, inactive_track,
@@ -323,8 +323,8 @@ case COGITO_SLIDER: {
       bool draw_step_markers = false;
       bool draw_left_end_dot = false;
       bool draw_right_end_dot = false;
-      if (n->slider.show_end_dots) {
-        if (n->slider.mode == COGITO_SLIDER_MODE_NORMAL) {
+      if (n->kd->slider.show_end_dots) {
+        if (n->kd->slider.mode == COGITO_SLIDER_MODE_NORMAL) {
           // Normal slider starts from the left side, so only show the opposite
           // endpoint marker on the right.
           draw_right_end_dot = true;
@@ -339,7 +339,7 @@ case COGITO_SLIDER: {
         const double end_dot_hide_t = 0.02;
         double left_handle_t = t0;
         double right_handle_t = t0;
-        if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
+        if (n->kd->slider.mode == COGITO_SLIDER_MODE_RANGE) {
           left_handle_t = t0;
           right_handle_t = t1;
           if (right_handle_t < left_handle_t) {
@@ -355,12 +355,12 @@ case COGITO_SLIDER: {
           draw_right_end_dot = false;
         }
       }
-      if (require_stop_indicator && n->slider.mode == COGITO_SLIDER_MODE_NORMAL) {
+      if (require_stop_indicator && n->kd->slider.mode == COGITO_SLIDER_MODE_NORMAL) {
         draw_right_end_dot = true;
       }
 
-      if (!cp_panel_slider && span > 0.0 && n->slider.show_step_dots) {
-        double step = cogito_slider_step_normalized(n->slider.step);
+      if (!cp_panel_slider && span > 0.0 && n->kd->slider.show_step_dots) {
+        double step = cogito_slider_step_normalized(n->kd->slider.step);
         if (step > 0.000001) {
           int step_count = (int)floor(span / step + 0.5);
           if (step_count >= 1 && step_count <= 256) {
@@ -374,13 +374,13 @@ case COGITO_SLIDER: {
             for (int i = 0; i <= step_count; i++) {
               if (i == 0 && !draw_left_end_dot) continue;
               if (i == step_count && !draw_right_end_dot) continue;
-              double sv = n->slider.min + (double)i * step;
-              if (i == step_count || sv > n->slider.max) sv = n->slider.max;
-              double tu = (sv - n->slider.min) / span;
+              double sv = n->kd->slider.min + (double)i * step;
+              if (i == step_count || sv > n->kd->slider.max) sv = n->kd->slider.max;
+              double tu = (sv - n->kd->slider.min) / span;
               if (tu < 0.0) tu = 0.0;
               if (tu > 1.0) tu = 1.0;
               int sx = x0 + (int)lround((double)(x1 - x0) * tu);
-              if (n->slider.mode == COGITO_SLIDER_MODE_CENTERED &&
+              if (n->kd->slider.mode == COGITO_SLIDER_MODE_CENTERED &&
                   i != 0 && i != step_count && abs(sx - center_x) <= 1) {
                 continue;
               }
@@ -394,7 +394,7 @@ case COGITO_SLIDER: {
         }
       }
 
-      if (n->slider.mode == COGITO_SLIDER_MODE_NORMAL &&
+      if (n->kd->slider.mode == COGITO_SLIDER_MODE_NORMAL &&
           slider_size >= COGITO_SLIDER_SIZE_M &&
           n->icon && n->icon->data && n->icon->data[0] &&
           draw_active) {
@@ -423,22 +423,22 @@ case COGITO_SLIDER: {
       }
 
       int state_x = k0;
-      if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
-        state_x = (n->slider.active_handle == 2) ? k1 : k0;
-      } else if (n->slider.mode == COGITO_SLIDER_MODE_CENTERED) {
+      if (n->kd->slider.mode == COGITO_SLIDER_MODE_RANGE) {
+        state_x = (n->kd->slider.active_handle == 2) ? k1 : k0;
+      } else if (n->kd->slider.mode == COGITO_SLIDER_MODE_CENTERED) {
         state_x = k0;
       }
 
       // ---- Spring animation for thumb size on hover/active ----
       double dt = cogito_spring_dt;
-      double target_size = (hover || active || n->slider.dragging) ? 1.0 : 0.0;
+      double target_size = (hover || active || n->kd->slider.dragging) ? 1.0 : 0.0;
 
       if (!n->spring_h.inited) {
         cogito_spring_snap(&n->spring_h, target_size);
       }
 
       bool was_expanded = (n->spring_h.target >= 0.5);
-      bool is_expanded = (hover || active || n->slider.dragging);
+      bool is_expanded = (hover || active || n->kd->slider.dragging);
       if (was_expanded != is_expanded) {
         cogito_spring_snap(&n->spring_h, is_expanded ? 0.0 : 1.0);
       }
@@ -456,7 +456,7 @@ case COGITO_SLIDER: {
       int animated_thumb_r = animated_thumb_w / 2;
       if (animated_thumb_r < 2) animated_thumb_r = 2;
 
-      if (hover || active || n->slider.dragging || size_scale > 0.01f) {
+      if (hover || active || n->kd->slider.dragging || size_scale > 0.01f) {
         CogitoColor state_layer = cogito_node_state_layer_seed(n);
         state_layer.a = active ? 31 : 20;
         const int state_pad = 6;
@@ -471,12 +471,12 @@ case COGITO_SLIDER: {
 
       int k0_anim_left = k0 - animated_thumb_w / 2;
       cogito_draw_rect(k0_anim_left, cy - animated_thumb_h / 2, animated_thumb_w, animated_thumb_h, active_track, animated_thumb_r);
-      if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
+      if (n->kd->slider.mode == COGITO_SLIDER_MODE_RANGE) {
         int k1_anim_left = k1 - animated_thumb_w / 2;
         cogito_draw_rect(k1_anim_left, cy - animated_thumb_h / 2, animated_thumb_w, animated_thumb_h, active_track, animated_thumb_r);
       }
 
-      bool bubble_visible = n->slider.show_value_bubble && (active || n->slider.dragging);
+      bool bubble_visible = n->kd->slider.show_value_bubble && (active || n->kd->slider.dragging);
       if (!cp_panel_slider && bubble_visible) {
         int bubble_h = 40;
         int value_size = cogito_node_font_size(n);
@@ -494,18 +494,18 @@ case COGITO_SLIDER: {
 
         int handle_count = 1;
         int handle_idx[2] = {0, 0};
-        if (n->slider.mode == COGITO_SLIDER_MODE_RANGE) {
-          handle_idx[0] = (n->slider.active_handle == 2) ? 1 : 0;
+        if (n->kd->slider.mode == COGITO_SLIDER_MODE_RANGE) {
+          handle_idx[0] = (n->kd->slider.active_handle == 2) ? 1 : 0;
         }
         int handle_x[2] = {k0, k1};
-        double handle_val[2] = {n->slider.value, n->slider.value2};
+        double handle_val[2] = {n->kd->slider.value, n->kd->slider.value2};
 
         int bubble_y_base = cy - animated_thumb_h / 2 - 4 - bubble_h;
 
         for (int hi = 0; hi < handle_count; hi++) {
           int idx = handle_idx[hi];
           double bubble_value = handle_val[idx];
-          double display_value = bubble_value * n->slider.bubble_scale;
+          double display_value = bubble_value * n->kd->slider.bubble_scale;
           char value_buf[96];
           value_buf[0] = '\0';
 
@@ -524,8 +524,8 @@ case COGITO_SLIDER: {
             }
           }
 
-          const char* fmt = (n->slider.bubble_format && n->slider.bubble_format->data)
-            ? n->slider.bubble_format->data
+          const char* fmt = (n->kd->slider.bubble_format && n->kd->slider.bubble_format->data)
+            ? n->kd->slider.bubble_format->data
             : NULL;
           if (fmt && fmt[0]) {
             char time_buf[32];

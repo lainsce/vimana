@@ -2,9 +2,9 @@ case COGITO_BUTTON_GROUP: {
       // ButtonGroup intrinsic size is based on children (Button/IconButton)
       // Sum of child widths + gaps (must match layout gap values)
       
-      int btn_size_i = (n->buttongroup.size >= 0 && n->buttongroup.size <= 4) ? n->buttongroup.size : 2;
+      int btn_size_i = (n->kd->buttongroup.size >= 0 && n->kd->buttongroup.size <= 4) ? n->kd->buttongroup.size : 2;
       int buttongroup_gaps_i[] = {12, 12, 8, 8, 8}; // XS, S, M, L, XL
-      bool is_connected = (n->buttongroup.connected == 1);
+      bool is_connected = (n->kd->buttongroup.connected == 1);
       int actual_gap = is_connected ? 2 : buttongroup_gaps_i[btn_size_i];
       
       int total_w = 0;

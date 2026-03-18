@@ -109,8 +109,8 @@ static void cogito_scroller_state_store(const CogitoNode* n) {
     if (slot->key) free(slot->key);
     slot->key = cogito_scroller_state_dup(key);
   }
-  slot->scroll_x = n->scroller.scroll_x;
-  slot->scroll_y = n->scroller.scroll_y;
+  slot->scroll_x = n->kd->scroller.scroll_x;
+  slot->scroll_y = n->kd->scroller.scroll_y;
   slot->stamp = cogito_scroller_state_tick++;
 }
 
@@ -203,7 +203,7 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
   int cw = 0;
   int ch = 0;
   cogito_intrinsic_size(c, &cw, &ch);
-  if (!n->scroller.horz) {
+  if (!n->kd->scroller.horz) {
     cw = viewport_w;
   } else if (cw < viewport_w) {
     cw = viewport_w;
@@ -211,23 +211,23 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
   /* Re-measure content height given the actual width.
    * This lets text-wrapping nodes (textview, webview) report their natural
    * content height so the scroller knows when to show the scrollbar. */
-  if (n->scroller.vert) {
+  if (n->kd->scroller.vert) {
     int measured_h = cogito_scroller_measure_child_h(c, cw);
     if (measured_h > ch) ch = measured_h;
   }
-  if (!n->scroller.vert) {
+  if (!n->kd->scroller.vert) {
     ch = viewport_h;
   } else if (ch < viewport_h) {
     ch = viewport_h;
   }
-  n->scroller.content_w = cw;
-  n->scroller.content_h = ch;
+  n->kd->scroller.content_w = cw;
+  n->kd->scroller.content_h = ch;
   int max_x = cw - viewport_w;
   int max_y = ch - viewport_h;
   if (max_x < 0) max_x = 0;
   if (max_y < 0) max_y = 0;
 
-  CogitoNode* sync_src = n->scroller.sync_with;
+  CogitoNode* sync_src = n->kd->scroller.sync_with;
   if (sync_src && sync_src != n && sync_src->kind == COGITO_SCROLLER) {
     CogitoNode* src_win = cogito_node_window(sync_src);
     CogitoNode* dst_win = cogito_node_window(n);
@@ -245,54 +245,54 @@ static void cogito_layout_scroller(CogitoNode* n, int x, int y) {
         if (src_view_w < 0) src_view_w = 0;
         if (src_view_h < 0) src_view_h = 0;
       }
-      int src_max_x = sync_src->scroller.content_w - src_view_w;
-      int src_max_y = sync_src->scroller.content_h - src_view_h;
+      int src_max_x = sync_src->kd->scroller.content_w - src_view_w;
+      int src_max_y = sync_src->kd->scroller.content_h - src_view_h;
       if (src_max_x < 0) src_max_x = 0;
       if (src_max_y < 0) src_max_y = 0;
 
-      if (n->scroller.horz && sync_src->scroller.horz) {
+      if (n->kd->scroller.horz && sync_src->kd->scroller.horz) {
         if (src_max_x > 0 && max_x > 0) {
-          double p = (double)sync_src->scroller.scroll_x / (double)src_max_x;
+          double p = (double)sync_src->kd->scroller.scroll_x / (double)src_max_x;
           if (p < 0.0) p = 0.0;
           if (p > 1.0) p = 1.0;
-          n->scroller.scroll_x = (int)lround(p * (double)max_x);
+          n->kd->scroller.scroll_x = (int)lround(p * (double)max_x);
         } else {
-          n->scroller.scroll_x = 0;
+          n->kd->scroller.scroll_x = 0;
         }
       }
-      if (n->scroller.vert && sync_src->scroller.vert) {
+      if (n->kd->scroller.vert && sync_src->kd->scroller.vert) {
         if (src_max_y > 0 && max_y > 0) {
-          double p = (double)sync_src->scroller.scroll_y / (double)src_max_y;
+          double p = (double)sync_src->kd->scroller.scroll_y / (double)src_max_y;
           if (p < 0.0) p = 0.0;
           if (p > 1.0) p = 1.0;
-          n->scroller.scroll_y = (int)lround(p * (double)max_y);
+          n->kd->scroller.scroll_y = (int)lround(p * (double)max_y);
         } else {
-          n->scroller.scroll_y = 0;
+          n->kd->scroller.scroll_y = 0;
         }
       }
     }
   }
 
-  if (!n->scroller.state_restored) {
+  if (!n->kd->scroller.state_restored) {
     int saved_x = 0;
     int saved_y = 0;
     if (cogito_scroller_state_load(n, &saved_x, &saved_y)) {
-      n->scroller.scroll_x = saved_x;
-      n->scroller.scroll_y = saved_y;
+      n->kd->scroller.scroll_x = saved_x;
+      n->kd->scroller.scroll_y = saved_y;
     }
-    n->scroller.state_restored = true;
+    n->kd->scroller.state_restored = true;
   }
-  if (n->scroller.scroll_x < 0) n->scroller.scroll_x = 0;
-  if (n->scroller.scroll_y < 0) n->scroller.scroll_y = 0;
-  if (n->scroller.scroll_x > max_x) n->scroller.scroll_x = max_x;
-  if (n->scroller.scroll_y > max_y) n->scroller.scroll_y = max_y;
+  if (n->kd->scroller.scroll_x < 0) n->kd->scroller.scroll_x = 0;
+  if (n->kd->scroller.scroll_y < 0) n->kd->scroller.scroll_y = 0;
+  if (n->kd->scroller.scroll_x > max_x) n->kd->scroller.scroll_x = max_x;
+  if (n->kd->scroller.scroll_y > max_y) n->kd->scroller.scroll_y = max_y;
   cogito_scroller_state_store(n);
   // RTL horizontal: flip scroll direction (scroll_x=0 → rightmost content visible)
-  int sx_offset = n->scroller.scroll_x;
-  if (cogito_is_rtl() && n->scroller.horz && max_x > 0) {
-    sx_offset = max_x - n->scroller.scroll_x;
+  int sx_offset = n->kd->scroller.scroll_x;
+  if (cogito_is_rtl() && n->kd->scroller.horz && max_x > 0) {
+    sx_offset = max_x - n->kd->scroller.scroll_x;
   }
-  cogito_layout_node(c, child_x - sx_offset, child_y - n->scroller.scroll_y, cw, ch);
+  cogito_layout_node(c, child_x - sx_offset, child_y - n->kd->scroller.scroll_y, cw, ch);
   for (size_t i = 1; i < n->len; i++) {
     cogito_layout_node(n->children[i], child_x, child_y, 0, 0);
   }

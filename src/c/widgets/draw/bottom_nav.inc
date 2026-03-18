@@ -13,20 +13,20 @@ case COGITO_BOTTOM_NAV: {
     }
   }
 
-  if (n->bottom_nav.len == 0) {
+  if (n->kd->bottom_nav.len == 0) {
     if (fab) cogito_draw_node(fab);
     break;
   }
 
   // Auto-detect mode: Medium if container width > 600dp, else Compact
   bool medium_mode = n->w > 600;
-  n->bottom_nav.medium_mode = medium_mode;
+  n->kd->bottom_nav.medium_mode = medium_mode;
 
   int reserved_right = 0;
   if (fab && fab->w > 0) reserved_right = fab->w + 18;
   int items_w = n->w - reserved_right;
   if (items_w < 1) items_w = n->w;
-  int item_w = items_w / (int)n->bottom_nav.len;
+  int item_w = items_w / (int)n->kd->bottom_nav.len;
   if (item_w < 1) item_w = 1;
 
   int icon_size = medium_mode ? 24 : 24;
@@ -39,7 +39,7 @@ case COGITO_BOTTOM_NAV: {
   // ---- Selection indicator animation using spring_w ----
   double dt = cogito_spring_dt;
   bool any_anim_active = false;
-  int selected_idx = n->bottom_nav.selected;
+  int selected_idx = n->kd->bottom_nav.selected;
 
   if (!n->spring_w.inited) {
     cogito_spring_snap(&n->spring_w, (double)selected_idx);
@@ -63,10 +63,10 @@ case COGITO_BOTTOM_NAV: {
     cogito_window_relayout(cogito_node_window(n));
   }
 
-  for (size_t i = 0; i < n->bottom_nav.len; i++) {
-    bool selected = (int)i == n->bottom_nav.selected;
+  for (size_t i = 0; i < n->kd->bottom_nav.len; i++) {
+    bool selected = (int)i == n->kd->bottom_nav.selected;
     bool hover = false;
-    int visual_i = cogito_is_rtl() ? (int)(n->bottom_nav.len - 1 - i) : (int)i;
+    int visual_i = cogito_is_rtl() ? (int)(n->kd->bottom_nav.len - 1 - i) : (int)i;
     int item_x = n->x + visual_i * item_w;
 
     if (have_mouse && cogito_hit_rect(mx, my, item_x, n->y, item_w, n->h)) {
@@ -102,13 +102,13 @@ case COGITO_BOTTOM_NAV: {
         if (anim_scale > 1.0f) anim_scale = 1.0f;
 
         // Calculate content width (icon + gap + label)
-        bool has_icon = n->bottom_nav.icons && n->bottom_nav.icons[i];
-        bool has_label = n->bottom_nav.labels && n->bottom_nav.labels[i];
+        bool has_icon = n->kd->bottom_nav.icons && n->kd->bottom_nav.icons[i];
+        bool has_label = n->kd->bottom_nav.labels && n->kd->bottom_nav.labels[i];
         int content_w = 0;
         if (has_icon) content_w += icon_size;
         if (has_icon && has_label) content_w += 8;
         if (has_label) {
-          content_w += cogito_text_width_size_node(n, n->bottom_nav.labels[i]->data, label_size);
+          content_w += cogito_text_width_size_node(n, n->kd->bottom_nav.labels[i]->data, label_size);
         }
 
         // 24dp padding on both sides
@@ -138,14 +138,14 @@ case COGITO_BOTTOM_NAV: {
       }
 
       // Calculate content layout: icon + label horizontally centered
-      bool has_icon = n->bottom_nav.icons && n->bottom_nav.icons[i];
-      bool has_label = n->bottom_nav.labels && n->bottom_nav.labels[i];
+      bool has_icon = n->kd->bottom_nav.icons && n->kd->bottom_nav.icons[i];
+      bool has_label = n->kd->bottom_nav.labels && n->kd->bottom_nav.labels[i];
 
       int content_w = 0;
       int icon_w = has_icon ? icon_size : 0;
       int label_w = 0;
       if (has_label) {
-        label_w = cogito_text_width_size_node(n, n->bottom_nav.labels[i]->data, label_size);
+        label_w = cogito_text_width_size_node(n, n->kd->bottom_nav.labels[i]->data, label_size);
       }
 
       if (has_icon && has_label) {
@@ -160,7 +160,7 @@ case COGITO_BOTTOM_NAV: {
       // Draw icon
       if (has_icon) {
         int icon_y = center_y - icon_size / 2;
-        cogito_draw_icon_fallback(n, n->bottom_nav.icons[i]->data, content_x, icon_y, icon_size, icon_color);
+        cogito_draw_icon_fallback(n, n->kd->bottom_nav.icons[i]->data, content_x, icon_y, icon_size, icon_color);
         content_x += icon_w + 8;
       }
 
@@ -168,7 +168,7 @@ case COGITO_BOTTOM_NAV: {
       if (has_label) {
         int th = cogito_text_height_size(label_size);
         int label_y = center_y - th / 2;
-        cogito_draw_text_size_node(n, content_x, label_y, n->bottom_nav.labels[i]->data, text_color, label_size, false, false);
+        cogito_draw_text_size_node(n, content_x, label_y, n->kd->bottom_nav.labels[i]->data, text_color, label_size, false, false);
       }
 
     } else {
@@ -201,18 +201,18 @@ case COGITO_BOTTOM_NAV: {
       }
 
       // Draw icon centered
-      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) {
+      if (n->kd->bottom_nav.icons && n->kd->bottom_nav.icons[i]) {
         int icon_x = item_x + (item_w - icon_size) / 2;
         int icon_y = n->y + 12;
-        cogito_draw_icon_fallback(n, n->bottom_nav.icons[i]->data, icon_x, icon_y, icon_size, icon_color);
+        cogito_draw_icon_fallback(n, n->kd->bottom_nav.icons[i]->data, icon_x, icon_y, icon_size, icon_color);
       }
 
       // Draw label below icon
-      if (n->bottom_nav.labels && n->bottom_nav.labels[i]) {
-        int label_w = cogito_text_width_size_node(n, n->bottom_nav.labels[i]->data, label_size);
+      if (n->kd->bottom_nav.labels && n->kd->bottom_nav.labels[i]) {
+        int label_w = cogito_text_width_size_node(n, n->kd->bottom_nav.labels[i]->data, label_size);
         int label_x = item_x + (item_w - label_w) / 2;
         int label_y = n->y + 12 + icon_size + 4;
-        cogito_draw_text_size_node(n, label_x, label_y, n->bottom_nav.labels[i]->data, text_color, label_size, false, false);
+        cogito_draw_text_size_node(n, label_x, label_y, n->kd->bottom_nav.labels[i]->data, text_color, label_size, false, false);
       }
     }
   }

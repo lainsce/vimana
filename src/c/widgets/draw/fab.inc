@@ -4,8 +4,8 @@ case COGITO_FAB: {
   CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
   CogitoStyle s_base = cogito_theme_resolve_node_state(n, false, false);
   bool in_nav_rail = (n->parent && n->parent->kind == COGITO_NAV_RAIL);
-  bool nav_rail_expanded = in_nav_rail && n->parent->nav_rail.expanded;
-  bool effective_extended = n->fab.extended || nav_rail_expanded;
+  bool nav_rail_expanded = in_nav_rail && n->parent->kd->nav_rail.expanded;
+  bool effective_extended = n->kd->fab.extended || nav_rail_expanded;
   const char* label = (n->subtitle && n->subtitle->data && n->subtitle->data[0])
     ? n->subtitle->data
     : "Create";
@@ -21,11 +21,11 @@ case COGITO_FAB: {
   // Padding between icon and text (extended): S=8, M=12, L=16
   int fab_radius, fab_icon;
   int ext_lpad, ext_gap;
-  if (n->fab.size == 0) {
+  if (n->kd->fab.size == 0) {
     // Size S (default)
     fab_radius = 16; fab_icon = 24;
     ext_lpad = 16; ext_gap = 8;
-  } else if (n->fab.size == 2) {
+  } else if (n->kd->fab.size == 2) {
     // Size L
     fab_radius = 28; fab_icon = 36;
     ext_lpad = 28; ext_gap = 16;
@@ -38,8 +38,8 @@ case COGITO_FAB: {
   // Determine colors based on variant
   // variant: 0=Primary, 1=Secondary, 2=Tertiary, 3=PrimaryContainer, 4=SecondaryContainer, 5=TertiaryContainer
   CogitoColor bg, text_color;
-  if (!in_nav_rail || n->fab.variant_set) {
-    switch (n->fab.variant) {
+  if (!in_nav_rail || n->kd->fab.variant_set) {
+    switch (n->kd->fab.variant) {
       case 0: // Primary
         bg = cogito_cached_primary;
         text_color = cogito_cached_on_primary;
@@ -75,7 +75,7 @@ case COGITO_FAB: {
   }
   int radius = fab_radius;
   if (in_nav_rail) {
-    if (!n->fab.variant_set) {
+    if (!n->kd->fab.variant_set) {
       bg = rail_style.has_selection ? rail_style.selection : n->parent->selection_color;
       text_color = cogito_on_color(bg);
     }

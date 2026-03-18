@@ -60,9 +60,9 @@ case COGITO_SEARCHFIELD: {
     0);
   }
   // Selection highlight
-  if (focused && n->text_input.sel_start != n->text_input.sel_end) {
-    int a = n->text_input.sel_start;
-    int b = n->text_input.sel_end;
+  if (focused && n->kd->text_input.sel_start != n->kd->text_input.sel_end) {
+    int a = n->kd->text_input.sel_start;
+    int b = n->kd->text_input.sel_end;
     if (a > b) { int tmp = a; a = b; b = tmp;
     }
     int sx = cogito_text_width_size_n_node(n, txt, a, size);
@@ -81,7 +81,7 @@ case COGITO_SEARCHFIELD: {
   }
   // Caret
   if (focused) {
-    int caret = n->text_input.caret;
+    int caret = n->kd->text_input.caret;
     if (caret < 0) caret = 0;
     int tw    = cogito_text_width_size_n_node(n, txt, caret, size);
     int car_x = text_x + tw;

@@ -1,7 +1,7 @@
 static bool cogito_timepicker_panel_set_from_pointer(CogitoNode* panel, int mx, int my, bool require_hit, bool* out_changed) {
   if (out_changed) *out_changed = false;
-  if (!panel || panel->kind != COGITO_TIMEPICKER || !panel->timepicker.popover_panel) return false;
-  if (!panel->timepicker.dial_visible) return false;
+  if (!panel || panel->kind != COGITO_TIMEPICKER || !panel->kd->timepicker.popover_panel) return false;
+  if (!panel->kd->timepicker.dial_visible) return false;
 
   CogitoTimePickerPanelLayout ly;
   cogito_timepicker_panel_layout(panel, &ly);
@@ -12,22 +12,22 @@ static bool cogito_timepicker_panel_set_from_pointer(CogitoNode* panel, int mx, 
   if (require_hit && dist2 > hit_r * hit_r) return false;
   if (dist2 < 36) return false;
 
-  uint8_t mode = panel->timepicker.mode;
+  uint8_t mode = panel->kd->timepicker.mode;
   if (mode != COGITO_TIMEPICKER_MODE_MINUTE) mode = COGITO_TIMEPICKER_MODE_HOUR;
   double angle = cogito_timepicker_panel_pointer_angle(mx, my, ly.dial_cx, ly.dial_cy);
   bool changed = false;
   if (mode == COGITO_TIMEPICKER_MODE_MINUTE) {
     int new_minute = cogito_timepicker_panel_angle_to_minute(angle);
-    if (new_minute != panel->timepicker.minute) {
-      panel->timepicker.minute = new_minute;
+    if (new_minute != panel->kd->timepicker.minute) {
+      panel->kd->timepicker.minute = new_minute;
       changed = true;
     }
   } else {
     int hour12 = cogito_timepicker_panel_angle_to_hour12(angle);
-    int new_hour = cogito_timepicker_hour24_from_12(hour12, panel->timepicker.hour >= 12);
-    if (new_hour != panel->timepicker.hour) {
-      panel->timepicker.hour = new_hour;
-      panel->timepicker.ampm = (new_hour >= 12);
+    int new_hour = cogito_timepicker_hour24_from_12(hour12, panel->kd->timepicker.hour >= 12);
+    if (new_hour != panel->kd->timepicker.hour) {
+      panel->kd->timepicker.hour = new_hour;
+      panel->kd->timepicker.ampm = (new_hour >= 12);
       changed = true;
     }
   }
@@ -57,14 +57,14 @@ static CogitoNode* cogito_timepicker_open_panel(CogitoNode* owner) {
 
   CogitoNode* panel = cogito_node_new(COGITO_TIMEPICKER);
   panel->editable = false;
-  panel->timepicker.popover_panel = true;
-  panel->timepicker.owner = owner;
-  panel->timepicker.hour = owner->timepicker.hour;
-  panel->timepicker.minute = owner->timepicker.minute;
-  panel->timepicker.ampm = owner->timepicker.ampm;
-  panel->timepicker.dial_visible = owner->timepicker.dial_visible;
-  panel->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
-  panel->timepicker.initialized = true;
+  panel->kd->timepicker.popover_panel = true;
+  panel->kd->timepicker.owner = owner;
+  panel->kd->timepicker.hour = owner->kd->timepicker.hour;
+  panel->kd->timepicker.minute = owner->kd->timepicker.minute;
+  panel->kd->timepicker.ampm = owner->kd->timepicker.ampm;
+  panel->kd->timepicker.dial_visible = owner->kd->timepicker.dial_visible;
+  panel->kd->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
+  panel->kd->timepicker.initialized = true;
 
   cogito_children_add(pop, panel);
   yis_release_val(YV_OBJ(panel));  // child list now owns the panel reference
@@ -83,17 +83,17 @@ static void cogito_timepicker_show_popover(CogitoNode* anchor) {
 }
 
 static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
-  if (!panel || panel->kind != COGITO_TIMEPICKER || !panel->timepicker.popover_panel) return false;
+  if (!panel || panel->kind != COGITO_TIMEPICKER || !panel->kd->timepicker.popover_panel) return false;
   cogito_timepicker_ensure_time(panel);
 
-  CogitoNode* owner = panel->timepicker.owner;
+  CogitoNode* owner = panel->kd->timepicker.owner;
   CogitoNode* win = cogito_node_window(panel);
   CogitoTimePickerPanelLayout ly;
   cogito_timepicker_panel_layout(panel, &ly);
 
   if (cogito_hit_rect_min48(mx, my, ly.keyboard_x, ly.keyboard_y, ly.keyboard_w, ly.keyboard_h)) {
-    panel->timepicker.dial_visible = !panel->timepicker.dial_visible;
-    if (!panel->timepicker.dial_visible) {
+    panel->kd->timepicker.dial_visible = !panel->kd->timepicker.dial_visible;
+    if (!panel->kd->timepicker.dial_visible) {
       if (cogito_pointer_capture == panel) cogito_pointer_capture = NULL;
       if (cogito_timepicker_active == panel) cogito_timepicker_active = NULL;
     }
@@ -104,7 +104,7 @@ static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
 
   if (cogito_hit_rect_min48(mx, my, ly.cancel_x, ly.cancel_y, ly.cancel_w, ly.cancel_h)) {
     if (owner && owner->kind == COGITO_TIMEPICKER) {
-      owner->timepicker.dial_visible = panel->timepicker.dial_visible;
+      owner->kd->timepicker.dial_visible = panel->kd->timepicker.dial_visible;
     }
     if (cogito_pointer_capture == panel) cogito_pointer_capture = NULL;
     if (cogito_timepicker_active == panel) cogito_timepicker_active = NULL;
@@ -116,13 +116,13 @@ static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
     bool changed = false;
     if (owner && owner->kind == COGITO_TIMEPICKER) {
       cogito_timepicker_ensure_time(owner);
-      changed = owner->timepicker.hour != panel->timepicker.hour ||
-                owner->timepicker.minute != panel->timepicker.minute;
-      owner->timepicker.hour = panel->timepicker.hour;
-      owner->timepicker.minute = panel->timepicker.minute;
-      owner->timepicker.ampm = (owner->timepicker.hour >= 12);
-      owner->timepicker.dial_visible = panel->timepicker.dial_visible;
-      owner->timepicker.initialized = true;
+      changed = owner->kd->timepicker.hour != panel->kd->timepicker.hour ||
+                owner->kd->timepicker.minute != panel->kd->timepicker.minute;
+      owner->kd->timepicker.hour = panel->kd->timepicker.hour;
+      owner->kd->timepicker.minute = panel->kd->timepicker.minute;
+      owner->kd->timepicker.ampm = (owner->kd->timepicker.hour >= 12);
+      owner->kd->timepicker.dial_visible = panel->kd->timepicker.dial_visible;
+      owner->kd->timepicker.initialized = true;
     }
     if (cogito_pointer_capture == panel) cogito_pointer_capture = NULL;
     if (cogito_timepicker_active == panel) cogito_timepicker_active = NULL;
@@ -133,25 +133,25 @@ static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
 
   bool needs_relayout = false;
   if (cogito_hit_rect_min48(mx, my, ly.hour_x, ly.hour_y, ly.hour_w, ly.hour_h)) {
-    if (panel->timepicker.mode != COGITO_TIMEPICKER_MODE_HOUR) {
-      panel->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
+    if (panel->kd->timepicker.mode != COGITO_TIMEPICKER_MODE_HOUR) {
+      panel->kd->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
       needs_relayout = true;
     }
   } else if (cogito_hit_rect_min48(mx, my, ly.minute_x, ly.minute_y, ly.minute_w, ly.minute_h)) {
-    if (panel->timepicker.mode != COGITO_TIMEPICKER_MODE_MINUTE) {
-      panel->timepicker.mode = COGITO_TIMEPICKER_MODE_MINUTE;
+    if (panel->kd->timepicker.mode != COGITO_TIMEPICKER_MODE_MINUTE) {
+      panel->kd->timepicker.mode = COGITO_TIMEPICKER_MODE_MINUTE;
       needs_relayout = true;
     }
   } else if (cogito_hit_rect_min48(mx, my, ly.ampm_x, ly.ampm_y, ly.ampm_w, ly.ampm_split_h)) {
-    if (panel->timepicker.hour >= 12) {
-      panel->timepicker.hour -= 12;
-      panel->timepicker.ampm = false;
+    if (panel->kd->timepicker.hour >= 12) {
+      panel->kd->timepicker.hour -= 12;
+      panel->kd->timepicker.ampm = false;
       needs_relayout = true;
     }
   } else if (cogito_hit_rect_min48(mx, my, ly.ampm_x, ly.ampm_y + ly.ampm_split_h, ly.ampm_w, ly.ampm_h - ly.ampm_split_h)) {
-    if (panel->timepicker.hour < 12) {
-      panel->timepicker.hour += 12;
-      panel->timepicker.ampm = true;
+    if (panel->kd->timepicker.hour < 12) {
+      panel->kd->timepicker.hour += 12;
+      panel->kd->timepicker.ampm = true;
       needs_relayout = true;
     }
   } else {
@@ -178,7 +178,7 @@ static bool cogito_timepicker_hit_panel(CogitoNode* panel, int mx, int my) {
 static bool cogito_timepicker_hit(CogitoNode* n, int mx, int my, bool clicked) {
   if (!n || n->kind != COGITO_TIMEPICKER || !clicked) return false;
 
-  if (n->timepicker.popover_panel) {
+  if (n->kd->timepicker.popover_panel) {
     return cogito_timepicker_hit_panel(n, mx, my);
   }
 
@@ -195,11 +195,11 @@ static bool cogito_timepicker_hit(CogitoNode* n, int mx, int my, bool clicked) {
 static CogitoNode* cogito_timepicker_new_obj(void) {
   CogitoNode* n = cogito_node_new(COGITO_TIMEPICKER);
   n->editable = false;
-  n->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
-  n->timepicker.initialized = false;
-  n->timepicker.popover_panel = false;
-  n->timepicker.dial_visible = true;
-  n->timepicker.owner = NULL;
+  n->kd->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
+  n->kd->timepicker.initialized = false;
+  n->kd->timepicker.popover_panel = false;
+  n->kd->timepicker.dial_visible = true;
+  n->kd->timepicker.owner = NULL;
   cogito_timepicker_ensure_time(n);
   return n;
 }
@@ -226,7 +226,7 @@ static YisVal cogito_timepicker_get_hour(YisVal nodev) {
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (!n || n->kind != COGITO_TIMEPICKER) return YV_INT(0);
   cogito_timepicker_ensure_time(n);
-  return YV_INT(n->timepicker.hour);
+  return YV_INT(n->kd->timepicker.hour);
 }
 
 static YisVal cogito_timepicker_get_minute(YisVal nodev) {
@@ -234,7 +234,7 @@ static YisVal cogito_timepicker_get_minute(YisVal nodev) {
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (!n || n->kind != COGITO_TIMEPICKER) return YV_INT(0);
   cogito_timepicker_ensure_time(n);
-  return YV_INT(n->timepicker.minute);
+  return YV_INT(n->kd->timepicker.minute);
 }
 
 static void cogito_timepicker_set_time(YisVal nodev, YisVal hourv, YisVal minv) {
@@ -253,10 +253,10 @@ static void cogito_timepicker_set_time(YisVal nodev, YisVal hourv, YisVal minv) 
   if (m < 0) m = 0;
   if (m > 59) m = 59;
 
-  n->timepicker.hour = h;
-  n->timepicker.minute = m;
-  n->timepicker.ampm = (h >= 12);
-  n->timepicker.initialized = true;
+  n->kd->timepicker.hour = h;
+  n->kd->timepicker.minute = m;
+  n->kd->timepicker.ampm = (h >= 12);
+  n->kd->timepicker.initialized = true;
 
   cogito_window_relayout(cogito_node_window(n));
 }

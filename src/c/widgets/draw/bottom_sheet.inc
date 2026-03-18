@@ -39,14 +39,14 @@ case COGITO_BOTTOM_SHEET: {
 
   // ---- Drag handle animation using spring_w ----
   double dt = cogito_spring_dt;
-  double target_expand = (n->bottom_sheet.dragging || n->bottom_sheet.expanded) ? 1.0 : 0.0;
+  double target_expand = (n->kd->bottom_sheet.dragging || n->kd->bottom_sheet.expanded) ? 1.0 : 0.0;
 
   if (!n->spring_w.inited) {
     cogito_spring_snap(&n->spring_w, target_expand);
   }
 
   bool was_expanded = (n->spring_w.target >= 0.5);
-  bool is_expanded = (n->bottom_sheet.dragging || n->bottom_sheet.expanded);
+  bool is_expanded = (n->kd->bottom_sheet.dragging || n->kd->bottom_sheet.expanded);
   if (was_expanded != is_expanded) {
     cogito_spring_snap(&n->spring_w, is_expanded ? target_expand : n->spring_w.x);
   }
@@ -63,7 +63,7 @@ case COGITO_BOTTOM_SHEET: {
   int expanded_handle_w = 44;
   int handle_w = base_handle_w + (int)((expanded_handle_w - base_handle_w) * expand_scale);
   int handle_h = 4 + (int)(2 * expand_scale); // 4 to 6
-  if (n->bottom_sheet.dragging && handle_h < 6) handle_h = 6;
+  if (n->kd->bottom_sheet.dragging && handle_h < 6) handle_h = 6;
 
   int handle_x = n->x + (n->w - handle_w) / 2;
   int handle_y = n->y + 12;

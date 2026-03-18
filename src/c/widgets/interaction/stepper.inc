@@ -1,16 +1,16 @@
 static CogitoNode* cogito_stepper_new_obj(double min, double max, double value, double step) {
   CogitoNode* st = cogito_node_new(COGITO_STEPPER);
-  st->stepper.min = min;
-  st->stepper.max = max;
-  if (st->stepper.max < st->stepper.min) {
-    double tmp = st->stepper.min;
-    st->stepper.min = st->stepper.max;
-    st->stepper.max = tmp;
+  st->kd->stepper.min = min;
+  st->kd->stepper.max = max;
+  if (st->kd->stepper.max < st->kd->stepper.min) {
+    double tmp = st->kd->stepper.min;
+    st->kd->stepper.min = st->kd->stepper.max;
+    st->kd->stepper.max = tmp;
   }
-  if (value < st->stepper.min) value = st->stepper.min;
-  if (value > st->stepper.max) value = st->stepper.max;
-  st->stepper.value = value;
-  st->stepper.step = step;
+  if (value < st->kd->stepper.min) value = st->kd->stepper.min;
+  if (value > st->kd->stepper.max) value = st->kd->stepper.max;
+  st->kd->stepper.value = value;
+  st->kd->stepper.step = step;
   return st;
 }
 static YisVal cogito_stepper_new(YisVal minv, YisVal maxv, YisVal valv, YisVal stepv) {
@@ -33,12 +33,12 @@ static YisVal cogito_stepper_get_value(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.stepper_value expects stepper");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_STEPPER) yis_trap("cogito.stepper_value expects stepper");
-  return YV_FLOAT(n->stepper.value);
+  return YV_FLOAT(n->kd->stepper.value);
 }
 static void cogito_stepper_hit_test(CogitoNode* n, int mx, int my) {
   int btn_w = n->h;
-  n->stepper.hit_minus = cogito_hit_rect_min48(mx, my, n->x, n->y, btn_w, n->h);
-  n->stepper.hit_plus = cogito_hit_rect_min48(mx, my, n->x + n->w - btn_w, n->y, btn_w, n->h);
+  n->kd->stepper.hit_minus = cogito_hit_rect_min48(mx, my, n->x, n->y, btn_w, n->h);
+  n->kd->stepper.hit_plus = cogito_hit_rect_min48(mx, my, n->x + n->w - btn_w, n->y, btn_w, n->h);
 }
 
 static CogitoNode* cogito_find_stepper_hit(CogitoNode* n, int x, int y) {
@@ -59,15 +59,15 @@ static void cogito_stepper_click(CogitoNode* n, int mx, int my) {
   int btn_w = n->h;
   bool hit_minus = cogito_hit_rect_min48(mx, my, n->x, n->y, btn_w, n->h);
   bool hit_plus = cogito_hit_rect_min48(mx, my, n->x + n->w - btn_w, n->y, btn_w, n->h);
-  double prev = n->stepper.value;
-  if (hit_minus && n->stepper.value > n->stepper.min) {
-    n->stepper.value -= n->stepper.step;
-    if (n->stepper.value < n->stepper.min) n->stepper.value = n->stepper.min;
-  } else if (hit_plus && n->stepper.value < n->stepper.max) {
-    n->stepper.value += n->stepper.step;
-    if (n->stepper.value > n->stepper.max) n->stepper.value = n->stepper.max;
+  double prev = n->kd->stepper.value;
+  if (hit_minus && n->kd->stepper.value > n->kd->stepper.min) {
+    n->kd->stepper.value -= n->kd->stepper.step;
+    if (n->kd->stepper.value < n->kd->stepper.min) n->kd->stepper.value = n->kd->stepper.min;
+  } else if (hit_plus && n->kd->stepper.value < n->kd->stepper.max) {
+    n->kd->stepper.value += n->kd->stepper.step;
+    if (n->kd->stepper.value > n->kd->stepper.max) n->kd->stepper.value = n->kd->stepper.max;
   }
-  if (n->stepper.value != prev) {
+  if (n->kd->stepper.value != prev) {
     cogito_invoke_change(n);
   }
 }

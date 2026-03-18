@@ -111,7 +111,7 @@ def ?CACHE_DIR = ""
     return pdfs[index]
 }
 
-:: add_pdf(lib = any, path = string, title = string, pages = num, thumb = string) (( -- )) {
+:: add_pdf(lib = any, path = string, title = string, pages = num, thumb = string) (( [string => any] )) {
     let ?l = lib
     let ?pdfs = l["pdfs"] ?? []: [any]
     let ?pdf_item = []: [string => any]
@@ -124,17 +124,19 @@ def ?CACHE_DIR = ""
     pdf_item["bookmarked"] = false
     stdr.push(pdfs, pdf_item)
     l["pdfs"] = pdfs
+    return l
 }
 
-:: remove_pdf(lib = any, index = num) (( -- )) {
+:: remove_pdf(lib = any, index = num) (( [string => any] )) {
     let ?l = lib
     let pdfs = l["pdfs"] ?? []: [any]
-    if index < 0 || index >= len(pdfs) { return }
+    if index < 0 || index >= len(pdfs) { return l }
     let ?next = []: [any]
     for (let ?i = 0; i < len(pdfs); i += 1) {
         if i != index { stdr.push(next, pdfs[i]) }
     }
     l["pdfs"] = next
+    return l
 }
 
 :: set_last_page(lib = any, index = num, page = num) (( -- )) {
@@ -164,19 +166,20 @@ def ?CACHE_DIR = ""
     return str(tags[index] ?? "")
 }
 
-:: add_tag(lib = any, tag = string) (( -- )) {
+:: add_tag(lib = any, tag = string) (( [string => any] )) {
     let t = stdr.trim(tag)
-    if stdr.len(t) == 0 { return }
     let ?l = lib
+    if stdr.len(t) == 0 { return l }
     let ?tags = l["tags"] ?? []: [any]
     for (let ?i = 0; i < len(tags); i += 1) {
-        if str(tags[i] ?? "") == t { return }
+        if str(tags[i] ?? "") == t { return l }
     }
     stdr.push(tags, t)
     l["tags"] = tags
+    return l
 }
 
-:: remove_tag(lib = any, tag = string) (( -- )) {
+:: remove_tag(lib = any, tag = string) (( [string => any] )) {
     let ?l = lib
     let tags = l["tags"] ?? []: [any]
     let ?next = []: [any]
@@ -184,6 +187,7 @@ def ?CACHE_DIR = ""
         if str(tags[i] ?? "") != tag { stdr.push(next, tags[i]) }
     }
     l["tags"] = next
+    return l
 }
 
 :: set_pdf_tags(lib = any, index = num, new_tags = any) (( -- )) {

@@ -1,16 +1,16 @@
 static CogitoNode* cogito_image_new_obj(YisStr* source) {
   CogitoNode* img = cogito_node_new(COGITO_IMAGE);
   cogito_node_set_icon(img, source);
-  img->image.texture = NULL;
-  img->image.glow_texture = NULL;
-  img->image.glow_source = NULL;
-  img->image.w = 0;
-  img->image.h = 0;
-  img->image.glow_w = 0;
-  img->image.glow_h = 0;
-  img->image.glow_sigma = 0.0f;
-  img->image.loaded = false;
-  img->image.avg_lum = 0.5f;
+  img->kd->image.texture = NULL;
+  img->kd->image.glow_texture = NULL;
+  img->kd->image.glow_source = NULL;
+  img->kd->image.w = 0;
+  img->kd->image.h = 0;
+  img->kd->image.glow_w = 0;
+  img->kd->image.glow_h = 0;
+  img->kd->image.glow_sigma = 0.0f;
+  img->kd->image.loaded = false;
+  img->kd->image.avg_lum = 0.5f;
   img->blur_radius = 0.0f;
   return img;
 }
@@ -25,23 +25,23 @@ static void cogito_image_set_icon(YisVal imgv, YisVal icon) {
   YisStr* is = stdr_to_string(icon);
   
   // Free existing texture if any
-  if (img->image.texture) {
-    cogito_image_cache_release_texture(img->image.texture);
-    img->image.texture = NULL;
+  if (img->kd->image.texture) {
+    cogito_image_cache_release_texture(img->kd->image.texture);
+    img->kd->image.texture = NULL;
   }
-  if (img->image.glow_texture && cogito_backend && cogito_backend->texture_destroy) {
-    cogito_backend->texture_destroy(img->image.glow_texture);
-    img->image.glow_texture = NULL;
+  if (img->kd->image.glow_texture && cogito_backend && cogito_backend->texture_destroy) {
+    cogito_backend->texture_destroy(img->kd->image.glow_texture);
+    img->kd->image.glow_texture = NULL;
   }
-  img->image.glow_source = NULL;
+  img->kd->image.glow_source = NULL;
   
   cogito_node_set_icon(img, is);
-  img->image.loaded = false;
-  img->image.w = 0;
-  img->image.h = 0;
-  img->image.glow_w = 0;
-  img->image.glow_h = 0;
-  img->image.avg_lum = 0.5f;
+  img->kd->image.loaded = false;
+  img->kd->image.w = 0;
+  img->kd->image.h = 0;
+  img->kd->image.glow_w = 0;
+  img->kd->image.glow_h = 0;
+  img->kd->image.avg_lum = 0.5f;
   cogito_window_relayout(cogito_node_window(img));
 }
 static void cogito_image_set_source(YisVal imgv, YisVal source) {
@@ -78,13 +78,13 @@ static void cogito_image_set_blur(YisVal imgv, YisVal sigmav) {
   float sigma = (float)yis_as_float(sigmav);
   if (sigma < 0.0f) sigma = 0.0f;
   img->blur_radius = sigma;
-  if (sigma == 0.0f && img->image.glow_texture && cogito_backend &&
+  if (sigma == 0.0f && img->kd->image.glow_texture && cogito_backend &&
       cogito_backend->texture_destroy) {
-    cogito_backend->texture_destroy(img->image.glow_texture);
-    img->image.glow_texture = NULL;
-    img->image.glow_source = NULL;
-    img->image.glow_w = 0;
-    img->image.glow_h = 0;
+    cogito_backend->texture_destroy(img->kd->image.glow_texture);
+    img->kd->image.glow_texture = NULL;
+    img->kd->image.glow_source = NULL;
+    img->kd->image.glow_w = 0;
+    img->kd->image.glow_h = 0;
   }
   cogito_window_relayout(cogito_node_window(img));
 }
@@ -95,7 +95,7 @@ static void cogito_image_set_fit(YisVal imgv, YisVal fitv) {
   int fit = (int)yis_as_int(fitv);
   if (fit < 0) fit = 0;
   if (fit > 1) fit = 1;
-  img->image.fit = (uint8_t)fit;
+  img->kd->image.fit = (uint8_t)fit;
   cogito_window_relayout(cogito_node_window(img));
 }
 

@@ -1,5 +1,5 @@
 case COGITO_COLORPICKER: {
-      if (n->colorpicker.popover_panel && n->len > 0) {
+      if (n->kd->colorpicker.popover_panel && n->len > 0) {
         // Position 3 slider children below the header area.
         int sx = x + COGITO_COLORPICKER_PANEL_PAD + COGITO_COLORPICKER_PANEL_LABEL_W + COGITO_COLORPICKER_PANEL_LABEL_GAP;
         int sw = w - COGITO_COLORPICKER_PANEL_PAD * 2 -

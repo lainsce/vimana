@@ -10,7 +10,7 @@ case COGITO_TOOLBAR: {
       const char* cls = (n->class_name && n->class_name->data) ? n->class_name->data : NULL;
       bool floating = cls && strstr(cls, "floating") != NULL;
       bool compact = floating && cls && strstr(cls, "compact") != NULL;
-      bool vertical = n->toolbar.vertical;
+      bool vertical = n->kd->toolbar.vertical;
 
       // Find FAB child if any
       CogitoNode* fab_child = NULL;

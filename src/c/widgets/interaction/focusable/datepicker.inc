@@ -1,2 +1,2 @@
 case COGITO_DATEPICKER:
-      return !n->datepicker.popover_panel;
+      return !n->kd->datepicker.popover_panel;

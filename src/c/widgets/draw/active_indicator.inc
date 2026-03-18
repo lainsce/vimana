@@ -3,13 +3,13 @@ case COGITO_ACTIVE_INDICATOR: {
   CogitoColor color = s.has_text ? s.text : n->text_color;
 
   double now = cogito_now();
-  if (n->indicator.last_time == 0.0) n->indicator.last_time = now;
+  if (n->kd->indicator.last_time == 0.0) n->kd->indicator.last_time = now;
   // Rotate at ~1.5 revolutions per second (forward direction)
-  double dt = now - n->indicator.last_time;
+  double dt = now - n->kd->indicator.last_time;
   if (dt < 0) dt = 0; // Prevent negative time jumps
-  n->indicator.angle += dt * 540.0; // degrees per second (positive for forward rotation)
-  if (n->indicator.angle >= 360.0) n->indicator.angle -= 360.0;
-  n->indicator.last_time = now;
+  n->kd->indicator.angle += dt * 540.0; // degrees per second (positive for forward rotation)
+  if (n->kd->indicator.angle >= 360.0) n->kd->indicator.angle -= 360.0;
+  n->kd->indicator.last_time = now;
 
   int cx = n->x + n->w / 2;
   int cy = n->y + n->h / 2;
@@ -50,7 +50,7 @@ case COGITO_ACTIVE_INDICATOR: {
                      electron_orbit_r * 2, electron_orbit_r * 2, orbit_color, electron_orbit_r);
     
     // Draw electron on the orbit
-    double electron_angle_rad = n->indicator.angle * 3.14159265358979 / 180.0;
+    double electron_angle_rad = n->kd->indicator.angle * 3.14159265358979 / 180.0;
     // Offset second electron by 180 degrees
     if (e == 1) electron_angle_rad += 3.14159265358979;
     

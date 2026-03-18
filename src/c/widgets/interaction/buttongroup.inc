@@ -3,10 +3,10 @@ static CogitoNode* cogito_buttongroup_new_obj(void) {
   s->selected = 0;
   s->gap = 2;
   // Initialize buttongroup properties with defaults (M size, round, standard)
-  s->buttongroup.size = 2;    // Medium (M) by default
-  s->buttongroup.shape = 0;    // Round by default
-  s->buttongroup.connected = 0; // Standard (not connected) by default
-  s->buttongroup.pressed_child = -1; // No child pressed initially
+  s->kd->buttongroup.size = 2;    // Medium (M) by default
+  s->kd->buttongroup.shape = 0;    // Round by default
+  s->kd->buttongroup.connected = 0; // Standard (not connected) by default
+  s->kd->buttongroup.pressed_child = -1; // No child pressed initially
   return s;
 }
 
@@ -93,8 +93,8 @@ static bool cogito_buttongroup_child_radii(CogitoNode* child,
   }
   
   CogitoNode* bg = child->parent;
-  bool is_connected = (bg->buttongroup.connected == 1);
-  bool is_rounded = (bg->buttongroup.shape == 0);
+  bool is_connected = (bg->kd->buttongroup.connected == 1);
+  bool is_rounded = (bg->kd->buttongroup.shape == 0);
   
   int idx = cogito_buttongroup_child_index(child);
   int count = (int)bg->len;
@@ -152,14 +152,14 @@ static void cogito_buttongroup_set_size(YisVal nodev, YisVal sizev) {
   int size = (int)yis_as_int(sizev);
   if (size < 0) size = 0;
   if (size > 4) size = 4;
-  n->buttongroup.size = size;
+  n->kd->buttongroup.size = size;
 }
 
 static YisVal cogito_buttongroup_get_size(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.buttongroup_get_size expects buttongroup");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_BUTTON_GROUP) yis_trap("cogito.buttongroup_get_size expects buttongroup");
-  return YV_INT(n->buttongroup.size);
+  return YV_INT(n->kd->buttongroup.size);
 }
 
 static void cogito_buttongroup_set_shape(YisVal nodev, YisVal shapev) {
@@ -169,28 +169,28 @@ static void cogito_buttongroup_set_shape(YisVal nodev, YisVal shapev) {
   int shape = (int)yis_as_int(shapev);
   if (shape < 0) shape = 0;
   if (shape > 1) shape = 1;
-  n->buttongroup.shape = shape;
+  n->kd->buttongroup.shape = shape;
 }
 
 static YisVal cogito_buttongroup_get_shape(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.buttongroup_get_shape expects buttongroup");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_BUTTON_GROUP) yis_trap("cogito.buttongroup_get_shape expects buttongroup");
-  return YV_INT(n->buttongroup.shape);
+  return YV_INT(n->kd->buttongroup.shape);
 }
 
 static void cogito_buttongroup_set_connected(YisVal nodev, YisVal connectedv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.buttongroup_set_connected expects buttongroup");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_BUTTON_GROUP) yis_trap("cogito.buttongroup_set_connected expects buttongroup");
-  n->buttongroup.connected = yis_as_bool(connectedv) ? 1 : 0;
+  n->kd->buttongroup.connected = yis_as_bool(connectedv) ? 1 : 0;
 }
 
 static YisVal cogito_buttongroup_get_connected(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.buttongroup_get_connected expects buttongroup");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   if (n->kind != COGITO_BUTTON_GROUP) yis_trap("cogito.buttongroup_get_connected expects buttongroup");
-  return YV_BOOL(n->buttongroup.connected == 1);
+  return YV_BOOL(n->kd->buttongroup.connected == 1);
 }
 
 static void cogito_buttongroup_set_selected(YisVal nodev, YisVal idxv) {

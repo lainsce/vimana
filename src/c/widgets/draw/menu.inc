@@ -114,7 +114,7 @@ static void cogito_draw_menu(void) {
     cogito_window_relayout(cogito_node_window(cogito_menu.owner));
   }
 
-  bool vibrant = cogito_menu.owner->button.menu_vibrant;
+  bool vibrant = cogito_menu.owner->kd->button.menu_vibrant;
 
   // Tertiary colors for toggled items (and vibrant mode)
   CogitoColor tertiary = {0}, tertiary_container = {0}, on_tertiary_container = {0}, on_tertiary = {0};
@@ -174,8 +174,8 @@ static void cogito_draw_menu(void) {
 
   // Sections use gap by default; dividers are opt-in
   bool use_section = cogito_menu.owner->menu_section_after != NULL;
-  bool use_divider = cogito_menu.owner->button.menu_divider;
-  int item_gap = (cogito_menu.owner->button.menu_item_gap > 0) ? cogito_menu.owner->button.menu_item_gap :
+  bool use_divider = cogito_menu.owner->kd->button.menu_divider;
+  int item_gap = (cogito_menu.owner->kd->button.menu_item_gap > 0) ? cogito_menu.owner->kd->button.menu_item_gap :
                  (cogito_theme.menu.has_item_gap ? cogito_theme.menu.item_gap : 2);
   int section_gap = 2;
   int divider_h = use_divider ? 1 : 0;

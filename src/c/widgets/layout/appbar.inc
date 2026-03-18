@@ -7,8 +7,8 @@ case COGITO_APPBAR: {
       int controls_top_pad = 15;
       cogito_appbar_button_metrics(&btn_size, &btn_gap, &btn_pad_top, &btn_pad_right);
       int buttons_y = y + btn_pad_top;
-      n->appbar.btn_size = btn_size;
-      n->appbar.btn_y = buttons_y;
+      n->kd->appbar.btn_size = btn_size;
+      n->kd->appbar.btn_y = buttons_y;
       CogitoNode* win = cogito_node_window(n);
       bool allow_max = !win || win->resizable;
       // Only show traffic lights on the first (leftmost) appbar
@@ -16,26 +16,26 @@ case COGITO_APPBAR: {
         int controls_x = win ? win->x : x;
         int controls_w = win ? win->w : w;
         cogito_appbar_controls_positions(n, controls_x, controls_w, btn_size, btn_gap, controls_edge_pad, allow_max,
-                                         &n->appbar.btn_close_x, &n->appbar.btn_min_x, &n->appbar.btn_max_x);
-        n->appbar.btn_y = (win ? win->y : y) + controls_top_pad;
+                                         &n->kd->appbar.btn_close_x, &n->kd->appbar.btn_min_x, &n->kd->appbar.btn_max_x);
+        n->kd->appbar.btn_y = (win ? win->y : y) + controls_top_pad;
       } else {
         // Other appbars don't show traffic lights
-        n->appbar.btn_close_x = -1;
-        n->appbar.btn_min_x = -1;
-        n->appbar.btn_max_x = -1;
+        n->kd->appbar.btn_close_x = -1;
+        n->kd->appbar.btn_min_x = -1;
+        n->kd->appbar.btn_max_x = -1;
       }
       int title_y = 0;
       int subtitle_y = 0;
       int child_y = 0;
       int appbar_h = 0;
       cogito_appbar_row_positions(n, &buttons_y, &title_y, &subtitle_y, &child_y, &appbar_h);
-      if (n->appbar.btn_close_x >= 0 || n->appbar.btn_min_x >= 0 || n->appbar.btn_max_x >= 0) {
-        n->appbar.btn_y = (win ? win->y : y) + controls_top_pad;
+      if (n->kd->appbar.btn_close_x >= 0 || n->kd->appbar.btn_min_x >= 0 || n->kd->appbar.btn_max_x >= 0) {
+        n->kd->appbar.btn_y = (win ? win->y : y) + controls_top_pad;
       } else {
-        n->appbar.btn_y = buttons_y;
+        n->kd->appbar.btn_y = buttons_y;
       }
-      n->appbar.title_y = title_y;
-      n->appbar.subtitle_y = subtitle_y;
+      n->kd->appbar.title_y = title_y;
+      n->kd->appbar.subtitle_y = subtitle_y;
       CogitoNode* title_widget = cogito_appbar_title_widget(n);
       int lead_count = 0;
       int lead_total_w = 0;
@@ -128,11 +128,11 @@ case COGITO_APPBAR: {
       } else {
         lx = x + 16;
       }
-      if (n->appbar.btn_close_x >= 0 || n->appbar.btn_min_x >= 0 || n->appbar.btn_max_x >= 0) {
+      if (n->kd->appbar.btn_close_x >= 0 || n->kd->appbar.btn_min_x >= 0 || n->kd->appbar.btn_max_x >= 0) {
         // Traffic lights are always on the left (macOS convention), even in RTL
-        int rightmost_light = n->appbar.btn_close_x;
-        if (n->appbar.btn_min_x > rightmost_light) rightmost_light = n->appbar.btn_min_x;
-        if (n->appbar.btn_max_x > rightmost_light) rightmost_light = n->appbar.btn_max_x;
+        int rightmost_light = n->kd->appbar.btn_close_x;
+        if (n->kd->appbar.btn_min_x > rightmost_light) rightmost_light = n->kd->appbar.btn_min_x;
+        if (n->kd->appbar.btn_max_x > rightmost_light) rightmost_light = n->kd->appbar.btn_max_x;
         if (rightmost_light >= 0) {
           int min_left = rightmost_light + btn_size + 12;
           if (!rtl && min_left > lx) lx = min_left;
@@ -239,7 +239,7 @@ case COGITO_APPBAR: {
           title_tx = rtl ? (x + w - 16) : (x + 16);
         }
       }
-      n->appbar.title_x = title_tx;
+      n->kd->appbar.title_x = title_tx;
       if (title_widget) {
         cogito_layout_node(title_widget, title_tx, title_ty, title_tw, title_th);
       }

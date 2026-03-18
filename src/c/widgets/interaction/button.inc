@@ -1,6 +1,6 @@
 static CogitoNode* cogito_button_new_obj(YisStr* label) {
   CogitoNode* btn = cogito_node_new(COGITO_BUTTON);
-  btn->button.size = COGITO_BUTTON_SIZE_M; // Default to M size
+  btn->kd->button.size = COGITO_BUTTON_SIZE_M; // Default to M size
   cogito_node_set_text(btn, label);
   return btn;
 }
@@ -46,7 +46,7 @@ static void cogito_button_set_size(YisVal btnv, YisVal sizev) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_set_size expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (!cogito_button_accepts_size(btn)) yis_trap("cogito.button_set_size expects button");
-  btn->button.size = cogito_button_clamp_size_int((int)yis_as_int(sizev));
+  btn->kd->button.size = cogito_button_clamp_size_int((int)yis_as_int(sizev));
   cogito_window_relayout(cogito_node_window(btn));
 }
 
@@ -54,7 +54,7 @@ static YisVal cogito_button_get_size(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_get_size expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (!cogito_button_accepts_size(btn)) yis_trap("cogito.button_get_size expects button");
-  return YV_INT((int)cogito_button_clamp_size_int((int)btn->button.size));
+  return YV_INT((int)cogito_button_clamp_size_int((int)btn->kd->button.size));
 }
 void cogito_button_on_click(YisVal btnv, YisVal handler) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_on_click expects button");
@@ -101,7 +101,7 @@ void cogito_button_set_menu_divider(YisVal btnv, YisVal dividerv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_set_menu_divider expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_set_menu_divider expects button");
-  btn->button.menu_divider = yis_as_bool(dividerv);
+  btn->kd->button.menu_divider = yis_as_bool(dividerv);
   cogito_window_relayout(cogito_node_window(btn));
 }
 
@@ -109,15 +109,15 @@ YisVal cogito_button_get_menu_divider(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_get_menu_divider expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_get_menu_divider expects button");
-  return YV_BOOL(btn->button.menu_divider);
+  return YV_BOOL(btn->kd->button.menu_divider);
 }
 
 void cogito_button_set_menu_item_gap(YisVal btnv, YisVal gapv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_set_menu_item_gap expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_set_menu_item_gap expects button");
-  btn->button.menu_item_gap = (int)yis_as_int(gapv);
-  if (btn->button.menu_item_gap < 0) btn->button.menu_item_gap = 0;
+  btn->kd->button.menu_item_gap = (int)yis_as_int(gapv);
+  if (btn->kd->button.menu_item_gap < 0) btn->kd->button.menu_item_gap = 0;
   cogito_window_relayout(cogito_node_window(btn));
 }
 
@@ -125,14 +125,14 @@ YisVal cogito_button_get_menu_item_gap(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_get_menu_item_gap expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_get_menu_item_gap expects button");
-  return YV_INT(btn->button.menu_item_gap);
+  return YV_INT(btn->kd->button.menu_item_gap);
 }
 
 void cogito_button_set_menu_vibrant(YisVal btnv, YisVal vibrantv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_set_menu_vibrant expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_set_menu_vibrant expects button");
-  btn->button.menu_vibrant = yis_as_bool(vibrantv);
+  btn->kd->button.menu_vibrant = yis_as_bool(vibrantv);
   cogito_window_relayout(cogito_node_window(btn));
 }
 
@@ -140,5 +140,5 @@ YisVal cogito_button_get_menu_vibrant(YisVal btnv) {
   if (btnv.tag != EVT_OBJ) yis_trap("cogito.button_get_menu_vibrant expects button");
   CogitoNode* btn = (CogitoNode*)btnv.as.p;
   if (btn->kind != COGITO_ICONBTN) yis_trap("cogito.button_get_menu_vibrant expects button");
-  return YV_BOOL(btn->button.menu_vibrant);
+  return YV_BOOL(btn->kd->button.menu_vibrant);
 }

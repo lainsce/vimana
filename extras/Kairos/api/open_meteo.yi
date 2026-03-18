@@ -4,7 +4,7 @@ bring stdr
 bring net
 bring json
 
-: _response_error(error = string) (( any )) {
+: _response_error(error = string) (( [string => any] )) {
     let ?out = []: [string => any]
     out["ok"] = false
     out["error"] = error
@@ -56,7 +56,7 @@ bring json
     pressure_hpa = num,
     is_day = num,
     precip_prob = num
-) (( any )) {
+) (( [string => any] )) {
     let ?row = []: [string => any]
     row["time"] = time
     row["temp_c"] = temp_c
@@ -71,7 +71,7 @@ bring json
     return row
 }
 
-: _location_item(item = any) (( any )) {
+: _location_item(item = any) (( [string => any] )) {
     let ?loc = []: [string => any]
 
     let name = str(json.get(item, "name", ""))
@@ -120,7 +120,7 @@ bring json
     return 0
 }
 
-:: search_locations(query = string, count = num) (( any )) {
+:: search_locations(query = string, count = num) (( [string => any] )) {
     let q = stdr.trim(query)
     if len(q) < 2 {
         let ?empty = []: [string => any]
@@ -173,7 +173,7 @@ bring json
     return out
 }
 
-:: fetch_forecast(latitude = num, longitude = num) (( any )) {
+:: fetch_forecast(latitude = num, longitude = num) (( [string => any] )) {
     let params = [
         ["latitude", str(latitude)],
         ["longitude", str(longitude)],

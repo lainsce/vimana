@@ -1,5 +1,5 @@
 case COGITO_DATEPICKER: {
-      if (n->datepicker.popover_panel) {
+      if (n->kd->datepicker.popover_panel) {
         w = COGITO_DATEPICKER_POPOVER_W;
         h = COGITO_DATEPICKER_POPOVER_H;
       } else {

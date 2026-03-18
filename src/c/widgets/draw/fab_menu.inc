@@ -16,7 +16,7 @@ case COGITO_FAB_MENU: {
   // Main FAB uses regular colors (not container colors)
   // Menu items use container colors
   CogitoColor bg, text_color, item_bg, item_text_color;
-  switch (n->fab_menu.variant) {
+  switch (n->kd->fab_menu.variant) {
     case 0: // Primary
       bg = cogito_cached_primary;
       text_color = cogito_cached_on_primary;
@@ -43,7 +43,7 @@ case COGITO_FAB_MENU: {
   // Corner radius: S=16, M=20, L=28
   // Icon size: S=24, M=28, L=36
   int fab_radius, fab_icon;
-  int size = n->fab_menu.size;
+  int size = n->kd->fab_menu.size;
   if (size == 0) {
     fab_radius = 16; fab_icon = 24;
   } else if (size == 2) {
@@ -71,11 +71,11 @@ case COGITO_FAB_MENU: {
   double dt = cogito_spring_dt;
 
   // On state change, snap spring to current visual state, then animate to target
-  bool state_changed = (n->fab_menu.geom_anim_target != (float)target_progress);
+  bool state_changed = (n->kd->fab_menu.geom_anim_target != (float)target_progress);
   if (state_changed) {
     // Snap to opposite of target (current visual state)
     cogito_spring_snap(&n->spring_x, menu_open ? 0.0 : 1.0);
-    n->fab_menu.geom_anim_target = (float)target_progress;
+    n->kd->fab_menu.geom_anim_target = (float)target_progress;
   }
 
   // Tick spring: Spatial Fast for FAB menu (k=800, z=0.6)
@@ -206,29 +206,29 @@ case COGITO_FAB_MENU: {
     const double items_dur_s = 0.400; // 400ms to match FAB spring timing
     double now = cogito_now();
 
-    if (n->fab_menu.items_anim_target != items_target_t) {
-      n->fab_menu.items_anim_from = n->fab_menu.items_t;
-      n->fab_menu.items_anim_target = items_target_t;
-      n->fab_menu.items_anim_start = now;
+    if (n->kd->fab_menu.items_anim_target != items_target_t) {
+      n->kd->fab_menu.items_anim_from = n->kd->fab_menu.items_t;
+      n->kd->fab_menu.items_anim_target = items_target_t;
+      n->kd->fab_menu.items_anim_start = now;
     }
 
-    float items_t = n->fab_menu.items_anim_target;
+    float items_t = n->kd->fab_menu.items_anim_target;
     if (items_dur_s > 0.0) {
-      double elapsed = (now - n->fab_menu.items_anim_start) / items_dur_s;
+      double elapsed = (now - n->kd->fab_menu.items_anim_start) / items_dur_s;
       if (elapsed < 0.0) elapsed = 0.0;
       if (elapsed >= 1.0) {
-        items_t = n->fab_menu.items_anim_target;
+        items_t = n->kd->fab_menu.items_anim_target;
       } else {
         double eased = 1.0 - pow(1.0 - elapsed, 3.0); // ease-out cubic
-        items_t = (float)(n->fab_menu.items_anim_from +
-                          (n->fab_menu.items_anim_target - n->fab_menu.items_anim_from) * eased);
-        double end_time = n->fab_menu.items_anim_start + items_dur_s;
+        items_t = (float)(n->kd->fab_menu.items_anim_from +
+                          (n->kd->fab_menu.items_anim_target - n->kd->fab_menu.items_anim_from) * eased);
+        double end_time = n->kd->fab_menu.items_anim_start + items_dur_s;
         if (end_time > cogito_anim_end_time) cogito_anim_end_time = end_time;
       }
     }
     if (items_t < 0.0f) items_t = 0.0f;
     if (items_t > 1.0f) items_t = 1.0f;
-    n->fab_menu.items_t = items_t;
+    n->kd->fab_menu.items_t = items_t;
 
     // All items start from the same right-edge position (FAB's right edge)
     int start_x = draw_x + draw_w;

@@ -40,7 +40,7 @@ static bool cogito_colorpicker_hit_rect_min48_local(int x, int y, int rx, int ry
 
 static void cogito_colorpicker_sync_hex(CogitoNode* n) {
   if (!n || n->kind != COGITO_COLORPICKER) return;
-  CogitoColor c = cogito_hct_to_rgb(n->colorpicker.h, n->colorpicker.c, n->colorpicker.t);
+  CogitoColor c = cogito_hct_to_rgb(n->kd->colorpicker.h, n->kd->colorpicker.c, n->kd->colorpicker.t);
   char buf[8];
   cogito_color_to_hex(c, buf);
   cogito_text_set_from_buf(n, buf, strlen(buf));
@@ -101,7 +101,7 @@ static void cogito_colorpicker_panel_footer_layout(
 }
 
 static void cogito_colorpicker_slider_rect(CogitoNode* n, int idx, int* out_x, int* out_y, int* out_w, int* out_h) {
-  if (n && n->kind == COGITO_COLORPICKER && n->colorpicker.popover_panel) {
+  if (n && n->kind == COGITO_COLORPICKER && n->kd->colorpicker.popover_panel) {
     int row = 0;
     for (size_t i = 0; i < n->len; i++) {
       CogitoNode* c = n->children[i];
@@ -180,9 +180,9 @@ static int cogito_colorpicker_panel_collect_sliders(CogitoNode* panel, CogitoNod
 static bool cogito_colorpicker_panel_read_hct(CogitoNode* panel, double* out_h, double* out_c, double* out_t) {
   CogitoNode* rows[3] = { NULL, NULL, NULL };
   if (cogito_colorpicker_panel_collect_sliders(panel, rows) < 3) return false;
-  if (out_h) *out_h = rows[0]->slider.value;
-  if (out_c) *out_c = rows[1]->slider.value;
-  if (out_t) *out_t = rows[2]->slider.value;
+  if (out_h) *out_h = rows[0]->kd->slider.value;
+  if (out_c) *out_c = rows[1]->kd->slider.value;
+  if (out_t) *out_t = rows[2]->kd->slider.value;
   return true;
 }
 
@@ -201,25 +201,25 @@ static void cogito_colorpicker_panel_apply_hct_to_sliders(CogitoNode* panel) {
   if (!panel || panel->kind != COGITO_COLORPICKER) return;
   CogitoNode* rows[3] = { NULL, NULL, NULL };
   if (cogito_colorpicker_panel_collect_sliders(panel, rows) < 3) return;
-  rows[0]->slider.value = cogito_colorpicker_clamp(panel->colorpicker.h, rows[0]->slider.min, rows[0]->slider.max);
-  rows[0]->slider.value2 = rows[0]->slider.value;
-  rows[1]->slider.value = cogito_colorpicker_clamp(panel->colorpicker.c, rows[1]->slider.min, rows[1]->slider.max);
-  rows[1]->slider.value2 = rows[1]->slider.value;
-  rows[2]->slider.value = cogito_colorpicker_clamp(panel->colorpicker.t, rows[2]->slider.min, rows[2]->slider.max);
-  rows[2]->slider.value2 = rows[2]->slider.value;
+  rows[0]->kd->slider.value = cogito_colorpicker_clamp(panel->kd->colorpicker.h, rows[0]->kd->slider.min, rows[0]->kd->slider.max);
+  rows[0]->kd->slider.value2 = rows[0]->kd->slider.value;
+  rows[1]->kd->slider.value = cogito_colorpicker_clamp(panel->kd->colorpicker.c, rows[1]->kd->slider.min, rows[1]->kd->slider.max);
+  rows[1]->kd->slider.value2 = rows[1]->kd->slider.value;
+  rows[2]->kd->slider.value = cogito_colorpicker_clamp(panel->kd->colorpicker.t, rows[2]->kd->slider.min, rows[2]->kd->slider.max);
+  rows[2]->kd->slider.value2 = rows[2]->kd->slider.value;
 }
 
 // Sync panel H/C/T when one of its slider children changed via normal slider drag.
 static bool cogito_colorpicker_panel_sync_from_slider(CogitoNode* slider) {
   if (!slider || slider->kind != COGITO_SLIDER || !slider->parent) return false;
   CogitoNode* panel = slider->parent;
-  if (panel->kind != COGITO_COLORPICKER || !panel->colorpicker.popover_panel) return false;
+  if (panel->kind != COGITO_COLORPICKER || !panel->kd->colorpicker.popover_panel) return false;
   int chan = cogito_colorpicker_panel_slider_channel(panel, slider);
-  if (chan == 0) panel->colorpicker.h = slider->slider.value;
-  else if (chan == 1) panel->colorpicker.c = slider->slider.value;
-  else if (chan == 2) panel->colorpicker.t = slider->slider.value;
+  if (chan == 0) panel->kd->colorpicker.h = slider->kd->slider.value;
+  else if (chan == 1) panel->kd->colorpicker.c = slider->kd->slider.value;
+  else if (chan == 2) panel->kd->colorpicker.t = slider->kd->slider.value;
   else return false;
-  if (!panel->colorpicker.hex_editing) {
+  if (!panel->kd->colorpicker.hex_editing) {
     cogito_colorpicker_sync_hex(panel);
   }
   return true;
@@ -227,7 +227,7 @@ static bool cogito_colorpicker_panel_sync_from_slider(CogitoNode* slider) {
 
 // Hit-test panel rows directly (fallback when slider child is not the click target).
 static int cogito_colorpicker_panel_hit_channel(CogitoNode* panel, int mx, int my) {
-  if (!panel || panel->kind != COGITO_COLORPICKER || !panel->colorpicker.popover_panel) return -1;
+  if (!panel || panel->kind != COGITO_COLORPICKER || !panel->kd->colorpicker.popover_panel) return -1;
   for (int chan = 0; chan < 3; chan++) {
     int sx = 0, sy = 0, sw = 0, sh = 0;
     cogito_colorpicker_slider_rect(panel, chan, &sx, &sy, &sw, &sh);
@@ -239,7 +239,7 @@ static int cogito_colorpicker_panel_hit_channel(CogitoNode* panel, int mx, int m
 // Mode-aware hex input rect — panel uses panel layout, trigger uses field layout
 static bool cogito_colorpicker_hex_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n) return false;
-  if (n->colorpicker.popover_panel) {
+  if (n->kd->colorpicker.popover_panel) {
     if (out_x) *out_x = 0;
     if (out_y) *out_y = 0;
     if (out_w) *out_w = 0;
@@ -263,11 +263,11 @@ static bool cogito_colorpicker_set_from_mouse(CogitoNode* n, int channel, int mx
   if (t < 0.0) t = 0.0;
   if (t > 1.0) t = 1.0;
   double prev = 0.0;
-  if (channel == 0) { prev = n->colorpicker.h; n->colorpicker.h = t * 360.0; }
-  else if (channel == 1) { prev = n->colorpicker.c; n->colorpicker.c = t * 100.0; }
-  else { prev = n->colorpicker.t; n->colorpicker.t = t * 100.0; }
-  if (!n->colorpicker.hex_editing) {
+  if (channel == 0) { prev = n->kd->colorpicker.h; n->kd->colorpicker.h = t * 360.0; }
+  else if (channel == 1) { prev = n->kd->colorpicker.c; n->kd->colorpicker.c = t * 100.0; }
+  else { prev = n->kd->colorpicker.t; n->kd->colorpicker.t = t * 100.0; }
+  if (!n->kd->colorpicker.hex_editing) {
     cogito_colorpicker_sync_hex(n);
   }
-  return prev != (channel == 0 ? n->colorpicker.h : (channel == 1 ? n->colorpicker.c : n->colorpicker.t));
+  return prev != (channel == 0 ? n->kd->colorpicker.h : (channel == 1 ? n->kd->colorpicker.c : n->kd->colorpicker.t));
 }

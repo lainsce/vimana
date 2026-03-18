@@ -59,16 +59,16 @@ static void cogito_node_drop(YisObj* o) {
     n->icon = NULL;
   }
   if ((n->kind == COGITO_IMAGE || n->kind == COGITO_AVATAR) &&
-      n->image.texture) {
-    cogito_image_cache_release_texture(n->image.texture);
-    n->image.texture = NULL;
+      n->kd->image.texture) {
+    cogito_image_cache_release_texture(n->kd->image.texture);
+    n->kd->image.texture = NULL;
   }
   if ((n->kind == COGITO_IMAGE || n->kind == COGITO_AVATAR) &&
-      n->image.glow_texture && cogito_backend &&
+      n->kd->image.glow_texture && cogito_backend &&
       cogito_backend->texture_destroy) {
-    cogito_backend->texture_destroy(n->image.glow_texture);
-    n->image.glow_texture = NULL;
-    n->image.glow_source = NULL;
+    cogito_backend->texture_destroy(n->kd->image.glow_texture);
+    n->kd->image.glow_texture = NULL;
+    n->kd->image.glow_source = NULL;
   }
   if (n->on_click) {
     yis_release_val(YV_FN(n->on_click));
@@ -162,28 +162,28 @@ static void cogito_node_drop(YisObj* o) {
     n->tab_cap = 0;
   }
   if (n->kind == COGITO_NAV_RAIL) {
-    if (n->nav_rail.labels) {
-      for (size_t i = 0; i < n->nav_rail.len; i++) {
-        if (n->nav_rail.labels[i]) yis_release_val(YV_STR(n->nav_rail.labels[i]));
-        if (n->nav_rail.icons && n->nav_rail.icons[i]) yis_release_val(YV_STR(n->nav_rail.icons[i]));
+    if (n->kd->nav_rail.labels) {
+      for (size_t i = 0; i < n->kd->nav_rail.len; i++) {
+        if (n->kd->nav_rail.labels[i]) yis_release_val(YV_STR(n->kd->nav_rail.labels[i]));
+        if (n->kd->nav_rail.icons && n->kd->nav_rail.icons[i]) yis_release_val(YV_STR(n->kd->nav_rail.icons[i]));
       }
-      free(n->nav_rail.labels);
-      free(n->nav_rail.icons);
+      free(n->kd->nav_rail.labels);
+      free(n->kd->nav_rail.icons);
     }
-    if (n->nav_rail.badges) free(n->nav_rail.badges);
-    if (n->nav_rail.item_springs) free(n->nav_rail.item_springs);
+    if (n->kd->nav_rail.badges) free(n->kd->nav_rail.badges);
+    if (n->kd->nav_rail.item_springs) free(n->kd->nav_rail.item_springs);
   }
-  if (n->kind == COGITO_BOTTOM_NAV && n->bottom_nav.labels) {
-    for (size_t i = 0; i < n->bottom_nav.len; i++) {
-      if (n->bottom_nav.labels[i]) yis_release_val(YV_STR(n->bottom_nav.labels[i]));
-      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) yis_release_val(YV_STR(n->bottom_nav.icons[i]));
+  if (n->kind == COGITO_BOTTOM_NAV && n->kd->bottom_nav.labels) {
+    for (size_t i = 0; i < n->kd->bottom_nav.len; i++) {
+      if (n->kd->bottom_nav.labels[i]) yis_release_val(YV_STR(n->kd->bottom_nav.labels[i]));
+      if (n->kd->bottom_nav.icons && n->kd->bottom_nav.icons[i]) yis_release_val(YV_STR(n->kd->bottom_nav.icons[i]));
     }
-    free(n->bottom_nav.labels);
-    free(n->bottom_nav.icons);
+    free(n->kd->bottom_nav.labels);
+    free(n->kd->bottom_nav.icons);
   }
-  if (n->kind == COGITO_SLIDER && n->slider.bubble_format) {
-    yis_release_val(YV_STR(n->slider.bubble_format));
-    n->slider.bubble_format = NULL;
+  if (n->kind == COGITO_SLIDER && n->kd->slider.bubble_format) {
+    yis_release_val(YV_STR(n->kd->slider.bubble_format));
+    n->kd->slider.bubble_format = NULL;
   }
   if (n->textfield_regex) {
     yis_release_val(YV_STR(n->textfield_regex));
@@ -227,19 +227,22 @@ static void cogito_node_drop(YisObj* o) {
     n->cap = 0;
   }
   if (n->kind == COGITO_CARD) {
-    if (n->card.header_image) {
-      yis_release_val(YV_OBJ(n->card.header_image));
-      n->card.header_image = NULL;
+    if (n->kd->card.header_image) {
+      yis_release_val(YV_OBJ(n->kd->card.header_image));
+      n->kd->card.header_image = NULL;
     }
-    if (n->card.actions) {
-      free(n->card.actions);
-      n->card.actions = NULL;
+    if (n->kd->card.actions) {
+      free(n->kd->card.actions);
+      n->kd->card.actions = NULL;
     }
   }
   if (n->dialog) {
     yis_release_val(YV_OBJ(n->dialog));
     n->dialog = NULL;
   }
+  // Free per-kind data
+  free(n->kd);
+  n->kd = NULL;
 }
 
 static CogitoNode* cogito_node_new(CogitoKind kind) {
@@ -345,35 +348,66 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
 
   // Kind-specific non-zero defaults
   switch (kind) {
-    case COGITO_SCROLLER: n->scroller.vert = true; break;
+    case COGITO_SCROLLER: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoScrollerData)); n->kd->scroller.vert = true; break;
     case COGITO_SLIDER:
-      n->slider.show_value_bubble = true;
-      n->slider.bubble_scale = 1.0;
+      n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoSliderData));
+      n->kd->slider.show_value_bubble = true;
+      n->kd->slider.bubble_scale = 1.0;
       break;
-    case COGITO_STEPPER: n->stepper.max = 100.0; n->stepper.step = 1.0; break;
+    case COGITO_STEPPER: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoStepperData)); n->kd->stepper.max = 100.0; n->kd->stepper.step = 1.0; break;
     case COGITO_COLORPICKER:
-      n->colorpicker.h = 236.0;
-      n->colorpicker.c = 41.0;
-      n->colorpicker.t = 40.0;
+      n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoColorpickerData));
+      n->kd->colorpicker.h = 236.0;
+      n->kd->colorpicker.c = 41.0;
+      n->kd->colorpicker.t = 40.0;
       cogito_colorpicker_sync_hex(n);
       break;
-    case COGITO_IMAGE: case COGITO_AVATAR: n->image.avg_lum = 0.5f; break;
+    case COGITO_IMAGE: case COGITO_AVATAR: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoImageData)); n->kd->image.avg_lum = 0.5f; break;
     case COGITO_VIEW_DUAL:
-      n->view_dual.ratio = 0.5f;
-      n->view_dual.anim_ratio = 0.5f;
-      n->view_dual.anim_from = 0.5f;
-      n->view_dual.anim_to = 0.5f;
-      n->view_dual.animating = false;
-      n->view_dual.show_handle = true;
-      n->view_dual.edge_snap = 0;
+      n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoViewDualData));
+      n->kd->view_dual.ratio = 0.5f;
+      n->kd->view_dual.anim_ratio = 0.5f;
+      n->kd->view_dual.anim_from = 0.5f;
+      n->kd->view_dual.anim_to = 0.5f;
+      n->kd->view_dual.animating = false;
+      n->kd->view_dual.show_handle = true;
+      n->kd->view_dual.edge_snap = 0;
       break;
     case COGITO_WINDOW:
       n->window_size_class = COGITO_WINDOW_SIZE_MEDIUM;
       break;
     case COGITO_SIDE_SHEET:
-      n->side_sheet.mode = COGITO_SIDE_SHEET_MODAL;
-      n->side_sheet.preferred_mode = COGITO_SIDE_SHEET_MODAL;
+      n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoSideSheetData));
+      n->kd->side_sheet.mode = COGITO_SIDE_SHEET_MODAL;
+      n->kd->side_sheet.preferred_mode = COGITO_SIDE_SHEET_MODAL;
       break;
+    // Kinds with per-kind data but only zero-initialized defaults
+    case COGITO_DATEPICKER: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoDatepickerData)); break;
+    case COGITO_TIMEPICKER: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoTimepickerData)); break;
+    case COGITO_APPBAR: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoAppbarData)); break;
+    case COGITO_GRID: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoGridData)); break;
+    case COGITO_CAROUSEL: case COGITO_CAROUSEL_ITEM: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoCarouselData)); break;
+    case COGITO_TEXTFIELD: case COGITO_TEXTVIEW: case COGITO_SEARCHFIELD: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoTextInputData)); break;
+    case COGITO_NAV_RAIL: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoNavRailData)); break;
+    case COGITO_BOTTOM_NAV: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoBottomNavData)); break;
+    case COGITO_BADGE: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoBadgeData)); break;
+    case COGITO_PROGRESS: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoProgressData)); break;
+    case COGITO_BUTTON: case COGITO_FONTBUTTON: case COGITO_ICONBTN: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoButtonData)); break;
+    case COGITO_CHIP: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoChipData)); break;
+    case COGITO_BOTTOM_SHEET: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoBottomSheetData)); break;
+    case COGITO_FAB: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoFabData)); break;
+    case COGITO_FAB_MENU: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoFabMenuData)); break;
+    case COGITO_DIVIDER: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoDividerData)); break;
+    case COGITO_LABEL: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoLabelData)); break;
+    case COGITO_ACTIVE_INDICATOR: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoIndicatorData)); break;
+    case COGITO_SPLIT_BUTTON: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoSplitBtnData)); break;
+    case COGITO_DRAWING_AREA: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoDrawingAreaData)); break;
+    case COGITO_WEBVIEW: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoWebviewData)); break;
+    case COGITO_SHAPE: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoShapeData)); break;
+    case COGITO_MENU_SECTION: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoMenuSectionData)); break;
+    case COGITO_TOOLBAR: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoToolbarData)); break;
+    case COGITO_BUTTON_GROUP: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoButtonGroupData)); break;
+    case COGITO_CARD: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoCardData)); break;
     default: break;
   }
   cogito_apply_style_to_node(n);
@@ -613,13 +647,13 @@ static void cogito_node_set_text(CogitoNode* n, YisStr* s) {
   int len = n->text ? (int)n->text->len : 0;
   // Only update text_input for widgets that store editing state in text_input.
   if (n->kind == COGITO_TEXTFIELD || n->kind == COGITO_TEXTVIEW || n->kind == COGITO_SEARCHFIELD) {
-    if (n->text_input.caret > len) n->text_input.caret = len;
-    if (n->text_input.sel_start > len) n->text_input.sel_start = len;
-    if (n->text_input.sel_end > len) n->text_input.sel_end = len;
+    if (n->kd->text_input.caret > len) n->kd->text_input.caret = len;
+    if (n->kd->text_input.sel_start > len) n->kd->text_input.sel_start = len;
+    if (n->kd->text_input.sel_end > len) n->kd->text_input.sel_end = len;
   } else if (n->kind == COGITO_COLORPICKER) {
-    if (n->colorpicker.caret > len) n->colorpicker.caret = len;
-    if (n->colorpicker.sel_start > len) n->colorpicker.sel_start = len;
-    if (n->colorpicker.sel_end > len) n->colorpicker.sel_end = len;
+    if (n->kd->colorpicker.caret > len) n->kd->colorpicker.caret = len;
+    if (n->kd->colorpicker.sel_start > len) n->kd->colorpicker.sel_start = len;
+    if (n->kd->colorpicker.sel_end > len) n->kd->colorpicker.sel_end = len;
   }
   if (n->kind == COGITO_TEXTFIELD) {
     cogito_textfield_refresh_regex_state(n);

@@ -80,7 +80,7 @@ case COGITO_WINDOW: {
       if (n->kind == COGITO_WINDOW && (n->side_sheet_open || n->side_sheet_closing) && n->side_sheet_node) {
         float p = cogito_overlay_anim_value(n->side_sheet_node, n->side_sheet_open);
         // Skip scrim for sidebar mode - it's docked next to overlay
-        if (n->side_sheet_node->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR) {
+        if (n->side_sheet_node->kd->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR) {
             // Draw scrim for modal/inset modes
           CogitoStyle slot_style = cogito_theme_resolve(COGITO_DIALOG_SLOT);
           CogitoColor scrim = slot_style.has_bg ? slot_style.bg : n->bg;
@@ -89,7 +89,7 @@ case COGITO_WINDOW: {
             cogito_draw_rect(0, 0, n->w, n->h, scrim, 0);
         }
         int slide_dx = 0;
-        if (n->side_sheet_node->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR) {
+        if (n->side_sheet_node->kd->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR) {
           slide_dx = (int)lroundf((1.0f - p) * (float)n->side_sheet_node->w);
         }
         if (slide_dx > 0) cogito_draw_offset_subtree(n->side_sheet_node, slide_dx, 0);

@@ -3,7 +3,7 @@ case COGITO_BUTTON_GROUP: {
       // Arranges children horizontally with optional connected styling
       
       // Use buttongroup size for gap (spec values)
-      int btn_size = (n->buttongroup.size >= 0 && n->buttongroup.size <= 4) ? n->buttongroup.size : 2;
+      int btn_size = (n->kd->buttongroup.size >= 0 && n->kd->buttongroup.size <= 4) ? n->kd->buttongroup.size : 2;
       int buttongroup_gaps[] = {12, 12, 8, 8, 8};      // XS, S, M, L, XL (unconnected)
       int size_gap = buttongroup_gaps[btn_size];
       
@@ -63,7 +63,7 @@ case COGITO_BUTTON_GROUP: {
         
         // Propagate ButtonGroup size to children (Button/IconButton)
         if (c->kind == COGITO_BUTTON || c->kind == COGITO_ICONBTN) {
-          c->button.size = n->buttongroup.size;
+          c->kd->button.size = n->kd->buttongroup.size;
         }
         
         int cw = 0, ch = 0;
@@ -77,7 +77,7 @@ case COGITO_BUTTON_GROUP: {
       }
       
       // For connected mode, use smaller gap; otherwise use standard gap
-      bool is_connected = (n->buttongroup.connected == 1);
+      bool is_connected = (n->kd->buttongroup.connected == 1);
       int actual_gap = is_connected ? 2 : pad;
       
       int total_gaps = (count > 1) ? (int)(count - 1) * actual_gap : 0;

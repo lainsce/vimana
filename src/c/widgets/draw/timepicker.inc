@@ -2,7 +2,7 @@ case COGITO_TIMEPICKER: {
   cogito_timepicker_ensure_time(n);
   bool hover = false, active = false;
   cogito_node_hover_state(n, &hover, &active);
-  CogitoStyle s = n->timepicker.popover_panel
+  CogitoStyle s = n->kd->timepicker.popover_panel
     ? cogito_theme_resolve_node(n)
     : cogito_theme_resolve_node_state(n, hover, active);
 
@@ -11,9 +11,9 @@ case COGITO_TIMEPICKER: {
   CogitoColor border = s.has_border ? s.border : n->border_color;
   CogitoColor sel = s.has_selection ? s.selection : n->selection_color;
   int border_w = s.has_border_width ? s.border_width : (n->border_width_set ? n->border_width : 0);
-  int radius = s.has_radius ? s.radius : (n->timepicker.popover_panel ? 24 : 8);
+  int radius = s.has_radius ? s.radius : (n->kd->timepicker.popover_panel ? 24 : 8);
 
-  if (n->timepicker.popover_panel) {
+  if (n->kd->timepicker.popover_panel) {
     CogitoTimePickerPanelLayout ly;
     cogito_timepicker_panel_layout(n, &ly);
 
@@ -40,10 +40,10 @@ case COGITO_TIMEPICKER: {
                                ly.header_y + (ly.header_h - cogito_text_height_size(header_size)) / 2,
                                "Select time", text, header_size, false, false);
 
-    uint8_t mode = n->timepicker.mode;
+    uint8_t mode = n->kd->timepicker.mode;
     if (mode != COGITO_TIMEPICKER_MODE_MINUTE) mode = COGITO_TIMEPICKER_MODE_HOUR;
-    bool is_pm = (n->timepicker.hour >= 12);
-    int display_hour = cogito_timepicker_hour12_from_24(n->timepicker.hour);
+    bool is_pm = (n->kd->timepicker.hour >= 12);
+    int display_hour = cogito_timepicker_hour12_from_24(n->kd->timepicker.hour);
 
     CogitoColor tertiary = {0}, tertiary_container = {0};
     cogito_theme_get_tertiary(&tertiary, NULL, &tertiary_container, NULL);
@@ -64,7 +64,7 @@ case COGITO_TIMEPICKER: {
     char hbuf[8];
     char mbuf[8];
     snprintf(hbuf, sizeof(hbuf), "%02d", display_hour);
-    snprintf(mbuf, sizeof(mbuf), "%02d", n->timepicker.minute);
+    snprintf(mbuf, sizeof(mbuf), "%02d", n->kd->timepicker.minute);
 
     CogitoColor active_text = sel;
     CogitoColor inactive_text = text;
@@ -106,7 +106,7 @@ case COGITO_TIMEPICKER: {
                                ly.ampm_y + ly.ampm_split_h + ((ly.ampm_h - ly.ampm_split_h) - am_th) / 2,
                                "PM", is_pm ? tertiary : inactive_text, header_size + 4, true, false);
 
-    if (n->timepicker.dial_visible) {
+    if (n->kd->timepicker.dial_visible) {
       CogitoColor dial_bg = box_bg;
       CogitoColor dial_tint = sel;
       dial_tint.a = 26;
@@ -131,8 +131,8 @@ case COGITO_TIMEPICKER: {
       }
 
       int selected_value = (mode == COGITO_TIMEPICKER_MODE_MINUTE)
-        ? n->timepicker.minute
-        : cogito_timepicker_hour12_from_24(n->timepicker.hour);
+        ? n->kd->timepicker.minute
+        : cogito_timepicker_hour12_from_24(n->kd->timepicker.hour);
       int hand_x = 0, hand_y = 0;
       cogito_timepicker_panel_value_point(&ly, mode, selected_value, &hand_x, &hand_y);
       CogitoColor hand = sel;
@@ -142,8 +142,8 @@ case COGITO_TIMEPICKER: {
       cogito_draw_rect(hand_x - 24, hand_y - 24, 48, 48, sel, 24);
 
       char sbuf[8];
-      if (mode == COGITO_TIMEPICKER_MODE_MINUTE) snprintf(sbuf, sizeof(sbuf), "%02d", n->timepicker.minute);
-      else snprintf(sbuf, sizeof(sbuf), "%d", cogito_timepicker_hour12_from_24(n->timepicker.hour));
+      if (mode == COGITO_TIMEPICKER_MODE_MINUTE) snprintf(sbuf, sizeof(sbuf), "%02d", n->kd->timepicker.minute);
+      else snprintf(sbuf, sizeof(sbuf), "%d", cogito_timepicker_hour12_from_24(n->kd->timepicker.hour));
       int sw = cogito_text_width_size_node(n, sbuf, header_size + 6);
       int sh = cogito_text_height_size(header_size + 6);
       cogito_draw_text_size_node(n, hand_x - sw / 2, hand_y - sh / 2, sbuf, cogito_on_color(sel), header_size + 6, false, false);
@@ -191,7 +191,7 @@ case COGITO_TIMEPICKER: {
     int key_icon = cogito_timepicker_iconbtn_icon_size(&key_style, ly.keyboard_w);
     int key_icon_x = ly.keyboard_x + (ly.keyboard_w - key_icon) / 2;
     int key_icon_y = ly.keyboard_y + (ly.keyboard_h - key_icon) / 2;
-    cogito_draw_icon_fallback(n, n->timepicker.dial_visible ? "sf:keyboard" : "sf:clock",
+    cogito_draw_icon_fallback(n, n->kd->timepicker.dial_visible ? "sf:keyboard" : "sf:clock",
                               key_icon_x, key_icon_y, key_icon, key_col);
     break;
   }
@@ -213,7 +213,7 @@ case COGITO_TIMEPICKER: {
 
   const char* label = (n->subtitle && n->subtitle->data && n->subtitle->data[0]) ? n->subtitle->data : "Select time";
   char value[32];
-  cogito_timepicker_format_display(n->timepicker.hour, n->timepicker.minute, true, value, sizeof(value));
+  cogito_timepicker_format_display(n->kd->timepicker.hour, n->kd->timepicker.minute, true, value, sizeof(value));
 
   int size = cogito_node_font_size(n);
   int label_size = size - 2;

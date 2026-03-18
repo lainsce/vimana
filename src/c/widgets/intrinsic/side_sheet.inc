@@ -20,7 +20,7 @@ case COGITO_SIDE_SHEET: {
   w = handle_w + content_w;
   if (w < header_w) w = header_w;
   if (w < 200) w = 200;
-  if (n->side_sheet.mode == COGITO_SIDE_SHEET_INSET) {
+  if (n->kd->side_sheet.mode == COGITO_SIDE_SHEET_INSET) {
       w += 32;
       h += 32;
   }

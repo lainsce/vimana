@@ -32,11 +32,11 @@ static void cogito_layout_zstack(CogitoNode* n, int x, int y) {
 
       int target_w = host_w;
       if (target_w < 0) target_w = 0;
-      int target_h = c->bottom_sheet.desired_h > 0 ? c->bottom_sheet.desired_h : min_h;
+      int target_h = c->kd->bottom_sheet.desired_h > 0 ? c->kd->bottom_sheet.desired_h : min_h;
       if (target_h < min_h) target_h = min_h;
       if (target_h > max_h) target_h = max_h;
-      c->bottom_sheet.desired_h = target_h;
-      c->bottom_sheet.expanded = target_h >= (max_h - 8);
+      c->kd->bottom_sheet.desired_h = target_h;
+      c->kd->bottom_sheet.expanded = target_h >= (max_h - 8);
 
       int target_x = host_x;
       int target_y = host_y + host_h - target_h;
@@ -70,16 +70,16 @@ static void cogito_layout_zstack(CogitoNode* n, int x, int y) {
 
       int target_h = host_h;
       if (target_h < 0) target_h = 0;
-      int target_w = c->side_sheet.desired_w > 0 ? c->side_sheet.desired_w : min_w;
+      int target_w = c->kd->side_sheet.desired_w > 0 ? c->kd->side_sheet.desired_w : min_w;
       if (target_w < min_w) target_w = min_w;
       if (target_w > max_w) target_w = max_w;
-      c->side_sheet.desired_w = target_w;
-      c->side_sheet.expanded = target_w >= (max_w - 8);
+      c->kd->side_sheet.desired_w = target_w;
+      c->kd->side_sheet.expanded = target_w >= (max_w - 8);
 
       // Position side sheet based on mode
       int target_x;
       bool rtl = cogito_is_rtl();
-      if (c->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+      if (c->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
           // Sidebar mode: position adjacent to window. RTL: left side, LTR: right side
           target_x = rtl ? (host_x - target_w) : (host_x + host_w);
       } else {

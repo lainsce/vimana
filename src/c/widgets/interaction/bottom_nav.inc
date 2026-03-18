@@ -1,10 +1,10 @@
 static CogitoNode* cogito_bottom_nav_new_obj(void) {
   CogitoNode* n = cogito_node_new(COGITO_BOTTOM_NAV);
-  n->bottom_nav.labels = NULL;
-  n->bottom_nav.icons = NULL;
-  n->bottom_nav.len = 0;
-  n->bottom_nav.cap = 0;
-  n->bottom_nav.selected = 0;
+  n->kd->bottom_nav.labels = NULL;
+  n->kd->bottom_nav.icons = NULL;
+  n->kd->bottom_nav.len = 0;
+  n->kd->bottom_nav.cap = 0;
+  n->kd->bottom_nav.selected = 0;
   return n;
 }
 
@@ -28,24 +28,24 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
   }
 
   // Clear existing items
-  if (n->bottom_nav.labels) {
-    for (size_t i = 0; i < n->bottom_nav.len; i++) {
-      if (n->bottom_nav.labels[i]) yis_release_val(YV_STR(n->bottom_nav.labels[i]));
-      if (n->bottom_nav.icons && n->bottom_nav.icons[i]) yis_release_val(YV_STR(n->bottom_nav.icons[i]));
+  if (n->kd->bottom_nav.labels) {
+    for (size_t i = 0; i < n->kd->bottom_nav.len; i++) {
+      if (n->kd->bottom_nav.labels[i]) yis_release_val(YV_STR(n->kd->bottom_nav.labels[i]));
+      if (n->kd->bottom_nav.icons && n->kd->bottom_nav.icons[i]) yis_release_val(YV_STR(n->kd->bottom_nav.icons[i]));
     }
-    free(n->bottom_nav.labels);
-    free(n->bottom_nav.icons);
+    free(n->kd->bottom_nav.labels);
+    free(n->kd->bottom_nav.icons);
   }
 
-  n->bottom_nav.len = count;
-  n->bottom_nav.cap = count;
-  n->bottom_nav.labels = (YisStr**)calloc(count, sizeof(YisStr*));
-  n->bottom_nav.icons = (YisStr**)calloc(count, sizeof(YisStr*));
+  n->kd->bottom_nav.len = count;
+  n->kd->bottom_nav.cap = count;
+  n->kd->bottom_nav.labels = (YisStr**)calloc(count, sizeof(YisStr*));
+  n->kd->bottom_nav.icons = (YisStr**)calloc(count, sizeof(YisStr*));
 
   for (size_t i = 0; i < count; i++) {
     YisVal lv = labels->items[i];
     YisStr* ls = stdr_to_string(lv);
-    n->bottom_nav.labels[i] = ls;
+    n->kd->bottom_nav.labels[i] = ls;
     yis_retain_val(YV_STR(ls));
   }
 
@@ -56,7 +56,7 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
     for (size_t i = 0; i < icon_count; i++) {
       YisVal iv = icons->items[i];
       YisStr* is = stdr_to_string(iv);
-      n->bottom_nav.icons[i] = is;
+      n->kd->bottom_nav.icons[i] = is;
       yis_retain_val(YV_STR(is));
     }
   }
@@ -67,15 +67,15 @@ static void cogito_bottom_nav_set_items(YisVal navv, YisVal labelsv, YisVal icon
 static YisVal cogito_bottom_nav_get_selected(YisVal navv) {
   if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_get_selected expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
-  return YV_INT(n->bottom_nav.selected);
+  return YV_INT(n->kd->bottom_nav.selected);
 }
 
 static void cogito_bottom_nav_set_selected(YisVal navv, YisVal idxv) {
   if (navv.tag != EVT_OBJ) yis_trap("cogito.bottom_nav_set_selected expects bottom_nav");
   CogitoNode* n = (CogitoNode*)navv.as.p;
   int idx = (int)yis_as_int(idxv);
-  if (idx >= 0 && idx < (int)n->bottom_nav.len) {
-    n->bottom_nav.selected = idx;
+  if (idx >= 0 && idx < (int)n->kd->bottom_nav.len) {
+    n->kd->bottom_nav.selected = idx;
   }
 }
 
@@ -95,7 +95,7 @@ static int cogito_bottom_nav_hit_index(CogitoNode* n, int x, int y) {
   if (!n || n->kind != COGITO_BOTTOM_NAV) return -1;
   if (!cogito_hit_node(n, x, y)) return -1;
 
-  if (n->bottom_nav.len == 0) return -1;
+  if (n->kd->bottom_nav.len == 0) return -1;
   int reserved_right = 0;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
@@ -106,11 +106,11 @@ static int cogito_bottom_nav_hit_index(CogitoNode* n, int x, int y) {
   int items_w = n->w - reserved_right;
   if (items_w < 1) items_w = n->w;
   if (x >= n->x + items_w) return -1;
-  int item_w = items_w / (int)n->bottom_nav.len;
+  int item_w = items_w / (int)n->kd->bottom_nav.len;
   if (item_w < 1) return -1;
-  for (int idx = 0; idx < (int)n->bottom_nav.len; idx++) {
+  for (int idx = 0; idx < (int)n->kd->bottom_nav.len; idx++) {
     int ix = n->x + idx * item_w;
-    int iw = (idx == (int)n->bottom_nav.len - 1) ? (n->x + items_w - ix) : item_w;
+    int iw = (idx == (int)n->kd->bottom_nav.len - 1) ? (n->x + items_w - ix) : item_w;
     if (iw < 1) iw = 1;
     if (cogito_hit_rect_min48(x, y, ix, n->y, iw, n->h)) return idx;
   }
@@ -134,6 +134,6 @@ static inline CogitoNode* cogito_find_bottom_nav_hit(CogitoNode* n, int x, int y
 }
 
 static void cogito_handle_bottom_nav_select(CogitoNode* nav, int idx) {
-  nav->bottom_nav.selected = idx;
+  nav->kd->bottom_nav.selected = idx;
   cogito_invoke_select(nav, idx, false);
 }

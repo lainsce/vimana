@@ -3,7 +3,7 @@ case COGITO_DATEPICKER: {
   bool hover = false;
   bool active = false;
   cogito_node_hover_state(n, &hover, &active);
-  CogitoStyle s = n->datepicker.popover_panel
+  CogitoStyle s = n->kd->datepicker.popover_panel
     ? cogito_theme_resolve_node(n)
     : cogito_theme_resolve_node_state(n, hover, active);
 
@@ -12,13 +12,13 @@ case COGITO_DATEPICKER: {
   CogitoColor border = s.has_border ? s.border : n->border_color;
   CogitoColor sel = s.has_selection ? s.selection : n->selection_color;
   int border_w = s.has_border_width ? s.border_width : (n->border_width_set ? n->border_width : 0);
-  int radius = s.has_radius ? s.radius : (n->datepicker.popover_panel ? 20 : 8);
+  int radius = s.has_radius ? s.radius : (n->kd->datepicker.popover_panel ? 20 : 8);
 
   int mx = 0, my = 0;
   bool down = false;
   (void)cogito_pointer_query(&mx, &my, &down, NULL);
 
-  if (n->datepicker.popover_panel) {
+  if (n->kd->datepicker.popover_panel) {
     CogitoDatePickerPanelLayout ly;
     cogito_datepicker_panel_layout(n, &ly);
 
@@ -92,9 +92,9 @@ case COGITO_DATEPICKER: {
                                 nav_icon, text);
     }
 
-    const char* month_name = cogito_datepicker_month_short(n->datepicker.view_month);
+    const char* month_name = cogito_datepicker_month_short(n->kd->datepicker.view_month);
     char year_buf[16];
-    snprintf(year_buf, sizeof(year_buf), "%d", n->datepicker.view_year);
+    snprintf(year_buf, sizeof(year_buf), "%d", n->kd->datepicker.view_year);
 
     int month_tw = cogito_text_width_size_node(n, month_name, header_size + 1);
     int year_tw = cogito_text_width_size_node(n, year_buf, header_size + 1);
@@ -154,9 +154,9 @@ case COGITO_DATEPICKER: {
         cogito_datepicker_panel_cell_date(n, idx, &y, &m, &d, &in_view);
 
         bool selected = cogito_datepicker_same_date(y, m, d,
-                                                    n->datepicker.year,
-                                                    n->datepicker.month,
-                                                    n->datepicker.day);
+                                                    n->kd->datepicker.year,
+                                                    n->kd->datepicker.month,
+                                                    n->kd->datepicker.day);
         bool today = cogito_datepicker_same_date(y, m, d, today_y, today_m, today_d);
         bool over_cell = cogito_hit_rect(mx, my, cx, cy, ly.cell_w, ly.cell_h);
 
@@ -228,7 +228,7 @@ case COGITO_DATEPICKER: {
       int rows = cogito_datepicker_selector_visible_rows(&ly);
       int total = cogito_datepicker_selector_total(mode);
       cogito_datepicker_selector_clamp_start(n, mode, rows);
-      int start = n->datepicker.list_start;
+      int start = n->kd->datepicker.list_start;
       int selected_idx = cogito_datepicker_selector_selected_index(n, mode);
 
       for (int row = 0; row < rows; row++) {
@@ -321,7 +321,7 @@ case COGITO_DATEPICKER: {
   }
 
   char value[32];
-  cogito_datepicker_format_display(n->datepicker.year, n->datepicker.month, n->datepicker.day, value, sizeof(value));
+  cogito_datepicker_format_display(n->kd->datepicker.year, n->kd->datepicker.month, n->kd->datepicker.day, value, sizeof(value));
 
   const char* label = (n->subtitle && n->subtitle->data && n->subtitle->data[0]) ? n->subtitle->data : "Date";
 

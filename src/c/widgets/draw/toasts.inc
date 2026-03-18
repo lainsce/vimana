@@ -55,7 +55,7 @@ static void cogito_draw_appbar_traffic_overlay(CogitoNode* n) {
   if (!n) return;
 
   if (n->kind == COGITO_APPBAR) {
-    if (n->appbar.btn_close_x >= 0 || n->appbar.btn_min_x >= 0 || n->appbar.btn_max_x >= 0) {
+    if (n->kd->appbar.btn_close_x >= 0 || n->kd->appbar.btn_min_x >= 0 || n->kd->appbar.btn_max_x >= 0) {
       bool hover = false;
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
@@ -63,9 +63,9 @@ static void cogito_draw_appbar_traffic_overlay(CogitoNode* n) {
       CogitoColor text = s.has_text ? s.text : n->text_color;
       CogitoColor border = s.has_border ? s.border : n->border_color;
 
-      int btn = n->appbar.btn_size;
+      int btn = n->kd->appbar.btn_size;
       if (btn < 1) btn = 12;
-      int by = n->appbar.btn_y;
+      int by = n->kd->appbar.btn_y;
 
       int mx = 0, my = 0;
       bool down = false;
@@ -73,7 +73,7 @@ static void cogito_draw_appbar_traffic_overlay(CogitoNode* n) {
 
       CogitoTrafficLightsState lights = {0};
       cogito_traffic_lights_compute(
-          n->appbar.btn_close_x, n->appbar.btn_min_x, n->appbar.btn_max_x,
+          n->kd->appbar.btn_close_x, n->kd->appbar.btn_min_x, n->kd->appbar.btn_max_x,
           by, btn, mx, my, down, &lights);
 
       CogitoColor fallback_btn = s.has_selection ? s.selection : n->selection_color;
@@ -86,7 +86,7 @@ static void cogito_draw_appbar_traffic_overlay(CogitoNode* n) {
       cogito_bin_scope_begin_for_node(n, &bin_scope_state);
       cogito_draw_traffic_lights_styled(
           &s, fallback_btn, fallback_border,
-          n->appbar.btn_close_x, n->appbar.btn_min_x, n->appbar.btn_max_x,
+          n->kd->appbar.btn_close_x, n->kd->appbar.btn_min_x, n->kd->appbar.btn_max_x,
           by, btn, &lights, false);
       cogito_bin_scope_end_for_node(&bin_scope_state);
     }

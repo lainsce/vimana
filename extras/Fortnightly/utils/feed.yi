@@ -8,7 +8,7 @@ bring utils.cache
 
 -- ── RSS/Atom Splitting ───────────────────────────────────────
 
-: split_items(xml = string, open_tag = string, close_tag = string) (( any )) {
+: split_items(xml = string, open_tag = string, close_tag = string) (( [any] )) {
     let ?items = []: [any]
     let total = stdr.len(xml)
     let ?remaining = ""
@@ -37,7 +37,7 @@ bring utils.cache
 
 -- ── Parse RSS Feed ───────────────────────────────────────────
 
-: parse_rss_items(xml = string, source_name = string) (( any )) {
+: parse_rss_items(xml = string, source_name = string) (( [any] )) {
     let ?result = []: [any]
     let items = split_items(xml, "<item", "</item>")
     let count = stdr.len(items)
@@ -91,7 +91,7 @@ bring utils.cache
     return result
 }
 
-: parse_atom_entries(xml = string, source_name = string) (( any )) {
+: parse_atom_entries(xml = string, source_name = string) (( [any] )) {
     let ?result = []: [any]
     let entries = split_items(xml, "<entry", "</entry>")
     let count = stdr.len(entries)
@@ -138,7 +138,7 @@ bring utils.cache
     return result
 }
 
-:: parse_feed(xml = string, source_name = string) (( any )) {
+:: parse_feed(xml = string, source_name = string) (( [any] )) {
     if stdr.contains(xml, "<feed") {
         return parse_atom_entries(xml, source_name)
     }
@@ -171,7 +171,7 @@ bring utils.cache
     return parse.extract_article_content(html)
 }
 
-:: fetch_single_feed(source = any) (( any )) {
+:: fetch_single_feed(source = any) (( [any] )) {
     let ?result = []: [any]
     let s = source ?? []: [string => any]
     let url = str(s["url"] ?? "")
@@ -206,7 +206,7 @@ bring utils.cache
     return result
 }
 
-:: fetch_all_feeds(sources = any, articles = any) (( any )) {
+:: fetch_all_feeds(sources = any, articles = any) (( [any] )) {
     let ?result = []: [any]
     for (let ?i = 0; i < len(sources); i += 1) {
         let s = sources[i] ?? []: [string => any]

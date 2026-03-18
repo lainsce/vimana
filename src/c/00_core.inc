@@ -650,6 +650,330 @@ typedef struct CogitoFontCacheEntry {
   uint32_t variation_hash;
 } CogitoFontCacheEntry;
 
+// ──── Per-kind data structs (extracted from CogitoNode anonymous union) ────
+
+typedef struct {
+  int scroll_x, scroll_y;
+  int content_w, content_h;
+  bool horz, vert;
+  struct CogitoNode* sync_with;
+  bool state_restored;
+  bool bar_hovered;
+  bool bar_in_use;
+  uint8_t bar_alpha;
+  double bar_hover_until;
+} CogitoScrollerData;
+
+typedef struct {
+  double min, max, value;
+  double value2;
+  double step;
+  bool dragging;
+  bool show_step_dots;
+  bool show_end_dots;
+  bool show_value_bubble;
+  YisStr* bubble_format;
+  double bubble_scale;
+  uint8_t mode;
+  uint8_t active_handle;
+  uint8_t size;
+  uint8_t shape;
+} CogitoSliderData;
+
+typedef struct {
+  double min, max, value, step;
+  bool hit_minus, hit_plus;
+} CogitoStepperData;
+
+typedef struct {
+  int year, month, day;
+  int view_year, view_month;
+  int list_start;
+  bool popover_panel;
+  uint8_t mode;
+  struct CogitoNode* owner;
+} CogitoDatepickerData;
+
+typedef struct {
+  int caret;
+  int sel_start, sel_end;
+  bool selecting;
+  double h, c, t;
+  bool hex_editing;
+  bool popover_panel;
+  struct CogitoNode* owner;
+} CogitoColorpickerData;
+
+typedef struct {
+  int hour, minute;
+  bool ampm;
+  bool initialized;
+  bool popover_panel;
+  bool dial_visible;
+  uint8_t mode;
+  struct CogitoNode* owner;
+} CogitoTimepickerData;
+
+typedef struct {
+  int btn_close_x, btn_min_x, btn_max_x;
+  int btn_y, btn_size;
+  int title_x, title_y, subtitle_y;
+  struct CogitoNode* paired_scroller;
+  int paired_surface_level;
+  char pair_base_class[128];
+  char controls[16];
+} CogitoAppbarData;
+
+typedef struct {
+  int cols;
+  int gap_x, gap_y;
+} CogitoGridData;
+
+typedef struct {
+  bool dragging;
+  int scroll_x;
+  int drag_start_x, drag_start_scroll;
+  int active_index, item_count;
+  float velocity;
+  double scroll_xf;
+  double anim_start, anim_from, anim_to;
+  bool animating;
+  double drag_last_time, drag_last_xf;
+} CogitoCarouselData;
+
+typedef struct {
+  CogitoTexture* texture;
+  CogitoTexture* glow_texture;
+  CogitoTexture* glow_source;
+  int w, h;
+  int glow_w, glow_h;
+  float glow_sigma;
+  bool loaded;
+  float avg_lum;
+  uint8_t fit;
+} CogitoImageData;
+
+typedef struct {
+  int caret;
+  int sel_start, sel_end;
+  bool selecting;
+} CogitoTextInputData;
+
+typedef struct {
+  YisStr** labels;
+  YisStr** icons;
+  int* badges;
+  size_t len, cap;
+  int selected;
+  bool expanded;
+  bool centered;
+  bool show_toggle;
+  bool no_label;
+  bool show_divider;
+  CogitoSpring* item_springs;
+} CogitoNavRailData;
+
+typedef struct {
+  YisStr** labels;
+  YisStr** icons;
+  size_t len, cap;
+  int selected;
+  bool medium_mode;
+} CogitoBottomNavData;
+
+typedef struct {
+  int count;
+} CogitoBadgeData;
+
+typedef struct {
+  double value;
+  bool indeterminate;
+  bool circular;
+  uint8_t shape;
+} CogitoProgressData;
+
+typedef struct {
+  bool outlined, text_style;
+  uint8_t size;
+  int icon_shape;
+  int icon_color_style;
+  int icon_width;
+  bool icon_toggle;
+  bool menu_divider;
+  int menu_item_gap;
+  bool menu_vibrant;
+} CogitoButtonData;
+
+typedef struct {
+  bool selected, has_close;
+} CogitoChipData;
+
+typedef struct {
+  bool dragging;
+  bool expanded;
+  int drag_start_y;
+  int drag_start_h;
+  int desired_h;
+} CogitoBottomSheetData;
+
+typedef struct {
+  bool dragging;
+  bool expanded;
+  int drag_start_x;
+  int drag_start_w;
+  int desired_w;
+  uint8_t mode;
+  uint8_t preferred_mode;
+} CogitoSideSheetData;
+
+typedef struct {
+  bool extended;
+  bool variant_set;
+  uint8_t variant;
+  uint8_t size;
+} CogitoFabData;
+
+typedef struct {
+  uint8_t variant;
+  uint8_t size;
+  float geom_anim_target;
+  float items_anim_target;
+  float items_anim_from;
+  float items_t;
+  double items_anim_start;
+} CogitoFabMenuData;
+
+typedef struct {
+  bool vertical, inset, wavy;
+} CogitoDividerData;
+
+typedef struct {
+  int cls;
+} CogitoLabelData;
+
+typedef struct {
+  double angle;
+  double last_time;
+} CogitoIndicatorData;
+
+typedef struct {
+  float ratio;
+  float anim_ratio;
+  float anim_from;
+  float anim_to;
+  double anim_start;
+  bool animating;
+  bool show_handle;
+  int edge_snap;
+  bool dragging;
+  bool drag_committed;
+  int drag_start_mouse_x;
+  int drag_offset;
+} CogitoViewDualData;
+
+typedef struct {
+  int arrow_x;
+  int arrow_w;
+  uint8_t size;
+  bool outlined, text_style;
+} CogitoSplitBtnData;
+
+typedef struct {
+  bool pressed;
+  bool dragging;
+  int pointer_x;
+  int pointer_y;
+  int press_x;
+  int press_y;
+  int point_count;
+  int points_x[COGITO_DRAWING_AREA_MAX_POINTS];
+  int points_y[COGITO_DRAWING_AREA_MAX_POINTS];
+  CogitoColor canvas_color;
+  int canvas_line_width;
+} CogitoDrawingAreaData;
+
+typedef struct {
+  bool open_external_on_click;
+} CogitoWebviewData;
+
+typedef struct {
+  int preset;
+  int size_dp;
+  int size_h_dp;
+  int color_style;
+  bool custom_color_set;
+  bool clip_children;
+  CogitoColor custom_color;
+  float vertices[COGITO_SHAPE_VERTEX_COUNT * 2];
+  int svg_poly_count;
+  float svg_poly[COGITO_SHAPE_SVG_POLY_MAX * 2];
+} CogitoShapeData;
+
+typedef struct {
+  bool has_divider_before;
+  bool has_divider_after;
+} CogitoMenuSectionData;
+
+typedef struct {
+  bool vibrant;
+  bool vertical;
+  bool docked;
+} CogitoToolbarData;
+
+typedef struct {
+  int size;
+  int shape;
+  int connected;
+  int pressed_child;
+} CogitoButtonGroupData;
+
+typedef struct {
+  uint8_t variant;
+  struct CogitoNode* header_image;
+  struct CogitoNode* overflow_btn;
+  struct CogitoNode** actions;
+  size_t action_len, action_cap;
+} CogitoCardData;
+
+// Named union of all per-kind data (allocated per-kind, not full union size)
+typedef union {
+  CogitoScrollerData scroller;
+  CogitoSliderData slider;
+  CogitoStepperData stepper;
+  CogitoDatepickerData datepicker;
+  CogitoColorpickerData colorpicker;
+  CogitoTimepickerData timepicker;
+  CogitoAppbarData appbar;
+  CogitoGridData grid;
+  CogitoCarouselData carousel;
+  CogitoImageData image;
+  CogitoTextInputData text_input;
+  CogitoNavRailData nav_rail;
+  CogitoBottomNavData bottom_nav;
+  CogitoBadgeData badge;
+  CogitoProgressData progress;
+  CogitoButtonData button;
+  CogitoChipData chip;
+  CogitoBottomSheetData bottom_sheet;
+  CogitoSideSheetData side_sheet;
+  CogitoFabData fab;
+  CogitoFabMenuData fab_menu;
+  CogitoDividerData divider;
+  CogitoLabelData label;
+  CogitoIndicatorData indicator;
+  CogitoViewDualData view_dual;
+  CogitoSplitBtnData split_btn;
+  CogitoDrawingAreaData drawing_area;
+  CogitoWebviewData webview;
+  CogitoShapeData shape;
+  CogitoMenuSectionData menu_section;
+  CogitoToolbarData toolbar;
+  CogitoButtonGroupData buttongroup;
+  CogitoCardData card;
+} CogitoKindData;
+
+// ──── End per-kind data structs ────
+
 typedef struct CogitoNode {
   YisObj base;
   CogitoKind kind;
@@ -931,261 +1255,8 @@ typedef struct CogitoNode {
   float overlay_anim_from;
   float overlay_anim_to;
 
-  // Kind-specific data (anonymous union — only one member active per node)
-  union {
-    struct {
-      int scroll_x, scroll_y;
-      int content_w, content_h;
-      bool horz, vert;
-      struct CogitoNode* sync_with;
-      bool state_restored;
-      bool bar_hovered;
-      bool bar_in_use;  /* true while user is interacting (thumb drag or track click until release) */
-      uint8_t bar_alpha;
-      double bar_hover_until;
-    } scroller;
-
-    struct {
-      double min, max, value;
-      double value2;
-      double step;
-      bool dragging;
-      bool show_step_dots;
-      bool show_end_dots;
-      bool show_value_bubble;
-      YisStr* bubble_format;
-      double bubble_scale;
-      uint8_t mode;
-      uint8_t active_handle;
-      uint8_t size;
-      uint8_t shape;
-    } slider;
-
-    struct {
-      double min, max, value, step;
-      bool hit_minus, hit_plus;
-    } stepper;
-
-    struct {
-      int year, month, day;
-      int view_year, view_month;
-      int list_start;
-      bool popover_panel;
-      uint8_t mode;
-      struct CogitoNode* owner;
-    } datepicker;
-
-    struct {
-      int caret;
-      int sel_start, sel_end;
-      bool selecting;
-      double h, c, t;
-      bool hex_editing;
-      bool popover_panel;
-      struct CogitoNode* owner;
-    } colorpicker;
-
-    struct {
-      int hour, minute;
-      bool ampm;
-      bool initialized;
-      bool popover_panel;
-      bool dial_visible;
-      uint8_t mode; // 0: hour dial, 1: minute dial
-      struct CogitoNode* owner;
-    } timepicker;
-
-    struct {
-      int btn_close_x, btn_min_x, btn_max_x;
-      int btn_y, btn_size;
-      int title_x, title_y, subtitle_y;
-      struct CogitoNode* paired_scroller;
-      int paired_surface_level;
-      char pair_base_class[128];
-      char controls[
-        16
-      ];
-    } appbar;
-
-    struct {
-      int cols;
-      int gap_x, gap_y;
-    } grid;
-
-    struct {
-      bool dragging;
-      int scroll_x;
-      int drag_start_x, drag_start_scroll;
-      int active_index, item_count;
-      float velocity;
-      double scroll_xf;
-      double anim_start, anim_from, anim_to;
-      bool animating;
-      double drag_last_time, drag_last_xf;
-    } carousel;
-
-    struct {
-      CogitoTexture* texture;
-      CogitoTexture* glow_texture;
-      CogitoTexture* glow_source;
-      int w, h;
-      int glow_w, glow_h;
-      float glow_sigma;
-      bool loaded;
-      float avg_lum;
-      uint8_t fit;  // 0 = cover (default), 1 = contain
-    } image;
-
-    struct {
-      int caret;
-      int sel_start, sel_end;
-      bool selecting;
-    } text_input;
-
-    struct {
-      YisStr** labels;
-      YisStr** icons;
-      int* badges; // 0: none, -1: dot, >0: numeric
-      size_t len, cap;
-      int selected;
-      bool expanded;
-      bool centered; // If true, center destination block vertically in available lane
-      bool show_toggle;
-      bool no_label; // If true, use icon-only mode with larger indicator
-      bool show_divider; // If true, show vertical divider on right edge
-      CogitoSpring* item_springs; // Per-item animation springs (width expansion)
-    } nav_rail;
-
-    struct {
-      YisStr** labels;
-      YisStr** icons;
-      size_t len, cap;
-      int selected;
-      bool medium_mode; // true if container width > 600dp
-    } bottom_nav;
-
-    struct { int count;
-    } badge;
-    struct {
-      double value;
-      bool indeterminate;
-      bool circular;
-      uint8_t shape;
-    } progress;
-    struct {
-      bool outlined, text_style;
-      uint8_t size;
-      int icon_shape;
-      int icon_color_style;
-      int icon_width;
-      bool icon_toggle;
-      bool menu_divider;
-      int menu_item_gap;
-      bool menu_vibrant;
-    } button;
-    struct { bool selected, has_close;
-    } chip;
-     struct {
-       bool dragging;
-       bool expanded;
-       int drag_start_y;
-       int drag_start_h;
-       int desired_h;
-    } bottom_sheet;
-     struct {
-       bool dragging;
-       bool expanded;
-       int drag_start_x;
-       int drag_start_w;
-       int desired_w;
-       uint8_t mode;
-       uint8_t preferred_mode;
-    } side_sheet;
-    struct {
-        bool extended;
-        bool variant_set; // true when set_color(...) is explicitly called
-        uint8_t variant; // 0=Primary, 1=Secondary, 2=Tertiary, 3=PContainer, 4=SContainer, 5=TContainer
-        uint8_t size;    // 0=S(42), 1=M(56, default), 2=L(96)
-    } fab;
-    struct {
-        uint8_t variant; // 0=Primary, 1=Secondary, 2=Tertiary
-        uint8_t size;    // 0=S(42), 1=M(56, default), 2=L(96)
-        // Spring animation target for FAB (for detecting state changes)
-        float geom_anim_target;  // FAB progress target (0=closed, 1=open)
-        // Time-based animation for items
-        float items_anim_target; // Items progress target (0=hidden, 1=shown)
-        float items_anim_from;   // Starting progress
-        float items_t;           // Current progress
-        double items_anim_start; // Animation start time
-    } fab_menu;
-    struct { bool vertical, inset, wavy;
-    } divider;
-    struct { int cls;
-    } label;
-    struct { double angle; double last_time;
-    } indicator;
-    struct {
-      float ratio;
-      float anim_ratio;
-      float anim_from;
-      float anim_to;
-      double anim_start;
-      bool animating;
-      bool show_handle;
-      int edge_snap;
-      bool dragging;
-      bool drag_committed;
-      int drag_start_mouse_x;
-      int drag_offset;
-    } view_dual;
-    struct { int arrow_x; int arrow_w; uint8_t size; // 0=XS..4=XL, same as button
-      bool outlined, text_style;
-    } split_btn;
-    struct {
-      bool pressed;
-      bool dragging;
-      int pointer_x;
-      int pointer_y;
-      int press_x;
-      int press_y;
-      int point_count;
-      int points_x[COGITO_DRAWING_AREA_MAX_POINTS];
-      int points_y[COGITO_DRAWING_AREA_MAX_POINTS];
-      CogitoColor canvas_color;
-      int canvas_line_width;
-    } drawing_area;
-    struct {
-      bool open_external_on_click;
-    } webview;
-    struct {
-      int preset;
-      int size_dp;
-      int size_h_dp;
-      int color_style; // 0=custom, 1=primary, 2=secondary, 3=tertiary
-      bool custom_color_set;
-      bool clip_children;
-      CogitoColor custom_color;
-      float vertices[COGITO_SHAPE_VERTEX_COUNT * 2];
-      int svg_poly_count;
-      float svg_poly[COGITO_SHAPE_SVG_POLY_MAX * 2];
-    } shape;
-    struct { bool has_divider_before; bool has_divider_after;
-    } menu_section;
-    struct { bool vibrant; bool vertical; bool docked;
-    } toolbar;
-    // ButtonGroup: size (0-4 for XS-XL), shape (0=round,1=square), connected (0=standard,1=connected)
-    // pressed_child: index of child being pressed (-1 = none), for width expansion animation
-    // For connected mode: children use spring_h to animate corner radius (0=square, 1=fully rounded)
-    struct { int size; int shape; int connected; int pressed_child;
-    } buttongroup;
-    struct {
-      uint8_t variant;                  // 0=elevated(default), 1=filled, 2=outlined
-      struct CogitoNode* header_image;  // optional top image (NOT in children[]; own ref)
-      struct CogitoNode* overflow_btn;  // optional overflow iconbtn (in children[])
-      struct CogitoNode** actions;      // action button nodes (in children[]; array freed separately)
-      size_t action_len, action_cap;
-    } card;
-  };
+  // Kind-specific data (heap-allocated per-kind, NULL for kinds without extra data)
+  CogitoKindData* kd;
 } CogitoNode;
 
 // Resolve logical start/end margins to physical left/right
@@ -2574,9 +2645,9 @@ static CogitoColor cogito_node_state_layer_seed(const CogitoNode* n) {
   bool surface_variant = cls && (strstr(cls, "surface-variant") || strstr(cls, "surface_variant"));
   bool iconic_class = cls && strstr(cls, "iconic") != NULL;
   bool iconic_iconbtn = n && n->kind == COGITO_ICONBTN &&
-                        (n->button.icon_color_style == 3 || iconic_class);
+                        (n->kd->button.icon_color_style == 3 || iconic_class);
   if (n && n->kind == COGITO_ICONBTN && n->parent && n->parent->kind == COGITO_APPBAR) {
-    if (n->button.icon_color_style == 3 || iconic_class) return primary;
+    if (n->kd->button.icon_color_style == 3 || iconic_class) return primary;
   }
   if (primary_container) return on_primary_container;
   if (secondary_container) return on_secondary_container;
@@ -2691,17 +2762,17 @@ static void cogito_font_cache_clear(void);
 static void cogito_app_fonts_refresh(void);
 
 void cogito_nav_rail_set_no_label(CogitoNode* n, bool val) {
-  if (n) n->nav_rail.no_label = val;
+  if (n) n->kd->nav_rail.no_label = val;
 }
 
 bool cogito_nav_rail_get_no_label(CogitoNode* n) {
-  return n ? n->nav_rail.no_label : false;
+  return n ? n->kd->nav_rail.no_label : false;
 }
 
 void cogito_nav_rail_set_centered(CogitoNode* n, bool val) {
-  if (n) n->nav_rail.centered = val;
+  if (n) n->kd->nav_rail.centered = val;
 }
 
 bool cogito_nav_rail_get_centered(CogitoNode* n) {
-  return n ? n->nav_rail.centered : false;
+  return n ? n->kd->nav_rail.centered : false;
 }

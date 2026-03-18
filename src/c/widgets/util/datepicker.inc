@@ -124,7 +124,7 @@ static bool cogito_datepicker_same_date(int y1, int m1, int d1, int y2, int m2, 
 
 static uint8_t cogito_datepicker_mode(const CogitoNode* n) {
   if (!n || n->kind != COGITO_DATEPICKER) return COGITO_DATEPICKER_MODE_CALENDAR;
-  uint8_t m = n->datepicker.mode;
+  uint8_t m = n->kd->datepicker.mode;
   if (m > COGITO_DATEPICKER_MODE_YEAR_LIST) m = COGITO_DATEPICKER_MODE_CALENDAR;
   return m;
 }
@@ -138,13 +138,13 @@ static int cogito_datepicker_selector_total(uint8_t mode) {
 static int cogito_datepicker_selector_selected_index(const CogitoNode* n, uint8_t mode) {
   if (!n || n->kind != COGITO_DATEPICKER) return 0;
   if (mode == COGITO_DATEPICKER_MODE_MONTH_LIST) {
-    int idx = n->datepicker.view_month - 1;
+    int idx = n->kd->datepicker.view_month - 1;
     if (idx < 0) idx = 0;
     if (idx > 11) idx = 11;
     return idx;
   }
   if (mode == COGITO_DATEPICKER_MODE_YEAR_LIST) {
-    int idx = n->datepicker.view_year - COGITO_DATEPICKER_YEAR_MIN;
+    int idx = n->kd->datepicker.view_year - COGITO_DATEPICKER_YEAR_MIN;
     int max_idx = cogito_datepicker_selector_total(mode) - 1;
     if (idx < 0) idx = 0;
     if (idx > max_idx) idx = max_idx;
@@ -158,16 +158,16 @@ static void cogito_datepicker_selector_apply_index(CogitoNode* n, uint8_t mode, 
   if (mode == COGITO_DATEPICKER_MODE_MONTH_LIST) {
     if (idx < 0) idx = 0;
     if (idx > 11) idx = 11;
-    n->datepicker.view_month = idx + 1;
-    cogito_datepicker_normalize_year_month(&n->datepicker.view_year, &n->datepicker.view_month);
+    n->kd->datepicker.view_month = idx + 1;
+    cogito_datepicker_normalize_year_month(&n->kd->datepicker.view_year, &n->kd->datepicker.view_month);
     return;
   }
   if (mode == COGITO_DATEPICKER_MODE_YEAR_LIST) {
     int max_idx = cogito_datepicker_selector_total(mode) - 1;
     if (idx < 0) idx = 0;
     if (idx > max_idx) idx = max_idx;
-    n->datepicker.view_year = COGITO_DATEPICKER_YEAR_MIN + idx;
-    cogito_datepicker_normalize_year_month(&n->datepicker.view_year, &n->datepicker.view_month);
+    n->kd->datepicker.view_year = COGITO_DATEPICKER_YEAR_MIN + idx;
+    cogito_datepicker_normalize_year_month(&n->kd->datepicker.view_year, &n->kd->datepicker.view_month);
   }
 }
 
@@ -186,24 +186,24 @@ static void cogito_datepicker_selector_clamp_start(CogitoNode* n, uint8_t mode, 
   if (visible_rows < 1) visible_rows = 1;
   int max_start = total - visible_rows;
   if (max_start < 0) max_start = 0;
-  if (n->datepicker.list_start < 0) n->datepicker.list_start = 0;
-  if (n->datepicker.list_start > max_start) n->datepicker.list_start = max_start;
+  if (n->kd->datepicker.list_start < 0) n->kd->datepicker.list_start = 0;
+  if (n->kd->datepicker.list_start > max_start) n->kd->datepicker.list_start = max_start;
 }
 
 static void cogito_datepicker_selector_center_start(CogitoNode* n, uint8_t mode, int visible_rows) {
   if (!n || n->kind != COGITO_DATEPICKER) return;
   int sel = cogito_datepicker_selector_selected_index(n, mode);
   int start = sel - visible_rows / 2;
-  n->datepicker.list_start = start;
+  n->kd->datepicker.list_start = start;
   cogito_datepicker_selector_clamp_start(n, mode, visible_rows);
 }
 
 static void cogito_datepicker_selector_set_mode(CogitoNode* n, uint8_t mode, const CogitoDatePickerPanelLayout* ly) {
   if (!n || n->kind != COGITO_DATEPICKER) return;
   if (mode > COGITO_DATEPICKER_MODE_YEAR_LIST) mode = COGITO_DATEPICKER_MODE_CALENDAR;
-  n->datepicker.mode = mode;
+  n->kd->datepicker.mode = mode;
   if (mode == COGITO_DATEPICKER_MODE_CALENDAR) {
-    n->datepicker.list_start = 0;
+    n->kd->datepicker.list_start = 0;
     return;
   }
   int rows = cogito_datepicker_selector_visible_rows(ly);
@@ -212,67 +212,67 @@ static void cogito_datepicker_selector_set_mode(CogitoNode* n, uint8_t mode, con
 
 static void cogito_datepicker_clamp_selected(CogitoNode* n) {
   if (!n || n->kind != COGITO_DATEPICKER) return;
-  if (n->datepicker.month < 1) n->datepicker.month = 1;
-  if (n->datepicker.month > 12) n->datepicker.month = 12;
-  int dim = cogito_days_in_month(n->datepicker.year, n->datepicker.month);
-  if (n->datepicker.day < 1) n->datepicker.day = 1;
-  if (n->datepicker.day > dim) n->datepicker.day = dim;
+  if (n->kd->datepicker.month < 1) n->kd->datepicker.month = 1;
+  if (n->kd->datepicker.month > 12) n->kd->datepicker.month = 12;
+  int dim = cogito_days_in_month(n->kd->datepicker.year, n->kd->datepicker.month);
+  if (n->kd->datepicker.day < 1) n->kd->datepicker.day = 1;
+  if (n->kd->datepicker.day > dim) n->kd->datepicker.day = dim;
 }
 
 static void cogito_datepicker_ensure_date(CogitoNode* n) {
   if (!n || n->kind != COGITO_DATEPICKER) return;
 
-  if (n->datepicker.popover_panel && n->datepicker.owner &&
-      n->datepicker.owner->kind == COGITO_DATEPICKER) {
-    CogitoNode* owner = n->datepicker.owner;
+  if (n->kd->datepicker.popover_panel && n->kd->datepicker.owner &&
+      n->kd->datepicker.owner->kind == COGITO_DATEPICKER) {
+    CogitoNode* owner = n->kd->datepicker.owner;
     cogito_datepicker_ensure_date(owner);
-    if (n->datepicker.year <= 0 || n->datepicker.month <= 0 || n->datepicker.day <= 0) {
-      n->datepicker.year = owner->datepicker.year;
-      n->datepicker.month = owner->datepicker.month;
-      n->datepicker.day = owner->datepicker.day;
+    if (n->kd->datepicker.year <= 0 || n->kd->datepicker.month <= 0 || n->kd->datepicker.day <= 0) {
+      n->kd->datepicker.year = owner->kd->datepicker.year;
+      n->kd->datepicker.month = owner->kd->datepicker.month;
+      n->kd->datepicker.day = owner->kd->datepicker.day;
     }
-    if (n->datepicker.view_year <= 0 || n->datepicker.view_month <= 0) {
-      n->datepicker.view_year = owner->datepicker.year;
-      n->datepicker.view_month = owner->datepicker.month;
+    if (n->kd->datepicker.view_year <= 0 || n->kd->datepicker.view_month <= 0) {
+      n->kd->datepicker.view_year = owner->kd->datepicker.year;
+      n->kd->datepicker.view_month = owner->kd->datepicker.month;
     }
-  } else if (n->datepicker.year <= 0 || n->datepicker.month <= 0 || n->datepicker.day <= 0) {
-    cogito_datepicker_today(&n->datepicker.year, &n->datepicker.month, &n->datepicker.day);
+  } else if (n->kd->datepicker.year <= 0 || n->kd->datepicker.month <= 0 || n->kd->datepicker.day <= 0) {
+    cogito_datepicker_today(&n->kd->datepicker.year, &n->kd->datepicker.month, &n->kd->datepicker.day);
   }
 
   cogito_datepicker_clamp_selected(n);
 
-  if (n->datepicker.view_year <= 0 || n->datepicker.view_month <= 0) {
-    n->datepicker.view_year = n->datepicker.year;
-    n->datepicker.view_month = n->datepicker.month;
+  if (n->kd->datepicker.view_year <= 0 || n->kd->datepicker.view_month <= 0) {
+    n->kd->datepicker.view_year = n->kd->datepicker.year;
+    n->kd->datepicker.view_month = n->kd->datepicker.month;
   }
-  cogito_datepicker_normalize_year_month(&n->datepicker.view_year, &n->datepicker.view_month);
+  cogito_datepicker_normalize_year_month(&n->kd->datepicker.view_year, &n->kd->datepicker.view_month);
 
-  if (n->datepicker.mode > COGITO_DATEPICKER_MODE_YEAR_LIST) {
-    n->datepicker.mode = COGITO_DATEPICKER_MODE_CALENDAR;
+  if (n->kd->datepicker.mode > COGITO_DATEPICKER_MODE_YEAR_LIST) {
+    n->kd->datepicker.mode = COGITO_DATEPICKER_MODE_CALENDAR;
   }
-  if (n->datepicker.list_start < 0) n->datepicker.list_start = 0;
+  if (n->kd->datepicker.list_start < 0) n->kd->datepicker.list_start = 0;
 }
 
 static void cogito_datepicker_set_selected(CogitoNode* n, int year, int month, int day) {
   if (!n || n->kind != COGITO_DATEPICKER) return;
-  n->datepicker.year = year;
-  n->datepicker.month = month;
-  n->datepicker.day = day;
+  n->kd->datepicker.year = year;
+  n->kd->datepicker.month = month;
+  n->kd->datepicker.day = day;
   cogito_datepicker_clamp_selected(n);
 }
 
 static void cogito_datepicker_shift_view_month(CogitoNode* n, int delta) {
   if (!n || n->kind != COGITO_DATEPICKER) return;
   cogito_datepicker_ensure_date(n);
-  n->datepicker.view_month += delta;
-  cogito_datepicker_normalize_year_month(&n->datepicker.view_year, &n->datepicker.view_month);
+  n->kd->datepicker.view_month += delta;
+  cogito_datepicker_normalize_year_month(&n->kd->datepicker.view_year, &n->kd->datepicker.view_month);
 }
 
 static void cogito_datepicker_shift_view_year(CogitoNode* n, int delta) {
   if (!n || n->kind != COGITO_DATEPICKER) return;
   cogito_datepicker_ensure_date(n);
-  n->datepicker.view_year += delta;
-  cogito_datepicker_normalize_year_month(&n->datepicker.view_year, &n->datepicker.view_month);
+  n->kd->datepicker.view_year += delta;
+  cogito_datepicker_normalize_year_month(&n->kd->datepicker.view_year, &n->kd->datepicker.view_month);
 }
 
 static void cogito_datepicker_format_display(int year, int month, int day, char* out, size_t out_cap) {
@@ -394,11 +394,11 @@ static void cogito_datepicker_panel_cell_date(const CogitoNode* n, int idx,
                                               int* out_year, int* out_month, int* out_day,
                                               bool* out_in_view) {
   if (!n || n->kind != COGITO_DATEPICKER) return;
-  int vy = n->datepicker.view_year;
-  int vm = n->datepicker.view_month;
+  int vy = n->kd->datepicker.view_year;
+  int vm = n->kd->datepicker.view_month;
   if (vy <= 0 || vm <= 0) {
-    vy = n->datepicker.year;
-    vm = n->datepicker.month;
+    vy = n->kd->datepicker.year;
+    vm = n->kd->datepicker.month;
   }
   cogito_datepicker_normalize_year_month(&vy, &vm);
 
@@ -522,7 +522,7 @@ static bool cogito_datepicker_panel_hit_selector_item(CogitoNode* n, int mx, int
   }
   if (row < 0 || row >= rows) return false;
 
-  int idx = n->datepicker.list_start + row;
+  int idx = n->kd->datepicker.list_start + row;
   if (idx < 0 || idx >= total) return false;
   if (out_index) *out_index = idx;
   return true;
@@ -558,7 +558,7 @@ static bool cogito_datepicker_panel_selector_scrollbar_rect(CogitoNode* n,
   int travel = th - thumb_h;
   int thumb_y = ty;
   if (travel > 0 && max_start > 0) {
-    thumb_y = ty + (int)lround((double)travel * (double)n->datepicker.list_start / (double)max_start);
+    thumb_y = ty + (int)lround((double)travel * (double)n->kd->datepicker.list_start / (double)max_start);
   }
 
   if (out_track_x) *out_track_x = tx;
@@ -594,7 +594,7 @@ static bool cogito_datepicker_panel_selector_set_start_from_track(CogitoNode* n,
 
   int max_start = total - rows;
   int new_start = (int)lround((double)thumb_center * (double)max_start / (double)travel);
-  n->datepicker.list_start = new_start;
+  n->kd->datepicker.list_start = new_start;
   cogito_datepicker_selector_clamp_start(n, mode, rows);
   return true;
 }

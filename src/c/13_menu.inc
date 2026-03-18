@@ -29,7 +29,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
 
   // Sections use gap by default; dividers are opt-in via menu_divider flag
   bool use_section = n->menu_section_after != NULL;
-  bool use_divider = n->button.menu_divider;
+  bool use_divider = n->kd->button.menu_divider;
 
   int item_h = font_size + pad_y * 2;
   int min_h = item_style->has_min_h ? item_style->min_h
@@ -40,7 +40,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
 
   int menu_pad_top = 8;
   int menu_pad_bottom = 8;
-  int item_gap = (n->button.menu_item_gap > 0) ? n->button.menu_item_gap :
+  int item_gap = (n->kd->button.menu_item_gap > 0) ? n->kd->button.menu_item_gap :
                  (cogito_theme.menu.has_item_gap ? cogito_theme.menu.item_gap : 2);
   int section_gap = 2;
   int divider_h = use_divider ? 1 : 0;
@@ -241,8 +241,8 @@ static int cogito_menu_hit(const CogitoMenu* menu, int x, int y) {
 
   // Sections use gap by default; dividers are opt-in via menu_divider flag
   bool use_section = menu->owner->menu_section_after != NULL;
-  bool use_divider = menu->owner->button.menu_divider;
-  int item_gap = (menu->owner->button.menu_item_gap > 0) ? menu->owner->button.menu_item_gap :
+  bool use_divider = menu->owner->kd->button.menu_divider;
+  int item_gap = (menu->owner->kd->button.menu_item_gap > 0) ? menu->owner->kd->button.menu_item_gap :
                  (cogito_theme.menu.has_item_gap ? cogito_theme.menu.item_gap : 2);
   int section_gap = 2;
   int divider_h = use_divider ? 1 : 0;

@@ -4,10 +4,10 @@ case COGITO_VIEW_DUAL: {
   CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
   CogitoColor text_col = s.has_text ? s.text : n->text_color;
   
-  float ratio = n->view_dual.animating ? n->view_dual.anim_ratio : n->view_dual.ratio;
+  float ratio = n->kd->view_dual.animating ? n->kd->view_dual.anim_ratio : n->kd->view_dual.ratio;
   ratio = cogito_view_dual_clamp_ratio(ratio);
-  bool anim_to_left_edge = n->view_dual.animating && n->view_dual.anim_to <= 0.0f;
-  bool anim_to_right_edge = n->view_dual.animating && n->view_dual.anim_to >= 1.0f;
+  bool anim_to_left_edge = n->kd->view_dual.animating && n->kd->view_dual.anim_to <= 0.0f;
+  bool anim_to_right_edge = n->kd->view_dual.animating && n->kd->view_dual.anim_to >= 1.0f;
   bool edge_left = (ratio <= COGITO_VIEW_DUAL_EDGE_RATIO_ZONE) || anim_to_left_edge;
   bool edge_right = (ratio >= (1.0f - COGITO_VIEW_DUAL_EDGE_RATIO_ZONE)) || anim_to_right_edge;
 
@@ -15,10 +15,10 @@ case COGITO_VIEW_DUAL: {
   cogito_view_dual_content_bounds(n, &content_x, &content_y, &content_w, &content_h);
   
   // Handle visuals use the same intent region as runtime hit-testing.
-  bool handle_visible = n->view_dual.show_handle;
+  bool handle_visible = n->kd->view_dual.show_handle;
   float handle_ratio = edge_left ? 0.0f : (edge_right ? 1.0f : ratio);
   bool handle_hover = false;
-  bool handle_active = handle_visible && n->view_dual.dragging;
+  bool handle_active = handle_visible && n->kd->view_dual.dragging;
   int pmx = 0, pmy = 0;
   bool pdown = false, ppressed = false;
   if (handle_visible && cogito_pointer_query(&pmx, &pmy, &pdown, &ppressed)) {

@@ -148,8 +148,8 @@ static void cogito_scroller_set_scroll_y(YisVal scv, YisVal yv) {
   if (!n || n->kind != COGITO_SCROLLER) yis_trap("cogito.scroller_set_scroll_y expects scroller");
   int y = (int)yis_as_int(yv);
   if (y < 0) y = 0;
-  if (n->scroller.scroll_y == y) return;
-  n->scroller.scroll_y = y;
+  if (n->kd->scroller.scroll_y == y) return;
+  n->kd->scroller.scroll_y = y;
   cogito_window_relayout(cogito_node_window(n));
 }
 
@@ -256,8 +256,8 @@ static void cogito_node_set_editable(YisVal nodev, YisVal onv) {
       cogito_focused = NULL;
       cogito_focus_visible = false;
     }
-    n->text_input.selecting = false;
-    n->text_input.sel_end = n->text_input.sel_start;
+    n->kd->text_input.selecting = false;
+    n->kd->text_input.sel_end = n->kd->text_input.sel_start;
   }
   cogito_window_relayout(cogito_node_window(n));
 }
@@ -327,12 +327,12 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
   n->font_tabular = false;
   n->font_emphasized = false;
   if (is_button) {
-    n->button.outlined = false;
+    n->kd->button.outlined = false;
     if (n->kind == COGITO_BUTTON) {
-      n->button.text_style = false;
+      n->kd->button.text_style = false;
     }
   }
-  if (n->kind == COGITO_LABEL) n->label.cls = COGITO_LABEL_CLASS_NONE;
+  if (n->kind == COGITO_LABEL) n->kd->label.cls = COGITO_LABEL_CLASS_NONE;
   if (s && s[0]) {
     bool has_ws = false;
     for (const char* q = s; *q; q++) {
@@ -364,7 +364,7 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
         if (n->kind == COGITO_LABEL) {
           int label_cls = cogito_label_class_from_name(tok);
           if (label_cls != COGITO_LABEL_CLASS_NONE) {
-            n->label.cls = label_cls;
+            n->kd->label.cls = label_cls;
             recognized = true;
           }
         }
@@ -382,11 +382,11 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
           recognized = true;
         }
         if (!recognized && is_button && strcmp(tok, "outlined") == 0) {
-          n->button.outlined = true;
+          n->kd->button.outlined = true;
           recognized = true;
         }
         if (!recognized && is_button && strcmp(tok, "text") == 0) {
-          n->button.text_style = true;
+          n->kd->button.text_style = true;
           recognized = true;
         }
 
@@ -408,7 +408,7 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
         label_cls = cogito_label_class_from_name(s);
       }
       if (label_cls != COGITO_LABEL_CLASS_NONE) {
-        n->label.cls = label_cls;
+        n->kd->label.cls = label_cls;
       } else if (strcmp(s,
       "monospace") == 0 || strcmp(s,
       "mono") == 0) {
@@ -422,10 +422,10 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
         n->font_emphasized = true;
       } else if (is_button && strcmp(s,
       "outlined") == 0) {
-        n->button.outlined = true;
+        n->kd->button.outlined = true;
       } else if (is_button && strcmp(s,
       "text") == 0) {
-        n->button.text_style = true;
+        n->kd->button.text_style = true;
       } else {
         // Store custom class name
         if (cs) {

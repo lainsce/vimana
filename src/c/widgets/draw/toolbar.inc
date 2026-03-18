@@ -2,7 +2,7 @@ case COGITO_TOOLBAR: {
       bool hover = false;
       bool active = false;
       bool floating = cogito_toolbar_is_floating(n);
-      bool vibrant = floating && n->toolbar.vibrant;
+      bool vibrant = floating && n->kd->toolbar.vibrant;
       cogito_node_hover_state(n, &hover, &active);
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
       

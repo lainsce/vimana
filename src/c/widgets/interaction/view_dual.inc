@@ -27,7 +27,7 @@ static float cogito_view_dual_clamp_ratio(float ratio) {
 
 static float cogito_view_dual_current_ratio(const CogitoNode* n) {
   if (!n) return 0.5f;
-  float ratio = n->view_dual.animating ? n->view_dual.anim_ratio : n->view_dual.ratio;
+  float ratio = n->kd->view_dual.animating ? n->kd->view_dual.anim_ratio : n->kd->view_dual.ratio;
   return cogito_view_dual_clamp_ratio(ratio);
 }
 
@@ -104,7 +104,7 @@ static void cogito_view_dual_handle_targets_for_ratio(const CogitoNode* n, float
 static bool cogito_view_dual_hit_handle_intent_for_ratio(const CogitoNode* n,
                                                           float ratio,
                                                           int mx, int my) {
-  if (!n || !n->view_dual.show_handle) return false;
+  if (!n || !n->kd->view_dual.show_handle) return false;
   int ix = 0, iy = 0, iw = 0, ih = 0;
   cogito_view_dual_handle_targets_for_ratio(n, ratio, NULL, NULL, &ix, &iy, &iw, &ih);
   return cogito_hit_rect(mx, my, ix, iy, iw, ih);
@@ -113,21 +113,21 @@ static bool cogito_view_dual_hit_handle_intent_for_ratio(const CogitoNode* n,
 static void cogito_view_dual_set_ratio_target(CogitoNode* n, float r, bool animate) {
   if (!n) return;
   r = cogito_view_dual_clamp_ratio(r);
-  n->view_dual.ratio = r;
+  n->kd->view_dual.ratio = r;
   if (!animate) {
-    n->view_dual.anim_ratio = r;
-    n->view_dual.anim_from = r;
-    n->view_dual.anim_to = r;
-    n->view_dual.animating = false;
+    n->kd->view_dual.anim_ratio = r;
+    n->kd->view_dual.anim_from = r;
+    n->kd->view_dual.anim_to = r;
+    n->kd->view_dual.animating = false;
     return;
   }
 
-  n->view_dual.anim_from = n->view_dual.anim_ratio;
-  n->view_dual.anim_to = r;
-  n->view_dual.anim_start = cogito_now();
-  n->view_dual.animating = (fabsf(n->view_dual.anim_to - n->view_dual.anim_from) > 0.0005f);
-  if (!n->view_dual.animating) {
-    n->view_dual.anim_ratio = r;
+  n->kd->view_dual.anim_from = n->kd->view_dual.anim_ratio;
+  n->kd->view_dual.anim_to = r;
+  n->kd->view_dual.anim_start = cogito_now();
+  n->kd->view_dual.animating = (fabsf(n->kd->view_dual.anim_to - n->kd->view_dual.anim_from) > 0.0005f);
+  if (!n->kd->view_dual.animating) {
+    n->kd->view_dual.anim_ratio = r;
   }
 }
 
@@ -135,8 +135,8 @@ static void cogito_view_dual_set_ratio(YisVal vdv, YisVal ratiov) {
   if (vdv.tag != EVT_OBJ) yis_trap("cogito.view_dual_set_ratio expects view_dual");
   CogitoNode* n = (CogitoNode*)vdv.as.p;
   int gap = n->gap > 0 ? n->gap : 8;
-  int handle_w = n->view_dual.show_handle ? COGITO_VIEW_DUAL_HANDLE_W : 0;
-  int split_w = n->view_dual.show_handle
+  int handle_w = n->kd->view_dual.show_handle ? COGITO_VIEW_DUAL_HANDLE_W : 0;
+  int split_w = n->kd->view_dual.show_handle
     ? (gap * 2 + handle_w)
     : COGITO_VIEW_DUAL_HIDDEN_GAP_W;
   const int min_item_w = COGITO_VIEW_DUAL_INTERACTION_MIN_ITEM_W;
@@ -219,10 +219,10 @@ static void cogito_view_dual_set_show_handle(YisVal vdv, YisVal showv) {
   if (vdv.tag != EVT_OBJ) yis_trap("cogito.view_dual_set_show_handle expects view_dual");
   CogitoNode* n = (CogitoNode*)vdv.as.p;
   bool show = yis_as_bool(showv);
-  n->view_dual.show_handle = show;
+  n->kd->view_dual.show_handle = show;
   if (!show) {
-    n->view_dual.dragging = false;
-    n->view_dual.drag_committed = false;
+    n->kd->view_dual.dragging = false;
+    n->kd->view_dual.drag_committed = false;
     if (cogito_pointer_capture == n) {
       cogito_pointer_capture = NULL;
     }
@@ -233,5 +233,5 @@ static void cogito_view_dual_set_show_handle(YisVal vdv, YisVal showv) {
 static YisVal cogito_view_dual_get_show_handle(YisVal vdv) {
   if (vdv.tag != EVT_OBJ) yis_trap("cogito.view_dual_get_show_handle expects view_dual");
   CogitoNode* n = (CogitoNode*)vdv.as.p;
-  return YV_BOOL(n->view_dual.show_handle);
+  return YV_BOOL(n->kd->view_dual.show_handle);
 }

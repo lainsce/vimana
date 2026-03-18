@@ -7,15 +7,15 @@ static void cogito_draw_rect_lines(int x, int y, int w, int h,
 
 static CogitoNode* cogito_drawing_area_new_obj(void) {
   CogitoNode* n = cogito_node_new(COGITO_DRAWING_AREA);
-  n->drawing_area.pressed = false;
-  n->drawing_area.dragging = false;
-  n->drawing_area.pointer_x = 0;
-  n->drawing_area.pointer_y = 0;
-  n->drawing_area.press_x = 0;
-  n->drawing_area.press_y = 0;
-  n->drawing_area.point_count = 0;
-  n->drawing_area.canvas_color = cogito_color(0, 0, 0, 255);
-  n->drawing_area.canvas_line_width = 1;
+  n->kd->drawing_area.pressed = false;
+  n->kd->drawing_area.dragging = false;
+  n->kd->drawing_area.pointer_x = 0;
+  n->kd->drawing_area.pointer_y = 0;
+  n->kd->drawing_area.press_x = 0;
+  n->kd->drawing_area.press_y = 0;
+  n->kd->drawing_area.point_count = 0;
+  n->kd->drawing_area.canvas_color = cogito_color(0, 0, 0, 255);
+  n->kd->drawing_area.canvas_line_width = 1;
   return n;
 }
 
@@ -37,26 +37,26 @@ static int cogito_drawing_area_clamp_y(CogitoNode* n, int y) {
 
 static void cogito_drawing_area_add_point(CogitoNode* n, int x, int y) {
   if (!n || n->kind != COGITO_DRAWING_AREA) return;
-  if (n->drawing_area.point_count >= COGITO_DRAWING_AREA_MAX_POINTS) return;
-  n->drawing_area.points_x[n->drawing_area.point_count] = cogito_drawing_area_clamp_x(n, x);
-  n->drawing_area.points_y[n->drawing_area.point_count] = cogito_drawing_area_clamp_y(n, y);
-  n->drawing_area.point_count++;
+  if (n->kd->drawing_area.point_count >= COGITO_DRAWING_AREA_MAX_POINTS) return;
+  n->kd->drawing_area.points_x[n->kd->drawing_area.point_count] = cogito_drawing_area_clamp_x(n, x);
+  n->kd->drawing_area.points_y[n->kd->drawing_area.point_count] = cogito_drawing_area_clamp_y(n, y);
+  n->kd->drawing_area.point_count++;
 }
 
 static void cogito_drawing_area_begin_stroke(CogitoNode* n, int x, int y) {
   if (!n || n->kind != COGITO_DRAWING_AREA) return;
-  if (n->drawing_area.point_count > 0 &&
-      n->drawing_area.point_count < COGITO_DRAWING_AREA_MAX_POINTS) {
-    n->drawing_area.points_x[n->drawing_area.point_count] = -1;
-    n->drawing_area.points_y[n->drawing_area.point_count] = -1;
-    n->drawing_area.point_count++;
+  if (n->kd->drawing_area.point_count > 0 &&
+      n->kd->drawing_area.point_count < COGITO_DRAWING_AREA_MAX_POINTS) {
+    n->kd->drawing_area.points_x[n->kd->drawing_area.point_count] = -1;
+    n->kd->drawing_area.points_y[n->kd->drawing_area.point_count] = -1;
+    n->kd->drawing_area.point_count++;
   }
   cogito_drawing_area_add_point(n, x, y);
 }
 
 static void cogito_drawing_area_clear_points(CogitoNode* n) {
   if (!n || n->kind != COGITO_DRAWING_AREA) return;
-  n->drawing_area.point_count = 0;
+  n->kd->drawing_area.point_count = 0;
 }
 
 static YisVal cogito_drawing_area_new(void) {
@@ -66,19 +66,19 @@ static YisVal cogito_drawing_area_new(void) {
 static YisVal cogito_drawing_area_get_x(YisVal dav) {
   if (dav.tag != EVT_OBJ) yis_trap("cogito.drawing_area_get_x expects drawing_area");
   CogitoNode* n = (CogitoNode*)dav.as.p;
-  return YV_INT(n->drawing_area.pointer_x);
+  return YV_INT(n->kd->drawing_area.pointer_x);
 }
 
 static YisVal cogito_drawing_area_get_y(YisVal dav) {
   if (dav.tag != EVT_OBJ) yis_trap("cogito.drawing_area_get_y expects drawing_area");
   CogitoNode* n = (CogitoNode*)dav.as.p;
-  return YV_INT(n->drawing_area.pointer_y);
+  return YV_INT(n->kd->drawing_area.pointer_y);
 }
 
 static YisVal cogito_drawing_area_get_pressed(YisVal dav) {
   if (dav.tag != EVT_OBJ) yis_trap("cogito.drawing_area_get_pressed expects drawing_area");
   CogitoNode* n = (CogitoNode*)dav.as.p;
-  return YV_BOOL(n->drawing_area.pressed);
+  return YV_BOOL(n->kd->drawing_area.pressed);
 }
 
 static void cogito_drawing_area_clear(YisVal dav) {
@@ -176,7 +176,7 @@ static void cogito_canvas_set_color(YisVal ctxv, YisVal colorv) {
   if (!n) return;
   CogitoColor c;
   if (cogito_canvas_parse_color(colorv, &c)) {
-    n->drawing_area.canvas_color = c;
+    n->kd->drawing_area.canvas_color = c;
   }
 }
 
@@ -186,7 +186,7 @@ static void cogito_canvas_set_line_width(YisVal ctxv, YisVal widthv) {
   int w = cogito_canvas_int(widthv);
   if (w < 1) w = 1;
   if (w > 64) w = 64;
-  n->drawing_area.canvas_line_width = w;
+  n->kd->drawing_area.canvas_line_width = w;
 }
 
 static void cogito_canvas_draw_line_with_width(const CogitoNode* n, int x1, int y1, int x2, int y2, CogitoColor color, int width) {
@@ -217,8 +217,8 @@ static void cogito_canvas_line(YisVal ctxv, YisVal x1v, YisVal y1v, YisVal x2v, 
   int y2 = n->y + cogito_canvas_int(y2v);
   bool clipped = false;
   cogito_canvas_scissor_begin(n, &clipped);
-  cogito_canvas_draw_line_with_width(n, x1, y1, x2, y2, n->drawing_area.canvas_color,
-                                     n->drawing_area.canvas_line_width);
+  cogito_canvas_draw_line_with_width(n, x1, y1, x2, y2, n->kd->drawing_area.canvas_color,
+                                     n->kd->drawing_area.canvas_line_width);
   cogito_canvas_scissor_end(clipped);
 }
 
@@ -232,8 +232,8 @@ static void cogito_canvas_rect(YisVal ctxv, YisVal xv, YisVal yv, YisVal wv, Yis
   if (w <= 0 || h <= 0) return;
   bool clipped = false;
   cogito_canvas_scissor_begin(n, &clipped);
-  cogito_draw_rect_lines(x, y, w, h, n->drawing_area.canvas_color, 0,
-                         n->drawing_area.canvas_line_width);
+  cogito_draw_rect_lines(x, y, w, h, n->kd->drawing_area.canvas_color, 0,
+                         n->kd->drawing_area.canvas_line_width);
   cogito_canvas_scissor_end(clipped);
 }
 
@@ -247,7 +247,7 @@ static void cogito_canvas_fill_rect(YisVal ctxv, YisVal xv, YisVal yv, YisVal wv
   if (w <= 0 || h <= 0) return;
   bool clipped = false;
   cogito_canvas_scissor_begin(n, &clipped);
-  cogito_draw_rect(x, y, w, h, n->drawing_area.canvas_color, 0);
+  cogito_draw_rect(x, y, w, h, n->kd->drawing_area.canvas_color, 0);
   cogito_canvas_scissor_end(clipped);
 }
 
@@ -262,7 +262,7 @@ static void cogito_canvas_circle(YisVal ctxv, YisVal cxv, YisVal cyv, YisVal rv)
   cogito_canvas_scissor_begin(n, &clipped);
   if (cogito_backend && cogito_backend->draw_circle_lines) {
     cogito_backend->draw_circle_lines(cx, cy, (float)r,
-      n->drawing_area.canvas_color, n->drawing_area.canvas_line_width);
+      n->kd->drawing_area.canvas_color, n->kd->drawing_area.canvas_line_width);
   }
   cogito_canvas_scissor_end(clipped);
 }
@@ -277,7 +277,7 @@ static void cogito_canvas_fill_circle(YisVal ctxv, YisVal cxv, YisVal cyv, YisVa
   bool clipped = false;
   cogito_canvas_scissor_begin(n, &clipped);
   if (cogito_backend && cogito_backend->draw_circle) {
-    cogito_backend->draw_circle(cx, cy, (float)r, n->drawing_area.canvas_color);
+    cogito_backend->draw_circle(cx, cy, (float)r, n->kd->drawing_area.canvas_color);
   }
   cogito_canvas_scissor_end(clipped);
 }

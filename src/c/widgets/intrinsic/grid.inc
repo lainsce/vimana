@@ -1,7 +1,7 @@
 case COGITO_GRID: {
-      int cols = n->grid.cols > 0 ? n->grid.cols : 1;
-      int gap_x = n->grid.gap_x;
-      int gap_y = n->grid.gap_y;
+      int cols = n->kd->grid.cols > 0 ? n->kd->grid.cols : 1;
+      int gap_x = n->kd->grid.gap_x;
+      int gap_y = n->kd->grid.gap_y;
       size_t count = n->len;
       if (count == 0) {
         w = 0;

@@ -1,10 +1,10 @@
 case COGITO_DIVIDER:
-      if (n->divider.vertical) {
-        w = n->divider.wavy ? 12 : 1;
+      if (n->kd->divider.vertical) {
+        w = n->kd->divider.wavy ? 12 : 1;
         h = 24;
       } else {
         w = 24;
-        h = n->divider.wavy ? 12 : 1;
+        h = n->kd->divider.wavy ? 12 : 1;
       }
       break;
     

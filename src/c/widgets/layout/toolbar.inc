@@ -1,7 +1,7 @@
 case COGITO_TOOLBAR: {
       bool floating = cogito_toolbar_is_floating(n);
       bool compact = floating && cogito_toolbar_is_compact(n);
-      bool vertical = n->toolbar.vertical;
+      bool vertical = n->kd->toolbar.vertical;
       int gap = floating ? COGITO_TOOLBAR_FLOATING_GAP : COGITO_TOOLBAR_DOCKED_GAP;
       if (compact) gap = COGITO_TOOLBAR_FLOATING_COMPACT_GAP;
       int slots = COGITO_TOOLBAR_MAX_SLOTS;

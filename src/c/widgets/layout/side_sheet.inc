@@ -1,6 +1,6 @@
 case COGITO_SIDE_SHEET: {
   int r_x = x, r_y = y, r_w = n->w;
-  if (n->side_sheet.mode == COGITO_SIDE_SHEET_INSET) {
+  if (n->kd->side_sheet.mode == COGITO_SIDE_SHEET_INSET) {
       r_x += 16;
       r_y += 16;
       r_w -= 32;
@@ -10,7 +10,7 @@ case COGITO_SIDE_SHEET: {
   int pad_t = n->padding_top;
   int pad_r = n->padding_right;
   int pad_b = n->padding_bottom;
-  int handle_w = (n->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR)
+  int handle_w = (n->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR)
     ? 0
     : COGITO_SIDE_SHEET_HANDLE_TOUCH_W;
   int gap = n->gap > 0 ? n->gap : 8;

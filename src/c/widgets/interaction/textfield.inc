@@ -143,7 +143,7 @@ static CogitoNode* cogito_find_text_input(CogitoNode* n, int x, int y) {
     CogitoNode* ss = n->side_sheet_node;
     CogitoNode* ss_hit = cogito_find_text_input(ss, x, y);
     if (ss_hit) return ss_hit;
-    if (ss->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR &&
+    if (ss->kd->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR &&
         cogito_hit_rect(x, y, 0, 0, n->w, n->h)) {
       return NULL;
     }

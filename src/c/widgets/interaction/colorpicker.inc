@@ -5,11 +5,11 @@ static void cogito_popover_close(YisVal windowv);
 
 static CogitoNode* cogito_colorpicker_new_obj(void) {
   CogitoNode* cp = cogito_node_new(COGITO_COLORPICKER);
-  cp->colorpicker.h = 236.0;
-  cp->colorpicker.c = 41.0;
-  cp->colorpicker.t = 40.0;
-  cp->colorpicker.popover_panel = false;
-  cp->colorpicker.owner = NULL;
+  cp->kd->colorpicker.h = 236.0;
+  cp->kd->colorpicker.c = 41.0;
+  cp->kd->colorpicker.t = 40.0;
+  cp->kd->colorpicker.popover_panel = false;
+  cp->kd->colorpicker.owner = NULL;
   cogito_colorpicker_sync_hex(cp);
   return cp;
 }
@@ -48,18 +48,18 @@ static CogitoNode* cogito_colorpicker_open_panel(CogitoNode* owner) {
 
   CogitoNode* panel = cogito_node_new(COGITO_COLORPICKER);
   panel->editable = false;
-  panel->colorpicker.popover_panel = true;
-  panel->colorpicker.owner = owner;
-  panel->colorpicker.h = owner->colorpicker.h;
-  panel->colorpicker.c = owner->colorpicker.c;
-  panel->colorpicker.t = owner->colorpicker.t;
+  panel->kd->colorpicker.popover_panel = true;
+  panel->kd->colorpicker.owner = owner;
+  panel->kd->colorpicker.h = owner->kd->colorpicker.h;
+  panel->kd->colorpicker.c = owner->kd->colorpicker.c;
+  panel->kd->colorpicker.t = owner->kd->colorpicker.t;
   panel->radius_set = true;
   panel->border_radius = 20;
 
   // Add H (0-360), C (0-100), T (0-100) sliders as children
-  CogitoNode* sh = cogito_slider_new_obj(0.0, 360.0, owner->colorpicker.h);
-  CogitoNode* sc = cogito_slider_new_obj(0.0, 100.0, owner->colorpicker.c);
-  CogitoNode* st = cogito_slider_new_obj(0.0, 100.0, owner->colorpicker.t);
+  CogitoNode* sh = cogito_slider_new_obj(0.0, 360.0, owner->kd->colorpicker.h);
+  CogitoNode* sc = cogito_slider_new_obj(0.0, 100.0, owner->kd->colorpicker.c);
+  CogitoNode* st = cogito_slider_new_obj(0.0, 100.0, owner->kd->colorpicker.t);
   cogito_children_add(panel, sh);
   cogito_children_add(panel, sc);
   cogito_children_add(panel, st);
@@ -86,7 +86,7 @@ static void cogito_colorpicker_show_popover(CogitoNode* anchor) {
 // Handles Cancel / OK footer button clicks in the panel.
 // Returns true if consumed; slider clicks should be handled by the caller.
 static bool cogito_colorpicker_hit_panel(CogitoNode* panel, int mx, int my) {
-  if (!panel || panel->kind != COGITO_COLORPICKER || !panel->colorpicker.popover_panel) return false;
+  if (!panel || panel->kind != COGITO_COLORPICKER || !panel->kd->colorpicker.popover_panel) return false;
 
   int cx = 0, cy = 0, cw = 0, ch = 0;
   int ox = 0, oy = 0, ow = 0, oh = 0;
@@ -101,21 +101,21 @@ static bool cogito_colorpicker_hit_panel(CogitoNode* panel, int mx, int my) {
 
   if (cogito_hit_rect_min48(mx, my, ox, oy, ow, oh)) {
     // OK: commit panel H/C/T state to owner, fire onChange, close popover
-    CogitoNode* owner = panel->colorpicker.owner;
+    CogitoNode* owner = panel->kd->colorpicker.owner;
     CogitoNode* win = cogito_node_window(panel);
     if (owner && owner->kind == COGITO_COLORPICKER) {
-      double new_h = panel->colorpicker.h;
-      double new_c = panel->colorpicker.c;
-      double new_t = panel->colorpicker.t;
+      double new_h = panel->kd->colorpicker.h;
+      double new_c = panel->kd->colorpicker.c;
+      double new_t = panel->kd->colorpicker.t;
       if (new_h < 0.0 || new_h > 360.0 || new_c < 0.0 || new_c > 100.0 || new_t < 0.0 || new_t > 100.0) {
         (void)cogito_colorpicker_panel_read_hct(panel, &new_h, &new_c, &new_t);
       }
-      bool changed = (owner->colorpicker.h != new_h ||
-                      owner->colorpicker.c != new_c ||
-                      owner->colorpicker.t != new_t);
-      owner->colorpicker.h = new_h;
-      owner->colorpicker.c = new_c;
-      owner->colorpicker.t = new_t;
+      bool changed = (owner->kd->colorpicker.h != new_h ||
+                      owner->kd->colorpicker.c != new_c ||
+                      owner->kd->colorpicker.t != new_t);
+      owner->kd->colorpicker.h = new_h;
+      owner->kd->colorpicker.c = new_c;
+      owner->kd->colorpicker.t = new_t;
       cogito_colorpicker_sync_hex(owner);
       if (win) cogito_popover_close(YV_OBJ(win));
       if (changed) cogito_invoke_change(owner);
@@ -130,7 +130,7 @@ static bool cogito_colorpicker_hit_panel(CogitoNode* panel, int mx, int my) {
 
 // Handles a click on the trigger node: opens popover (icon) or lets focus block handle hex edit.
 static void cogito_colorpicker_click(CogitoNode* n, int mx, int my) {
-  if (!n || n->kind != COGITO_COLORPICKER || n->colorpicker.popover_panel) return;
+  if (!n || n->kind != COGITO_COLORPICKER || n->kd->colorpicker.popover_panel) return;
 
   CogitoNode* win = cogito_node_window(n);
   if (win && win->popover_open && win->popover_anchor == n) {

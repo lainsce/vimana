@@ -1,6 +1,6 @@
 case COGITO_NAV_RAIL: {
   int rail_w = COGITO_NAV_RAIL_COLLAPSED_WIDTH;
-  if (n->nav_rail.expanded) {
+  if (n->kd->nav_rail.expanded) {
     int parent_w = 0;
     if (n->parent) {
       parent_w = n->parent->w - n->parent->padding_left - n->parent->padding_right;
@@ -20,20 +20,20 @@ case COGITO_NAV_RAIL: {
     if (fab_h < 0) fab_h = 0;
     break;
   }
-  int top_offset = n->nav_rail.expanded
+  int top_offset = n->kd->nav_rail.expanded
     ? COGITO_NAV_RAIL_EXPANDED_TOP_OFFSET
     : COGITO_NAV_RAIL_COLLAPSED_TOP_OFFSET;
-  int section_gap = n->nav_rail.expanded
+  int section_gap = n->kd->nav_rail.expanded
     ? COGITO_NAV_RAIL_EXPANDED_SECTION_GAP
     : COGITO_NAV_RAIL_COLLAPSED_SECTION_GAP;
   int top_space = top_offset + section_gap;
-  if (n->nav_rail.show_toggle) {
+  if (n->kd->nav_rail.show_toggle) {
     top_space += COGITO_NAV_RAIL_SHARED_TOGGLE_BUTTON_SIZE;
   }
   if (fab_h > 0) top_space += fab_h + section_gap;
-  int item_step = n->nav_rail.expanded ? COGITO_NAV_RAIL_EXPANDED_ITEM_STEP : COGITO_NAV_RAIL_COLLAPSED_ITEM_STEP;
+  int item_step = n->kd->nav_rail.expanded ? COGITO_NAV_RAIL_EXPANDED_ITEM_STEP : COGITO_NAV_RAIL_COLLAPSED_ITEM_STEP;
   w = rail_w;
-  h = n->padding_top + n->padding_bottom + top_space + (item_step * n->nav_rail.len);
+  h = n->padding_top + n->padding_bottom + top_space + (item_step * n->kd->nav_rail.len);
   if (h < 200) h = 200;  // Minimum height
   break;
 }

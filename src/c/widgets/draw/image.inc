@@ -21,21 +21,21 @@ case COGITO_IMAGE: {
       if (radius > n->h / 2) radius = n->h / 2;
       
       // Load image from file path if not yet loaded (fallback if layout didn't load it)
-      if (n->icon && n->icon->data && n->icon->data[0] && !n->image.loaded) {
+      if (n->icon && n->icon->data && n->icon->data[0] && !n->kd->image.loaded) {
         CogitoTexture* tex = NULL;
         int tw = 0, th = 0;
         if (cogito_image_load_file_texture(n->icon->data, n->w, n->h,
-                                           &tex, &tw, &th, &n->image.avg_lum)) {
-          n->image.texture = tex;
-          n->image.w = tw;
-          n->image.h = th;
-          n->image.loaded = true;
+                                           &tex, &tw, &th, &n->kd->image.avg_lum)) {
+          n->kd->image.texture = tex;
+          n->kd->image.w = tw;
+          n->kd->image.h = th;
+          n->kd->image.loaded = true;
           CogitoNode* win = cogito_node_window(n);
           if (win) {
             cogito_window_relayout(win);
           }
         } else {
-          n->image.loaded = true; // Mark as attempted to avoid retrying
+          n->kd->image.loaded = true; // Mark as attempted to avoid retrying
         }
       }
       
@@ -51,34 +51,34 @@ case COGITO_IMAGE: {
       }
       
       // Draw the loaded image texture
-      if (n->image.texture && n->image.w > 0 && n->image.h > 0) {
+      if (n->kd->image.texture && n->kd->image.w > 0 && n->kd->image.h > 0) {
         // Calculate draw dimensions - fit the image to the widget size (cover mode)
         int draw_w = n->w;
         int draw_h = n->h;
         int draw_x = n->x;
         int draw_y = n->y;
         
-        float img_aspect = (float)n->image.w / (float)n->image.h;
+        float img_aspect = (float)n->kd->image.w / (float)n->kd->image.h;
         float widget_aspect = (n->h > 0) ? (float)n->w / (float)n->h : 1.0f;
-        int src_x = 0, src_y = 0, src_w = n->image.w, src_h = n->image.h;
+        int src_x = 0, src_y = 0, src_w = n->kd->image.w, src_h = n->kd->image.h;
 
-        if (n->image.fit == 1) {
+        if (n->kd->image.fit == 1) {
           // Contain mode: scale to fit entirely within widget, center result
-          float scale = ((float)n->w / (float)n->image.w < (float)n->h / (float)n->image.h)
-                      ? (float)n->w / (float)n->image.w
-                      : (float)n->h / (float)n->image.h;
-          draw_w = (int)(n->image.w * scale);
-          draw_h = (int)(n->image.h * scale);
+          float scale = ((float)n->w / (float)n->kd->image.w < (float)n->h / (float)n->kd->image.h)
+                      ? (float)n->w / (float)n->kd->image.w
+                      : (float)n->h / (float)n->kd->image.h;
+          draw_w = (int)(n->kd->image.w * scale);
+          draw_h = (int)(n->kd->image.h * scale);
           draw_x = n->x + (n->w - draw_w) / 2;
           draw_y = n->y + (n->h - draw_h) / 2;
         } else {
           // Cover mode: crop source to fill widget
           if (img_aspect > widget_aspect && widget_aspect > 0) {
-            src_w = (int)(n->image.h * widget_aspect);
-            src_x = (n->image.w - src_w) / 2;
+            src_w = (int)(n->kd->image.h * widget_aspect);
+            src_x = (n->kd->image.w - src_w) / 2;
           } else if (img_aspect < widget_aspect && img_aspect > 0) {
-            src_h = (int)(n->image.w / widget_aspect);
-            src_y = (n->image.h - src_h) / 2;
+            src_h = (int)(n->kd->image.w / widget_aspect);
+            src_y = (n->kd->image.h - src_h) / 2;
           }
         }
         
@@ -99,7 +99,7 @@ case COGITO_IMAGE: {
             src_x += shift;
             // Clamp so we don't read outside the texture
             if (src_x < 0) src_x = 0;
-            if (src_x + src_w > n->image.w) src_x = n->image.w - src_w;
+            if (src_x + src_w > n->kd->image.w) src_x = n->kd->image.w - src_w;
           }
         }
 
@@ -114,20 +114,20 @@ case COGITO_IMAGE: {
             int glow_pad_y = glow_pad_x;
             if (glow_pad_x < 1) glow_pad_x = 1;
             if (glow_pad_y < 1) glow_pad_y = 1;
-            bool glow_stale = n->image.glow_texture == NULL ||
-                              n->image.glow_source != n->image.texture ||
-                              n->image.glow_w != draw_w ||
-                              n->image.glow_h != draw_h ||
-                              n->image.glow_sigma != blur_sigma;
+            bool glow_stale = n->kd->image.glow_texture == NULL ||
+                              n->kd->image.glow_source != n->kd->image.texture ||
+                              n->kd->image.glow_w != draw_w ||
+                              n->kd->image.glow_h != draw_h ||
+                              n->kd->image.glow_sigma != blur_sigma;
             if (glow_stale) {
-              if (n->image.glow_texture) {
-                cogito_backend->texture_destroy(n->image.glow_texture);
-                n->image.glow_texture = NULL;
+              if (n->kd->image.glow_texture) {
+                cogito_backend->texture_destroy(n->kd->image.glow_texture);
+                n->kd->image.glow_texture = NULL;
               }
-              n->image.glow_source = NULL;
-              n->image.glow_w = 0;
-              n->image.glow_h = 0;
-              n->image.glow_sigma = 0.0f;
+              n->kd->image.glow_source = NULL;
+              n->kd->image.glow_w = 0;
+              n->kd->image.glow_h = 0;
+              n->kd->image.glow_sigma = 0.0f;
 
               int full_w = draw_w + glow_pad_x * 2;
               int full_h = draw_h + glow_pad_y * 2;
@@ -164,7 +164,7 @@ case COGITO_IMAGE: {
 
                 if (hr <= 0) {
                   CogitoRect img_dst = {half_pad_x, half_pad_y, half_img_w, half_img_h};
-                  cogito_backend->draw_texture(n->image.texture, img_src, img_dst, white);
+                  cogito_backend->draw_texture(n->kd->image.texture, img_src, img_dst, white);
                 } else {
                   // Row-segment rounded clipping at half-res
                   float hr_f = (float)hr;
@@ -199,7 +199,7 @@ case COGITO_IMAGE: {
                       int ssw = sx1 - sx0; if (ssw < 1) ssw = 1;
                       CogitoRect ss = {sx0, sy0, ssw, ssh};
                       CogitoRect sd = {half_pad_x + seg_inset, half_pad_y + seg_start, lw, sh};
-                      cogito_backend->draw_texture(n->image.texture, ss, sd, white);
+                      cogito_backend->draw_texture(n->kd->image.texture, ss, sd, white);
                     }
                     seg_start = row;
                     seg_inset = inset;
@@ -215,16 +215,16 @@ case COGITO_IMAGE: {
                 cogito_backend->texture_destroy(rt_pad);
 
                 if (blurred) {
-                  n->image.glow_texture = blurred;
-                  n->image.glow_source = n->image.texture;
-                  n->image.glow_w = draw_w;
-                  n->image.glow_h = draw_h;
-                  n->image.glow_sigma = blur_sigma;
+                  n->kd->image.glow_texture = blurred;
+                  n->kd->image.glow_source = n->kd->image.texture;
+                  n->kd->image.glow_w = draw_w;
+                  n->kd->image.glow_h = draw_h;
+                  n->kd->image.glow_sigma = blur_sigma;
                 }
               }
             }
 
-            if (n->image.glow_texture) {
+            if (n->kd->image.glow_texture) {
               CogitoRect glow_src = {0, 0, 0, 0};
               CogitoRect glow_dst = {
                 draw_x - glow_pad_x,
@@ -233,14 +233,14 @@ case COGITO_IMAGE: {
                 draw_h + glow_pad_y * 2
               };
               CogitoColor glow_tint = {255, 255, 255, 136};
-              cogito_backend->draw_texture(n->image.glow_texture, glow_src, glow_dst, glow_tint);
+              cogito_backend->draw_texture(n->kd->image.glow_texture, glow_src, glow_dst, glow_tint);
             }
           }
 
           if (radius <= 0) {
             CogitoRect src_rect = {src_x, src_y, src_w, src_h};
             CogitoRect dst_rect = {draw_x, draw_y, draw_w, draw_h};
-            cogito_backend->draw_texture(n->image.texture, src_rect, dst_rect, white);
+            cogito_backend->draw_texture(n->kd->image.texture, src_rect, dst_rect, white);
           } else {
             // Rounded clipping for textures with anti-aliased edges.
             // Use ceilf() for interior strips so they never extend past the
@@ -287,7 +287,7 @@ case COGITO_IMAGE: {
 
                 CogitoRect src_seg = {src_x0, src_y0, src_w_seg, src_h_seg};
                 CogitoRect dst_seg = {draw_x + seg_inset, draw_y + seg_start, line_w, seg_h};
-                cogito_backend->draw_texture(n->image.texture, src_seg, dst_seg, white);
+                cogito_backend->draw_texture(n->kd->image.texture, src_seg, dst_seg, white);
               }
 
               seg_start = row;
@@ -328,7 +328,7 @@ case COGITO_IMAGE: {
                 if (sw_l < 1) sw_l = 1;
                 CogitoRect es = {sx_l, sy, sw_l, sh_e};
                 CogitoRect ed = {draw_x + fl, draw_y + row, 1, 1};
-                cogito_backend->draw_texture(n->image.texture, es, ed, et);
+                cogito_backend->draw_texture(n->kd->image.texture, es, ed, et);
               }
               // Right edge
               int rc = draw_w - 1 - fl;
@@ -338,7 +338,7 @@ case COGITO_IMAGE: {
                 if (sw_r < 1) sw_r = 1;
                 CogitoRect es = {sx_r, sy, sw_r, sh_e};
                 CogitoRect ed = {draw_x + rc, draw_y + row, 1, 1};
-                cogito_backend->draw_texture(n->image.texture, es, ed, et);
+                cogito_backend->draw_texture(n->kd->image.texture, es, ed, et);
               }
             }
           }

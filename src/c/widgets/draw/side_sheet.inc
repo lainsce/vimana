@@ -10,7 +10,7 @@ case COGITO_SIDE_SHEET: {
   cogito_anim_apply(n, &s, &bg, &text_color, NULL, NULL);
 
   // Draw modal scrim when the sheet is overlaid in ZStack/Window (not for sidebar mode).
-  if (n->side_sheet.mode == COGITO_SIDE_SHEET_MODAL || n->side_sheet.mode == COGITO_SIDE_SHEET_INSET) {
+  if (n->kd->side_sheet.mode == COGITO_SIDE_SHEET_MODAL || n->kd->side_sheet.mode == COGITO_SIDE_SHEET_INSET) {
     CogitoNode* host = n->parent;
     if (host && host->kind != COGITO_DIALOG_SLOT &&
         (host->kind == COGITO_ZSTACK || host->kind == COGITO_WINDOW)) {
@@ -37,7 +37,7 @@ case COGITO_SIDE_SHEET: {
   }
 
   int r_x = n->x, r_y = n->y, r_w = n->w, r_h = n->h;
-  if (n->side_sheet.mode == COGITO_SIDE_SHEET_INSET) {
+  if (n->kd->side_sheet.mode == COGITO_SIDE_SHEET_INSET) {
       r_x += 16;
       r_y += 16;
       r_w -= 32;
@@ -47,7 +47,7 @@ case COGITO_SIDE_SHEET: {
   cogito_draw_rect_node(n, &s, r_x, r_y, r_w, r_h, bg, radius);
 
   // Draw border on inner edge: right edge in RTL, left edge in LTR
-  if (n->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+  if (n->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
       CogitoStyle outline_style = cogito_theme_resolve(COGITO_SIDE_SHEET);
       CogitoColor border_color = n->border_color;
       if (outline_style.has_bg) {
@@ -62,7 +62,7 @@ case COGITO_SIDE_SHEET: {
 
   // Draw title (clipped so it does not overlap the close button)
   bool sheet_rtl = cogito_is_rtl();
-  int handle_w = (n->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR)
+  int handle_w = (n->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR)
     ? 0
     : COGITO_SIDE_SHEET_HANDLE_TOUCH_W;
   if (n->text && n->text->data && n->text->data[0]) {

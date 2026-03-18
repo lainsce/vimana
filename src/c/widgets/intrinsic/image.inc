@@ -4,9 +4,9 @@ case COGITO_IMAGE:
       if (n->min_w_set && n->min_h_set) {
         w = n->min_w;
         h = n->min_h;
-      } else if (n->image.loaded && n->image.w > 0 && n->image.h > 0) {
-        w = n->image.w;
-        h = n->image.h;
+      } else if (n->kd->image.loaded && n->kd->image.w > 0 && n->kd->image.h > 0) {
+        w = n->kd->image.w;
+        h = n->kd->image.h;
       } else {
         w = 100;
         h = 100;

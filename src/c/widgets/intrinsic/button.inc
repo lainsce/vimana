@@ -2,7 +2,7 @@ case COGITO_BUTTON:
       {
         int btn_h = 40;
         int pad_x = 16;
-        cogito_button_size_metrics(n, (int)n->button.size, n->kind, &btn_h, &pad_x, NULL, NULL);
+        cogito_button_size_metrics(n, (int)n->kd->button.size, n->kind, &btn_h, &pad_x, NULL, NULL);
         w = text_w + pad_x * 2;
         h = btn_h;
         int min_text_h = text_h + 8;

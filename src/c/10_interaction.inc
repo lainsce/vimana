@@ -239,7 +239,7 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
     CogitoNode* ss_hit = cogito_find_clickable(ss, x, y);
     if (ss_hit) return ss_hit;
     // In modal/inset mode, side sheet captures interactions over the window.
-    if (ss->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR &&
+    if (ss->kd->side_sheet.mode != COGITO_SIDE_SHEET_SIDEBAR &&
         cogito_hit_rect(x, y, 0, 0, n->w, n->h)) {
       return ss;
     }

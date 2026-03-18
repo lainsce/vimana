@@ -58,9 +58,9 @@ case COGITO_TEXTVIEW: {
       int pad = 8;
       int size = cogito_node_font_size(n);
       const char* t = n->text ? n->text->data : "";
-      if (n->text_input.sel_start != n->text_input.sel_end) {
-        int a = n->text_input.sel_start;
-        int b = n->text_input.sel_end;
+      if (n->kd->text_input.sel_start != n->kd->text_input.sel_end) {
+        int a = n->kd->text_input.sel_start;
+        int b = n->kd->text_input.sel_end;
         if (a > b) { int tmp = a; a = b; b = tmp; }
         int max_w = n->w - pad * 2;
         if (max_w < 1) max_w = 1;
@@ -113,9 +113,9 @@ case COGITO_TEXTVIEW: {
         }
       }
       cogito_draw_text_wrapped(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), cogito_node_medium(n), 0, true, 0);
-      if (n->text_input.sel_start != n->text_input.sel_end) {
-        int a2 = n->text_input.sel_start;
-        int b2 = n->text_input.sel_end;
+      if (n->kd->text_input.sel_start != n->kd->text_input.sel_end) {
+        int a2 = n->kd->text_input.sel_start;
+        int b2 = n->kd->text_input.sel_end;
         if (a2 > b2) { int tmp = a2; a2 = b2; b2 = tmp; }
         int max_w2 = n->w - pad * 2;
         if (max_w2 < 1) max_w2 = 1;
@@ -191,7 +191,7 @@ case COGITO_TEXTVIEW: {
         int idx = 0;
         int line_h = cogito_text_height_size(size);
         int cy = n->y + pad;
-        int caret_idx = n->text_input.caret;
+        int caret_idx = n->kd->text_input.caret;
         if (caret_idx < 0) caret_idx = 0;
         if (caret_idx > len) caret_idx = len;
         while (idx <= len) {

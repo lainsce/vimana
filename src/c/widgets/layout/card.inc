@@ -1,6 +1,6 @@
 case COGITO_CARD: {
   CogitoStyle s = cogito_theme_resolve_node(n);
-  bool has_header_image = n->card.header_image != NULL;
+  bool has_header_image = n->kd->card.header_image != NULL;
   int header_content_gap = has_header_image ? 24 : 0;
   int default_pad = has_header_image ? 0 : 16;
   int pad_l = s.has_padding_left ? s.padding_left : default_pad;
@@ -14,18 +14,18 @@ case COGITO_CARD: {
   int cy = y;
 
   // Header image: spans full card width at top
-  if (n->card.header_image) {
-    cogito_layout_node(n->card.header_image, x, cy, n->w, 160);
+  if (n->kd->card.header_image) {
+    cogito_layout_node(n->kd->card.header_image, x, cy, n->w, 160);
     cy += 160;
   }
 
   cy += has_header_image ? header_content_gap : pad_t;
 
   // Overflow button: upper-right of content area
-  if (n->card.overflow_btn) {
+  if (n->kd->card.overflow_btn) {
     int bw = 0, bh = 0;
-    cogito_intrinsic_size(n->card.overflow_btn, &bw, &bh);
-    cogito_layout_node(n->card.overflow_btn,
+    cogito_intrinsic_size(n->kd->card.overflow_btn, &bw, &bh);
+    cogito_layout_node(n->kd->card.overflow_btn,
       x + n->w - pad_r - bw,
       cy,
       bw, bh);
@@ -48,10 +48,10 @@ case COGITO_CARD: {
   int btn_h = 0;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
-    if (c == n->card.overflow_btn) continue;
+    if (c == n->kd->card.overflow_btn) continue;
     bool is_action = false;
-    for (size_t j = 0; j < n->card.action_len; j++) {
-      if (n->card.actions[j] == c) { is_action = true; break; }
+    for (size_t j = 0; j < n->kd->card.action_len; j++) {
+      if (n->kd->card.actions[j] == c) { is_action = true; break; }
     }
     if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
       is_action = true;
@@ -69,10 +69,10 @@ case COGITO_CARD: {
   int content_count = 0;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
-    if (c == n->card.overflow_btn) continue;
+    if (c == n->kd->card.overflow_btn) continue;
     bool is_action = false;
-    for (size_t j = 0; j < n->card.action_len; j++) {
-      if (n->card.actions[j] == c) { is_action = true; break; }
+    for (size_t j = 0; j < n->kd->card.action_len; j++) {
+      if (n->kd->card.actions[j] == c) { is_action = true; break; }
     }
     if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
       is_action = true;
@@ -103,10 +103,10 @@ case COGITO_CARD: {
     int bx = x + n->w - 8;
     for (int i = (int)n->len - 1; i >= 0; i--) {
       CogitoNode* c = n->children[i];
-      if (c == n->card.overflow_btn) continue;
+      if (c == n->kd->card.overflow_btn) continue;
       bool is_action = false;
-      for (size_t j = 0; j < n->card.action_len; j++) {
-        if (n->card.actions[j] == c) { is_action = true; break; }
+      for (size_t j = 0; j < n->kd->card.action_len; j++) {
+        if (n->kd->card.actions[j] == c) { is_action = true; break; }
       }
       if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
         is_action = true;

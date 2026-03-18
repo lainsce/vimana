@@ -1,6 +1,6 @@
 static CogitoNode* cogito_grid_new_obj(int cols) {
   CogitoNode* g = cogito_node_new(COGITO_GRID);
-  g->grid.cols = cols > 0 ? cols : 1;
+  g->kd->grid.cols = cols > 0 ? cols : 1;
   g->grid_align_x = 0;
   g->grid_align_y = 0;
   return g;
@@ -38,8 +38,8 @@ static void cogito_grid_add(YisVal gridv, YisVal childv, YisVal colv, YisVal row
 static void cogito_grid_set_gap(YisVal gridv, YisVal xv, YisVal yv) {
   if (gridv.tag != EVT_OBJ) yis_trap("cogito.grid_set_gap expects grid");
   CogitoNode* g = (CogitoNode*)gridv.as.p;
-  g->grid.gap_x = (int)yis_as_int(xv);
-  g->grid.gap_y = (int)yis_as_int(yv);
+  g->kd->grid.gap_x = (int)yis_as_int(xv);
+  g->kd->grid.gap_y = (int)yis_as_int(yv);
   cogito_window_relayout(cogito_node_window(g));
 }
 static void cogito_grid_set_cols(YisVal gridv, YisVal colsv) {
@@ -47,8 +47,8 @@ static void cogito_grid_set_cols(YisVal gridv, YisVal colsv) {
   CogitoNode* g = (CogitoNode*)gridv.as.p;
   int cols = (int)yis_as_int(colsv);
   if (cols < 1) cols = 1;
-  if (g->grid.cols == cols) return;
-  g->grid.cols = cols;
+  if (g->kd->grid.cols == cols) return;
+  g->kd->grid.cols = cols;
   cogito_window_relayout(cogito_node_window(g));
 }
 static void cogito_grid_set_span(YisVal childv, YisVal colsv, YisVal rowsv) {

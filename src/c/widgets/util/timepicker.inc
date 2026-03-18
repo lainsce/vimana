@@ -94,35 +94,35 @@ static int cogito_timepicker_iconbtn_icon_size(const CogitoStyle* s, int button_
 
 static void cogito_timepicker_ensure_time(CogitoNode* n) {
   if (!n || n->kind != COGITO_TIMEPICKER) return;
-  if (n->timepicker.initialized) return;
+  if (n->kd->timepicker.initialized) return;
 
   // Popover panels inherit current value from their owner.
-  if (n->timepicker.popover_panel && n->timepicker.owner &&
-      n->timepicker.owner->kind == COGITO_TIMEPICKER) {
-    CogitoNode* owner = n->timepicker.owner;
+  if (n->kd->timepicker.popover_panel && n->kd->timepicker.owner &&
+      n->kd->timepicker.owner->kind == COGITO_TIMEPICKER) {
+    CogitoNode* owner = n->kd->timepicker.owner;
     cogito_timepicker_ensure_time(owner);
-    n->timepicker.hour = owner->timepicker.hour;
-    n->timepicker.minute = owner->timepicker.minute;
-    n->timepicker.ampm = owner->timepicker.ampm;
-    n->timepicker.dial_visible = owner->timepicker.dial_visible;
-    n->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
-    n->timepicker.initialized = true;
+    n->kd->timepicker.hour = owner->kd->timepicker.hour;
+    n->kd->timepicker.minute = owner->kd->timepicker.minute;
+    n->kd->timepicker.ampm = owner->kd->timepicker.ampm;
+    n->kd->timepicker.dial_visible = owner->kd->timepicker.dial_visible;
+    n->kd->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
+    n->kd->timepicker.initialized = true;
     return;
   }
 
   time_t now = time(NULL);
   struct tm* lt = localtime(&now);
   if (lt) {
-    n->timepicker.hour = lt->tm_hour;
-    n->timepicker.minute = lt->tm_min;
+    n->kd->timepicker.hour = lt->tm_hour;
+    n->kd->timepicker.minute = lt->tm_min;
   } else {
-    n->timepicker.hour = 7;
-    n->timepicker.minute = 0;
+    n->kd->timepicker.hour = 7;
+    n->kd->timepicker.minute = 0;
   }
-  n->timepicker.ampm = (n->timepicker.hour >= 12);
-  n->timepicker.dial_visible = true;
-  n->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
-  n->timepicker.initialized = true;
+  n->kd->timepicker.ampm = (n->kd->timepicker.hour >= 12);
+  n->kd->timepicker.dial_visible = true;
+  n->kd->timepicker.mode = COGITO_TIMEPICKER_MODE_HOUR;
+  n->kd->timepicker.initialized = true;
 }
 
 static void cogito_timepicker_panel_layout(const CogitoNode* n, CogitoTimePickerPanelLayout* out) {

@@ -55,7 +55,7 @@ static int cogito_appbar_ctrl_index(char c) {
 static void cogito_appbar_controls_positions(CogitoNode* n, int x, int w, int btn_size, int gap, int pad, bool allow_max, int* out_close, int* out_min, int* out_max) {
   int pos[3] = {-1, -1, -1};
   bool seen[3] = {false, false, false};
-  const char* s = n->appbar.controls[0] ? n->appbar.controls : "CIM|";
+  const char* s = n->kd->appbar.controls[0] ? n->kd->appbar.controls : "CIM|";
   const char* split = strchr(s, '|');
   size_t left_len = split ? (size_t)(split - s) : strlen(s);
   const char* right = split ? split + 1 : "";
@@ -262,7 +262,7 @@ static const char* cogito_appbar_surface_token_for_level(int level) {
 static void cogito_appbar_apply_paired_surface(CogitoNode* appbar) {
   if (!appbar || appbar->kind != COGITO_APPBAR) return;
 
-  if (!appbar->appbar.paired_scroller) {
+  if (!appbar->kd->appbar.paired_scroller) {
     const char* app_cls = (appbar->class_name && appbar->class_name->data) ? appbar->class_name->data : "";
     if (cogito_class_has_token(app_cls, "sidebar") && appbar->parent) {
       for (size_t i = 0; i < appbar->parent->len; i++) {
@@ -270,7 +270,7 @@ static void cogito_appbar_apply_paired_surface(CogitoNode* appbar) {
         if (!sib || sib == appbar || sib->kind != COGITO_SCROLLER) continue;
         const char* sc_cls = (sib->class_name && sib->class_name->data) ? sib->class_name->data : "";
         if (!cogito_class_has_token(sc_cls, "sidebar")) continue;
-        appbar->appbar.paired_scroller = sib;
+        appbar->kd->appbar.paired_scroller = sib;
         int sc_level = 3;
         if (cogito_class_has_token(sc_cls, "surface-container-lowest")) sc_level = 0;
         else if (cogito_class_has_token(sc_cls, "surface-container-low")) sc_level = 1;
@@ -280,21 +280,21 @@ static void cogito_appbar_apply_paired_surface(CogitoNode* appbar) {
         int target_level = sc_level + 1;
         if (target_level < 3) target_level = 3;
         if (target_level > 4) target_level = 4;
-        appbar->appbar.paired_surface_level = target_level;
-        if (appbar->appbar.pair_base_class[0] == 0) {
-          strncpy(appbar->appbar.pair_base_class, app_cls, sizeof(appbar->appbar.pair_base_class) - 1);
-          appbar->appbar.pair_base_class[sizeof(appbar->appbar.pair_base_class) - 1] = 0;
+        appbar->kd->appbar.paired_surface_level = target_level;
+        if (appbar->kd->appbar.pair_base_class[0] == 0) {
+          strncpy(appbar->kd->appbar.pair_base_class, app_cls, sizeof(appbar->kd->appbar.pair_base_class) - 1);
+          appbar->kd->appbar.pair_base_class[sizeof(appbar->kd->appbar.pair_base_class) - 1] = 0;
         }
         break;
       }
     }
   }
 
-  if (!appbar->appbar.paired_scroller || appbar->appbar.pair_base_class[0] == 0) return;
+  if (!appbar->kd->appbar.paired_scroller || appbar->kd->appbar.pair_base_class[0] == 0) return;
 
-  CogitoNode* sc = appbar->appbar.paired_scroller;
-  bool elevate = (sc->kind == COGITO_SCROLLER && sc->len > 0 && sc->scroller.scroll_y > 0);
-  const char* base = appbar->appbar.pair_base_class;
+  CogitoNode* sc = appbar->kd->appbar.paired_scroller;
+  bool elevate = (sc->kind == COGITO_SCROLLER && sc->len > 0 && sc->kd->scroller.scroll_y > 0);
+  const char* base = appbar->kd->appbar.pair_base_class;
 
   char desired[256];
   desired[0] = 0;
@@ -323,7 +323,7 @@ static void cogito_appbar_apply_paired_surface(CogitoNode* appbar) {
       desired[out] = 0;
     }
 
-    const char* surface_tok = cogito_appbar_surface_token_for_level(appbar->appbar.paired_surface_level);
+    const char* surface_tok = cogito_appbar_surface_token_for_level(appbar->kd->appbar.paired_surface_level);
     size_t slen = strlen(surface_tok);
     if (out > 0 && out + 1 < sizeof(desired)) desired[out++] = ' ';
     if (out + slen < sizeof(desired)) {

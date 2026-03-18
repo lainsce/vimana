@@ -1241,13 +1241,13 @@ static void cogito_text_delete_range(CogitoNode* n, size_t start, size_t end) {
 
 static void cogito_text_append_codepoint(CogitoNode* n, int cp) {
   if (!n || cp <= 0) return;
-  int* caret = &n->text_input.caret;
-  int* sel_start = &n->text_input.sel_start;
-  int* sel_end = &n->text_input.sel_end;
+  int* caret = &n->kd->text_input.caret;
+  int* sel_start = &n->kd->text_input.sel_start;
+  int* sel_end = &n->kd->text_input.sel_end;
   if (n->kind == COGITO_COLORPICKER) {
-    caret = &n->colorpicker.caret;
-    sel_start = &n->colorpicker.sel_start;
-    sel_end = &n->colorpicker.sel_end;
+    caret = &n->kd->colorpicker.caret;
+    sel_start = &n->kd->colorpicker.sel_start;
+    sel_end = &n->kd->colorpicker.sel_end;
   }
   if (*sel_start != *sel_end) {
     size_t start = (size_t)*sel_start;
@@ -1306,13 +1306,13 @@ static void cogito_text_append_codepoint(CogitoNode* n, int cp) {
 
 static void cogito_text_backspace(CogitoNode* n) {
   if (!n || !n->text || n->text->len == 0) return;
-  int* caret = &n->text_input.caret;
-  int* sel_start = &n->text_input.sel_start;
-  int* sel_end = &n->text_input.sel_end;
+  int* caret = &n->kd->text_input.caret;
+  int* sel_start = &n->kd->text_input.sel_start;
+  int* sel_end = &n->kd->text_input.sel_end;
   if (n->kind == COGITO_COLORPICKER) {
-    caret = &n->colorpicker.caret;
-    sel_start = &n->colorpicker.sel_start;
-    sel_end = &n->colorpicker.sel_end;
+    caret = &n->kd->colorpicker.caret;
+    sel_start = &n->kd->colorpicker.sel_start;
+    sel_end = &n->kd->colorpicker.sel_end;
   }
   if (*sel_start != *sel_end) {
     size_t start = (size_t)*sel_start;

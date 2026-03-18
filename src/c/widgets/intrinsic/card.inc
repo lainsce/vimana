@@ -1,6 +1,6 @@
 case COGITO_CARD: {
   CogitoStyle s = cogito_theme_resolve_node(n);
-  bool has_header_image = n->card.header_image != NULL;
+  bool has_header_image = n->kd->card.header_image != NULL;
   int header_content_gap = has_header_image ? 24 : 0;
   int default_pad = has_header_image ? 0 : 16;
   int pad_l = s.has_padding_left ? s.padding_left : default_pad;
@@ -9,7 +9,7 @@ case COGITO_CARD: {
   int pad_b = s.has_padding_bottom ? s.padding_bottom : pad_t;
   int gap = n->gap;
 
-  int img_h = n->card.header_image ? 160 : 0;
+  int img_h = n->kd->card.header_image ? 160 : 0;
 
   int title_h = 0;
   if (n->text && n->text->data && n->text->data[0]) {
@@ -28,10 +28,10 @@ case COGITO_CARD: {
   int content_count = 0;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
-    if (c == n->card.overflow_btn) continue;
+    if (c == n->kd->card.overflow_btn) continue;
     bool is_action = false;
-    for (size_t j = 0; j < n->card.action_len; j++) {
-      if (n->card.actions[j] == c) { is_action = true; break; }
+    for (size_t j = 0; j < n->kd->card.action_len; j++) {
+      if (n->kd->card.actions[j] == c) { is_action = true; break; }
     }
     if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
       is_action = true;
@@ -56,10 +56,10 @@ case COGITO_CARD: {
   bool has_actions = false;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
-    if (c == n->card.overflow_btn) continue;
+    if (c == n->kd->card.overflow_btn) continue;
     bool is_action = false;
-    for (size_t j = 0; j < n->card.action_len; j++) {
-      if (n->card.actions[j] == c) { is_action = true; break; }
+    for (size_t j = 0; j < n->kd->card.action_len; j++) {
+      if (n->kd->card.actions[j] == c) { is_action = true; break; }
     }
     if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
       is_action = true;
@@ -73,10 +73,10 @@ case COGITO_CARD: {
     int row_h = 0;
     for (size_t i = 0; i < n->len; i++) {
       CogitoNode* c = n->children[i];
-      if (c == n->card.overflow_btn) continue;
+      if (c == n->kd->card.overflow_btn) continue;
       bool is_action = false;
-      for (size_t j = 0; j < n->card.action_len; j++) {
-        if (n->card.actions[j] == c) { is_action = true; break; }
+      for (size_t j = 0; j < n->kd->card.action_len; j++) {
+        if (n->kd->card.actions[j] == c) { is_action = true; break; }
       }
       if (!is_action && c->view_id && c->view_id->data && strcmp(c->view_id->data, "card-action") == 0) {
         is_action = true;

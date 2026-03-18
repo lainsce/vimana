@@ -1,9 +1,9 @@
 case COGITO_TIMEPICKER: {
-  if (n->timepicker.popover_panel) {
+  if (n->kd->timepicker.popover_panel) {
     w = 328;
     // Keep structural vertical spacing when dial is hidden; only remove dial height.
     h = 24 + 20 + 80 + 36 + 48 + 24;
-    if (n->timepicker.dial_visible) h += 256;
+    if (n->kd->timepicker.dial_visible) h += 256;
   } else {
     // Keep intrinsic size as outer size (including style padding).
     int pad_w = n->padding_left + n->padding_right;

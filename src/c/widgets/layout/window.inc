@@ -27,7 +27,7 @@ static bool cogito_toolbar_is_compact(const CogitoNode* toolbar) {
 
 static bool cogito_toolbar_is_vertical(const CogitoNode* toolbar) {
   if (!toolbar || toolbar->kind != COGITO_TOOLBAR) return false;
-  return toolbar->toolbar.vertical;
+  return toolbar->kd->toolbar.vertical;
 }
 
 static int cogito_toolbar_reserved_height(const CogitoNode* toolbar, int toolbar_h) {
@@ -139,8 +139,8 @@ static void cogito_side_sheet_apply_mode_for_layout(CogitoNode* side_sheet, uint
   if (!side_sheet || side_sheet->kind != COGITO_SIDE_SHEET) return;
   if (mode > COGITO_SIDE_SHEET_SIDEBAR) mode = COGITO_SIDE_SHEET_MODAL;
 
-  if (side_sheet->side_sheet.mode != mode) {
-    side_sheet->side_sheet.mode = mode;
+  if (side_sheet->kd->side_sheet.mode != mode) {
+    side_sheet->kd->side_sheet.mode = mode;
     const char* class_name = cogito_side_sheet_mode_class_name(mode);
     if (class_name && class_name[0]) {
       if (!side_sheet->class_name || !side_sheet->class_name->data || strcmp(side_sheet->class_name->data, class_name) != 0) {
@@ -196,7 +196,7 @@ static void cogito_window_apply_size_class_adaptivity(CogitoNode* win) {
 
   if (win->side_sheet_node && win->side_sheet_node->kind == COGITO_SIDE_SHEET) {
     CogitoNode* ss = win->side_sheet_node;
-    uint8_t preferred = ss->side_sheet.preferred_mode;
+    uint8_t preferred = ss->kd->side_sheet.preferred_mode;
     if (preferred > COGITO_SIDE_SHEET_SIDEBAR) preferred = COGITO_SIDE_SHEET_MODAL;
     uint8_t effective = preferred;
     if (compact && preferred == COGITO_SIDE_SHEET_SIDEBAR) {
@@ -333,7 +333,7 @@ static void cogito_layout_window(CogitoNode* win) {
   if (toolbar_vertical) avail_w -= toolbar_w;
   // Sidebar side sheet is coplanar: subtract its width from content area
   if (win->side_sheet_open && win->side_sheet_node &&
-      win->side_sheet_node->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+      win->side_sheet_node->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
     int ss_w = 0;
     cogito_intrinsic_size(win->side_sheet_node, &ss_w, NULL);
     avail_w -= ss_w;
@@ -446,7 +446,7 @@ static void cogito_layout_window(CogitoNode* win) {
     ss_h = win->h;
     // For sidebar mode: position at right edge, pushing window width
     // For other modes: overlay on right
-    if (win->side_sheet_node->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+    if (win->side_sheet_node->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
         // Sidebar docked on right - positioned at right edge
         int ss_x = win->w - ss_w;
         cogito_layout_node(win->side_sheet_node, ss_x, 0, ss_w, ss_h);
@@ -468,7 +468,7 @@ int max_w = win->padding_left;
   int sidebar_w = 0;
   // Check if there's a sidebar side sheet and get its width
   if (win->side_sheet_open && win->side_sheet_node && 
-      win->side_sheet_node->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+      win->side_sheet_node->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
       cogito_intrinsic_size(win->side_sheet_node, &sidebar_w, NULL);
   }
   for (size_t i = 0; i < win->len; i++) {

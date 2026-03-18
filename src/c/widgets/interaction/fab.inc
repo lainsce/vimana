@@ -16,7 +16,7 @@ static void cogito_fab_set_size(YisVal fabv, YisVal sizev) {
   int s = (int)yis_as_int(sizev);
   if (s < 0) s = 0;
   if (s > 2) s = 2;
-  n->fab.size = (uint8_t)s;
+  n->kd->fab.size = (uint8_t)s;
   cogito_window_relayout(cogito_node_window(n));
 }
 
@@ -27,8 +27,8 @@ static void cogito_fab_set_color(YisVal fabv, YisVal colorv) {
   int c = (int)yis_as_int(colorv);
   if (c < 0) c = 0;
   if (c > 5) c = 5;
-  n->fab.variant = (uint8_t)c;
-  n->fab.variant_set = true;
+  n->kd->fab.variant = (uint8_t)c;
+  n->kd->fab.variant_set = true;
 }
 
 // color: 0=Primary, 1=Secondary, 2=Tertiary
@@ -38,7 +38,7 @@ static void cogito_fab_menu_set_color(YisVal fabv, YisVal colorv) {
   int c = (int)yis_as_int(colorv);
   if (c < 0) c = 0;
   if (c > 2) c = 2;
-  n->fab_menu.variant = (uint8_t)c;
+  n->kd->fab_menu.variant = (uint8_t)c;
 }
 
 // size: 0=S(56x56), 1=M(80x80), 2=L(96x96)
@@ -48,15 +48,15 @@ static void cogito_fab_menu_set_size(YisVal fabv, YisVal sizev) {
   int s = (int)yis_as_int(sizev);
   if (s < 0) s = 0;
   if (s > 2) s = 2;
-  n->fab_menu.size = (uint8_t)s;
+  n->kd->fab_menu.size = (uint8_t)s;
   cogito_window_relayout(cogito_node_window(n));
 }
 
 static void cogito_fab_set_extended(YisVal fabv, YisVal extended, YisVal label) {
   if (fabv.tag != EVT_OBJ) yis_trap("cogito.fab_set_extended expects fab");
   CogitoNode* n = (CogitoNode*)fabv.as.p;
-  n->fab.extended = yis_as_bool(extended);
-  if (n->fab.extended) {
+  n->kd->fab.extended = yis_as_bool(extended);
+  if (n->kd->fab.extended) {
     YisStr* lbl = stdr_to_string(label);
     if (n->subtitle) yis_release_val(YV_STR(n->subtitle));
     n->subtitle = lbl;

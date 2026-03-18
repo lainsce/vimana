@@ -1,4 +1,4 @@
 case COGITO_SHAPE:
-  w = (n->shape.size_dp > 0) ? n->shape.size_dp : 96;
-  h = (n->shape.size_h_dp > 0) ? n->shape.size_h_dp : w;
+  w = (n->kd->shape.size_dp > 0) ? n->kd->shape.size_dp : 96;
+  h = (n->kd->shape.size_h_dp > 0) ? n->kd->shape.size_h_dp : w;
   break;

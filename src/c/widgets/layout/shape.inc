@@ -1,5 +1,5 @@
 case COGITO_SHAPE:
-  if (n->shape.clip_children) {
+  if (n->kd->shape.clip_children) {
     for (size_t i = 0; i < n->len; i++) {
       CogitoNode* c = n->children[i];
       int cw = n->w;

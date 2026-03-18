@@ -1,16 +1,16 @@
 static CogitoNode* cogito_nav_rail_new_obj(void) {
   CogitoNode* n = cogito_node_new(COGITO_NAV_RAIL);
-  n->nav_rail.labels = NULL;
-  n->nav_rail.icons = NULL;
-  n->nav_rail.badges = NULL;
-  n->nav_rail.item_springs = NULL;
-  n->nav_rail.len = 0;
-  n->nav_rail.cap = 0;
-  n->nav_rail.selected = 0;
-  n->nav_rail.expanded = false;
-  n->nav_rail.centered = false;
-  n->nav_rail.show_toggle = true;
-  n->nav_rail.no_label = false;
+  n->kd->nav_rail.labels = NULL;
+  n->kd->nav_rail.icons = NULL;
+  n->kd->nav_rail.badges = NULL;
+  n->kd->nav_rail.item_springs = NULL;
+  n->kd->nav_rail.len = 0;
+  n->kd->nav_rail.cap = 0;
+  n->kd->nav_rail.selected = 0;
+  n->kd->nav_rail.expanded = false;
+  n->kd->nav_rail.centered = false;
+  n->kd->nav_rail.show_toggle = true;
+  n->kd->nav_rail.no_label = false;
   return n;
 }
 
@@ -34,35 +34,35 @@ static void cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal icons
   }
 
   // Clear existing items
-  if (n->nav_rail.labels || n->nav_rail.badges) {
-    for (size_t i = 0; i < n->nav_rail.len; i++) {
-      if (n->nav_rail.labels && n->nav_rail.labels[i]) yis_release_val(YV_STR(n->nav_rail.labels[i]));
-      if (n->nav_rail.icons && n->nav_rail.icons[i]) yis_release_val(YV_STR(n->nav_rail.icons[i]));
+  if (n->kd->nav_rail.labels || n->kd->nav_rail.badges) {
+    for (size_t i = 0; i < n->kd->nav_rail.len; i++) {
+      if (n->kd->nav_rail.labels && n->kd->nav_rail.labels[i]) yis_release_val(YV_STR(n->kd->nav_rail.labels[i]));
+      if (n->kd->nav_rail.icons && n->kd->nav_rail.icons[i]) yis_release_val(YV_STR(n->kd->nav_rail.icons[i]));
     }
-    free(n->nav_rail.labels);
-    free(n->nav_rail.icons);
-    free(n->nav_rail.badges);
-    if (n->nav_rail.item_springs) free(n->nav_rail.item_springs);
+    free(n->kd->nav_rail.labels);
+    free(n->kd->nav_rail.icons);
+    free(n->kd->nav_rail.badges);
+    if (n->kd->nav_rail.item_springs) free(n->kd->nav_rail.item_springs);
   }
 
-  n->nav_rail.len = count;
-  n->nav_rail.cap = count;
-  n->nav_rail.labels = (YisStr**)calloc(count, sizeof(YisStr*));
-  n->nav_rail.icons = (YisStr**)calloc(count, sizeof(YisStr*));
-  n->nav_rail.badges = (int*)calloc(count, sizeof(int));
-  n->nav_rail.item_springs = (CogitoSpring*)calloc(count, sizeof(CogitoSpring));
+  n->kd->nav_rail.len = count;
+  n->kd->nav_rail.cap = count;
+  n->kd->nav_rail.labels = (YisStr**)calloc(count, sizeof(YisStr*));
+  n->kd->nav_rail.icons = (YisStr**)calloc(count, sizeof(YisStr*));
+  n->kd->nav_rail.badges = (int*)calloc(count, sizeof(int));
+  n->kd->nav_rail.item_springs = (CogitoSpring*)calloc(count, sizeof(CogitoSpring));
   // Initialize springs: selected item starts at 1.0, others at 0.0
-  if (n->nav_rail.item_springs) {
+  if (n->kd->nav_rail.item_springs) {
     for (size_t i = 0; i < count; i++) {
-      double initial = ((int)i == n->nav_rail.selected) ? 1.0 : 0.0;
-      cogito_spring_snap(&n->nav_rail.item_springs[i], initial);
+      double initial = ((int)i == n->kd->nav_rail.selected) ? 1.0 : 0.0;
+      cogito_spring_snap(&n->kd->nav_rail.item_springs[i], initial);
     }
   }
 
   for (size_t i = 0; i < count; i++) {
     YisVal lv = labels->items[i];
     YisStr* ls = stdr_to_string(lv);
-    n->nav_rail.labels[i] = ls;
+    n->kd->nav_rail.labels[i] = ls;
     yis_retain_val(YV_STR(ls));
   }
 
@@ -73,7 +73,7 @@ static void cogito_nav_rail_set_items(YisVal railv, YisVal labelsv, YisVal icons
     for (size_t i = 0; i < icon_count; i++) {
       YisVal iv = icons->items[i];
       YisStr* is = stdr_to_string(iv);
-      n->nav_rail.icons[i] = is;
+      n->kd->nav_rail.icons[i] = is;
       yis_retain_val(YV_STR(is));
     }
   }
@@ -86,13 +86,13 @@ static void cogito_nav_rail_set_badges(YisVal railv, YisVal badgesv) {
   CogitoNode* n = (CogitoNode*)railv.as.p;
   if (n->kind != COGITO_NAV_RAIL) yis_trap("cogito.nav_rail_set_badges expects nav_rail");
 
-  size_t count = n->nav_rail.len;
+  size_t count = n->kd->nav_rail.len;
   if (count == 0) return;
-  if (!n->nav_rail.badges) {
-    n->nav_rail.badges = (int*)calloc(count, sizeof(int));
+  if (!n->kd->nav_rail.badges) {
+    n->kd->nav_rail.badges = (int*)calloc(count, sizeof(int));
   }
-  if (!n->nav_rail.badges) return;
-  memset(n->nav_rail.badges, 0, sizeof(int) * count);
+  if (!n->kd->nav_rail.badges) return;
+  memset(n->kd->nav_rail.badges, 0, sizeof(int) * count);
 
   if (badgesv.tag == EVT_NULL) {
     cogito_window_relayout(cogito_node_window(n));
@@ -124,7 +124,7 @@ static void cogito_nav_rail_set_badges(YisVal railv, YisVal badgesv) {
       default:
         yis_trap("cogito.nav_rail_set_badges expects int/bool/null entries");
     }
-    n->nav_rail.badges[i] = badge;
+    n->kd->nav_rail.badges[i] = badge;
   }
 
   cogito_window_relayout(cogito_node_window(n));
@@ -134,23 +134,23 @@ static void cogito_nav_rail_set_toggle(YisVal railv, YisVal onv) {
   if (railv.tag != EVT_OBJ) yis_trap("cogito.nav_rail_set_toggle expects nav_rail");
   CogitoNode* n = (CogitoNode*)railv.as.p;
   if (n->kind != COGITO_NAV_RAIL) yis_trap("cogito.nav_rail_set_toggle expects nav_rail");
-  n->nav_rail.show_toggle = yis_as_bool(onv);
-  if (!n->nav_rail.show_toggle) n->nav_rail.expanded = false;
+  n->kd->nav_rail.show_toggle = yis_as_bool(onv);
+  if (!n->kd->nav_rail.show_toggle) n->kd->nav_rail.expanded = false;
   cogito_window_relayout(cogito_node_window(n));
 }
 
 static YisVal cogito_nav_rail_get_selected(YisVal railv) {
   if (railv.tag != EVT_OBJ) yis_trap("cogito.nav_rail_get_selected expects nav_rail");
   CogitoNode* n = (CogitoNode*)railv.as.p;
-  return YV_INT(n->nav_rail.selected);
+  return YV_INT(n->kd->nav_rail.selected);
 }
 
 static void cogito_nav_rail_set_selected(YisVal railv, YisVal idxv) {
   if (railv.tag != EVT_OBJ) yis_trap("cogito.nav_rail_set_selected expects nav_rail");
   CogitoNode* n = (CogitoNode*)railv.as.p;
   int idx = (int)yis_as_int(idxv);
-  if (idx >= 0 && idx < (int)n->nav_rail.len) {
-    n->nav_rail.selected = idx;
+  if (idx >= 0 && idx < (int)n->kd->nav_rail.len) {
+    n->kd->nav_rail.selected = idx;
   }
 }
 
@@ -168,7 +168,7 @@ static void cogito_nav_rail_on_change(YisVal railv, YisVal handler) {
 
 static void cogito_nav_rail_toggle_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n) return;
-  if (!n->nav_rail.show_toggle) {
+  if (!n->kd->nav_rail.show_toggle) {
     if (out_x) *out_x = 0;
     if (out_y) *out_y = 0;
     if (out_w) *out_w = 0;
@@ -177,7 +177,7 @@ static void cogito_nav_rail_toggle_rect(CogitoNode* n, int* out_x, int* out_y, i
   }
   int rail_w = n->w > 0 ? n->w : COGITO_NAV_RAIL_COLLAPSED_WIDTH;
   int x = n->x + (rail_w - COGITO_NAV_RAIL_SHARED_TOGGLE_BUTTON_SIZE) / 2;
-  if (n->nav_rail.expanded) {
+  if (n->kd->nav_rail.expanded) {
     int indicator_w = rail_w - (COGITO_NAV_RAIL_EXPANDED_SIDE_PADDING * 2);
     if (indicator_w < COGITO_NAV_RAIL_EXPANDED_INDICATOR_MIN_WIDTH) {
       indicator_w = COGITO_NAV_RAIL_EXPANDED_INDICATOR_MIN_WIDTH;
@@ -191,7 +191,7 @@ static void cogito_nav_rail_toggle_rect(CogitoNode* n, int* out_x, int* out_y, i
     if (align_x > max_x) align_x = max_x;
     x = align_x;
   }
-  int top_offset = n->nav_rail.expanded
+  int top_offset = n->kd->nav_rail.expanded
     ? COGITO_NAV_RAIL_EXPANDED_TOP_OFFSET
     : COGITO_NAV_RAIL_COLLAPSED_TOP_OFFSET;
   int y = n->y + n->padding_top + top_offset;
@@ -202,7 +202,7 @@ static void cogito_nav_rail_toggle_rect(CogitoNode* n, int* out_x, int* out_y, i
 }
 
 static bool cogito_nav_rail_hit_toggle(CogitoNode* n, int x, int y) {
-  if (!n || n->kind != COGITO_NAV_RAIL || !n->nav_rail.show_toggle) return false;
+  if (!n || n->kind != COGITO_NAV_RAIL || !n->kd->nav_rail.show_toggle) return false;
   int tx = 0, ty = 0, tw = 0, th = 0;
   cogito_nav_rail_toggle_rect(n, &tx, &ty, &tw, &th);
   return cogito_hit_rect_min48(x, y, tx, ty, tw, th);
@@ -211,11 +211,11 @@ static bool cogito_nav_rail_hit_toggle(CogitoNode* n, int x, int y) {
 static int cogito_nav_rail_items_start_y(CogitoNode* n) {
   if (!n) return 0;
 
-  if (n->nav_rail.centered && n->h > 0 && n->nav_rail.len > 0) {
-    int item_step = n->nav_rail.expanded
+  if (n->kd->nav_rail.centered && n->h > 0 && n->kd->nav_rail.len > 0) {
+    int item_step = n->kd->nav_rail.expanded
       ? COGITO_NAV_RAIL_EXPANDED_ITEM_STEP
       : COGITO_NAV_RAIL_COLLAPSED_ITEM_STEP;
-    int block_h = item_step * (int)n->nav_rail.len;
+    int block_h = item_step * (int)n->kd->nav_rail.len;
     int top = n->y + n->padding_top;
     int bottom = n->y + n->h - n->padding_bottom;
     int avail_h = bottom - top;
@@ -225,14 +225,14 @@ static int cogito_nav_rail_items_start_y(CogitoNode* n) {
     return top;
   }
 
-  int top_offset = n->nav_rail.expanded
+  int top_offset = n->kd->nav_rail.expanded
     ? COGITO_NAV_RAIL_EXPANDED_TOP_OFFSET
     : COGITO_NAV_RAIL_COLLAPSED_TOP_OFFSET;
-  int section_gap = n->nav_rail.expanded
+  int section_gap = n->kd->nav_rail.expanded
     ? COGITO_NAV_RAIL_EXPANDED_SECTION_GAP
     : COGITO_NAV_RAIL_COLLAPSED_SECTION_GAP;
   int item_y = n->y + n->padding_top + top_offset + section_gap;
-  if (n->nav_rail.show_toggle) {
+  if (n->kd->nav_rail.show_toggle) {
     item_y += COGITO_NAV_RAIL_SHARED_TOGGLE_BUTTON_SIZE;
   }
   for (size_t i = 0; i < n->len; i++) {
@@ -247,7 +247,7 @@ static int cogito_nav_rail_items_start_y(CogitoNode* n) {
 }
 
 static int cogito_nav_rail_item_step(const CogitoNode* n) {
-  if (n && n->nav_rail.expanded) return COGITO_NAV_RAIL_EXPANDED_ITEM_STEP;
+  if (n && n->kd->nav_rail.expanded) return COGITO_NAV_RAIL_EXPANDED_ITEM_STEP;
   return COGITO_NAV_RAIL_COLLAPSED_ITEM_STEP;
 }
 
@@ -260,7 +260,7 @@ static int cogito_nav_rail_hit_index(CogitoNode* n, int x, int y) {
   int item_y = cogito_nav_rail_items_start_y(n);
   int item_step = cogito_nav_rail_item_step(n);
 
-  for (size_t i = 0; i < n->nav_rail.len; i++) {
+  for (size_t i = 0; i < n->kd->nav_rail.len; i++) {
     if (cogito_hit_rect_min48(x, y, n->x, item_y, rail_w, item_step)) return (int)i;
     item_y += item_step;
   }
@@ -288,11 +288,11 @@ static void __cogito_nav_rail_set_divider(YisVal railv, YisVal onv) {
   if (railv.tag != EVT_OBJ) yis_trap("cogito.nav_rail_set_divider expects nav_rail");
   CogitoNode* n = (CogitoNode*)railv.as.p;
   if (n->kind != COGITO_NAV_RAIL) yis_trap("cogito.nav_rail_set_divider expects nav_rail");
-  n->nav_rail.show_divider = yis_as_bool(onv);
+  n->kd->nav_rail.show_divider = yis_as_bool(onv);
   cogito_window_relayout(cogito_node_window(n));
 }
 
 static void cogito_handle_nav_rail_select(CogitoNode* rail, int idx) {
-  rail->nav_rail.selected = idx;
+  rail->kd->nav_rail.selected = idx;
   cogito_invoke_select(rail, idx, false);
 }

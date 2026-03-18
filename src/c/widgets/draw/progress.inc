@@ -27,9 +27,9 @@ case COGITO_PROGRESS: {
       if (thickness < 1) thickness = 1;
       int cap = thickness / 2;
       if (cap < 1) cap = 1;
-      bool indeterminate = n->progress.indeterminate;
-      bool circular = n->progress.circular;
-      bool wavy = (n->progress.shape == COGITO_PROGRESS_SHAPE_WAVY);
+      bool indeterminate = n->kd->progress.indeterminate;
+      bool circular = n->kd->progress.circular;
+      bool wavy = (n->kd->progress.shape == COGITO_PROGRESS_SHAPE_WAVY);
 
       double now = cogito_now();
 
@@ -61,7 +61,7 @@ case COGITO_PROGRESS: {
           seg_a0 = start_deg + phase;
           seg_a1 = seg_a0 + chunk;
         } else {
-          double t = n->progress.value;
+          double t = n->kd->progress.value;
           if (t < 0.0) t = 0.0;
           if (t > 1.0) t = 1.0;
           seg_a1 = start_deg + sweep_deg * t;
@@ -236,7 +236,7 @@ case COGITO_PROGRESS: {
           if (active_end > x1) active_end = x1;
           has_active = active_end > active_start;
         } else {
-          double t = n->progress.value;
+          double t = n->kd->progress.value;
           if (t < 0.0) t = 0.0;
           if (t > 1.0) t = 1.0;
           if (cogito_is_rtl()) {

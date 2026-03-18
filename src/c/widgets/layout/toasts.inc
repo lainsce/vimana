@@ -5,7 +5,7 @@ static bool cogito_is_fab_or_docked_toolbar(CogitoNode* n) {
   // Toolbar is docked if not floating and positioned at bottom
   if (n->kind == COGITO_TOOLBAR) {
     bool floating = (n->class_name && n->class_name->data && strstr(n->class_name->data, "floating"));
-    return !floating && !n->toolbar.vertical;
+    return !floating && !n->kd->toolbar.vertical;
   }
   return false;
 }

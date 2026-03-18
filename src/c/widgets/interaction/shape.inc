@@ -37,7 +37,7 @@ static bool cogito_svg_parse_f32(const char** ps, float* out) {
 
 static void cogito_shape_store_svg_poly(CogitoNode* n, const float* in_x, const float* in_y, int in_count) {
   if (!n) return;
-  n->shape.svg_poly_count = 0;
+  n->kd->shape.svg_poly_count = 0;
   if (!in_x || !in_y || in_count < 3) return;
 
   float min_x = in_x[0], max_x = in_x[0], min_y = in_y[0], max_y = in_y[0];
@@ -61,10 +61,10 @@ static void cogito_shape_store_svg_poly(CogitoNode* n, const float* in_x, const 
     for (int i = 0; i < in_count; i++) {
       float nx = 0.5f + (in_x[i] - ccx) / scale;
       float ny = 0.5f + (in_y[i] - ccy) / scale;
-      n->shape.svg_poly[i * 2 + 0] = cogito_shape_inset01_4(nx);
-      n->shape.svg_poly[i * 2 + 1] = cogito_shape_inset01_4(ny);
+      n->kd->shape.svg_poly[i * 2 + 0] = cogito_shape_inset01_4(nx);
+      n->kd->shape.svg_poly[i * 2 + 1] = cogito_shape_inset01_4(ny);
     }
-    n->shape.svg_poly_count = in_count;
+    n->kd->shape.svg_poly_count = in_count;
     return;
   }
 
@@ -95,10 +95,10 @@ static void cogito_shape_store_svg_poly(CogitoNode* n, const float* in_x, const 
     float sy = in_y[si] + (in_y[si + 1] - in_y[si]) * local;
     float nx = 0.5f + (sx - ccx) / scale;
     float ny = 0.5f + (sy - ccy) / scale;
-    n->shape.svg_poly[k * 2 + 0] = cogito_shape_inset01_4(nx);
-    n->shape.svg_poly[k * 2 + 1] = cogito_shape_inset01_4(ny);
+    n->kd->shape.svg_poly[k * 2 + 0] = cogito_shape_inset01_4(nx);
+    n->kd->shape.svg_poly[k * 2 + 1] = cogito_shape_inset01_4(ny);
   }
-  n->shape.svg_poly_count = out_n;
+  n->kd->shape.svg_poly_count = out_n;
 }
 
 static bool cogito_shape_set_from_svg_path(CogitoNode* n, const char* path) {
@@ -252,8 +252,8 @@ static bool cogito_shape_set_from_svg_path(CogitoNode* n, const char* path) {
   for (int i = 0; i < COGITO_SHAPE_VERTEX_COUNT; i++) {
     float nx = 0.5f + (sxp[i] - ccx) / scale;
     float ny = 0.5f + (syp[i] - ccy) / scale;
-    n->shape.vertices[i * 2 + 0] = cogito_shape_inset01_4(nx);
-    n->shape.vertices[i * 2 + 1] = cogito_shape_inset01_4(ny);
+    n->kd->shape.vertices[i * 2 + 0] = cogito_shape_inset01_4(nx);
+    n->kd->shape.vertices[i * 2 + 1] = cogito_shape_inset01_4(ny);
   }
   return true;
 }
@@ -262,15 +262,15 @@ static void cogito_shape_apply_preset_node(CogitoNode* n, int preset) {
   if (!n) return;
   if (preset < 0) preset = 0;
   if (preset >= COGITO_SHAPE_COUNT) preset = COGITO_SHAPE_CIRCLE;
-  n->shape.preset = preset;
-  n->shape.svg_poly_count = 0;
+  n->kd->shape.preset = preset;
+  n->kd->shape.svg_poly_count = 0;
 
   const char* svg_path = cogito_shape_svg_path_for_preset(preset);
   if (svg_path && cogito_shape_set_from_svg_path(n, svg_path)) return;
 
   const char* circle_path = cogito_shape_svg_path_for_preset(COGITO_SHAPE_CIRCLE);
   if (circle_path && cogito_shape_set_from_svg_path(n, circle_path)) {
-    n->shape.preset = COGITO_SHAPE_CIRCLE;
+    n->kd->shape.preset = COGITO_SHAPE_CIRCLE;
     return;
   }
 
@@ -278,19 +278,19 @@ static void cogito_shape_apply_preset_node(CogitoNode* n, int preset) {
   const float step = (2.0f * 3.14159265359f) / (float)COGITO_SHAPE_VERTEX_COUNT;
   for (int i = 0; i < COGITO_SHAPE_VERTEX_COUNT; i++) {
     float a = base + ((float)i * step);
-    n->shape.vertices[i * 2 + 0] = cogito_shape_inset01_4(0.5f + cosf(a) * 0.5f);
-    n->shape.vertices[i * 2 + 1] = cogito_shape_inset01_4(0.5f + sinf(a) * 0.5f);
+    n->kd->shape.vertices[i * 2 + 0] = cogito_shape_inset01_4(0.5f + cosf(a) * 0.5f);
+    n->kd->shape.vertices[i * 2 + 1] = cogito_shape_inset01_4(0.5f + sinf(a) * 0.5f);
   }
 }
 
 static CogitoNode* cogito_shape_new_obj(int preset) {
   CogitoNode* n = cogito_node_new(COGITO_SHAPE);
-  n->shape.size_dp = 96;
-  n->shape.size_h_dp = 0;
-  n->shape.size_h_dp = 0;
-  n->shape.color_style = 0;
-  n->shape.custom_color_set = false;
-  n->shape.custom_color = cogito_color(24, 24, 33, 255);
+  n->kd->shape.size_dp = 96;
+  n->kd->shape.size_h_dp = 0;
+  n->kd->shape.size_h_dp = 0;
+  n->kd->shape.color_style = 0;
+  n->kd->shape.custom_color_set = false;
+  n->kd->shape.custom_color = cogito_color(24, 24, 33, 255);
   cogito_shape_apply_preset_node(n, preset);
   return n;
 }
@@ -311,7 +311,7 @@ static void cogito_shape_set_preset(YisVal shapev, YisVal presetv) {
 static YisVal cogito_shape_get_preset(YisVal shapev) {
   if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_preset expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  return YV_INT(n->shape.preset);
+  return YV_INT(n->kd->shape.preset);
 }
 
 static void cogito_shape_set_size(YisVal shapev, YisVal sizev) {
@@ -319,8 +319,8 @@ static void cogito_shape_set_size(YisVal shapev, YisVal sizev) {
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int size_dp = (int)yis_as_int(sizev);
   if (size_dp < 1) size_dp = 1;
-  if (n->shape.size_dp == size_dp) return;
-  n->shape.size_dp = size_dp;
+  if (n->kd->shape.size_dp == size_dp) return;
+  n->kd->shape.size_dp = size_dp;
   cogito_window_relayout(cogito_node_window(n));
 }
 
@@ -329,15 +329,15 @@ static void cogito_shape_set_size_h(YisVal shapev, YisVal hv) {
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int h = (int)yis_as_int(hv);
   if (h < 0) h = 0;
-  if (n->shape.size_h_dp == h) return;
-  n->shape.size_h_dp = h;
+  if (n->kd->shape.size_h_dp == h) return;
+  n->kd->shape.size_h_dp = h;
   cogito_window_relayout(cogito_node_window(n));
 }
 
 static YisVal cogito_shape_get_size(YisVal shapev) {
   if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_size expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  int size_dp = (n->shape.size_dp > 0) ? n->shape.size_dp : 96;
+  int size_dp = (n->kd->shape.size_dp > 0) ? n->kd->shape.size_dp : 96;
   return YV_INT(size_dp);
 }
 
@@ -347,9 +347,9 @@ static void cogito_shape_set_color_style(YisVal shapev, YisVal stylev) {
   int style = (int)yis_as_int(stylev);
   if (style < 0) style = 0;
   if (style > 3) style = 3;
-  n->shape.color_style = style;
+  n->kd->shape.color_style = style;
   if (style > 0) {
-    n->shape.custom_color_set = false;
+    n->kd->shape.custom_color_set = false;
     n->bg_set = false;
   }
   cogito_window_relayout(cogito_node_window(n));
@@ -358,7 +358,7 @@ static void cogito_shape_set_color_style(YisVal shapev, YisVal stylev) {
 static YisVal cogito_shape_get_color_style(YisVal shapev) {
   if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_get_color_style expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
-  int style = n->shape.color_style;
+  int style = n->kd->shape.color_style;
   if (style < 0) style = 0;
   if (style > 3) style = 3;
   return YV_INT(style);
@@ -372,9 +372,9 @@ static void cogito_shape_set_color(YisVal shapev, YisVal colorv) {
     int style = (int)yis_as_int(colorv);
     if (style < 0) style = 0;
     if (style > 3) style = 3;
-    n->shape.color_style = style;
+    n->kd->shape.color_style = style;
     if (style > 0) {
-      n->shape.custom_color_set = false;
+      n->kd->shape.custom_color_set = false;
       n->bg_set = false;
     }
     cogito_window_relayout(cogito_node_window(n));
@@ -384,24 +384,24 @@ static void cogito_shape_set_color(YisVal shapev, YisVal colorv) {
   YisStr* s = stdr_to_string(colorv);
   const char* text = (s && s->data) ? s->data : "";
   if (strcmp(text, "primary") == 0 || strcmp(text, "Primary") == 0) {
-    n->shape.color_style = 1;
-    n->shape.custom_color_set = false;
+    n->kd->shape.color_style = 1;
+    n->kd->shape.custom_color_set = false;
     n->bg_set = false;
   } else if (strcmp(text, "secondary") == 0 || strcmp(text, "Secondary") == 0) {
-    n->shape.color_style = 2;
-    n->shape.custom_color_set = false;
+    n->kd->shape.color_style = 2;
+    n->kd->shape.custom_color_set = false;
     n->bg_set = false;
   } else if (strcmp(text, "tertiary") == 0 || strcmp(text, "Tertiary") == 0) {
-    n->shape.color_style = 3;
-    n->shape.custom_color_set = false;
+    n->kd->shape.color_style = 3;
+    n->kd->shape.custom_color_set = false;
     n->bg_set = false;
   } else {
     const char* p = text;
     CogitoColor c = cogito_color(24, 24, 33, 255);
     if (cogito_css_parse_color(&p, &c)) {
-      n->shape.color_style = 0;
-      n->shape.custom_color = c;
-      n->shape.custom_color_set = true;
+      n->kd->shape.color_style = 0;
+      n->kd->shape.custom_color = c;
+      n->kd->shape.custom_color_set = true;
       n->bg = c;
       n->bg_set = true;
     }
@@ -416,9 +416,9 @@ static void cogito_shape_set_vertex(YisVal shapev, YisVal idxv, YisVal xv, YisVa
   if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return;
   float x = (float)yis_as_float(xv);
   float y = (float)yis_as_float(yv);
-  n->shape.vertices[idx * 2 + 0] = cogito_shape_clamp01(x);
-  n->shape.vertices[idx * 2 + 1] = cogito_shape_clamp01(y);
-  n->shape.svg_poly_count = 0;
+  n->kd->shape.vertices[idx * 2 + 0] = cogito_shape_clamp01(x);
+  n->kd->shape.vertices[idx * 2 + 1] = cogito_shape_clamp01(y);
+  n->kd->shape.svg_poly_count = 0;
   // Vertex edits change paint only; geometry/layout bounds remain unchanged.
   cogito_queue_draw(cogito_node_window(n));
 }
@@ -428,7 +428,7 @@ static YisVal cogito_shape_get_vertex_x(YisVal shapev, YisVal idxv) {
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int idx = (int)yis_as_int(idxv);
   if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return YV_FLOAT(0.0);
-  return YV_FLOAT(n->shape.vertices[idx * 2 + 0]);
+  return YV_FLOAT(n->kd->shape.vertices[idx * 2 + 0]);
 }
 
 static YisVal cogito_shape_get_vertex_y(YisVal shapev, YisVal idxv) {
@@ -436,14 +436,14 @@ static YisVal cogito_shape_get_vertex_y(YisVal shapev, YisVal idxv) {
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   int idx = (int)yis_as_int(idxv);
   if (idx < 0 || idx >= COGITO_SHAPE_VERTEX_COUNT) return YV_FLOAT(0.0);
-  return YV_FLOAT(n->shape.vertices[idx * 2 + 1]);
+  return YV_FLOAT(n->kd->shape.vertices[idx * 2 + 1]);
 }
 
 static void cogito_shape_set_clip(YisVal shapev, YisVal onv) {
   if (shapev.tag != EVT_OBJ) yis_trap("cogito.shape_set_clip expects shape");
   CogitoNode* n = (CogitoNode*)shapev.as.p;
   bool on = yis_as_bool(onv);
-  if (n->shape.clip_children == on) return;
-  n->shape.clip_children = on;
+  if (n->kd->shape.clip_children == on) return;
+  n->kd->shape.clip_children = on;
   cogito_window_relayout(cogito_node_window(n));
 }

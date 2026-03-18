@@ -2,7 +2,6 @@ cask main
 
 bring stdr
 bring cogito
-bring json
 
 bring utils.pdf
 bring utils.library
@@ -61,49 +60,6 @@ def rebuild_state = cogito.state(false)
     rebuild_state.set(v)
 }
 
-: _pdf_to_json_inline(e = any) (( string )) {
-    let path_e = json.escape(str(e["path"] ?? ""))
-    let title_e = json.escape(str(e["title"] ?? ""))
-    let thumb_e = json.escape(str(e["thumb"] ?? ""))
-    let pages = stdr.num(e["pages"] ?? 0)
-    let lp = stdr.num(e["last_page"] ?? 0)
-    let bm = e["bookmarked"] ?? false
-    let ?bm_s = "false"
-    if bm { bm_s = "true" }
-    let etags = e["tags"] ?? []: [any]
-    let ?tp = []: [any]
-    for (let ?i = 0; i < len(etags); i += 1) {
-        if i > 0 { stdr.push(tp, ",") }
-        stdr.push(tp, "\"")
-        stdr.push(tp, json.escape(str(etags[i] ?? "")))
-        stdr.push(tp, "\"")
-    }
-    let tags_s = stdr.join(tp)
-    return "{\"path\":\"$$path_e$$\",\"title\":\"$$title_e$$\",\"pages\":$$pages$$,\"last_page\":$$lp$$,\"tags\":[$$tags_s$$],\"thumb\":\"$$thumb_e$$\",\"bookmarked\":$$bm_s$$}"
-}
-
-: _save_lib() (( -- )) {
-    let pdfs = lib["pdfs"] ?? []: [any]
-    let tags = lib["tags"] ?? []: [any]
-    let ?parts = []: [any]
-    stdr.push(parts, "{\"pdfs\":[")
-    for (let ?i = 0; i < len(pdfs); i += 1) {
-        if i > 0 { stdr.push(parts, ",") }
-        stdr.push(parts, _pdf_to_json_inline(pdfs[i] ?? []: [string => any]))
-    }
-    stdr.push(parts, "],\"tags\":[")
-    for (let ?i = 0; i < len(tags); i += 1) {
-        if i > 0 { stdr.push(parts, ",") }
-        stdr.push(parts, "\"")
-        stdr.push(parts, json.escape(str(tags[i] ?? "")))
-        stdr.push(parts, "\"")
-    }
-    stdr.push(parts, "]}")
-    let text = stdr.join(parts)
-    let path = library.library_path()
-    stdr.write_text_file(path, text)
-}
-
 : _thumb_path_for(pdf_path = string) (( string )) {
     let name = stdr.basename(pdf_path)
     let key = library.sanitize_filename(stdr.stem(name))
@@ -137,18 +93,8 @@ def rebuild_state = cogito.state(false)
         pdf.render_thumb(path, thumb_prefix)
     }
 
-    let ?new_pdf = []: [string => any]
-    new_pdf["path"] = path
-    new_pdf["title"] = title
-    new_pdf["pages"] = pages
-    new_pdf["last_page"] = 0
-    new_pdf["tags"] = []: [any]
-    new_pdf["thumb"] = thumb_file
-    new_pdf["bookmarked"] = false
-    let ?pdfs = lib["pdfs"] ?? []: [any]
-    pdfs[len(pdfs)] = new_pdf
-    lib["pdfs"] = pdfs
-    _save_lib()
+    lib = library.add_pdf(lib, path, title, pages, thumb_file)
+    library.save_library(lib)
     refresh_all()
 }
 
@@ -202,7 +148,7 @@ def rebuild_state = cogito.state(false)
         sidebar_panel.set_visible(true)
         home_panel.set_hexpand(true)
     }
-    _save_lib()
+    library.save_library(lib)
     refresh_all()
 }
 
@@ -239,11 +185,7 @@ def rebuild_state = cogito.state(false)
 
     apply_zoom()
 
-    let ?pdfs_lp = lib["pdfs"] ?? []: [any]
-    if selected_pdf >= 0 && selected_pdf < len(pdfs_lp) {
-        let ?elp = pdfs_lp[selected_pdf] ?? []: [string => any]
-        elp["last_page"] = current_page
-    }
+    library.set_last_page(lib, selected_pdf, current_page)
 }
 
 : go_to_page(page = num) (( -- )) {
@@ -296,12 +238,8 @@ def rebuild_state = cogito.state(false)
 
 : toggle_bookmark() (( -- )) {
     if selected_pdf < 0 { return }
-    let ?pdfs_bm = lib["pdfs"] ?? []: [any]
-    if selected_pdf >= len(pdfs_bm) { return }
-    let ?ebm = pdfs_bm[selected_pdf] ?? []: [string => any]
-    let cur = ebm["bookmarked"] ?? false
-    if cur { ebm["bookmarked"] = false } else { ebm["bookmarked"] = true }
-    _save_lib()
+    library.toggle_bookmark(lib, selected_pdf)
+    library.save_library(lib)
 }
 
 : select_tag(tag = string) (( -- )) {
@@ -335,17 +273,8 @@ def rebuild_state = cogito.state(false)
     .on_click((b = cogito.Button) => {
         let name = tag_input.text()
         if stdr.len(stdr.trim(name)) > 0 {
-            let tval = stdr.trim(name)
-            let ?tags_add = lib["tags"] ?? []: [any]
-            let ?dup = false
-            for (let ?ti = 0; ti < len(tags_add); ti += 1) {
-                if str(tags_add[ti] ?? "") == tval { dup = true }
-            }
-            if !dup {
-                tags_add[len(tags_add)] = tval
-                lib["tags"] = tags_add
-            }
-            _save_lib()
+            lib = library.add_tag(lib, stdr.trim(name))
+            library.save_library(lib)
             tag_input.set_text("")
             dlg.close()
             refresh_all()
@@ -370,13 +299,8 @@ def rebuild_state = cogito.state(false)
         let del_btn = cogito.iconbtn("sf:trash")
         .set_class("text")
         del_btn.on_click((btn = cogito.IconButton) => {
-            let ?tags_rm = lib["tags"] ?? []: [any]
-            let ?next_tags = []: [any]
-            for (let ?ri = 0; ri < len(tags_rm); ri += 1) {
-                if str(tags_rm[ri] ?? "") != tname { next_tags[len(next_tags)] = tags_rm[ri] }
-            }
-            lib["tags"] = next_tags
-            _save_lib()
+            lib = library.remove_tag(lib, tname)
+            library.save_library(lib)
             dlg.close()
             refresh_all()
         })
@@ -435,9 +359,7 @@ def rebuild_state = cogito.state(false)
 
 entry() (( -- )) {
     library.ensure_cache_dir()
-    let loaded = library.load_library()
-    lib["pdfs"] = loaded["pdfs"] ?? []: [any]
-    lib["tags"] = loaded["tags"] ?? []: [any]
+    lib = library.load_library()
 
     let app = cogito.app()
     .set_appid("com.fyralabs.Corpus")

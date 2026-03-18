@@ -13,10 +13,10 @@ case COGITO_CARD: {
 
   // Variant overrides (only when not already set by theme/node)
   if (!s.has_border_width && !n->border_width_set) {
-    if (n->card.variant == 2) border_w = 1; // outlined
+    if (n->kd->card.variant == 2) border_w = 1; // outlined
   }
   if (!n->shadow_set) {
-    if (n->card.variant == 1 || n->card.variant == 2) shadow = 0;
+    if (n->kd->card.variant == 1 || n->kd->card.variant == 2) shadow = 0;
   }
 
   cogito_anim_apply(n, &s, &bg, &text_color, &border_color, NULL);
@@ -68,16 +68,16 @@ case COGITO_CARD: {
   }
 
   // Header image (drawn inside card bg; shares card radius for top-corner clipping)
-  if (n->card.header_image) {
-    CogitoNode* img = n->card.header_image;
+  if (n->kd->card.header_image) {
+    CogitoNode* img = n->kd->card.header_image;
     img->border_radius = radius;
     img->radius_set = true;
     cogito_draw_node(img);
   }
 
-  int img_h = n->card.header_image ? 160 : 0;
+  int img_h = n->kd->card.header_image ? 160 : 0;
   CogitoStyle ts = cogito_theme_resolve_node(n);
-  bool has_header_image = n->card.header_image != NULL;
+  bool has_header_image = n->kd->card.header_image != NULL;
   int header_content_gap = has_header_image ? 24 : 0;
   int default_pad = has_header_image ? 0 : 16;
   int pad_l = ts.has_padding_left ? ts.padding_left : default_pad;
@@ -106,13 +106,13 @@ case COGITO_CARD: {
   // Children (skip overflow_btn — drawn last on top)
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
-    if (c == n->card.overflow_btn) continue;
+    if (c == n->kd->card.overflow_btn) continue;
     cogito_draw_node(c);
   }
 
   // Overflow button (drawn on top of everything)
-  if (n->card.overflow_btn) {
-    cogito_draw_node(n->card.overflow_btn);
+  if (n->kd->card.overflow_btn) {
+    cogito_draw_node(n->kd->card.overflow_btn);
   }
 
   // State layer for interactive cards (on_click set): hover 8%, press 12%

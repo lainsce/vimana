@@ -1,5 +1,5 @@
 case COGITO_COLORPICKER: {
-      if (n->colorpicker.popover_panel) {
+      if (n->kd->colorpicker.popover_panel) {
         // Panel: DatePicker-like top/header rhythm + 3 slider rows + footer section.
         h = COGITO_COLORPICKER_PANEL_TOP +
             COGITO_COLORPICKER_PANEL_HEADER_H +

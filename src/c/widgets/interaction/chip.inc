@@ -11,18 +11,18 @@ static YisVal cogito_chip_new(YisVal text) {
 static void cogito_chip_set_selected(YisVal chipv, YisVal sel) {
   if (chipv.tag != EVT_OBJ) yis_trap("cogito.chip_set_selected expects chip");
   CogitoNode* n = (CogitoNode*)chipv.as.p;
-  n->chip.selected = yis_as_bool(sel);
+  n->kd->chip.selected = yis_as_bool(sel);
   cogito_window_relayout(cogito_node_window(n));
 }
 static YisVal cogito_chip_get_selected(YisVal chipv) {
   if (chipv.tag != EVT_OBJ) yis_trap("cogito.chip_get_selected expects chip");
   CogitoNode* n = (CogitoNode*)chipv.as.p;
-  return YV_BOOL(n->chip.selected);
+  return YV_BOOL(n->kd->chip.selected);
 }
 static void cogito_chip_set_closable(YisVal chipv, YisVal closable) {
   if (chipv.tag != EVT_OBJ) yis_trap("cogito.chip_set_closable expects chip");
   CogitoNode* n = (CogitoNode*)chipv.as.p;
-  n->chip.has_close = yis_as_bool(closable);
+  n->kd->chip.has_close = yis_as_bool(closable);
   cogito_window_relayout(cogito_node_window(n));
 }
 static void cogito_chip_on_close(YisVal chipv, YisVal handler) {
@@ -39,7 +39,7 @@ static void cogito_chip_on_close(YisVal chipv, YisVal handler) {
 
 static void cogito_chip_close_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n || n->kind != COGITO_CHIP) return;
-  if (!n->chip.has_close) {
+  if (!n->kd->chip.has_close) {
     if (out_x) *out_x = 0;
     if (out_y) *out_y = 0;
     if (out_w) *out_w = 0;

@@ -16,7 +16,7 @@ case COGITO_ICONBTN: {
       bool has_custom_class = n->class_name && n->class_name->data && n->class_name->data[0];
       bool iconic_class = n->class_name && n->class_name->data &&
                           strstr(n->class_name->data, "iconic") != NULL;
-      bool is_iconic_variant = (n->button.icon_color_style == 3) || iconic_class;
+      bool is_iconic_variant = (n->kd->button.icon_color_style == 3) || iconic_class;
       bool in_appbar = false;
       bool in_appbar_or_toolbar = false;
       for (CogitoNode* p = n->parent; p; p = p->parent) {
@@ -83,16 +83,16 @@ case COGITO_ICONBTN: {
       // - Outside ButtonGroup: use the IconButton shape.
       // - Inside ButtonGroup: use the group shape as baseline.
       // - If toggle is active and checked: invert (circle <-> square).
-      int base_shape = n->button.icon_shape;
+      int base_shape = n->kd->button.icon_shape;
       if (in_buttongroup && n->parent && n->parent->kind == COGITO_BUTTON_GROUP) {
-        base_shape = (n->parent->buttongroup.shape == 0) ? 0 : 1;
+        base_shape = (n->parent->kd->buttongroup.shape == 0) ? 0 : 1;
       }
       
       // For toggle IconButtons: animate shape change with spring
       int eff_shape = base_shape;
       float shape_t = 0.0f; // 0.0 = circle, 1.0 = square (animated)
       
-      if (n->button.icon_toggle) {
+      if (n->kd->button.icon_toggle) {
         // Target shape based on checked state
         int target_shape = base_shape ? 0 : 1; // Inverted when checked
         double target_t = target_shape == 1 ? 1.0 : 0.0;
@@ -103,12 +103,12 @@ case COGITO_ICONBTN: {
         }
         
         // Check if target changed (state toggle)
-        bool state_changed = (n->buttongroup.pressed_child != (int)target_t);
+        bool state_changed = (n->kd->buttongroup.pressed_child != (int)target_t);
         if (state_changed && n->spring_h.inited) {
           // Snap to opposite when state changes for smooth transition
           cogito_spring_snap(&n->spring_h, target_t == 1.0 ? 0.0 : 1.0);
         }
-        n->buttongroup.pressed_child = (int)target_t; // Track current target
+        n->kd->buttongroup.pressed_child = (int)target_t; // Track current target
         
         // Tick spring animation: Spatial Fast for shape toggle (k=800, z=0.6)
         cogito_spring_tick(&n->spring_h, target_t, 800.0, 0.6, cogito_spring_dt);
@@ -125,15 +125,15 @@ case COGITO_ICONBTN: {
         if (in_appbar && !n->radius_set) {
           // AppBar IconBtn default shape still follows effective toggle-aware shape.
           if (eff_shape == 1) {
-            if (n->button.size == COGITO_BUTTON_SIZE_XS) {
+            if (n->kd->button.size == COGITO_BUTTON_SIZE_XS) {
               radius = 12;
-            } else if (n->button.size == COGITO_BUTTON_SIZE_S) {
+            } else if (n->kd->button.size == COGITO_BUTTON_SIZE_S) {
               radius = 12;
-            } else if (n->button.size == COGITO_BUTTON_SIZE_M) {
+            } else if (n->kd->button.size == COGITO_BUTTON_SIZE_M) {
               radius = 16;
-            } else if (n->button.size == COGITO_BUTTON_SIZE_L) {
+            } else if (n->kd->button.size == COGITO_BUTTON_SIZE_L) {
               radius = 28;
-            } else if (n->button.size == COGITO_BUTTON_SIZE_XL) {
+            } else if (n->kd->button.size == COGITO_BUTTON_SIZE_XL) {
               radius = 28;
             } else {
               radius = 16;
@@ -147,15 +147,15 @@ case COGITO_ICONBTN: {
         } else {
           int min_dim = n->w < n->h ? n->w : n->h;
           if (eff_shape == 1) {
-            if (n->button.size == COGITO_BUTTON_SIZE_XS) {
+            if (n->kd->button.size == COGITO_BUTTON_SIZE_XS) {
               radius = 12;
-            } else if (n->button.size == COGITO_BUTTON_SIZE_S) {
+            } else if (n->kd->button.size == COGITO_BUTTON_SIZE_S) {
               radius = 12;
-            } else if (n->button.size == COGITO_BUTTON_SIZE_M) {
+            } else if (n->kd->button.size == COGITO_BUTTON_SIZE_M) {
               radius = 16;
-            } else if (n->button.size == COGITO_BUTTON_SIZE_L) {
+            } else if (n->kd->button.size == COGITO_BUTTON_SIZE_L) {
               radius = 28;
-            } else if (n->button.size == COGITO_BUTTON_SIZE_XL) {
+            } else if (n->kd->button.size == COGITO_BUTTON_SIZE_XL) {
               radius = 28;
             } else {
               radius = 16;
@@ -275,7 +275,7 @@ case COGITO_ICONBTN: {
             radius = n->h / 2;
           } else {
             // Pill = square shape, use size-based radii
-            int bg_size = (buttongroup_node->buttongroup.size >= 0 && buttongroup_node->buttongroup.size <= 4) ? buttongroup_node->buttongroup.size : 2;
+            int bg_size = (buttongroup_node->kd->buttongroup.size >= 0 && buttongroup_node->kd->buttongroup.size <= 4) ? buttongroup_node->kd->buttongroup.size : 2;
             int buttongroup_radii[] = {4, 8, 8, 16, 20};
             radius = buttongroup_radii[bg_size];
           }
@@ -287,20 +287,20 @@ case COGITO_ICONBTN: {
         // Plain IconButtons outside ButtonGroup: respect effective shape (toggle-aware)
         // When pressed/active, use size-based pressed radius
         if (active) {
-          radius = cogito_button_pressed_radius(n->button.size);
+          radius = cogito_button_pressed_radius(n->kd->button.size);
         } else if (!n->radius_set && !s.has_radius) {
           // For toggle buttons: interpolate between circle and square based on shape_t
           // shape_t = 0.0 means circle, shape_t = 1.0 means square
           int square_radius;
-          if (n->button.size == COGITO_BUTTON_SIZE_XS) {
+          if (n->kd->button.size == COGITO_BUTTON_SIZE_XS) {
             square_radius = 12;
-          } else if (n->button.size == COGITO_BUTTON_SIZE_S) {
+          } else if (n->kd->button.size == COGITO_BUTTON_SIZE_S) {
             square_radius = 12;
-          } else if (n->button.size == COGITO_BUTTON_SIZE_M) {
+          } else if (n->kd->button.size == COGITO_BUTTON_SIZE_M) {
             square_radius = 16;
-          } else if (n->button.size == COGITO_BUTTON_SIZE_L) {
+          } else if (n->kd->button.size == COGITO_BUTTON_SIZE_L) {
             square_radius = 28;
-          } else if (n->button.size == COGITO_BUTTON_SIZE_XL) {
+          } else if (n->kd->button.size == COGITO_BUTTON_SIZE_XL) {
             square_radius = 28;
           } else {
             square_radius = 16;
@@ -310,7 +310,7 @@ case COGITO_ICONBTN: {
           int circle_radius = min_dim / 2;
           
           // Interpolate based on animated shape_t
-          if (n->button.icon_toggle) {
+          if (n->kd->button.icon_toggle) {
             radius = (int)(circle_radius + shape_t * (square_radius - circle_radius));
           } else {
             // Non-toggle: use shape directly
@@ -351,9 +351,9 @@ case COGITO_ICONBTN: {
           }
         }
 
-        if (border_w > 0 || n->button.outlined) {
+        if (border_w > 0 || n->kd->button.outlined) {
           int draw_border_w = border_w;
-          if (n->button.outlined && draw_border_w == 0) {
+          if (n->kd->button.outlined && draw_border_w == 0) {
             draw_border_w = 1; // Default border width for outlined icon buttons
           }
           if (in_buttongroup) {
@@ -384,7 +384,7 @@ case COGITO_ICONBTN: {
       if (n->text) {
         int btn_min = n->w < n->h ? n->w : n->h;
         int default_icon = 24;
-        cogito_button_size_metrics(n, (int)n->button.size, n->kind, NULL, NULL, &default_icon, NULL);
+        cogito_button_size_metrics(n, (int)n->kd->button.size, n->kind, NULL, NULL, &default_icon, NULL);
         // Icon sizes per size tier (from spec): XS=20, S=24, M=24, L=32, XL=40
         // cogito_button_size_metrics already returns these correctly via out_icon
         int target = s.has_icon_size ? s.icon_size : default_icon;

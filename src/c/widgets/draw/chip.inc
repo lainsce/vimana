@@ -51,7 +51,7 @@ case COGITO_CHIP: {
   // ---- Leading check icon for selected chips with spring animation ----
   // Use spring_h for checkmark scale animation
   double dt = cogito_spring_dt;
-  double target_scale = n->chip.selected ? 1.0 : 0.0;
+  double target_scale = n->kd->chip.selected ? 1.0 : 0.0;
 
   if (!n->spring_h.inited) {
     cogito_spring_snap(&n->spring_h, target_scale);
@@ -59,8 +59,8 @@ case COGITO_CHIP: {
 
   // On state change, snap to starting position
   bool was_selected = (n->spring_h.target >= 0.5);
-  if (was_selected != n->chip.selected) {
-    cogito_spring_snap(&n->spring_h, n->chip.selected ? 0.0 : 1.0);
+  if (was_selected != n->kd->chip.selected) {
+    cogito_spring_snap(&n->spring_h, n->kd->chip.selected ? 0.0 : 1.0);
   }
   n->spring_h.target = target_scale;
 
@@ -105,13 +105,13 @@ case COGITO_CHIP: {
     int text_h    = cogito_text_height_size(font_size);
     int tw        = cogito_text_width_size_node(n, n->text->data, font_size);
     // Cogito: 12dp leading pad (or h+4 when selected = check icon space), 12dp trailing
-    int lead = n->chip.selected ? (n->h + 4) : 12;
+    int lead = n->kd->chip.selected ? (n->h + 4) : 12;
     int text_x = chip_rtl ? (n->x + n->w - lead - tw) : (n->x + lead);
     int text_y = n->y + (n->h - text_h) / 2;
     cogito_draw_text_size_node(n, text_x, text_y, n->text->data, text_color, font_size, chip_bold, chip_medium);
 
     // ---- Close icon ----
-    if (n->chip.has_close) {
+    if (n->kd->chip.has_close) {
       // Cogito: trailing 8dp gap + 18dp close button
       int close_zone = 18;
       int icon_size  = 10;

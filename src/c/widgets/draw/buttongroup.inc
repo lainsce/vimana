@@ -18,7 +18,7 @@ case COGITO_BUTTON_GROUP: {
       }
 
       // Update pressed child tracking
-      n->buttongroup.pressed_child = pressed_idx;
+      n->kd->buttongroup.pressed_child = pressed_idx;
 
       // Spring animation for width expansion (Fast spatial: k=800, z=0.6)
       double dt = cogito_spring_dt;

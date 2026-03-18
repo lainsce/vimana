@@ -34,14 +34,14 @@ static CogitoNode* cogito_appbar_new_obj(YisStr* title, YisStr* subtitle) {
   cogito_node_set_text(ab, title);
   cogito_node_set_subtitle(ab, subtitle);
   ab->hexpand = true;
-  ab->appbar.btn_close_x = -1;
-  ab->appbar.btn_min_x = -1;
-  ab->appbar.btn_max_x = -1;
-  ab->appbar.paired_scroller = NULL;
-  ab->appbar.paired_surface_level = 2;
-  ab->appbar.pair_base_class[0] = 0;
-  strncpy(ab->appbar.controls, "CIM|", sizeof(ab->appbar.controls) - 1);
-  ab->appbar.controls[sizeof(ab->appbar.controls) - 1] = 0;
+  ab->kd->appbar.btn_close_x = -1;
+  ab->kd->appbar.btn_min_x = -1;
+  ab->kd->appbar.btn_max_x = -1;
+  ab->kd->appbar.paired_scroller = NULL;
+  ab->kd->appbar.paired_surface_level = 2;
+  ab->kd->appbar.pair_base_class[0] = 0;
+  strncpy(ab->kd->appbar.controls, "CIM|", sizeof(ab->kd->appbar.controls) - 1);
+  ab->kd->appbar.controls[sizeof(ab->kd->appbar.controls) - 1] = 0;
   return ab;
 }
 static YisVal cogito_appbar_new(YisVal title, YisVal subtitle) {
@@ -56,7 +56,7 @@ static YisVal cogito_appbar_add_button(YisVal appv, YisVal text, YisVal handler)
   YisStr* ts = stdr_to_string(text);
   CogitoNode* btn = cogito_iconbtn_new_obj(ts);
   // AppBar action icons default to iconic treatment.
-  btn->button.icon_color_style = 3;
+  btn->kd->button.icon_color_style = 3;
   if (handler.tag == EVT_FN) {
     btn->on_click = (YisFn*)handler.as.p;
     yis_retain_val(YV_FN(btn->on_click));
@@ -87,11 +87,11 @@ static void cogito_appbar_set_controls(YisVal appv, YisVal layout) {
   }
   buf[j] = 0;
   if (j == 0) {
-    strncpy(ab->appbar.controls, "CIM|", sizeof(ab->appbar.controls) - 1);
-    ab->appbar.controls[sizeof(ab->appbar.controls) - 1] = 0;
+    strncpy(ab->kd->appbar.controls, "CIM|", sizeof(ab->kd->appbar.controls) - 1);
+    ab->kd->appbar.controls[sizeof(ab->kd->appbar.controls) - 1] = 0;
   } else {
-    strncpy(ab->appbar.controls, buf, sizeof(ab->appbar.controls) - 1);
-    ab->appbar.controls[sizeof(ab->appbar.controls) - 1] = 0;
+    strncpy(ab->kd->appbar.controls, buf, sizeof(ab->kd->appbar.controls) - 1);
+    ab->kd->appbar.controls[sizeof(ab->kd->appbar.controls) - 1] = 0;
   }
   CogitoNode* win = cogito_root(ab);
   if (win && win->kind == COGITO_WINDOW) {

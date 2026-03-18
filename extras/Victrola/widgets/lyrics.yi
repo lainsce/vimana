@@ -153,7 +153,7 @@ bring cogito
     return false
 }
 
-:: parse_lrc(text = string) (( any )) {
+:: parse_lrc(text = string) (( [any] )) {
     let ?lines = []: [any]
     let n = stdr.len(text)
     let ?start = 0

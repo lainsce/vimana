@@ -135,13 +135,13 @@ static void cogito_layout_carousel(CogitoNode* n, int x, int y) {
   if (max_scroll < 0) max_scroll = 0;
   
   // Clamp scroll position
-  if (n->carousel.scroll_x < 0) n->carousel.scroll_x = 0;
-  if (n->carousel.scroll_x > max_scroll) n->carousel.scroll_x = max_scroll;
+  if (n->kd->carousel.scroll_x < 0) n->kd->carousel.scroll_x = 0;
+  if (n->kd->carousel.scroll_x > max_scroll) n->kd->carousel.scroll_x = max_scroll;
   
   // Calculate scroll progress (0.0 = left-most, 1.0 = right-most)
   double scroll_progress = 0.0;
   if (max_scroll > 0) {
-    scroll_progress = (double)n->carousel.scroll_x / (double)max_scroll;
+    scroll_progress = (double)n->kd->carousel.scroll_x / (double)max_scroll;
   }
   if (scroll_progress < 0.0) scroll_progress = 0.0;
   if (scroll_progress > 1.0) scroll_progress = 1.0;
@@ -152,7 +152,7 @@ static void cogito_layout_carousel(CogitoNode* n, int x, int y) {
   int active_idx = (int)(scroll_progress * (double)(count - 1) + 0.5);
   if (active_idx < 0) active_idx = 0;
   if (active_idx >= (int)count) active_idx = (int)count - 1;
-  n->carousel.active_index = active_idx;
+  n->kd->carousel.active_index = active_idx;
   
   // Calculate widths for each item based on active index
   // The active item gets dominant ratio, adjacent get secondary, others get tertiary
@@ -232,7 +232,7 @@ static void cogito_layout_carousel(CogitoNode* n, int x, int y) {
   
   // Apply scroll offset and ensure content stays within carousel bounds
   // Clamp the starting position to prevent overflow on the right side
-  int cx = inner_x - n->carousel.scroll_x;
+  int cx = inner_x - n->kd->carousel.scroll_x;
   
   // Ensure we don't start too far right (which would cause left overflow)
   // or too far left (which would cause right overflow)

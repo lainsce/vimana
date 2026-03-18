@@ -2,13 +2,13 @@ case COGITO_COLORPICKER: {
       bool hover = false;
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
-      CogitoStyle s = n->colorpicker.popover_panel
+      CogitoStyle s = n->kd->colorpicker.popover_panel
         ? cogito_theme_resolve_node(n)
         : cogito_theme_resolve_node_state(n, hover, active);
       CogitoColor bg = s.has_bg ? s.bg : n->bg;
       CogitoColor border = s.has_border ? s.border : n->border_color;
       int border_w = s.has_border_width ? s.border_width : n->border_width;
-      int radius = s.has_radius ? s.radius : (n->colorpicker.popover_panel ? 20 : 8);
+      int radius = s.has_radius ? s.radius : (n->kd->colorpicker.popover_panel ? 20 : 8);
 
       int mx = 0, my = 0;
       bool down = false;
@@ -17,7 +17,7 @@ case COGITO_COLORPICKER: {
       CogitoColor text_col = s.has_text ? s.text : n->text_color;
       CogitoColor accent = s.has_selection ? s.selection : n->selection_color;
 
-      if (n->colorpicker.popover_panel) {
+      if (n->kd->colorpicker.popover_panel) {
         // ---- Panel mode: DatePicker-like header, rows, and footer actions ----
         cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
         if (border_w > 0) {
@@ -69,7 +69,7 @@ case COGITO_COLORPICKER: {
           int ly = c->y + (c->h - lh) / 2;
           cogito_draw_text_size_node(n, lx, ly, labels[si], text_muted, label_size, false, false);
 
-          int value = (int)lround(c->slider.value);
+          int value = (int)lround(c->kd->slider.value);
           char value_buf[8];
           snprintf(value_buf, sizeof(value_buf), "%d", value);
           int vx = n->x + n->w - COGITO_COLORPICKER_PANEL_PAD - COGITO_COLORPICKER_PANEL_VALUE_W;
@@ -114,12 +114,12 @@ case COGITO_COLORPICKER: {
         CogitoNode* win = cogito_node_window(n);
         bool open = (win && win->popover_open && win->popover_anchor == n);
         CogitoNode* live = n;
-        if (open && !n->colorpicker.hex_editing && win && win->popover) {
+        if (open && !n->kd->colorpicker.hex_editing && win && win->popover) {
           for (size_t i = 0; i < win->popover->len; i++) {
             CogitoNode* c = win->popover->children[i];
             if (c && c->kind == COGITO_COLORPICKER &&
-                c->colorpicker.popover_panel &&
-                c->colorpicker.owner == n) {
+                c->kd->colorpicker.popover_panel &&
+                c->kd->colorpicker.owner == n) {
               live = c;
               break;
             }
@@ -139,7 +139,7 @@ case COGITO_COLORPICKER: {
           cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, border, radius, border_w);
         }
 
-        if (!live->text || !live->text->data || !live->text->data[0] || !live->colorpicker.hex_editing) {
+        if (!live->text || !live->text->data || !live->text->data[0] || !live->kd->colorpicker.hex_editing) {
           cogito_colorpicker_sync_hex(live);
         }
 
@@ -152,7 +152,7 @@ case COGITO_COLORPICKER: {
           &ix, &iy, &iw, &ih);
 
         // Color swatch
-        CogitoColor swatch_color = cogito_hct_to_rgb(live->colorpicker.h, live->colorpicker.c, live->colorpicker.t);
+        CogitoColor swatch_color = cogito_hct_to_rgb(live->kd->colorpicker.h, live->kd->colorpicker.c, live->kd->colorpicker.t);
         cogito_draw_rect(sw_x, sw_y, sw_w, sw_h, swatch_color, 6);
         CogitoColor swatch_border = text_col;
         swatch_border.a = 60;
@@ -170,8 +170,8 @@ case COGITO_COLORPICKER: {
         int th = cogito_text_height_size(size);
         int ty = hy + (hh - th) / 2;
 
-        if (n->colorpicker.sel_start != n->colorpicker.sel_end) {
-          int a = n->colorpicker.sel_start, b = n->colorpicker.sel_end;
+        if (n->kd->colorpicker.sel_start != n->kd->colorpicker.sel_end) {
+          int a = n->kd->colorpicker.sel_start, b = n->kd->colorpicker.sel_end;
           if (a > b) { int tmp = a; a = b; b = tmp; }
           int sx_sel = cogito_text_width_size_n_node(n, hex, a, size);
           int ex = cogito_text_width_size_n_node(n, hex, b, size);
@@ -182,8 +182,8 @@ case COGITO_COLORPICKER: {
 
         cogito_draw_text_ellipsis(n, hx + pad, ty, hw - pad * 2, hex, text_col, size, false, false, 0);
 
-        if (cogito_focused == n && n->colorpicker.hex_editing) {
-          int caret = n->colorpicker.caret;
+        if (cogito_focused == n && n->kd->colorpicker.hex_editing) {
+          int caret = n->kd->colorpicker.caret;
           if (caret < 0) caret = 0;
           int tw = cogito_text_width_size_n_node(n, hex, caret, size);
           int cx = hx + pad + tw;

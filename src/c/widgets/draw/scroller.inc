@@ -33,17 +33,17 @@ case COGITO_SCROLLER: {
   {
         bool cursor_over_scroller = cogito_main_pointer_valid &&
             cogito_hit_rect(cogito_main_pointer_x, cogito_main_pointer_y, n->x, n->y, n->w, n->h);
-        bool prev_bar_hovered = n->scroller.bar_hovered;
+        bool prev_bar_hovered = n->kd->scroller.bar_hovered;
         bool cursor_over_sb = false;
-        if (n->scroller.bar_in_use) {
+        if (n->kd->scroller.bar_in_use) {
           cursor_over_sb = true;
         } else if (cursor_over_scroller && cogito_main_pointer_valid) {
-          bool in_vert_gutter = n->scroller.vert && cogito_main_pointer_x >= n->x + n->w - COGITO_SCROLLBAR_A11Y_MIN;
-          bool in_horz_gutter = n->scroller.horz && cogito_main_pointer_y >= n->y + n->h - COGITO_SCROLLBAR_A11Y_MIN;
-          int hit_w = (n->scroller.bar_hovered || in_vert_gutter || in_horz_gutter) ? COGITO_SCROLLBAR_WIDTH_WIDE : COGITO_SCROLLBAR_WIDTH_NARROW;
+          bool in_vert_gutter = n->kd->scroller.vert && cogito_main_pointer_x >= n->x + n->w - COGITO_SCROLLBAR_A11Y_MIN;
+          bool in_horz_gutter = n->kd->scroller.horz && cogito_main_pointer_y >= n->y + n->h - COGITO_SCROLLBAR_A11Y_MIN;
+          int hit_w = (n->kd->scroller.bar_hovered || in_vert_gutter || in_horz_gutter) ? COGITO_SCROLLBAR_WIDTH_WIDE : COGITO_SCROLLBAR_WIDTH_NARROW;
           cursor_over_sb = cogito_scroller_hit_scrollbar(
               n, cogito_main_pointer_x, cogito_main_pointer_y, hit_w, hit_w) != COGITO_SCROLLBAR_HIT_NONE;
-          if (!cursor_over_sb && n->scroller.bar_hovered) {
+          if (!cursor_over_sb && n->kd->scroller.bar_hovered) {
         // Fallback to narrow hit-test at the transition boundary.
             cursor_over_sb = cogito_scroller_hit_scrollbar(
                 n, cogito_main_pointer_x, cogito_main_pointer_y,
@@ -52,38 +52,38 @@ case COGITO_SCROLLER: {
           /* Keep bar hovered whenever pointer is in the gutter to avoid thumb flashing from hit-test edge cases. */
           if (in_vert_gutter || in_horz_gutter) cursor_over_sb = true;
     }
-        n->scroller.bar_hovered = cursor_over_sb;
-        int sb_w = n->scroller.bar_hovered ? COGITO_SCROLLBAR_WIDTH_WIDE : COGITO_SCROLLBAR_WIDTH_NARROW;
+        n->kd->scroller.bar_hovered = cursor_over_sb;
+        int sb_w = n->kd->scroller.bar_hovered ? COGITO_SCROLLBAR_WIDTH_WIDE : COGITO_SCROLLBAR_WIDTH_NARROW;
         int sb_h = sb_w;
         double now = cogito_now();
         bool bar_alpha_changed = false;
-        if (n->scroller.bar_in_use) {
+        if (n->kd->scroller.bar_in_use) {
           /* User is interacting: keep bar full opacity, no fade. */
-          if (n->scroller.bar_alpha < 255) {
-            n->scroller.bar_alpha = 255;
+          if (n->kd->scroller.bar_alpha < 255) {
+            n->kd->scroller.bar_alpha = 255;
             bar_alpha_changed = true;
           }
-          n->scroller.bar_hover_until = 0.0;
+          n->kd->scroller.bar_hover_until = 0.0;
         } else if (cursor_over_scroller) {
           if (cursor_over_sb) {
-            if (n->scroller.bar_alpha < 255) {
-              n->scroller.bar_alpha = (uint8_t)(n->scroller.bar_alpha + 51) > 255 ? 255 : (n->scroller.bar_alpha + 51);
+            if (n->kd->scroller.bar_alpha < 255) {
+              n->kd->scroller.bar_alpha = (uint8_t)(n->kd->scroller.bar_alpha + 51) > 255 ? 255 : (n->kd->scroller.bar_alpha + 51);
               bar_alpha_changed = true;
         }
       } else {
-            if (n->scroller.bar_alpha < 200) {
-              n->scroller.bar_alpha = (uint8_t)(n->scroller.bar_alpha + 40) > 200 ? 200 : (n->scroller.bar_alpha + 40);
+            if (n->kd->scroller.bar_alpha < 200) {
+              n->kd->scroller.bar_alpha = (uint8_t)(n->kd->scroller.bar_alpha + 40) > 200 ? 200 : (n->kd->scroller.bar_alpha + 40);
               bar_alpha_changed = true;
         }
       }
-          n->scroller.bar_hover_until = 0.0;
+          n->kd->scroller.bar_hover_until = 0.0;
     } else {
-          if (n->scroller.bar_alpha > 0 && n->scroller.bar_hover_until == 0.0) {
-            n->scroller.bar_hover_until = now + 0.3;
+          if (n->kd->scroller.bar_alpha > 0 && n->kd->scroller.bar_hover_until == 0.0) {
+            n->kd->scroller.bar_hover_until = now + 0.3;
       }
-          if (n->scroller.bar_hover_until > 0.0 && now >= n->scroller.bar_hover_until) {
-            n->scroller.bar_alpha = (uint8_t)((int)n->scroller.bar_alpha * 220 / 255);
-            if (n->scroller.bar_alpha > 0) {
+          if (n->kd->scroller.bar_hover_until > 0.0 && now >= n->kd->scroller.bar_hover_until) {
+            n->kd->scroller.bar_alpha = (uint8_t)((int)n->kd->scroller.bar_alpha * 220 / 255);
+            if (n->kd->scroller.bar_alpha > 0) {
           // Request continued redraw via frame counter instead of queue_draw
           // Request continuous redraw for animation
               double anim_end = now + 0.016; // Request ~1 frame more of animation
@@ -91,17 +91,17 @@ case COGITO_SCROLLER: {
         }
       }
     }
-        if (bar_alpha_changed || prev_bar_hovered != n->scroller.bar_hovered) {
+        if (bar_alpha_changed || prev_bar_hovered != n->kd->scroller.bar_hovered) {
           double anim_end = now + 0.016;
           if (anim_end > cogito_anim_end_time) cogito_anim_end_time = anim_end;
     }
-        if (n->scroller.bar_alpha > 0) {
+        if (n->kd->scroller.bar_alpha > 0) {
       // Scrollbar uses on-surface tint derived from theme text, not hardcoded grey
           CogitoColor on_surface = s.has_text ? s.text : n->text_color;
           CogitoColor track = on_surface;
-          track.a = (uint8_t)((int)n->scroller.bar_alpha * 30 / 255);
+          track.a = (uint8_t)((int)n->kd->scroller.bar_alpha * 30 / 255);
           CogitoColor thumb = on_surface;
-          thumb.a = (uint8_t)((int)n->scroller.bar_alpha * 160 / 255);
+          thumb.a = (uint8_t)((int)n->kd->scroller.bar_alpha * 160 / 255);
           int vtx, vty, vtw, vth, vux, vuy, vuw, vuh;
           if (cogito_scroller_vert_scrollbar_rects(n, sb_w, &vtx, &vty, &vtw, &vth, &vux, &vuy, &vuw, &vuh)) {
             cogito_draw_rect(vtx, vty, vtw, vth, track,

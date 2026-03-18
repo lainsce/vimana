@@ -49,7 +49,7 @@ case COGITO_BUTTON: {
       if (!in_buttongroup) {
         // When pressed/active, use size-based pressed radius
         if (active) {
-          radius = cogito_button_pressed_radius(n->button.size);
+          radius = cogito_button_pressed_radius(n->kd->button.size);
         } else {
           int circular = n->h / 2;
           if (circular > radius) radius = circular;
@@ -135,13 +135,13 @@ case COGITO_BUTTON: {
         // Use buttongroup size/shape for radius if no explicit radius set
         if (!n->radius_set && !s.has_radius) {
           CogitoNode* buttongroup_node = n->parent;
-          bool is_rounded = (buttongroup_node->buttongroup.shape == 0); // 0 = rounded (circle), 1 = pill (square)
+          bool is_rounded = (buttongroup_node->kd->buttongroup.shape == 0); // 0 = rounded (circle), 1 = pill (square)
           if (is_rounded) {
             // Rounded = circle shape
             radius = n->h / 2;
           } else {
             // Pill = square shape, use size-based radii
-            int bg_size = (buttongroup_node->buttongroup.size >= 0 && buttongroup_node->buttongroup.size <= 4) ? buttongroup_node->buttongroup.size : 2;
+            int bg_size = (buttongroup_node->kd->buttongroup.size >= 0 && buttongroup_node->kd->buttongroup.size <= 4) ? buttongroup_node->kd->buttongroup.size : 2;
             int buttongroup_radii[] = {4, 8, 8, 16, 20};
             radius = buttongroup_radii[bg_size];
           }
@@ -152,7 +152,7 @@ case COGITO_BUTTON: {
       } else {
         // Plain buttons outside ButtonGroup: respect icon_shape option
         if (!n->radius_set && !s.has_radius) {
-          if (n->button.icon_shape == 1) {
+          if (n->kd->button.icon_shape == 1) {
             // Squared button: use 16px radius
             radius = 16;
           } else {

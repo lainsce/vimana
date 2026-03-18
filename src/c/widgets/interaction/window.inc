@@ -194,7 +194,7 @@ static void cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
   win->side_sheet_node->parent = win;
   win->side_sheet_open = true;
   win->side_sheet_closing = false;
-  if (ss->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+  if (ss->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
     cogito_overlay_anim_start(ss, 1.0f, 1.0f, 0.0);
   } else {
     cogito_overlay_anim_start(ss, 0.0f, 1.0f, 0.24);
@@ -206,7 +206,7 @@ static void cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
   // so repeated rebuilds/open/close never drift due intrinsic-width changes.
   if (cogito_backend && cogito_backend->window_set_size && cogito_active_backend_window) {
     int new_sidebar_w = 0;
-    if (ss->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+    if (ss->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
       cogito_intrinsic_size(ss, &new_sidebar_w, NULL);
       if (new_sidebar_w < 0) new_sidebar_w = 0;
     }
@@ -246,7 +246,7 @@ static void cogito_window_clear_side_sheet(YisVal winv) {
   }
 
   // Sidebar closes instantly — no slide animation.
-  if (win->side_sheet_node->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
+  if (win->side_sheet_node->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
     win->side_sheet_open = false;
     win->side_sheet_closing = false;
     yis_release_val(YV_OBJ(win->side_sheet_node));

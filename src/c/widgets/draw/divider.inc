@@ -7,15 +7,15 @@ case COGITO_DIVIDER: {
       CogitoColor line = s.has_bg ? s.bg : (s.has_border ? s.border : (s.has_text ? s.text : n->text_color));
       int thickness = s.has_border_width ? s.border_width : 1;
       if (thickness < 1) thickness = 1;
-      int inset = n->divider.inset ? 18 : 0;
-      if (n->divider.vertical) {
+      int inset = n->kd->divider.inset ? 18 : 0;
+      if (n->kd->divider.vertical) {
         int max_inset = (n->h - 1) / 2;
         if (inset > max_inset) inset = max_inset;
         int y0 = n->y + inset;
         int y1 = n->y + n->h - 1 - inset;
         if (y1 < y0) break;
         int x = n->x + n->w / 2;
-        if (n->divider.wavy) {
+        if (n->kd->divider.wavy) {
           double amp = thickness * 2.0;
           double period = 12.0;
           cogito_draw_wavy_line_aa(y0, y1, x, (double)thickness, amp, period, 0.0, line);
@@ -32,7 +32,7 @@ case COGITO_DIVIDER: {
         int x1 = n->x + n->w - 1 - inset;
         if (x1 < x0) break;
         int y = n->y + n->h / 2;
-        if (n->divider.wavy) {
+        if (n->kd->divider.wavy) {
           double amp = thickness * 2.0;
           double period = 12.0;
           cogito_draw_wavy_line_aa(x0, x1, y, (double)thickness, amp, period, 0.0, line);

@@ -1,16 +1,16 @@
 case COGITO_VIEW_DUAL: {
-  float ratio = n->view_dual.animating ? n->view_dual.anim_ratio : n->view_dual.ratio;
+  float ratio = n->kd->view_dual.animating ? n->kd->view_dual.anim_ratio : n->kd->view_dual.ratio;
   if (ratio < 0.0f) ratio = 0.0f;
   if (ratio > 1.0f) ratio = 1.0f;
   const float edge_ratio_zone = 0.05f;
-  bool anim_to_left_edge = n->view_dual.animating && n->view_dual.anim_to <= 0.0f;
-  bool anim_to_right_edge = n->view_dual.animating && n->view_dual.anim_to >= 1.0f;
+  bool anim_to_left_edge = n->kd->view_dual.animating && n->kd->view_dual.anim_to <= 0.0f;
+  bool anim_to_right_edge = n->kd->view_dual.animating && n->kd->view_dual.anim_to >= 1.0f;
   bool edge_left = (ratio <= edge_ratio_zone) || anim_to_left_edge;
   bool edge_right = (ratio >= (1.0f - edge_ratio_zone)) || anim_to_right_edge;
   int gap = n->gap > 0 ? n->gap : 8;
-  int hidden_gap_w = n->view_dual.show_handle ? 0 : 16;
-  int handle_w = n->view_dual.show_handle ? 4 : 0;
-  int split_w = n->view_dual.show_handle ? (gap * 2 + handle_w) : hidden_gap_w;
+  int hidden_gap_w = n->kd->view_dual.show_handle ? 0 : 16;
+  int handle_w = n->kd->view_dual.show_handle ? 4 : 0;
+  int split_w = n->kd->view_dual.show_handle ? (gap * 2 + handle_w) : hidden_gap_w;
   const int min_item_w = 360;
 
   int content_x = x + n->padding_left;

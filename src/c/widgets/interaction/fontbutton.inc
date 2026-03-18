@@ -404,7 +404,7 @@ static void cogito_fontbutton_open_dialog(CogitoNode* n) {
 
 static CogitoNode* cogito_fontbutton_new_obj(void) {
   CogitoNode* btn = cogito_node_new(COGITO_FONTBUTTON);
-  btn->button.size = COGITO_BUTTON_SIZE_S;
+  btn->kd->button.size = COGITO_BUTTON_SIZE_S;
   cogito_node_set_text(btn, stdr_str_lit("System Default"));
   return btn;
 }

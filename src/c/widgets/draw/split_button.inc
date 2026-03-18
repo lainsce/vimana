@@ -6,8 +6,8 @@ case COGITO_SPLIT_BUTTON: {
   CogitoColor text_color = s.has_text ? s.text : n->text_color;
   CogitoColor border_color = s.has_border ? s.border : n->border_color;
   int border_w = s.has_border_width ? s.border_width : 0;
-  if (n->split_btn.outlined && border_w == 0) border_w = 1;
-  if (n->split_btn.text_style) { bg = cogito_rgba(0,0,0,0); border_w = 0; }
+  if (n->kd->split_btn.outlined && border_w == 0) border_w = 1;
+  if (n->kd->split_btn.text_style) { bg = cogito_rgba(0,0,0,0); border_w = 0; }
 
   cogito_anim_apply(n, &s, &bg, &text_color, &border_color, NULL);
 
@@ -25,8 +25,8 @@ case COGITO_SPLIT_BUTTON: {
   bool split_rtl = cogito_is_rtl();
   int main_x = split_rtl ? (n->x + menu_w + gap) : n->x;
   int menu_x = split_rtl ? n->x : (n->x + main_w + gap);
-  n->split_btn.arrow_x = menu_x;
-  n->split_btn.arrow_w = menu_w;
+  n->kd->split_btn.arrow_x = menu_x;
+  n->kd->split_btn.arrow_w = menu_w;
 
   // Per-part hover/active detection
   int mx = 0, my = 0;
@@ -59,7 +59,7 @@ case COGITO_SPLIT_BUTTON: {
   if (outer_radius < 0) outer_radius = 0;
   
   // When pressed, use size-based pressed radius
-  int pressed_radius = cogito_button_pressed_radius(n->split_btn.size);
+  int pressed_radius = cogito_button_pressed_radius(n->kd->split_btn.size);
   int main_outer_radius = main_active ? pressed_radius : outer_radius;
   
   // Menu button acts like a latched button:

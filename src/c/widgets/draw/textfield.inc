@@ -251,9 +251,9 @@ case COGITO_TEXTFIELD: {
         if (ty < n->y + field_pad_y) ty = n->y + field_pad_y;
       }
 
-      if (n->text_input.sel_start != n->text_input.sel_end) {
-        int a = n->text_input.sel_start;
-        int b = n->text_input.sel_end;
+      if (n->kd->text_input.sel_start != n->kd->text_input.sel_end) {
+        int a = n->kd->text_input.sel_start;
+        int b = n->kd->text_input.sel_end;
         if (a > b) { int tmp = a; a = b; b = tmp; }
         int sx = cogito_text_width_size_n_node(n, t, a, size);
         int ex = cogito_text_width_size_n_node(n, t, b, size);
@@ -269,9 +269,9 @@ case COGITO_TEXTFIELD: {
 
       cogito_draw_text_ellipsis(n, text_x, ty, text_w, t, text, size, cogito_node_bold(n), cogito_node_medium(n), 0);
 
-      if (n->text_input.sel_start != n->text_input.sel_end) {
-        int a2 = n->text_input.sel_start;
-        int b2 = n->text_input.sel_end;
+      if (n->kd->text_input.sel_start != n->kd->text_input.sel_end) {
+        int a2 = n->kd->text_input.sel_start;
+        int b2 = n->kd->text_input.sel_end;
         if (a2 > b2) { int tmp = a2; a2 = b2; b2 = tmp; }
         int len2 = (int)strlen(t);
         if (a2 < 0) a2 = 0;
@@ -290,7 +290,7 @@ case COGITO_TEXTFIELD: {
       }
 
       if (focused) {
-        int caret = n->text_input.caret;
+        int caret = n->kd->text_input.caret;
         if (caret < 0) caret = 0;
         int tw = cogito_text_width_size_n_node(n, t, caret, size);
         int car_x = text_x + tw;

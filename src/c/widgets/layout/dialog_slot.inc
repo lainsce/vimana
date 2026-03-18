@@ -34,7 +34,7 @@ case COGITO_DIALOG_SLOT:
         int dy = base_y;
         if (compact && n->dialog->kind == COGITO_BOTTOM_SHEET) {
           dw = base_w;
-          int desired_h = n->dialog->bottom_sheet.desired_h;
+          int desired_h = n->dialog->kd->bottom_sheet.desired_h;
           if (desired_h <= 0) {
             desired_h = (int)lround((double)base_h * COGITO_BOTTOM_SHEET_DEFAULT_RATIO);
           }

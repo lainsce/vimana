@@ -32,7 +32,7 @@ static void cogito_avatar_set_image(YisVal avatarv, YisVal pathv) {
   if (n->icon) yis_release_val(YV_STR(n->icon));
   n->icon = path;
   yis_retain_val(YV_STR(path));
-  n->image.loaded = false;
-  n->image.texture = NULL;
+  n->kd->image.loaded = false;
+  n->kd->image.texture = NULL;
   cogito_window_relayout(cogito_node_window(n));
 }
