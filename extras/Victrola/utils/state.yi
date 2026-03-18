@@ -6,138 +6,114 @@ bring json
 bring utils.model
 bring utils.util
 
-:: save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any, track_meta_map = any, artist_image_map = any, play_counts = any, play_count_artists = any, track_play_counts = any) (( -- )) {
+:: save_state(state_path = string, current_folder = string, tracks = any, album_cover_map = any, track_meta_map = any, artist_image_map = any, play_counts = any, play_count_artists = any, track_play_counts = any) (( -- ))
     let folder_esc = json.escape(current_folder)
 
     let ?covers_json = ""
     let ?seen = []: [string => any]
-    for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+    for (let ?i = 0; i < stdr.len(tracks); i = i + 1)
         let t = tracks[i] ?? []: [string => any]
         let album = stdr.str(t["album"] ?? "Unknown Album")
         let artist = stdr.str(t["artist"] ?? "Unknown Artist")
         let key = model.album_cover_key(album, artist)
 
-        if !stdr.is_null(seen[key]) {
+        if !stdr.is_null(seen[key])
             continue
-        }
         seen[key] = 1
 
         let ?cover = util.sanitize_cover_path(stdr.str(album_cover_map[key] ?? ""))
-        if stdr.len(cover) == 0 {
+        if stdr.len(cover) == 0
             cover = util.sanitize_cover_path(stdr.str(album_cover_map[album] ?? ""))
-        }
-        if stdr.len(cover) == 0 {
+        if stdr.len(cover) == 0
             continue
-        }
-        if !stdr.file_exists(cover) {
+        if !stdr.file_exists(cover)
             continue
-        }
 
-        if stdr.len(covers_json) > 0 {
+        if stdr.len(covers_json) > 0
             covers_json = "$$covers_json$$,"
-        }
 
         let album_esc = json.escape(album)
         let artist_esc = json.escape(artist)
         let cover_esc = json.escape(cover)
         covers_json = "$$covers_json$${\"album\":\"$$album_esc$$\",\"artist\":\"$$artist_esc$$\",\"cover\":\"$$cover_esc$$\"}"
-    }
 
     let ?meta_json = ""
-    for (let ?j = 0; j < stdr.len(tracks); j = j + 1) {
+    for (let ?j = 0; j < stdr.len(tracks); j = j + 1)
         let trk = tracks[j] ?? []: [string => any]
         let trk_path = stdr.str(trk["path"] ?? "")
-        if stdr.len(trk_path) == 0 {
+        if stdr.len(trk_path) == 0
             continue
-        }
         let m = track_meta_map[trk_path] ?? null
-        if stdr.is_null(m) {
+        if stdr.is_null(m)
             continue
-        }
         let m_title = stdr.str(m["title"] ?? "")
         let m_artist = stdr.str(m["artist"] ?? "")
         let m_album = stdr.str(m["album"] ?? "")
-        if stdr.len(m_title) == 0 && stdr.len(m_artist) == 0 && stdr.len(m_album) == 0 {
+        if stdr.len(m_title) == 0 && stdr.len(m_artist) == 0 && stdr.len(m_album) == 0
             continue
-        }
-        if stdr.len(meta_json) > 0 {
+        if stdr.len(meta_json) > 0
             meta_json = "$$meta_json$$,"
-        }
         let p_esc = json.escape(trk_path)
         let t_esc = json.escape(m_title)
         let ar_esc = json.escape(m_artist)
         let al_esc = json.escape(m_album)
         meta_json = "$$meta_json$${\"path\":\"$$p_esc$$\",\"title\":\"$$t_esc$$\",\"artist\":\"$$ar_esc$$\",\"album\":\"$$al_esc$$\"}"
-    }
 
     let ?ai_json = ""
     let ?ai_seen = []: [string => any]
-    for (let ?k = 0; k < stdr.len(tracks); k = k + 1) {
+    for (let ?k = 0; k < stdr.len(tracks); k = k + 1)
         let ai_t = tracks[k] ?? []: [string => any]
         let ai_name = stdr.str(ai_t["artist"] ?? "")
-        if stdr.len(ai_name) == 0 || ai_name == "Unknown Artist" {
+        if stdr.len(ai_name) == 0 || ai_name == "Unknown Artist"
             continue
-        }
-        if !stdr.is_null(ai_seen[ai_name]) {
+        if !stdr.is_null(ai_seen[ai_name])
             continue
-        }
         ai_seen[ai_name] = true
         let ai_path = stdr.str(artist_image_map[ai_name] ?? "")
-        if stdr.len(ai_path) == 0 || !stdr.file_exists(ai_path) {
+        if stdr.len(ai_path) == 0 || !stdr.file_exists(ai_path)
             continue
-        }
-        if stdr.len(ai_json) > 0 {
+        if stdr.len(ai_json) > 0
             ai_json = "$$ai_json$$,"
-        }
         let ai_name_esc = json.escape(ai_name)
         let ai_path_esc = json.escape(ai_path)
         ai_json = "$$ai_json$${\"name\":\"$$ai_name_esc$$\",\"image\":\"$$ai_path_esc$$\"}"
-    }
 
     let ?play_json = ""
     let ?play_seen = []: [string => any]
-    for (let ?m = 0; m < stdr.len(play_count_artists); m = m + 1) {
+    for (let ?m = 0; m < stdr.len(play_count_artists); m = m + 1)
         let artist = stdr.str(play_count_artists[m] ?? "")
-        if stdr.len(artist) == 0 || !stdr.is_null(play_seen[artist]) {
+        if stdr.len(artist) == 0 || !stdr.is_null(play_seen[artist])
             continue
-        }
         play_seen[artist] = true
 
         let count = stdr.num(play_counts[artist] ?? 0)
-        if count <= 0 {
+        if count <= 0
             continue
-        }
 
-        if stdr.len(play_json) > 0 {
+        if stdr.len(play_json) > 0
             play_json = "$$play_json$$,"
-        }
 
         let artist_esc = json.escape(artist)
         play_json = "$$play_json$${\"name\":\"$$artist_esc$$\",\"count\":$$count$$}"
-    }
 
     let ?track_play_json = ""
     let ?track_play_seen = []: [string => any]
-    for (let ?n = 0; n < stdr.len(tracks); n = n + 1) {
+    for (let ?n = 0; n < stdr.len(tracks); n = n + 1)
         let trk = tracks[n] ?? []: [string => any]
         let trk_path = stdr.str(trk["path"] ?? "")
-        if stdr.len(trk_path) == 0 || !stdr.is_null(track_play_seen[trk_path]) {
+        if stdr.len(trk_path) == 0 || !stdr.is_null(track_play_seen[trk_path])
             continue
-        }
 
         track_play_seen[trk_path] = true
         let count = stdr.num(track_play_counts[trk_path] ?? 0)
-        if count <= 0 {
+        if count <= 0
             continue
-        }
 
-        if stdr.len(track_play_json) > 0 {
+        if stdr.len(track_play_json) > 0
             track_play_json = "$$track_play_json$$,"
-        }
 
         let path_esc = json.escape(trk_path)
         track_play_json = "$$track_play_json$${\"path\":\"$$path_esc$$\",\"count\":$$count$$}"
-    }
 
     let ?payload = "{"
     payload = "$$payload$$\"folder\":\"$$folder_esc$$\""
@@ -148,9 +124,9 @@ bring utils.util
     payload = "$$payload$$,\"track_play_counts\":[$$track_play_json$$]"
     payload = "$$payload$$}"
     stdr.write_text_file(state_path, payload)
-}
+;
 
-:: load_state(state_path = string) (( any )) {
+:: load_state(state_path = string) (( any ))
     let ?out = []: [string => any]
     out["folder"] = ""
     out["covers"] = []: [string => any]
@@ -161,134 +137,111 @@ bring utils.util
     out["track_play_counts"] = []: [string => any]
 
     let raw = stdr.read_text_file(state_path)
-    if stdr.is_null(raw) {
-        return out
-    }
+    if stdr.is_null(raw)
+        <- out
 
     let parsed = json.parse_result(stdr.str(raw))
-    if !(parsed["ok"] ?? false) {
-        return out
-    }
+    if !(parsed["ok"] ?? false)
+        <- out
 
     let root = parsed["value"] ?? null
-    if stdr.is_null(root) {
-        return out
-    }
+    if stdr.is_null(root)
+        <- out
 
     let folder = stdr.str(root["folder"] ?? "")
-    if stdr.len(folder) > 0 {
+    if stdr.len(folder) > 0
         out["folder"] = folder
-    }
 
     let ?covers = []: [string => any]
     let entries = root["album_covers"] ?? []: [any]
-    if stdr.str(entries) != "[array]" {
+    if stdr.str(entries) != "[array]"
         out["covers"] = covers
-        return out
-    }
+        <- out
 
-    for (let ?i = 0; i < stdr.len(entries); i = i + 1) {
+    for (let ?i = 0; i < stdr.len(entries); i = i + 1)
         let item = entries[i] ?? []: [string => any]
         let album = stdr.str(item["album"] ?? "")
         let artist = stdr.str(item["artist"] ?? "")
         let cover = util.sanitize_cover_path(stdr.str(item["cover"] ?? ""))
-        if stdr.len(album) == 0 || stdr.len(cover) == 0 {
+        if stdr.len(album) == 0 || stdr.len(cover) == 0
             continue
-        }
-        if !stdr.file_exists(cover) {
+        if !stdr.file_exists(cover)
             continue
-        }
-        if stdr.len(stdr.trim(artist)) > 0 {
+        if stdr.len(stdr.trim(artist)) > 0
             covers[model.album_cover_key(album, artist)] = cover
-        } else {
+        else
             covers[album] = cover
-        }
-    }
 
     out["covers"] = covers
 
     let ?meta = []: [string => any]
     let meta_entries = root["track_meta"] ?? []: [any]
-    for (let ?j = 0; j < stdr.len(meta_entries); j = j + 1) {
+    for (let ?j = 0; j < stdr.len(meta_entries); j = j + 1)
         let m = meta_entries[j] ?? []: [string => any]
         let p = stdr.str(m["path"] ?? "")
-        if stdr.len(p) == 0 {
+        if stdr.len(p) == 0
             continue
-        }
         let ?ent = []: [string => any]
         let mt = stdr.str(m["title"] ?? "")
         let ma = stdr.str(m["artist"] ?? "")
         let mal = stdr.str(m["album"] ?? "")
-        if stdr.len(mt) > 0 {
+        if stdr.len(mt) > 0
             ent["title"] = mt
-        }
-        if stdr.len(ma) > 0 {
+        if stdr.len(ma) > 0
             ent["artist"] = ma
-        }
-        if stdr.len(mal) > 0 {
+        if stdr.len(mal) > 0
             ent["album"] = mal
-        }
         meta[p] = ent
-    }
     out["track_meta"] = meta
 
     let ?ai_map = []: [string => any]
     let ai_entries = root["artist_images"] ?? []: [any]
-    for (let ?k = 0; k < stdr.len(ai_entries); k = k + 1) {
+    for (let ?k = 0; k < stdr.len(ai_entries); k = k + 1)
         let ai = ai_entries[k] ?? []: [string => any]
         let ai_name = stdr.str(ai["name"] ?? "")
         let ai_path = stdr.str(ai["image"] ?? "")
-        if stdr.len(ai_name) == 0 || stdr.len(ai_path) == 0 {
+        if stdr.len(ai_name) == 0 || stdr.len(ai_path) == 0
             continue
-        }
-        if stdr.file_exists(ai_path) {
+        if stdr.file_exists(ai_path)
             ai_map[ai_name] = ai_path
-        }
-    }
     out["artist_images"] = ai_map
 
     let ?play_map = []: [string => any]
     let ?play_artists = []: [string]
     let ?play_seen = []: [string => any]
     let play_entries = root["play_counts"] ?? []: [any]
-    for (let ?m = 0; m < stdr.len(play_entries); m = m + 1) {
+    for (let ?m = 0; m < stdr.len(play_entries); m = m + 1)
         let play = play_entries[m] ?? []: [string => any]
         let artist = stdr.str(play["name"] ?? "")
-        if stdr.len(artist) == 0 || !stdr.is_null(play_seen[artist]) {
+        if stdr.len(artist) == 0 || !stdr.is_null(play_seen[artist])
             continue
-        }
 
         let count = stdr.num(play["count"] ?? 0)
-        if count <= 0 {
+        if count <= 0
             continue
-        }
 
         play_seen[artist] = true
         play_map[artist] = count
         play_artists[stdr.len(play_artists)] = artist
-    }
     out["play_counts"] = play_map
     out["play_count_artists"] = play_artists
 
     let ?track_play_map = []: [string => any]
     let ?track_play_seen = []: [string => any]
     let track_play_entries = root["track_play_counts"] ?? []: [any]
-    for (let ?n = 0; n < stdr.len(track_play_entries); n = n + 1) {
+    for (let ?n = 0; n < stdr.len(track_play_entries); n = n + 1)
         let play = track_play_entries[n] ?? []: [string => any]
         let path = stdr.str(play["path"] ?? "")
-        if stdr.len(path) == 0 || !stdr.is_null(track_play_seen[path]) {
+        if stdr.len(path) == 0 || !stdr.is_null(track_play_seen[path])
             continue
-        }
 
         let count = stdr.num(play["count"] ?? 0)
-        if count <= 0 {
+        if count <= 0
             continue
-        }
 
         track_play_seen[path] = true
         track_play_map[path] = count
-    }
     out["track_play_counts"] = track_play_map
 
-    return out
-}
+    <- out
+;

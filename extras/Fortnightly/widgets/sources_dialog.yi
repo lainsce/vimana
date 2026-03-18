@@ -15,7 +15,7 @@ bring widgets.source_row
     on_add_source = any,
     on_remove_source = any,
     on_save = any
-) (( cogito.Dialog )) {
+) (( cogito.Dialog ))
     let dlg = cogito.dialog("News Sources")
     .set_vexpand(true)
     .set_class("sources-dialog")
@@ -34,10 +34,9 @@ bring widgets.source_row
     .set_gap(4)
     .set_hexpand(true)
 
-    for (let ?i = 0; i < len(sources); i += 1) {
+    for (let ?i = 0; i < len(sources); i += 1)
         let s = sources[i] ?? []: [string => any]
         list.add(source_row.build_source_row(i, s, on_remove_source))
-    }
     scroll.add(list)
     content.add(scroll)
 
@@ -107,5 +106,5 @@ bring widgets.source_row
 
     content.add(actions)
     dlg.add(content)
-    return dlg
-}
+    <- dlg
+;

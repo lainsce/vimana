@@ -5,32 +5,30 @@ bring cogito
 
 bring utils.model
 
-: set_library_view_shows_groups(groups_revealer = cogito.Revealer, titles_revealer = cogito.Revealer, show_groups = bool) (( -- )) {
+: set_library_view_shows_groups(groups_revealer = cogito.Revealer, titles_revealer = cogito.Revealer, show_groups = bool) (( -- ))
     groups_revealer.set_show_children(show_groups)
     groups_revealer.set_vexpand(show_groups)
     titles_revealer.set_show_children(!show_groups)
     titles_revealer.set_vexpand(!show_groups)
-}
+;
 
-:: track_matches_query(track = any, query_text = string) (( bool )) {
-    if stdr.len(query_text) == 0 {
-        return true
-    }
+:: track_matches_query(track = any, query_text = string) (( bool ))
+    if stdr.len(query_text) == 0
+        <- true
     let blob = stdr.str(track["search"] ?? "")
-    return stdr.contains(blob, query_text)
-}
+    <- stdr.contains(blob, query_text)
+;
 
-: build_library_row(track = any, mode = num, is_now_playing = bool) (( any )) {
+: build_library_row(track = any, mode = num, is_now_playing = bool) (( any ))
     let ?title = stdr.str(track["title"] ?? "")
     let ?subtitle = stdr.str(track["artist"] ?? "")
 
-    if mode == 1 {
+    if mode == 1
         title = stdr.str(track["artist"] ?? "")
         subtitle = stdr.str(track["title"] ?? "")
-    } elif mode == 2 {
+    elif mode == 2
         title = stdr.str(track["album"] ?? "")
         subtitle = stdr.str(track["artist"] ?? "")
-    }
 
     let row = cogito.hstack()
     .set_class("victrola-song-row")
@@ -58,18 +56,17 @@ bring utils.model
 
     row.add(text_col)
     row.add(cogito.hstack().set_hexpand(true))
-    if is_now_playing {
+    if is_now_playing
         row.add(cogito.image("sf:speaker.wave.2")
             .set_size(24, 24)
             .set_halign(2)
             .set_align(4)
         )
-    }
 
-    return row
-}
+    <- row
+;
 
-: build_artist_card(name = string, subtitle = string, cover = string, on_artist_click = any) (( any )) {
+: build_artist_card(name = string, subtitle = string, cover = string, on_artist_click = any) (( any ))
     let card = cogito.card("")
     .set_class("outlined victrola-artist-card")
     .set_gap(4)
@@ -93,10 +90,10 @@ bring utils.model
         on_artist_click(name)
     })
 
-    return card
-}
+    <- card
+;
 
-: build_album_card(album = string, artist = string, subtitle = string, album_cover_map = any, on_album_click = any) (( any )) {
+: build_album_card(album = string, artist = string, subtitle = string, album_cover_map = any, on_album_click = any) (( any ))
     let cover = model.album_cover_for(album_cover_map, album, artist)
 
     let card = cogito.card("")
@@ -122,44 +119,39 @@ bring utils.model
         on_album_click(album)
     })
 
-    return card
-}
+    <- card
+;
 
-: str_less_than(a = string, b = string) (( bool )) {
+: str_less_than(a = string, b = string) (( bool ))
     let la = stdr.len(a)
     let lb = stdr.len(b)
     let ?min_len = la
     if lb < min_len { min_len = lb }
-    for (let ?i = 0; i < min_len; i = i + 1) {
+    for (let ?i = 0; i < min_len; i = i + 1)
         let ca = stdr.char_code(stdr.char_at(a, i))
         let cb = stdr.char_code(stdr.char_at(b, i))
-        if ca < cb { return true }
-        if ca > cb { return false }
-    }
-    return la < lb
-}
+        if ca < cb { <- true }
+        if ca > cb { <- false }
+    <- la < lb
+;
 
-: lowercase(s = string) (( string )) {
+: lowercase(s = string) (( string ))
     let ?result = ""
-    for (let ?i = 0; i < stdr.len(s); i = i + 1) {
+    for (let ?i = 0; i < stdr.len(s); i = i + 1)
         let c = stdr.char_code(stdr.char_at(s, i))
-        if c >= 65 && c <= 90 {
+        if c >= 65 && c <= 90
             result = result + stdr.char_from_code(c + 32)
-        } else {
+        else
             result = result + stdr.char_at(s, i)
-        }
-    }
-    return result
-}
+    <- result
+;
 
-: find_visible_index(track_idx = num, visible_track_indexes = [num]) (( num )) {
-    for (let ?i = 0; i < stdr.len(visible_track_indexes); i = i + 1) {
-        if visible_track_indexes[i] == track_idx {
-            return i
-        }
-    }
-    return -1
-}
+: find_visible_index(track_idx = num, visible_track_indexes = [num]) (( num ))
+    for (let ?i = 0; i < stdr.len(visible_track_indexes); i = i + 1)
+        if visible_track_indexes[i] == track_idx
+            <- i
+    <- -1
+;
 
 :: refresh_library_list(
     library_list = cogito.ContentList,
@@ -179,7 +171,7 @@ bring utils.model
     artist_image_map = any,
     on_artist_click = any,
     on_album_click = any
-) (( any )) {
+) (( any ))
     library_list.clear()
     library_grid.clear()
 
@@ -190,109 +182,89 @@ bring utils.model
     let songs_view = mode == 0 || (mode == 2 && album_detail_open) || (mode == 1 && artist_detail_open && album_detail_open)
     set_library_view_shows_groups(groups_revealer, titles_revealer, !songs_view)
 
-    if songs_view {
+    if songs_view
         let ?collected_indexes = []: [num]
-        for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+        for (let ?i = 0; i < stdr.len(tracks); i = i + 1)
             let t = tracks[i] ?? []: [string => any]
-            if !track_matches_query(t, query_text) {
+            if !track_matches_query(t, query_text)
                 continue
-            }
 
-            if mode == 2 && album_detail_open {
+            if mode == 2 && album_detail_open
                 let album = stdr.str(t["album"] ?? "Unknown Album")
-                if album != album_detail_key {
+                if album != album_detail_key
                     continue
-                }
-            }
 
-            if mode == 1 && artist_detail_open && album_detail_open {
+            if mode == 1 && artist_detail_open && album_detail_open
                 let artist = stdr.str(t["artist"] ?? "Unknown Artist")
-                if artist != artist_detail_key {
+                if artist != artist_detail_key
                     continue
-                }
                 let album = stdr.str(t["album"] ?? "Unknown Album")
-                if album != album_detail_key {
+                if album != album_detail_key
                     continue
-                }
-            }
 
             collected_indexes[stdr.len(collected_indexes)] = i
-        }
 
-        if album_detail_open {
-            for (let ?i = 1; i < stdr.len(collected_indexes); i = i + 1) {
+        if album_detail_open
+            for (let ?i = 1; i < stdr.len(collected_indexes); i = i + 1)
                 let ?j = i
-                for (; j > 0; j = j - 1) {
+                for (; j > 0; j = j - 1)
                     let idx_j = collected_indexes[j] ?? 0
                     let idx_prev = collected_indexes[j - 1] ?? 0
                     let tn_j = stdr.num(tracks[idx_j]["track_number"] ?? 0)
                     let tn_prev = stdr.num(tracks[idx_prev]["track_number"] ?? 0)
-                    if tn_j > 0 && (tn_prev == 0 || tn_j < tn_prev) {
+                    if tn_j > 0 && (tn_prev == 0 || tn_j < tn_prev)
                         collected_indexes[j] = idx_prev
                         collected_indexes[j - 1] = idx_j
-                    } else {
+                    else
                         j = 0
-                    }
-                }
-            }
-        } elif mode == 0 {
-            for (let ?i = 1; i < stdr.len(collected_indexes); i = i + 1) {
+        elif mode == 0
+            for (let ?i = 1; i < stdr.len(collected_indexes); i = i + 1)
                 let ?j = i
-                for (; j > 0; j = j - 1) {
+                for (; j > 0; j = j - 1)
                     let idx_j = collected_indexes[j] ?? 0
                     let idx_prev = collected_indexes[j - 1] ?? 0
                     let title_j = lowercase(stdr.str(tracks[idx_j]["title"] ?? ""))
                     let title_prev = lowercase(stdr.str(tracks[idx_prev]["title"] ?? ""))
-                    if str_less_than(title_j, title_prev) {
+                    if str_less_than(title_j, title_prev)
                         collected_indexes[j] = idx_prev
                         collected_indexes[j - 1] = idx_j
-                    } else {
+                    else
                         j = 0
-                    }
-                }
-            }
-        }
 
-        for (let ?ci = 0; ci < stdr.len(collected_indexes); ci = ci + 1) {
+        for (let ?ci = 0; ci < stdr.len(collected_indexes); ci = ci + 1)
             let i = collected_indexes[ci] ?? 0
             let t = tracks[i] ?? []: [string => any]
             library_list.add(build_library_row(t, 0, i == playing_track))
             visible_track_indexes[stdr.len(visible_track_indexes)] = i
             visible_group_keys[stdr.len(visible_group_keys)] = ""
-        }
 
         let playing_row = find_visible_index(playing_track, visible_track_indexes)
-        if playing_row >= 0 {
+        if playing_row >= 0
             library_list.set_selected(playing_row)
-        }
-    } elif mode == 1 && artist_detail_open {
+    elif mode == 1 && artist_detail_open
         library_grid.set_cols(2)
 
         let ?seen = []: [string => any]
         let ?order = []: [string]
         let ?first_indexes = []: [num]
 
-        for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+        for (let ?i = 0; i < stdr.len(tracks); i = i + 1)
             let t = tracks[i] ?? []: [string => any]
             let artist = stdr.str(t["artist"] ?? "Unknown Artist")
-            if artist != artist_detail_key {
+            if artist != artist_detail_key
                 continue
-            }
-            if !track_matches_query(t, query_text) {
+            if !track_matches_query(t, query_text)
                 continue
-            }
 
             let key = stdr.str(t["album"] ?? "Unknown Album")
-            if stdr.is_null(seen[key]) {
+            if stdr.is_null(seen[key])
                 seen[key] = 1
                 order[stdr.len(order)] = key
                 first_indexes[stdr.len(first_indexes)] = i
-            } else {
+            else
                 seen[key] = stdr.num(seen[key] ?? 0) + 1
-            }
-        }
 
-        for (let ?j = 0; j < stdr.len(order); j = j + 1) {
+        for (let ?j = 0; j < stdr.len(order); j = j + 1)
             let key = order[j] ?? "Unknown Album"
             visible_group_keys[stdr.len(visible_group_keys)] = key
             visible_track_indexes[stdr.len(visible_track_indexes)] = first_indexes[j] ?? -1
@@ -302,37 +274,32 @@ bring utils.model
             let row = (j - col) / 2
             let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
             library_grid.add(build_album_card(key, artist_detail_key, subtitle, album_cover_map, on_album_click), col, row, 1, 1)
-        }
-    } elif mode == 1 {
+    elif mode == 1
         library_grid.set_cols(2)
 
         let ?seen = []: [string => any]
         let ?order = []: [string]
         let ?first_indexes = []: [num]
 
-        for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+        for (let ?i = 0; i < stdr.len(tracks); i = i + 1)
             let t = tracks[i] ?? []: [string => any]
-            if !track_matches_query(t, query_text) {
+            if !track_matches_query(t, query_text)
                 continue
-            }
 
             let key = stdr.str(t["artist"] ?? "Unknown Artist")
-            if stdr.is_null(seen[key]) {
+            if stdr.is_null(seen[key])
                 seen[key] = 1
                 order[stdr.len(order)] = key
                 first_indexes[stdr.len(first_indexes)] = i
-            } else {
+            else
                 seen[key] = stdr.num(seen[key] ?? 0) + 1
-            }
-        }
 
         let ?playing_artist = ""
-        if playing_track >= 0 && playing_track < stdr.len(tracks) {
+        if playing_track >= 0 && playing_track < stdr.len(tracks)
             let pt = tracks[playing_track] ?? []: [string => any]
             playing_artist = stdr.str(pt["artist"] ?? "Unknown Artist")
-        }
 
-        for (let ?j = 0; j < stdr.len(order); j = j + 1) {
+        for (let ?j = 0; j < stdr.len(order); j = j + 1)
             let key = order[j] ?? "Unknown Artist"
             visible_group_keys[stdr.len(visible_group_keys)] = key
             visible_track_indexes[stdr.len(visible_track_indexes)] = first_indexes[j] ?? -1
@@ -343,48 +310,41 @@ bring utils.model
             let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
 
             let ?artist_cover = stdr.str(artist_image_map[key] ?? "")
-            if stdr.len(artist_cover) == 0 || !stdr.file_exists(artist_cover) {
+            if stdr.len(artist_cover) == 0 || !stdr.file_exists(artist_cover)
                 artist_cover = ""
                 let fi = first_indexes[j] ?? -1
-                if fi >= 0 && fi < stdr.len(tracks) {
+                if fi >= 0 && fi < stdr.len(tracks)
                     let ft = tracks[fi] ?? []: [string => any]
                     let fa = stdr.str(ft["album"] ?? "Unknown Album")
                     artist_cover = model.album_cover_for(album_cover_map, fa, key)
-                }
-            }
 
             library_grid.add(build_artist_card(key, subtitle, artist_cover, on_artist_click), col, row, 1, 1)
-        }
-    } else {
+    else
         library_grid.set_cols(2)
 
         let ?seen = []: [string => any]
         let ?order = []: [string]
         let ?first_indexes = []: [num]
 
-        for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+        for (let ?i = 0; i < stdr.len(tracks); i = i + 1)
             let t = tracks[i] ?? []: [string => any]
-            if !track_matches_query(t, query_text) {
+            if !track_matches_query(t, query_text)
                 continue
-            }
 
             let key = stdr.str(t["album"] ?? "Unknown Album")
-            if stdr.is_null(seen[key]) {
+            if stdr.is_null(seen[key])
                 seen[key] = 1
                 order[stdr.len(order)] = key
                 first_indexes[stdr.len(first_indexes)] = i
-            } else {
+            else
                 seen[key] = stdr.num(seen[key] ?? 0) + 1
-            }
-        }
 
         let ?playing_album = ""
-        if playing_track >= 0 && playing_track < stdr.len(tracks) {
+        if playing_track >= 0 && playing_track < stdr.len(tracks)
             let pt = tracks[playing_track] ?? []: [string => any]
             playing_album = stdr.str(pt["album"] ?? "Unknown Album")
-        }
 
-        for (let ?j = 0; j < stdr.len(order); j = j + 1) {
+        for (let ?j = 0; j < stdr.len(order); j = j + 1)
             let key = order[j] ?? "Unknown Album"
             visible_group_keys[stdr.len(visible_group_keys)] = key
             visible_track_indexes[stdr.len(visible_track_indexes)] = first_indexes[j] ?? -1
@@ -395,11 +355,9 @@ bring utils.model
             let row = (j - col) / 2
             let subtitle = if count > 1 { "$$count$$ songs" } else { "$$count$$ song" }
             library_grid.add(build_album_card(key, artist, subtitle, album_cover_map, on_album_click), col, row, 1, 1)
-        }
-    }
 
     let ?out = []: [string => any]
     out["track_indexes"] = visible_track_indexes
     out["group_keys"] = visible_group_keys
-    return out
-}
+    <- out
+;

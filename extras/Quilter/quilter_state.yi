@@ -3,12 +3,11 @@ cask quilter_state
 bring stdr
 bring json
 
-: bool_json(v = bool) (( string )) {
-    if v {
-        return "true"
-    }
-    return "false"
-}
+: bool_json(v = bool) (( string ))
+    if v
+        <- "true"
+    <- "false"
+;
 
 :: save(
     state_path = string,
@@ -25,7 +24,7 @@ bring json
     preview_type = string,
     active_open_index = num,
     open_paths = [string]
-) (( -- )) {
+) (( -- ))
     let current_path_esc = json.escape(current_path)
     let text_esc = json.escape(markdown_text)
     let preview_esc = json.escape(preview_type)
@@ -39,13 +38,11 @@ bring json
     let external_links_json = bool_json(open_links_external)
 
     let ?paths_json = ""
-    for (let ?i = 0; i < len(open_paths); i += 1) {
-        if i > 0 {
+    for (let ?i = 0; i < len(open_paths); i += 1)
+        if i > 0
             paths_json = "$$paths_json$$,"
-        }
         let esc = json.escape(open_paths[i] ?? "")
         paths_json = "$$paths_json$$\"$$esc$$\""
-    }
 
     let ?payload = "{"
     payload = "$$payload$$\"current_path\":\"$$current_path_esc$$\""
@@ -64,18 +61,16 @@ bring json
     payload = "$$payload$$}"
 
     stdr.write_text_file(state_path, payload)
-}
+;
 
-:: load(state_path = string) (( any )) {
+:: load(state_path = string) (( any ))
     let raw = stdr.read_text_file(state_path)
-    if is_null(raw) {
-        return null
-    }
+    if is_null(raw)
+        <- null
 
     let parsed = json.parse_result(str(raw))
-    if !(parsed["ok"] ?? false) {
-        return null
-    }
+    if !(parsed["ok"] ?? false)
+        <- null
 
-    return parsed["value"]
-}
+    <- parsed["value"]
+;

@@ -3,41 +3,41 @@ cask color_utils
 bring stdr
 
 -- Parse a single hex character to its numeric value (0-15)
-:: hex_val(c = string) (( num )) {
-    if c == "0" { return 0 }
-    if c == "1" { return 1 }
-    if c == "2" { return 2 }
-    if c == "3" { return 3 }
-    if c == "4" { return 4 }
-    if c == "5" { return 5 }
-    if c == "6" { return 6 }
-    if c == "7" { return 7 }
-    if c == "8" { return 8 }
-    if c == "9" { return 9 }
-    if c == "A" || c == "a" { return 10 }
-    if c == "B" || c == "b" { return 11 }
-    if c == "C" || c == "c" { return 12 }
-    if c == "D" || c == "d" { return 13 }
-    if c == "E" || c == "e" { return 14 }
-    if c == "F" || c == "f" { return 15 }
-    return 0
-}
+:: hex_val(c = string) (( num ))
+    if c == "0" { <- 0 }
+    if c == "1" { <- 1 }
+    if c == "2" { <- 2 }
+    if c == "3" { <- 3 }
+    if c == "4" { <- 4 }
+    if c == "5" { <- 5 }
+    if c == "6" { <- 6 }
+    if c == "7" { <- 7 }
+    if c == "8" { <- 8 }
+    if c == "9" { <- 9 }
+    if c == "A" || c == "a" { <- 10 }
+    if c == "B" || c == "b" { <- 11 }
+    if c == "C" || c == "c" { <- 12 }
+    if c == "D" || c == "d" { <- 13 }
+    if c == "E" || c == "e" { <- 14 }
+    if c == "F" || c == "f" { <- 15 }
+    <- 0
+;
 
 -- Perceived luminance of a "#RRGGBB" hex color (0.0 = dark, 1.0 = light)
-:: luminance(hex = string) (( num )) {
+:: luminance(hex = string) (( num ))
     let r = hex_val(stdr.slice(hex, 1, 2)) * 16 + hex_val(stdr.slice(hex, 2, 3))
     let g = hex_val(stdr.slice(hex, 3, 4)) * 16 + hex_val(stdr.slice(hex, 4, 5))
     let b = hex_val(stdr.slice(hex, 5, 6)) * 16 + hex_val(stdr.slice(hex, 6, 7))
-    return (r * 0.299 + g * 0.587 + b * 0.114) / 255.0
-}
+    <- (r * 0.299 + g * 0.587 + b * 0.114) / 255.0
+;
 
 -- Best contrasting base color: "#000000" on light, "#FFFFFF" on dark
-:: contrast_color(hex = string) (( string )) {
-    if luminance(hex) > 0.5 { return "#000000" }
-    return "#FFFFFF"
-}
+:: contrast_color(hex = string) (( string ))
+    if luminance(hex) > 0.5 { <- "#000000" }
+    <- "#FFFFFF"
+;
 
 -- True when the hex color is perceived as dark (luminance <= 0.5)
-:: is_dark(hex = string) (( bool )) {
-    return luminance(hex) <= 0.5
-}
+:: is_dark(hex = string) (( bool ))
+    <- luminance(hex) <= 0.5
+;

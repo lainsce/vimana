@@ -3,7 +3,7 @@ cask custom_fonts
 bring stdr
 bring cogito
 
-: build_ui(win = cogito.Window) (( -- )) {
+: build_ui(win = cogito.Window) (( -- ))
     let vstack = cogito.vstack()
     .set_gap(12)
     .set_padding(0, 24, 24, 24)
@@ -52,9 +52,9 @@ bring cogito
     vstack.add(caption)
 
     win.add(vstack)
-}
+;
 
-entry () (( -- )) {
+-> ()
     let app = cogito.app()
     .set_appid("yis.cogito.CustomFonts")
     .set_baseline_font("Helvetica")
@@ -64,4 +64,4 @@ entry () (( -- )) {
     let win = cogito.window_title("Custom Fonts Demo", 800, 700)
     .build(build_ui)
     app.run(win)
-}
+;

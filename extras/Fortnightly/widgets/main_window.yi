@@ -22,7 +22,7 @@ bring widgets.article_row
     on_sources = any,
     on_activate = any,
     close_handler = any
-) (( cogito.Button )) {
+) (( cogito.Button ))
     let main_content = cogito.hstack()
     .set_gap(0)
     .set_hexpand(true)
@@ -82,5 +82,5 @@ bring widgets.article_row
     main_content.add(detail_panel_widget)
 
     win.add(main_content)
-    return back_btn
-}
+    <- back_btn
+;

@@ -40,32 +40,28 @@ def sources_state = cogito.state(false)
 
 -- ── Glue Helpers ─────────────────────────────────────────────
 
-: request_rebuild() (( -- )) {
+: request_rebuild() (( -- ))
     let v = sources_state.get()
     sources_state.set(v)
-}
+;
 
-: remove_source(index = num) (( -- )) {
-    if index < 0 || index >= len(sources) {
-        return
-    }
+: remove_source(index = num) (( -- ))
+    if index < 0 || index >= len(sources)
+        <-
     let ?next = []: [any]
-    for (let ?i = 0; i < len(sources); i += 1) {
-        if i == index {
+    for (let ?i = 0; i < len(sources); i += 1)
+        if i == index
             continue
-        }
         next[len(next)] = sources[i]
-    }
     sources = next
     request_rebuild()
-}
+;
 
-: add_source_from_draft() (( -- )) {
+: add_source_from_draft() (( -- ))
     let name = stdr.trim(draft_source_name)
     let url = stdr.trim(draft_source_url)
-    if len(name) == 0 || len(url) == 0 {
-        return
-    }
+    if len(name) == 0 || len(url) == 0
+        <-
     let ?src = []: [string => any]
     src["name"] = name
     src["url"] = url
@@ -73,23 +69,20 @@ def sources_state = cogito.state(false)
     draft_source_name = ""
     draft_source_url = ""
     request_rebuild()
-}
+;
 
-: refresh_article_list() (( -- )) {
+: refresh_article_list() (( -- ))
     article_list.clear()
-    for (let ?i = 0; i < len(articles); i += 1) {
+    for (let ?i = 0; i < len(articles); i += 1)
         let a = articles[i] ?? []: [string => any]
         article_list.add(article_row.build_article_row(i, a))
-    }
-    if selected_article >= 0 && selected_article < len(articles) {
+    if selected_article >= 0 && selected_article < len(articles)
         article_list.set_selected(selected_article)
-    }
-}
+;
 
-: show_article(index = num) (( -- )) {
-    if index < 0 || index >= len(articles) {
-        return
-    }
+: show_article(index = num) (( -- ))
+    if index < 0 || index >= len(articles)
+        <-
     selected_article = index
     detail_panel.show_article(
         index, articles,
@@ -98,19 +91,18 @@ def sources_state = cogito.state(false)
         detail_panel_widget, detail_back_btn,
         list_panel, is_compact_mode
     )
-}
+;
 
-: close_article_detail() (( -- )) {
-    if is_compact_mode {
+: close_article_detail() (( -- ))
+    if is_compact_mode
         detail_panel_widget.set_visible(false)
         detail_panel_widget.set_hexpand(false)
         detail_back_btn.set_visible(false)
         list_panel.set_visible(true)
         list_panel.set_hexpand(true)
-    }
-}
+;
 
-: open_sources(win = cogito.Window) (( -- )) {
+: open_sources(win = cogito.Window) (( -- ))
     sources_open = true
     let dlg = sources_dialog.build_sources_dialog_content(
         win, sources, draft_source_name, draft_source_url,
@@ -125,78 +117,68 @@ def sources_state = cogito.state(false)
             articles = []: [any]
             selected_article = -1
             feed_index = 0
-            if len(sources) > 0 {
+            if len(sources) > 0
                 article_list.clear()
-                for (let ?sk = 0; sk < 8; sk += 1) {
+                for (let ?sk = 0; sk < 8; sk += 1)
                     article_list.add(article_row.build_skeleton_row())
-                }
                 cogito.set_timeout(0, () => {
                     fetch_next_feed()
                 })
-            } else {
+            else
                 refresh_article_list()
-            }
         }
     )
     win.set_dialog(dlg)
-}
+;
 
-: apply_compact_layout(compact = bool) (( -- )) {
+: apply_compact_layout(compact = bool) (( -- ))
     is_compact_mode = compact
-    if compact {
+    if compact
         detail_panel_widget.set_visible(false)
         detail_panel_widget.set_hexpand(false)
         detail_back_btn.set_visible(true)
         list_panel.set_visible(true)
         list_panel.set_hexpand(true)
-    } else {
+    else
         detail_panel_widget.set_visible(true)
         detail_panel_widget.set_hexpand(true)
         detail_back_btn.set_visible(false)
         list_panel.set_visible(true)
         list_panel.set_hexpand(false)
-        if selected_article >= 0 {
+        if selected_article >= 0
             show_article(selected_article)
-        }
-    }
-}
+;
 
 -- ── Incremental Feed Loading ─────────────────────────────────
 
 def ?feed_index = 0
 
-: fetch_next_feed() (( -- )) {
-    if feed_index >= len(sources) {
-        return
-    }
+: fetch_next_feed() (( -- ))
+    if feed_index >= len(sources)
+        <-
     let prev_count = len(articles)
     let items = feed.fetch_single_feed(sources[feed_index])
-    for (let ?j = 0; j < len(items); j += 1) {
+    for (let ?j = 0; j < len(items); j += 1)
         articles[len(articles)] = items[j]
-    }
     feed_index += 1
-    if prev_count == 0 {
+    if prev_count == 0
         refresh_article_list()
-        if len(articles) > 0 {
+        if len(articles) > 0
             selected_article = 0
             show_article(0)
-        }
-    } else {
-        for (let ?k = prev_count; k < len(articles); k += 1) {
+    else
+        for (let ?k = prev_count; k < len(articles); k += 1)
             let a = articles[k] ?? []: [string => any]
             article_list.add(article_row.build_article_row(k, a))
-        }
-    }
-    if feed_index < len(sources) {
+    if feed_index < len(sources)
         cogito.set_timeout(0, () => {
             fetch_next_feed()
         })
-    }
-}
+;
 
 -- ── Entry Point ──────────────────────────────────────────────
 
-entry() (( -- )) {
+-> ()
     sources = state.load_state()
     cache.prune_old_images()
 
@@ -210,13 +192,11 @@ entry() (( -- )) {
     cogito.load_sum("fortnightly.sum")
 
     -- Fetch first feed synchronously so the appbar has a title at first layout
-    if len(sources) > 0 {
+    if len(sources) > 0
         let items = feed.fetch_single_feed(sources[0])
-        for (let ?j = 0; j < len(items); j += 1) {
+        for (let ?j = 0; j < len(items); j += 1)
             articles[len(articles)] = items[j]
-        }
         feed_index = 1
-    }
 
     let win = cogito.window_size("Fortnightly", 1024, 720)
     .set_resizable(true)
@@ -229,9 +209,8 @@ entry() (( -- )) {
         detail_lede, detail_body,
         () => { open_sources(win) },
         (idx = num) => {
-            if idx >= 0 && idx < len(articles) && idx != selected_article {
+            if idx >= 0 && idx < len(articles) && idx != selected_article
                 show_article(idx)
-            }
         },
         () => { close_article_detail() }
     )
@@ -239,28 +218,24 @@ entry() (( -- )) {
     -- Wire up responsive layout
     win.on_resize((node = any) => {
         let compact = win.is_compact()
-        if compact != is_compact_mode {
+        if compact != is_compact_mode
             apply_compact_layout(compact)
-        }
     })
 
     -- Populate the list with first feed data (or skeletons if still loading)
-    if len(articles) > 0 {
+    if len(articles) > 0
         refresh_article_list()
         selected_article = 0
         show_article(0)
-    } elif len(sources) > 0 {
-        for (let ?i = 0; i < 8; i += 1) {
+    elif len(sources) > 0
+        for (let ?i = 0; i < 8; i += 1)
             article_list.add(article_row.build_skeleton_row())
-        }
-    }
 
     -- Fetch remaining feeds incrementally
-    if feed_index < len(sources) {
+    if feed_index < len(sources)
         cogito.set_timeout(0, () => {
             fetch_next_feed()
         })
-    }
 
     app.run(win)
-}
+;

@@ -33,9 +33,9 @@ def ?preview_type = "half" -- half | full | edit
 
 def ?search_cursor = 0
 
-: is_valid_preview_mode(mode = string) (( bool )) {
-    return mode == "half" || mode == "full" || mode == "edit"
-}
+: is_valid_preview_mode(mode = string) (( bool ))
+    <- mode == "half" || mode == "full" || mode == "edit"
+;
 
 def bar = cogito.appbar("Quilter", "Focus on your writing.")
 def title_label = cogito.label("Not Saved Yet")
@@ -64,154 +64,136 @@ def track_type = cogito.dropdown()
 def track_value = cogito.label("Words: 0")
 def status_hint = cogito.label("Tracks words, sentences or reading time here")
 
-: trim_text(text = string) (( string )) {
-    return quilter_text.trim_text(text)
-}
+: trim_text(text = string) (( string ))
+    <- quilter_text.trim_text(text)
+;
 
-: starts_with(text = string, prefix = string) (( bool )) {
-    return quilter_text.starts_with(text, prefix)
-}
+: starts_with(text = string, prefix = string) (( bool ))
+    <- quilter_text.starts_with(text, prefix)
+;
 
-: slice_between(text = string, start = num, end = num) (( string )) {
-    return quilter_text.slice_between(text, start, end)
-}
+: slice_between(text = string, start = num, end = num) (( string ))
+    <- quilter_text.slice_between(text, start, end)
+;
 
-: slice_from(text = string, from = num) (( string )) {
-    return quilter_text.slice_from(text, from)
-}
+: slice_from(text = string, from = num) (( string ))
+    <- quilter_text.slice_from(text, from)
+;
 
-: basename(path = string) (( string )) {
-    return quilter_text.basename(path)
-}
+: basename(path = string) (( string ))
+    <- quilter_text.basename(path)
+;
 
-: ends_with_md(path = string) (( bool )) {
-    return quilter_text.ends_with_md(path)
-}
+: ends_with_md(path = string) (( bool ))
+    <- quilter_text.ends_with_md(path)
+;
 
-: ensure_md(path = string) (( string )) {
-    return quilter_text.ensure_md(path)
-}
+: ensure_md(path = string) (( string ))
+    <- quilter_text.ensure_md(path)
+;
 
-: default_name() (( string )) {
-    if len(current_path) > 0 {
-        return current_path
-    }
-    return "New Document.md"
-}
+: default_name() (( string ))
+    if len(current_path) > 0
+        <- current_path
+    <- "New Document.md"
+;
 
-: open_path_index(path = string) (( num )) {
-    for (let ?i = 0; i < len(open_paths); i += 1) {
-        if open_paths[i] == path {
-            return i
-        }
-    }
-    return -1
-}
+: open_path_index(path = string) (( num ))
+    for (let ?i = 0; i < len(open_paths); i += 1)
+        if open_paths[i] == path
+            <- i
+    <- -1
+;
 
-: file_label(path = string) (( string )) {
-    if len(path) > 0 {
-        return basename(path)
-    }
-    return "Not Saved Yet"
-}
+: file_label(path = string) (( string ))
+    if len(path) > 0
+        <- basename(path)
+    <- "Not Saved Yet"
+;
 
-: sync_active_open_index() (( -- )) {
-    if len(open_paths) == 0 {
+: sync_active_open_index() (( -- ))
+    if len(open_paths) == 0
         open_paths[0] = ""
         active_open_index = 0
-        return
-    }
+        <-
 
     let target = current_path
-    if len(target) == 0 {
+    if len(target) == 0
         let blank_idx = open_path_index("")
-        if blank_idx >= 0 {
+        if blank_idx >= 0
             active_open_index = blank_idx
-            return
-        }
+            <-
         open_paths[len(open_paths)] = ""
         active_open_index = len(open_paths) - 1
-        return
-    }
+        <-
 
     let idx = open_path_index(target)
-    if idx >= 0 {
+    if idx >= 0
         active_open_index = idx
-        return
-    }
+        <-
 
     open_paths[len(open_paths)] = target
     active_open_index = len(open_paths) - 1
-}
+;
 
-: sync_file_selection() (( -- )) {
-    if len(open_paths) == 0 {
-        return
-    }
+: sync_file_selection() (( -- ))
+    if len(open_paths) == 0
+        <-
 
-    if active_open_index < 0 {
+    if active_open_index < 0
         active_open_index = 0
-    }
-    if active_open_index >= len(open_paths) {
+    if active_open_index >= len(open_paths)
         active_open_index = len(open_paths) - 1
-    }
 
     suspend_file_select = true
     files_list.set_selected(active_open_index)
     suspend_file_select = false
-}
+;
 
-: refresh_files_hint() (( -- )) {
-    if len(open_paths) == 0 {
+: refresh_files_hint() (( -- ))
+    if len(open_paths) == 0
         files_hint.set_text("No documents in session")
-    } elif len(open_paths) == 1 && len(open_paths[0] ?? "") == 0 {
+    elif len(open_paths) == 1 && len(open_paths[0] ?? "") == 0
         files_hint.set_text("1 unsaved draft")
-    } else {
+    else
         let count = len(open_paths)
         files_hint.set_text("$$count$$ documents in session")
-    }
-}
+;
 
-: refresh_open_files_ui(win = cogito.Window) (( -- )) {
+: refresh_open_files_ui(win = cogito.Window) (( -- ))
     files_list.clear()
-    for (let ?i = 0; i < len(open_paths); i += 1) {
+    for (let ?i = 0; i < len(open_paths); i += 1)
         files_list.add(cogito.label(file_label(open_paths[i] ?? "")).set_padding(8, 10, 8, 10).set_ellipsis(true))
-    }
 
     refresh_files_hint()
     sync_file_selection()
-}
+;
 
-: populate_open_files_ui(win = cogito.Window) (( -- )) {
+: populate_open_files_ui(win = cogito.Window) (( -- ))
     refresh_open_files_ui(win)
-}
+;
 
-: remove_open_index(idx = num) (( -- )) {
-    if idx < 0 || idx >= len(open_paths) {
-        return
-    }
+: remove_open_index(idx = num) (( -- ))
+    if idx < 0 || idx >= len(open_paths)
+        <-
 
     let ?next = []: [string]
-    for (let ?i = 0; i < len(open_paths); i += 1) {
-        if i != idx {
+    for (let ?i = 0; i < len(open_paths); i += 1)
+        if i != idx
             next[len(next)] = open_paths[i] ?? ""
-        }
-    }
     open_paths = next
-}
+;
 
-: move_current_document(delta = num, win = cogito.Window) (( -- )) {
-    if len(open_paths) < 2 {
+: move_current_document(delta = num, win = cogito.Window) (( -- ))
+    if len(open_paths) < 2
         set_status("Need at least two documents to reorder")
-        return
-    }
+        <-
 
     let from = active_open_index
     let to = from + delta
-    if to < 0 || to >= len(open_paths) {
+    if to < 0 || to >= len(open_paths)
         set_status("Cannot move document further")
-        return
-    }
+        <-
 
     let temp = open_paths[from] ?? ""
     open_paths[from] = open_paths[to] ?? ""
@@ -221,15 +203,14 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     refresh_open_files_ui(win)
     save_session_state()
 
-    if delta < 0 {
+    if delta < 0
         set_status("Moved document up")
-    } else {
+    else
         set_status("Moved document down")
-    }
-}
+;
 
-: close_current_document_now(win = cogito.Window) (( -- )) {
-    if len(open_paths) <= 1 {
+: close_current_document_now(win = cogito.Window) (( -- ))
+    if len(open_paths) <= 1
         current_path = ""
         dirty = false
         markdown_text = SAMPLE_MD
@@ -245,32 +226,28 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
         refresh_preview_outline_stats()
         set_status("Started a fresh document")
         save_session_state()
-        return
-    }
+        <-
 
     let ?idx = active_open_index
     remove_open_index(idx)
     files_list.remove_at(idx)
-    if len(open_paths) == 0 {
+    if len(open_paths) == 0
         open_paths[0] = ""
-    }
-    if idx >= len(open_paths) {
+    if idx >= len(open_paths)
         idx = len(open_paths) - 1
-    }
 
     let next_path = open_paths[idx] ?? ""
-    if len(next_path) > 0 {
+    if len(next_path) > 0
         open_path_now(next_path, win)
-    } else {
+    else
         new_document_now(win)
-    }
 
     refresh_open_files_ui(win)
     save_session_state()
     set_status("Closed document")
-}
+;
 
-: save_session_state() (( -- )) {
+: save_session_state() (( -- ))
     quilter_state.save(
         STATE_PATH,
         current_path,
@@ -287,15 +264,14 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
         active_open_index,
         open_paths
     )
-}
+;
 
-: load_session_state() (( -- )) {
+: load_session_state() (( -- ))
     let root = quilter_state.load(STATE_PATH)
-    if is_null(root) {
+    if is_null(root)
         open_paths[0] = ""
         active_open_index = 0
-        return
-    }
+        <-
 
     current_path = str(json.get(root, "current_path", ""))
     dirty = json.get(root, "dirty", false) == true
@@ -310,152 +286,141 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     open_links_external = json.get(root, "open_links_external", open_links_external) == true
 
     let restored_mode = str(json.get(root, "preview_type", preview_type))
-    if restored_mode !is_valid_preview_mode {
+    if restored_mode !is_valid_preview_mode
         preview_type = restored_mode
-    }
 
     open_paths = []: [string]
     let restored_paths = json.get(root, "open_paths", []: [any])
-    for (let ?i = 0; i < len(restored_paths); i += 1) {
+    for (let ?i = 0; i < len(restored_paths); i += 1)
         let p = str(restored_paths[i] ?? "")
         open_paths[len(open_paths)] = p
-    }
 
     active_open_index = json.get(root, "active_open_index", 0)
     sync_active_open_index()
-}
+;
 
-: escape_html(text = string) (( string )) {
-    return quilter_markdown.escape_html(text)
-}
+: escape_html(text = string) (( string ))
+    <- quilter_markdown.escape_html(text)
+;
 
-: markdown_to_html(md = string) (( string )) {
-    return quilter_markdown.markdown_to_html(md)
-}
+: markdown_to_html(md = string) (( string ))
+    <- quilter_markdown.markdown_to_html(md)
+;
 
-: markdown_to_preview(md = string) (( string )) {
-    return quilter_markdown.markdown_to_preview(md)
-}
+: markdown_to_preview(md = string) (( string ))
+    <- quilter_markdown.markdown_to_preview(md)
+;
 
-: outline_from_markdown(md = string) (( string )) {
-    return quilter_markdown.outline_from_markdown(md)
-}
+: outline_from_markdown(md = string) (( string ))
+    <- quilter_markdown.outline_from_markdown(md)
+;
 
-: count_words(text = string) (( num )) {
-    return quilter_text.count_words(text)
-}
+: count_words(text = string) (( num ))
+    <- quilter_text.count_words(text)
+;
 
-: count_sentences(text = string) (( num )) {
-    return quilter_text.count_sentences(text)
-}
+: count_sentences(text = string) (( num ))
+    <- quilter_text.count_sentences(text)
+;
 
-: find_from(haystack = string, needle = string, from = num) (( num )) {
-    return quilter_text.find_from(haystack, needle, from)
-}
+: find_from(haystack = string, needle = string, from = num) (( num ))
+    <- quilter_text.find_from(haystack, needle, from)
+;
 
-: count_matches(haystack = string, needle = string) (( num )) {
-    return quilter_text.count_matches(haystack, needle)
-}
+: count_matches(haystack = string, needle = string) (( num ))
+    <- quilter_text.count_matches(haystack, needle)
+;
 
-: replace_at(text = string, at = num, old_len = num, replacement = string) (( string )) {
-    return quilter_text.replace_at(text, at, old_len, replacement)
-}
+: replace_at(text = string, at = num, old_len = num, replacement = string) (( string ))
+    <- quilter_text.replace_at(text, at, old_len, replacement)
+;
 
-: set_status(text = string) (( -- )) {
+: set_status(text = string) (( -- ))
     status_hint.set_text(text)
     bar.set_subtitle(text)
-}
+;
 
-: refresh_title() (( -- )) {
+: refresh_title() (( -- ))
     let base = if len(current_path) > 0 { basename(current_path) } else { "Not Saved Yet" }
     bar.set_title(base)
     title_label.set_text(base)
     dirty_badge_revealer.set_show_children(dirty)
-}
+;
 
-: refresh_tracker() (( -- )) {
+: refresh_tracker() (( -- ))
     let mode = track_type.selected()
     let words = count_words(markdown_text)
     let sentences = count_sentences(markdown_text)
 
-    if mode == 0 {
+    if mode == 0
         track_value.set_text("Words: $$words$$")
-    } elif mode == 1 {
+    elif mode == 1
         track_value.set_text("Sentences: $$sentences$$")
-    } else {
+    else
         let ?minutes = 1
-        if words > 264 {
+        if words > 264
             minutes = words / 264
-            if words % 264 != 0 {
+            if words % 264 != 0
                 minutes += 1
-            }
-        }
         track_value.set_text("Reading Time: $$minutes$$ min")
-    }
-}
+;
 
-: refresh_search_state() (( -- )) {
+: refresh_search_state() (( -- ))
     let q = trim_text(search_find.text())
     let hits = count_matches(markdown_text, q)
     search_state.set_text("$$hits$$ matches")
-}
+;
 
-: refresh_preview_outline_stats() (( -- )) {
+: refresh_preview_outline_stats() (( -- ))
     preview.set_html(markdown_to_preview(markdown_text))
     outline_text.set_text(outline_from_markdown(markdown_text))
     refresh_tracker()
     refresh_search_state()
-}
+;
 
-: apply_preview_mode() (( -- )) {
-    if preview_type == "full" {
+: apply_preview_mode() (( -- ))
+    if preview_type == "full"
         editor_preview.set_ratio(0.0)
-    } elif preview_type == "edit" {
+    elif preview_type == "edit"
         editor_preview.set_ratio(1.0)
-    } else {
+    else
         editor_preview.set_ratio(0.52)
-    }
-}
+;
 
-: apply_visibility_states() (( -- )) {
+: apply_visibility_states() (( -- ))
     let sidebar_visible = show_sidebar && !focus_mode
 
-    if sidebar_visible {
+    if sidebar_visible
         root_dual.set_ratio(0.24)
         root_dual.set_padding(0, 0, 12, 12)
         main_pane.set_padding(0, 16, 0, 16)
-    } else {
+    else
         root_dual.set_ratio(0.0)
         root_dual.set_padding(0, 0, 12, 0)
         main_pane.set_padding(0, 16, 0, 0)
-    }
     root_dual.set_show_handle(sidebar_visible)
 
-    if show_searchbar && !focus_mode {
+    if show_searchbar && !focus_mode
         search_revealer.set_show_children(true)
-    } else {
+    else
         search_revealer.set_show_children(false)
-    }
 
-    if show_statusbar && !focus_mode {
+    if show_statusbar && !focus_mode
         status_revealer.set_show_children(true)
-    } else {
+    else
         status_revealer.set_show_children(false)
-    }
-}
+;
 
-: add_open_file(path = string) (( num )) {
-    for (let ?i = 0; i < len(open_paths); i += 1) {
-        if open_paths[i] == path {
-            return i
-        }
-    }
+: add_open_file(path = string) (( num ))
+    for (let ?i = 0; i < len(open_paths); i += 1)
+        if open_paths[i] == path
+            <- i
 
     open_paths[len(open_paths)] = path
-    return len(open_paths) - 1
-}
+    <- len(open_paths) - 1
+;
 
-: new_document_now(win = cogito.Window) (( -- )) {
+: new_document_now(win = cogito.Window) (( -- ))
     current_path = ""
     dirty = false
     markdown_text = SAMPLE_MD
@@ -470,14 +435,13 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     refresh_preview_outline_stats()
     set_status("New Document")
     save_session_state()
-}
+;
 
-: open_path_now(path = string, win = cogito.Window) (( bool )) {
+: open_path_now(path = string, win = cogito.Window) (( bool ))
     let raw = stdr.read_text_file(path)
-    if is_null(raw) {
+    if is_null(raw)
         set_status("Open failed")
-        return false
-    }
+        <- false
 
     suspend_change = true
     markdown_text = str(raw)
@@ -495,14 +459,13 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     let base = basename(path)
     set_status("Opened $$base$$")
     save_session_state()
-    return true
-}
+    <- true
+;
 
-: confirm_discard_changes(win = cogito.Window, action_name = string, on_continue = any, on_cancel = any) (( -- )) {
-    if !dirty || !confirm_on_switch {
+: confirm_discard_changes(win = cogito.Window, action_name = string, on_continue = any, on_cancel = any) (( -- ))
+    if !dirty || !confirm_on_switch
         on_continue(null)
-        return
-    }
+        <-
 
     let dlg = cogito.dialog("Unsaved Changes")
     let box = cogito.vstack()
@@ -526,37 +489,35 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     box.add(actions)
     dlg.add(box)
     win.set_dialog(dlg)
-}
+;
 
-: close_current_document(win = cogito.Window) (( -- )) {
+: close_current_document(win = cogito.Window) (( -- ))
     confirm_discard_changes(win, "close this document", (x = any) => {
         close_current_document_now(win)
     }, (x = any) => {
         sync_file_selection()
         set_status("Kept current document")
     })
-}
+;
 
-: new_document(win = cogito.Window) (( -- )) {
+: new_document(win = cogito.Window) (( -- ))
     confirm_discard_changes(win, "create a new document", (x = any) => {
         new_document_now(win)
     }, (x = any) => {
         set_status("Kept current document")
     })
-}
+;
 
-: open_dialog(win = cogito.Window) (( -- )) {
+: open_dialog(win = cogito.Window) (( -- ))
     let picked = stdr.open_file_dialog("Open Markdown File", "md")
-    if is_null(picked) {
+    if is_null(picked)
         set_status("Open canceled")
-        return
-    }
+        <-
 
     let path = str(picked)
-    if current_path == path {
+    if current_path == path
         set_status("Already open")
-        return
-    }
+        <-
 
     confirm_discard_changes(win, "open another file", (x = any) => {
         open_path_now(path, win)
@@ -564,21 +525,19 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
         sync_file_selection()
         set_status("Kept current document")
     })
-}
+;
 
-: save_as(win = cogito.Window) (( bool )) {
+: save_as(win = cogito.Window) (( bool ))
     let picked = stdr.save_file_dialog("Save As…", default_name(), "md")
-    if is_null(picked) {
+    if is_null(picked)
         set_status("Save canceled")
-        return false
-    }
+        <- false
 
     let path = ensure_md(str(picked))
     let ok = stdr.write_text_file(path, markdown_text)
-    if !ok {
+    if !ok
         set_status("Save failed")
-        return false
-    }
+        <- false
 
     current_path = path
     dirty = false
@@ -589,122 +548,106 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     let base = basename(path)
     set_status("Saved $$base$$")
     save_session_state()
-    return true
-}
+    <- true
+;
 
-: save_current(win = cogito.Window) (( -- )) {
-    if len(current_path) == 0 {
+: save_current(win = cogito.Window) (( -- ))
+    if len(current_path) == 0
         save_as(win)
-        return
-    }
+        <-
 
     let ok = stdr.write_text_file(current_path, markdown_text)
-    if !ok {
+    if !ok
         set_status("Save failed")
-        return
-    }
+        <-
 
     dirty = false
     refresh_title()
     let base = basename(current_path)
     set_status("Saved $$base$$")
     save_session_state()
-}
+;
 
-: export_html() (( -- )) {
+: export_html() (( -- ))
     let fallback = if len(current_path) > 0 { basename(current_path) } else { "document.md" }
     let stem = if ends_with_md(fallback) { slice_between(fallback, 0, len(fallback) - 3) } else { fallback }
 
     let picked = stdr.save_file_dialog("Export HTML…", "$$stem$$.html", "html")
-    if is_null(picked) {
+    if is_null(picked)
         set_status("Export canceled")
-        return
-    }
+        <-
 
     let ok = stdr.write_text_file(str(picked), markdown_to_html(markdown_text))
-    if ok {
+    if ok
         set_status("Exported HTML")
-    } else {
+    else
         set_status("HTML export failed")
-    }
-}
+;
 
-: search_next() (( -- )) {
+: search_next() (( -- ))
     let q = trim_text(search_find.text())
-    if len(q) == 0 {
+    if len(q) == 0
         set_status("Find text…")
-        return
-    }
+        <-
 
     let i1 = find_from(markdown_text, q, search_cursor)
     let i = if i1 >= 0 { i1 } else { find_from(markdown_text, q, 0) }
-    if i < 0 {
+    if i < 0
         set_status("No match")
-        return
-    }
+        <-
 
     search_cursor = i + len(q)
     let p = i + 1
     set_status("Search next: match at $$p$$")
-}
+;
 
-: search_previous() (( -- )) {
+: search_previous() (( -- ))
     let q = trim_text(search_find.text())
-    if len(q) == 0 {
+    if len(q) == 0
         set_status("Find text…")
-        return
-    }
+        <-
 
     let ?last = -1
     let ?pos = 0
-    for (; pos < len(markdown_text);) {
+    for (; pos < len(markdown_text);)
         let i = find_from(markdown_text, q, pos)
-        if i < 0 {
+        if i < 0
             break
-        }
-        if i >= search_cursor {
+        if i >= search_cursor
             break
-        }
         last = i
         pos = i + len(q)
-    }
 
-    if last < 0 {
+    if last < 0
         pos = 0
-        for (; pos < len(markdown_text);) {
+        for (; pos < len(markdown_text);)
             let i = find_from(markdown_text, q, pos)
-            if i < 0 {
+            if i < 0
                 break
-            }
             last = i
             pos = i + len(q)
-        }
-    }
 
-    if last < 0 {
+    if last < 0
         set_status("No match")
-        return
-    }
+        <-
 
     search_cursor = last
     let p = last + 1
     set_status("Search previous: match at $$p$$")
-}
+;
 
-: replace_next() (( -- )) {
+: replace_next() (( -- ))
     let q = trim_text(search_find.text())
-    if len(q) == 0 {
+    if len(q) == 0
         set_status("Find text…")
-        return
-    }
+        <-
 
     let r = search_replace.text()
     let i1 = find_from(markdown_text, q, search_cursor)
     let i = if i1 >= 0 { i1 } else { find_from(markdown_text, q, 0) }
-    if i < 0 {
+    if i < 0
         set_status("No match to replace")
-        return
-    }
+        <-
 
     markdown_text = replace_at(markdown_text, i, len(q), r)
     search_cursor = i + len(r)
@@ -718,34 +661,30 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     refresh_preview_outline_stats()
     set_status("Replaced one match")
     save_session_state()
-}
+;
 
-: replace_all() (( -- )) {
+: replace_all() (( -- ))
     let q = trim_text(search_find.text())
-    if len(q) == 0 {
+    if len(q) == 0
         set_status("Find text…")
-        return
-    }
+        <-
 
     let r = search_replace.text()
     let ?count = 0
     let ?cursor = 0
 
-    for (; cursor < len(markdown_text);) {
+    for (; cursor < len(markdown_text);)
         let i = find_from(markdown_text, q, cursor)
-        if i < 0 {
+        if i < 0
             break
-        }
 
         markdown_text = replace_at(markdown_text, i, len(q), r)
         cursor = i + len(r)
         count += 1
-    }
 
-    if count == 0 {
+    if count == 0
         set_status("No match to replace")
-        return
-    }
+        <-
 
     suspend_change = true
     editor.set_text(markdown_text)
@@ -756,9 +695,9 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     refresh_preview_outline_stats()
     set_status("Replaced $$count$$ matches")
     save_session_state()
-}
+;
 
-: set_editor_markdown(next_text = string, status = string) (( -- )) {
+: set_editor_markdown(next_text = string, status = string) (( -- ))
     markdown_text = next_text
 
     suspend_change = true
@@ -770,60 +709,57 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     refresh_preview_outline_stats()
     set_status(status)
     save_session_state()
-}
+;
 
-: insert_markdown_snippet(snippet = string, status = string) (( -- )) {
+: insert_markdown_snippet(snippet = string, status = string) (( -- ))
     let sep = if len(markdown_text) > 0 { "\n\n" } else { "" }
     set_editor_markdown("$$markdown_text$$$$sep$$$$snippet$$", status)
-}
+;
 
-: insert_heading(level = num) (( -- )) {
-    if level <= 1 {
+: insert_heading(level = num) (( -- ))
+    if level <= 1
         insert_markdown_snippet("# Heading", "Inserted H1 heading")
-    } elif level == 2 {
+    elif level == 2
         insert_markdown_snippet("## Heading", "Inserted H2 heading")
-    } else {
+    else
         insert_markdown_snippet("### Heading", "Inserted H3 heading")
-    }
-}
+;
 
-: make_snippet_handler(snippet = string, msg = string) (( -> )) {
-    return (b = cogito.Button) => {
+: make_snippet_handler(snippet = string, msg = string) (( -> ))
+    <- (b = cogito.Button) => {
         insert_markdown_snippet(snippet, msg)
     }
-}
+;
 
-: make_heading_handler(level = num) (( -> )) {
-    return (b = cogito.Button) => {
+: make_heading_handler(level = num) (( -> ))
+    <- (b = cogito.Button) => {
         insert_heading(level)
     }
-}
+;
 
-: toggle_focus_mode() (( -- )) {
+: toggle_focus_mode() (( -- ))
     focus_mode = !focus_mode
     apply_visibility_states()
-    if focus_mode {
+    if focus_mode
         set_status("Focus Mode")
-    } else {
+    else
         set_status("Exit focus mode")
-    }
     save_session_state()
-}
+;
 
-: set_preview_mode(mode = string) (( -- )) {
+: set_preview_mode(mode = string) (( -- ))
     preview_type = mode
     apply_preview_mode()
-    if mode == "full" {
+    if mode == "full"
         set_status("Full-Width")
-    } elif mode == "edit" {
+    elif mode == "edit"
         set_status("Edit")
-    } else {
+    else
         set_status("Half-Width")
-    }
     save_session_state()
-}
+;
 
-: show_preferences(win = cogito.Window) (( -- )) {
+: show_preferences(win = cogito.Window) (( -- ))
     let dlg = cogito.dialog("Preferences")
 
     let settings = cogito.settings_window("Quilter Preferences")
@@ -919,13 +855,12 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     .set_selected(if preview_type == "full" { 1 } elif preview_type == "edit" { 2 } else { 0 })
     mode_dd.on_change((d = cogito.Dropdown) => {
         let idx = d.selected()
-        if idx == 1 {
+        if idx == 1
             set_preview_mode("full")
-        } elif idx == 2 {
+        elif idx == 2
             set_preview_mode("edit")
-        } else {
+        else
             set_preview_mode("half")
-        }
     })
     row_mode.add(mode_dd)
     behavior_list.add(row_mode)
@@ -961,17 +896,17 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
 
     dlg.add(settings)
     win.set_dialog(dlg)
-}
+;
 
-: show_about(win = cogito.Window) (( -- )) {
+: show_about(win = cogito.Window) (( -- ))
     quilter_ui.show_about(win)
-}
+;
 
-: show_cheatsheet(win = cogito.Window) (( -- )) {
+: show_cheatsheet(win = cogito.Window) (( -- ))
     quilter_ui.show_cheatsheet(win)
-}
+;
 
-: build_window(win = cogito.Window) (( -- )) {
+: build_window(win = cogito.Window) (( -- ))
     bar.set_hexpand(true)
     bar.set_title_widget(title_row)
 
@@ -1066,23 +1001,19 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     .set_padding(8, 8, 8, 8)
 
     files_list.on_select((idx = num) => {
-        if !suspend_file_select && idx >= 0 && idx < len(open_paths) {
+        if !suspend_file_select && idx >= 0 && idx < len(open_paths)
             let p = open_paths[idx] ?? ""
-            if idx != active_open_index {
+            if idx != active_open_index
                 confirm_discard_changes(win, "switch documents", (x = any) => {
-                    if len(p) > 0 {
-                        if !open_path_now(p, win) {
+                    if len(p) > 0
+                        if !open_path_now(p, win)
                             sync_file_selection()
-                        }
-                    } else {
+                    else
                         new_document_now(win)
-                    }
                 }, (x = any) => {
                     sync_file_selection()
                     set_status("Kept current document")
                 })
-            }
-        }
     })
 
     outline_text
@@ -1264,20 +1195,17 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     })
 
     editor.on_change((tv = cogito.TextView) => {
-        if !suspend_change {
+        if !suspend_change
             markdown_text = tv.text()
             dirty = true
             refresh_title()
             refresh_preview_outline_stats()
-            if autosave_session {
+            if autosave_session
                 save_session_state()
-            }
-        }
     })
 
-    if len(open_paths) == 0 {
+    if len(open_paths) == 0
         open_paths[0] = ""
-    }
     sync_active_open_index()
     populate_open_files_ui(win)
 
@@ -1286,9 +1214,9 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     refresh_title()
     refresh_preview_outline_stats()
     set_status("Ready")
-}
+;
 
-entry() (( -- )) {
+-> ()
     load_session_state()
 
     -- Configure module-level widgets
@@ -1309,4 +1237,4 @@ entry() (( -- )) {
     })
 
     app.run(win)
-}
+;

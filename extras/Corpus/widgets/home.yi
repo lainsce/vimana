@@ -19,7 +19,7 @@ bring widgets.pdf_card
     add_fab = cogito.FAB,
     on_search = any,
     on_add = any
-) (( -- )) {
+) (( -- ))
     panel
     .set_gap(0)
     .set_vexpand(true)
@@ -116,19 +116,19 @@ bring widgets.pdf_card
     })
     fab_holder.add(add_fab)
     panel.add(fab_holder)
-}
+;
 
 :: refresh_continue_reading(
     continue_grid = cogito.Grid,
     continue_label = cogito.Label,
     continue_reading = any,
     on_open = any
-) (( -- )) {
+) (( -- ))
     continue_grid.clear()
     let count = len(continue_reading)
     continue_label.set_visible(count > 0)
 
-    for (let ?i = 0; i < count && i < 10; i += 1) {
+    for (let ?i = 0; i < count && i < 10; i += 1)
         let item = continue_reading[i] ?? []: [string => any]
         let idx = stdr.num(item["index"] ?? 0)
         let pdf_item = item["pdf_item"] ?? []: [string => any]
@@ -142,8 +142,7 @@ bring widgets.pdf_card
             on_open(idx)
         })
         continue_grid.add(card, i, 0, 1, 1)
-    }
-}
+;
 
 :: refresh_recents(
     recents_grid = cogito.Grid,
@@ -151,29 +150,26 @@ bring widgets.pdf_card
     filter_tag = string,
     search_query = string,
     on_open = any
-) (( -- )) {
+) (( -- ))
     recents_grid.clear()
     let count = len(pdfs)
     let ?col = 0
     let ?row = 0
     let ?placed = 0
 
-    for (let ?i = count - 1; i >= 0; i -= 1) {
+    for (let ?i = count - 1; i >= 0; i -= 1)
         let pdf_item = pdfs[i] ?? []: [string => any]
 
-        if stdr.len(filter_tag) > 0 {
+        if stdr.len(filter_tag) > 0
             let tags = pdf_item["tags"] ?? []: [any]
             let ?found = false
-            for (let ?t = 0; t < len(tags); t += 1) {
+            for (let ?t = 0; t < len(tags); t += 1)
                 if str(tags[t] ?? "") == filter_tag { found = true }
-            }
             if !found { continue }
-        }
 
-        if stdr.len(search_query) > 0 {
+        if stdr.len(search_query) > 0
             let title = str(pdf_item["title"] ?? "")
             if !stdr.contains(title, search_query) { continue }
-        }
 
         let title = str(pdf_item["title"] ?? "Untitled")
         let thumb = str(pdf_item["thumb"] ?? "")
@@ -185,10 +181,8 @@ bring widgets.pdf_card
         recents_grid.add(card, col, row, 1, 1)
 
         col += 1
-        if col >= 3 {
+        if col >= 3
             col = 0
             row += 1
-        }
         placed += 1
-    }
-}
+;

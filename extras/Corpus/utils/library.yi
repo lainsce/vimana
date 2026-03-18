@@ -5,81 +5,77 @@ bring json
 
 def ?CACHE_DIR = ""
 
-:: ensure_cache_dir() (( string )) {
-    if stdr.len(CACHE_DIR) > 0 { return CACHE_DIR }
+:: ensure_cache_dir() (( string ))
+    if stdr.len(CACHE_DIR) > 0 { <- CACHE_DIR }
     let r = stdr.run_command("echo $HOME")
     let home = stdr.trim(str(r[1] ?? ""))
     let dir = stdr.join_path(home, ".cache/corpus")
     stdr.run_command("mkdir -p '$$dir$$/thumbs'")
     stdr.run_command("mkdir -p '$$dir$$/pages'")
     CACHE_DIR = dir
-    return dir
-}
+    <- dir
+;
 
-:: library_path() (( string )) {
+:: library_path() (( string ))
     let dir = ensure_cache_dir()
-    return stdr.join_path(dir, "library.json")
-}
+    <- stdr.join_path(dir, "library.json")
+;
 
-:: thumbs_dir() (( string )) {
+:: thumbs_dir() (( string ))
     let dir = ensure_cache_dir()
-    return stdr.join_path(dir, "thumbs")
-}
+    <- stdr.join_path(dir, "thumbs")
+;
 
-:: pages_dir() (( string )) {
+:: pages_dir() (( string ))
     let dir = ensure_cache_dir()
-    return stdr.join_path(dir, "pages")
-}
+    <- stdr.join_path(dir, "pages")
+;
 
-:: load_library() (( [string => any] )) {
+:: load_library() (( [string => any] ))
     let path = library_path()
     let text = stdr.read_text_file(path)
-    if is_null(text) || stdr.len(str(text)) == 0 {
+    if is_null(text) || stdr.len(str(text)) == 0
         let ?lib = []: [string => any]
         lib["pdfs"] = []: [any]
         lib["tags"] = []: [any]
-        return lib
-    }
+        <- lib
     let parsed = json.parse(str(text))
-    if is_null(parsed) {
+    if is_null(parsed)
         let ?lib = []: [string => any]
         lib["pdfs"] = []: [any]
         lib["tags"] = []: [any]
-        return lib
-    }
+        <- lib
     let ?lib = parsed ?? []: [string => any]
     if is_null(lib["pdfs"]) { lib["pdfs"] = []: [any] }
     if is_null(lib["tags"]) { lib["tags"] = []: [any] }
-    return lib
-}
+    <- lib
+;
 
-:: save_library(lib = any) (( -- )) {
+:: save_library(lib = any) (( -- ))
     let path = library_path()
     let text = _lib_to_json(lib)
     stdr.write_text_file(path, text)
-}
+;
 
-: _lib_to_json(lib = any) (( string )) {
+: _lib_to_json(lib = any) (( string ))
     let pdfs = lib["pdfs"] ?? []: [any]
     let tags = lib["tags"] ?? []: [any]
     let ?parts = []: [any]
     stdr.push(parts, "{\"pdfs\":[")
-    for (let ?i = 0; i < len(pdfs); i += 1) {
+    for (let ?i = 0; i < len(pdfs); i += 1)
         if i > 0 { stdr.push(parts, ",") }
         stdr.push(parts, _pdf_to_json(pdfs[i] ?? []: [string => any]))
-    }
     stdr.push(parts, "],\"tags\":[")
-    for (let ?i = 0; i < len(tags); i += 1) {
+    for (let ?i = 0; i < len(tags); i += 1)
         if i > 0 { stdr.push(parts, ",") }
         stdr.push(parts, "\"")
         stdr.push(parts, json.escape(str(tags[i] ?? "")))
         stdr.push(parts, "\"")
-    }
     stdr.push(parts, "]}")
-    return stdr.join(parts)
-}
+    <- stdr.join(parts)
+;
 
-: _pdf_to_json(e = any) (( string )) {
+: _pdf_to_json(e = any) (( string ))
     let path_e = json.escape(str(e["path"] ?? ""))
     let title_e = json.escape(str(e["title"] ?? ""))
     let thumb_e = json.escape(str(e["thumb"] ?? ""))
@@ -90,28 +86,27 @@ def ?CACHE_DIR = ""
     if bm { bm_s = "true" }
     let etags = e["tags"] ?? []: [any]
     let ?tp = []: [any]
-    for (let ?i = 0; i < len(etags); i += 1) {
+    for (let ?i = 0; i < len(etags); i += 1)
         if i > 0 { stdr.push(tp, ",") }
         stdr.push(tp, "\"")
         stdr.push(tp, json.escape(str(etags[i] ?? "")))
         stdr.push(tp, "\"")
-    }
     let tags_s = stdr.join(tp)
-    return "{\"path\":\"$$path_e$$\",\"title\":\"$$title_e$$\",\"pages\":$$pages$$,\"last_page\":$$lp$$,\"tags\":[$$tags_s$$],\"thumb\":\"$$thumb_e$$\",\"bookmarked\":$$bm_s$$}"
-}
+    <- "{\"path\":\"$$path_e$$\",\"title\":\"$$title_e$$\",\"pages\":$$pages$$,\"last_page\":$$lp$$,\"tags\":[$$tags_s$$],\"thumb\":\"$$thumb_e$$\",\"bookmarked\":$$bm_s$$}"
+;
 
-:: pdf_count(lib = any) (( num )) {
+:: pdf_count(lib = any) (( num ))
     let pdfs = lib["pdfs"] ?? []: [any]
-    return len(pdfs)
-}
+    <- len(pdfs)
+;
 
-:: get_pdf(lib = any, index = num) (( any )) {
+:: get_pdf(lib = any, index = num) (( any ))
     let pdfs = lib["pdfs"] ?? []: [any]
-    if index < 0 || index >= len(pdfs) { return null }
-    return pdfs[index]
-}
+    if index < 0 || index >= len(pdfs) { <- null }
+    <- pdfs[index]
+;
 
-:: add_pdf(lib = any, path = string, title = string, pages = num, thumb = string) (( [string => any] )) {
+:: add_pdf(lib = any, path = string, title = string, pages = num, thumb = string) (( [string => any] ))
     let ?l = lib
     let ?pdfs = l["pdfs"] ?? []: [any]
     let ?pdf_item = []: [string => any]
@@ -124,108 +119,102 @@ def ?CACHE_DIR = ""
     pdf_item["bookmarked"] = false
     stdr.push(pdfs, pdf_item)
     l["pdfs"] = pdfs
-    return l
-}
+    <- l
+;
 
-:: remove_pdf(lib = any, index = num) (( [string => any] )) {
+:: remove_pdf(lib = any, index = num) (( [string => any] ))
     let ?l = lib
     let pdfs = l["pdfs"] ?? []: [any]
-    if index < 0 || index >= len(pdfs) { return l }
+    if index < 0 || index >= len(pdfs) { <- l }
     let ?next = []: [any]
-    for (let ?i = 0; i < len(pdfs); i += 1) {
+    for (let ?i = 0; i < len(pdfs); i += 1)
         if i != index { stdr.push(next, pdfs[i]) }
-    }
     l["pdfs"] = next
-    return l
-}
+    <- l
+;
 
-:: set_last_page(lib = any, index = num, page = num) (( -- )) {
+:: set_last_page(lib = any, index = num, page = num) (( -- ))
     let pdfs = lib["pdfs"] ?? []: [any]
-    if index < 0 || index >= len(pdfs) { return }
+    if index < 0 || index >= len(pdfs) { <- }
     let ?pdf_item = pdfs[index] ?? []: [string => any]
     pdf_item["last_page"] = page
-}
+;
 
-:: toggle_bookmark(lib = any, index = num) (( bool )) {
+:: toggle_bookmark(lib = any, index = num) (( bool ))
     let pdfs = lib["pdfs"] ?? []: [any]
-    if index < 0 || index >= len(pdfs) { return false }
+    if index < 0 || index >= len(pdfs) { <- false }
     let ?pdf_item = pdfs[index] ?? []: [string => any]
     let cur = pdf_item["bookmarked"] ?? false
     if cur { pdf_item["bookmarked"] = false } else { pdf_item["bookmarked"] = true }
-    return !cur
-}
+    <- !cur
+;
 
-:: tag_count(lib = any) (( num )) {
+:: tag_count(lib = any) (( num ))
     let tags = lib["tags"] ?? []: [any]
-    return len(tags)
-}
+    <- len(tags)
+;
 
-:: get_tag(lib = any, index = num) (( string )) {
+:: get_tag(lib = any, index = num) (( string ))
     let tags = lib["tags"] ?? []: [any]
-    if index < 0 || index >= len(tags) { return "" }
-    return str(tags[index] ?? "")
-}
+    if index < 0 || index >= len(tags) { <- "" }
+    <- str(tags[index] ?? "")
+;
 
-:: add_tag(lib = any, tag = string) (( [string => any] )) {
+:: add_tag(lib = any, tag = string) (( [string => any] ))
     let t = stdr.trim(tag)
     let ?l = lib
-    if stdr.len(t) == 0 { return l }
+    if stdr.len(t) == 0 { <- l }
     let ?tags = l["tags"] ?? []: [any]
-    for (let ?i = 0; i < len(tags); i += 1) {
-        if str(tags[i] ?? "") == t { return l }
-    }
+    for (let ?i = 0; i < len(tags); i += 1)
+        if str(tags[i] ?? "") == t { <- l }
     stdr.push(tags, t)
     l["tags"] = tags
-    return l
-}
+    <- l
+;
 
-:: remove_tag(lib = any, tag = string) (( [string => any] )) {
+:: remove_tag(lib = any, tag = string) (( [string => any] ))
     let ?l = lib
     let tags = l["tags"] ?? []: [any]
     let ?next = []: [any]
-    for (let ?i = 0; i < len(tags); i += 1) {
+    for (let ?i = 0; i < len(tags); i += 1)
         if str(tags[i] ?? "") != tag { stdr.push(next, tags[i]) }
-    }
     l["tags"] = next
-    return l
-}
+    <- l
+;
 
-:: set_pdf_tags(lib = any, index = num, new_tags = any) (( -- )) {
+:: set_pdf_tags(lib = any, index = num, new_tags = any) (( -- ))
     let pdfs = lib["pdfs"] ?? []: [any]
-    if index < 0 || index >= len(pdfs) { return }
+    if index < 0 || index >= len(pdfs) { <- }
     let ?pdf_item = pdfs[index] ?? []: [string => any]
     pdf_item["tags"] = new_tags
-}
+;
 
-:: pdf_has_tag(pdf_item = any, tag = string) (( bool )) {
+:: pdf_has_tag(pdf_item = any, tag = string) (( bool ))
     let tags = pdf_item["tags"] ?? []: [any]
-    for (let ?i = 0; i < len(tags); i += 1) {
-        if str(tags[i] ?? "") == tag { return true }
-    }
-    return false
-}
+    for (let ?i = 0; i < len(tags); i += 1)
+        if str(tags[i] ?? "") == tag { <- true }
+    <- false
+;
 
-:: get_continue_reading(lib = any) (( [any] )) {
+:: get_continue_reading(lib = any) (( [any] ))
     let pdfs = lib["pdfs"] ?? []: [any]
     let ?result = []: [any]
-    for (let ?i = 0; i < len(pdfs); i += 1) {
+    for (let ?i = 0; i < len(pdfs); i += 1)
         let pdf_item = pdfs[i] ?? []: [string => any]
         let lp = stdr.num(pdf_item["last_page"] ?? 0)
         let total = stdr.num(pdf_item["pages"] ?? 0)
-        if lp > 0 && lp < total {
+        if lp > 0 && lp < total
             let ?item = []: [string => any]
             item["index"] = i
             item["pdf_item"] = pdf_item
             result[len(result)] = item
-        }
-    }
-    return result
-}
+    <- result
+;
 
-:: sanitize_filename(name = string) (( string )) {
+:: sanitize_filename(name = string) (( string ))
     let ?out = ""
     let slen = stdr.len(name)
-    for (let ?i = 0; i < slen; i += 1) {
+    for (let ?i = 0; i < slen; i += 1)
         let c = stdr.char_at(name, i)
         let code = stdr.char_code(c)
         let ?ok = false
@@ -233,11 +222,9 @@ def ?CACHE_DIR = ""
         if code >= 65 && code <= 90 { ok = true }
         if code >= 48 && code <= 57 { ok = true }
         if c == "-" || c == "_" { ok = true }
-        if ok {
+        if ok
             out = out + c
-        } else {
+        else
             out = out + "_"
-        }
-    }
-    return out
-}
+    <- out
+;

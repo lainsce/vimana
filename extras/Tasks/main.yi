@@ -4,9 +4,9 @@ bring stdr
 bring cogito
 bring json
 
-macro is_blank_char() (( bool )) {
+!: is_blank_char() (( bool ))
     this == " " || this == "\t" || this == "\n" || this == "\r"
-}
+;
 
 def ?tasks = []: [string]
 def ?completed = []: [bool]
@@ -15,39 +15,33 @@ def ?draft_task = ""
 def ?draft_task_detail = ""
 def TASKS_STATE_PATH = ".tasks_state.json"
 
-: save_state() (( -- )) {
+: save_state() (( -- ))
     let ?payload = "{\"tasks\":["
-    for (let ?i = 0; i < len(tasks); i += 1) {
-        if i > 0 {
+    for (let ?i = 0; i < len(tasks); i += 1)
+        if i > 0
             payload = "$$payload$$,"
-        }
         let t = tasks[i] ?? ""
         let esc = json.escape(t)
         payload = "$$payload$$\"$$esc$$\""
-    }
 
     payload = "$$payload$$],\"completed\":["
-    for (let ?i = 0; i < len(completed); i += 1) {
-        if i > 0 {
+    for (let ?i = 0; i < len(completed); i += 1)
+        if i > 0
             payload = "$$payload$$,"
-        }
         payload = if completed[i] { "$$payload$$true" } else { "$$payload$$false" }
-    }
 
     payload = "$$payload$$]}"
     stdr.write_text_file(TASKS_STATE_PATH, payload)
-}
+;
 
-: load_state() (( -- )) {
+: load_state() (( -- ))
     let raw = stdr.read_text_file(TASKS_STATE_PATH)
-    if is_null(raw) {
-        return
-    }
+    if is_null(raw)
+        <-
 
     let parsed = json.parse_result(str(raw))
-    if !(parsed["ok"] ?? false) {
-        return
-    }
+    if !(parsed["ok"] ?? false)
+        <-
 
     let root = parsed["value"]
     let loaded_tasks = json.get(root, "tasks", []: [any])
@@ -56,126 +50,109 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     tasks = []: [string]
     completed = []: [bool]
 
-    for (let ?i = 0; i < len(loaded_tasks); i += 1) {
+    for (let ?i = 0; i < len(loaded_tasks); i += 1)
         tasks[len(tasks)] = str(loaded_tasks[i] ?? "")
-    }
 
-    for (let ?i = 0; i < len(tasks); i += 1) {
+    for (let ?i = 0; i < len(tasks); i += 1)
         let v = if i < len(loaded_completed) { loaded_completed[i] } else { false }
         completed[len(completed)] = (v == true)
-    }
-}
+;
 
-: trim_text(text = string) (( string )) {
+: trim_text(text = string) (( string ))
     let n = len(text)
-    if n == 0 {
-        return ""
-    }
+    if n == 0
+        <- ""
 
     let ?start = 0
-    for (; start < n; start += 1) {
+    for (; start < n; start += 1)
         let ch = text[start]
-        if !(ch !is_blank_char) {
+        if !(ch !is_blank_char)
             break
-        }
-    }
-    if start >= n {
-        return ""
-    }
+    if start >= n
+        <- ""
 
     let ?end = n - 1
-    for (; end >= start; end -= 1) {
+    for (; end >= start; end -= 1)
         let ch = text[end]
-        if !(ch !is_blank_char) {
+        if !(ch !is_blank_char)
             break
-        }
-    }
 
     let ?out = ""
-    for (let ?i = start; i <= end; i += 1) {
+    for (let ?i = start; i <= end; i += 1)
         out = "$$out$$ $$text[i]$$"
-    }
-    return out
-}
+    <- out
+;
 
-: request_rebuild() (( -- )) {
+: request_rebuild() (( -- ))
     let is_open = sheet_open_state.get()
     sheet_open_state.set(is_open)
-}
+;
 
-: open_create_sheet() (( -- )) {
+: open_create_sheet() (( -- ))
     draft_task = ""
     sheet_open_state.set(true)
-}
+;
 
-: close_create_sheet() (( -- )) {
+: close_create_sheet() (( -- ))
     draft_task = ""
     draft_task_detail = ""
     sheet_open_state.set(false)
-}
+;
 
-: add_task_from_sheet() (( -- )) {
+: add_task_from_sheet() (( -- ))
     let text = trim_text(draft_task)
     let detail = trim_text(draft_task_detail)
-    if len(text) == 0 {
-        return
-    }
+    if len(text) == 0
+        <-
     completed[len(completed)] = false
     let ?task_value = text
-    if len(detail) > 0 {
+    if len(detail) > 0
         task_value = "$$task_value$$ — $$detail$$"
-    }
     tasks[len(tasks)] = task_value
     close_create_sheet()
     save_state()
-}
+;
 
-: set_task_done(index = num, checked = bool) (( -- )) {
-    if index < 0 || index >= len(completed) {
-        return
-    }
+: set_task_done(index = num, checked = bool) (( -- ))
+    if index < 0 || index >= len(completed)
+        <-
     completed[index] = checked
     request_rebuild()
     save_state()
-}
+;
 
-: remove_task(index = num) (( -- )) {
-    if index < 0 || index >= len(tasks) {
-        return
-    }
+: remove_task(index = num) (( -- ))
+    if index < 0 || index >= len(tasks)
+        <-
 
     let ?next_tasks = []: [string]
     let ?next_completed = []: [bool]
 
-    for (let ?i = 0; i < len(tasks); i += 1) {
-        if i == index {
+    for (let ?i = 0; i < len(tasks); i += 1)
+        if i == index
             continue
-        }
 
         next_tasks[len(next_tasks)] = tasks[i] ?? ""
 
         let done_value = if i < len(completed) { completed[i] } else { false }
         next_completed[len(next_completed)] = done_value
-    }
 
     tasks = next_tasks
     completed = next_completed
 
     request_rebuild()
     save_state()
-}
+;
 
-: completed_count() (( num )) {
+: completed_count() (( num ))
     let ?count = 0
-    for (let ?i = 0; i < len(completed); i += 1) {
-        if completed[i] {
+    for (let ?i = 0; i < len(completed); i += 1)
+        if completed[i]
             count += 1
-        }
-    }
-    return count
-}
+    <- count
+;
 
-: build_task_card(index = num, text = string, checked = bool) (( cogito.Card )) {
+: build_task_card(index = num, text = string, checked = bool) (( cogito.Card ))
     let card = cogito.card("Task")
     .set_hexpand(true)
     .set_gap(8)
@@ -208,10 +185,10 @@ def TASKS_STATE_PATH = ".tasks_state.json"
 
     card.add(actions)
 
-    return card
-}
+    <- card
+;
 
-: build_task_sheet() (( cogito.BottomSheet )) {
+: build_task_sheet() (( cogito.BottomSheet ))
     let sheet = cogito.bottom_sheet("Create Task")
     .set_gap(12)
 
@@ -255,10 +232,10 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     actions.add(add_btn)
 
     sheet.add(actions)
-    return sheet
-}
+    <- sheet
+;
 
-: build_main_content() (( cogito.VStack )) {
+: build_main_content() (( cogito.VStack ))
     let total = len(tasks)
 
     let content = cogito.vstack()
@@ -267,7 +244,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     .set_vexpand(true)
     .set_padding(14, 14, 90, 14)
 
-    if total == 0 {
+    if total == 0
         let empty = cogito.empty_page("No Tasks Yet")
         .set_description("Tap the + button to create your first task.")
         .set_icon("sf:checklist")
@@ -277,8 +254,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
         .set_hexpand(true)
         .set_class("task-empty")
         content.add(empty)
-        return content
-    }
+        <- content
 
     let scroller = cogito.scroller()
     .set_hexpand(true)
@@ -290,18 +266,17 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     .set_hexpand(true)
 
     let done_len = len(completed)
-    for (let ?i = 0; i < total; i += 1) {
+    for (let ?i = 0; i < total; i += 1)
         let checked = if i < done_len { completed[i] } else { false }
         let text = tasks[i] ?? ""
         list.add(build_task_card(i, text, checked))
-    }
 
     scroller.add(list)
     content.add(scroller)
-    return content
-}
+    <- content
+;
 
-: show_about_window(win = cogito.Window) (( -- )) {
+: show_about_window(win = cogito.Window) (( -- ))
     let dlg = cogito.dialog("")
     let content = cogito.vstack()
     content.align_center()
@@ -312,9 +287,9 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     content.add(aw)
     dlg.add(content)
     win.set_dialog(dlg)
-}
+;
 
-: build_window(win = cogito.Window) (( -- )) {
+: build_window(win = cogito.Window) (( -- ))
     let total = len(tasks)
     let done = completed_count()
     let is_sheet_open = sheet_open_state.get() == true
@@ -329,7 +304,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
 
     win.add(build_main_content())
 
-    if is_sheet_open {
+    if is_sheet_open
         let sheet_layer = cogito.zstack()
         .set_hexpand(true)
         .set_vexpand(true)
@@ -337,8 +312,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
         .set_padding(12, 12, 12, 12)
         sheet_layer.add(build_task_sheet())
         win.add(sheet_layer)
-        return
-    }
+        <-
 
     let fab_layer = cogito.zstack()
     .set_hexpand(true)
@@ -353,9 +327,9 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     })
     fab_layer.add(fab)
     win.add(fab_layer)
-}
+;
 
-entry() (( -- )) {
+-> ()
     load_state()
 
     let app = cogito.app()
@@ -373,4 +347,4 @@ entry() (( -- )) {
     })
 
     app.run(win)
-}
+;

@@ -6,56 +6,49 @@ bring net
 
 def ?CACHE_DIR = ""
 
-: ensure_cache_dir() (( string )) {
-    if stdr.len(CACHE_DIR) > 0 {
-        return CACHE_DIR
-    }
+: ensure_cache_dir() (( string ))
+    if stdr.len(CACHE_DIR) > 0
+        <- CACHE_DIR
 
     let run = stdr.run_command("echo $HOME")
     let ?home = stdr.trim(stdr.str(run[1] ?? ""))
-    if stdr.len(home) == 0 {
+    if stdr.len(home) == 0
         home = "/tmp"
-    }
 
     let dir = stdr.join_path(home, ".cache/victrola/artist-images")
     let qdir = stdr.shell_quote(dir)
     stdr.run_command("mkdir -p $$qdir$$")
     CACHE_DIR = dir
-    return dir
-}
+    <- dir
+;
 
-: safe_filename(artist = string) (( string )) {
+: safe_filename(artist = string) (( string ))
     let ?out = ""
     let n = stdr.len(artist)
-    for (let ?i = 0; i < n; i = i + 1) {
+    for (let ?i = 0; i < n; i = i + 1)
         let ch = stdr.slice(artist, i, i + 1)
         let code = stdr.char_code(ch)
         let is_alpha = (code >= 97 && code <= 122) || (code >= 65 && code <= 90)
         let is_alnum = is_alpha || (code >= 48 && code <= 57)
-        if is_alnum || ch == "-" || ch == "_" {
+        if is_alnum || ch == "-" || ch == "_"
             out = stdr.str_concat(out, ch)
-        } else {
+        else
             out = stdr.str_concat(out, "_")
-        }
-    }
-    return out
-}
+    <- out
+;
 
-:: fetch_artist_image(artist = string) (( string )) {
-    if stdr.len(stdr.trim(artist)) == 0 || artist == "Unknown Artist" {
-        return ""
-    }
+:: fetch_artist_image(artist = string) (( string ))
+    if stdr.len(stdr.trim(artist)) == 0 || artist == "Unknown Artist"
+        <- ""
 
     let dir = ensure_cache_dir()
     let fname = safe_filename(artist)
-    if stdr.len(fname) == 0 {
-        return ""
-    }
+    if stdr.len(fname) == 0
+        <- ""
 
     let dest = stdr.join_path(dir, "$$fname$$.jpg")
-    if stdr.file_exists(dest) {
-        return dest
-    }
+    if stdr.file_exists(dest)
+        <- dest
 
     let resp = net.get(
         "https://api.deezer.com/search/artist",
@@ -64,62 +57,51 @@ def ?CACHE_DIR = ""
         10
     )
 
-    if !(resp["ok"] ?? false) {
-        return ""
-    }
+    if !(resp["ok"] ?? false)
+        <- ""
 
     let body = stdr.str(resp["body"] ?? "")
     let root = json.parse(body)
-    if stdr.is_null(root) {
-        return ""
-    }
+    if stdr.is_null(root)
+        <- ""
 
     let data = root["data"] ?? []: [any]
-    if stdr.len(data) == 0 {
-        return ""
-    }
+    if stdr.len(data) == 0
+        <- ""
 
     let first = data[0] ?? []: [string => any]
     let ?img_url = stdr.str(first["picture_medium"] ?? "")
-    if stdr.len(img_url) == 0 {
+    if stdr.len(img_url) == 0
         img_url = stdr.str(first["picture"] ?? "")
-    }
-    if stdr.len(img_url) == 0 {
-        return ""
-    }
+    if stdr.len(img_url) == 0
+        <- ""
 
     let qdest = stdr.shell_quote(dest)
     let qurl = stdr.shell_quote(img_url)
     let dl_cmd = "curl -sS -L --max-time 10 -o $$qdest$$ $$qurl$$"
     let run = stdr.run_command(dl_cmd)
     let exit = stdr.num(run[0] ?? 1)
-    if exit != 0 {
-        return ""
-    }
+    if exit != 0
+        <- ""
 
-    if stdr.file_exists(dest) {
-        return dest
-    }
+    if stdr.file_exists(dest)
+        <- dest
 
-    return ""
-}
+    <- ""
+;
 
-:: fetch_missing(artist_names = any, ?artist_image_map = any) (( any )) {
-    for (let ?i = 0; i < stdr.len(artist_names); i = i + 1) {
+:: fetch_missing(artist_names = any, ?artist_image_map = any) (( any ))
+    for (let ?i = 0; i < stdr.len(artist_names); i = i + 1)
         let ?name = stdr.str(artist_names[i] ?? "")
-        if stdr.len(name) == 0 || name == "Unknown Artist" {
+        if stdr.len(name) == 0 || name == "Unknown Artist"
             continue
-        }
 
         let ?existing = stdr.str(artist_image_map[name] ?? "")
-        if stdr.len(existing) > 0 && stdr.file_exists(existing) {
+        if stdr.len(existing) > 0 && stdr.file_exists(existing)
             continue
-        }
 
         let ?path = fetch_artist_image(name)
-        if stdr.len(path) > 0 {
+        if stdr.len(path) > 0
             artist_image_map[name] = path
-        }
-    }
-    return artist_image_map
-}
+    <- artist_image_map
+;

@@ -3,18 +3,18 @@ cask gui_hello
 bring stdr
 bring cogito
 
-macro fill_center() (( cogito.Button )) {
+!: fill_center() (( cogito.Button ))
     this.set_hexpand(true)
     .set_vexpand(true)
     .set_halign(1)
     .set_valign(1)
-}
+;
 
-: on_btn(btn = cogito.Button) (( -- )) {
+: on_btn(btn = cogito.Button) (( -- ))
     btn.set_text("This Button Got Clicked!")
-}
+;
 
-: build_ui(win = cogito.Window) (( -- )) {
+: build_ui(win = cogito.Window) (( -- ))
     let vstack = cogito.vstack()
     .set_gap(8)
     .set_padding(0, 18, 18, 18)
@@ -32,9 +32,9 @@ macro fill_center() (( cogito.Button )) {
 
     vstack.add(btn)
     win.add(vstack)
-}
+;
 
-entry () (( -- )) {
+-> ()
     let app = cogito.app()
     .set_appid("yis.cogito.Hello")
     .set_accent_color("#72dec2", false)
@@ -43,4 +43,4 @@ entry () (( -- )) {
     .build(build_ui)
     .set_resizable(false)
     app.run(win)
-}
+;

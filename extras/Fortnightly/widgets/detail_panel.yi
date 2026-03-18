@@ -16,7 +16,7 @@ bring utils.parse
     detail_lede = cogito.Label,
     detail_body = cogito.Label,
     close_handler = any
-) (( cogito.Button )) {
+) (( cogito.Button ))
     detail_panel
     .set_hexpand(true)
     .set_vexpand(true)
@@ -90,8 +90,8 @@ bring utils.parse
     detail_scroll.add(body_content)
     detail_panel.add(detail_scroll)
 
-    return back_btn
-}
+    <- back_btn
+;
 
 :: show_article(
     index = num,
@@ -106,10 +106,9 @@ bring utils.parse
     detail_back_btn = cogito.Button,
     list_panel = cogito.VStack,
     is_compact_mode = bool
-) (( -- )) {
-    if index < 0 || index >= len(articles) {
-        return
-    }
+) (( -- ))
+    if index < 0 || index >= len(articles)
+        <-
     let a = articles[index] ?? []: [string => any]
     let title = str(a["title"] ?? "")
     let date = str(a["date"] ?? "")
@@ -122,54 +121,47 @@ bring utils.parse
     detail_bar.set_title(title)
     detail_bar.set_subtitle(long_date)
     let ?img_src = local_image
-    if len(img_src) == 0 {
+    if len(img_src) == 0
         img_src = image_url
-    }
-    if len(img_src) > 0 {
+    if len(img_src) > 0
         detail_image.set_icon(img_src)
         detail_image.set_visible(true)
-    } else {
+    else
         detail_image.set_visible(false)
-    }
-    if stdr.len(caption) > 0 {
+    if stdr.len(caption) > 0
         detail_caption.set_text(caption)
         detail_caption.set_visible(true)
-    } else {
+    else
         detail_caption.set_visible(false)
-    }
     let lede_sep = stdr.index_of(body, "\n\n")
-    if lede_sep > 0 {
+    if lede_sep > 0
         let rest = stdr.slice(body, lede_sep + 2, stdr.len(body))
         detail_lede.set_text(stdr.slice(body, 0, lede_sep))
         detail_lede.set_visible(true)
         detail_body.set_text(rest)
         detail_body.set_visible(stdr.len(rest) > 0)
-    } else {
+    else
         detail_lede.set_text(body)
         detail_lede.set_visible(stdr.len(body) > 0)
         detail_body.set_text("")
         detail_body.set_visible(false)
-    }
 
     -- Populate category chips
     let categories = a["categories"] ?? []: [any]
     let cat_count = stdr.len(categories)
     detail_chips.clear()
     let ?chip_i = 0
-    for (let ?ci = 0; ci < cat_count && ci < 8; ci += 1) {
+    for (let ?ci = 0; ci < cat_count && ci < 8; ci += 1)
         let cat_text = str(categories[ci] ?? "")
-        if len(cat_text) > 0 {
+        if len(cat_text) > 0
             detail_chips.add(cogito.chip(cat_text).set_class("category-chip").set_disabled(true), chip_i, 0, 1, 1)
             chip_i += 1
-        }
-    }
     detail_chips.set_visible(chip_i > 0)
 
-    if is_compact_mode {
+    if is_compact_mode
         detail_panel.set_visible(true)
         detail_panel.set_hexpand(true)
         detail_back_btn.set_visible(true)
         list_panel.set_visible(false)
         list_panel.set_hexpand(false)
-    }
-}
+;

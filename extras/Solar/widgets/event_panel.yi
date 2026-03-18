@@ -18,7 +18,7 @@ bring utils.calendar
     hero_weekday = cogito.Label,
     hero_day_num = cogito.Label,
     hero_month = cogito.Label
-) (( cogito.Button )) {
+) (( cogito.Button ))
     panel
     .set_gap(0)
     .set_padding(0, 0, 0, 0)
@@ -133,8 +133,8 @@ bring utils.calendar
 
     panel.add(body)
 
-    return back_btn
-}
+    <- back_btn
+;
 
 :: refresh_events(
     event_list = cogito.ContentList,
@@ -147,59 +147,54 @@ bring utils.calendar
     sel_day = num,
     on_event_click = any,
     on_delete_event = any
-) (( -- )) {
+) (( -- ))
     event_list.clear()
 
     let today_y = calendar.current_year()
     let today_m = calendar.current_month()
     let today_d = calendar.current_day()
 
-    if sel_day == today_d && sel_month == today_m && sel_year == today_y {
+    if sel_day == today_d && sel_month == today_m && sel_year == today_y
         title_label.set_text("Today")
-    } else {
+    else
         let date_str = calendar.format_date_label(sel_year, sel_month, sel_day)
         title_label.set_text(date_str)
-    }
 
     let sub = calendar.format_day_subtitle(sel_year, sel_month, sel_day)
     subtitle_label.set_text(sub)
 
     let ?day_events = []: [any]
     let n = len(events)
-    for (let ?i = 0; i < n; i += 1) {
+    for (let ?i = 0; i < n; i += 1)
         let ev = events[i] ?? []: [string => any]
         let ey = stdr.num(ev["year"] ?? 0)
         let em = stdr.num(ev["month"] ?? 0)
         let ed = stdr.num(ev["day"] ?? 0)
-        if ey == sel_year && em == sel_month && ed == sel_day {
+        if ey == sel_year && em == sel_month && ed == sel_day
             stdr.push(day_events, ev)
-        }
-    }
 
-    if len(day_events) == 0 {
+    if len(day_events) == 0
         empty_holder.set_visible(true)
         event_list.set_visible(false)
-        return
-    }
+        <-
 
     empty_holder.set_visible(false)
     event_list.set_visible(true)
 
-    for (let ?j = 0; j < len(day_events); j += 1) {
+    for (let ?j = 0; j < len(day_events); j += 1)
         let ev = day_events[j] ?? []: [string => any]
         let row = _build_event_row(ev, j, on_event_click, on_delete_event)
         event_list.add(row)
-    }
-}
+;
 
-: _build_event_row(ev = any, index = num, on_event_click = any, on_delete_event = any) (( cogito.HStack )) {
+: _build_event_row(ev = any, index = num, on_event_click = any, on_delete_event = any) (( cogito.HStack ))
     let title = str(ev["title"] ?? "Untitled")
     let allday = stdr.num(ev["allday"] ?? 0)
     let color = str(ev["color"] ?? "#6B38FB")
     let desc = str(ev["description"] ?? "")
 
     let ?time_str = "All Day"
-    if allday != 1 {
+    if allday != 1
         let sh = stdr.num(ev["start_hour"] ?? 0)
         let sm = stdr.num(ev["start_min"] ?? 0)
         let eh = stdr.num(ev["end_hour"] ?? 0)
@@ -207,7 +202,6 @@ bring utils.calendar
         let start_str = calendar.format_time_12h(sh, sm)
         let end_str = calendar.format_time_12h(eh, em)
         time_str = "$$start_str$$ – $$end_str$$"
-    }
 
     let row = cogito.hstack()
     .set_gap(0)
@@ -239,14 +233,13 @@ bring utils.calendar
     .set_ellipsis(true)
     info_col.add(title_label)
 
-    if stdr.len(desc) > 0 {
+    if stdr.len(desc) > 0
         let desc_label = cogito.label(desc)
         .set_class("solar-event-desc")
         .set_align(0)
         .set_text_align(0)
         .set_ellipsis(true)
         info_col.add(desc_label)
-    }
 
     row.add(info_col)
 
@@ -291,5 +284,5 @@ bring utils.calendar
     })
     row.add(overflow_btn)
 
-    return row
-}
+    <- row
+;

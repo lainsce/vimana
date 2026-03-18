@@ -4,9 +4,9 @@ bring stdr
 bring cogito
 bring json
 
-macro append_digit(d = num) (( num )) {
+!: append_digit(d = num) (( num ))
     this * 10 + d
-}
+;
 
 def display_expression = cogito.label("")
 def display_working = cogito.label("0")
@@ -30,7 +30,7 @@ def ABACUS_STATE_PATH = ".abacus_state.json"
 def ABOUT_MORE_INFO_URL = "https://github.com/lainsce/yis"
 def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
-: save_state() (( -- )) {
+: save_state() (( -- ))
     let pending_op_esc = json.escape(pending_op)
     let conv_input_esc = json.escape(conv_input.text())
     let ?payload = "{"
@@ -49,18 +49,16 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     payload = "$$payload$$\"conv_input\":\"$$conv_input_esc$$\""
     payload = "$$payload$$}"
     stdr.write_text_file(ABACUS_STATE_PATH, payload)
-}
+;
 
-: load_state() (( -- )) {
+: load_state() (( -- ))
     let raw = stdr.read_text_file(ABACUS_STATE_PATH)
-    if is_null(raw) {
-        return
-    }
+    if is_null(raw)
+        <-
 
     let parsed = json.parse_result(str(raw))
-    if !(parsed["ok"] ?? false) {
-        return
-    }
+    if !(parsed["ok"] ?? false)
+        <-
 
     let root = parsed["value"]
     current_value = json.get(root, "current_value", 0.0)
@@ -74,31 +72,27 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     conv_category = json.get(root, "conv_category", 0)
     conv_input_state = str(json.get(root, "conv_input", "1"))
     state_loaded = true
-}
+;
 
-: apply_loaded_state(view_switcher = cogito.ViewSwitcher) (( -- )) {
-    if has_error {
+: apply_loaded_state(view_switcher = cogito.ViewSwitcher) (( -- ))
+    if has_error
         clear_expression()
         update_display_value("Error")
-    } elif pending_op != "" {
+    elif pending_op != ""
         let rhs = if reset_input { "" } else { str(current_value) }
         set_expression(str(stored_value), pending_op, rhs, false)
         update_display_value(str(current_value))
-    } else {
+    else
         clear_expression()
         update_display_value(str(current_value))
-    }
 
-    if conv_category < 0 || conv_category > 3 {
+    if conv_category < 0 || conv_category > 3
         conv_category = 0
-    }
     let count = conv_unit_count()
-    if conv_from_idx < 0 || conv_from_idx >= count {
+    if conv_from_idx < 0 || conv_from_idx >= count
         conv_from_idx = 0
-    }
-    if conv_to_idx < 0 || conv_to_idx >= count {
+    if conv_to_idx < 0 || conv_to_idx >= count
         conv_to_idx = if count > 1 { 1 } else { 0 }
-    }
 
     conv_category_dd.set_selected(conv_category)
     conv_apply_unit_items()
@@ -107,31 +101,30 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     conv_input.set_text(conv_input_state)
     do_convert()
 
-    if showing_converter {
+    if showing_converter
         view_switcher.set_active("converter")
-    } else {
+    else
         view_switcher.set_active("calculator")
-    }
-}
+;
 
-: update_display_value(text = string) (( -- )) {
+: update_display_value(text = string) (( -- ))
     display_working.set_text(text)
-}
+;
 
-: clear_expression() (( -- )) {
+: clear_expression() (( -- ))
     display_expression.set_text("")
-}
+;
 
-: set_expression(lhs_text = string, op_text = string, rhs_text = string, show_equals = bool) (( -- )) {
+: set_expression(lhs_text = string, op_text = string, rhs_text = string, show_equals = bool) (( -- ))
     let text = if rhs_text == "" {
         if show_equals { "$$lhs_text$$ $$op_text$$ =" } else { "$$lhs_text$$ $$op_text$$" }
     } else {
         if show_equals { "$$lhs_text$$ $$op_text$$ $$rhs_text$$ =" } else { "$$lhs_text$$ $$op_text$$ $$rhs_text$$" }
     }
     display_expression.set_text(text)
-}
+;
 
-: clear_all() (( -- )) {
+: clear_all() (( -- ))
     current_value = 0.0
     stored_value = 0.0
     pending_op = ""
@@ -140,28 +133,25 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     clear_expression()
     update_display_value("0")
     save_state()
-}
+;
 
-: commit_pending(show_equals = bool) (( -- )) {
+: commit_pending(show_equals = bool) (( -- ))
     let op = pending_op
-    if op == "" {
-        return
-    }
-    if reset_input {
-        return
-    }
+    if op == ""
+        <-
+    if reset_input
+        <-
 
     let lhs = stored_value
     let rhs = current_value
 
-    if op == "/" && rhs == 0 {
+    if op == "/" && rhs == 0
         has_error = true
         pending_op = ""
         reset_input = true
         clear_expression()
         update_display_value("Error")
-        return
-    }
+        <-
 
     let result = if op == "+" {
         lhs + rhs
@@ -177,134 +167,123 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     stored_value = result
     set_expression(str(lhs), op, str(rhs), show_equals)
     update_display_value(str(result))
-}
+;
 
-: input_digit(d = num) (( -- )) {
-    if has_error {
+: input_digit(d = num) (( -- ))
+    if has_error
         clear_all()
-    }
 
     let ?next = current_value
-    if reset_input {
+    if reset_input
         next = d
         reset_input = false
-    } else {
+    else
         next = next !append_digit d
-    }
 
     current_value = next
-    if pending_op != "" {
+    if pending_op != ""
         set_expression(str(stored_value), pending_op, str(next), false)
-    } else {
+    else
         clear_expression()
-    }
     update_display_value(str(next))
     save_state()
-}
+;
 
-: choose_operator(op = string) (( -- )) {
-    if has_error {
+: choose_operator(op = string) (( -- ))
+    if has_error
         clear_all()
-    }
 
-    if pending_op != "" && !reset_input {
+    if pending_op != "" && !reset_input
         commit_pending(false)
-        if has_error {
-            return
-        }
-    } else {
+        if has_error
+            <-
+    else
         stored_value = current_value
-    }
 
     pending_op = op
     reset_input = true
     set_expression(str(stored_value), pending_op, "", false)
     update_display_value(str(current_value))
     save_state()
-}
+;
 
-: evaluate() (( -- )) {
-    if has_error {
+: evaluate() (( -- ))
+    if has_error
         clear_all()
-        return
-    }
-    if pending_op == "" {
-        return
-    }
+        <-
+    if pending_op == ""
+        <-
 
     commit_pending(true)
-    if has_error {
-        return
-    }
+    if has_error
+        <-
 
     pending_op = ""
     reset_input = true
     save_state()
-}
+;
 
-: digit_button(d = num) (( cogito.Button )) {
+: digit_button(d = num) (( cogito.Button ))
     let btn = cogito.button(str(d))
     .set_class("calc-digit")
     .on_click((b = cogito.Button) => {
         input_digit(d)
     })
-    return btn
-}
+    <- btn
+;
 
-: operator_button(text = string, op = string) (( cogito.Button )) {
+: operator_button(text = string, op = string) (( cogito.Button ))
     let btn = cogito.button(text)
     .set_class("calc-op")
     .on_click((b = cogito.Button) => {
         choose_operator(op)
     })
-    return btn
-}
+    <- btn
+;
 
-: clear_button() (( cogito.Button )) {
+: clear_button() (( cogito.Button ))
     let btn = cogito.button("C")
     .set_class("calc-clear")
     .on_click((b = cogito.Button) => {
         clear_all()
     })
-    return btn
-}
+    <- btn
+;
 
-: equals_button() (( cogito.Button )) {
+: equals_button() (( cogito.Button ))
     let btn = cogito.button("=")
     .set_class("calc-equals")
     .on_click((b = cogito.Button) => {
         evaluate()
     })
-    return btn
-}
+    <- btn
+;
 
-: spacer() (( cogito.Label )) {
+: spacer() (( cogito.Label ))
     let s = cogito.label("")
     .set_class("calc-spacer")
-    return s
-}
+    <- s
+;
 
-: aton(s = string) (( num )) {
+: aton(s = string) (( num ))
     let ?result = 0.0
     let ?i = 0
     let ?neg = false
     let slen = len(s)
-    if slen == 0 {
-        return 0.0
-    }
-    if s[0] == "-" {
+    if slen == 0
+        <- 0.0
+    if s[0] == "-"
         neg = true
         i = 1
-    }
     let ?frac = false
     let ?frac_div = 1.0
     let ?done = false
-    for (; i < slen && !done; i += 1) {
+    for (; i < slen && !done; i += 1)
         let c = s[i]
         let ?d = 0 - 1
-        if c == "." {
+        if c == "."
             frac = true
-        } elif c == "0" { d = 0 }
+        elif c == "0" { d = 0 }
         elif c == "1" { d = 1 }
         elif c == "2" { d = 2 }
         elif c == "3" { d = 3 }
@@ -315,132 +294,123 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
         elif c == "8" { d = 8 }
         elif c == "9" { d = 9 }
         else { done = true }
-        if d >= 0 {
-            if frac {
+        if d >= 0
+            if frac
                 frac_div *= 10.0
                 result += d / frac_div
-            } else {
+            else
                 result = result * 10 + d
-            }
-        }
-    }
-    if neg {
+    if neg
         result = 0 - result
-    }
-    return result
-}
+    <- result
+;
 
-: conv_unit_names() (( [any] )) {
-    if conv_category == 0 {
-        return ["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"]
-    } elif conv_category == 1 {
-        return ["Kilogram", "Gram", "Milligram", "Pound", "Ounce", "Ton"]
-    } elif conv_category == 2 {
-        return ["Celsius", "Fahrenheit", "Kelvin"]
-    } else {
-        return ["Liter", "Milliliter", "Gallon", "Quart", "Cup", "Fluid Oz"]
-    }
-}
+: conv_unit_names() (( [any] ))
+    if conv_category == 0
+        <- ["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"]
+    elif conv_category == 1
+        <- ["Kilogram", "Gram", "Milligram", "Pound", "Ounce", "Ton"]
+    elif conv_category == 2
+        <- ["Celsius", "Fahrenheit", "Kelvin"]
+    else
+        <- ["Liter", "Milliliter", "Gallon", "Quart", "Cup", "Fluid Oz"]
+;
 
-: conv_unit_count() (( num )) {
-    if conv_category == 0 {
-        return 8
-    } elif conv_category == 1 {
-        return 6
-    } elif conv_category == 2 {
-        return 3
-    }
-    return 6
-}
+: conv_unit_count() (( num ))
+    if conv_category == 0
+        <- 8
+    elif conv_category == 1
+        <- 6
+    elif conv_category == 2
+        <- 3
+    <- 6
+;
 
-: conv_apply_unit_items() (( -- )) {
-    if conv_category == 0 {
+: conv_apply_unit_items() (( -- ))
+    if conv_category == 0
         conv_from_dd.set_items(["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"])
         conv_to_dd.set_items(["Meter", "Kilometer", "Centimeter", "Millimeter", "Mile", "Yard", "Foot", "Inch"])
-    } elif conv_category == 1 {
+    elif conv_category == 1
         conv_from_dd.set_items(["Kilogram", "Gram", "Milligram", "Pound", "Ounce", "Ton"])
         conv_to_dd.set_items(["Kilogram", "Gram", "Milligram", "Pound", "Ounce", "Ton"])
-    } elif conv_category == 2 {
+    elif conv_category == 2
         conv_from_dd.set_items(["Celsius", "Fahrenheit", "Kelvin"])
         conv_to_dd.set_items(["Celsius", "Fahrenheit", "Kelvin"])
-    } else {
+    else
         conv_from_dd.set_items(["Liter", "Milliliter", "Gallon", "Quart", "Cup", "Fluid Oz"])
         conv_to_dd.set_items(["Liter", "Milliliter", "Gallon", "Quart", "Cup", "Fluid Oz"])
-    }
-}
+;
 
-: conv_to_base(value = num, idx = num) (( num )) {
-    if conv_category == 0 {
-        if idx == 0 { return value }
-        elif idx == 1 { return value * 1000 }
-        elif idx == 2 { return value / 100 }
-        elif idx == 3 { return value / 1000 }
-        elif idx == 4 { return value * 1609.344 }
-        elif idx == 5 { return value * 0.9144 }
-        elif idx == 6 { return value * 0.3048 }
-        else { return value * 0.0254 }
-    } elif conv_category == 1 {
-        if idx == 0 { return value }
-        elif idx == 1 { return value / 1000 }
-        elif idx == 2 { return value / 1000000 }
-        elif idx == 3 { return value * 0.453592 }
-        elif idx == 4 { return value * 0.0283495 }
-        else { return value * 907.185 }
-    } elif conv_category == 2 {
-        if idx == 0 { return value }
-        elif idx == 1 { return (value - 32) * 5 / 9 }
-        else { return value - 273.15 }
-    } else {
-        if idx == 0 { return value }
-        elif idx == 1 { return value / 1000 }
-        elif idx == 2 { return value * 3.78541 }
-        elif idx == 3 { return value * 0.946353 }
-        elif idx == 4 { return value * 0.236588 }
-        else { return value * 0.0295735 }
-    }
-}
+: conv_to_base(value = num, idx = num) (( num ))
+    if conv_category == 0
+        if idx == 0 { <- value }
+        elif idx == 1 { <- value * 1000 }
+        elif idx == 2 { <- value / 100 }
+        elif idx == 3 { <- value / 1000 }
+        elif idx == 4 { <- value * 1609.344 }
+        elif idx == 5 { <- value * 0.9144 }
+        elif idx == 6 { <- value * 0.3048 }
+        else { <- value * 0.0254 }
+    elif conv_category == 1
+        if idx == 0 { <- value }
+        elif idx == 1 { <- value / 1000 }
+        elif idx == 2 { <- value / 1000000 }
+        elif idx == 3 { <- value * 0.453592 }
+        elif idx == 4 { <- value * 0.0283495 }
+        else { <- value * 907.185 }
+    elif conv_category == 2
+        if idx == 0 { <- value }
+        elif idx == 1 { <- (value - 32) * 5 / 9 }
+        else { <- value - 273.15 }
+    else
+        if idx == 0 { <- value }
+        elif idx == 1 { <- value / 1000 }
+        elif idx == 2 { <- value * 3.78541 }
+        elif idx == 3 { <- value * 0.946353 }
+        elif idx == 4 { <- value * 0.236588 }
+        else { <- value * 0.0295735 }
+;
 
-: conv_from_base(value = num, idx = num) (( num )) {
-    if conv_category == 0 {
-        if idx == 0 { return value }
-        elif idx == 1 { return value / 1000 }
-        elif idx == 2 { return value * 100 }
-        elif idx == 3 { return value * 1000 }
-        elif idx == 4 { return value / 1609.344 }
-        elif idx == 5 { return value / 0.9144 }
-        elif idx == 6 { return value / 0.3048 }
-        else { return value / 0.0254 }
-    } elif conv_category == 1 {
-        if idx == 0 { return value }
-        elif idx == 1 { return value * 1000 }
-        elif idx == 2 { return value * 1000000 }
-        elif idx == 3 { return value / 0.453592 }
-        elif idx == 4 { return value / 0.0283495 }
-        else { return value / 907.185 }
-    } elif conv_category == 2 {
-        if idx == 0 { return value }
-        elif idx == 1 { return value * 9 / 5 + 32 }
-        else { return value + 273.15 }
-    } else {
-        if idx == 0 { return value }
-        elif idx == 1 { return value * 1000 }
-        elif idx == 2 { return value / 3.78541 }
-        elif idx == 3 { return value / 0.946353 }
-        elif idx == 4 { return value / 0.236588 }
-        else { return value / 0.0295735 }
-    }
-}
+: conv_from_base(value = num, idx = num) (( num ))
+    if conv_category == 0
+        if idx == 0 { <- value }
+        elif idx == 1 { <- value / 1000 }
+        elif idx == 2 { <- value * 100 }
+        elif idx == 3 { <- value * 1000 }
+        elif idx == 4 { <- value / 1609.344 }
+        elif idx == 5 { <- value / 0.9144 }
+        elif idx == 6 { <- value / 0.3048 }
+        else { <- value / 0.0254 }
+    elif conv_category == 1
+        if idx == 0 { <- value }
+        elif idx == 1 { <- value * 1000 }
+        elif idx == 2 { <- value * 1000000 }
+        elif idx == 3 { <- value / 0.453592 }
+        elif idx == 4 { <- value / 0.0283495 }
+        else { <- value / 907.185 }
+    elif conv_category == 2
+        if idx == 0 { <- value }
+        elif idx == 1 { <- value * 9 / 5 + 32 }
+        else { <- value + 273.15 }
+    else
+        if idx == 0 { <- value }
+        elif idx == 1 { <- value * 1000 }
+        elif idx == 2 { <- value / 3.78541 }
+        elif idx == 3 { <- value / 0.946353 }
+        elif idx == 4 { <- value / 0.236588 }
+        else { <- value / 0.0295735 }
+;
 
-: do_convert() (( -- )) {
+: do_convert() (( -- ))
     let input_text = conv_input.text()
     conv_input_state = input_text
     let input_val = aton(input_text)
     let base = conv_to_base(input_val, conv_from_idx)
     let result = conv_from_base(base, conv_to_idx)
     conv_output.set_text(str(result))
-}
+;
 
-: swap_conv() (( -- )) {
+: swap_conv() (( -- ))
     let old_from = conv_from_idx
     let old_to = conv_to_idx
     conv_from_idx = old_to
@@ -453,12 +423,11 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     conv_output.set_text(old_input)
     conv_input_state = conv_input.text()
     save_state()
-}
+;
 
-: refresh_conv_units() (( -- )) {
-    if conv_category < 0 || conv_category > 3 {
+: refresh_conv_units() (( -- ))
+    if conv_category < 0 || conv_category > 3
         conv_category = 0
-    }
     conv_apply_unit_items()
     conv_from_idx = 0
     conv_to_idx = 1
@@ -468,9 +437,9 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     conv_input_state = "1"
     do_convert()
     save_state()
-}
+;
 
-: build_converter_ui() (( cogito.VStack )) {
+: build_converter_ui() (( cogito.VStack ))
     let panel = cogito.vstack()
     panel.set_hexpand(true)
     panel.set_vexpand(true)
@@ -493,12 +462,10 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     .set_gap(6)
 
     let unit_count = conv_unit_count()
-    if conv_from_idx < 0 || conv_from_idx >= unit_count {
+    if conv_from_idx < 0 || conv_from_idx >= unit_count
         conv_from_idx = 0
-    }
-    if conv_to_idx < 0 || conv_to_idx >= unit_count {
+    if conv_to_idx < 0 || conv_to_idx >= unit_count
         conv_to_idx = if unit_count > 1 { 1 } else { 0 }
-    }
 
     conv_apply_unit_items()
 
@@ -551,10 +518,10 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     panel.add(to_row)
 
     do_convert()
-    return panel
-}
+    <- panel
+;
 
-: show_about_window(win = cogito.Window) (( -- )) {
+: show_about_window(win = cogito.Window) (( -- ))
     let dlg = cogito.dialog("")
     let content = cogito.vstack()
     content.align_center()
@@ -567,9 +534,9 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
     dlg.add(content)
     win.set_dialog(dlg)
-}
+;
 
-: build_ui(win = cogito.Window) (( -- )) {
+: build_ui(win = cogito.Window) (( -- ))
     let root = cogito.vstack()
     .set_hexpand(true)
     .set_vexpand(true)
@@ -586,11 +553,10 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     cogito.set_tooltip(about_btn, "About Abacus")
     let toggle_btn = bar.add_trailing_button("sf:arrow.left.arrow.right", (b = cogito.Button) => {
         showing_converter = !showing_converter
-        if showing_converter {
+        if showing_converter
             switcher.set_active("converter")
-        } else {
+        else
             switcher.set_active("calculator")
-        }
         save_state()
     })
     cogito.set_tooltip(toggle_btn, "Unit Converter")
@@ -663,14 +629,13 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
     root.add(switcher)
     win.add(root)
-    if state_loaded {
+    if state_loaded
         apply_loaded_state(switcher)
-    } else {
+    else
         clear_all()
-    }
-}
+;
 
-entry () (( -- )) {
+-> ()
     load_state()
     cogito.load_sum("calc.sum")
     let app = cogito.app()
@@ -683,4 +648,4 @@ entry () (( -- )) {
     .set_autosize(false)
     .set_size_request(412, 412)
     app.run(win)
-}
+;

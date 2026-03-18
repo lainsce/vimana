@@ -5,7 +5,7 @@ bring cogito
 
 bring utils.cache
 
-:: build_source_row(index = num, source = any, remove_handler = any) (( cogito.HStack )) {
+:: build_source_row(index = num, source = any, remove_handler = any) (( cogito.HStack ))
     let name = str(source["name"] ?? "")
     let url = str(source["url"] ?? "")
 
@@ -17,10 +17,9 @@ bring utils.cache
 
     let favicon_path = cache.download_favicon(url)
     let ?favicon_src = favicon_path
-    if len(favicon_src) == 0 {
+    if len(favicon_src) == 0
         let domain = cache.extract_domain(url)
         favicon_src = "https://www.google.com/s2/favicons?domain=$$domain$$&sz=64"
-    }
     let icon = cogito.image(favicon_src)
     .set_size(64, 64)
     .set_radius(0)
@@ -51,5 +50,5 @@ bring utils.cache
     })
     row.add(remove_btn)
 
-    return row
-}
+    <- row
+;

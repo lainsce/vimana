@@ -5,43 +5,38 @@ bring json
 
 bring utils.cache
 
-:: save_state(sources = any) (( -- )) {
+:: save_state(sources = any) (( -- ))
     let ?payload = "{\"sources\":["
-    for (let ?i = 0; i < len(sources); i += 1) {
-        if i > 0 {
+    for (let ?i = 0; i < len(sources); i += 1)
+        if i > 0
             payload = "$$payload$$,"
-        }
         let s = sources[i] ?? []: [string => any]
         let name_esc = json.escape(str(s["name"] ?? ""))
         let url_esc = json.escape(str(s["url"] ?? ""))
         payload = "$$payload$${\"name\":\"$$name_esc$$\",\"url\":\"$$url_esc$$\"}"
-    }
     payload = "$$payload$$]}"
     let dir = cache.ensure_cache_dir()
     let path = stdr.join_path(dir, "state.json")
     stdr.write_text_file(path, payload)
-}
+;
 
-:: load_state() (( any )) {
+:: load_state() (( any ))
     let dir = cache.ensure_cache_dir()
     let path = stdr.join_path(dir, "state.json")
     let raw = stdr.read_text_file(path)
-    if is_null(raw) {
-        return []: [any]
-    }
+    if is_null(raw)
+        <- []: [any]
     let parsed = json.parse_result(str(raw))
-    if !(parsed["ok"] ?? false) {
-        return []: [any]
-    }
+    if !(parsed["ok"] ?? false)
+        <- []: [any]
     let root = parsed["value"]
     let loaded = json.get(root, "sources", []: [any])
     let ?result = []: [any]
-    for (let ?i = 0; i < len(loaded); i += 1) {
+    for (let ?i = 0; i < len(loaded); i += 1)
         let s = loaded[i] ?? []: [string => any]
         let ?src = []: [string => any]
         src["name"] = str(s["name"] ?? "")
         src["url"] = str(s["url"] ?? "")
         result[len(result)] = src
-    }
-    return result
-}
+    <- result
+;

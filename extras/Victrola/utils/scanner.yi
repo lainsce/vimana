@@ -4,44 +4,38 @@ bring stdr
 
 bring utils.util
 
-:: pick_folder_macos() (( string )) {
+:: pick_folder_macos() (( string ))
     let cmd = "osascript -e 'POSIX path of (choose folder with prompt \"Choose Music Folder\")'"
     let run = stdr.run_command(cmd)
     let exit = run[0] ?? 1
     let out = stdr.trim(stdr.str(run[1] ?? ""))
-    if exit == 0 && stdr.len(out) > 0 {
-        return out
-    }
-    return ""
-}
+    if exit == 0 && stdr.len(out) > 0
+        <- out
+    <- ""
+;
 
-:: scan_folder(folder = string, audio_exts = any) (( any )) {
+:: scan_folder(folder = string, audio_exts = any) (( any ))
     let chosen = stdr.trim(folder)
-    if stdr.len(chosen) == 0 {
-        return []: [string]
-    }
+    if stdr.len(chosen) == 0
+        <- []: [string]
 
     let quoted = stdr.shell_quote(chosen)
     let ?cmd = "find $$quoted$$ -type f \\("
-    for (let ?i = 0; i < stdr.len(audio_exts); i = i + 1) {
+    for (let ?i = 0; i < stdr.len(audio_exts); i = i + 1)
         let ext = audio_exts[i] ?? ""
-        if stdr.len(ext) == 0 {
+        if stdr.len(ext) == 0
             continue
-        }
-        if i > 0 {
+        if i > 0
             cmd = stdr.str_concat(cmd, " -o")
-        }
         cmd = stdr.str_concat(cmd, " -iname '*")
         cmd = stdr.str_concat(cmd, ext)
         cmd = stdr.str_concat(cmd, "'")
-    }
     cmd = stdr.str_concat(cmd, " \\) | sort")
 
     let run = stdr.run_command(cmd)
     let exit = run[0] ?? 1
-    if exit != 0 {
-        return []: [string]
-    }
+    if exit != 0
+        <- []: [string]
 
-    return util.split_lines(stdr.str(run[1] ?? ""))
-}
+    <- util.split_lines(stdr.str(run[1] ?? ""))
+;

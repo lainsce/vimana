@@ -4,9 +4,9 @@ bring stdr
 bring cogito
 bring json
 
-macro with_ext(ext = string) (( string )) {
+!: with_ext(ext = string) (( string ))
     "$$this$$$$ext$$"
-}
+;
 
 def editor = cogito.textview("")
 def bar = cogito.appbar("Untitled.txt", "Ready")
@@ -19,25 +19,23 @@ def STATE_PATH = ".enigma_state.json"
 def ABOUT_MORE_INFO_URL = "https://github.com/lainsce/yis"
 def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
-: save_session_state() (( -- )) {
+: save_session_state() (( -- ))
     let path_esc = json.escape(current_path)
     let text_esc = json.escape(editor.text())
     let ?payload = "{\"path\":\"$$path_esc$$\",\"dirty\":"
     payload = if is_dirty { "$$payload$$ true" } else { "$$payload$$ false" }
     payload = "$$payload$$,\"text\":\"$$text_esc$$\"}"
     stdr.write_text_file(STATE_PATH, payload)
-}
+;
 
-: load_session_state() (( -- )) {
+: load_session_state() (( -- ))
     let raw = stdr.read_text_file(STATE_PATH)
-    if is_null(raw) {
-        return
-    }
+    if is_null(raw)
+        <-
 
     let parsed = json.parse_result(str(raw))
-    if !(parsed["ok"] ?? false) {
-        return
-    }
+    if !(parsed["ok"] ?? false)
+        <-
 
     let root = parsed["value"]
     current_path = str(json.get(root, "path", ""))
@@ -47,85 +45,79 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     set_editor_text(text)
     refresh_header()
     set_status("Recovered autosaved session")
-}
+;
 
-: is_txt_path(path = string) (( bool )) {
+: is_txt_path(path = string) (( bool ))
     let n = len(path)
-    if n < 4 || path[n - 4] != "." {
-        return false
-    }
+    if n < 4 || path[n - 4] != "."
+        <- false
     let c1 = path[n - 3]
     let c2 = path[n - 2]
     let c3 = path[n - 1]
     -- .txt or .TXT (retro)
-    return (c1 == "t" || c1 == "T") &&
+    <- (c1 == "t" || c1 == "T") &&
     (c2 == "x" || c2 == "X") &&
     (c3 == "t" || c3 == "T")
-}
+;
 
-: basename(path = string) (( string )) {
+: basename(path = string) (( string ))
     let n = len(path)
     let ?last_sep = -1
-    for (let ?i = 0; i < n; i += 1) {
+    for (let ?i = 0; i < n; i += 1)
         let ch = path[i]
-        if ch == "/" || ch == "\\" {
+        if ch == "/" || ch == "\\"
             last_sep = i
-        }
-    }
-    if last_sep < 0 {
-        return path
-    }
+    if last_sep < 0
+        <- path
 
     let ?name = ""
-    for (let ?i = last_sep + 1; i < n; i += 1) {
+    for (let ?i = last_sep + 1; i < n; i += 1)
         name = "$$name$$$$path[i]$$"
-    }
-    return name
-}
+    <- name
+;
 
-: set_status(text = string) (( -- )) {
+: set_status(text = string) (( -- ))
     subtitle_text = text
     bar.set_subtitle(subtitle_text)
-}
+;
 
-: refresh_header() (( -- )) {
+: refresh_header() (( -- ))
     let name = if current_path != "" { basename(current_path) } else { "Untitled.txt" }
     title_text = if is_dirty { "$$name$$ *" } else { name }
     bar.set_title(title_text)
-}
+;
 
-: set_editor_text(text = string) (( -- )) {
+: set_editor_text(text = string) (( -- ))
     suspend_dirty = true
     editor.set_text(text)
     suspend_dirty = false
-}
+;
 
-: new_document() (( -- )) {
+: new_document() (( -- ))
     set_editor_text("")
     current_path = ""
     is_dirty = false
     refresh_header()
     set_status("New document")
     save_session_state()
-}
+;
 
-: default_save_name() (( string )) {
-    return if current_path == "" { "Untitled.txt" } else { current_path }
-}
+: default_save_name() (( string ))
+    <- if current_path == "" { "Untitled.txt" } else { current_path }
+;
 
-: show_open_dialog() (( -- )) {
+: show_open_dialog() (( -- ))
     let picked = stdr.open_file_dialog("Open .txt", "txt")
-    if is_null(picked) {
+    if is_null(picked)
         set_status("Open canceled")
-        return
-    }
+        <-
     let path = str(picked)
     let text = stdr.read_text_file(path)
-    if !is_txt_path(path) {
+    if !is_txt_path(path)
         set_status("Open failed: choose a .txt file")
-    } elif is_null(text) {
+    elif is_null(text)
         set_status("Open failed: cannot read file")
-    } else {
+    else
         set_editor_text(str(text))
         current_path = path
         is_dirty = false
@@ -133,35 +125,31 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
         let base = basename(path)
         set_status("Opened $$base$$")
         save_session_state()
-    }
-}
+;
 
-: show_save_dialog() (( -- )) {
+: show_save_dialog() (( -- ))
     let picked = stdr.save_file_dialog("Save As .txt", default_save_name(), "txt")
-    if is_null(picked) {
+    if is_null(picked)
         set_status("Save canceled")
-        return
-    }
+        <-
 
     let ?path = str(picked)
-    if !is_txt_path(path) {
+    if !is_txt_path(path)
         path = path !with_ext ".txt"
-    }
 
     let ok = stdr.write_text_file(path, editor.text())
-    if !ok {
+    if !ok
         set_status("Save failed: cannot write file")
-    } else {
+    else
         current_path = path
         is_dirty = false
         refresh_header()
         let base = basename(path)
         set_status("Saved $$base$$")
         save_session_state()
-    }
-}
+;
 
-: show_about_window(win = cogito.Window) (( -- )) {
+: show_about_window(win = cogito.Window) (( -- ))
     let dlg = cogito.dialog("")
 
     let aw = cogito.about_window("Enigma", "GPLv3 License")
@@ -171,9 +159,9 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
     dlg.add(aw)
     win.set_dialog(dlg)
-}
+;
 
-entry() (( -- )) {
+-> ()
     load_session_state()
 
     let app = cogito.app()
@@ -221,16 +209,14 @@ entry() (( -- )) {
     editor.set_hexpand(true)
     .set_vexpand(true)
     .on_change((tv = cogito.TextView) => {
-        if !suspend_dirty {
+        if !suspend_dirty
             is_dirty = true
             refresh_header()
-            if current_path == "" {
+            if current_path == ""
                 set_status("Editing unsaved document")
-            } else {
+            else
                 set_status("Modified document")
-            }
             save_session_state()
-        }
     })
     root.add(editor)
 
@@ -238,4 +224,4 @@ entry() (( -- )) {
 
     win.add(root)
     app.run(win)
-}
+;

@@ -12,7 +12,7 @@ bring widgets.pdf_card
     tag_scroll = cogito.Scroller,
     tag_fab = cogito.FAB,
     on_manage_tags = any
-) (( -- )) {
+) (( -- ))
     panel
     .set_gap(0)
     .set_vexpand(true)
@@ -47,32 +47,29 @@ bring widgets.pdf_card
     })
     fab_holder.add(tag_fab)
     panel.add(fab_holder)
-}
+;
 
 :: refresh_tags(
     tag_list = cogito.ContentList,
     tags = any,
     selected_tag = string,
     on_tag_select = any
-) (( -- )) {
+) (( -- ))
     tag_list.clear()
 
     tag_list.add(pdf_card.build_tag_row("All", selected_tag == ""))
 
-    for (let ?i = 0; i < len(tags); i += 1) {
+    for (let ?i = 0; i < len(tags); i += 1)
         let tag_name = str(tags[i] ?? "")
         if stdr.len(tag_name) == 0 { continue }
         tag_list.add(pdf_card.build_tag_row(tag_name, selected_tag == tag_name))
-    }
 
     tag_list.on_activate((idx = num) => {
-        if idx == 0 {
+        if idx == 0
             on_tag_select("")
-        } else {
+        else
             let real_idx = idx - 1
-            if real_idx >= 0 && real_idx < len(tags) {
+            if real_idx >= 0 && real_idx < len(tags)
                 on_tag_select(str(tags[real_idx] ?? ""))
-            }
-        }
     })
-}
+;

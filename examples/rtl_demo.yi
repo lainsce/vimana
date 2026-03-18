@@ -3,7 +3,7 @@ cask rtl_demo
 bring stdr
 bring cogito
 
-: build_ui(win = cogito.Window) (( -- )) {
+: build_ui(win = cogito.Window) (( -- ))
     -- Enable RTL direction
     cogito.set_direction(1)
 
@@ -98,9 +98,9 @@ bring cogito
     vstack.add(grid)
 
     win.add(vstack)
-}
+;
 
-entry () (( -- )) {
+-> ()
     let app = cogito.app()
     .set_appid("yis.cogito.RTLDemo")
     .set_accent_color("#1a73e8", false)
@@ -108,4 +108,4 @@ entry () (( -- )) {
     let win = cogito.window_title("Cogito RTL Demo", 800, 600)
     .build(build_ui)
     app.run(win)
-}
+;

@@ -8,7 +8,7 @@ bring utils.cache
 
 -- ── RSS/Atom Splitting ───────────────────────────────────────
 
-: split_items(xml = string, open_tag = string, close_tag = string) (( [any] )) {
+: split_items(xml = string, open_tag = string, close_tag = string) (( [any] ))
     let ?items = []: [any]
     let total = stdr.len(xml)
     let ?remaining = ""
@@ -17,65 +17,57 @@ bring utils.cache
     let ?after_open = ""
     let ?end_idx = 0
     let ?item_end = 0
-    for (let ?pos = 0; pos < total; pos = item_end) {
+    for (let ?pos = 0; pos < total; pos = item_end)
         remaining = stdr.slice(xml, pos, total)
         start_idx = stdr.index_of(remaining, open_tag)
-        if start_idx < 0 {
+        if start_idx < 0
             break
-        }
         item_start = pos + start_idx
         after_open = stdr.slice(xml, item_start, total)
         end_idx = stdr.index_of(after_open, close_tag)
-        if end_idx < 0 {
+        if end_idx < 0
             break
-        }
         item_end = item_start + end_idx + stdr.len(close_tag)
         items[stdr.len(items)] = stdr.slice(xml, item_start, item_end)
-    }
-    return items
-}
+    <- items
+;
 
 -- ── Parse RSS Feed ───────────────────────────────────────────
 
-: parse_rss_items(xml = string, source_name = string) (( [any] )) {
+: parse_rss_items(xml = string, source_name = string) (( [any] ))
     let ?result = []: [any]
     let items = split_items(xml, "<item", "</item>")
     let count = stdr.len(items)
-    for (let ?i = 0; i < count; i += 1) {
+    for (let ?i = 0; i < count; i += 1)
         let item_xml = str(items[i] ?? "")
         let ?title = parse.extract_cdata(parse.extract_tag(item_xml, "title"))
         title = parse.decode_entities(parse.strip_html(stdr.trim(title)))
         let ?date_str = parse.extract_tag(item_xml, "pubDate")
-        if stdr.len(date_str) == 0 {
+        if stdr.len(date_str) == 0
             date_str = parse.extract_tag(item_xml, "dc:date")
-        }
         date_str = stdr.trim(date_str)
         let image = parse.extract_image_from_item(item_xml)
         let caption = parse.extract_image_caption(item_xml)
         let desc_raw = parse.extract_tag(item_xml, "description")
         let content_raw = parse.extract_tag(item_xml, "content:encoded")
         let ?body = ""
-        if stdr.len(content_raw) > 0 {
+        if stdr.len(content_raw) > 0
             body = parse.extract_cdata(content_raw)
-        } elif stdr.len(desc_raw) > 0 {
+        elif stdr.len(desc_raw) > 0
             body = parse.extract_cdata(desc_raw)
-        }
         body = parse.clean_body(parse.decode_entities(parse.strip_html(parse.strip_figure(stdr.trim(body)))))
-        if stdr.len(caption) > 0 {
+        if stdr.len(caption) > 0
             body = parse.clean_body(stdr.replace(body, caption, ""))
-        }
 
         let link = stdr.trim(parse.extract_cdata(parse.extract_tag(item_xml, "link")))
         let cat_tags = parse.extract_all_tags(item_xml, "category")
         let ?categories = []: [any]
-        for (let ?ci = 0; ci < stdr.len(cat_tags); ci += 1) {
+        for (let ?ci = 0; ci < stdr.len(cat_tags); ci += 1)
             let cat = parse.decode_entities(parse.strip_html(stdr.trim(str(cat_tags[ci] ?? ""))))
-            if stdr.len(cat) > 0 {
+            if stdr.len(cat) > 0
                 categories[stdr.len(categories)] = cat
-            }
-        }
 
-        if stdr.len(title) > 0 {
+        if stdr.len(title) > 0
             let ?article = []: [string => any]
             article["title"] = title
             article["date"] = date_str
@@ -86,43 +78,38 @@ bring utils.cache
             article["link"] = link
             article["categories"] = categories
             result[stdr.len(result)] = article
-        }
-    }
-    return result
-}
+    <- result
+;
 
-: parse_atom_entries(xml = string, source_name = string) (( [any] )) {
+: parse_atom_entries(xml = string, source_name = string) (( [any] ))
     let ?result = []: [any]
     let entries = split_items(xml, "<entry", "</entry>")
     let count = stdr.len(entries)
-    for (let ?i = 0; i < count; i += 1) {
+    for (let ?i = 0; i < count; i += 1)
         let entry_xml = str(entries[i] ?? "")
         let ?title = parse.extract_cdata(parse.extract_tag(entry_xml, "title"))
         title = parse.decode_entities(parse.strip_html(stdr.trim(title)))
         let ?date_str = parse.extract_tag(entry_xml, "published")
-        if stdr.len(date_str) == 0 {
+        if stdr.len(date_str) == 0
             date_str = parse.extract_tag(entry_xml, "updated")
-        }
         date_str = stdr.trim(date_str)
         let image = parse.extract_atom_image(entry_xml)
         let caption = parse.extract_image_caption(entry_xml)
         let content = parse.extract_tag(entry_xml, "content")
         let ?body = ""
-        if stdr.len(content) > 0 {
+        if stdr.len(content) > 0
             body = parse.extract_cdata(content)
-        } else {
+        else
             let summary = parse.extract_tag(entry_xml, "summary")
             body = parse.extract_cdata(summary)
-        }
         body = parse.clean_body(parse.decode_entities(parse.strip_html(parse.strip_figure(stdr.trim(body)))))
-        if stdr.len(caption) > 0 {
+        if stdr.len(caption) > 0
             body = parse.clean_body(stdr.replace(body, caption, ""))
-        }
 
         let link = parse.extract_atom_link(entry_xml)
         let categories = parse.extract_atom_categories(entry_xml)
 
-        if stdr.len(title) > 0 {
+        if stdr.len(title) > 0
             let ?article = []: [string => any]
             article["title"] = title
             article["date"] = date_str
@@ -133,113 +120,93 @@ bring utils.cache
             article["link"] = link
             article["categories"] = categories
             result[stdr.len(result)] = article
-        }
-    }
-    return result
-}
+    <- result
+;
 
-:: parse_feed(xml = string, source_name = string) (( [any] )) {
-    if stdr.contains(xml, "<feed") {
-        return parse_atom_entries(xml, source_name)
-    }
-    return parse_rss_items(xml, source_name)
-}
+:: parse_feed(xml = string, source_name = string) (( [any] ))
+    if stdr.contains(xml, "<feed")
+        <- parse_atom_entries(xml, source_name)
+    <- parse_rss_items(xml, source_name)
+;
 
 -- ── Truncation Detection ─────────────────────────────────────
 
-: is_body_truncated(body = string) (( bool )) {
+: is_body_truncated(body = string) (( bool ))
     let n = stdr.len(body)
-    if n == 0 { return false }
+    if n == 0 { <- false }
     let ?tail_start = n - 200
     if tail_start < 0 { tail_start = 0 }
     let tail = stdr.slice(body, tail_start, n)
-    if stdr.contains(tail, "...") || stdr.contains(tail, "\u{2026}") {
-        return true
-    }
-    if stdr.contains(tail, "Read the full story") || stdr.contains(tail, "Read more at") || stdr.contains(tail, "Continue reading") {
-        return true
-    }
-    return false
-}
+    if stdr.contains(tail, "...") || stdr.contains(tail, "\u{2026}")
+        <- true
+    if stdr.contains(tail, "Read the full story") || stdr.contains(tail, "Read more at") || stdr.contains(tail, "Continue reading")
+        <- true
+    <- false
+;
 
-: fetch_full_article(url = string) (( string )) {
-    if stdr.len(url) == 0 { return "" }
+: fetch_full_article(url = string) (( string ))
+    if stdr.len(url) == 0 { <- "" }
     let resp = net.get(url, []: [any], []: [any], 15)
-    if !(resp["ok"] ?? false) { return "" }
+    if !(resp["ok"] ?? false) { <- "" }
     let html = str(resp["body"] ?? "")
-    if stdr.len(html) == 0 { return "" }
-    return parse.extract_article_content(html)
-}
+    if stdr.len(html) == 0 { <- "" }
+    <- parse.extract_article_content(html)
+;
 
-:: fetch_single_feed(source = any) (( [any] )) {
+:: fetch_single_feed(source = any) (( [any] ))
     let ?result = []: [any]
     let s = source ?? []: [string => any]
     let url = str(s["url"] ?? "")
     let name = str(s["name"] ?? "")
-    if len(url) == 0 {
-        return result
-    }
+    if len(url) == 0
+        <- result
     let resp = net.get(url, []: [any], []: [any], 15)
-    if resp["ok"] {
+    if resp["ok"]
         let body = str(resp["body"] ?? "")
         let items = parse_feed(body, name)
-        for (let ?j = 0; j < len(items); j += 1) {
+        for (let ?j = 0; j < len(items); j += 1)
             let ?article = items[j] ?? []: [string => any]
             let img_url = str(article["image"] ?? "")
-            if len(img_url) > 0 {
+            if len(img_url) > 0
                 let local_path = cache.download_image(img_url)
-                if len(local_path) > 0 {
+                if len(local_path) > 0
                     article["local_image"] = local_path
-                }
-            }
             let cur_body = str(article["body"] ?? "")
             let link = str(article["link"] ?? "")
-            if is_body_truncated(cur_body) && len(link) > 0 {
+            if is_body_truncated(cur_body) && len(link) > 0
                 let full = fetch_full_article(link)
-                if len(full) > len(cur_body) {
+                if len(full) > len(cur_body)
                     article["body"] = full
-                }
-            }
             result[len(result)] = article
-        }
-    }
-    return result
-}
+    <- result
+;
 
-:: fetch_all_feeds(sources = any, articles = any) (( [any] )) {
+:: fetch_all_feeds(sources = any, articles = any) (( [any] ))
     let ?result = []: [any]
-    for (let ?i = 0; i < len(sources); i += 1) {
+    for (let ?i = 0; i < len(sources); i += 1)
         let s = sources[i] ?? []: [string => any]
         let url = str(s["url"] ?? "")
         let name = str(s["name"] ?? "")
-        if len(url) == 0 {
+        if len(url) == 0
             continue
-        }
         let resp = net.get(url, []: [any], []: [any], 15)
-        if resp["ok"] {
+        if resp["ok"]
             let body = str(resp["body"] ?? "")
             let items = parse_feed(body, name)
-            for (let ?j = 0; j < len(items); j += 1) {
+            for (let ?j = 0; j < len(items); j += 1)
                 let ?article = items[j] ?? []: [string => any]
                 let img_url = str(article["image"] ?? "")
-                if len(img_url) > 0 {
+                if len(img_url) > 0
                     let local_path = cache.download_image(img_url)
-                    if len(local_path) > 0 {
+                    if len(local_path) > 0
                         article["local_image"] = local_path
-                    }
-                }
                 -- Try fetching full article if body is truncated
                 let cur_body = str(article["body"] ?? "")
                 let link = str(article["link"] ?? "")
-                if is_body_truncated(cur_body) && len(link) > 0 {
+                if is_body_truncated(cur_body) && len(link) > 0
                     let full = fetch_full_article(link)
-                    if len(full) > len(cur_body) {
+                    if len(full) > len(cur_body)
                         article["body"] = full
-                    }
-                }
                 result[len(result)] = article
-            }
-        }
-    }
-    return result
-}
+    <- result
+;

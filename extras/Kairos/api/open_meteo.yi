@@ -4,7 +4,7 @@ bring stdr
 bring net
 bring json
 
-: _response_error(error = string) (( [string => any] )) {
+: _response_error(error = string) (( [string => any] ))
     let ?out = []: [string => any]
     out["ok"] = false
     out["error"] = error
@@ -14,36 +14,31 @@ bring json
     out["sunrise"] = ""
     out["sunset"] = ""
     out["sunrise_next"] = ""
-    return out
-}
+    <- out
+;
 
-: _http_error_message(resp = any, fallback = string) (( string )) {
+: _http_error_message(resp = any, fallback = string) (( string ))
     let raw_error = str(resp["error"] ?? "")
     let err = stdr.trim(raw_error)
-    if len(err) > 0 {
-        return err
-    }
+    if len(err) > 0
+        <- err
 
     let body = str(resp["body"] ?? "")
-    if len(stdr.trim(body)) == 0 {
-        return fallback
-    }
+    if len(stdr.trim(body)) == 0
+        <- fallback
 
     let parsed = json.parse_result(body)
-    if parsed["ok"] ?? false {
+    if parsed["ok"] ?? false
         let root = parsed["value"]
         let reason = str(json.get(root, "reason", ""))
-        if len(stdr.trim(reason)) > 0 {
-            return reason
-        }
+        if len(stdr.trim(reason)) > 0
+            <- reason
         let message = str(json.get(root, "message", ""))
-        if len(stdr.trim(message)) > 0 {
-            return message
-        }
-    }
+        if len(stdr.trim(message)) > 0
+            <- message
 
-    return fallback
-}
+    <- fallback
+;
 
 : _hour_item(
     time = string,
@@ -56,7 +51,7 @@ bring json
     pressure_hpa = num,
     is_day = num,
     precip_prob = num
-) (( [string => any] )) {
+) (( [string => any] ))
     let ?row = []: [string => any]
     row["time"] = time
     row["temp_c"] = temp_c
@@ -68,10 +63,10 @@ bring json
     row["pressure_hpa"] = pressure_hpa
     row["is_day"] = is_day
     row["precip_prob"] = precip_prob
-    return row
-}
+    <- row
+;
 
-: _location_item(item = any) (( [string => any] )) {
+: _location_item(item = any) (( [string => any] ))
     let ?loc = []: [string => any]
 
     let name = str(json.get(item, "name", ""))
@@ -81,9 +76,8 @@ bring json
     let longitude = stdr.num(json.get(item, "longitude", 0.0))
 
     let ?subtitle = country
-    if len(admin) > 0 {
+    if len(admin) > 0
         subtitle = "$$admin$$, $$country$$"
-    }
 
     loc["name"] = name
     loc["country"] = country
@@ -93,42 +87,36 @@ bring json
     loc["longitude"] = longitude
     loc["label"] = "$$name$$, $$country$$"
     loc["id"] = "$$name$$:$$latitude$$:$$longitude$$"
-    return loc
-}
+    <- loc
+;
 
-: _read_array_value(arr = any, idx = num, fallback = any) (( any )) {
-    if idx < 0 || idx >= len(arr) {
-        return fallback
-    }
+: _read_array_value(arr = any, idx = num, fallback = any) (( any ))
+    if idx < 0 || idx >= len(arr)
+        <- fallback
     let v = arr[idx]
-    if is_null(v) {
-        return fallback
-    }
-    return v
-}
+    if is_null(v)
+        <- fallback
+    <- v
+;
 
-: _find_hour_start(times = any, current_time = string) (( num )) {
-    if len(current_time) == 0 {
-        return 0
-    }
-    for (let ?i = 0; i < len(times); i += 1) {
+: _find_hour_start(times = any, current_time = string) (( num ))
+    if len(current_time) == 0
+        <- 0
+    for (let ?i = 0; i < len(times); i += 1)
         let t = str(times[i] ?? "")
-        if t == current_time {
-            return i
-        }
-    }
-    return 0
-}
+        if t == current_time
+            <- i
+    <- 0
+;
 
-:: search_locations(query = string, count = num) (( [string => any] )) {
+:: search_locations(query = string, count = num) (( [string => any] ))
     let q = stdr.trim(query)
-    if len(q) < 2 {
+    if len(q) < 2
         let ?empty = []: [string => any]
         empty["ok"] = true
         empty["error"] = ""
         empty["results"] = []: [any]
-        return empty
-    }
+        <- empty
 
     let params = [
         ["name", q],
@@ -144,36 +132,32 @@ bring json
         20
     )
 
-    if !(resp["ok"] ?? false) {
+    if !(resp["ok"] ?? false)
         let err_msg = _http_error_message(resp, "Could not fetch locations")
-        return _response_error(err_msg)
-    }
+        <- _response_error(err_msg)
 
     let parsed = json.parse_result(str(resp["body"] ?? ""))
-    if !(parsed["ok"] ?? false) {
-        return _response_error("Could not parse location response")
-    }
+    if !(parsed["ok"] ?? false)
+        <- _response_error("Could not parse location response")
 
     let root = parsed["value"]
     let raw = json.get(root, "results", []: [any])
 
     let ?results = []: [any]
-    for (let ?i = 0; i < len(raw); i += 1) {
+    for (let ?i = 0; i < len(raw); i += 1)
         let it = raw[i] ?? null
-        if is_null(it) {
+        if is_null(it)
             continue
-        }
         results[len(results)] = _location_item(it)
-    }
 
     let ?out = []: [string => any]
     out["ok"] = true
     out["error"] = ""
     out["results"] = results
-    return out
-}
+    <- out
+;
 
-:: fetch_forecast(latitude = num, longitude = num) (( [string => any] )) {
+:: fetch_forecast(latitude = num, longitude = num) (( [string => any] ))
     let params = [
         ["latitude", str(latitude)],
         ["longitude", str(longitude)],
@@ -193,15 +177,13 @@ bring json
         25
     )
 
-    if !(resp["ok"] ?? false) {
+    if !(resp["ok"] ?? false)
         let err_msg = _http_error_message(resp, "Could not fetch forecast")
-        return _response_error(err_msg)
-    }
+        <- _response_error(err_msg)
 
     let parsed = json.parse_result(str(resp["body"] ?? ""))
-    if !(parsed["ok"] ?? false) {
-        return _response_error("Could not parse forecast response")
-    }
+    if !(parsed["ok"] ?? false)
+        <- _response_error("Could not parse forecast response")
 
     let root = parsed["value"]
     let current_raw = json.get(root, "current", []: [string => any])
@@ -235,7 +217,7 @@ bring json
     let ?hours = []: [any]
     let ?taken = 0
 
-    for (let ?i = start_idx; i < len(hourly_time); i += 1) {
+    for (let ?i = start_idx; i < len(hourly_time); i += 1)
         let t = str(_read_array_value(hourly_time, i, current_time))
         let temp_c = stdr.num(_read_array_value(hourly_temp, i, current_temp_c))
         let humidity = stdr.num(_read_array_value(hourly_humidity, i, current_humidity))
@@ -260,9 +242,8 @@ bring json
             precip_prob
         )
         taken += 1
-    }
 
-    if len(hours) == 0 {
+    if len(hours) == 0
         hours[0] = _hour_item(
             current_time,
             current_temp_c,
@@ -275,7 +256,6 @@ bring json
             current_is_day,
             0.0
         )
-    }
 
     let sunrise_arr = json.get(daily_raw, "sunrise", []: [any])
     let sunset_arr = json.get(daily_raw, "sunset", []: [any])
@@ -284,9 +264,8 @@ bring json
     let sunset = str(_read_array_value(sunset_arr, 0, ""))
     let ?sunrise_next = str(_read_array_value(sunrise_arr, 1, ""))
 
-    if len(sunrise_next) == 0 {
+    if len(sunrise_next) == 0
         sunrise_next = sunrise
-    }
 
     let ?current = []: [string => any]
     current["time"] = current_time
@@ -312,5 +291,5 @@ bring json
     out["sunrise"] = sunrise
     out["sunset"] = sunset
     out["sunrise_next"] = sunrise_next
-    return out
-}
+    <- out
+;

@@ -8,102 +8,90 @@ def PI = 3.141592653589793
 def HALF_PI = 1.5707963267948966
 def TAU = 6.283185307179586
 
-: _num_or(value = any, fallback = num) (( num )) {
-    if is_null(value) {
-        return fallback
-    }
-    return stdr.num(value)
-}
+: _num_or(value = any, fallback = num) (( num ))
+    if is_null(value)
+        <- fallback
+    <- stdr.num(value)
+;
 
-: _wrap_angle(x = num) (( num )) {
+: _wrap_angle(x = num) (( num ))
     let ?y = x
-    for (let ?i = 0; i < 8; i += 1) {
-        if !(y > PI || y < -PI) {
+    for (let ?i = 0; i < 8; i += 1)
+        if !(y > PI || y < -PI)
             break
-        }
-        if y > PI {
+        if y > PI
             y -= TAU
-        } elif y < -PI {
+        elif y < -PI
             y += TAU
-        }
-    }
-    return y
-}
+    <- y
+;
 
-: _sin_taylor(x = num) (( num )) {
+: _sin_taylor(x = num) (( num ))
     let x2 = x * x
     let ?term = x
     let ?sum = x
-    for (let ?i = 0; i < 7; i += 1) {
+    for (let ?i = 0; i < 7; i += 1)
         let denom = (2.0 * i + 2.0) * (2.0 * i + 3.0)
         term = -term * x2 / denom
         sum += term
-    }
-    return sum
-}
+    <- sum
+;
 
-: _cos_taylor(x = num) (( num )) {
+: _cos_taylor(x = num) (( num ))
     let x2 = x * x
     let ?term = 1.0
     let ?sum = 1.0
-    for (let ?i = 0; i < 7; i += 1) {
+    for (let ?i = 0; i < 7; i += 1)
         let denom = (2.0 * i + 1.0) * (2.0 * i + 2.0)
         term = -term * x2 / denom
         sum += term
-    }
-    return sum
-}
+    <- sum
+;
 
-: _sin(x = num) (( num )) {
+: _sin(x = num) (( num ))
     let ?y = _wrap_angle(x)
     let ?sign = 1.0
-    if y > HALF_PI {
+    if y > HALF_PI
         y = PI - y
-    } elif y < -HALF_PI {
+    elif y < -HALF_PI
         y = PI + y
         sign = -1.0
-    }
-    return sign * _sin_taylor(y)
-}
+    <- sign * _sin_taylor(y)
+;
 
-: _cos(x = num) (( num )) {
+: _cos(x = num) (( num ))
     let ?y = _wrap_angle(x)
-    if y < 0.0 {
+    if y < 0.0
         y = -y
-    }
     let ?sign = 1.0
-    if y > HALF_PI {
+    if y > HALF_PI
         y = PI - y
         sign = -1.0
-    }
-    return sign * _cos_taylor(y)
-}
+    <- sign * _cos_taylor(y)
+;
 
-: _clamp(v = num, lo = num, hi = num) (( num )) {
-    if v < lo { return lo }
-    if v > hi { return hi }
-    return v
-}
+: _clamp(v = num, lo = num, hi = num) (( num ))
+    if v < lo { <- lo }
+    if v > hi { <- hi }
+    <- v
+;
 
-: _orbit_angle(now_epoch = num, sunrise = num, sunset = num, sunrise_next = num) (( num )) {
-    if sunrise < 0 || sunset < 0 {
-        return PI / 2.0
-    }
+: _orbit_angle(now_epoch = num, sunrise = num, sunset = num, sunrise_next = num) (( num ))
+    if sunrise < 0 || sunset < 0
+        <- PI / 2.0
 
-    if now_epoch >= sunrise && now_epoch <= sunset {
+    if now_epoch >= sunrise && now_epoch <= sunset
         let day_progress = time_utils.ratio_between(now_epoch, sunrise, sunset)
-        return PI - (PI * day_progress)
-    }
+        <- PI - (PI * day_progress)
 
-    if now_epoch > sunset && sunrise_next > sunset {
+    if now_epoch > sunset && sunrise_next > sunset
         let night_progress = time_utils.ratio_between(now_epoch, sunset, sunrise_next)
-        return 0.0 - (PI * night_progress)
-    }
+        <- 0.0 - (PI * night_progress)
 
     let prev_sunset = sunset - 86400
     let early_progress = time_utils.ratio_between(now_epoch, prev_sunset, sunrise)
-    return 0.0 - (PI * early_progress)
-}
+    <- 0.0 - (PI * early_progress)
+;
 
 : _draw_arc(
     area = cogito.DrawingArea,
@@ -115,11 +103,11 @@ def TAU = 6.283185307179586
     steps = num,
     color = string,
     line_width = num
-) (( -- )) {
+) (( -- ))
     area.set_color(color)
     .set_line_width(line_width)
 
-    for (let ?i = 1; i <= steps; i += 1) {
+    for (let ?i = 1; i <= steps; i += 1)
         let a0 = angle_start + ((angle_end - angle_start) * (i - 1)) / steps
         let a1 = angle_start + ((angle_end - angle_start) * i) / steps
 
@@ -134,10 +122,9 @@ def TAU = 6.283185307179586
             stdr.floor(x1 + 0.5),
             stdr.floor(y1 + 0.5)
         )
-    }
-}
+;
 
-: _update_status(orbit = any, status = cogito.Label, sunrise_lbl = cogito.Label, sunset_lbl = cogito.Label) (( -- )) {
+: _update_status(orbit = any, status = cogito.Label, sunrise_lbl = cogito.Label, sunset_lbl = cogito.Label) (( -- ))
     let now_epoch = _num_or(orbit["now_epoch"] ?? null, -1.0)
     let sunrise = _num_or(orbit["sunrise_epoch"] ?? null, -1.0)
     let sunset = _num_or(orbit["sunset_epoch"] ?? null, -1.0)
@@ -149,112 +136,103 @@ def TAU = 6.283185307179586
     let sunset_hhmm = time_utils.format_hhmm(sunset_txt)
 
     let ?phase = "Night"
-    if now_epoch >= sunrise && now_epoch <= sunset {
+    if now_epoch >= sunrise && now_epoch <= sunset
         phase = "Day"
-    }
 
     status.set_text(phase)
     sunrise_lbl.set_text(sunrise_hhmm)
     sunset_lbl.set_text(sunset_hhmm)
-}
+;
 
-: _tick(?orbit = any, status = cogito.Label, sunrise_lbl = cogito.Label, sunset_lbl = cogito.Label) (( -- )) {
+: _tick(?orbit = any, status = cogito.Label, sunrise_lbl = cogito.Label, sunset_lbl = cogito.Label) (( -- ))
     orbit["now_epoch"] = time_utils.now_epoch()
     _update_status(orbit, status, sunrise_lbl, sunset_lbl)
-}
+;
 
-: _fill_circle(area = cogito.DrawingArea, cx = num, cy = num, r = num, color = string) (( -- )) {
+: _fill_circle(area = cogito.DrawingArea, cx = num, cy = num, r = num, color = string) (( -- ))
     area.set_color(color)
     let ?y = stdr.floor(cy - r)
     let y_end = stdr.floor(cy + r)
-    for (; y <= y_end; y += 1) {
+    for (; y <= y_end; y += 1)
         let dy = y - cy
         let dx_sq = (r * r) - (dy * dy)
-        if dx_sq > 0 {
+        if dx_sq > 0
             let dx = _sqrt(dx_sq)
             let x0 = stdr.floor(cx - dx)
             let x1 = stdr.floor(cx + dx)
             area.fill_rect(x0, y, x1 - x0 + 1, 1)
-        }
-    }
-}
+;
 
-: _hex_digit(v = num) (( string )) {
-    if v < 10 { return str(v) }
-    if v == 10 { return "A" }
-    if v == 11 { return "B" }
-    if v == 12 { return "C" }
-    if v == 13 { return "D" }
-    if v == 14 { return "E" }
-    return "F"
-}
+: _hex_digit(v = num) (( string ))
+    if v < 10 { <- str(v) }
+    if v == 10 { <- "A" }
+    if v == 11 { <- "B" }
+    if v == 12 { <- "C" }
+    if v == 13 { <- "D" }
+    if v == 14 { <- "E" }
+    <- "F"
+;
 
-: _hex_byte(v = num) (( string )) {
+: _hex_byte(v = num) (( string ))
     let ?hi = stdr.floor(v / 16)
     let ?lo = stdr.floor(v - (hi * 16))
     let ?hi_hex = _hex_digit(hi)
     let ?lo_hex = _hex_digit(lo)
-    return "$$hi_hex$$$$lo_hex$$"
-}
+    <- "$$hi_hex$$$$lo_hex$$"
+;
 
-: _sqrt(x = num) (( num )) {
-    if x <= 0 { return 0.0 }
+: _sqrt(x = num) (( num ))
+    if x <= 0 { <- 0.0 }
     let ?a = x
-    for (let ?i = 0; i < 16; i += 1) {
+    for (let ?i = 0; i < 16; i += 1)
         if a * a <= x * 4.0 { break }
         a = a / 2.0
-    }
-    for (let ?i = 0; i < 8; i += 1) {
+    for (let ?i = 0; i < 8; i += 1)
         a = (a + x / a) / 2.0
-    }
-    return a
-}
+    <- a
+;
 
-: _fill_semicircle(area = cogito.DrawingArea, cx = num, cy = num, r = num, color = string, top = bool) (( -- )) {
+: _fill_semicircle(area = cogito.DrawingArea, cx = num, cy = num, r = num, color = string, top = bool) (( -- ))
     area.set_color(color)
     let ?y = 0.0
     let ?y_end = 0.0
-    if top {
+    if top
         y = stdr.floor(cy - r)
         y_end = stdr.floor(cy)
-    } else {
+    else
         y = stdr.floor(cy)
         y_end = stdr.floor(cy + r)
-    }
-    for (; y <= y_end; y += 1) {
+    for (; y <= y_end; y += 1)
         let dy = y - cy
         let dx_sq = (r * r) - (dy * dy)
-        if dx_sq > 0 {
+        if dx_sq > 0
             let dx = _sqrt(dx_sq)
             let x0 = stdr.floor(cx - dx)
             let x1 = stdr.floor(cx + dx)
             area.fill_rect(x0, y, x1 - x0 + 1, 1)
-        }
-    }
-}
+;
 
-: _aa_circle(area = cogito.DrawingArea, cx = num, cy = num, r = num, base_color = string) (( -- )) {
+: _aa_circle(area = cogito.DrawingArea, cx = num, cy = num, r = num, base_color = string) (( -- ))
     let outer = r + 1.0
     let inner = r - 1.0
     let outer_sq = outer * outer
     let band = 4.0 * r
     let ?y = stdr.floor(cy - outer)
     let y_end = stdr.floor(cy + outer)
-    for (; y <= y_end; y += 1) {
+    for (; y <= y_end; y += 1)
         let dy = y - cy
         let dx_sq_outer = outer_sq - (dy * dy)
         let dx_sq_inner = (inner * inner) - (dy * dy)
-        if dx_sq_outer > 0 {
+        if dx_sq_outer > 0
             let dx_o = _sqrt(dx_sq_outer)
             let ?dx_i = 0.0
-            if dx_sq_inner > 0 {
+            if dx_sq_inner > 0
                 dx_i = _sqrt(dx_sq_inner)
-            }
             let lx0 = stdr.floor(cx - dx_o)
             let lx1 = stdr.floor(cx - dx_i)
             let rx0 = stdr.floor(cx + dx_i)
             let rx1 = stdr.floor(cx + dx_o)
-            for (let ?px = lx0; px <= lx1; px += 1) {
+            for (let ?px = lx0; px <= lx1; px += 1)
                 let dist_sq = (px - cx) * (px - cx) + dy * dy
                 let ?frac = (outer_sq - dist_sq) / band
                 if frac < 0 { frac = 0.0 }
@@ -263,8 +241,7 @@ def TAU = 6.283185307179586
                 let hex_a = _hex_byte(alpha)
                 area.set_color("$$base_color$$$$hex_a$$")
                 area.fill_rect(px, y, 1, 1)
-            }
-            for (let ?px = rx0; px <= rx1; px += 1) {
+            for (let ?px = rx0; px <= rx1; px += 1)
                 let dist_sq = (px - cx) * (px - cx) + dy * dy
                 let ?frac = (outer_sq - dist_sq) / band
                 if frac < 0 { frac = 0.0 }
@@ -273,27 +250,21 @@ def TAU = 6.283185307179586
                 let hex_a = _hex_byte(alpha)
                 area.set_color("$$base_color$$$$hex_a$$")
                 area.fill_rect(px, y, 1, 1)
-            }
-            if dx_sq_inner > 0 {
+            if dx_sq_inner > 0
                 area.set_color(base_color)
                 let fill_x0 = stdr.floor(cx - dx_i) + 1
                 let fill_x1 = stdr.floor(cx + dx_i) - 1
-                if fill_x1 >= fill_x0 {
+                if fill_x1 >= fill_x0
                     area.fill_rect(fill_x0, y, fill_x1 - fill_x0 + 1, 1)
-                }
-            }
-        }
-    }
-}
+;
 
-: _draw_orbit(orbit = any, area = cogito.DrawingArea, w = num, h = num, fix = cogito.Fixed, sr_pair = cogito.HStack, ss_pair = cogito.HStack, st = cogito.Label) (( -- )) {
+: _draw_orbit(orbit = any, area = cogito.DrawingArea, w = num, h = num, fix = cogito.Fixed, sr_pair = cogito.HStack, ss_pair = cogito.HStack, st = cogito.Label) (( -- ))
     let cx = w / 2.0
     let cy = h / 2.0 + 6.0
 
     let ?radius = (if w < h { w } else { h }) / 2.0 - 18.0
-    if radius < 16.0 {
+    if radius < 16.0
         radius = 16.0
-    }
 
     let orbit_color = str(orbit["color"] ?? "#8DB4D7")
     let orbit_arc_color = str(orbit["arc_color"] ?? "#8DB4D72E")
@@ -325,9 +296,9 @@ def TAU = 6.283185307179586
 
     fix.set_pos(sr_pair, stdr.floor(cx - radius) - 80, stdr.floor(cy) - 16)
     fix.set_pos(ss_pair, stdr.floor(cx + radius) + 16, stdr.floor(cy) - 16)
-}
+;
 
-:: new_orbit() (( any )) {
+:: new_orbit() (( any ))
     let title = cogito.label("Sun Orbit")
     .set_class("kairos-section-title")
 
@@ -412,14 +383,14 @@ def TAU = 6.283185307179586
     })
 
     _update_status(orbit, status, sunrise_lbl, sunset_lbl)
-    return orbit
-}
+    <- orbit
+;
 
-:: widget(orbit = any) (( any )) {
-    return orbit["root"]
-}
+:: widget(orbit = any) (( any ))
+    <- orbit["root"]
+;
 
-:: set_times(?orbit = any, sunrise_iso = string, sunset_iso = string, sunrise_next_iso = string, tz = string) (( -- )) {
+:: set_times(?orbit = any, sunrise_iso = string, sunset_iso = string, sunrise_next_iso = string, tz = string) (( -- ))
     orbit["sunrise_iso"] = sunrise_iso
     orbit["sunset_iso"] = sunset_iso
     orbit["sunrise_next_iso"] = sunrise_next_iso
@@ -429,14 +400,13 @@ def TAU = 6.283185307179586
     orbit["sunrise_next_epoch"] = time_utils.iso_to_epoch(sunrise_next_iso, tz)
 
     let refresh = orbit["refresh"] ?? null
-    if !is_null(refresh) {
+    if !is_null(refresh)
         refresh()
-    }
-}
+;
 
-:: set_color(?orbit = any, color = string, arc_color = string, day_color = string, night_color = string) (( -- )) {
+:: set_color(?orbit = any, color = string, arc_color = string, day_color = string, night_color = string) (( -- ))
     orbit["color"] = color
     orbit["arc_color"] = arc_color
     orbit["day_color"] = day_color
     orbit["night_color"] = night_color
-}
+;

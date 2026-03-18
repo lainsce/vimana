@@ -4,275 +4,235 @@ bring stdr
 
 -- ── XML Helpers ──────────────────────────────────────────────
 
-:: extract_tag(xml = string, tag = string) (( string )) {
+:: extract_tag(xml = string, tag = string) (( string ))
     let open_tag = "<$$tag$$>"
     let close_tag = "</$$tag$$>"
     let ?start = stdr.index_of(xml, open_tag)
-    if start < 0 {
+    if start < 0
         -- Try with attributes: <tag ...>
         let open_attr = "<$$tag$$ "
         start = stdr.index_of(xml, open_attr)
-        if start < 0 {
-            return ""
-        }
+        if start < 0
+            <- ""
         -- Find the closing > of the opening tag
         let gt = stdr.index_of(stdr.slice(xml, start, stdr.len(xml)), ">")
-        if gt < 0 {
-            return ""
-        }
+        if gt < 0
+            <- ""
         start = start + gt + 1
         let end = stdr.index_of(stdr.slice(xml, start, stdr.len(xml)), close_tag)
-        if end < 0 {
-            return ""
-        }
-        return stdr.slice(xml, start, start + end)
-    }
+        if end < 0
+            <- ""
+        <- stdr.slice(xml, start, start + end)
     start = start + stdr.len(open_tag)
     let remaining = stdr.slice(xml, start, stdr.len(xml))
     let end = stdr.index_of(remaining, close_tag)
-    if end < 0 {
-        return ""
-    }
-    return stdr.slice(xml, start, start + end)
-}
+    if end < 0
+        <- ""
+    <- stdr.slice(xml, start, start + end)
+;
 
-:: extract_cdata(text = string) (( string )) {
+:: extract_cdata(text = string) (( string ))
     let cdata_start = "<![CDATA["
     let cdata_end = "]]>"
     let idx = stdr.index_of(text, cdata_start)
-    if idx >= 0 {
+    if idx >= 0
         let from = idx + stdr.len(cdata_start)
         let eidx = stdr.index_of(stdr.slice(text, from, stdr.len(text)), cdata_end)
-        if eidx >= 0 {
-            return stdr.slice(text, from, from + eidx)
-        }
-    }
-    return text
-}
+        if eidx >= 0
+            <- stdr.slice(text, from, from + eidx)
+    <- text
+;
 
-:: extract_all_tags(xml = string, tag = string) (( any )) {
+:: extract_all_tags(xml = string, tag = string) (( any ))
     let ?results = []: [any]
     let open_tag = "<$$tag$$>"
     let open_attr = "<$$tag$$ "
     let close_tag = "</$$tag$$>"
     let ?pos = 0
-    for (let ?pass = 0; pass < 100 && pos < stdr.len(xml); pass += 1) {
+    for (let ?pass = 0; pass < 100 && pos < stdr.len(xml); pass += 1)
         let rest = stdr.slice(xml, pos, stdr.len(xml))
         let ?idx = stdr.index_of(rest, open_tag)
         let ?content_start = 0
-        if idx >= 0 {
+        if idx >= 0
             content_start = idx + stdr.len(open_tag)
-        } else {
+        else
             idx = stdr.index_of(rest, open_attr)
-            if idx < 0 {
-                return results
-            }
+            if idx < 0
+                <- results
             let after_open = stdr.slice(rest, idx, stdr.len(rest))
             let gt = stdr.index_of(after_open, ">")
-            if gt < 0 {
-                return results
-            }
+            if gt < 0
+                <- results
             content_start = idx + gt + 1
-        }
         let after_content = stdr.slice(rest, content_start, stdr.len(rest))
         let end = stdr.index_of(after_content, close_tag)
-        if end < 0 {
-            return results
-        }
+        if end < 0
+            <- results
         let val = stdr.slice(rest, content_start, content_start + end)
         results[stdr.len(results)] = val
         pos = pos + content_start + end + stdr.len(close_tag)
-    }
-    return results
-}
+    <- results
+;
 
-:: extract_attr(tag_xml = string, attr_name = string) (( string )) {
+:: extract_attr(tag_xml = string, attr_name = string) (( string ))
     let needle = "$$attr_name$$=\""
     let idx = stdr.index_of(tag_xml, needle)
-    if idx < 0 {
-        return ""
-    }
+    if idx < 0
+        <- ""
     let from = idx + stdr.len(needle)
     let rest = stdr.slice(tag_xml, from, stdr.len(tag_xml))
     let qidx = stdr.index_of(rest, "\"")
-    if qidx < 0 {
-        return ""
-    }
-    return stdr.slice(rest, 0, qidx)
-}
+    if qidx < 0
+        <- ""
+    <- stdr.slice(rest, 0, qidx)
+;
 
-:: extract_atom_link(entry_xml = string) (( string )) {
+:: extract_atom_link(entry_xml = string) (( string ))
     let ?pos = 0
     let ?fallback = ""
-    for (let ?pass = 0; pass < 20 && pos < stdr.len(entry_xml); pass += 1) {
+    for (let ?pass = 0; pass < 20 && pos < stdr.len(entry_xml); pass += 1)
         let rest = stdr.slice(entry_xml, pos, stdr.len(entry_xml))
         let idx = stdr.index_of(rest, "<link")
-        if idx < 0 {
-            return fallback
-        }
+        if idx < 0
+            <- fallback
         let after = stdr.slice(rest, idx, stdr.len(rest))
         let gt = stdr.index_of(after, ">")
-        if gt < 0 {
-            return fallback
-        }
+        if gt < 0
+            <- fallback
         let tag_text = stdr.slice(after, 0, gt + 1)
         let href = extract_attr(tag_text, "href")
-        if stdr.len(href) > 0 {
+        if stdr.len(href) > 0
             let rel = extract_attr(tag_text, "rel")
-            if rel == "alternate" {
-                return href
-            }
-            if stdr.len(fallback) == 0 {
+            if rel == "alternate"
+                <- href
+            if stdr.len(fallback) == 0
                 fallback = href
-            }
-        }
         pos = pos + idx + gt + 1
-    }
-    return fallback
-}
+    <- fallback
+;
 
-:: extract_atom_categories(entry_xml = string) (( any )) {
+:: extract_atom_categories(entry_xml = string) (( any ))
     let ?results = []: [any]
     let ?pos = 0
-    for (let ?pass = 0; pass < 50 && pos < stdr.len(entry_xml); pass += 1) {
+    for (let ?pass = 0; pass < 50 && pos < stdr.len(entry_xml); pass += 1)
         let rest = stdr.slice(entry_xml, pos, stdr.len(entry_xml))
         let idx = stdr.index_of(rest, "<category")
-        if idx < 0 {
-            return results
-        }
+        if idx < 0
+            <- results
         let after = stdr.slice(rest, idx, stdr.len(rest))
         let gt = stdr.index_of(after, ">")
-        if gt < 0 {
-            return results
-        }
+        if gt < 0
+            <- results
         let tag_text = stdr.slice(after, 0, gt + 1)
         let term = extract_attr(tag_text, "term")
-        if stdr.len(term) > 0 {
+        if stdr.len(term) > 0
             let cleaned = decode_entities(stdr.trim(term))
-            if stdr.len(cleaned) > 0 {
+            if stdr.len(cleaned) > 0
                 results[stdr.len(results)] = cleaned
-            }
-        }
         pos = pos + idx + gt + 1
-    }
-    return results
-}
+    <- results
+;
 
 -- ── HTML Processing ──────────────────────────────────────────
 
-:: strip_figure(text = string) (( string )) {
+:: strip_figure(text = string) (( string ))
     let ?t = text
     let ?changed = true
-    for (let ?pass = 0; changed && pass < 10; pass += 1) {
+    for (let ?pass = 0; changed && pass < 10; pass += 1)
         changed = false
         let idx = stdr.index_of(t, "<figure")
-        if idx >= 0 {
+        if idx >= 0
             let after = stdr.slice(t, idx, stdr.len(t))
             let end = stdr.index_of(after, "</figure>")
-            if end >= 0 {
+            if end >= 0
                 let before = stdr.slice(t, 0, idx)
                 let tail = stdr.slice(t, idx + end + stdr.len("</figure>"), stdr.len(t))
                 t = "$$before$$$$tail$$"
                 changed = true
-            }
-        }
-    }
-    return t
-}
+    <- t
+;
 
-:: strip_html(text = string) (( string )) {
+:: strip_html(text = string) (( string ))
     let ?result = ""
     let ?in_tag = false
     let n = stdr.len(text)
-    for (let ?i = 0; i < n; i += 1) {
+    for (let ?i = 0; i < n; i += 1)
         let ch = stdr.slice(text, i, i + 1)
-        if ch == "<" {
+        if ch == "<"
             in_tag = true
-        } elif ch == ">" {
+        elif ch == ">"
             in_tag = false
-        } elif !in_tag {
+        elif !in_tag
             result = "$$result$$$$ch$$"
-        }
-    }
-    return result
-}
+    <- result
+;
 
-:: clean_body(text = string) (( string )) {
+:: clean_body(text = string) (( string ))
     let ?t = stdr.replace(text, "\t", " ")
     t = stdr.replace(t, "\r", "\n")
     -- Collapse 3+ newlines into 2
     let ?shrinking = true
-    for (let ?pass = 0; shrinking && pass < 50; pass += 1) {
+    for (let ?pass = 0; shrinking && pass < 50; pass += 1)
         let next = stdr.replace(t, "\n\n\n", "\n\n")
-        if stdr.len(next) == stdr.len(t) {
+        if stdr.len(next) == stdr.len(t)
             shrinking = false
-        } else {
+        else
             t = next
-        }
-    }
     -- Strip leading newlines and spaces
     let ?stripping = true
-    for (let ?i = 0; stripping && i < 500 && stdr.len(t) > 0; i += 1) {
+    for (let ?i = 0; stripping && i < 500 && stdr.len(t) > 0; i += 1)
         let ch = stdr.slice(t, 0, 1)
-        if ch == "\n" || ch == " " {
+        if ch == "\n" || ch == " "
             t = stdr.slice(t, 1, stdr.len(t))
-        } else {
+        else
             stripping = false
-        }
-    }
     -- Strip trailing newlines and spaces
     stripping = true
-    for (let ?j = 0; stripping && j < 500 && stdr.len(t) > 0; j += 1) {
+    for (let ?j = 0; stripping && j < 500 && stdr.len(t) > 0; j += 1)
         let n = stdr.len(t)
         let ch = stdr.slice(t, n - 1, n)
-        if ch == "\n" || ch == " " {
+        if ch == "\n" || ch == " "
             t = stdr.slice(t, 0, n - 1)
-        } else {
+        else
             stripping = false
-        }
-    }
     -- Remove consecutive duplicate paragraphs
     let ?deduped = ""
     let ?prev_para = ""
     let ?dpos = 0
-    for (let ?dp = 0; dp < 500 && dpos <= stdr.len(t); dp += 1) {
+    for (let ?dp = 0; dp < 500 && dpos <= stdr.len(t); dp += 1)
         let drest = stdr.slice(t, dpos, stdr.len(t))
         let sep = stdr.index_of(drest, "\n\n")
         let ?para = ""
-        if sep < 0 {
+        if sep < 0
             para = stdr.trim(drest)
             dpos = stdr.len(t) + 1
-        } else {
+        else
             para = stdr.trim(stdr.slice(drest, 0, sep))
             dpos = dpos + sep + 2
-        }
-        if stdr.len(para) > 0 && para != prev_para {
-            if stdr.len(deduped) > 0 {
+        if stdr.len(para) > 0 && para != prev_para
+            if stdr.len(deduped) > 0
                 deduped = "$$deduped$$\n\n$$para$$"
-            } else {
+            else
                 deduped = para
-            }
             prev_para = para
-        }
-    }
-    return deduped
-}
+    <- deduped
+;
 
 -- ── Entity Decoding ──────────────────────────────────────────
 
-: convert_numeric_entities(text = string) (( string )) {
+: convert_numeric_entities(text = string) (( string ))
     let ?t = text
     let ?pos = 0
-    for (let ?found = true; found && pos < stdr.len(t); found = found) {
+    for (let ?found = true; found && pos < stdr.len(t); found = found)
         let rest = stdr.slice(t, pos, stdr.len(t))
         let idx = stdr.index_of(rest, "&#")
-        if idx < 0 {
+        if idx < 0
             found = false
-        } else {
+        else
             let abs_pos = pos + idx
             let after = stdr.slice(t, abs_pos, stdr.len(t))
             let semi = stdr.index_of(after, ";")
-            if semi > 2 && semi < 10 {
+            if semi > 2 && semi < 10
                 let num_str = stdr.slice(after, 2, semi)
                 let code = stdr.num(num_str)
                 let ch = stdr.char_from_code(code)
@@ -280,15 +240,12 @@ bring stdr
                 let tail = stdr.slice(t, abs_pos + semi + 1, stdr.len(t))
                 t = "$$before$$$$ch$$$$tail$$"
                 pos = abs_pos + stdr.len(ch)
-            } else {
+            else
                 pos = abs_pos + 2
-            }
-        }
-    }
-    return t
-}
+    <- t
+;
 
-:: decode_entities(text = string) (( string )) {
+:: decode_entities(text = string) (( string ))
     let ?t = text
     t = stdr.replace(t, "&amp;", "&")
     t = stdr.replace(t, "&#038;", "&")
@@ -320,324 +277,287 @@ bring stdr
     t = stdr.replace(t, "&trade;", "\u{2122}")
     t = stdr.replace(t, "&euro;", "\u{20AC}")
     t = convert_numeric_entities(t)
-    return t
-}
+    <- t
+;
 
 -- ── Image Extraction ─────────────────────────────────────────
 
-:: extract_image_from_item(item_xml = string) (( string )) {
+:: extract_image_from_item(item_xml = string) (( string ))
     -- Try media:content url="..."
     let media_tag = "media:content"
     let ?idx = stdr.index_of(item_xml, media_tag)
-    if idx >= 0 {
+    if idx >= 0
         let after = stdr.slice(item_xml, idx, stdr.len(item_xml))
         let url_attr = "url=\""
         let uidx = stdr.index_of(after, url_attr)
-        if uidx >= 0 {
+        if uidx >= 0
             let from = uidx + stdr.len(url_attr)
             let rest = stdr.slice(after, from, stdr.len(after))
             let qidx = stdr.index_of(rest, "\"")
-            if qidx > 0 {
-                return decode_entities(stdr.slice(rest, 0, qidx))
-            }
-        }
-    }
+            if qidx > 0
+                <- decode_entities(stdr.slice(rest, 0, qidx))
 
     -- Try enclosure url="..."
     let enc_tag = "<enclosure"
     idx = stdr.index_of(item_xml, enc_tag)
-    if idx >= 0 {
+    if idx >= 0
         let after = stdr.slice(item_xml, idx, stdr.len(item_xml))
         let url_attr = "url=\""
         let uidx = stdr.index_of(after, url_attr)
-        if uidx >= 0 {
+        if uidx >= 0
             let from = uidx + stdr.len(url_attr)
             let rest = stdr.slice(after, from, stdr.len(after))
             let qidx = stdr.index_of(rest, "\"")
-            if qidx > 0 {
-                return decode_entities(stdr.slice(rest, 0, qidx))
-            }
-        }
-    }
+            if qidx > 0
+                <- decode_entities(stdr.slice(rest, 0, qidx))
 
     -- Try <image> inside the item description
     let desc = extract_tag(item_xml, "description")
     let raw_desc = extract_cdata(desc)
     let img_idx = stdr.index_of(raw_desc, "<img")
-    if img_idx >= 0 {
+    if img_idx >= 0
         let after = stdr.slice(raw_desc, img_idx, stdr.len(raw_desc))
         let src_attr = "src=\""
         let sidx = stdr.index_of(after, src_attr)
-        if sidx >= 0 {
+        if sidx >= 0
             let from = sidx + stdr.len(src_attr)
             let rest = stdr.slice(after, from, stdr.len(after))
             let qidx = stdr.index_of(rest, "\"")
-            if qidx > 0 {
-                return decode_entities(stdr.slice(rest, 0, qidx))
-            }
-        }
-    }
+            if qidx > 0
+                <- decode_entities(stdr.slice(rest, 0, qidx))
 
-    return ""
-}
+    <- ""
+;
 
-:: clean_caption(text = string) (( string )) {
+:: clean_caption(text = string) (( string ))
     let ?t = stdr.replace(stdr.replace(text, "\n", " "), "\r", " ")
-    return stdr.trim(t)
-}
+    <- stdr.trim(t)
+;
 
-:: extract_image_caption(item_xml = string) (( string )) {
+:: extract_image_caption(item_xml = string) (( string ))
     -- Try media:description
     let md = extract_tag(item_xml, "media:description")
-    if stdr.len(md) > 0 {
+    if stdr.len(md) > 0
         let cap = clean_caption(decode_entities(strip_html(md)))
-        if stdr.len(cap) > 0 { return cap }
-    }
+        if stdr.len(cap) > 0 { <- cap }
     -- Try media:text
     let mt = extract_tag(item_xml, "media:text")
-    if stdr.len(mt) > 0 {
+    if stdr.len(mt) > 0
         let cap = clean_caption(decode_entities(strip_html(mt)))
-        if stdr.len(cap) > 0 { return cap }
-    }
+        if stdr.len(cap) > 0 { <- cap }
     -- Try figcaption
     let fc = extract_tag(item_xml, "figcaption")
-    if stdr.len(fc) > 0 {
+    if stdr.len(fc) > 0
         let cap = clean_caption(decode_entities(strip_html(fc)))
-        if stdr.len(cap) > 0 { return cap }
-    }
+        if stdr.len(cap) > 0 { <- cap }
     -- Try data-caption attribute on <img>
     let dc_attr = "data-caption=\""
     let dc_idx = stdr.index_of(item_xml, dc_attr)
-    if dc_idx >= 0 {
+    if dc_idx >= 0
         let from = dc_idx + stdr.len(dc_attr)
         let rest = stdr.slice(item_xml, from, stdr.len(item_xml))
         let qidx = stdr.index_of(rest, "\"")
-        if qidx > 0 {
+        if qidx > 0
             let cap = clean_caption(decode_entities(stdr.slice(rest, 0, qidx)))
-            if stdr.len(cap) > 0 { return cap }
-        }
-    }
-    return ""
-}
+            if stdr.len(cap) > 0 { <- cap }
+    <- ""
+;
 
-:: extract_atom_image(entry_xml = string) (( string )) {
+:: extract_atom_image(entry_xml = string) (( string ))
     -- Try <media:content url="...">
     let media_tag = "media:content"
     let ?idx = stdr.index_of(entry_xml, media_tag)
-    if idx >= 0 {
+    if idx >= 0
         let after = stdr.slice(entry_xml, idx, stdr.len(entry_xml))
         let url_attr = "url=\""
         let uidx = stdr.index_of(after, url_attr)
-        if uidx >= 0 {
+        if uidx >= 0
             let from = uidx + stdr.len(url_attr)
             let rest = stdr.slice(after, from, stdr.len(after))
             let qidx = stdr.index_of(rest, "\"")
-            if qidx > 0 {
-                return stdr.slice(rest, 0, qidx)
-            }
-        }
-    }
+            if qidx > 0
+                <- stdr.slice(rest, 0, qidx)
 
     -- Try <link rel="enclosure" href="...">
     let enc = "rel=\"enclosure\""
     idx = stdr.index_of(entry_xml, enc)
-    if idx >= 0 {
+    if idx >= 0
         let after = stdr.slice(entry_xml, idx, stdr.len(entry_xml))
         let href = "href=\""
         let hidx = stdr.index_of(after, href)
-        if hidx >= 0 {
+        if hidx >= 0
             let from = hidx + stdr.len(href)
             let rest = stdr.slice(after, from, stdr.len(after))
             let qidx = stdr.index_of(rest, "\"")
-            if qidx > 0 {
-                return stdr.slice(rest, 0, qidx)
-            }
-        }
-    }
+            if qidx > 0
+                <- stdr.slice(rest, 0, qidx)
 
     -- Try content with <img src="...">
     let content = extract_tag(entry_xml, "content")
     let raw = extract_cdata(content)
     let img_idx = stdr.index_of(raw, "<img")
-    if img_idx >= 0 {
+    if img_idx >= 0
         let after = stdr.slice(raw, img_idx, stdr.len(raw))
         let src_attr = "src=\""
         let sidx = stdr.index_of(after, src_attr)
-        if sidx >= 0 {
+        if sidx >= 0
             let from = sidx + stdr.len(src_attr)
             let rest = stdr.slice(after, from, stdr.len(after))
             let qidx = stdr.index_of(rest, "\"")
-            if qidx > 0 {
-                return decode_entities(stdr.slice(rest, 0, qidx))
-            }
-        }
-    }
+            if qidx > 0
+                <- decode_entities(stdr.slice(rest, 0, qidx))
 
-    return ""
-}
+    <- ""
+;
 
 -- ── Boilerplate Detection ────────────────────────────────────
 
-:: is_boilerplate(text = string) (( bool )) {
+:: is_boilerplate(text = string) (( bool ))
     let n = stdr.len(text)
     -- Navigation links
-    if stdr.starts_with(text, "See All") { return true }
-    if stdr.starts_with(text, "Read More") { return true }
-    if stdr.starts_with(text, "Read more") { return true }
-    if stdr.starts_with(text, "Sign up") { return true }
-    if stdr.starts_with(text, "Sign Up") { return true }
-    if stdr.starts_with(text, "Subscribe") { return true }
-    if stdr.starts_with(text, "Log in") { return true }
-    if stdr.starts_with(text, "Log In") { return true }
-    if stdr.starts_with(text, "Create a free account") { return true }
-    if stdr.starts_with(text, "Already a subscriber") { return true }
-    if stdr.starts_with(text, "Already a member") { return true }
-    if stdr.starts_with(text, "Already have an account") { return true }
-    if stdr.starts_with(text, "Continue reading") { return true }
-    if stdr.starts_with(text, "Click here") { return true }
-    if stdr.starts_with(text, "Tap here") { return true }
-    if stdr.starts_with(text, "Download our app") { return true }
-    if stdr.starts_with(text, "Get the app") { return true }
-    if stdr.starts_with(text, "Open in app") { return true }
-    if stdr.starts_with(text, "This article is") && n < 100 { return true }
-    if stdr.starts_with(text, "This story is") && n < 100 { return true }
-    if stdr.starts_with(text, "This content is") && n < 100 { return true }
+    if stdr.starts_with(text, "See All") { <- true }
+    if stdr.starts_with(text, "Read More") { <- true }
+    if stdr.starts_with(text, "Read more") { <- true }
+    if stdr.starts_with(text, "Sign up") { <- true }
+    if stdr.starts_with(text, "Sign Up") { <- true }
+    if stdr.starts_with(text, "Subscribe") { <- true }
+    if stdr.starts_with(text, "Log in") { <- true }
+    if stdr.starts_with(text, "Log In") { <- true }
+    if stdr.starts_with(text, "Create a free account") { <- true }
+    if stdr.starts_with(text, "Already a subscriber") { <- true }
+    if stdr.starts_with(text, "Already a member") { <- true }
+    if stdr.starts_with(text, "Already have an account") { <- true }
+    if stdr.starts_with(text, "Continue reading") { <- true }
+    if stdr.starts_with(text, "Click here") { <- true }
+    if stdr.starts_with(text, "Tap here") { <- true }
+    if stdr.starts_with(text, "Download our app") { <- true }
+    if stdr.starts_with(text, "Get the app") { <- true }
+    if stdr.starts_with(text, "Open in app") { <- true }
+    if stdr.starts_with(text, "This article is") && n < 100 { <- true }
+    if stdr.starts_with(text, "This story is") && n < 100 { <- true }
+    if stdr.starts_with(text, "This content is") && n < 100 { <- true }
     -- Share this
-    if stdr.starts_with(text, "Share this") { return true }
-    if stdr.starts_with(text, "Share on") { return true }
+    if stdr.starts_with(text, "Share this") { <- true }
+    if stdr.starts_with(text, "Share on") { <- true }
     -- Subscription/digest prompts
-    if stdr.contains(text, "email digest") { return true }
-    if stdr.contains(text, "homepage feed") { return true }
-    if stdr.contains(text, "will be added to") { return true }
-    if stdr.contains(text, "newsletter") && n < 120 { return true }
-    if stdr.contains(text, "free daily digest") { return true }
-    if stdr.contains(text, "subscribe to") && n < 120 { return true }
-    if stdr.contains(text, "Subscribe to") && n < 120 { return true }
+    if stdr.contains(text, "email digest") { <- true }
+    if stdr.contains(text, "homepage feed") { <- true }
+    if stdr.contains(text, "will be added to") { <- true }
+    if stdr.contains(text, "newsletter") && n < 120 { <- true }
+    if stdr.contains(text, "free daily digest") { <- true }
+    if stdr.contains(text, "subscribe to") && n < 120 { <- true }
+    if stdr.contains(text, "Subscribe to") && n < 120 { <- true }
     -- Paywall / upsell prompts
-    if stdr.contains(text, "paywall") { return true }
-    if stdr.contains(text, "unlimited access") && n < 150 { return true }
-    if stdr.contains(text, "Unlimited access") && n < 150 { return true }
-    if stdr.contains(text, "premium content") && n < 150 { return true }
-    if stdr.contains(text, "Premium content") && n < 150 { return true }
-    if stdr.contains(text, "exclusive content") && n < 150 { return true }
-    if stdr.contains(text, "free trial") && n < 150 { return true }
-    if stdr.contains(text, "Free trial") && n < 150 { return true }
-    if stdr.contains(text, "Start your") && stdr.contains(text, "trial") { return true }
-    if stdr.contains(text, "per month") && n < 100 { return true }
-    if stdr.contains(text, "/month") && n < 100 { return true }
-    if stdr.contains(text, "per year") && n < 100 { return true }
-    if stdr.contains(text, "/year") && n < 100 { return true }
-    if stdr.contains(text, "billed annually") { return true }
-    if stdr.contains(text, "billed monthly") { return true }
-    if stdr.contains(text, "cancel anytime") { return true }
-    if stdr.contains(text, "Cancel anytime") { return true }
+    if stdr.contains(text, "paywall") { <- true }
+    if stdr.contains(text, "unlimited access") && n < 150 { <- true }
+    if stdr.contains(text, "Unlimited access") && n < 150 { <- true }
+    if stdr.contains(text, "premium content") && n < 150 { <- true }
+    if stdr.contains(text, "Premium content") && n < 150 { <- true }
+    if stdr.contains(text, "exclusive content") && n < 150 { <- true }
+    if stdr.contains(text, "free trial") && n < 150 { <- true }
+    if stdr.contains(text, "Free trial") && n < 150 { <- true }
+    if stdr.contains(text, "Start your") && stdr.contains(text, "trial") { <- true }
+    if stdr.contains(text, "per month") && n < 100 { <- true }
+    if stdr.contains(text, "/month") && n < 100 { <- true }
+    if stdr.contains(text, "per year") && n < 100 { <- true }
+    if stdr.contains(text, "/year") && n < 100 { <- true }
+    if stdr.contains(text, "billed annually") { <- true }
+    if stdr.contains(text, "billed monthly") { <- true }
+    if stdr.contains(text, "cancel anytime") { <- true }
+    if stdr.contains(text, "Cancel anytime") { <- true }
     -- Account / login prompts
-    if stdr.contains(text, "create an account") && n < 120 { return true }
-    if stdr.contains(text, "Create an account") && n < 120 { return true }
-    if stdr.contains(text, "sign in to") && n < 120 { return true }
-    if stdr.contains(text, "Sign in to") && n < 120 { return true }
-    if stdr.contains(text, "log in to") && n < 120 { return true }
-    if stdr.contains(text, "Log in to") && n < 120 { return true }
+    if stdr.contains(text, "create an account") && n < 120 { <- true }
+    if stdr.contains(text, "Create an account") && n < 120 { <- true }
+    if stdr.contains(text, "sign in to") && n < 120 { <- true }
+    if stdr.contains(text, "Sign in to") && n < 120 { <- true }
+    if stdr.contains(text, "log in to") && n < 120 { <- true }
+    if stdr.contains(text, "Log in to") && n < 120 { <- true }
     -- Ad/sponsor labels
-    if stdr.contains(text, "Sponsored") && n < 80 { return true }
-    if stdr.contains(text, "Advertisement") && n < 80 { return true }
-    if stdr.contains(text, "ADVERTISEMENT") { return true }
-    if stdr.contains(text, "Paid Content") { return true }
-    if stdr.contains(text, "paid partner") && n < 120 { return true }
-    if stdr.contains(text, "Promoted") && n < 80 { return true }
+    if stdr.contains(text, "Sponsored") && n < 80 { <- true }
+    if stdr.contains(text, "Advertisement") && n < 80 { <- true }
+    if stdr.contains(text, "ADVERTISEMENT") { <- true }
+    if stdr.contains(text, "Paid Content") { <- true }
+    if stdr.contains(text, "paid partner") && n < 120 { <- true }
+    if stdr.contains(text, "Promoted") && n < 80 { <- true }
     -- App install / push notification prompts
-    if stdr.contains(text, "push notifications") && n < 120 { return true }
-    if stdr.contains(text, "browser notifications") && n < 120 { return true }
-    if stdr.contains(text, "Enable notifications") { return true }
+    if stdr.contains(text, "push notifications") && n < 120 { <- true }
+    if stdr.contains(text, "browser notifications") && n < 120 { <- true }
+    if stdr.contains(text, "Enable notifications") { <- true }
     -- Cookie/privacy banners
-    if stdr.contains(text, "cookie") && n < 120 { return true }
-    if stdr.contains(text, "privacy policy") && n < 120 { return true }
-    if stdr.contains(text, "terms of service") && n < 120 { return true }
-    if stdr.contains(text, "Terms of Service") && n < 120 { return true }
+    if stdr.contains(text, "cookie") && n < 120 { <- true }
+    if stdr.contains(text, "privacy policy") && n < 120 { <- true }
+    if stdr.contains(text, "terms of service") && n < 120 { <- true }
+    if stdr.contains(text, "Terms of Service") && n < 120 { <- true }
     -- Social / follow prompts
-    if stdr.contains(text, "Follow us on") && n < 80 { return true }
-    if stdr.contains(text, "Like us on") && n < 80 { return true }
-    if stdr.contains(text, "Join us on") && n < 80 { return true }
+    if stdr.contains(text, "Follow us on") && n < 80 { <- true }
+    if stdr.contains(text, "Like us on") && n < 80 { <- true }
+    if stdr.contains(text, "Join us on") && n < 80 { <- true }
     -- Donation prompts
-    if stdr.contains(text, "donate") && n < 120 { return true }
-    if stdr.contains(text, "Donate") && n < 120 { return true }
-    if stdr.contains(text, "Support our journalism") { return true }
-    if stdr.contains(text, "support our work") && n < 150 { return true }
-    if stdr.contains(text, "reader-funded") && n < 150 { return true }
-    if stdr.contains(text, "reader funded") && n < 150 { return true }
+    if stdr.contains(text, "donate") && n < 120 { <- true }
+    if stdr.contains(text, "Donate") && n < 120 { <- true }
+    if stdr.contains(text, "Support our journalism") { <- true }
+    if stdr.contains(text, "support our work") && n < 150 { <- true }
+    if stdr.contains(text, "reader-funded") && n < 150 { <- true }
+    if stdr.contains(text, "reader funded") && n < 150 { <- true }
     -- Very short text without sentence-ending punctuation is likely UI chrome
-    if n < 40 {
-        if !stdr.ends_with(text, ".") && !stdr.ends_with(text, "!") && !stdr.ends_with(text, "?") && !stdr.ends_with(text, ":") && !stdr.ends_with(text, "\u{201D}") {
-            return true
-        }
-    }
-    return false
-}
+    if n < 40
+        if !stdr.ends_with(text, ".") && !stdr.ends_with(text, "!") && !stdr.ends_with(text, "?") && !stdr.ends_with(text, ":") && !stdr.ends_with(text, "\u{201D}")
+            <- true
+    <- false
+;
 
 -- ── Article Content Extraction ───────────────────────────────
 
-:: extract_paragraphs(html = string) (( any )) {
+:: extract_paragraphs(html = string) (( any ))
     let ?results = []: [any]
     let ?pos = 0
-    for (let ?pass = 0; pass < 500 && pos < stdr.len(html); pass += 1) {
+    for (let ?pass = 0; pass < 500 && pos < stdr.len(html); pass += 1)
         let rest = stdr.slice(html, pos, stdr.len(html))
         let ?idx = stdr.index_of(rest, "<p>")
         let ?content_start = 0
-        if idx >= 0 {
+        if idx >= 0
             content_start = idx + 3
-        } else {
+        else
             idx = stdr.index_of(rest, "<p ")
-            if idx < 0 {
-                return results
-            }
+            if idx < 0
+                <- results
             let after = stdr.slice(rest, idx, stdr.len(rest))
             let gt = stdr.index_of(after, ">")
-            if gt < 0 {
-                return results
-            }
+            if gt < 0
+                <- results
             content_start = idx + gt + 1
-        }
         let after_content = stdr.slice(rest, content_start, stdr.len(rest))
         let end = stdr.index_of(after_content, "</p>")
-        if end < 0 {
-            return results
-        }
+        if end < 0
+            <- results
         let raw = stdr.slice(rest, content_start, content_start + end)
         let text = stdr.trim(decode_entities(strip_html(raw)))
-        if stdr.len(text) > 0 && !is_boilerplate(text) {
+        if stdr.len(text) > 0 && !is_boilerplate(text)
             results[stdr.len(results)] = text
-        }
         pos = pos + content_start + end + 4
-    }
-    return results
-}
+    <- results
+;
 
-:: extract_article_content(html = string) (( string )) {
+:: extract_article_content(html = string) (( string ))
     -- Try to find <article> block first
     let ?source = html
     let art_start = stdr.index_of(html, "<article")
-    if art_start >= 0 {
+    if art_start >= 0
         let after = stdr.slice(html, art_start, stdr.len(html))
         let art_end = stdr.index_of(after, "</article>")
-        if art_end > 0 {
+        if art_end > 0
             source = stdr.slice(after, 0, art_end)
-        }
-    }
     let paragraphs = extract_paragraphs(source)
     let count = stdr.len(paragraphs)
-    if count == 0 {
-        return ""
-    }
+    if count == 0
+        <- ""
     let ?result = ""
-    for (let ?i = 0; i < count; i += 1) {
+    for (let ?i = 0; i < count; i += 1)
         let p = str(paragraphs[i] ?? "")
-        if stdr.len(p) > 0 {
-            if stdr.len(result) > 0 {
+        if stdr.len(p) > 0
+            if stdr.len(result) > 0
                 result = "$$result$$\n\n$$p$$"
-            } else {
+            else
                 result = p
-            }
-        }
-    }
-    return clean_body(result)
-}
+    <- clean_body(result)
+;

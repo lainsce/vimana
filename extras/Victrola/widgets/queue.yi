@@ -3,99 +3,82 @@ cask queue
 bring stdr
 bring cogito
 
-:: find_queue_index(queue = any, track_idx = num) (( num )) {
-    for (let ?i = 0; i < len(queue); i = i + 1) {
-        if queue[i] == track_idx {
-            return i
-        }
-    }
-    return -1
-}
+:: find_queue_index(queue = any, track_idx = num) (( num ))
+    for (let ?i = 0; i < len(queue); i = i + 1)
+        if queue[i] == track_idx
+            <- i
+    <- -1
+;
 
-:: queue_remove(queue = any, queue_pos = num) (( any )) {
-    if queue_pos < 0 || queue_pos >= len(queue) {
-        return queue
-    }
+:: queue_remove(queue = any, queue_pos = num) (( any ))
+    if queue_pos < 0 || queue_pos >= len(queue)
+        <- queue
 
     let ?next_queue = []: [num]
-    for (let ?i = 0; i < len(queue); i = i + 1) {
-        if i != queue_pos {
+    for (let ?i = 0; i < len(queue); i = i + 1)
+        if i != queue_pos
             stdr.push(next_queue, queue[i] ?? -1)
-        }
-    }
-    return next_queue
-}
+    <- next_queue
+;
 
-:: queue_swap(?queue = any, pos_a = num, pos_b = num) (( any )) {
-    if pos_a < 0 || pos_a >= len(queue) || pos_b < 0 || pos_b >= len(queue) {
-        return queue
-    }
+:: queue_swap(?queue = any, pos_a = num, pos_b = num) (( any ))
+    if pos_a < 0 || pos_a >= len(queue) || pos_b < 0 || pos_b >= len(queue)
+        <- queue
     let tmp = queue[pos_a] ?? -1
     queue[pos_a] = queue[pos_b] ?? -1
     queue[pos_b] = tmp
-    return queue
-}
+    <- queue
+;
 
-:: sync_playing_position(queue = any, playing_track = num, current_pos = num) (( num )) {
-    if len(queue) == 0 {
-        return -1
-    }
+:: sync_playing_position(queue = any, playing_track = num, current_pos = num) (( num ))
+    if len(queue) == 0
+        <- -1
 
     let playing_pos = find_queue_index(queue, playing_track)
-    if playing_pos >= 0 {
-        return playing_pos
-    }
+    if playing_pos >= 0
+        <- playing_pos
 
     let ?pos = current_pos
-    if pos < 0 {
+    if pos < 0
         pos = 0
-    }
-    if pos >= len(queue) {
+    if pos >= len(queue)
         pos = len(queue) - 1
-    }
-    return pos
-}
+    <- pos
+;
 
-:: build_queue_for_artist(tracks = any, artist = string) (( any )) {
+:: build_queue_for_artist(tracks = any, artist = string) (( any ))
     let ?queue = []: [num]
-    if len(artist) == 0 {
-        return queue
-    }
+    if len(artist) == 0
+        <- queue
 
-    for (let ?i = 0; i < len(tracks); i = i + 1) {
+    for (let ?i = 0; i < len(tracks); i = i + 1)
         let t = tracks[i] ?? []: [string => any]
-        if str(t["artist"] ?? "") == artist {
+        if str(t["artist"] ?? "") == artist
             stdr.push(queue, i)
-        }
-    }
 
-    return queue
-}
+    <- queue
+;
 
-:: build_queue_for_album(tracks = any, album = string) (( any )) {
+:: build_queue_for_album(tracks = any, album = string) (( any ))
     let ?queue = []: [num]
-    if len(album) == 0 {
-        return queue
-    }
+    if len(album) == 0
+        <- queue
 
-    for (let ?i = 0; i < len(tracks); i = i + 1) {
+    for (let ?i = 0; i < len(tracks); i = i + 1)
         let t = tracks[i] ?? []: [string => any]
-        if str(t["album"] ?? "") == album {
+        if str(t["album"] ?? "") == album
             stdr.push(queue, i)
-        }
-    }
 
-    return queue
-}
+    <- queue
+;
 
-:: build_queue_row(tracks = any, track_idx = num, queue_pos = num, is_current = bool, on_move_up = any, on_move_down = any, on_remove = any) (( any )) {
+:: build_queue_row(tracks = any, track_idx = num, queue_pos = num, is_current = bool, on_move_up = any, on_move_down = any, on_remove = any) (( any ))
     let t = tracks[track_idx] ?? []: [string => any]
     let ?title = str(t["title"] ?? "")
     let ?artist = str(t["artist"] ?? "Unknown Artist")
     let ?path = str(t["path"] ?? "")
-    if len(title) == 0 {
+    if len(title) == 0
         title = stdr.basename(path)
-    }
 
     let row = cogito.hstack()
     .set_gap(12)
@@ -103,9 +86,8 @@ bring cogito
     .set_padding(8, 0, 8, 0)
     .set_class("victrola-queue-row")
 
-    if is_current {
+    if is_current
         row.set_class("victrola-queue-row victrola-queue-current")
-    }
 
     let meta = cogito.vstack()
     .set_gap(2)
@@ -143,10 +125,10 @@ bring cogito
         })
     )
 
-    return row
-}
+    <- row
+;
 
-:: build_queue_content(tracks = any, queue = any, queue_pos = num, queue_active = bool, playing_track = num, on_move_up = any, on_move_down = any, on_remove = any, on_play_at = any) (( any )) {
+:: build_queue_content(tracks = any, queue = any, queue_pos = num, queue_active = bool, playing_track = num, on_move_up = any, on_move_down = any, on_remove = any, on_play_at = any) (( any ))
     let queue_list = cogito.content_list()
     .set_hexpand(true)
     .set_padding(0,0,0,0)
@@ -154,22 +136,18 @@ bring cogito
 
     let ?queue_visible_positions = []: [num]
 
-    for (let ?i = 0; i < len(queue); i = i + 1) {
+    for (let ?i = 0; i < len(queue); i = i + 1)
         let track_idx = stdr.num(queue[i] ?? -1)
-        if track_idx >= 0 {
+        if track_idx >= 0
             let is_current = i == queue_pos && (queue_active || track_idx == playing_track)
             queue_list.add(build_queue_row(tracks, track_idx, i, is_current, on_move_up, on_move_down, on_remove))
             stdr.push(queue_visible_positions, i)
-        }
-    }
 
     queue_list.on_select((idx = num) => {
-        if idx >= 0 && idx < len(queue_visible_positions) {
+        if idx >= 0 && idx < len(queue_visible_positions)
             let qp = stdr.num(queue_visible_positions[idx] ?? -1)
-            if qp >= 0 {
+            if qp >= 0
                 on_play_at(qp)
-            }
-        }
     })
 
     let queue_scroll = cogito.scroller()
@@ -181,18 +159,18 @@ bring cogito
     .set_min_content_height(220)
     .add(queue_list)
 
-    return queue_scroll
-}
+    <- queue_scroll
+;
 
-:: build_queue_sheet(tracks = any, queue = any, queue_pos = num, queue_active = bool, playing_track = num, on_move_up = any, on_move_down = any, on_remove = any, on_play_at = any) (( any )) {
+:: build_queue_sheet(tracks = any, queue = any, queue_pos = num, queue_active = bool, playing_track = num, on_move_up = any, on_move_down = any, on_remove = any, on_play_at = any) (( any ))
     let sheet = cogito.side_sheet("Queue")
     .set_mode(2)
     sheet.add(build_queue_content(tracks, queue, queue_pos, queue_active, playing_track, on_move_up, on_move_down, on_remove, on_play_at))
-    return sheet
-}
+    <- sheet
+;
 
-:: build_queue_bottom_sheet(tracks = any, queue = any, queue_pos = num, queue_active = bool, playing_track = num, on_move_up = any, on_move_down = any, on_remove = any, on_play_at = any) (( any )) {
+:: build_queue_bottom_sheet(tracks = any, queue = any, queue_pos = num, queue_active = bool, playing_track = num, on_move_up = any, on_move_down = any, on_remove = any, on_play_at = any) (( any ))
     let sheet = cogito.bottom_sheet("Queue")
     sheet.add(build_queue_content(tracks, queue, queue_pos, queue_active, playing_track, on_move_up, on_move_down, on_remove, on_play_at))
-    return sheet
-}
+    <- sheet
+;

@@ -2,113 +2,94 @@ cask util
 
 bring stdr
 
-:: collapse_path_separators(path = string) (( string )) {
+:: collapse_path_separators(path = string) (( string ))
     let n = stdr.len(path)
-    if n == 0 {
-        return ""
-    }
+    if n == 0
+        <- ""
 
     let ?out = ""
     let ?prev_slash = false
 
-    for (let ?i = 0; i < n; i = i + 1) {
+    for (let ?i = 0; i < n; i = i + 1)
         let ?ch = stdr.slice(path, i, i + 1)
-        if ch == "\\" {
+        if ch == "\\"
             ch = "/"
-        }
 
-        if ch == "/" {
-            if !prev_slash {
+        if ch == "/"
+            if !prev_slash
                 out = stdr.str_concat(out, "/")
-            }
             prev_slash = true
-        } else {
+        else
             out = stdr.str_concat(out, ch)
             prev_slash = false
-        }
-    }
 
-    return out
-}
+    <- out
+;
 
-:: sanitize_cover_path(path = string) (( string )) {
+:: sanitize_cover_path(path = string) (( string ))
     let ?p = stdr.trim(path)
-    if stdr.len(p) == 0 {
-        return ""
-    }
+    if stdr.len(p) == 0
+        <- ""
 
-    if stdr.len(p) >= 2 {
+    if stdr.len(p) >= 2
         let first = stdr.slice(p, 0, 1)
         let last = stdr.slice(p, stdr.len(p) - 1, stdr.len(p))
-        if first == "\"" && last == "\"" {
+        if first == "\"" && last == "\""
             p = stdr.slice(p, 1, stdr.len(p) - 1)
-        } elif first == "'" && last == "'" {
+        elif first == "'" && last == "'"
             p = stdr.slice(p, 1, stdr.len(p) - 1)
-        }
-    }
 
     p = stdr.trim(p)
 
-    if stdr.index_of(p, "file://") == 0 {
+    if stdr.index_of(p, "file://") == 0
         p = stdr.slice(p, 7, stdr.len(p))
-        if stdr.index_of(p, "localhost") == 0 {
+        if stdr.index_of(p, "localhost") == 0
             p = stdr.slice(p, 9, stdr.len(p))
-        }
-        if stdr.len(p) > 0 && stdr.slice(p, 0, 1) != "/" {
+        if stdr.len(p) > 0 && stdr.slice(p, 0, 1) != "/"
             p = stdr.str_concat("/", p)
-        }
-    } elif stdr.index_of(p, "file:") == 0 {
+    elif stdr.index_of(p, "file:") == 0
         p = stdr.slice(p, 5, stdr.len(p))
-        if stdr.len(p) > 0 && stdr.slice(p, 0, 1) != "/" {
+        if stdr.len(p) > 0 && stdr.slice(p, 0, 1) != "/"
             p = stdr.str_concat("/", p)
-        }
-    }
 
     p = collapse_path_separators(p)
 
     let pn = stdr.len(p)
-    if pn > 1 && stdr.slice(p, pn - 1, pn) == "/" {
+    if pn > 1 && stdr.slice(p, pn - 1, pn) == "/"
         p = stdr.slice(p, 0, pn - 1)
-    }
 
-    return p
-}
+    <- p
+;
 
-:: split_lines(text = string) (( any )) {
+:: split_lines(text = string) (( any ))
     let ?lines = []: [string]
     let ?start = 0
     let ?i = 0
     let n = stdr.len(text)
 
-    for (; i < n; i = i + 1) {
-        if stdr.slice(text, i, i + 1) == "\n" {
+    for (; i < n; i = i + 1)
+        if stdr.slice(text, i, i + 1) == "\n"
             let line = stdr.trim(stdr.slice(text, start, i))
-            if stdr.len(line) > 0 {
+            if stdr.len(line) > 0
                 lines[stdr.len(lines)] = line
-            }
             start = i + 1
-        }
-    }
 
-    if start < n {
+    if start < n
         let line = stdr.trim(stdr.slice(text, start, n))
-        if stdr.len(line) > 0 {
+        if stdr.len(line) > 0
             lines[stdr.len(lines)] = line
-        }
-    }
 
-    return lines
-}
+    <- lines
+;
 
-:: format_ms(ms = num) (( string )) {
-    if ms < 0 {
-        return "00:00"
-    }
+:: format_ms(ms = num) (( string ))
+    if ms < 0
+        <- "00:00"
     let total = ms / 1000
     let m = total / 60
     let s = total - m * 60
 
     let mm = if m < 10 { "0$$m$$" } else { "$$m$$" }
     let ss = if s < 10 { "0$$s$$" } else { "$$s$$" }
-    return "$$mm$$:$$ss$$"
-}
+    <- "$$mm$$:$$ss$$"
+;

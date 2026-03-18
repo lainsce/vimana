@@ -5,50 +5,42 @@ bring json
 bring net
 bring cogito
 
-:: read_embedded_lyrics(path = string) (( string )) {
-    if stdr.len(path) == 0 {
-        return ""
-    }
+:: read_embedded_lyrics(path = string) (( string ))
+    if stdr.len(path) == 0
+        <- ""
 
     let quoted = stdr.shell_quote(path)
     let cmd = "ffprobe -v quiet -show_entries format_tags -of json $$quoted$$ 2>/dev/null"
     let run = stdr.run_command(cmd)
     let exit = run[0] ?? 1
-    if exit != 0 {
-        return ""
-    }
+    if exit != 0
+        <- ""
 
     let body = stdr.str(run[1] ?? "")
     let root = json.parse(body)
-    if stdr.is_null(root) {
-        return ""
-    }
+    if stdr.is_null(root)
+        <- ""
 
     let fmt = root["format"] ?? null
-    if stdr.is_null(fmt) {
-        return ""
-    }
+    if stdr.is_null(fmt)
+        <- ""
     let tags = fmt["tags"] ?? null
-    if stdr.is_null(tags) {
-        return ""
-    }
+    if stdr.is_null(tags)
+        <- ""
 
     let keys = ["lyrics", "LYRICS", "lyrics-XXX", "lyrics-None-eng", "UNSYNCEDLYRICS", "unsyncedlyrics"]
-    for (let ?i = 0; i < stdr.len(keys); i = i + 1) {
+    for (let ?i = 0; i < stdr.len(keys); i = i + 1)
         let k = stdr.str(keys[i] ?? "")
         let v = stdr.str(tags[k] ?? "")
-        if stdr.len(v) > 0 {
-            return v
-        }
-    }
+        if stdr.len(v) > 0
+            <- v
 
-    return ""
-}
+    <- ""
+;
 
-:: embed_lyrics(path = string, lyrics = string) (( bool )) {
-    if stdr.len(path) == 0 || stdr.len(lyrics) == 0 {
-        return false
-    }
+:: embed_lyrics(path = string, lyrics = string) (( bool ))
+    if stdr.len(path) == 0 || stdr.len(lyrics) == 0
+        <- false
 
     let tmp = stdr.str_concat(path, ".victrola_tmp")
     let quoted_in = stdr.shell_quote(path)
@@ -56,14 +48,12 @@ bring cogito
 
     let lyrics_file = stdr.str_concat(path, ".lyrics.txt")
     let quoted_lf = stdr.shell_quote(lyrics_file)
-    if !stdr.write_text_file(lyrics_file, lyrics) {
-        return false
-    }
+    if !stdr.write_text_file(lyrics_file, lyrics)
+        <- false
 
     let ?tag_key = "lyrics"
-    if stdr.ends_with(path, ".flac") {
+    if stdr.ends_with(path, ".flac")
         tag_key = "LYRICS"
-    }
 
     let cmd = "ffmpeg -y -i $$quoted_in$$ -c copy -map_metadata 0 -metadata $$tag_key$$=\"$(cat $$quoted_lf$$)\" $$quoted_out$$ 2>/dev/null"
     let run = stdr.run_command(cmd)
@@ -71,23 +61,21 @@ bring cogito
 
     stdr.run_command(stdr.str_concat("rm -f ", quoted_lf))
 
-    if exit != 0 {
+    if exit != 0
         stdr.run_command(stdr.str_concat("rm -f ", quoted_out))
-        return false
-    }
+        <- false
 
     let mv_cmd = "mv -f $$quoted_out$$ $$quoted_in$$"
     let mv_run = stdr.run_command(mv_cmd)
     let mv_exit = mv_run[0] ?? 1
-    if mv_exit != 0 {
+    if mv_exit != 0
         stdr.run_command(stdr.str_concat("rm -f ", quoted_out))
-        return false
-    }
+        <- false
 
-    return true
-}
+    <- true
+;
 
-:: fetch_online(artist = string, title = string) (( string )) {
+:: fetch_online(artist = string, title = string) (( string ))
     let resp = net.get(
         "https://lrclib.net/api/get",
         [["artist_name", artist], ["track_name", title]],
@@ -95,135 +83,115 @@ bring cogito
         15
     )
 
-    if !(resp["ok"] ?? false) {
-        return ""
-    }
+    if !(resp["ok"] ?? false)
+        <- ""
 
     let body = stdr.str(resp["body"] ?? "")
     let root = json.parse(body)
-    if stdr.is_null(root) {
-        return ""
-    }
+    if stdr.is_null(root)
+        <- ""
 
     let plain = stdr.str(json.get(root, "plainLyrics", ""))
     let synced = stdr.str(json.get(root, "syncedLyrics", ""))
 
-    if stdr.len(synced) > 0 {
-        return synced
-    }
-    if stdr.len(plain) > 0 {
-        return plain
-    }
-    return ""
-}
+    if stdr.len(synced) > 0
+        <- synced
+    if stdr.len(plain) > 0
+        <- plain
+    <- ""
+;
 
-:: fetch_lyrics(artist = string, title = string, path = string) (( string )) {
-    if stdr.len(artist) == 0 && stdr.len(title) == 0 {
-        return "Select a track to view lyrics."
-    }
+:: fetch_lyrics(artist = string, title = string, path = string) (( string ))
+    if stdr.len(artist) == 0 && stdr.len(title) == 0
+        <- "Select a track to view lyrics."
 
     let embedded = read_embedded_lyrics(path)
-    if stdr.len(embedded) > 0 {
-        return embedded
-    }
+    if stdr.len(embedded) > 0
+        <- embedded
 
     let online = fetch_online(artist, title)
-    if stdr.len(online) == 0 {
-        return "No lyrics found for this track."
-    }
+    if stdr.len(online) == 0
+        <- "No lyrics found for this track."
 
     embed_lyrics(path, online)
 
-    return online
-}
+    <- online
+;
 
-:: is_synced(text = string) (( bool )) {
+:: is_synced(text = string) (( bool ))
     let n = stdr.len(text)
     let ?i = 0
-    for (; i < n - 5; i = i + 1) {
-        if stdr.slice(text, i, i + 1) == "[" {
+    for (; i < n - 5; i = i + 1)
+        if stdr.slice(text, i, i + 1) == "["
             let code1 = stdr.char_code(stdr.slice(text, i + 1, i + 2))
             let code2 = stdr.char_code(stdr.slice(text, i + 2, i + 3))
             let c3 = stdr.slice(text, i + 3, i + 4)
-            if code1 >= 48 && code1 <= 57 && code2 >= 48 && code2 <= 57 && c3 == ":" {
-                return true
-            }
-        }
-    }
-    return false
-}
+            if code1 >= 48 && code1 <= 57 && code2 >= 48 && code2 <= 57 && c3 == ":"
+                <- true
+    <- false
+;
 
-:: parse_lrc(text = string) (( [any] )) {
+:: parse_lrc(text = string) (( [any] ))
     let ?lines = []: [any]
     let n = stdr.len(text)
     let ?start = 0
     let ?i = 0
 
-    for (; i < n; i = i + 1) {
-        if stdr.slice(text, i, i + 1) == "\n" {
+    for (; i < n; i = i + 1)
+        if stdr.slice(text, i, i + 1) == "\n"
             let line = stdr.trim(stdr.slice(text, start, i))
-            if stdr.len(line) > 0 {
+            if stdr.len(line) > 0
                 let parsed = parse_lrc_line(line)
-                if !stdr.is_null(parsed) {
+                if !stdr.is_null(parsed)
                     lines[stdr.len(lines)] = parsed
-                }
-            }
             start = i + 1
-        }
-    }
-    if start < n {
+    if start < n
         let line = stdr.trim(stdr.slice(text, start, n))
-        if stdr.len(line) > 0 {
+        if stdr.len(line) > 0
             let parsed = parse_lrc_line(line)
-            if !stdr.is_null(parsed) {
+            if !stdr.is_null(parsed)
                 lines[stdr.len(lines)] = parsed
-            }
-        }
-    }
 
-    return lines
-}
+    <- lines
+;
 
-: parse_lrc_line(line = string) (( any )) {
+: parse_lrc_line(line = string) (( any ))
     let n = stdr.len(line)
-    if n < 5 { return null }
-    if stdr.slice(line, 0, 1) != "[" { return null }
+    if n < 5 { <- null }
+    if stdr.slice(line, 0, 1) != "[" { <- null }
 
     let bracket = stdr.index_of(line, "]")
-    if bracket < 4 { return null }
+    if bracket < 4 { <- null }
 
     let tag = stdr.slice(line, 1, bracket)
     let colon = stdr.index_of(tag, ":")
-    if colon < 0 { return null }
+    if colon < 0 { <- null }
 
     let mm_str = stdr.slice(tag, 0, colon)
     let mm = stdr.num(mm_str)
-    if mm == 0 && mm_str != "0" && mm_str != "00" {
-        return null
-    }
+    if mm == 0 && mm_str != "0" && mm_str != "00"
+        <- null
 
     let rest = stdr.slice(tag, colon + 1, stdr.len(tag))
     let dot = stdr.index_of(rest, ".")
     let ?ss = 0
     let ?frac_ms = 0
 
-    if dot >= 0 {
+    if dot >= 0
         ss = stdr.num(stdr.slice(rest, 0, dot))
         let frac_str = stdr.slice(rest, dot + 1, stdr.len(rest))
         let frac_val = stdr.num(frac_str)
         let frac_len = stdr.len(frac_str)
-        if frac_len == 2 {
+        if frac_len == 2
             frac_ms = frac_val * 10
-        } elif frac_len == 3 {
+        elif frac_len == 3
             frac_ms = frac_val
-        } elif frac_len == 1 {
+        elif frac_len == 1
             frac_ms = frac_val * 100
-        } else {
+        else
             frac_ms = frac_val
-        }
-    } else {
+    else
         ss = stdr.num(rest)
-    }
 
     let ms = mm * 60000 + ss * 1000 + frac_ms
     let lyric_text = stdr.trim(stdr.slice(line, bracket + 1, n))
@@ -231,128 +199,112 @@ bring cogito
     let ?out = []: [any]
     out[0] = ms
     out[1] = lyric_text
-    return out
-}
+    <- out
+;
 
-:: strip_timestamps(text = string) (( string )) {
+:: strip_timestamps(text = string) (( string ))
     let ?result = ""
     let n = stdr.len(text)
     let ?start = 0
     let ?i = 0
 
-    for (; i < n; i = i + 1) {
-        if stdr.slice(text, i, i + 1) == "\n" {
+    for (; i < n; i = i + 1)
+        if stdr.slice(text, i, i + 1) == "\n"
             let line = stdr.trim(stdr.slice(text, start, i))
-            if stdr.len(line) > 0 {
+            if stdr.len(line) > 0
                 let cleaned = strip_line_timestamp(line)
-                if stdr.len(cleaned) > 0 {
-                    if stdr.len(result) > 0 {
+                if stdr.len(cleaned) > 0
+                    if stdr.len(result) > 0
                         result = stdr.str_concat(result, "\n")
-                    }
                     result = stdr.str_concat(result, cleaned)
-                }
-            }
             start = i + 1
-        }
-    }
-    if start < n {
+    if start < n
         let line = stdr.trim(stdr.slice(text, start, n))
-        if stdr.len(line) > 0 {
+        if stdr.len(line) > 0
             let cleaned = strip_line_timestamp(line)
-            if stdr.len(cleaned) > 0 {
-                if stdr.len(result) > 0 {
+            if stdr.len(cleaned) > 0
+                if stdr.len(result) > 0
                     result = stdr.str_concat(result, "\n")
-                }
                 result = stdr.str_concat(result, cleaned)
-            }
-        }
-    }
 
-    return result
-}
+    <- result
+;
 
-: strip_line_timestamp(line = string) (( string )) {
+: strip_line_timestamp(line = string) (( string ))
     let ?pos = 0
     let n = stdr.len(line)
-    for (; pos < n;) {
-        if stdr.slice(line, pos, pos + 1) != "[" { return stdr.trim(stdr.slice(line, pos, n)) }
+    for (; pos < n;)
+        if stdr.slice(line, pos, pos + 1) != "[" { <- stdr.trim(stdr.slice(line, pos, n)) }
         let bracket = stdr.index_of(stdr.slice(line, pos, n), "]")
-        if bracket < 0 { return stdr.trim(stdr.slice(line, pos, n)) }
+        if bracket < 0 { <- stdr.trim(stdr.slice(line, pos, n)) }
         pos = pos + bracket + 1
-    }
-    return ""
-}
+    <- ""
+;
 
 -- Display / caching / sync helpers
 
-:: cache_key(tracks = any, track_idx = num) (( string )) {
-    if track_idx < 0 || track_idx >= len(tracks) { return "" }
+:: cache_key(tracks = any, track_idx = num) (( string ))
+    if track_idx < 0 || track_idx >= len(tracks) { <- "" }
     let t = tracks[track_idx] ?? []: [string => any]
     let artist = str(t["artist"] ?? "")
     let title = str(t["title"] ?? "")
-    return "$$artist$$|$$title$$"
-}
+    <- "$$artist$$|$$title$$"
+;
 
-:: check_lyrics_cached(tracks = any, track_idx = num, ?lyrics_cache = any) (( any )) {
+:: check_lyrics_cached(tracks = any, track_idx = num, ?lyrics_cache = any) (( any ))
     let ?out = []: [string => any]
     out["lyrics_cache"] = lyrics_cache
     out["has_lyrics"] = false
-    if track_idx < 0 || track_idx >= len(tracks) {
-        return out
-    }
+    if track_idx < 0 || track_idx >= len(tracks)
+        <- out
     let key = cache_key(tracks, track_idx)
     let cached = str(lyrics_cache[key] ?? "")
-    if len(cached) > 0 {
+    if len(cached) > 0
         out["has_lyrics"] = cached != "__none__"
-        return out
-    }
+        <- out
     let t = tracks[track_idx] ?? []: [string => any]
     let ?artist = str(t["artist"] ?? "")
     let ?title = str(t["title"] ?? "")
     let ?path = str(t["path"] ?? "")
     let ?result = fetch_lyrics(artist, title, path)
-    if result == "No lyrics found for this track." {
+    if result == "No lyrics found for this track."
         lyrics_cache[key] = "__none__"
-    } else {
+    else
         lyrics_cache[key] = result
         out["has_lyrics"] = true
-    }
     out["lyrics_cache"] = lyrics_cache
-    return out
-}
+    <- out
+;
 
-:: fetch_and_cache(tracks = any, track_idx = num, ?lyrics_cache = any) (( any )) {
+:: fetch_and_cache(tracks = any, track_idx = num, ?lyrics_cache = any) (( any ))
     let ?out = []: [string => any]
     out["lyrics_cache"] = lyrics_cache
     out["text"] = "Select a track to view lyrics."
     out["has_lyrics"] = false
-    if track_idx < 0 || track_idx >= len(tracks) {
-        return out
-    }
+    if track_idx < 0 || track_idx >= len(tracks)
+        <- out
     let key = cache_key(tracks, track_idx)
     let cached = str(lyrics_cache[key] ?? "")
-    if len(cached) > 0 && cached != "__none__" {
+    if len(cached) > 0 && cached != "__none__"
         out["text"] = cached
         out["has_lyrics"] = true
-        return out
-    }
+        <- out
     let t = tracks[track_idx] ?? []: [string => any]
     let artist = str(t["artist"] ?? "")
     let title = str(t["title"] ?? "")
     let path = str(t["path"] ?? "")
     let result = fetch_lyrics(artist, title, path)
     out["text"] = result
-    if result == "No lyrics found for this track." {
+    if result == "No lyrics found for this track."
         lyrics_cache[key] = "__none__"
-    } else {
+    else
         lyrics_cache[key] = result
         out["has_lyrics"] = true
-    }
     out["lyrics_cache"] = lyrics_cache
-    return out
-}
+    <- out
+;
 
-:: set_placeholder(lyrics_grid = cogito.Grid, text = string) (( -- )) {
+:: set_placeholder(lyrics_grid = cogito.Grid, text = string) (( -- ))
     lyrics_grid.clear()
     let label = cogito.label(text)
         .set_wrap(true)
@@ -361,9 +313,9 @@ bring cogito
         .set_class("victrola-lyric-line")
         .set_padding(0,0,0,0)
     lyrics_grid.add(label, 0, 0, 1, 1)
-}
+;
 
-:: populate_lyrics_grid(lyrics_grid = cogito.Grid, lyrics_scroll = cogito.Scroller, text = string) (( any )) {
+:: populate_lyrics_grid(lyrics_grid = cogito.Grid, lyrics_scroll = cogito.Scroller, text = string) (( any ))
     lyrics_grid.clear()
     lyrics_scroll.set_scroll_y(0)
 
@@ -372,7 +324,7 @@ bring cogito
     let ?synced = false
     let ?out = []: [string => any]
 
-    if !is_synced(text) {
+    if !is_synced(text)
         let cleaned = strip_timestamps(text)
         let label = cogito.label(cleaned)
             .set_wrap(true)
@@ -384,15 +336,14 @@ bring cogito
         out["line_labels"] = line_labels
         out["timestamps"] = timestamps
         out["synced"] = false
-        return out
-    }
+        <- out
 
     synced = true
     let parsed = parse_lrc(text)
     let ?count = len(parsed)
-    for (let ?i = 0; i < count; i = i + 1) {
+    for (let ?i = 0; i < count; i = i + 1)
         let lyric_entry = parsed[i] ?? null
-        if !stdr.is_null(lyric_entry) {
+        if !stdr.is_null(lyric_entry)
             let ts = stdr.num(lyric_entry[0] ?? 0)
             let ?line_text = stdr.str(lyric_entry[1] ?? "")
             if stdr.len(line_text) == 0 { line_text = "···" }
@@ -405,51 +356,43 @@ bring cogito
             lyrics_grid.add(label, 0, i, 1, 1)
             line_labels[i] = label
             timestamps[i] = ts
-        }
-    }
 
     out["line_labels"] = line_labels
     out["timestamps"] = timestamps
     out["synced"] = true
-    return out
-}
+    <- out
+;
 
-:: update_lyrics_scroll(timestamps = any, line_labels = any, lyrics_scroll = cogito.Scroller, elapsed_ms = num, current_line = num) (( num )) {
+:: update_lyrics_scroll(timestamps = any, line_labels = any, lyrics_scroll = cogito.Scroller, elapsed_ms = num, current_line = num) (( num ))
     let count = len(timestamps)
-    if count == 0 { return current_line }
+    if count == 0 { <- current_line }
 
     let ?lo = 0
     let ?hi = count - 1
     let ?line_idx = -1
-    for (; lo <= hi;) {
+    for (; lo <= hi;)
         let mid = (lo + hi) / 2
         let ts = stdr.num(timestamps[mid] ?? 0)
-        if ts <= elapsed_ms {
+        if ts <= elapsed_ms
             line_idx = mid
             lo = mid + 1
-        } else {
+        else
             hi = mid - 1
-        }
-    }
 
-    if line_idx == current_line { return current_line }
+    if line_idx == current_line { <- current_line }
 
-    if current_line >= 0 && current_line < count {
+    if current_line >= 0 && current_line < count
         let prev = line_labels[current_line] ?? null
-        if !stdr.is_null(prev) {
+        if !stdr.is_null(prev)
             cogito.node_set_class(prev, "victrola-lyric-line")
-        }
-    }
 
-    if line_idx >= 0 && line_idx < count {
+    if line_idx >= 0 && line_idx < count
         let curr = line_labels[line_idx] ?? null
-        if !stdr.is_null(curr) {
+        if !stdr.is_null(curr)
             cogito.node_set_class(curr, "victrola-lyric-active")
-        }
         let ?target_y = line_idx * 48 - 200
         if target_y < 0 { target_y = 0 }
         lyrics_scroll.set_scroll_y(target_y)
-    }
 
-    return line_idx
-}
+    <- line_idx
+;

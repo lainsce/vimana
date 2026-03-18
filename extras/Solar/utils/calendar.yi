@@ -7,105 +7,98 @@ def MONTH_ABBRS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"
 def DAY_ABBRS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 def DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-:: month_name(m = num) (( string )) {
-    if m >= 1 && m <= 12 {
-        return MONTH_NAMES[m - 1]
-    }
-    return ""
-}
+:: month_name(m = num) (( string ))
+    if m >= 1 && m <= 12
+        <- MONTH_NAMES[m - 1]
+    <- ""
+;
 
-:: month_abbr(m = num) (( string )) {
-    if m >= 1 && m <= 12 {
-        return MONTH_ABBRS[m - 1]
-    }
-    return ""
-}
+:: month_abbr(m = num) (( string ))
+    if m >= 1 && m <= 12
+        <- MONTH_ABBRS[m - 1]
+    <- ""
+;
 
-:: day_abbr(d = num) (( string )) {
-    if d >= 0 && d <= 6 {
-        return DAY_ABBRS[d]
-    }
-    return ""
-}
+:: day_abbr(d = num) (( string ))
+    if d >= 0 && d <= 6
+        <- DAY_ABBRS[d]
+    <- ""
+;
 
-:: day_name(d = num) (( string )) {
-    if d >= 0 && d <= 6 {
-        return DAY_NAMES[d]
-    }
-    return ""
-}
+:: day_name(d = num) (( string ))
+    if d >= 0 && d <= 6
+        <- DAY_NAMES[d]
+    <- ""
+;
 
-:: days_in_month(year = num, month = num) (( num )) {
-    if month == 2 {
-        if is_leap_year(year) { return 29 }
-        return 28
-    }
-    if month == 4 || month == 6 || month == 9 || month == 11 {
-        return 30
-    }
-    return 31
-}
+:: days_in_month(year = num, month = num) (( num ))
+    if month == 2
+        if is_leap_year(year) { <- 29 }
+        <- 28
+    if month == 4 || month == 6 || month == 9 || month == 11
+        <- 30
+    <- 31
+;
 
-:: is_leap_year(year = num) (( bool )) {
-    if stdr.floor(year / 400) * 400 == year { return true }
-    if stdr.floor(year / 100) * 100 == year { return false }
-    if stdr.floor(year / 4) * 4 == year { return true }
-    return false
-}
+:: is_leap_year(year = num) (( bool ))
+    if stdr.floor(year / 400) * 400 == year { <- true }
+    if stdr.floor(year / 100) * 100 == year { <- false }
+    if stdr.floor(year / 4) * 4 == year { <- true }
+    <- false
+;
 
-:: first_weekday_of_month(year = num, month = num) (( num )) {
+:: first_weekday_of_month(year = num, month = num) (( num ))
     let m_str = if month < 10 { "0$$month$$" } else { str(month) }
     let cmd = "date -j -f %Y-%m-%d $$year$$-$$m_str$$-01 +%w"
     let result = stdr.run_command(cmd)
-    return stdr.num(stdr.trim(str(result[1] ?? "0")))
-}
+    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+;
 
-:: current_year() (( num )) {
+:: current_year() (( num ))
     let result = stdr.run_command("date +%Y")
-    return stdr.num(stdr.trim(str(result[1] ?? "0")))
-}
+    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+;
 
-:: current_month() (( num )) {
+:: current_month() (( num ))
     let result = stdr.run_command("date +%-m")
-    return stdr.num(stdr.trim(str(result[1] ?? "0")))
-}
+    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+;
 
-:: current_day() (( num )) {
+:: current_day() (( num ))
     let result = stdr.run_command("date +%-d")
-    return stdr.num(stdr.trim(str(result[1] ?? "0")))
-}
+    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+;
 
-:: format_time_12h(hour = num, minute = num) (( string )) {
+:: format_time_12h(hour = num, minute = num) (( string ))
     let ?h = hour
     let ?suffix = "AM"
-    if h == 0 {
+    if h == 0
         h = 12
-    } elif h == 12 {
+    elif h == 12
         suffix = "PM"
-    } elif h > 12 {
+    elif h > 12
         h = h - 12
         suffix = "PM"
-    }
     let min_str = if minute < 10 { "0$$minute$$" } else { str(minute) }
-    return "$$h$$:$$min_str$$ $$suffix$$"
-}
+    <- "$$h$$:$$min_str$$ $$suffix$$"
+;
 
-:: format_date_label(year = num, month = num, day = num) (( string )) {
+:: format_date_label(year = num, month = num, day = num) (( string ))
     let m = month_name(month)
-    return "$$m$$ $$day$$, $$year$$"
-}
+    <- "$$m$$ $$day$$, $$year$$"
+;
 
-:: weekday_of_date(year = num, month = num, day = num) (( num )) {
+:: weekday_of_date(year = num, month = num, day = num) (( num ))
     let m_str = if month < 10 { "0$$month$$" } else { str(month) }
     let d_str = if day < 10 { "0$$day$$" } else { str(day) }
     let cmd = "date -j -f %Y-%m-%d $$year$$-$$m_str$$-$$d_str$$ +%w"
     let result = stdr.run_command(cmd)
-    return stdr.num(stdr.trim(str(result[1] ?? "0")))
-}
+    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+;
 
-:: format_day_subtitle(year = num, month = num, day = num) (( string )) {
+:: format_day_subtitle(year = num, month = num, day = num) (( string ))
     let wd = weekday_of_date(year, month, day)
     let wd_name = day_name(wd)
     let m = month_name(month)
-    return "$$wd_name$$, $$m$$ $$day$$"
-}
+    <- "$$wd_name$$, $$m$$ $$day$$"
+;

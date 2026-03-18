@@ -7,138 +7,119 @@ def ?CACHE_DIR = ""
 def ?IMAGE_CACHE_DIR = ""
 def ?FAVICON_CACHE_DIR = ""
 
-:: ensure_cache_dir() (( string )) {
-    if len(CACHE_DIR) > 0 {
-        return CACHE_DIR
-    }
+:: ensure_cache_dir() (( string ))
+    if len(CACHE_DIR) > 0
+        <- CACHE_DIR
     let run = stdr.run_command("echo $HOME")
     let ?home = stdr.trim(str(run[1] ?? ""))
-    if len(home) == 0 {
+    if len(home) == 0
         home = "/tmp"
-    }
     let dir = stdr.join_path(home, ".cache/fortnightly")
     let qdir = stdr.shell_quote(dir)
     stdr.run_command("mkdir -p $$qdir$$")
     CACHE_DIR = dir
-    return dir
-}
+    <- dir
+;
 
-:: ensure_image_cache_dir() (( string )) {
-    if len(IMAGE_CACHE_DIR) > 0 {
-        return IMAGE_CACHE_DIR
-    }
+:: ensure_image_cache_dir() (( string ))
+    if len(IMAGE_CACHE_DIR) > 0
+        <- IMAGE_CACHE_DIR
     let base = ensure_cache_dir()
     let dir = stdr.join_path(base, "images")
     let qdir = stdr.shell_quote(dir)
     stdr.run_command("mkdir -p $$qdir$$")
     IMAGE_CACHE_DIR = dir
-    return dir
-}
+    <- dir
+;
 
-:: ensure_favicon_cache_dir() (( string )) {
-    if len(FAVICON_CACHE_DIR) > 0 {
-        return FAVICON_CACHE_DIR
-    }
+:: ensure_favicon_cache_dir() (( string ))
+    if len(FAVICON_CACHE_DIR) > 0
+        <- FAVICON_CACHE_DIR
     let base = ensure_cache_dir()
     let dir = stdr.join_path(base, "favicons")
     let qdir = stdr.shell_quote(dir)
     stdr.run_command("mkdir -p $$qdir$$")
     FAVICON_CACHE_DIR = dir
-    return dir
-}
+    <- dir
+;
 
-:: safe_filename(url = string) (( string )) {
+:: safe_filename(url = string) (( string ))
     let ?out = ""
     let n = len(url)
-    for (let ?i = 0; i < n; i += 1) {
+    for (let ?i = 0; i < n; i += 1)
         let ch = stdr.slice(url, i, i + 1)
         let code = stdr.char_code(ch)
         let is_alpha = (code >= 97 && code <= 122) || (code >= 65 && code <= 90)
         let is_alnum = is_alpha || (code >= 48 && code <= 57)
-        if is_alnum || ch == "-" || ch == "_" {
+        if is_alnum || ch == "-" || ch == "_"
             out = stdr.str_concat(out, ch)
-        } else {
+        else
             out = stdr.str_concat(out, "_")
-        }
-    }
     -- Truncate to avoid overly long filenames
-    if len(out) > 120 {
+    if len(out) > 120
         out = stdr.slice(out, 0, 120)
-    }
-    return out
-}
+    <- out
+;
 
-:: download_image(url = string) (( string )) {
-    if len(url) == 0 {
-        return ""
-    }
+:: download_image(url = string) (( string ))
+    if len(url) == 0
+        <- ""
     let dir = ensure_image_cache_dir()
     let fname = safe_filename(url)
-    if len(fname) == 0 {
-        return ""
-    }
+    if len(fname) == 0
+        <- ""
     let dest = stdr.join_path(dir, fname)
-    if stdr.file_exists(dest) {
-        return dest
-    }
+    if stdr.file_exists(dest)
+        <- dest
     let qdest = stdr.shell_quote(dest)
     let qurl = stdr.shell_quote(url)
     let run = stdr.run_command("curl -sS -L --max-time 10 -o $$qdest$$ $$qurl$$")
     let exit_code = stdr.num(run[0] ?? 1)
-    if exit_code != 0 {
-        return ""
-    }
-    if stdr.file_exists(dest) {
-        return dest
-    }
-    return ""
-}
+    if exit_code != 0
+        <- ""
+    if stdr.file_exists(dest)
+        <- dest
+    <- ""
+;
 
-:: extract_domain(url = string) (( string )) {
+:: extract_domain(url = string) (( string ))
     let sep = "://"
     let idx = stdr.index_of(url, sep)
-    if idx < 0 {
-        return url
-    }
+    if idx < 0
+        <- url
     let after = stdr.slice(url, idx + len(sep), len(url))
     let slash = stdr.index_of(after, "/")
-    if slash < 0 {
-        return after
-    }
-    return stdr.slice(after, 0, slash)
-}
+    if slash < 0
+        <- after
+    <- stdr.slice(after, 0, slash)
+;
 
-:: download_favicon(url = string) (( string )) {
+:: download_favicon(url = string) (( string ))
     let domain = extract_domain(url)
-    if len(domain) == 0 {
-        return ""
-    }
+    if len(domain) == 0
+        <- ""
     let dir = ensure_favicon_cache_dir()
     let fname = safe_filename(domain)
-    if len(fname) == 0 {
-        return ""
-    }
+    if len(fname) == 0
+        <- ""
     let dest = stdr.join_path(dir, fname)
-    if stdr.file_exists(dest) {
-        return dest
-    }
+    if stdr.file_exists(dest)
+        <- dest
     let fav_url = "https://www.google.com/s2/favicons?domain=$$domain$$&sz=64"
     let qdest = stdr.shell_quote(dest)
     let qurl = stdr.shell_quote(fav_url)
     let run = stdr.run_command("curl -sS -L --max-time 10 -o $$qdest$$ $$qurl$$")
     let exit_code = stdr.num(run[0] ?? 1)
-    if exit_code != 0 {
-        return ""
-    }
-    if stdr.file_exists(dest) {
-        return dest
-    }
-    return ""
-}
+    if exit_code != 0
+        <- ""
+    if stdr.file_exists(dest)
+        <- dest
+    <- ""
+;
 
-:: prune_old_images() (( -- )) {
+:: prune_old_images() (( -- ))
     let dir = ensure_image_cache_dir()
     let qdir = stdr.shell_quote(dir)
     -- Delete files older than 14 days
     stdr.run_command("find $$qdir$$ -type f -mtime +14 -delete 2>/dev/null")
-}
+;

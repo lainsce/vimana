@@ -21,7 +21,7 @@ def dark_switch = cogito.switchbar("Dark Mode")
 def ?mode_idx = 1
 def GAFU_STATE_PATH = ".gafu_state.json"
 
-: save_state() (( -- )) {
+: save_state() (( -- ))
     let source_hex_esc = json.escape(source_hex)
     let selected_image_path_esc = json.escape(selected_image_path)
     let ?payload = "{"
@@ -34,32 +34,29 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     payload = "$$payload$$\"mode_idx\":$$mode_idx$$"
     payload = "$$payload$$}"
     stdr.write_text_file(GAFU_STATE_PATH, payload)
-}
+;
 
-: apply_mode(idx = num) (( -- )) {
+: apply_mode(idx = num) (( -- ))
     mode_idx = idx
     set_mode_selection(mode_idx, mode_moon, mode_base, mode_bright, mode_brightest)
-    if mode_idx == 0 {
+    if mode_idx == 0
         gafu_app.set_contrast(-1)
-    } elif mode_idx == 1 {
+    elif mode_idx == 1
         gafu_app.set_contrast(0)
-    } elif mode_idx == 2 {
+    elif mode_idx == 2
         gafu_app.set_contrast(0.5)
-    } else {
+    else
         gafu_app.set_contrast(1)
-    }
-}
+;
 
-: load_state() (( -- )) {
+: load_state() (( -- ))
     let raw = stdr.read_text_file(GAFU_STATE_PATH)
-    if is_null(raw) {
-        return
-    }
+    if is_null(raw)
+        <-
 
     let parsed = json.parse_result(str(raw))
-    if !(parsed["ok"] ?? false) {
-        return
-    }
+    if !(parsed["ok"] ?? false)
+        <-
 
     let root = parsed["value"]
 
@@ -71,51 +68,46 @@ def GAFU_STATE_PATH = ".gafu_state.json"
 
     apply_source_color(source_hex)
 
-    if len(selected_image_path) > 0 {
+    if len(selected_image_path) > 0
         upload_hint.set_text("Image Selected.")
         selected_image_preview.set_source(selected_image_path)
         selected_image_preview.set_size(320, 180)
         selected_image_preview.set_radius(26)
         scheme_switch.set_disabled(false)
-    } else {
+    else
         upload_hint.set_text("Choose File Or Drag & Drop Here…")
         selected_image_preview.set_source("")
         selected_image_preview.set_size(0, 0)
         scheme_switch.set_disabled(true)
-    }
 
     scheme_switch.set_checked(scheme_checked)
-    if scheme_checked {
+    if scheme_checked
         gafu_app.set_ensor_variant(ENSOR_CONTENT)
-    } else {
+    else
         gafu_app.set_ensor_variant(ENSOR_DEFAULT)
-    }
 
     apply_mode(mode_idx)
     dark_switch.set_checked(dark_mode)
     gafu_app.set_dark_mode(dark_mode, false)
-}
+;
 
-: apply_source_color(hex = string) (( -- )) {
-    if len(hex) == 0 {
-        return
-    }
+: apply_source_color(hex = string) (( -- ))
+    if len(hex) == 0
+        <-
     source_hex = hex
     source_picker.set_hex(source_hex)
     gafu_app.set_accent_color(source_hex, false)
     save_state()
-}
+;
 
-: choose_source_image() (( -- )) {
+: choose_source_image() (( -- ))
     let picked = stdr.open_file_dialog("Choose image", "png")
-    if is_null(picked) {
-        return
-    }
+    if is_null(picked)
+        <-
 
     let path = str(picked)
-    if len(path) == 0 {
-        return
-    }
+    if len(path) == 0
+        <-
 
     selected_image_path = path
     scheme_switch.set_disabled(false)
@@ -124,14 +116,13 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     selected_image_preview.set_size(320, 180)
     selected_image_preview.set_radius(26)
     let seeded = gafu_app.set_accent_from_image(selected_image_path, false)
-    if seeded != "" {
+    if seeded != ""
         apply_source_color(seeded)
-    } else {
+    else
         save_state()
-    }
-}
+;
 
-: reset_everything() (( -- )) {
+: reset_everything() (( -- ))
     selected_image_path = ""
     upload_hint.set_text("Choose File Or Drag & Drop Here…")
     selected_image_preview.set_source("")
@@ -149,16 +140,16 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     gafu_app.set_dark_mode(false, false)
     mode_idx = 1
     save_state()
-}
+;
 
-: swatch(text = string, cls = string) (( cogito.Button )) {
+: swatch(text = string, cls = string) (( cogito.Button ))
     let box = cogito.button(text)
     .set_class(cls)
     .set_hexpand(true)
-    return box
-}
+    <- box
+;
 
-: tone_column(a = string, ca = string, b = string, cb = string, c = string, cc = string, d = string, cd = string) (( cogito.VStack )) {
+: tone_column(a = string, ca = string, b = string, cb = string, c = string, cc = string, d = string, cd = string) (( cogito.VStack ))
     let col = cogito.vstack()
     .set_hexpand(true)
     .set_class("gafu-tone-col")
@@ -167,10 +158,10 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     col.add(swatch(b, cb))
     col.add(swatch(c, cc))
     col.add(swatch(d, cd))
-    return col
-}
+    <- col
+;
 
-: fixed_column(a = string, ca = string, b = string, cb = string, c = string, cc = string, d = string, cd = string) (( cogito.VStack )) {
+: fixed_column(a = string, ca = string, b = string, cb = string, c = string, cc = string, d = string, cd = string) (( cogito.VStack ))
     let col = cogito.vstack()
     .set_hexpand(true)
 
@@ -183,8 +174,8 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     col.add(top)
     col.add(swatch(c, cc))
     col.add(swatch(d, cd))
-    return col
-}
+    <- col
+;
 
 : set_mode_selection(
     active = num,
@@ -192,7 +183,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     base = cogito.IconButton,
     bright = cogito.IconButton,
     brightest = cogito.IconButton
-) (( -- )) {
+) (( -- ))
     mode_idx = active
     moon.set_checked(active == 0)
     base.set_checked(active == 1)
@@ -203,9 +194,9 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     base.set_class(if active == 1 { "filled" } else { "tonal" })
     bright.set_class(if active == 2 { "filled" } else { "tonal" })
     brightest.set_class(if active == 3 { "filled" } else { "tonal" })
-}
+;
 
-: build_palette_grid() (( cogito.VStack )) {
+: build_palette_grid() (( cogito.VStack ))
     let group = cogito.vstack()
     .set_hexpand(true)
     .set_padding(12, 18, 18, 18)
@@ -282,10 +273,10 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     group.add(fixed)
     group.add(lower)
 
-    return group
-}
+    <- group
+;
 
-: build_right_panel() (( cogito.VStack )) {
+: build_right_panel() (( cogito.VStack ))
     let panel = cogito.vstack()
     .set_gap(24)
     .set_padding(0, 18, 18, 18)
@@ -333,11 +324,10 @@ def GAFU_STATE_PATH = ".gafu_state.json"
         .set_class("gafu-tool-switch")
         .set_disabled(len(selected_image_path) == 0)
         .on_change((sw = cogito.Switch) => {
-            if sw.checked() {
+            if sw.checked()
                 gafu_app.set_ensor_variant(ENSOR_CONTENT)
-            } else {
+            else
                 gafu_app.set_ensor_variant(ENSOR_DEFAULT)
-            }
             save_state()
         }))
     tools.add(cogito.image("sf:photo").set_class("gafu-tool"))
@@ -432,10 +422,10 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     panel.add(modes)
     panel.add(source)
     panel.add(dark_switch)
-    return panel
-}
+    <- panel
+;
 
-entry() (( -- )) {
+-> ()
     let app = gafu_app
     .set_appid("com.fyralabs.Gafu")
     .set_app_name("Gafu")
@@ -494,4 +484,4 @@ entry() (( -- )) {
 
     load_state()
     app.run(win)
-}
+;

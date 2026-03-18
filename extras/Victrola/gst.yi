@@ -8,74 +8,74 @@ pub def EVENT_EOS = 1
 pub def EVENT_ERROR = 2
 pub def EVENT_TAG = 3
 
-:: init() (( bool )) {
-    return cogito.gst_init()
-}
+:: init() (( bool ))
+    <- cogito.gst_init()
+;
 
-:: shutdown() (( -- )) {
+:: shutdown() (( -- ))
     cogito.gst_shutdown()
-}
+;
 
-:: load(path_or_uri = string) (( bool )) {
-    return cogito.gst_load(path_or_uri)
-}
+:: load(path_or_uri = string) (( bool ))
+    <- cogito.gst_load(path_or_uri)
+;
 
-:: play() (( bool )) {
-    return cogito.gst_play()
-}
+:: play() (( bool ))
+    <- cogito.gst_play()
+;
 
-:: pause() (( bool )) {
-    return cogito.gst_pause()
-}
+:: pause() (( bool ))
+    <- cogito.gst_pause()
+;
 
-:: stop() (( bool )) {
-    return cogito.gst_stop()
-}
+:: stop() (( bool ))
+    <- cogito.gst_stop()
+;
 
-:: seek_ms(position_ms = num) (( bool )) {
-    return cogito.gst_seek_ms(position_ms)
-}
+:: seek_ms(position_ms = num) (( bool ))
+    <- cogito.gst_seek_ms(position_ms)
+;
 
-:: position_ms() (( num )) {
-    return cogito.gst_position_ms()
-}
+:: position_ms() (( num ))
+    <- cogito.gst_position_ms()
+;
 
-:: duration_ms() (( num )) {
-    return cogito.gst_duration_ms()
-}
+:: duration_ms() (( num ))
+    <- cogito.gst_duration_ms()
+;
 
-:: set_volume(value_0_to_1 = num) (( bool )) {
-    return cogito.gst_set_volume(value_0_to_1)
-}
+:: set_volume(value_0_to_1 = num) (( bool ))
+    <- cogito.gst_set_volume(value_0_to_1)
+;
 
-:: volume() (( num )) {
-    return cogito.gst_volume()
-}
+:: volume() (( num ))
+    <- cogito.gst_volume()
+;
 
-:: last_error() (( string )) {
-    return cogito.gst_last_error()
-}
+:: last_error() (( string ))
+    <- cogito.gst_last_error()
+;
 
-:: last_cover_path() (( string )) {
-    return cogito.gst_last_cover_path()
-}
+:: last_cover_path() (( string ))
+    <- cogito.gst_last_cover_path()
+;
 
-:: last_tag_title() (( string )) {
-    return cogito.gst_last_tag_title()
-}
+:: last_tag_title() (( string ))
+    <- cogito.gst_last_tag_title()
+;
 
-:: last_tag_artist() (( string )) {
-    return cogito.gst_last_tag_artist()
-}
+:: last_tag_artist() (( string ))
+    <- cogito.gst_last_tag_artist()
+;
 
-:: last_tag_album() (( string )) {
-    return cogito.gst_last_tag_album()
-}
+:: last_tag_album() (( string ))
+    <- cogito.gst_last_tag_album()
+;
 
-:: last_tag_track_number() (( num )) {
-    return cogito.gst_last_tag_track_number()
-}
+:: last_tag_track_number() (( num ))
+    <- cogito.gst_last_tag_track_number()
+;
 
-:: poll() (( num )) {
-    return cogito.gst_poll_event()
-}
+:: poll() (( num ))
+    <- cogito.gst_poll_event()
+;

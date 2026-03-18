@@ -70,61 +70,59 @@ def orbit_widget = sun_orbit.new_orbit()
 
 def status_text = cogito.label("Add a location to start")
 
-: _bool(on = bool) (( string )) {
-    return if on { "true" } else { "false" }
-}
+: _bool(on = bool) (( string ))
+    <- if on { "true" } else { "false" }
+;
 
-: _hex_digit(v = num) (( string )) {
-    if v < 10 { return str(v) }
-    if v == 10 { return "A" }
-    if v == 11 { return "B" }
-    if v == 12 { return "C" }
-    if v == 13 { return "D" }
-    if v == 14 { return "E" }
-    return "F"
-}
+: _hex_digit(v = num) (( string ))
+    if v < 10 { <- str(v) }
+    if v == 10 { <- "A" }
+    if v == 11 { <- "B" }
+    if v == 12 { <- "C" }
+    if v == 13 { <- "D" }
+    if v == 14 { <- "E" }
+    <- "F"
+;
 
-: _hex_byte(v = num) (( string )) {
+: _hex_byte(v = num) (( string ))
     let ?hi = stdr.floor(v / 16)
     let ?lo = stdr.floor(v - (hi * 16))
     let hi_hex = _hex_digit(hi)
     let lo_hex = _hex_digit(lo)
-    return "$$hi_hex$$$$lo_hex$$"
-}
+    <- "$$hi_hex$$$$lo_hex$$"
+;
 
-: _num_or(value = any, fallback = num) (( num )) {
-    if is_null(value) {
-        return fallback
-    }
-    return stdr.num(value)
-}
+: _num_or(value = any, fallback = num) (( num ))
+    if is_null(value)
+        <- fallback
+    <- stdr.num(value)
+;
 
-: _valid_index(idx = num, n = num) (( bool )) {
-    return idx >= 0 && idx < n
-}
+: _valid_index(idx = num, n = num) (( bool ))
+    <- idx >= 0 && idx < n
+;
 
-: _selected_loc() (( any )) {
-    if !_valid_index(selected_location, len(locations)) {
-        return null
-    }
-    return locations[selected_location] ?? null
-}
+: _selected_loc() (( any ))
+    if !_valid_index(selected_location, len(locations))
+        <- null
+    <- locations[selected_location] ?? null
+;
 
-: _temp_short(v_c = num) (( string )) {
+: _temp_short(v_c = num) (( string ))
     let v = weather_fmt.value_temp(v_c, use_fahrenheit)
     let rounded = stdr.floor(v + 0.5)
     let suffix = weather_fmt.unit_suffix(use_fahrenheit)
-    return "$$rounded$$$$suffix$$"
-}
+    <- "$$rounded$$$$suffix$$"
+;
 
-: _temp_verbose(v_c = num) (( string )) {
+: _temp_verbose(v_c = num) (( string ))
     let v = weather_fmt.value_temp(v_c, use_fahrenheit)
     let rounded = stdr.floor(v + 0.5)
     let suffix = weather_fmt.unit_suffix(use_fahrenheit)
-    return "$$rounded$$ $$suffix$$"
-}
+    <- "$$rounded$$ $$suffix$$"
+;
 
-: _timeline_cell(hour_text = string, icon = string, value_text = string) (( any )) {
+: _timeline_cell(hour_text = string, icon = string, value_text = string) (( any ))
     let cell = cogito.vstack()
     .set_gap(4)
     .set_class("kairos-hour-cell")
@@ -133,10 +131,10 @@ def status_text = cogito.label("Add a location to start")
     cell.add(cogito.label(hour_text).set_class("kairos-hour-label"))
     cell.add(cogito.image(icon).set_class("kairos-hour-icon"))
     cell.add(cogito.label(value_text).set_class("kairos-hour-value"))
-    return cell
-}
+    <- cell
+;
 
-: _hourly_row(hour = any, hour_text = string) (( any )) {
+: _hourly_row(hour = any, hour_text = string) (( any ))
     let code = _num_or(hour["code"] ?? null, 0.0)
     let is_day = _num_or(hour["is_day"] ?? null, 1.0)
     let icon = weather_fmt.weather_icon(code, is_day)
@@ -186,18 +184,18 @@ def status_text = cogito.label("Add a location to start")
 
     outer.add(row)
     outer.add(precip_box)
-    return outer
-}
+    <- outer
+;
 
-: _set_empty_mode(on = bool) (( -- )) {
+: _set_empty_mode(on = bool) (( -- ))
     empty_page.set_visible(on)
     forecast_content.set_visible(!on)
     sidebar_panel.set_visible(!on && !is_compact_mode)
     content_bar.set_visible(!on)
-}
+;
 
-: _ensure_state_path() (( string )) {
-    if len(KAIROS_STATE_PATH) > 0 { return KAIROS_STATE_PATH }
+: _ensure_state_path() (( string ))
+    if len(KAIROS_STATE_PATH) > 0 { <- KAIROS_STATE_PATH }
     let run = stdr.run_command("echo $HOME")
     let ?home = stdr.trim(str(run[1] ?? ""))
     if len(home) == 0 { home = "/tmp" }
@@ -205,10 +203,10 @@ def status_text = cogito.label("Add a location to start")
     let qdir = stdr.shell_quote(dir)
     stdr.run_command("mkdir -p $$qdir$$")
     KAIROS_STATE_PATH = stdr.join_path(dir, "state.json")
-    return KAIROS_STATE_PATH
-}
+    <- KAIROS_STATE_PATH
+;
 
-: _serialize_weather_obj(obj = any) (( string )) {
+: _serialize_weather_obj(obj = any) (( string ))
     let time_esc = json.escape(str(obj["time"] ?? ""))
     let temp_c = _num_or(obj["temp_c"] ?? null, 0.0)
     let feels_c = _num_or(obj["feels_c"] ?? null, 0.0)
@@ -231,13 +229,13 @@ def status_text = cogito.label("Add a location to start")
     s = "$$s$$,\"pressure_hpa\":$$pressure$$"
     s = "$$s$$,\"is_day\":$$is_day$$"
     s = "$$s$$,\"precip_prob\":$$precip_prob$$}"
-    return s
-}
+    <- s
+;
 
-: _save_state() (( -- )) {
+: _save_state() (( -- ))
     let path = _ensure_state_path()
     let ?payload = "{\"locations\":["
-    for (let ?i = 0; i < len(locations); i += 1) {
+    for (let ?i = 0; i < len(locations); i += 1)
         if i > 0 { payload = "$$payload$$," }
         let loc = locations[i] ?? []: [string => any]
         let id_esc = json.escape(str(loc["id"] ?? ""))
@@ -257,13 +255,12 @@ def status_text = cogito.label("Add a location to start")
         o = "$$o$$,\"latitude\":$$lat$$"
         o = "$$o$$,\"longitude\":$$lon$$}"
         payload = "$$payload$$$$o$$"
-    }
     payload = "$$payload$$]"
     payload = "$$payload$$,\"selected\":$$selected_location$$"
     payload = if use_fahrenheit { "$$payload$$,\"fahrenheit\":true" } else { "$$payload$$,\"fahrenheit\":false" }
 
     let ok = forecast_data["ok"] ?? false
-    if ok {
+    if ok
         let cur = forecast_data["current"] ?? []: [string => any]
         let hrs = forecast_data["hours"] ?? []: [any]
         let sr_esc = json.escape(str(forecast_data["sunrise"] ?? ""))
@@ -281,19 +278,17 @@ def status_text = cogito.label("Add a location to start")
         fc = "$$fc$$,\"sunrise_next\":\"$$sn_esc$$\""
         fc = "$$fc$$,\"current\":" + _serialize_weather_obj(cur)
         fc = "$$fc$$,\"hours\":["
-        for (let ?j = 0; j < len(hrs); j += 1) {
+        for (let ?j = 0; j < len(hrs); j += 1)
             if j > 0 { fc = "$$fc$$," }
             fc = "$$fc$$" + _serialize_weather_obj(hrs[j] ?? []: [string => any])
-        }
         fc = "$$fc$$]}"
         payload = "$$payload$$$$fc$$"
-    }
 
     payload = "$$payload$$}"
     stdr.write_text_file(path, payload)
-}
+;
 
-: _restore_weather_obj(raw = any) (( any )) {
+: _restore_weather_obj(raw = any) (( any ))
     let ?obj = []: [string => any]
     obj["time"] = str(json.get(raw, "time", ""))
     obj["temp_c"] = stdr.num(json.get(raw, "temp_c", 0.0))
@@ -306,22 +301,22 @@ def status_text = cogito.label("Add a location to start")
     obj["pressure_hpa"] = stdr.num(json.get(raw, "pressure_hpa", 0.0))
     obj["is_day"] = stdr.num(json.get(raw, "is_day", 1.0))
     obj["precip_prob"] = stdr.num(json.get(raw, "precip_prob", 0.0))
-    return obj
-}
+    <- obj
+;
 
-: _load_state() (( -- )) {
+: _load_state() (( -- ))
     let path = _ensure_state_path()
     let raw = stdr.read_text_file(path)
-    if is_null(raw) { return }
+    if is_null(raw) { <- }
 
     let parsed = json.parse_result(str(raw))
-    if !(parsed["ok"] ?? false) { return }
+    if !(parsed["ok"] ?? false) { <- }
 
     let root = parsed["value"]
 
     let loaded_locs = json.get(root, "locations", []: [any])
     locations = []: [any]
-    for (let ?i = 0; i < len(loaded_locs); i += 1) {
+    for (let ?i = 0; i < len(loaded_locs); i += 1)
         let raw_loc = loaded_locs[i] ?? []: [string => any]
         let ?loc = []: [string => any]
         loc["id"] = str(json.get(raw_loc, "id", ""))
@@ -333,14 +328,13 @@ def status_text = cogito.label("Add a location to start")
         loc["latitude"] = stdr.num(json.get(raw_loc, "latitude", 0.0))
         loc["longitude"] = stdr.num(json.get(raw_loc, "longitude", 0.0))
         locations[len(locations)] = loc
-    }
 
     selected_location = stdr.num(json.get(root, "selected", -1))
     use_fahrenheit = json.get(root, "fahrenheit", false) == true
     unitbtn.set_text(if use_fahrenheit { "°F" } else { "°C" })
 
     let fc_raw = json.get(root, "forecast", null)
-    if !is_null(fc_raw) {
+    if !is_null(fc_raw)
         let ?fc = []: [string => any]
         fc["ok"] = json.get(fc_raw, "ok", false) == true
         fc["error"] = ""
@@ -353,59 +347,48 @@ def status_text = cogito.label("Add a location to start")
         fc["current"] = _restore_weather_obj(json.get(fc_raw, "current", []: [string => any]))
         let loaded_hrs = json.get(fc_raw, "hours", []: [any])
         let ?hrs = []: [any]
-        for (let ?j = 0; j < len(loaded_hrs); j += 1) {
+        for (let ?j = 0; j < len(loaded_hrs); j += 1)
             hrs[len(hrs)] = _restore_weather_obj(loaded_hrs[j] ?? []: [string => any])
-        }
         fc["hours"] = hrs
         forecast_data = fc
-    }
 
     _rebuild_location_list()
-    if len(locations) > 0 {
+    if len(locations) > 0
         _set_empty_mode(false)
-        if _valid_index(selected_location, len(locations)) {
+        if _valid_index(selected_location, len(locations))
             let ?sel_loc = _selected_loc()
-            if sel_loc != null {
-                if forecast_data["ok"] ?? false {
+            if sel_loc != null
+                if forecast_data["ok"] ?? false
                     sel_loc["forecast"] = forecast_data
-                }
-            }
-        }
         _apply_forecast()
-    }
-}
+;
 
-: _remove_location(index = num) (( -- )) {
-    if !_valid_index(index, len(locations)) {
-        return
-    }
+: _remove_location(index = num) (( -- ))
+    if !_valid_index(index, len(locations))
+        <-
 
     let ?next = []: [any]
-    for (let ?i = 0; i < len(locations); i += 1) {
-        if i == index {
+    for (let ?i = 0; i < len(locations); i += 1)
+        if i == index
             continue
-        }
         next[len(next)] = locations[i]
-    }
     locations = next
 
-    if len(locations) == 0 {
+    if len(locations) == 0
         selected_location = -1
         forecast_data = []: [string => any]
         _set_empty_mode(true)
-    } else {
-        if selected_location >= len(locations) {
+    else
+        if selected_location >= len(locations)
             selected_location = len(locations) - 1
-        }
         _set_empty_mode(false)
         _switch_location()
-    }
 
     _rebuild_location_list()
     _save_state()
-}
+;
 
-: _location_row(index = num, loc = any) (( any )) {
+: _location_row(index = num, loc = any) (( any ))
     let name = str(loc["name"] ?? "")
     let subtitle = str(loc["subtitle"] ?? "")
 
@@ -440,24 +423,22 @@ def status_text = cogito.label("Add a location to start")
     row.add(location_image)
     row.add(text_col)
     row.add(remove_btn)
-    return row
-}
+    <- row
+;
 
-: _rebuild_location_list() (( -- )) {
+: _rebuild_location_list() (( -- ))
     location_list.clear()
 
-    for (let ?i = 0; i < len(locations); i += 1) {
+    for (let ?i = 0; i < len(locations); i += 1)
         location_list.add(_location_row(i, locations[i]))
-    }
 
-    if _valid_index(selected_location, len(locations)) {
+    if _valid_index(selected_location, len(locations))
         location_list.set_selected(selected_location)
-    }
-}
+;
 
-: _build_series(hours = any, key = string, converter = any) (( any )) {
+: _build_series(hours = any, key = string, converter = any) (( any ))
     let ?series = []: [any]
-    for (let ?i = 0; i < len(hours); i += 1) {
+    for (let ?i = 0; i < len(hours); i += 1)
         let hour = hours[i] ?? []: [string => any]
         let time_iso = str(hour["time"] ?? "")
         let code = _num_or(hour["code"] ?? null, 0.0)
@@ -468,23 +449,21 @@ def status_text = cogito.label("Add a location to start")
         row["icon"] = weather_fmt.weather_icon(code, is_day)
 
         let base_v = _num_or(hour[key] ?? null, 0.0)
-        if is_null(converter) {
+        if is_null(converter)
             row["value"] = base_v
-        } else {
+        else
             row["value"] = converter(base_v)
-        }
 
         series[len(series)] = row
-    }
-    return series
-}
+    <- series
+;
 
-: _refresh_timelines(hours = any) (( -- )) {
+: _refresh_timelines(hours = any) (( -- ))
     weather_timeline_grid.clear()
     humidity_timeline_grid.clear()
     hourly_list.clear()
 
-    for (let ?i = 0; i < len(hours); i += 1) {
+    for (let ?i = 0; i < len(hours); i += 1)
         let hour = hours[i] ?? []: [string => any]
         let time_iso = str(hour["time"] ?? "")
         let code = _num_or(hour["code"] ?? null, 0.0)
@@ -500,28 +479,24 @@ def status_text = cogito.label("Add a location to start")
         humidity_timeline_grid.add(_timeline_cell(label, "sf:drop.fill", humidity_text), i, 0, 1, 1)
 
         hourly_list.add(_hourly_row(hour, label))
-    }
 
     let ?min_w = len(hours) * 74
-    if min_w < 480 {
+    if min_w < 480
         min_w = 480
-    }
     weather_timeline_scroll.set_min_content_width(min_w)
-}
+;
 
-: _apply_forecast() (( -- )) {
+: _apply_forecast() (( -- ))
     let ok = forecast_data["ok"] ?? false
-    if !ok {
+    if !ok
         current_desc.set_text("Could not fetch weather")
         compact_desc.set_text("Could not fetch weather")
-        return
-    }
+        <-
 
     let loc = _selected_loc()
-    if !is_null(loc) {
+    if !is_null(loc)
         let place = str(loc["label"] ?? "")
         compact_place.set_text(place)
-    }
 
     let current = forecast_data["current"] ?? []: [string => any]
     let hours = forecast_data["hours"] ?? []: [any]
@@ -587,15 +562,13 @@ def status_text = cogito.label("Add a location to start")
     -- Detect day boundaries (indices where the date portion changes).
     let ?day_breaks = []: [any]
     let ?prev_date = ""
-    for (let ?hi = 0; hi < len(hours); hi += 1) {
+    for (let ?hi = 0; hi < len(hours); hi += 1)
         let hour = hours[hi] ?? []: [string => any]
         let t = str(hour["time"] ?? "")
         let d = if len(t) >= 10 { stdr.slice(t, 0, 10) } else { "" }
-        if len(prev_date) > 0 && d != prev_date {
+        if len(prev_date) > 0 && d != prev_date
             day_breaks[len(day_breaks)] = hi
-        }
         prev_date = d
-    }
 
     line_chart.set_day_breaks(temp_chart, day_breaks)
     line_chart.set_day_breaks(humidity_chart, day_breaks)
@@ -606,14 +579,13 @@ def status_text = cogito.label("Add a location to start")
 
     _refresh_timelines(hours)
     _save_state()
-}
+;
 
-: _refresh_forecast() (( -- )) {
+: _refresh_forecast() (( -- ))
     let ?loc = _selected_loc()
-    if is_null(loc) {
+    if is_null(loc)
         _set_empty_mode(true)
-        return
-    }
+        <-
 
     _set_empty_mode(false)
 
@@ -623,70 +595,64 @@ def status_text = cogito.label("Add a location to start")
     forecast_data = open_meteo.fetch_forecast(lat, lon)
     loc["forecast"] = forecast_data
     _apply_forecast()
-}
+;
 
-: _switch_location() (( -- )) {
+: _switch_location() (( -- ))
     let loc = _selected_loc()
-    if is_null(loc) {
+    if is_null(loc)
         _set_empty_mode(true)
-        return
-    }
+        <-
     _set_empty_mode(false)
     let cached = loc["forecast"] ?? null
-    if !is_null(cached) {
+    if !is_null(cached)
         forecast_data = cached
         _apply_forecast()
-    } else {
+    else
         _refresh_forecast()
-    }
-}
+;
 
-: _add_location(loc = any) (( -- )) {
-    if is_null(loc) {
-        return
-    }
+: _add_location(loc = any) (( -- ))
+    if is_null(loc)
+        <-
 
     let incoming_id = str(loc["id"] ?? "")
-    for (let ?i = 0; i < len(locations); i += 1) {
+    for (let ?i = 0; i < len(locations); i += 1)
         let ex = locations[i] ?? []: [string => any]
-        if str(ex["id"] ?? "") == incoming_id {
+        if str(ex["id"] ?? "") == incoming_id
             selected_location = i
             _rebuild_location_list()
             _switch_location()
-            return
-        }
-    }
+            <-
 
     locations[len(locations)] = loc
     selected_location = len(locations) - 1
     _rebuild_location_list()
     _refresh_forecast()
-}
+;
 
-: _open_add_dialog(win = cogito.Window) (( -- )) {
+: _open_add_dialog(win = cogito.Window) (( -- ))
     let dlg = location_dialog.build_add_dialog((loc = any) => {
         _add_location(loc)
     })
     win.set_dialog(dlg)
-}
+;
 
-: _update_chart_range() (( -- )) {
-    if use_fahrenheit {
+: _update_chart_range() (( -- ))
+    if use_fahrenheit
         line_chart.set_range(temp_chart, -104.0, 104.0)
-    } else {
+    else
         line_chart.set_range(temp_chart, -40.0, 40.0)
-    }
-}
+;
 
-: _toggle_units() (( -- )) {
+: _toggle_units() (( -- ))
     use_fahrenheit = !use_fahrenheit
     unitbtn.set_text(if use_fahrenheit { "°F" } else { "°C" })
     _update_chart_range()
     _apply_forecast()
     _save_state()
-}
+;
 
-: _build_summary_page() (( any )) {
+: _build_summary_page() (( any ))
     let root = cogito.vstack()
     .set_hexpand(true)
     .set_vexpand(true)
@@ -730,10 +696,10 @@ def status_text = cogito.label("Add a location to start")
     .set_axes(false, true)
     .add(root)
 
-    return scroller
-}
+    <- scroller
+;
 
-: _build_hourly_page() (( any )) {
+: _build_hourly_page() (( any ))
     let card = cogito.vstack()
     .set_gap(8)
     .set_hexpand(true)
@@ -769,10 +735,10 @@ def status_text = cogito.label("Add a location to start")
     .set_axes(false, true)
     .add(root)
 
-    return scroller
-}
+    <- scroller
+;
 
-: _metric_card(title = string, value_label = cogito.Label) (( any )) {
+: _metric_card(title = string, value_label = cogito.Label) (( any ))
     let card = cogito.vstack()
     .set_gap(6)
     .set_hexpand(true)
@@ -781,10 +747,10 @@ def status_text = cogito.label("Add a location to start")
 
     card.add(cogito.label(title).set_class("kairos-metric-title"))
     card.add(value_label.set_class("kairos-metric-value"))
-    return card
-}
+    <- card
+;
 
-: _build_details_page() (( any )) {
+: _build_details_page() (( any ))
     let root = cogito.vstack()
     .set_gap(10)
     .set_hexpand(true)
@@ -808,10 +774,10 @@ def status_text = cogito.label("Add a location to start")
     .set_axes(false, true)
     .add(root)
 
-    return scroller
-}
+    <- scroller
+;
 
-: _build_content_panel(win = cogito.Window) (( any )) {
+: _build_content_panel(win = cogito.Window) (( any ))
     content_bar
     .set_class("small kairos-content-bar kairos-header-on-dark")
     .set_window_controls("close,minimize,maximize:")
@@ -932,10 +898,10 @@ def status_text = cogito.label("Add a location to start")
     .set_vexpand(true)
     .add(content_panel)
 
-    return content_tint_bin
-}
+    <- content_tint_bin
+;
 
-: _build_sidebar(win = cogito.Window) (( any )) {
+: _build_sidebar(win = cogito.Window) (( any ))
     sidebar_bar
     .set_hexpand(true)
     .set_class("small kairos-sidebar-bar")
@@ -966,11 +932,10 @@ def status_text = cogito.label("Add a location to start")
 
     location_list.on_activate((idx = any) => {
         let picked = _num_or(idx, -1.0)
-        if _valid_index(picked, len(locations)) {
+        if _valid_index(picked, len(locations))
             selected_location = picked
             _rebuild_location_list()
             _switch_location()
-        }
     })
 
     let list_scroll = cogito.scroller()
@@ -1001,12 +966,12 @@ def status_text = cogito.label("Add a location to start")
     sidebar_panel.add(list_scroll)
     sidebar_panel.add(footer)
 
-    return sidebar_panel
-}
+    <- sidebar_panel
+;
 
-: apply_compact_layout(compact = bool) (( -- )) {
+: apply_compact_layout(compact = bool) (( -- ))
     is_compact_mode = compact
-    if compact {
+    if compact
         sidebar_panel.set_visible(false)
         sidebar_panel.set_hexpand(false)
         loc_nav_btn.set_visible(true)
@@ -1015,7 +980,7 @@ def status_text = cogito.label("Add a location to start")
         header_stack.set_class("kairos-header-compact")
         title_expanded.set_visible(false)
         title_compact.set_visible(true)
-    } else {
+    else
         sidebar_panel.set_visible(true)
         sidebar_panel.set_hexpand(false)
         loc_nav_btn.set_visible(false)
@@ -1024,10 +989,9 @@ def status_text = cogito.label("Add a location to start")
         header_stack.set_class("kairos-header")
         title_expanded.set_visible(true)
         title_compact.set_visible(false)
-    }
-}
+;
 
-entry() (( -- )) {
+-> ()
     cogito.load_sum("kairos.sum")
 
     let win = cogito.window_size("Kairos", 1024, 720)
@@ -1048,13 +1012,13 @@ entry() (( -- )) {
         let n = _num_or(value, 0.0)
         let rounded = stdr.floor(n + 0.5)
         let suffix = weather_fmt.unit_suffix(use_fahrenheit)
-        return "$$rounded$$$$suffix$$"
+        <- "$$rounded$$$$suffix$$"
     })
 
     line_chart.set_formatter(humidity_chart, (value = any, idx = any, label = string) => {
         let n = _num_or(value, 0.0)
         let rounded = stdr.floor(n + 0.5)
-        return "$$rounded$$%"
+        <- "$$rounded$$%"
     })
 
     let root = cogito.hstack()
@@ -1069,9 +1033,8 @@ entry() (( -- )) {
 
     win.on_resize((node = any) => {
         let compact = win.is_compact()
-        if compact != is_compact_mode {
+        if compact != is_compact_mode
             apply_compact_layout(compact)
-        }
     })
 
     _set_empty_mode(true)
@@ -1079,4 +1042,4 @@ entry() (( -- )) {
     _load_state()
 
     app.run(win)
-}
+;

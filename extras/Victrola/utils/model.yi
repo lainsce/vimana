@@ -4,7 +4,7 @@ bring stdr
 
 bring utils.util
 
-:: make_track(path = string) (( any )) {
+:: make_track(path = string) (( any ))
     let clean_path = util.sanitize_cover_path(path)
     let file = stdr.basename(clean_path)
     let parent = stdr.basename(stdr.dirname(clean_path))
@@ -14,21 +14,17 @@ bring utils.util
     let ?title = base
     let ?album = parent
 
-    if stdr.len(album) == 0 {
+    if stdr.len(album) == 0
         album = "Unknown Album"
-    }
 
     let sep = stdr.index_of(base, " - ")
-    if sep > 0 {
+    if sep > 0
         let a = stdr.trim(stdr.slice(base, 0, sep))
         let t = stdr.trim(stdr.slice(base, sep + 3, stdr.len(base)))
-        if stdr.len(a) > 0 {
+        if stdr.len(a) > 0
             artist = a
-        }
-        if stdr.len(t) > 0 {
+        if stdr.len(t) > 0
             title = t
-        }
-    }
 
     let ?track = []: [string => any]
     track["path"] = clean_path
@@ -37,14 +33,13 @@ bring utils.util
     track["album"] = album
     track["track_number"] = 0
     track["search"] = "$$title$$ $$artist$$ $$album$$ $$file$$"
-    return track
-}
+    <- track
+;
 
-:: discover_album_cover(track = any) (( string )) {
+:: discover_album_cover(track = any) (( string ))
     let dir = stdr.dirname(util.sanitize_cover_path(stdr.str(track["path"] ?? "")))
-    if stdr.len(dir) == 0 {
-        return ""
-    }
+    if stdr.len(dir) == 0
+        <- ""
 
     let candidates = [
         "cover.jpg", "cover.jpeg", "cover.png",
@@ -53,116 +48,97 @@ bring utils.util
         "artwork.jpg", "artwork.jpeg", "artwork.png"
     ]
 
-    for (let ?i = 0; i < stdr.len(candidates); i = i + 1) {
+    for (let ?i = 0; i < stdr.len(candidates); i = i + 1)
         let p = util.sanitize_cover_path(stdr.join_path(dir, candidates[i] ?? ""))
-        if stdr.file_exists(p) {
-            return p
-        }
-    }
+        if stdr.file_exists(p)
+            <- p
 
-    return ""
-}
+    <- ""
+;
 
-:: album_cover_key(album = string, artist = string) (( string )) {
+:: album_cover_key(album = string, artist = string) (( string ))
     let ?album_norm = stdr.trim(album)
     let ?artist_norm = stdr.trim(artist)
 
-    if stdr.len(album_norm) == 0 {
+    if stdr.len(album_norm) == 0
         album_norm = "Unknown Album"
-    }
-    if stdr.len(artist_norm) == 0 {
+    if stdr.len(artist_norm) == 0
         artist_norm = "Unknown Artist"
-    }
 
-    return "$$artist_norm$$\n$$album_norm$$"
-}
+    <- "$$artist_norm$$\n$$album_norm$$"
+;
 
-:: rebuild_album_indexes(tracks = any, previous_cover_map = any) (( any )) {
+:: rebuild_album_indexes(tracks = any, previous_cover_map = any) (( any ))
     let ?album_cover_map = []: [string => any]
     let ?album_artist_map = []: [string => any]
 
-    for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+    for (let ?i = 0; i < stdr.len(tracks); i = i + 1)
         let t = tracks[i] ?? []: [string => any]
         let album = stdr.str(t["album"] ?? "Unknown Album")
         let artist = stdr.str(t["artist"] ?? "Unknown Artist")
 
-        if stdr.is_null(album_artist_map[album]) {
+        if stdr.is_null(album_artist_map[album])
             album_artist_map[album] = artist
-        }
 
         let key = album_cover_key(album, artist)
 
-        if stdr.is_null(album_cover_map[key]) {
+        if stdr.is_null(album_cover_map[key])
             let ?restored = util.sanitize_cover_path(stdr.str(previous_cover_map[key] ?? ""))
-            if stdr.len(restored) == 0 {
+            if stdr.len(restored) == 0
                 restored = util.sanitize_cover_path(stdr.str(previous_cover_map[album] ?? ""))
-            }
-            if stdr.len(restored) > 0 && stdr.file_exists(restored) {
+            if stdr.len(restored) > 0 && stdr.file_exists(restored)
                 album_cover_map[key] = restored
-            }
-        }
 
-        if stdr.is_null(album_cover_map[key]) {
+        if stdr.is_null(album_cover_map[key])
             let c = discover_album_cover(t)
-            if stdr.len(c) > 0 {
+            if stdr.len(c) > 0
                 album_cover_map[key] = c
-            }
-        }
-    }
 
     let ?out = []: [string => any]
     out["covers"] = album_cover_map
     out["artists"] = album_artist_map
-    return out
-}
+    <- out
+;
 
-:: album_cover_for(album_cover_map = any, album = string, artist = string) (( string )) {
+:: album_cover_for(album_cover_map = any, album = string, artist = string) (( string ))
     let key = album_cover_key(album, artist)
     let ?cover = util.sanitize_cover_path(stdr.str(album_cover_map[key] ?? ""))
-    if stdr.len(cover) == 0 {
+    if stdr.len(cover) == 0
         cover = util.sanitize_cover_path(stdr.str(album_cover_map[album] ?? ""))
-    }
-    return cover
-}
+    <- cover
+;
 
-:: album_artist_for(album_artist_map = any, album = string) (( string )) {
-    return stdr.str(album_artist_map[album] ?? "Unknown Artist")
-}
+:: album_artist_for(album_artist_map = any, album = string) (( string ))
+    <- stdr.str(album_artist_map[album] ?? "Unknown Artist")
+;
 
-:: apply_saved_meta(?tracks = any, track_meta_map = any) (( -- )) {
-    for (let ?i = 0; i < stdr.len(tracks); i = i + 1) {
+:: apply_saved_meta(?tracks = any, track_meta_map = any) (( -- ))
+    for (let ?i = 0; i < stdr.len(tracks); i = i + 1)
         let ?t = tracks[i] ?? []: [string => any]
         let path = stdr.str(t["path"] ?? "")
-        if stdr.len(path) == 0 {
+        if stdr.len(path) == 0
             continue
-        }
         let m = track_meta_map[path] ?? null
-        if stdr.is_null(m) {
+        if stdr.is_null(m)
             continue
-        }
         let ?changed = false
         let mt = stdr.str(m["title"] ?? "")
         let ma = stdr.str(m["artist"] ?? "")
         let mal = stdr.str(m["album"] ?? "")
-        if stdr.len(mt) > 0 && stdr.str(t["title"] ?? "") != mt {
+        if stdr.len(mt) > 0 && stdr.str(t["title"] ?? "") != mt
             t["title"] = mt
             changed = true
-        }
-        if stdr.len(ma) > 0 && stdr.str(t["artist"] ?? "") != ma {
+        if stdr.len(ma) > 0 && stdr.str(t["artist"] ?? "") != ma
             t["artist"] = ma
             changed = true
-        }
-        if stdr.len(mal) > 0 && stdr.str(t["album"] ?? "") != mal {
+        if stdr.len(mal) > 0 && stdr.str(t["album"] ?? "") != mal
             t["album"] = mal
             changed = true
-        }
-        if changed {
+        if changed
             let new_title = stdr.str(t["title"] ?? "")
             let new_artist = stdr.str(t["artist"] ?? "")
             let new_album = stdr.str(t["album"] ?? "")
             let new_file = stdr.basename(stdr.str(t["path"] ?? ""))
             t["search"] = "$$new_title$$ $$new_artist$$ $$new_album$$ $$new_file$$"
             tracks[i] = t
-        }
-    }
-}
+;

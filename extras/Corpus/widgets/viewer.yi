@@ -20,7 +20,7 @@ bring cogito
     on_zoom_out = any,
     on_rotate_cw = any,
     on_rotate_ccw = any
-) (( -- )) {
+) (( -- ))
     panel
     .set_gap(0)
     .set_vexpand(true)
@@ -127,7 +127,7 @@ bring cogito
     nav_holder.add(page_nav)
     content.add(nav_holder)
     panel.add(content)
-}
+;
 
 :: show_page(
     bar = cogito.AppBar,
@@ -137,13 +137,12 @@ bring cogito
     page_path = string,
     current = num,
     total = num
-) (( -- )) {
-    if stdr.len(page_path) > 0 && stdr.file_exists(page_path) {
+) (( -- ))
+    if stdr.len(page_path) > 0 && stdr.file_exists(page_path)
         page_image.set_icon(page_path)
         page_image.set_visible(true)
-    } else {
+    else
         page_image.set_visible(false)
-    }
     page_label.set_text("$$current$$ / $$total$$")
     page_scroll.set_scroll_y(0)
-}
+;

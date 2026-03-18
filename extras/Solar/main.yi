@@ -51,64 +51,59 @@ def hero_month = cogito.label("")
 
 -- ── Persistence ──────────────────────────────────────────────
 
-: _ensure_state_path() (( string )) {
-    if stdr.len(SOLAR_STATE_PATH) > 0 {
-        return SOLAR_STATE_PATH
-    }
+: _ensure_state_path() (( string ))
+    if stdr.len(SOLAR_STATE_PATH) > 0
+        <- SOLAR_STATE_PATH
     let run = stdr.run_command("echo $HOME")
     let home = stdr.trim(str(run[1] ?? ""))
     let dir = stdr.join_path(home, ".cache/solar")
     stdr.run_command("mkdir -p $$dir$$")
     SOLAR_STATE_PATH = stdr.join_path(dir, "events.ics")
-    return SOLAR_STATE_PATH
-}
+    <- SOLAR_STATE_PATH
+;
 
-: _join_lines(arr = any) (( string )) {
+: _join_lines(arr = any) (( string ))
     let ?parts = []: [any]
-    for (let ?i = 0; i < len(arr); i += 1) {
+    for (let ?i = 0; i < len(arr); i += 1)
         if i > 0 { stdr.push(parts, "\n") }
         stdr.push(parts, str(arr[i]))
-    }
-    return stdr.join(parts)
-}
+    <- stdr.join(parts)
+;
 
-: _split_lines(text = string) (( [any] )) {
+: _split_lines(text = string) (( [any] ))
     let ?result = []: [any]
     let ?start = 0
     let total = stdr.len(text)
-    for (let ?i = 0; i < total; i += 1) {
+    for (let ?i = 0; i < total; i += 1)
         let ch = stdr.char_at(text, i)
-        if ch == "\n" {
+        if ch == "\n"
             stdr.push(result, stdr.slice(text, start, i))
             start = i + 1
-        }
-    }
-    if start <= total {
+    if start <= total
         stdr.push(result, stdr.slice(text, start, total))
-    }
-    return result
-}
+    <- result
+;
 
-: _ical_escape(s = string) (( string )) {
+: _ical_escape(s = string) (( string ))
     let ?out = stdr.replace(s, "\\", "\\\\")
     out = stdr.replace(out, ";", "\\;")
     out = stdr.replace(out, ",", "\\,")
     out = stdr.replace(out, "\n", "\\n")
-    return out
-}
+    <- out
+;
 
-: _pad2(n = num) (( string )) {
-    if n < 10 { return "0$$n$$" }
-    return str(n)
-}
+: _pad2(n = num) (( string ))
+    if n < 10 { <- "0$$n$$" }
+    <- str(n)
+;
 
-: save_events() (( -- )) {
+: save_events() (( -- ))
     let path = _ensure_state_path()
     let ?lines = []: [any]
     stdr.push(lines, "BEGIN:VCALENDAR")
     stdr.push(lines, "VERSION:2.0")
     stdr.push(lines, "PRODID:-//Solar//EN")
-    for (let ?i = 0; i < len(events); i += 1) {
+    for (let ?i = 0; i < len(events); i += 1)
         let ev = events[i] ?? []: [string => any]
         let t = _ical_escape(str(ev["title"] ?? ""))
         let d = _ical_escape(str(ev["description"] ?? ""))
@@ -119,61 +114,53 @@ def hero_month = cogito.label("")
         let allday = stdr.num(ev["allday"] ?? 0)
         stdr.push(lines, "BEGIN:VEVENT")
         stdr.push(lines, "SUMMARY:$$t$$")
-        if stdr.len(d) > 0 {
+        if stdr.len(d) > 0
             stdr.push(lines, "DESCRIPTION:$$d$$")
-        }
-        if allday == 1 {
+        if allday == 1
             stdr.push(lines, "DTSTART;VALUE=DATE:$$yr$$$$mo$$$$dy$$")
             stdr.push(lines, "DTEND;VALUE=DATE:$$yr$$$$mo$$$$dy$$")
-        } else {
+        else
             let sh = _pad2(stdr.num(ev["start_hour"] ?? 9))
             let sm = _pad2(stdr.num(ev["start_min"] ?? 0))
             let eh = _pad2(stdr.num(ev["end_hour"] ?? 10))
             let em = _pad2(stdr.num(ev["end_min"] ?? 0))
             stdr.push(lines, "DTSTART:$$yr$$$$mo$$$$dy$$T$$sh$$$$sm$$00")
             stdr.push(lines, "DTEND:$$yr$$$$mo$$$$dy$$T$$eh$$$$em$$00")
-        }
         stdr.push(lines, "X-SOLAR-COLOR:$$c$$")
         stdr.push(lines, "END:VEVENT")
-    }
     stdr.push(lines, "END:VCALENDAR")
     stdr.write_text_file(path, _join_lines(lines))
-}
+;
 
-: load_events() (( -- )) {
+: load_events() (( -- ))
     let path = _ensure_state_path()
-    if !stdr.file_exists(path) { return }
+    if !stdr.file_exists(path) { <- }
     let raw = stdr.read_text_file(path)
-    if stdr.is_null(raw) { return }
+    if stdr.is_null(raw) { <- }
     let content = str(raw)
     let all_lines = _split_lines(content)
     events = []: [any]
     let ?ev = []: [string => any]
     let ?in_event = false
-    for (let ?i = 0; i < len(all_lines); i += 1) {
+    for (let ?i = 0; i < len(all_lines); i += 1)
         let line = str(all_lines[i] ?? "")
-        if line == "BEGIN:VEVENT" {
+        if line == "BEGIN:VEVENT"
             ev = []: [string => any]
             in_event = true
-        }
         if !in_event { continue }
-        if stdr.starts_with(line, "SUMMARY:") {
+        if stdr.starts_with(line, "SUMMARY:")
             ev["title"] = stdr.slice(line, 8, stdr.len(line))
-        }
-        if stdr.starts_with(line, "DESCRIPTION:") {
+        if stdr.starts_with(line, "DESCRIPTION:")
             ev["description"] = stdr.slice(line, 12, stdr.len(line))
-        }
-        if stdr.starts_with(line, "X-SOLAR-COLOR:") {
+        if stdr.starts_with(line, "X-SOLAR-COLOR:")
             ev["color"] = stdr.slice(line, 14, stdr.len(line))
-        }
-        if stdr.starts_with(line, "DTSTART;VALUE=DATE:") {
+        if stdr.starts_with(line, "DTSTART;VALUE=DATE:")
             let ds = stdr.slice(line, 19, stdr.len(line))
             ev["year"] = stdr.num(stdr.slice(ds, 0, 4))
             ev["month"] = stdr.num(stdr.slice(ds, 4, 6))
             ev["day"] = stdr.num(stdr.slice(ds, 6, 8))
             ev["allday"] = 1
-        }
-        if stdr.starts_with(line, "DTSTART:") {
+        if stdr.starts_with(line, "DTSTART:")
             let ds = stdr.slice(line, 8, stdr.len(line))
             ev["year"] = stdr.num(stdr.slice(ds, 0, 4))
             ev["month"] = stdr.num(stdr.slice(ds, 4, 6))
@@ -181,124 +168,105 @@ def hero_month = cogito.label("")
             ev["start_hour"] = stdr.num(stdr.slice(ds, 9, 11))
             ev["start_min"] = stdr.num(stdr.slice(ds, 11, 13))
             ev["allday"] = 0
-        }
-        if stdr.starts_with(line, "DTEND:") {
+        if stdr.starts_with(line, "DTEND:")
             let ds = stdr.slice(line, 6, stdr.len(line))
             ev["end_hour"] = stdr.num(stdr.slice(ds, 9, 11))
             ev["end_min"] = stdr.num(stdr.slice(ds, 11, 13))
-        }
-        if line == "END:VEVENT" {
+        if line == "END:VEVENT"
             stdr.push(events, ev)
             in_event = false
-        }
-    }
-}
+;
 
 -- ── Navigation ───────────────────────────────────────────────
 
-: go_prev_month() (( -- )) {
-    if view_mode == 3 {
+: go_prev_month() (( -- ))
+    if view_mode == 3
         view_year -= 1
-    } elif view_mode == 0 {
+    elif view_mode == 0
         selected_day -= 1
-        if selected_day < 1 {
+        if selected_day < 1
             view_month -= 1
-            if view_month < 1 {
+            if view_month < 1
                 view_month = 12
                 view_year -= 1
-            }
             selected_day = calendar.days_in_month(view_year, view_month)
-        }
-    } elif view_mode == 1 {
+    elif view_mode == 1
         selected_day -= 7
-        if selected_day < 1 {
+        if selected_day < 1
             view_month -= 1
-            if view_month < 1 {
+            if view_month < 1
                 view_month = 12
                 view_year -= 1
-            }
             let pm_days = calendar.days_in_month(view_year, view_month)
             selected_day = pm_days + selected_day
-        }
-    } else {
+    else
         view_month -= 1
-        if view_month < 1 {
+        if view_month < 1
             view_month = 12
             view_year -= 1
-        }
         selected_day = 1
-    }
     update_calendar()
-}
+;
 
-: go_next_month() (( -- )) {
-    if view_mode == 3 {
+: go_next_month() (( -- ))
+    if view_mode == 3
         view_year += 1
-    } elif view_mode == 0 {
+    elif view_mode == 0
         let max_d = calendar.days_in_month(view_year, view_month)
         selected_day += 1
-        if selected_day > max_d {
+        if selected_day > max_d
             selected_day = 1
             view_month += 1
-            if view_month > 12 {
+            if view_month > 12
                 view_month = 1
                 view_year += 1
-            }
-        }
-    } elif view_mode == 1 {
+    elif view_mode == 1
         let max_d = calendar.days_in_month(view_year, view_month)
         selected_day += 7
-        if selected_day > max_d {
+        if selected_day > max_d
             selected_day = selected_day - max_d
             view_month += 1
-            if view_month > 12 {
+            if view_month > 12
                 view_month = 1
                 view_year += 1
-            }
-        }
-    } else {
+    else
         view_month += 1
-        if view_month > 12 {
+        if view_month > 12
             view_month = 1
             view_year += 1
-        }
         selected_day = 1
-    }
     update_calendar()
-}
+;
 
-: go_today() (( -- )) {
+: go_today() (( -- ))
     view_year = calendar.current_year()
     view_month = calendar.current_month()
     selected_day = calendar.current_day()
     update_calendar()
-}
+;
 
-: select_day(day = num) (( -- )) {
-    if day == -1 {
+: select_day(day = num) (( -- ))
+    if day == -1
         go_today()
-        return
-    }
+        <-
     selected_day = day
     update_calendar()
-    if is_compact_mode {
+    if is_compact_mode
         show_events_compact()
-    }
-}
+;
 
 -- ── Calendar Refresh ─────────────────────────────────────────
 
-: update_calendar() (( -- )) {
+: update_calendar() (( -- ))
     let mn = calendar.month_name(view_month)
-    if view_mode == 3 {
+    if view_mode == 3
         month_label.set_text(str(view_year))
-    } elif view_mode == 0 {
+    elif view_mode == 0
         let day_label = calendar.format_day_subtitle(view_year, view_month, selected_day)
         month_label.set_text(day_label)
-    } else {
+    else
         let label_text = "$$mn$$ $$view_year$$"
         month_label.set_text(label_text)
-    }
 
     month_dropdown_updating = true
     month_dropdown.set_selected(view_month - 1)
@@ -308,20 +276,20 @@ def hero_month = cogito.label("")
     let today_m = calendar.current_month()
     let today_d = calendar.current_day()
 
-    if view_mode == 0 {
+    if view_mode == 0
         calendar_panel.populate_day_view(
             day_grid, view_year, view_month, selected_day,
             today_d, today_m, today_y,
             events, is_compact_mode
         )
-    } elif view_mode == 1 {
+    elif view_mode == 1
         calendar_panel.populate_week_view(
             day_grid, view_year, view_month, selected_day,
             today_d, today_m, today_y,
             events, is_compact_mode,
             (day = num) => { select_day(day) }
         )
-    } elif view_mode == 3 {
+    elif view_mode == 3
         calendar_panel.populate_year_view(
             day_grid, view_year,
             today_m, today_y,
@@ -333,13 +301,12 @@ def hero_month = cogito.label("")
                 update_calendar()
             }
         )
-    } else {
+    else
         calendar_panel.populate_days(
             day_grid, view_year, view_month, selected_day,
             today_d, today_m, today_y, events, is_compact_mode,
             (day = num) => { select_day(day) }
         )
-    }
 
     let date_label = calendar.format_date_label(view_year, view_month, selected_day)
 
@@ -349,14 +316,13 @@ def hero_month = cogito.label("")
         (idx = num) => { delete_event_at(idx) }
     )
 
-    if viewing_events_compact {
+    if viewing_events_compact
         _populate_date_hero()
-    }
-}
+;
 
 -- ── Event CRUD ───────────────────────────────────────────────
 
-: add_event(title = string, description = string, start_hour = num, start_min = num, end_hour = num, end_min = num, allday = bool, color = string) (( -- )) {
+: add_event(title = string, description = string, start_hour = num, start_min = num, end_hour = num, end_min = num, allday = bool, color = string) (( -- ))
     let ?ev = []: [string => any]
     ev["title"] = title
     ev["description"] = description
@@ -367,48 +333,42 @@ def hero_month = cogito.label("")
     ev["start_min"] = start_min
     ev["end_hour"] = end_hour
     ev["end_min"] = end_min
-    if allday {
+    if allday
         ev["allday"] = 1
-    } else {
+    else
         ev["allday"] = 0
-    }
     ev["color"] = color
     stdr.push(events, ev)
     save_events()
     update_calendar()
-}
+;
 
-: delete_event_at(visible_index = num) (( -- )) {
+: delete_event_at(visible_index = num) (( -- ))
     let ?day_idx = 0
     let ?target = -1
-    for (let ?i = 0; i < len(events); i += 1) {
+    for (let ?i = 0; i < len(events); i += 1)
         let ev = events[i] ?? []: [string => any]
         let ey = stdr.num(ev["year"] ?? 0)
         let em = stdr.num(ev["month"] ?? 0)
         let ed = stdr.num(ev["day"] ?? 0)
-        if ey == view_year && em == view_month && ed == selected_day {
-            if day_idx == visible_index {
+        if ey == view_year && em == view_month && ed == selected_day
+            if day_idx == visible_index
                 target = i
                 break
-            }
             day_idx += 1
-        }
-    }
-    if target < 0 { return }
+    if target < 0 { <- }
     let ?next = []: [any]
-    for (let ?i = 0; i < len(events); i += 1) {
-        if i != target {
+    for (let ?i = 0; i < len(events); i += 1)
+        if i != target
             stdr.push(next, events[i])
-        }
-    }
     events = next
     save_events()
     update_calendar()
-}
+;
 
 -- ── Add Event Dialog ─────────────────────────────────────────
 
-: open_add_event(win = cogito.Window) (( -- )) {
+: open_add_event(win = cogito.Window) (( -- ))
     let dlg = cogito.dialog("New Event")
 
     let form = cogito.vstack()
@@ -505,10 +465,9 @@ def hero_month = cogito.label("")
     let color_group = cogito.buttongroup()
     .set_size(1)
 
-    for (let ?ci = 0; ci < len(EVENT_COLORS); ci += 1) {
+    for (let ?ci = 0; ci < len(EVENT_COLORS); ci += 1)
         let name = str(color_names[ci])
         color_group.add(cogito.button(name))
-    }
 
     color_group.on_select((idx) => {
         picked_color = str(EVENT_COLORS[idx])
@@ -532,7 +491,7 @@ def hero_month = cogito.label("")
     .set_class("filled")
     .on_click((b = cogito.Button) => {
         let t = title_field.text()
-        if stdr.len(stdr.trim(t)) > 0 {
+        if stdr.len(stdr.trim(t)) > 0
             let d = desc_field.text()
             let is_allday = allday_switch.checked()
             let sh = start_tp.hour()
@@ -541,26 +500,25 @@ def hero_month = cogito.label("")
             let em = end_tp.minute()
             add_event(stdr.trim(t), stdr.trim(d), sh, sm, eh, em, is_allday, picked_color)
             dlg.close()
-        }
     })
     btn_row.add(save_btn)
 
     form.add(btn_row)
     dlg.add(form)
     win.set_dialog(dlg)
-}
+;
 
 -- ── Compact Layout ───────────────────────────────────────────
 
-: _populate_date_hero() (( -- )) {
+: _populate_date_hero() (( -- ))
     let wd = calendar.weekday_of_date(view_year, view_month, selected_day)
     hero_weekday.set_text(calendar.day_name(wd))
     hero_day_num.set_text(str(selected_day))
     let mn = calendar.month_name(view_month)
     hero_month.set_text("$$mn$$ $$view_year$$")
-}
+;
 
-: show_events_compact() (( -- )) {
+: show_events_compact() (( -- ))
     viewing_events_compact = true
     cal_panel.set_visible(false)
     evt_panel.set_visible(true)
@@ -573,9 +531,9 @@ def hero_month = cogito.label("")
     _populate_date_hero()
     evt_bar.set_window_controls("close,minimize,maximize:")
     cal_bar.set_window_controls("")
-}
+;
 
-: close_events_compact() (( -- )) {
+: close_events_compact() (( -- ))
     viewing_events_compact = false
     evt_panel.set_visible(false)
     evt_panel.set_hexpand(false)
@@ -587,14 +545,14 @@ def hero_month = cogito.label("")
     date_hero.set_visible(false)
     evt_bar.set_window_controls("")
     cal_bar.set_window_controls("close,minimize,maximize:")
-}
+;
 
-: apply_compact_layout(compact = bool) (( -- )) {
+: apply_compact_layout(compact = bool) (( -- ))
     is_compact_mode = compact
-    if compact {
+    if compact
         cal_title_compact.set_visible(true)
         cal_title_expanded.set_visible(false)
-        if viewing_events_compact {
+        if viewing_events_compact
             cal_panel.set_visible(false)
             evt_panel.set_visible(true)
             evt_panel.set_hexpand(true)
@@ -607,7 +565,7 @@ def hero_month = cogito.label("")
             _populate_date_hero()
             evt_bar.set_window_controls("close,minimize,maximize:")
             cal_bar.set_window_controls("")
-        } else {
+        else
             evt_panel.set_visible(false)
             evt_panel.set_hexpand(false)
             cal_panel.set_visible(true)
@@ -615,8 +573,7 @@ def hero_month = cogito.label("")
             date_hero.set_visible(false)
             cal_bar.set_window_controls("close,minimize,maximize:")
             evt_bar.set_window_controls("")
-        }
-    } else {
+    else
         cal_title_compact.set_visible(false)
         cal_title_expanded.set_visible(true)
         viewing_events_compact = false
@@ -631,13 +588,12 @@ def hero_month = cogito.label("")
         date_hero.set_visible(false)
         cal_bar.set_window_controls("")
         evt_bar.set_window_controls("")
-    }
     update_calendar()
-}
+;
 
 -- ── Entry Point ──────────────────────────────────────────────
 
-entry() (( -- )) {
+-> ()
     load_events()
 
     view_year = calendar.current_year()
@@ -669,12 +625,11 @@ entry() (( -- )) {
     .set_items(month_names)
     .set_selected(view_month - 1)
     .on_change((dd = cogito.Dropdown) => {
-        if !month_dropdown_updating {
+        if !month_dropdown_updating
             let idx = dd.selected()
             view_month = idx + 1
             selected_day = 1
             update_calendar()
-        }
     })
 
     cal_title_compact
@@ -734,13 +689,12 @@ entry() (( -- )) {
 
     win.on_resize((node = any) => {
         let compact = win.is_compact()
-        if compact != is_compact_mode {
+        if compact != is_compact_mode
             apply_compact_layout(compact)
-        }
     })
 
     cogito.load_sum("solar.sum")
     update_calendar()
 
     app.run(win)
-}
+;

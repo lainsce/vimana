@@ -55,62 +55,58 @@ def home_layout = cogito.hstack()
 
 def rebuild_state = cogito.state(false)
 
-: request_rebuild() (( -- )) {
+: request_rebuild() (( -- ))
     let v = rebuild_state.get()
     rebuild_state.set(v)
-}
+;
 
-: _thumb_path_for(pdf_path = string) (( string )) {
+: _thumb_path_for(pdf_path = string) (( string ))
     let name = stdr.basename(pdf_path)
     let key = library.sanitize_filename(stdr.stem(name))
-    return stdr.join_path(library.thumbs_dir(), key)
-}
+    <- stdr.join_path(library.thumbs_dir(), key)
+;
 
-: _page_path_for(pdf_path = string, page = num) (( string )) {
+: _page_path_for(pdf_path = string, page = num) (( string ))
     let name = stdr.basename(pdf_path)
     let key = library.sanitize_filename(stdr.stem(name))
     let dir = library.pages_dir()
-    return stdr.join_path(dir, "$$key$$_p$$page$$_$$BASE_DPI$$")
-}
+    <- stdr.join_path(dir, "$$key$$_p$$page$$_$$BASE_DPI$$")
+;
 
-: add_pdf_file() (( -- )) {
+: add_pdf_file() (( -- ))
     let result = stdr.open_file_dialog("Select a PDF", "pdf")
-    if is_null(result) {
-        return
-    }
+    if is_null(result)
+        <-
     let path = stdr.trim(str(result))
-    if stdr.len(path) == 0 { return }
+    if stdr.len(path) == 0 { <- }
 
     let ?title = pdf.get_title(path)
-    if stdr.len(title) == 0 {
+    if stdr.len(title) == 0
         title = stdr.stem(stdr.basename(path))
-    }
     let pages = pdf.get_page_count(path)
 
     let thumb_prefix = _thumb_path_for(path)
     let thumb_file = thumb_prefix + ".png"
-    if !stdr.file_exists(thumb_file) {
+    if !stdr.file_exists(thumb_file)
         pdf.render_thumb(path, thumb_prefix)
-    }
 
     lib = library.add_pdf(lib, path, title, pages, thumb_file)
     library.save_library(lib)
     refresh_all()
-}
+;
 
-: open_pdf(index = num) (( -- )) {
+: open_pdf(index = num) (( -- ))
     let pdf_entry = library.get_pdf(lib, index)
-    if is_null(pdf_entry) { return }
+    if is_null(pdf_entry) { <- }
     selected_pdf = index
     let path = str(pdf_entry["path"] ?? "")
     let title = str(pdf_entry["title"] ?? "Untitled")
     total_pages = stdr.num(pdf_entry["pages"] ?? 0)
     let last = stdr.num(pdf_entry["last_page"] ?? 0)
-    if last > 0 && last <= total_pages {
+    if last > 0 && last <= total_pages
         current_page = last
-    } else {
+    else
         current_page = 1
-    }
     zoom_scale = 1.0
     base_img_w = 0
     base_img_h = 0
@@ -120,63 +116,57 @@ def rebuild_state = cogito.state(false)
     viewer_bar.set_title(stdr.basename(path))
     viewer_bar.set_subtitle(title)
 
-    if total_pages > 1 {
+    if total_pages > 1
         page_slider.set_bounds(1, total_pages)
         page_slider.set_value(current_page)
         page_slider.set_visible(true)
-    } else {
+    else
         page_slider.set_visible(false)
-    }
 
     render_and_show_page()
 
     home_layout.set_visible(false)
     viewer_panel.set_visible(true)
     viewer_panel.set_hexpand(true)
-}
+;
 
-: close_viewer() (( -- )) {
+: close_viewer() (( -- ))
     viewing_pdf = false
     viewer_panel.set_visible(false)
     viewer_panel.set_hexpand(false)
     home_layout.set_visible(true)
     viewer_bar.set_window_controls("")
-    if is_compact_mode {
+    if is_compact_mode
         sidebar_panel.set_visible(false)
         home_panel.set_hexpand(true)
-    } else {
+    else
         sidebar_panel.set_visible(true)
         home_panel.set_hexpand(true)
-    }
     library.save_library(lib)
     refresh_all()
-}
+;
 
-: render_and_show_page() (( -- )) {
-    if selected_pdf < 0 { return }
+: render_and_show_page() (( -- ))
+    if selected_pdf < 0 { <- }
     let pdf_entry = library.get_pdf(lib, selected_pdf)
-    if is_null(pdf_entry) { return }
+    if is_null(pdf_entry) { <- }
     let path = str(pdf_entry["path"] ?? "")
     let page_prefix = _page_path_for(path, current_page)
     let page_file = page_prefix + ".png"
-    if !stdr.file_exists(page_file) {
+    if !stdr.file_exists(page_file)
         pdf.render_page(path, current_page, BASE_DPI, page_prefix)
-    }
 
-    if base_img_w == 0 || base_img_h == 0 {
+    if base_img_w == 0 || base_img_h == 0
         let dims = pdf.get_page_pixel_size(path, current_page, BASE_DPI)
         base_img_w = stdr.num(dims[0] ?? 0)
         base_img_h = stdr.num(dims[1] ?? 0)
-    }
 
     let ?display_file = page_file
-    if rotation != 0 {
+    if rotation != 0
         let rot_file = "$$page_prefix$$_r$$rotation$$.png"
-        if !stdr.file_exists(rot_file) {
+        if !stdr.file_exists(rot_file)
             pdf.rotate_image(page_file, rot_file, rotation)
-        }
         display_file = rot_file
-    }
 
     viewer.show_page(
         viewer_bar, page_image, page_label, page_scroll,
@@ -186,73 +176,71 @@ def rebuild_state = cogito.state(false)
     apply_zoom()
 
     library.set_last_page(lib, selected_pdf, current_page)
-}
+;
 
-: go_to_page(page = num) (( -- )) {
+: go_to_page(page = num) (( -- ))
     let ?p = stdr.floor(page)
     if p < 1 { p = 1 }
     if p > total_pages { p = total_pages }
-    if p == current_page { return }
+    if p == current_page { <- }
     current_page = p
     base_img_w = 0
     base_img_h = 0
     page_slider.set_value(current_page)
     render_and_show_page()
-}
+;
 
-: apply_zoom() (( -- )) {
-    if base_img_w > 0 && base_img_h > 0 {
+: apply_zoom() (( -- ))
+    if base_img_w > 0 && base_img_h > 0
         let ?bw = base_img_w
         let ?bh = base_img_h
-        if rotation == 90 || rotation == 270 {
+        if rotation == 90 || rotation == 270
             bw = base_img_h
             bh = base_img_w
-        }
         let sw = stdr.floor(bw * zoom_scale)
         let sh = stdr.floor(bh * zoom_scale)
         page_image.set_size(sw, sh)
-    }
-}
+;
 
-: zoom_in() (( -- )) {
-    if zoom_scale >= 3.0 { return }
+: zoom_in() (( -- ))
+    if zoom_scale >= 3.0 { <- }
     zoom_scale += 0.25
     apply_zoom()
-}
+;
 
-: zoom_out() (( -- )) {
-    if zoom_scale <= 0.5 { return }
+: zoom_out() (( -- ))
+    if zoom_scale <= 0.5 { <- }
     zoom_scale -= 0.25
     apply_zoom()
-}
+;
 
-: rotate_cw() (( -- )) {
+: rotate_cw() (( -- ))
     rotation = (rotation + 90) % 360
     render_and_show_page()
-}
+;
 
-: rotate_ccw() (( -- )) {
+: rotate_ccw() (( -- ))
     rotation = (rotation + 270) % 360
     render_and_show_page()
-}
+;
 
-: toggle_bookmark() (( -- )) {
-    if selected_pdf < 0 { return }
+: toggle_bookmark() (( -- ))
+    if selected_pdf < 0 { <- }
     library.toggle_bookmark(lib, selected_pdf)
     library.save_library(lib)
-}
+;
 
-: select_tag(tag = string) (( -- )) {
+: select_tag(tag = string) (( -- ))
     selected_tag = tag
     refresh_all()
-}
+;
 
-: do_search(query = string) (( -- )) {
+: do_search(query = string) (( -- ))
     search_query = query
     refresh_recents_only()
-}
+;
 
-: show_tag_dialog(win = cogito.Window) (( -- )) {
+: show_tag_dialog(win = cogito.Window) (( -- ))
     let dlg = cogito.dialog("Manage Tags")
 
     let content = cogito.vstack()
@@ -272,19 +260,18 @@ def rebuild_state = cogito.state(false)
     .set_class("filled")
     .on_click((b = cogito.Button) => {
         let name = tag_input.text()
-        if stdr.len(stdr.trim(name)) > 0 {
+        if stdr.len(stdr.trim(name)) > 0
             lib = library.add_tag(lib, stdr.trim(name))
             library.save_library(lib)
             tag_input.set_text("")
             dlg.close()
             refresh_all()
-        }
     })
     input_row.add(add_btn)
     content.add(input_row)
 
     let tags = lib["tags"] ?? []: [any]
-    for (let ?i = 0; i < len(tags); i += 1) {
+    for (let ?i = 0; i < len(tags); i += 1)
         let tname = str(tags[i] ?? "")
         let row = cogito.hstack()
         .set_gap(8)
@@ -306,13 +293,12 @@ def rebuild_state = cogito.state(false)
         })
         row.add(del_btn)
         content.add(row)
-    }
 
     dlg.add(content)
     win.set_dialog(dlg)
-}
+;
 
-: refresh_all() (( -- )) {
+: refresh_all() (( -- ))
     let tags = lib["tags"] ?? []: [any]
     sidebar.refresh_tags(tag_list, tags, selected_tag, (tag = string) => {
         select_tag(tag)
@@ -327,37 +313,35 @@ def rebuild_state = cogito.state(false)
     continue_divider.set_visible(len(continue_reading) > 0)
 
     refresh_recents_only()
-}
+;
 
-: refresh_recents_only() (( -- )) {
+: refresh_recents_only() (( -- ))
     let pdfs = lib["pdfs"] ?? []: [any]
     home.refresh_recents(recents_grid, pdfs, selected_tag, search_query, (idx = num) => {
         open_pdf(idx)
     })
-}
+;
 
-: apply_compact_layout(compact = bool) (( -- )) {
+: apply_compact_layout(compact = bool) (( -- ))
     is_compact_mode = compact
-    if viewing_pdf {
+    if viewing_pdf
         home_layout.set_visible(false)
         viewer_panel.set_visible(true)
         viewer_panel.set_hexpand(true)
-        return
-    }
-    if compact {
+        <-
+    if compact
         sidebar_panel.set_visible(false)
         sidebar_panel.set_hexpand(false)
         home_panel.set_visible(true)
         home_panel.set_hexpand(true)
-    } else {
+    else
         sidebar_panel.set_visible(true)
         sidebar_panel.set_hexpand(false)
         home_panel.set_visible(true)
         home_panel.set_hexpand(true)
-    }
-}
+;
 
-entry() (( -- )) {
+-> ()
     library.ensure_cache_dir()
     lib = library.load_library()
 
@@ -433,12 +417,11 @@ entry() (( -- )) {
 
     win.on_resize((node = any) => {
         let compact = win.is_compact()
-        if compact != is_compact_mode {
+        if compact != is_compact_mode
             apply_compact_layout(compact)
-        }
     })
 
     refresh_all()
 
     app.run(win)
-}
+;
