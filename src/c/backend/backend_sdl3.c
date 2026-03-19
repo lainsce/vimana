@@ -20,6 +20,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -247,6 +248,7 @@ typedef struct CogitoTextCacheKey {
   uint16_t text_len;
   uint16_t raster_size_q64;
   TTF_Font *font;
+  SDL_Renderer *renderer; // textures are renderer-specific in SDL3
   uint8_t rtl; // 0=LTR, 1=RTL — part of cache key
 } CogitoTextCacheKey;
 
@@ -272,7 +274,8 @@ static size_t g_text_cache_bytes = 0;
 static uint32_t cogito_text_cache_hash(TTF_Font *font, const char *text,
                                        size_t text_len,
                                        uint16_t raster_size_q64,
-                                       uint8_t rtl) {
+                                       uint8_t rtl,
+                                       SDL_Renderer *renderer) {
   uint32_t h = 5381;
   for (size_t i = 0; i < text_len; i++) {
     h = ((h << 5) + h) ^ (uint8_t)text[i];
@@ -281,13 +284,14 @@ static uint32_t cogito_text_cache_hash(TTF_Font *font, const char *text,
   h ^= (uint32_t)text_len;
   h ^= ((uint32_t)raster_size_q64 << 1);
   h ^= ((uint32_t)rtl << 17);
+  h ^= (uint32_t)(uintptr_t)renderer;
   return h;
 }
 
 static bool cogito_text_cache_key_eq(const CogitoTextCacheKey *a,
                                      const CogitoTextCacheKey *b) {
   return a->font == b->font && a->text_len == b->text_len &&
-         a->rtl == b->rtl &&
+         a->rtl == b->rtl && a->renderer == b->renderer &&
          memcmp(a->text, b->text, a->text_len) == 0;
 }
 
@@ -346,10 +350,11 @@ cogito_text_cache_lookup(TTF_Font *font, const char *text, size_t text_len,
   key.text_len = (uint16_t)text_len;
   key.raster_size_q64 = raster_size_q64;
   key.font = font;
+  key.renderer = g_current_renderer;
   key.rtl = rtl;
 
   uint32_t hash =
-      cogito_text_cache_hash(font, key.text, text_len, raster_size_q64, rtl);
+      cogito_text_cache_hash(font, key.text, text_len, raster_size_q64, rtl, g_current_renderer);
   int idx = (int)(hash & (COGITO_TEXT_CACHE_SIZE - 1));
 
   // Linear probing
@@ -3142,6 +3147,33 @@ bool cogito_debug_inspector_toggle_pressed(CogitoBackend *backend) {
 }
 
 // ============================================================================
+// Screenshot
+// ============================================================================
+
+static void sdl3_window_screenshot(CogitoWindow *window) {
+  if (!window) return;
+  CogitoSDL3Window *win = (CogitoSDL3Window *)window;
+  SDL_Renderer *renderer = win->renderer;
+  if (!renderer) return;
+
+  SDL_Surface *surface = SDL_RenderReadPixels(renderer, NULL);
+  if (!surface) return;
+
+  // Build path: ~/Pictures/Screenshot_<timestamp>.bmp
+  const char *home = getenv("HOME");
+  if (!home) home = "/tmp";
+  char path[512];
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+  snprintf(path, sizeof(path), "%s/Pictures/Screenshot_%04d%02d%02d_%02d%02d%02d.bmp",
+           home, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+           t->tm_hour, t->tm_min, t->tm_sec);
+
+  SDL_SaveBMP(surface, path);
+  SDL_DestroySurface(surface);
+}
+
+// ============================================================================
 // Backend Instance
 // ============================================================================
 
@@ -3226,6 +3258,7 @@ static CogitoBackend sdl3_backend = {
     .window_set_borderless = sdl3_window_set_borderless,
     .window_is_borderless = sdl3_window_is_borderless,
     .set_debug_overlay = sdl3_set_debug_overlay,
+    .window_screenshot = sdl3_window_screenshot,
 };
 
 bool cogito_backend_sdl3_init(void) {

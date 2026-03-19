@@ -1867,6 +1867,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     let app = cogito.app()
     .set_appid("com.fyralabs.Victrola")
     .set_app_name("Victrola")
+    .set_icon("com.fyralabs.Victrola.svg")
+    .set_mono_icon("com.fyralabs.Victrola-symbolic.svg")
     .set_accent_color(APP_ACCENT, true)
 
     app_ref = app
@@ -1925,6 +1927,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     build_mini_player(outer)
     build_bottom_nav(outer)
 
+    win.add(cogito.window_bar())
     win.add(outer)
 
     ui_ready = true

@@ -537,6 +537,7 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 ;
 
 : build_ui(win = cogito.Window) (( -- ))
+    win.add(cogito.window_bar())
     let root = cogito.vstack()
     .set_hexpand(true)
     .set_vexpand(true)
@@ -642,6 +643,8 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     .set_accent_color("#8C56BF", false)
     .set_appid("com.fyralabs.Abacus")
     .set_app_name("Abacus")
+    .set_icon("com.fyralabs.Abacus.svg")
+    .set_mono_icon("com.fyralabs.Abacus-symbolic.svg")
     let win = cogito.window_size("Abacus", 412, 412)
     .build(build_ui)
     .set_resizable(false)

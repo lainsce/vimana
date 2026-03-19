@@ -28,6 +28,7 @@ bring stdr
 : __cogito_app_set_ensor_variant(app = App, variant = num) (( -- )) { }
 : __cogito_app_set_contrast(app = App, contrast = num) (( -- )) { }
 : __cogito_app_set_icon(app = App, path = string) (( -- )) { }
+: __cogito_app_set_mono_icon(app = App, path = string) (( -- )) { }
 : __cogito_app() (( App )) { }
 : __cogito_appbar_add_button(appbar = AppBar, icon = string, handler = any) (( Button )) { }
 : __cogito_appbar_pair_scroller(appbar = AppBar, scroller = Scroller) (( -- )) { }
@@ -416,6 +417,7 @@ bring stdr
 : __cogito_toolbar_get_vibrant(toolbar = Toolbar) (( bool )) { }
 : __cogito_toolbar_set_vertical(toolbar = Toolbar, vertical = bool) (( -- )) { }
 : __cogito_toolbar_get_vertical(toolbar = Toolbar) (( bool )) { }
+: __cogito_window_bar() (( WindowBar )) { }
 : __cogito_treeview() (( TreeView )) { }
 : __cogito_view_chooser_bind(vc = ViewChooser, vs = ViewSwitcher) (( -- )) { }
 : __cogito_view_chooser_set_items(vc = ViewChooser, items = [string]) (( -- )) { }
@@ -485,6 +487,10 @@ pub ,: App
     ;
     :: set_icon(this, path = string) (( App ))
         __cogito_app_set_icon(this, path)
+        <- this
+    ;
+    :: set_mono_icon(this, path = string) (( App ))
+        __cogito_app_set_mono_icon(this, path)
         <- this
     ;
     :: set_baseline_font(this, path = string) (( App ))
@@ -3798,6 +3804,17 @@ pub ,: Toolbar : Component
     ;
 ;
 
+pub ,: WindowBar : Component
+    :: set_class(this, cls = string) (( WindowBar ))
+        __cogito_node_set_class(this, cls)
+        <- this
+    ;
+    :: set_id(this, id = string) (( WindowBar ))
+        __cogito_node_set_id(this, id)
+        <- this
+    ;
+;
+
 pub ,: Chip : Component
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Chip ))
         __cogito_container_set_margins(this, top, right, bottom, left)
@@ -4372,6 +4389,10 @@ pub ,: State
 
 :: toolbar() (( Toolbar ))
     <- __cogito_toolbar()
+;
+
+:: window_bar() (( WindowBar ))
+    <- __cogito_window_bar()
 ;
 
 :: chip(text = string) (( Chip ))

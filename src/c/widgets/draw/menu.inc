@@ -81,7 +81,11 @@ static void cogito_draw_menu(void) {
 
   // Calculate start X based on which edge of the button to anchor from
   int start_x;
-  if (menu_opens_left) {
+  if (final_x <= anchor_x) {
+    // Menu left-edge at or before anchor left — lock position and width
+    start_x = final_x;
+    animated_w = final_w;
+  } else if (menu_opens_left) {
     // Menu opens to the left, anchor from button's left
     start_x = anchor_x;
   } else if (menu_opens_right) {
@@ -114,7 +118,8 @@ static void cogito_draw_menu(void) {
     cogito_window_relayout(cogito_node_window(cogito_menu.owner));
   }
 
-  bool vibrant = cogito_menu.owner->kd->button.menu_vibrant;
+  bool has_button_kd = cogito_menu.owner->kd && cogito_menu.owner->kind != COGITO_WINDOW_BAR;
+  bool vibrant = has_button_kd ? cogito_menu.owner->kd->button.menu_vibrant : false;
 
   // Tertiary colors for toggled items (and vibrant mode)
   CogitoColor tertiary = {0}, tertiary_container = {0}, on_tertiary_container = {0}, on_tertiary = {0};
@@ -174,8 +179,8 @@ static void cogito_draw_menu(void) {
 
   // Sections use gap by default; dividers are opt-in
   bool use_section = cogito_menu.owner->menu_section_after != NULL;
-  bool use_divider = cogito_menu.owner->kd->button.menu_divider;
-  int item_gap = (cogito_menu.owner->kd->button.menu_item_gap > 0) ? cogito_menu.owner->kd->button.menu_item_gap :
+  bool use_divider = has_button_kd ? cogito_menu.owner->kd->button.menu_divider : false;
+  int item_gap = (has_button_kd && cogito_menu.owner->kd->button.menu_item_gap > 0) ? cogito_menu.owner->kd->button.menu_item_gap :
                  (cogito_theme.menu.has_item_gap ? cogito_theme.menu.item_gap : 2);
   int section_gap = 2;
   int divider_h = use_divider ? 1 : 0;
@@ -217,9 +222,9 @@ static void cogito_draw_menu(void) {
   int outer_radius = 16;
   int item_sel_radius = 12; // Radius for hover/toggled corners at menu edges
 
-  // Draw single shadow for entire menu
+  // Draw shadow at final dimensions to avoid flicker from per-frame size changes
   if (shadow_level >= 0 && section_count > 0) {
-    cogito_draw_shadow_radii_level(x, y + cogito_menu.pad_top, w, h - cogito_menu.pad_top - cogito_menu.pad_bottom, outer_radius, outer_radius, outer_radius, outer_radius, shadow_level);
+    cogito_draw_shadow_radii_level(final_x, final_y + cogito_menu.pad_top, final_w, final_h - cogito_menu.pad_top - cogito_menu.pad_bottom, outer_radius, outer_radius, outer_radius, outer_radius, shadow_level);
   }
   // Draw section backgrounds
   for (int s = 0; s < section_count; s++) {

@@ -46,6 +46,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_app_set_appid cogito_app_set_appid_yis
 #define cogito_app_set_contrast cogito_app_set_contrast_yis
 #define cogito_app_set_icon cogito_app_set_icon_yis
+#define cogito_app_set_mono_icon cogito_app_set_mono_icon_yis
 #define cogito_app_set_baseline_font cogito_app_set_baseline_font_yis
 #define cogito_app_set_emphasized_font cogito_app_set_emphasized_font_yis
 #define cogito_app_set_ensor_variant cogito_app_set_ensor_variant_yis
@@ -354,6 +355,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_toast_set_text cogito_toast_set_text_yis
 #define cogito_toasts_new cogito_toasts_new_yis
 #define cogito_toolbar_new cogito_toolbar_new_yis
+#define cogito_window_bar_new cogito_window_bar_new_yis
 #define cogito_toolbar_set_vibrant cogito_toolbar_set_vibrant_yis
 #define cogito_toolbar_get_vibrant cogito_toolbar_get_vibrant_yis
 #define cogito_toolbar_set_vertical cogito_toolbar_set_vertical_yis
@@ -455,6 +457,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_app_set_contrast
 #undef cogito_app_set_ensor_variant
 #undef cogito_app_set_icon
+#undef cogito_app_set_mono_icon
 #undef cogito_app_set_baseline_font
 #undef cogito_app_set_emphasized_font
 #undef cogito_appbar_add_button
@@ -756,6 +759,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_toast_set_text
 #undef cogito_toasts_new
 #undef cogito_toolbar_new
+#undef cogito_window_bar_new
 #undef cogito_toolbar_set_vibrant
 #undef cogito_toolbar_get_vibrant
 #undef cogito_toolbar_set_vertical
@@ -976,6 +980,15 @@ void cogito_app_set_icon(cogito_app *app, const char *path) {
     return;
   YisVal pv = cogito_val_from_cstr(path);
   cogito_app_set_icon_yis(YV_OBJ(app), pv);
+  if (pv.tag == EVT_STR)
+    yis_release_val(pv);
+}
+
+void cogito_app_set_mono_icon(cogito_app *app, const char *path) {
+  if (!app)
+    return;
+  YisVal pv = cogito_val_from_cstr(path);
+  cogito_app_set_mono_icon_yis(YV_OBJ(app), pv);
   if (pv.tag == EVT_STR)
     yis_release_val(pv);
 }
@@ -2448,6 +2461,9 @@ cogito_node *cogito_toast_new(const char *text) {
 }
 cogito_node *cogito_toolbar_new(void) {
   return cogito_from_val(cogito_toolbar_new_yis());
+}
+cogito_node *cogito_window_bar_new(void) {
+  return cogito_from_val(cogito_window_bar_new_yis());
 }
 
 void cogito_toolbar_set_vibrant(cogito_node *toolbar, bool vibrant) {

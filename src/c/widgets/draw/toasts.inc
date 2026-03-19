@@ -34,9 +34,11 @@ static void cogito_draw_fab_overlay(CogitoNode* n) {
     if (n->popover_open && n->menu_len > 0) {
       CogitoBinOverlayScopeState bin_scope_state = {0};
       cogito_bin_scope_begin_for_node(n, &bin_scope_state);
+      cogito_menu_draw_active = true;
       cogito_fab_menu_force_draw = true;
       cogito_draw_node(n);
       cogito_fab_menu_force_draw = false;
+      cogito_menu_draw_active = false;
       cogito_bin_scope_end_for_node(&bin_scope_state);
     }
     return;

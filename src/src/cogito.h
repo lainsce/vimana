@@ -132,6 +132,7 @@ int cogito_accent_from_pixels(const unsigned char *pixels, int n_bytes,
                                bool alpha, int *out_argb, int out_cap);
 void cogito_app_set_icon(cogito_app *app, const char *path);
 const char *cogito_app_get_icon(cogito_app *app);
+void cogito_app_set_mono_icon(cogito_app *app, const char *path);
 void cogito_app_set_baseline_font(cogito_app *app, const char *path);
 void cogito_app_set_emphasized_font(cogito_app *app, const char *path);
 bool cogito_open_url(const char *url);
@@ -286,6 +287,7 @@ cogito_node *cogito_treeview_new(void);
 cogito_node *cogito_toasts_new(void);
 cogito_node *cogito_toast_new(const char *text);
 cogito_node *cogito_toolbar_new(void);
+cogito_node *cogito_window_bar_new(void);
 void cogito_toolbar_set_vibrant(cogito_node *toolbar, bool vibrant);
 bool cogito_toolbar_get_vibrant(cogito_node *toolbar);
 void cogito_toolbar_set_vertical(cogito_node *toolbar, bool vertical);

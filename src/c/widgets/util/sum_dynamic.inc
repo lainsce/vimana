@@ -748,6 +748,8 @@ static void sum_build_dynamic(bool dark, CogitoColor accent, char* out, size_t c
   cogito_sum_append(out, cap, &off,
   "window\n  background: %s\n  padding: 0\n", surf);
   cogito_sum_append(out, cap, &off,
+  "window-bar\n  background: %s\n  padding: 0\n", sc);
+  cogito_sum_append(out, cap, &off,
   "zstack\n  background: transparent\n  color: %s\n  padding: 0\n", ons);
   cogito_sum_append(out, cap, &off,
   "dialog vstack\n  background: transparent\n  color: %s\n", ons);

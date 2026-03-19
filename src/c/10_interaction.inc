@@ -6,6 +6,7 @@ static bool cogito_hit_node_min48(const CogitoNode* n, int x, int y);
 static void cogito_clear_children(CogitoNode* node);
 static void cogito_timer_cancel_owner_tree(CogitoNode* root);
 static void cogito_node_set_class(YisVal nodev, YisVal classv);
+static void cogito_window_bar_invoke_menu(CogitoNode* n, size_t idx);
 
 static void cogito_invoke(YisFn* fn, int argc, YisVal* argv) {
   if (!fn) return;
@@ -61,6 +62,10 @@ static void cogito_invoke_click(CogitoNode* n) {
 
 static void cogito_invoke_menu(CogitoNode* n, size_t idx) {
   if (!n || idx >= n->menu_len) return;
+  if (n->kind == COGITO_WINDOW_BAR) {
+    cogito_window_bar_invoke_menu(n, idx);
+    return;
+  }
   if (n->kind == COGITO_DROPDOWN || n->kind == COGITO_VIEW_CHOOSER) {
     n->selected = (int)idx;
     cogito_invoke_change(n);
@@ -163,6 +168,7 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
 #include "widgets/interaction/revealer.inc"
 #include "widgets/interaction/bin.inc"
 #include "widgets/interaction/appbar.inc"
+#include "widgets/interaction/window_bar.inc"
 
 static void cogito_state_drop(YisObj* o) {
   CogitoState* s = (CogitoState*)o;

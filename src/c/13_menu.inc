@@ -29,7 +29,8 @@ static void cogito_menu_open_for(CogitoNode* n) {
 
   // Sections use gap by default; dividers are opt-in via menu_divider flag
   bool use_section = n->menu_section_after != NULL;
-  bool use_divider = n->kd->button.menu_divider;
+  bool has_button_kd = n->kd && n->kind != COGITO_WINDOW_BAR;
+  bool use_divider = has_button_kd ? n->kd->button.menu_divider : false;
 
   int item_h = font_size + pad_y * 2;
   int min_h = item_style->has_min_h ? item_style->min_h
@@ -40,7 +41,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
 
   int menu_pad_top = 8;
   int menu_pad_bottom = 8;
-  int item_gap = (n->kd->button.menu_item_gap > 0) ? n->kd->button.menu_item_gap :
+  int item_gap = (has_button_kd && n->kd->button.menu_item_gap > 0) ? n->kd->button.menu_item_gap :
                  (cogito_theme.menu.has_item_gap ? cogito_theme.menu.item_gap : 2);
   int section_gap = 2;
   int divider_h = use_divider ? 1 : 0;
@@ -80,7 +81,8 @@ static void cogito_menu_open_for(CogitoNode* n) {
     int trailing_w = (max_shortcut_w > arrow_size) ? max_shortcut_w : arrow_size;
     w += icon_text_gap + trailing_w;
   }
-  if (n->w > w) w = n->w;
+  // Only clamp menu width to owner width for button-like nodes, not full-width ones
+  if (n->kind != COGITO_WINDOW_BAR && n->w > w) w = n->w;
 
   // Minimum menu width for accessibility
   if (w < 112) w = 112;
@@ -129,6 +131,15 @@ static void cogito_menu_open_for(CogitoNode* n) {
   }
   h += menu_pad_bottom;
 
+  // For WindowBar, anchor at the AppMenu button rect instead of the full node
+  int ax = n->x, ay = n->y, aw = n->w, ah = n->h;
+  if (n->kind == COGITO_WINDOW_BAR && n->kd) {
+    ax = n->kd->window_bar.appmenu_x;
+    ay = n->kd->window_bar.appmenu_y;
+    aw = n->kd->window_bar.appmenu_w;
+    ah = n->kd->window_bar.appmenu_h;
+  }
+
   cogito_menu.open = true;
   cogito_menu.owner = n;
   cogito_menu.item_h = item_h;
@@ -138,20 +149,20 @@ static void cogito_menu_open_for(CogitoNode* n) {
   cogito_menu.pad_bottom = menu_pad_bottom;
   cogito_menu.w = w;
   cogito_menu.h = h;
-  cogito_menu.x = n->x;
-  cogito_menu.y = n->y;
+  cogito_menu.x = ax;
+  cogito_menu.y = ay;
 
-  // Store anchor point (the button) for draping animation origin
-  cogito_menu.anchor_x = n->x;
-  cogito_menu.anchor_y = n->y;
-  cogito_menu.anchor_w = n->w;
-  cogito_menu.anchor_h = n->h;
+  // Store anchor point for draping animation origin
+  cogito_menu.anchor_x = ax;
+  cogito_menu.anchor_y = ay;
+  cogito_menu.anchor_w = aw;
+  cogito_menu.anchor_h = ah;
 
   // Initialize draping spring: start at 0.0 (at button), animate to 1.0 (final position)
   cogito_spring_snap(&cogito_menu.draping_spring, 0.0);
 
-  int x = n->x;
-  int y = n->y + n->h;
+  int x = ax;
+  int y = ay + ah;
   const int edge_inset = 16;
 
   // Get window size from backend
@@ -183,11 +194,11 @@ static void cogito_menu_open_for(CogitoNode* n) {
     // Horizontal placement:
     // LTR: prefer anchor-left alignment; RTL: prefer anchor-right alignment.
     // If overflow, try opposite alignment. Clamp to edge inset bounds.
-    int right_aligned = n->x + n->w - w;
+    int right_aligned = ax + aw - w;
     if (cogito_is_rtl()) {
       // RTL: start right-aligned
       x = right_aligned;
-      if (x < edge_inset) x = n->x;  // flip to left-aligned if overflow
+      if (x < edge_inset) x = ax;  // flip to left-aligned if overflow
     } else {
       if (x + w > win_w - edge_inset) {
         x = right_aligned;
@@ -204,8 +215,8 @@ static void cogito_menu_open_for(CogitoNode* n) {
     if (x > max_x) x = max_x;
 
     // Vertical placement: prefer below anchor, then above, then clamp.
-    int below = n->y + n->h;
-    int above = n->y - h;
+    int below = ay + ah;
+    int above = ay - h;
     if (below + h <= win_h - edge_inset) {
       y = below;
     } else if (above >= edge_inset) {
@@ -229,7 +240,7 @@ static void cogito_menu_open_for(CogitoNode* n) {
   cogito_menu.h = h;
   cogito_menu.x = x;
   cogito_menu.y = y;
-  cogito_menu_kbd_index = (n->selected >= 0 && (size_t)n->selected < n->menu_len) ? n->selected : 0;
+  cogito_menu_kbd_index = (n->selected >= 0 && (size_t)n->selected < n->menu_len) ? n->selected : -1;
   cogito_a11y_emit_event("overlay-open", n, "menu");
 }
 
@@ -241,8 +252,9 @@ static int cogito_menu_hit(const CogitoMenu* menu, int x, int y) {
 
   // Sections use gap by default; dividers are opt-in via menu_divider flag
   bool use_section = menu->owner->menu_section_after != NULL;
-  bool use_divider = menu->owner->kd->button.menu_divider;
-  int item_gap = (menu->owner->kd->button.menu_item_gap > 0) ? menu->owner->kd->button.menu_item_gap :
+  bool has_button_kd = menu->owner->kd && menu->owner->kind != COGITO_WINDOW_BAR;
+  bool use_divider = has_button_kd ? menu->owner->kd->button.menu_divider : false;
+  int item_gap = (has_button_kd && menu->owner->kd->button.menu_item_gap > 0) ? menu->owner->kd->button.menu_item_gap :
                  (cogito_theme.menu.has_item_gap ? cogito_theme.menu.item_gap : 2);
   int section_gap = 2;
   int divider_h = use_divider ? 1 : 0;

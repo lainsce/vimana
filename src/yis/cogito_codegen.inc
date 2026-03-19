@@ -492,6 +492,15 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_window_bar")) {
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = cogito_window_bar_new();", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_toolbar_set_vibrant")) {
                         GenExpr toolbar, vibrant;
                         if (!gen_expr(cg, path, e->as.call.args[

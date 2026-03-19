@@ -185,6 +185,8 @@ def ?feed_index = 0
     let app = cogito.app()
     .set_appid("com.fyralabs.Fortnightly")
     .set_app_name("Fortnightly")
+    .set_icon("com.fyralabs.Fortnightly.svg")
+    .set_mono_icon("com.fyralabs.Fortnightly-symbolic.svg")
     .set_accent_color("#6B38FB", true)
     .set_baseline_font("Roboto Serif")
     .set_emphasized_font("Roboto Serif")

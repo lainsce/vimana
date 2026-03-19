@@ -429,6 +429,8 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     let app = gafu_app
     .set_appid("com.fyralabs.Gafu")
     .set_app_name("Gafu")
+    .set_icon("com.fyralabs.Gafu.svg")
+    .set_mono_icon("com.fyralabs.Gafu-symbolic.svg")
     .set_ensor_variant(ENSOR_DEFAULT)
     .set_dark_mode(false, false)
     .set_accent_color("#65558F", false)
@@ -479,6 +481,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     right.add(build_right_panel())
     root.add(right)
 
+    win.add(cogito.window_bar())
     win.add(root)
     .set_resizable(true)
 

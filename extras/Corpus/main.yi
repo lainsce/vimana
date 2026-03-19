@@ -348,6 +348,8 @@ def rebuild_state = cogito.state(false)
     let app = cogito.app()
     .set_appid("com.fyralabs.Corpus")
     .set_app_name("Corpus")
+    .set_icon("com.fyralabs.Corpus.svg")
+    .set_mono_icon("com.fyralabs.Corpus-symbolic.svg")
     .set_accent_color("#8B9A46", true)
     .set_baseline_font("Merriweather")
     .set_emphasized_font("Merriweather")
@@ -413,6 +415,7 @@ def rebuild_state = cogito.state(false)
     viewer_panel.set_hexpand(false)
     root.add(viewer_panel)
 
+    win.add(cogito.window_bar())
     win.add(root)
 
     win.on_resize((node = any) => {

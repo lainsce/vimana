@@ -820,6 +820,7 @@ static bool cogito_sum_selector_kind(const char* sel, CogitoKind* out_kind, bool
   if (strcmp(s, "viewswitcher") == 0) { if (out_kind) *out_kind = COGITO_VIEWSWITCHER; return true; }
   if (strcmp(s, "vstack") == 0) { if (out_kind) *out_kind = COGITO_VSTACK; return true; }
   if (strcmp(s, "window") == 0) { if (out_kind) *out_kind = COGITO_WINDOW; return true; }
+  if (strcmp(s, "window-bar") == 0 || strcmp(s, "window_bar") == 0 || strcmp(s, "windowbar") == 0) { if (out_kind) *out_kind = COGITO_WINDOW_BAR; return true; }
   if (strcmp(s, "zstack") == 0) { if (out_kind) *out_kind = COGITO_ZSTACK; return true; }
   return false;
 }

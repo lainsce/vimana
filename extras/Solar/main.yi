@@ -603,6 +603,8 @@ def hero_month = cogito.label("")
     let app = cogito.app()
     .set_appid("com.fyralabs.Solar")
     .set_app_name("Solar")
+    .set_icon("com.fyralabs.Solar.svg")
+    .set_mono_icon("com.fyralabs.Solar-symbolic.svg")
     .set_accent_color("#FF6F00", true)
 
     let win = cogito.window_size("Solar", 1024, 720)
@@ -685,6 +687,7 @@ def hero_month = cogito.label("")
     evt_panel.set_padding(0, 0, 0, 0)
     main_content.add(evt_panel)
 
+    win.add(cogito.window_bar())
     win.add(main_content)
 
     win.on_resize((node = any) => {

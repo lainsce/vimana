@@ -261,6 +261,32 @@ static const char* cogito_app_get_icon_path(CogitoApp* app) {
   return NULL;
 }
 
+static void cogito_app_set_mono_icon(YisVal appv, YisVal pathv) {
+  if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_mono_icon expects app");
+  CogitoApp* app = (CogitoApp*)appv.as.p;
+  YisStr* s = NULL;
+  bool temp = false;
+  if (pathv.tag == EVT_STR) {
+    s = (YisStr*)pathv.as.p;
+    if (s) yis_retain_val(YV_STR(s));
+  } else if (pathv.tag != EVT_NULL) {
+    s = stdr_to_string(pathv);
+    temp = true;
+  }
+  if (app->mono_icon) yis_release_val(YV_STR(app->mono_icon));
+  app->mono_icon = s;
+  if (temp && s) {
+    // app now owns temp string (ref=1)
+  }
+}
+
+static const char* cogito_app_get_mono_icon_path(CogitoApp* app) {
+  if (app && app->mono_icon && app->mono_icon->data && app->mono_icon->data[0]) {
+    return app->mono_icon->data;
+  }
+  return NULL;
+}
+
 static void cogito_app_set_baseline_font(YisVal appv, YisVal pathv) {
   if (appv.tag != EVT_OBJ) yis_trap("cogito.app_set_baseline_font expects app");
   CogitoApp* app = (CogitoApp*)appv.as.p;
@@ -328,4 +354,48 @@ static YisVal cogito_app_new(void) {
   YisVal appv = YV_OBJ(app);
   cogito_app_update_theme(appv);
   return YV_OBJ(app);
+}
+
+// Resolve the monochrome/symbolic app icon for WindowBar display.
+// Uses explicit mono_icon first, then falls back to full-color icon.
+static const char* cogito_resolve_app_icon_path(CogitoApp* app) {
+  static char resolved[PATH_MAX];
+  static bool cached = false;
+  static bool found = false;
+  if (cached) return found ? resolved : NULL;
+  cached = true;
+  // 1. Explicit mono_icon (set via set_mono_icon)
+  const char* mono_path = cogito_app_get_mono_icon_path(app);
+  if (mono_path && cogito_image_resolve_path(mono_path, resolved, sizeof(resolved))) {
+    found = true;
+    return resolved;
+  }
+  // 2. Explicit app_icon (full-color fallback)
+  const char* icon_path = cogito_app_get_icon_path(app);
+  if (icon_path && cogito_image_resolve_path(icon_path, resolved, sizeof(resolved))) {
+    found = true;
+    return resolved;
+  }
+  // 3. {app_id}.svg / {app_id}.png
+  const char* app_id = (app && app->app_id && app->app_id->data) ? app->app_id->data : NULL;
+  if (app_id && app_id[0]) {
+    static const char* exts[] = {".svg", ".png", NULL};
+    for (int i = 0; exts[i]; i++) {
+      char id_icon[256];
+      snprintf(id_icon, sizeof(id_icon), "%s%s", app_id, exts[i]);
+      if (cogito_image_resolve_path(id_icon, resolved, sizeof(resolved))) {
+        found = true;
+        return resolved;
+      }
+    }
+  }
+  // 4. Generic icon.{png,svg,...}
+  static const char* icon_names[] = {"icon.png", "icon.svg", "icon.jpg", "icon.bmp", NULL};
+  for (int i = 0; icon_names[i]; i++) {
+    if (cogito_image_resolve_path(icon_names[i], resolved, sizeof(resolved))) {
+      found = true;
+      return resolved;
+    }
+  }
+  return NULL;
 }

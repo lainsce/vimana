@@ -333,6 +333,8 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
     case COGITO_WINDOW:
       break;
 
+    #include "widgets/layout/window_bar.inc"
+
     case COGITO_KIND_COUNT:
       break;
   }

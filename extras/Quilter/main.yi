@@ -974,6 +974,7 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
         set_preview_mode("edit")
     })
 
+    win.add(cogito.window_bar())
     win.add(bar)
 
     let sidebar = cogito.vstack()
@@ -1229,6 +1230,8 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     let app = cogito.app()
     .set_appid("io.github.lainsce.Quilter")
     .set_app_name("Quilter")
+    .set_icon("io.github.lainsce.Quilter.svg")
+    .set_mono_icon("io.github.lainsce.Quilter-symbolic.svg")
 
     let win = cogito.window_size("Quilter", 1120, 760)
     .set_resizable(true)

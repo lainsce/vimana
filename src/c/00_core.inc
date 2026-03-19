@@ -222,6 +222,7 @@ typedef struct CogitoApp {
   bool system_accent_set;
   double system_theme_next_check;
   YisStr* app_icon; // path to app icon (png/svg/jpg/bmp)
+  YisStr* mono_icon; // path to monochrome/symbolic icon for WindowBar
   YisStr* baseline_font; // path to baseline (regular weight) font
   YisStr* emphasized_font; // path to emphasized (bold/medium) font
 } CogitoApp;
@@ -342,6 +343,7 @@ typedef enum {
   COGITO_MENU_SECTION,
   COGITO_WEBVIEW,
   COGITO_SIDE_SHEET,
+  COGITO_WINDOW_BAR,
   COGITO_KIND_COUNT
 } CogitoKind;
 
@@ -935,6 +937,13 @@ typedef struct {
   size_t action_len, action_cap;
 } CogitoCardData;
 
+typedef struct {
+  int appmenu_x;  // AppMenu hit rect (set by layout)
+  int appmenu_y;
+  int appmenu_w;
+  int appmenu_h;
+} CogitoWindowBarData;
+
 // Named union of all per-kind data (allocated per-kind, not full union size)
 typedef union {
   CogitoScrollerData scroller;
@@ -970,6 +979,7 @@ typedef union {
   CogitoToolbarData toolbar;
   CogitoButtonGroupData buttongroup;
   CogitoCardData card;
+  CogitoWindowBarData window_bar;
 } CogitoKindData;
 
 // ──── End per-kind data structs ────
@@ -1339,6 +1349,7 @@ static CogitoMenu cogito_menu = {
   0
 };
 static int cogito_menu_kbd_index = -1;
+static bool cogito_menu_draw_active = false; // true only while menu overlay is drawing
 static CogitoNode* cogito_fab_menu_open_node = NULL;
 static int cogito_fab_menu_kbd_index = -1;
 static CogitoFont* cogito_font = NULL;
@@ -1785,6 +1796,9 @@ static inline bool cogito_pointer_query(int* out_x, int* out_y,
   if (out_down) *out_down = false;
   if (out_pressed) *out_pressed = false;
   if (!cogito_backend) return false;
+  // Suppress pointer for non-overlay code while a menu overlay is open
+  if ((cogito_menu.open || cogito_fab_menu_open_node) && !cogito_menu_draw_active)
+    return false;
 
   int mx = 0;
   int my = 0;
@@ -2746,6 +2760,7 @@ static bool cogito_debug_enabled(void) {
 static void cogito_draw_rect(int x, int y, int w, int h, CogitoColor bg, int radius);
 static bool cogito_hit_rect(int x, int y, int rx, int ry, int rw, int rh);
 static CogitoNode* cogito_node_window(CogitoNode* n);
+static CogitoNode* cogito_find_window_bar(CogitoNode* win);
 static void cogito_window_relayout(CogitoNode* win);
 static bool cogito_file_exists(const char* path);
 static const char* cogito_app_get_baseline_font_path(CogitoApp* app);

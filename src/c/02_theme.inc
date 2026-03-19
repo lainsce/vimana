@@ -650,6 +650,9 @@ static void cogito_node_hover_state(CogitoNode* n, bool* out_hover, bool* out_ac
   *out_active = false;
   if (!n) return;
   if (n->disabled) return;
+  // When a menu overlay is open, suppress hover on all nodes except the menu owner
+  if (cogito_menu.open && n != cogito_menu.owner) return;
+  if (cogito_fab_menu_open_node && n != cogito_fab_menu_open_node) return;
   double now = cogito_now();
   double latch_seconds = (double)COGITO_ACTIVE_LATCH_MS / 1000.0;
   if (cogito_pointer_capture) {

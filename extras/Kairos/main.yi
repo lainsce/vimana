@@ -1001,6 +1001,8 @@ def status_text = cogito.label("Add a location to start")
     let app = cogito.app()
     .set_appid("com.fyralabs.Kairos")
     .set_app_name("Kairos")
+    .set_icon("com.fyralabs.Kairos.svg")
+    .set_mono_icon("com.fyralabs.Kairos-symbolic.svg")
     .set_accent_color("#8DB4D7", true)
 
     line_chart.set_colors(temp_chart, "#8DB4D7", "#8DB4D7", "#8DB4D7", "#8DB4D780")
@@ -1029,6 +1031,7 @@ def status_text = cogito.label("Add a location to start")
     root.add(_build_sidebar(win))
     root.add(_build_content_panel(win))
 
+    win.add(cogito.window_bar())
     win.add(root)
 
     win.on_resize((node = any) => {

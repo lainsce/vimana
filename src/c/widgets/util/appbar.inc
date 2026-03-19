@@ -357,7 +357,19 @@ static void cogito_appbar_row_positions(
   int btn_pad_right = 15;
   cogito_appbar_button_metrics(&btn_size, &btn_gap, &btn_pad_top, &btn_pad_right);
   int appbar_type = cogito_appbar_type(n);
-  int nav_top_inset = n->y + n->padding_top + btn_pad_top + btn_size + btn_pad_top;
+  bool has_window_bar = false;
+  {
+    CogitoNode* win = cogito_node_window(n);
+    if (win) {
+      for (size_t i = 0; i < win->len; i++) {
+        if (win->children[i] && win->children[i]->kind == COGITO_WINDOW_BAR) {
+          has_window_bar = true;
+          break;
+        }
+      }
+    }
+  }
+  int nav_top_inset = has_window_bar ? (n->y + 6) : (n->y + n->padding_top + btn_pad_top + btn_size + btn_pad_top);
   bool has_actual_height = n->h > 0;
   int node_top = n->y + n->padding_top;
   int node_bottom = has_actual_height ? (n->y + n->h - n->padding_bottom) : 0;
@@ -419,7 +431,7 @@ static void cogito_appbar_row_positions(
     subtitle_h = cogito_text_height_size(subtitle_size);
   }
 
-  int y_buttons = n->y + btn_pad_top;
+  int y_buttons = has_window_bar ? (n->y + 6) : (n->y + btn_pad_top);
   if (y_buttons < nav_top_inset) y_buttons = nav_top_inset;
   if (has_actual_height) {
     int max_buttons_y = node_bottom - btn_size;

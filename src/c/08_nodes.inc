@@ -408,6 +408,7 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
     case COGITO_TOOLBAR: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoToolbarData)); break;
     case COGITO_BUTTON_GROUP: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoButtonGroupData)); break;
     case COGITO_CARD: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoCardData)); break;
+    case COGITO_WINDOW_BAR: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoWindowBarData)); break;
     default: break;
   }
   cogito_apply_style_to_node(n);
@@ -464,6 +465,7 @@ static const char* cogito_node_default_a11y_role(CogitoKind kind) {
     case COGITO_TREEVIEW: return "tree";
     case COGITO_TOOLBAR:
     case COGITO_APPBAR:
+    case COGITO_WINDOW_BAR:
       return "toolbar";
     case COGITO_LABEL:
     case COGITO_BADGE:
@@ -935,6 +937,8 @@ static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
     #include "widgets/intrinsic/hstack.inc"
 
     #include "widgets/intrinsic/window.inc"
+
+    #include "widgets/intrinsic/window_bar.inc"
 
     case COGITO_KIND_COUNT:
       break;

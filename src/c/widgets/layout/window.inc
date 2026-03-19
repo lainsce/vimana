@@ -221,11 +221,21 @@ static void cogito_layout_window(CogitoNode* win) {
   int toolbar_reserved_h = 0;
   int nav_rail_w = 0;
   int bottom_nav_h = 0;
+  int window_bar_h = 0;
   bool toolbar_floating = false;
   CogitoNode* appbar = NULL;
   CogitoNode* toolbar = NULL;
   CogitoNode* nav_rail = NULL;
   CogitoNode* bottom_nav = NULL;
+  CogitoNode* window_bar = NULL;
+  for (size_t i = 0; i < win->len; i++) {
+    CogitoNode* c = win->children[i];
+    if (!c || cogito_node_is_hidden(c)) continue;
+    if (c->kind == COGITO_WINDOW_BAR) {
+      window_bar = win->children[i];
+      break;
+    }
+  }
   for (size_t i = 0; i < win->len; i++) {
     CogitoNode* c = win->children[i];
     if (!c || cogito_node_is_hidden(c)) continue;
@@ -258,9 +268,14 @@ static void cogito_layout_window(CogitoNode* win) {
       break;
     }
   }
+  if (window_bar) {
+    cogito_intrinsic_size(window_bar, NULL, &window_bar_h);
+    cogito_layout_node(window_bar, 0, 0, win->w, window_bar_h);
+    cy += window_bar_h;
+  }
   if (appbar) {
     cogito_intrinsic_size(appbar, NULL, &appbar_h);
-    cogito_layout_node(appbar, 0, 0, win->w, appbar_h);
+    cogito_layout_node(appbar, 0, window_bar_h, win->w, appbar_h);
     cy += appbar_h;
   }
   if (toolbar) {
@@ -277,7 +292,7 @@ static void cogito_layout_window(CogitoNode* win) {
       cogito_intrinsic_size(toolbar, &toolbar_w, NULL);
       if (toolbar_w < 1) toolbar_w = 56;  // Default width for vertical toolbar
       tx = win->w - toolbar_w - COGITO_TOOLBAR_VERTICAL_RIGHT_MARGIN;
-      ty = appbar ? appbar_h : 0;
+      ty = window_bar_h + (appbar ? appbar_h : 0);
       tw = toolbar_w;
       toolbar_h = win->h - ty;
       if (toolbar_h < 0) toolbar_h = 0;
@@ -299,7 +314,7 @@ static void cogito_layout_window(CogitoNode* win) {
   }
   if (nav_rail) {
     cogito_intrinsic_size(nav_rail, &nav_rail_w, NULL);
-    int rail_y = appbar ? appbar_h : 0;
+    int rail_y = window_bar_h + (appbar ? appbar_h : 0);
     int rail_h = win->h - rail_y;
     if (toolbar) rail_h -= toolbar_reserved_h;
     if (bottom_nav && !cogito_node_is_hidden(bottom_nav)) rail_h -= 80;  // Reserve space for bottom nav
@@ -327,6 +342,7 @@ static void cogito_layout_window(CogitoNode* win) {
   int avail_w = win->w - win->padding_left - win->padding_right;
   int avail_h = win->h - win->padding_top - win->padding_bottom;
   if (appbar) avail_h -= appbar_h + appbar_gap;
+  if (window_bar) avail_h -= window_bar_h;
   if (toolbar && !toolbar_vertical) avail_h -= toolbar_reserved_h + toolbar_gap;
   if (bottom_nav) avail_h -= bottom_nav_h;
   if (nav_rail) avail_w -= nav_rail_w;
@@ -340,20 +356,20 @@ static void cogito_layout_window(CogitoNode* win) {
   }
   if (avail_w < 0) avail_w = 0;
   if (avail_h < 0) avail_h = 0;
-  int content_y = win->padding_top + appbar_h + appbar_gap;
+  int content_y = win->padding_top + window_bar_h + appbar_h + appbar_gap;
 
   size_t content_child_count = 0;
   for (size_t i = 0; i < win->len; i++) {
     CogitoNode* c = win->children[i];
     if (!c || cogito_node_is_hidden(c)) continue;
-    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR || c->kind == COGITO_NAV_RAIL || c->kind == COGITO_BOTTOM_NAV) continue;
+    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR || c->kind == COGITO_NAV_RAIL || c->kind == COGITO_BOTTOM_NAV || c->kind == COGITO_WINDOW_BAR) continue;
     content_child_count++;
   }
 
   for (size_t i = 0; i < win->len; i++) {
     CogitoNode* c = win->children[i];
     if (!c || cogito_node_is_hidden(c)) continue;
-    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR || c->kind == COGITO_NAV_RAIL || c->kind == COGITO_BOTTOM_NAV) continue;
+    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR || c->kind == COGITO_NAV_RAIL || c->kind == COGITO_BOTTOM_NAV || c->kind == COGITO_WINDOW_BAR) continue;
 
     int cw = 0;
     int ch = 0;
@@ -465,11 +481,20 @@ int max_w = win->padding_left;
   int toolbar_h = 0;
   int toolbar_reserved_h = 0;
   int toolbar_vertical_w = 0;
+  int window_bar_h = 0;
   int sidebar_w = 0;
   // Check if there's a sidebar side sheet and get its width
   if (win->side_sheet_open && win->side_sheet_node && 
       win->side_sheet_node->kd->side_sheet.mode == COGITO_SIDE_SHEET_SIDEBAR) {
       cogito_intrinsic_size(win->side_sheet_node, &sidebar_w, NULL);
+  }
+  for (size_t i = 0; i < win->len; i++) {
+    CogitoNode* c = win->children[i];
+    if (!c || cogito_node_is_hidden(c)) continue;
+    if (c->kind == COGITO_WINDOW_BAR) {
+      cogito_intrinsic_size(c, NULL, &window_bar_h);
+      break;
+    }
   }
   for (size_t i = 0; i < win->len; i++) {
     CogitoNode* c = win->children[i];
@@ -500,6 +525,7 @@ int max_w = win->padding_left;
       break;
     }
   }
+  if (window_bar_h > 0) cy += window_bar_h;
   if (appbar_h > 0) cy += appbar_h;
   if (toolbar_reserved_h > 0) cy += toolbar_reserved_h;
   // Check if any child wants to expand
@@ -507,7 +533,7 @@ int max_w = win->padding_left;
   for (size_t i = 0; i < win->len; i++) {
     CogitoNode* c = win->children[i];
     if (!c || cogito_node_is_hidden(c)) continue;
-    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR) continue;
+    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR || c->kind == COGITO_WINDOW_BAR) continue;
     if (c->vexpand) {
       has_vexpanding_child = true;
       break;
@@ -518,7 +544,7 @@ int max_w = win->padding_left;
   for (size_t i = 0; i < win->len; i++) {
     CogitoNode* c = win->children[i];
     if (!c || cogito_node_is_hidden(c)) continue;
-    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR) continue;
+    if (c->kind == COGITO_APPBAR || c->kind == COGITO_TOOLBAR || c->kind == COGITO_WINDOW_BAR) continue;
     int cw = 0;
     int ch = 0;
     cogito_intrinsic_size(c, &cw, &ch);

@@ -203,6 +203,9 @@ typedef struct CogitoBackend {
 
   // Debug
   void (*set_debug_overlay)(CogitoWindow *window, bool enable);
+
+  // Screenshot (save window to BMP in user's Pictures/Desktop directory)
+  void (*window_screenshot)(CogitoWindow *window);
 } CogitoBackend;
 
 // ============================================================================

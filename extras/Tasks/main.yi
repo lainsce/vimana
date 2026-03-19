@@ -300,6 +300,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         show_about_window(win)
     })
+    win.add(cogito.window_bar())
     win.add(bar)
 
     win.add(build_main_content())
@@ -335,6 +336,8 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     let app = cogito.app()
     .set_appid("com.fyralabs.Tasks")
     .set_app_name("Tasks")
+    .set_icon("com.fyralabs.Tasks.svg")
+    .set_mono_icon("com.fyralabs.Tasks-symbolic.svg")
     .set_accent_color("#008888", false)
 
     cogito.load_sum("tasks.sum")

@@ -709,6 +709,14 @@ static void __cogito_app_set_icon(YisVal appv, YisVal pathv) {
   if (tmp) yis_release_val(YV_STR(tmp));
 }
 
+static void __cogito_app_set_mono_icon(YisVal appv, YisVal pathv) {
+  cogito_app* app = cogito_app_from_val(appv);
+  YisStr* tmp = NULL;
+  const char* path = cogito_optional_cstr(pathv, &tmp);
+  if (path) cogito_app_set_mono_icon(app, path);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
 static void __cogito_app_set_baseline_font(YisVal appv, YisVal pathv) {
   cogito_app* app = cogito_app_from_val(appv);
   YisStr* tmp = NULL;
@@ -2250,6 +2258,11 @@ static YisVal __cogito_toast(YisVal textv) {
 
 static YisVal __cogito_toolbar(void) {
   cogito_node* n = cogito_toolbar_new();
+  return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+
+static YisVal __cogito_window_bar(void) {
+  cogito_node* n = cogito_window_bar_new();
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
 }
 
@@ -3982,6 +3995,7 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_toast_new __cogito_toast
 #define cogito_appbar_new __cogito_appbar
 #define cogito_toolbar_new __cogito_toolbar
+#define cogito_window_bar_new __cogito_window_bar
 #define cogito_vstack_new __cogito_vstack
 #define cogito_hstack_new __cogito_hstack
 #define cogito_zstack_new __cogito_zstack

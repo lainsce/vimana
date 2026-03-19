@@ -17,7 +17,13 @@ case COGITO_APPBAR: {
         int controls_w = win ? win->w : w;
         cogito_appbar_controls_positions(n, controls_x, controls_w, btn_size, btn_gap, controls_edge_pad, allow_max,
                                          &n->kd->appbar.btn_close_x, &n->kd->appbar.btn_min_x, &n->kd->appbar.btn_max_x);
-        n->kd->appbar.btn_y = (win ? win->y : y) + controls_top_pad;
+        CogitoNode* wb = cogito_find_window_bar(win);
+        if (wb && wb->h > 0) {
+          // Center traffic lights vertically in the WindowBar
+          n->kd->appbar.btn_y = (win ? win->y : 0) + (wb->h - btn_size) / 2;
+        } else {
+          n->kd->appbar.btn_y = (win ? win->y : y) + controls_top_pad;
+        }
       } else {
         // Other appbars don't show traffic lights
         n->kd->appbar.btn_close_x = -1;

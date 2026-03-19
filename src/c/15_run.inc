@@ -404,14 +404,30 @@ static CogitoNode* cogito_focus_scope_root(CogitoNode* win) {
 static bool cogito_menu_keyboard_handle(void) {
   if (!cogito_menu.open || !cogito_menu.owner || cogito_menu.owner->menu_len == 0) return false;
   int len = (int)cogito_menu.owner->menu_len;
+
+  // Detect if any navigation key was pressed
+  bool nav_up    = cogito_backend->is_key_pressed(SDL_SCANCODE_UP);
+  bool nav_down  = cogito_backend->is_key_pressed(SDL_SCANCODE_DOWN);
+  bool nav_home  = cogito_backend->is_key_pressed(SDL_SCANCODE_HOME);
+  bool nav_end   = cogito_backend->is_key_pressed(SDL_SCANCODE_END);
+  bool nav_tab   = cogito_backend->is_key_pressed(SDL_SCANCODE_TAB);
+  bool nav_any   = nav_up || nav_down || nav_home || nav_end || nav_tab;
+
+  // Don't activate keyboard focus until a navigation key is pressed
+  if (cogito_menu_kbd_index < 0 && !nav_any) {
+    // Check for Enter/Space on no selection — ignore
+    return false;
+  }
+
+  // First navigation key activates focus on item 0
   if (cogito_menu_kbd_index < 0 || cogito_menu_kbd_index >= len) cogito_menu_kbd_index = 0;
 
   int next = cogito_menu_kbd_index;
-  if (cogito_backend->is_key_pressed(SDL_SCANCODE_UP)) next--;
-  else if (cogito_backend->is_key_pressed(SDL_SCANCODE_DOWN)) next++;
-  else if (cogito_backend->is_key_pressed(SDL_SCANCODE_HOME)) next = 0;
-  else if (cogito_backend->is_key_pressed(SDL_SCANCODE_END)) next = len - 1;
-  else if (cogito_backend->is_key_pressed(SDL_SCANCODE_TAB)) {
+  if (nav_up) next--;
+  else if (nav_down) next++;
+  else if (nav_home) next = 0;
+  else if (nav_end) next = len - 1;
+  else if (nav_tab) {
     bool reverse = cogito_backend->is_key_down(SDL_SCANCODE_LSHIFT) || cogito_backend->is_key_down(SDL_SCANCODE_RSHIFT);
     next += reverse ? -1 : 1;
   }
@@ -1073,6 +1089,38 @@ static void cogito_run(YisVal appv, YisVal winv) {
         inspector_drag_active = false;
       }
     }
+    // Deferred inspector window management: handle toggles from menu actions
+    if (cogito_inspector_open && !inspector_window) {
+      inspector_window = cogito_backend->window_create(
+        "Inspector",
+        inspector_w + inspector_shadow_margin * 2,
+        inspector_h + inspector_shadow_margin * 2,
+        true, true, false
+      );
+      if (inspector_window) {
+        cogito_backend->window_show(inspector_window);
+        if (cogito_backend->window_set_hit_test_callback) {
+          cogito_backend->window_set_hit_test_callback(inspector_window, cogito_inspector_hit_test, (void*)inspector_hit_test_params);
+          inspector_native_drag = true;
+        }
+#if defined(__APPLE__)
+        cogito_macos_set_window_shadow(inspector_window, true);
+#endif
+      } else {
+        cogito_inspector_open = false;
+      }
+      if (cogito_inspector_open && !cogito_inspector_selected) cogito_inspector_selected = win;
+    } else if (!cogito_inspector_open && inspector_window) {
+      cogito_backend->window_destroy(inspector_window);
+      inspector_window = NULL;
+      if (inspector_hit_test_params) {
+        free(inspector_hit_test_params);
+        inspector_hit_test_params = NULL;
+      }
+      inspector_native_drag = false;
+      inspector_drag_pending = false;
+      inspector_drag_active = false;
+    }
     // Get window size
     int sw, sh;
     bool window_resized = false;
@@ -1111,6 +1159,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
     float wheel = cogito_backend->get_mouse_wheel_move();
     bool left_down = cogito_backend->is_mouse_button_down(0);
     bool left_pressed = cogito_backend->is_mouse_button_pressed(0);
+    bool right_pressed = cogito_backend->is_mouse_button_pressed(2);
     bool left_released = cogito_backend->is_mouse_button_released(0);
     if (!left_down) {
       appbar_drag_swallow = false;
@@ -2294,6 +2343,27 @@ static void cogito_run(YisVal appv, YisVal winv) {
     if (click && !route_main_pointer) {
       click = false;
     }
+    // Right-click on WindowBar opens its context menu
+    if (right_pressed && !cogito_menu.open) {
+      CogitoNode* wb = cogito_find_window_bar(win);
+      if (wb && cogito_hit_node(wb, mx, my)) {
+        cogito_menu_open_for(wb);
+      }
+    }
+    // Left-click on WindowBar AppMenu button opens the menu
+    if (click && !cogito_menu.open) {
+      CogitoNode* wb = cogito_find_window_bar(win);
+      if (wb && wb->kd) {
+        int amx = wb->kd->window_bar.appmenu_x;
+        int amy = wb->kd->window_bar.appmenu_y;
+        int amw = wb->kd->window_bar.appmenu_w;
+        int amh = wb->kd->window_bar.appmenu_h;
+        if (mx >= amx && mx <= amx + amw && my >= amy && my <= amy + amh) {
+          cogito_menu_open_for(wb);
+          click = false; // consume the click
+        }
+      }
+    }
     if (click) {
       cogito_theme_mark_action_origin(mx, my);
       static int cogito_debug_hit = -1;
@@ -2405,6 +2475,22 @@ static void cogito_run(YisVal appv, YisVal winv) {
             cogito_drag_last_move = 0.0;
 #endif
             handled = true; // Mark as handled to skip clickable search
+          }
+        }
+        // Check if click is on the WindowBar for dragging
+        if (!handled && !active_dialog) {
+          CogitoNode* wb = cogito_find_window_bar(win);
+          if (wb && cogito_hit_node(wb, mx, my)) {
+            appbar_drag_swallow = true;
+#if defined(__APPLE__)
+            cogito_macos_drag_window();
+#else
+            cogito_drag_pending = true;
+            cogito_drag_pending_mouse.x = (float)mx;
+            cogito_drag_pending_mouse.y = (float)my;
+            cogito_drag_last_move = 0.0;
+#endif
+            handled = true;
           }
         }
         if (!handled && active_dialog) {
@@ -3098,7 +3184,11 @@ static void cogito_run(YisVal appv, YisVal winv) {
     cogito_tooltip_hovered = NULL;
     cogito_draw_node(win);
     cogito_draw_focus_ring();
-    if (cogito_menu.open) cogito_draw_menu();
+    if (cogito_menu.open) {
+      cogito_menu_draw_active = true;
+      cogito_draw_menu();
+      cogito_menu_draw_active = false;
+    }
     if (cogito_inspector_open) {
       cogito_draw_inspector_highlight();
       if (!inspector_window) {

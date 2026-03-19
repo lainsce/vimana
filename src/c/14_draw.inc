@@ -1788,6 +1788,7 @@ static void cogito_draw_node(CogitoNode* n) {
     #include "widgets/draw/about_window.inc"
     #include "widgets/draw/split_button.inc"
     #include "widgets/draw/buttongroup.inc"
+    #include "widgets/draw/window_bar.inc"
     case COGITO_KIND_COUNT:
       break;
   }

@@ -81,6 +81,7 @@ bring widgets.article_row
     )
     main_content.add(detail_panel_widget)
 
+    win.add(cogito.window_bar())
     win.add(main_content)
     <- back_btn
 ;
