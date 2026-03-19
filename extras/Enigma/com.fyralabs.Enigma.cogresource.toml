@@ -1,0 +1,8 @@
+[cogresource]
+prefix = "/com/fyralabs/Enigma"
+
+[[cogresource.file]]
+src = "com.fyralabs.Enigma.svg"
+
+[[cogresource.file]]
+src = "com.fyralabs.Enigma-symbolic.svg"

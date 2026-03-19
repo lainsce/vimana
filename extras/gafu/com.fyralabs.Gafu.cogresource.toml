@@ -1,0 +1,8 @@
+[cogresource]
+prefix = "/com/fyralabs/Gafu"
+
+[[cogresource.file]]
+src = "com.fyralabs.Gafu.svg"
+
+[[cogresource.file]]
+src = "com.fyralabs.Gafu-symbolic.svg"

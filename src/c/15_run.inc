@@ -508,6 +508,10 @@ static inline double cogito_startup_now(void) {
   return 0.0;
 }
 
+#if defined(__APPLE__)
+extern bool cogito_macos_set_dock_icon(const char *path);
+#endif
+
 static bool cogito_apply_window_icon(CogitoWindow* window, CogitoApp* app) {
   if (!window || !cogito_backend || !cogito_backend->window_set_icon) return false;
 
@@ -536,6 +540,11 @@ static bool cogito_apply_window_icon(CogitoWindow* window, CogitoApp* app) {
       }
     }
   }
+#if defined(__APPLE__)
+  if (icon_set) {
+    cogito_macos_set_dock_icon(resolved_icon);
+  }
+#endif
   return icon_set;
 }
 

@@ -1,0 +1,8 @@
+[cogresource]
+prefix = "/io/github/lainsce/Quilter"
+
+[[cogresource.file]]
+src = "io.github.lainsce.Quilter.svg"
+
+[[cogresource.file]]
+src = "io.github.lainsce.Quilter-symbolic.svg"

@@ -3,3 +3,6 @@ prefix = "/com/fyralabs/Corpus"
 
 [[cogresource.file]]
 src = "com.fyralabs.Corpus.svg"
+
+[[cogresource.file]]
+src = "com.fyralabs.Corpus-symbolic.svg"

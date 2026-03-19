@@ -3,3 +3,6 @@ prefix = "/com/fyralabs/Fortnightly"
 
 [[cogresource.file]]
 src = "com.fyralabs.Fortnightly.svg"
+
+[[cogresource.file]]
+src = "com.fyralabs.Fortnightly-symbolic.svg"

@@ -148,6 +148,30 @@ find_icon_svg() {
   return 1
 }
 
+find_mono_icon_svg() {
+  src_dir=$(dirname_path "$entry_path")
+  cand="$src_dir/$app_name-symbolic.svg"
+  if [ -f "$cand" ]; then
+    printf '%s' "$cand"
+    return 0
+  fi
+
+  stem=$(stem_name "$entry_path")
+  cand="$src_dir/$stem-symbolic.svg"
+  if [ -f "$cand" ]; then
+    printf '%s' "$cand"
+    return 0
+  fi
+
+  cand="$src_dir/icon-symbolic.svg"
+  if [ -f "$cand" ]; then
+    printf '%s' "$cand"
+    return 0
+  fi
+
+  return 1
+}
+
 insert_macos_icon_key() {
   plist=$1
   icon_file=$2
@@ -239,16 +263,25 @@ package_macos() {
     cp -f "$sum_file" "$resources_dir/" || true
   done
 
-  icon_svg=$(find_icon_svg) || return 0
-  if make_macos_icns "$icon_svg" "$resources_dir" "$app_name"; then
-    insert_macos_icon_key "$plist" "$app_name.icns" || true
-  else
-    printf '%s\n' "warning: Cogito packager failed to generate macOS icon from $icon_svg" >&2
+  icon_svg=$(find_icon_svg) || true
+  if [ -n "$icon_svg" ]; then
+    if make_macos_icns "$icon_svg" "$resources_dir" "$app_name"; then
+      insert_macos_icon_key "$plist" "$app_name.icns" || true
+    else
+      printf '%s\n' "warning: Cogito packager failed to generate macOS icon from $icon_svg" >&2
+    fi
+  fi
+
+  # Copy mono/symbolic icon to Resources if present
+  mono_svg=$(find_mono_icon_svg) || true
+  if [ -n "$mono_svg" ]; then
+    mkdir -p "$resources_dir"
+    cp -f "$mono_svg" "$resources_dir/" || true
   fi
 }
 
 package_linux() {
-  icon_svg=$(find_icon_svg) || return 0
+  icon_svg=$(find_icon_svg) || true
   abs_out=$(abs_path "$out_path")
   out_dir=$(dirname_path "$abs_out")
   icon_dst="$out_dir/$app_name.svg"
@@ -258,7 +291,15 @@ package_linux() {
     display_name=$app_name
   fi
 
-  cp -f "$icon_svg" "$icon_dst" || return 1
+  if [ -n "$icon_svg" ]; then
+    cp -f "$icon_svg" "$icon_dst" || return 1
+  fi
+
+  # Copy mono/symbolic icon if present
+  mono_svg=$(find_mono_icon_svg) || true
+  if [ -n "$mono_svg" ]; then
+    cp -f "$mono_svg" "$out_dir/" || true
+  fi
   cat > "$desktop_path" <<EOF
 [Desktop Entry]
 Type=Application

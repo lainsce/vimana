@@ -1,0 +1,8 @@
+[cogresource]
+prefix = "/com/fyralabs/Tasks"
+
+[[cogresource.file]]
+src = "com.fyralabs.Tasks.svg"
+
+[[cogresource.file]]
+src = "com.fyralabs.Tasks-symbolic.svg"

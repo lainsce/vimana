@@ -3,3 +3,6 @@ prefix = "/com/fyralabs/Kairos"
 
 [[cogresource.file]]
 src = "com.fyralabs.Kairos.svg"
+
+[[cogresource.file]]
+src = "com.fyralabs.Kairos-symbolic.svg"
