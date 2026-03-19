@@ -1160,11 +1160,11 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
           }
         }
       }
-    } else if (n->kind == COGITO_LABEL || n->kind == COGITO_BUTTON) {
+    } else if (n->kind == COGITO_LABEL || n->kind == COGITO_BUTTON || n->kind == COGITO_TEXTFIELD) {
       n->font_size = s.font_size;
       n->font_size_set = true;
     }
-  } else if (n->kind == COGITO_LABEL || n->kind == COGITO_BUTTON) {
+  } else if (n->kind == COGITO_LABEL || n->kind == COGITO_BUTTON || n->kind == COGITO_TEXTFIELD) {
     n->font_size_set = false;
   }
 

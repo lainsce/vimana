@@ -22,9 +22,29 @@ case COGITO_ZSTACK: {
 					cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, n->border_color, n->border_radius, n->border_width);
 				}
 			}
-			for (size_t i = 0; i < n->len; i++) {
-				cogito_draw_node(n->children[i]);
+			// Check if any child is a visible sheet overlay (modal)
+			bool zstack_has_sheet = false;
+			for (size_t i = n->len; i > 0; i--) {
+				CogitoNode* c = n->children[i - 1];
+				if (c && (c->kind == COGITO_BOTTOM_SHEET || c->kind == COGITO_SIDE_SHEET)) {
+					zstack_has_sheet = true;
+					break;
+				}
 			}
+			bool saved_suppressed = cogito_hover_suppressed;
+			if (zstack_has_sheet) cogito_hover_suppressed = true;
+			for (size_t i = 0; i < n->len; i++) {
+				CogitoNode* c = n->children[i];
+				bool is_sheet = c && (c->kind == COGITO_BOTTOM_SHEET || c->kind == COGITO_SIDE_SHEET);
+				if (zstack_has_sheet && is_sheet) {
+					cogito_overlay_draw_active = true;
+					cogito_draw_node(c);
+					cogito_overlay_draw_active = false;
+				} else {
+					cogito_draw_node(c);
+				}
+			}
+			cogito_hover_suppressed = saved_suppressed;
 			break;
 		}
 

@@ -34,8 +34,9 @@ case COGITO_WINDOW_BAR:
     // Resolve on-surface color for text/icons
     CogitoColor on_surf = s.has_text ? s.text : cogito_on_color(bg);
     on_surf = cogito_bin_scope_remap_color(on_surf);
-    // Hover highlight on AppMenu area
-    bool am_hover = cogito_hit_rect_min48(cogito_main_pointer_x, cogito_main_pointer_y,
+    // Hover highlight on AppMenu area (suppressed during screenshot)
+    bool am_hover = !cogito_screenshot_pending &&
+                    cogito_hit_rect_min48(cogito_main_pointer_x, cogito_main_pointer_y,
                                           amx, amy, amw, amh);
     if (am_hover && !cogito_menu.open) {
       CogitoColor hover_bg = on_surf;

@@ -2300,6 +2300,20 @@ void cogito_card_set_header_image(cogito_node *card, const char *url) {
   cogito_window_relayout((cogito_window *)n);
 }
 
+cogito_node *cogito_card_get_overflow_btn(cogito_node *card) {
+  if (!card) return NULL;
+  CogitoNode *n = (CogitoNode *)card;
+  if (n->kind != COGITO_CARD) return NULL;
+  return (cogito_node *)n->kd->card.overflow_btn;
+}
+
+void cogito_card_set_overflow_btn(cogito_node *card, cogito_node *btn) {
+  if (!card) return;
+  CogitoNode *n = (CogitoNode *)card;
+  if (n->kind != COGITO_CARD) return;
+  n->kd->card.overflow_btn = (CogitoNode *)btn;
+}
+
 cogito_node *cogito_avatar_new(const char *text_or_icon) {
   YisVal tv = text_or_icon ? cogito_val_from_cstr(text_or_icon) : YV_NULLV;
   YisVal v = cogito_avatar_new_yis(tv);
@@ -4915,6 +4929,12 @@ void cogito_content_list_on_activate(cogito_node *list, cogito_index_fn fn,
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
   cogito_content_list_on_activate_yis(YV_OBJ(list), YV_FN(wrap));
   yis_release_val(YV_FN(wrap));
+}
+
+void cogito_content_list_set_visible_dividers(cogito_node *list, bool on) {
+  if (!list)
+    return;
+  ((CogitoNode *)list)->visible_dividers = on;
 }
 
 void cogito_grid_on_select(cogito_node *grid, cogito_index_fn fn, void *user) {

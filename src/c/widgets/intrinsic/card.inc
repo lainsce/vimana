@@ -2,7 +2,7 @@ case COGITO_CARD: {
   CogitoStyle s = cogito_theme_resolve_node(n);
   bool has_header_image = n->kd->card.header_image != NULL;
   int header_content_gap = has_header_image ? 24 : 0;
-  int default_pad = has_header_image ? 0 : 16;
+  int default_pad = has_header_image ? 0 : 24;
   int pad_l = s.has_padding_left ? s.padding_left : default_pad;
   int pad_t = s.has_padding_top ? s.padding_top : default_pad;
   int pad_r = s.has_padding_right ? s.padding_right : pad_l;
@@ -43,13 +43,6 @@ case COGITO_CARD: {
     content_h += ch + c->margin_top + c->margin_bottom;
     if (content_count > 0) content_h += gap;
     content_count++;
-  }
-
-  if (content_count > 0) {
-    int body_size = cogito_label_class_font_size(COGITO_LABEL_CLASS_CONTENT_SUBTITLE, 14);
-    int body_line_h = cogito_text_height_size(body_size);
-    int max_body_h = body_line_h * 5;
-    if (content_h > max_body_h) content_h = max_body_h;
   }
 
   int action_h = 0;
@@ -93,6 +86,9 @@ case COGITO_CARD: {
   h = img_h + (has_header_image ? header_content_gap : pad_t) + title_h + subtitle_h + content_h + action_h + pad_b;
   if (w < 200) w = 200;
   if (h < 60) h = 60;
+  // Generic code after switch adds n->padding_*, which overlaps style padding already included above
+  w -= n->padding_left + n->padding_right;
+  h -= n->padding_top + n->padding_bottom;
   break;
 }
 

@@ -1,4 +1,12 @@
 case COGITO_WINDOW: {
+      // Determine if any overlay is covering background content
+      cogito_hover_suppressed = (n->dialog_open) ||
+          (n->popover_open && n->popover) ||
+          (n->side_sheet_open && n->side_sheet_node) ||
+          (n->dialog && n->dialog->kind == COGITO_DIALOG_SLOT &&
+           n->dialog->dialog_open && n->dialog->dialog);
+      cogito_overlay_draw_active = false;
+
       bool hover = false;
       bool active = false;
       cogito_node_hover_state(n, &hover, &active);
@@ -50,7 +58,9 @@ case COGITO_WINDOW: {
       if (n->kind == COGITO_WINDOW && n->dialog) {
         if (n->dialog->kind == COGITO_DIALOG_SLOT) {
           cogito_dialog_slot_force_draw = true;
+          cogito_overlay_draw_active = true;
           cogito_draw_node(n->dialog);
+          cogito_overlay_draw_active = false;
           cogito_dialog_slot_force_draw = false;
         } else if (n->dialog_open || n->dialog->overlay_anim_active) {
           float p = cogito_overlay_anim_value(n->dialog, n->dialog_open);
@@ -59,6 +69,7 @@ case COGITO_WINDOW: {
           if (scrim.a == 0) scrim.a = 82;
           scrim.a = (uint8_t)lroundf((float)scrim.a * p);
           cogito_draw_rect(0, 0, n->w, n->h, scrim, 0);
+          cogito_overlay_draw_active = true;
           if (n->dialog->kind == COGITO_WELCOME_SCREEN) {
             cogito_draw_node(n->dialog);
           } else {
@@ -70,11 +81,14 @@ case COGITO_WINDOW: {
               if (can_clip) cogito_backend->end_scissor();
             }
           }
+          cogito_overlay_draw_active = false;
         }
       }
       // Draw popover on top if open
       if (n->kind == COGITO_WINDOW && n->popover_open && n->popover) {
+        cogito_overlay_draw_active = true;
         cogito_draw_node(n->popover);
+        cogito_overlay_draw_active = false;
       }
       // Draw side sheet on top if open
       if (n->kind == COGITO_WINDOW && (n->side_sheet_open || n->side_sheet_closing) && n->side_sheet_node) {
@@ -93,7 +107,9 @@ case COGITO_WINDOW: {
           slide_dx = (int)lroundf((1.0f - p) * (float)n->side_sheet_node->w);
         }
         if (slide_dx > 0) cogito_draw_offset_subtree(n->side_sheet_node, slide_dx, 0);
+        cogito_overlay_draw_active = true;
         cogito_draw_node(n->side_sheet_node);
+        cogito_overlay_draw_active = false;
         if (slide_dx > 0) cogito_draw_offset_subtree(n->side_sheet_node, -slide_dx, 0);
         if (n->side_sheet_closing && !n->side_sheet_node->overlay_anim_active) {
           n->side_sheet_closing = false;
@@ -101,10 +117,14 @@ case COGITO_WINDOW: {
         }
       }
       // Draw toasts in a final overlay pass so they are never clipped by containers.
+      cogito_overlay_draw_active = true;
       cogito_draw_toasts_overlay(n);
+      cogito_overlay_draw_active = false;
       // Draw FAB Menus in a final overlay pass so they always float above all content.
       cogito_draw_fab_overlay(n);
       // Draw appbar traffic lights last so window controls always overlay everything.
       cogito_draw_appbar_traffic_overlay(n);
+      cogito_hover_suppressed = false;
+      cogito_overlay_draw_active = false;
       break;
 }

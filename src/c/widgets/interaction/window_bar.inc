@@ -32,9 +32,10 @@ enum {
 
 static void cogito_window_bar_screenshot(CogitoNode* win_node) {
   if (!win_node || !cogito_backend || !cogito_active_backend_window) return;
-  CogitoWindow* bw = cogito_active_backend_window;
-  if (cogito_backend->window_screenshot)
-    cogito_backend->window_screenshot(bw);
+  // Defer the actual capture to the next frame so the screenshot shows
+  // the clean window without the menu overlay or AppMenu hover highlight.
+  // The menu is closed by the caller (cogito_menu_close after invoke_menu).
+  cogito_screenshot_pending = true;
 }
 
 static void cogito_window_bar_invoke_menu(CogitoNode* n, size_t idx) {

@@ -1053,14 +1053,19 @@ static void __cogito_card_add_action(YisVal cardv, YisVal btnv) {
 
 static void __cogito_card_add_overflow(YisVal cardv, YisVal labelv, YisVal handler) {
   cogito_node* card = cogito_node_from_val(cardv);
-  // Use public API to create icon button
-  YisStr* icon_str = stdr_str_lit("sf:ellipsis");
-  YisStr* tmp = NULL;
-  const char* icon = cogito_required_cstr(YV_STR(icon_str), &tmp);
-  cogito_node* btn = cogito_iconbtn_new(icon);
-  yis_release_val(YV_STR(icon_str));
-  // Add to card using public API
-  cogito_node_add(card, btn);
+  // Reuse existing overflow button if already created
+  cogito_node* btn = cogito_card_get_overflow_btn(card);
+  if (!btn) {
+    YisStr* icon_str = stdr_str_lit("sf:ellipsis");
+    YisStr* tmp = NULL;
+    const char* icon = cogito_required_cstr(YV_STR(icon_str), &tmp);
+    btn = cogito_iconbtn_new(icon);
+    yis_release_val(YV_STR(icon_str));
+    cogito_iconbtn_set_size(btn, 0);
+    cogito_node_set_class(btn, "iconic");
+    cogito_card_set_overflow_btn(card, btn);
+    cogito_node_add(card, btn);
+  }
 
   YisStr* label_tmp = NULL;
   const char* label = cogito_required_cstr(labelv, &label_tmp);
@@ -1431,6 +1436,10 @@ static void __cogito_content_list_remove_at(YisVal listv, YisVal idxv) {
 static void __cogito_content_list_clear(YisVal listv) {
   cogito_node* n = cogito_node_from_val(listv);
   cogito_content_list_clear(n);
+}
+static void __cogito_content_list_set_visible_dividers(YisVal listv, YisVal onv) {
+  cogito_node* n = cogito_node_from_val(listv);
+  cogito_content_list_set_visible_dividers(n, yis_as_bool(onv));
 }
 // --- EmptyPage ---
 static YisVal __cogito_empty_page(YisVal titlev) {
@@ -4316,6 +4325,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_content_list_set_selected __cogito_content_list_set_selected
 #define cogito_content_list_remove_at __cogito_content_list_remove_at
 #define cogito_content_list_clear __cogito_content_list_clear
+#define cogito_content_list_set_visible_dividers __cogito_content_list_set_visible_dividers
 #define cogito_grid_set_cols __cogito_grid_set_cols
 #define cogito_grid_clear __cogito_grid_clear
 #define cogito_empty_page_new __cogito_empty_page

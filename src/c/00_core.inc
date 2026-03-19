@@ -1050,6 +1050,7 @@ typedef struct CogitoNode {
   bool disabled;
   bool hidden;
   bool adaptive_hidden;
+  bool visible_dividers;
   bool revealer_show_children;
   bool bin_accent_set;
   bool editable;
@@ -1350,6 +1351,9 @@ static CogitoMenu cogito_menu = {
 };
 static int cogito_menu_kbd_index = -1;
 static bool cogito_menu_draw_active = false; // true only while menu overlay is drawing
+static bool cogito_screenshot_pending = false; // true when screenshot should be taken after next clean render
+static bool cogito_overlay_draw_active = false; // true while dialog/popover/sheet overlay content is drawing
+static bool cogito_hover_suppressed = false;    // true when an overlay is covering background content
 static CogitoNode* cogito_fab_menu_open_node = NULL;
 static int cogito_fab_menu_kbd_index = -1;
 static CogitoFont* cogito_font = NULL;
@@ -1798,6 +1802,9 @@ static inline bool cogito_pointer_query(int* out_x, int* out_y,
   if (!cogito_backend) return false;
   // Suppress pointer for non-overlay code while a menu overlay is open
   if ((cogito_menu.open || cogito_fab_menu_open_node) && !cogito_menu_draw_active)
+    return false;
+  // Suppress pointer for non-overlay code while a dialog/popover/sheet is covering content
+  if (cogito_hover_suppressed && !cogito_overlay_draw_active)
     return false;
 
   int mx = 0;

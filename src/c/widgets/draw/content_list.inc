@@ -133,7 +133,7 @@ case COGITO_CONTENT_LIST: {
     }
 
     // Draw divider between items (not after last, not around selected items)
-    if (i + 1 < n->len && !is_selected && !(has_selection && (size_t)n->selected == i + 1)) {
+    if (n->visible_dividers && i + 1 < n->len && !is_selected && !(has_selection && (size_t)n->selected == i + 1)) {
       CogitoColor div_color = border_color;
       // Use outline_variant as fallback when no border color is set
       if (middle_style.has_border) {

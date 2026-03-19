@@ -1,7 +1,9 @@
 case COGITO_TEXTFIELD: {
       // Keep intrinsic size as outer size (including style padding).
+      int tf_font = cogito_node_font_size(n);
+      int tf_text_h = cogito_text_height_size(tf_font);
       int target_w = 160;
-      int target_h = 56;
+      int target_h = 16 + tf_text_h + 16;
       const char* hint = (n->hint && n->hint->data && n->hint->data[0]) ? n->hint->data : NULL;
       if (hint) {
         int hint_size = cogito_label_class_font_size(COGITO_LABEL_CLASS_CAPTION, 12);

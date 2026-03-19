@@ -79,7 +79,7 @@ case COGITO_CARD: {
   CogitoStyle ts = cogito_theme_resolve_node(n);
   bool has_header_image = n->kd->card.header_image != NULL;
   int header_content_gap = has_header_image ? 24 : 0;
-  int default_pad = has_header_image ? 0 : 16;
+  int default_pad = has_header_image ? 0 : 24;
   int pad_l = ts.has_padding_left ? ts.padding_left : default_pad;
   int pad_t = ts.has_padding_top  ? ts.padding_top  : default_pad;
   int cx    = n->x + pad_l;

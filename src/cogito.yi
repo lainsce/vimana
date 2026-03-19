@@ -121,6 +121,7 @@ bring stdr
 : __cogito_content_list_set_selected(list = ContentList, idx = num) (( -- )) { }
 : __cogito_content_list_remove_at(list = ContentList, idx = num) (( -- )) { }
 : __cogito_content_list_clear(list = ContentList) (( -- )) { }
+: __cogito_content_list_set_visible_dividers(list = ContentList, on = bool) (( -- )) { }
 : __cogito_datepicker_on_change(dp = DatePicker, handler = any) (( -- )) { }
 : __cogito_datepicker() (( DatePicker )) { }
 : __cogito_dialog_close(dialog = Dialog) (( -- )) { }
@@ -320,6 +321,8 @@ bring stdr
 : __cogito_buttongroup_get_shape(group = ButtonGroup) (( num )) { }
 : __cogito_buttongroup_set_connected(group = ButtonGroup, connected = bool) (( -- )) { }
 : __cogito_buttongroup_get_connected(group = ButtonGroup) (( bool )) { }
+: __cogito_buttongroup_set_selected(group = ButtonGroup, idx = num) (( -- )) { }
+: __cogito_buttongroup_get_selected(group = ButtonGroup) (( num )) { }
 : __cogito_node_set_flag(node = any, flag = num) (( -- )) { }
 : __cogito_node_clear_flag(node = any, flag = num) (( -- )) { }
 : __cogito_set_script_dir(dir = string) (( -- )) { }
@@ -2923,8 +2926,13 @@ pub ,: ButtonGroup : Component
         <- this
     ;
     :: set_items(this, items = [any]) (( ButtonGroup )) { <- this }
-    :: set_selected(this, idx = num) (( ButtonGroup )) { <- this }
-    :: selected(this) (( num )) { <- 0 }
+    :: set_selected(this, idx = num) (( ButtonGroup ))
+        __cogito_buttongroup_set_selected(this, idx)
+        <- this
+    ;
+    :: selected(this) (( num ))
+        <- __cogito_buttongroup_get_selected(this)
+    ;
     :: on_select(this, handler = any) (( ButtonGroup ))
         __cogito_buttongroup_on_select(this, handler)
         <- this
@@ -4876,6 +4884,10 @@ pub ,: ContentList : Component
     ;
     :: set_id(this, id = string) (( ContentList ))
         __cogito_node_set_id(this, id)
+        <- this
+    ;
+    :: set_visible_dividers(this, on = bool) (( ContentList ))
+        __cogito_content_list_set_visible_dividers(this, on)
         <- this
     ;
 ;

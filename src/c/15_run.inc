@@ -3228,6 +3228,11 @@ static void cogito_run(YisVal appv, YisVal winv) {
     }
     cogito_draw_set_clip(false, 0, 0, 0, 0);
     cogito_backend->end_frame(window);
+    if (cogito_screenshot_pending) {
+      cogito_screenshot_pending = false;
+      if (cogito_backend->window_screenshot)
+        cogito_backend->window_screenshot(window);
+    }
     cogito_backend->present(window);
     cogito_draw_clear_pending(win);
     // Animation deadline is time-based, no decrement needed

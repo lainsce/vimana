@@ -3150,27 +3150,146 @@ bool cogito_debug_inspector_toggle_pressed(CogitoBackend *backend) {
 // Screenshot
 // ============================================================================
 
+// Signed distance from point (px,py) to a rounded rectangle centered at
+// (cx,cy) with half-dimensions (hw,hh) and corner radius r.
+// Returns negative inside, positive outside.
+static float sdl3_sdf_roundrect(float px, float py,
+                                float cx, float cy,
+                                float hw, float hh, float r) {
+  float dx = fmaxf(fabsf(px - cx) - hw + r, 0.0f);
+  float dy = fmaxf(fabsf(py - cy) - hh + r, 0.0f);
+  return sqrtf(dx * dx + dy * dy) - r;
+}
+
 static void sdl3_window_screenshot(CogitoWindow *window) {
   if (!window) return;
   CogitoSDL3Window *win = (CogitoSDL3Window *)window;
   SDL_Renderer *renderer = win->renderer;
   if (!renderer) return;
 
-  SDL_Surface *surface = SDL_RenderReadPixels(renderer, NULL);
-  if (!surface) return;
+  SDL_Surface *raw = SDL_RenderReadPixels(renderer, NULL);
+  if (!raw) return;
 
-  // Build path: ~/Pictures/Screenshot_<timestamp>.bmp
+  int src_w = raw->w;
+  int src_h = raw->h;
+
+  // Determine pixel scale (Retina = 2x)
+  float scale = SDL_GetWindowDisplayScale(win->sdl_window);
+  if (scale < 1.0f) scale = 1.0f;
+
+  // macOS window corner radius = 10pt
+  float corner_r = 10.0f * scale;
+
+  // Shadow parameters (in surface pixels)
+  int pad = (int)(64.0f * scale);
+  float sigma = 24.0f * scale;
+  int shadow_off_y = (int)(8.0f * scale);
+  uint8_t shadow_max_a = 80; // ~31%
+
+  // Convert to RGBA32 for pixel manipulation
+  SDL_Surface *src = SDL_ConvertSurface(raw, SDL_PIXELFORMAT_RGBA32);
+  SDL_DestroySurface(raw);
+  if (!src) return;
+
+  // --- Apply rounded-corner mask to source surface ---
+  uint32_t *sp = (uint32_t *)src->pixels;
+  int sp_pitch = src->pitch / 4;
+  float half_w = src_w * 0.5f;
+  float half_h = src_h * 0.5f;
+  float cx = half_w;
+  float cy = half_h;
+
+  // Only process pixels in the corner regions (within corner_r of each corner)
+  int cr = (int)(corner_r + 2.0f); // +2 for AA band
+  for (int corner = 0; corner < 4; corner++) {
+    int x0 = (corner & 1) ? (src_w - cr) : 0;
+    int y0 = (corner & 2) ? (src_h - cr) : 0;
+    int x1 = (corner & 1) ? src_w : cr;
+    int y1 = (corner & 2) ? src_h : cr;
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 > src_w) x1 = src_w;
+    if (y1 > src_h) y1 = src_h;
+    for (int y = y0; y < y1; y++) {
+      for (int x = x0; x < x1; x++) {
+        float d = sdl3_sdf_roundrect((float)x + 0.5f, (float)y + 0.5f,
+                                     cx, cy, half_w, half_h, corner_r);
+        if (d > 0.5f) {
+          sp[y * sp_pitch + x] = 0; // fully outside → transparent
+        } else if (d > -0.5f) {
+          // AA band: scale alpha by coverage
+          float coverage = 0.5f - d;
+          uint32_t px = sp[y * sp_pitch + x];
+          uint8_t a = (px >> 24) & 0xFF;
+          a = (uint8_t)(a * coverage);
+          sp[y * sp_pitch + x] = (px & 0x00FFFFFF) | ((uint32_t)a << 24);
+        }
+      }
+    }
+  }
+
+  // --- Create output surface with padding for shadow ---
+  int out_w = src_w + pad * 2;
+  int out_h = src_h + pad * 2;
+  SDL_Surface *output = SDL_CreateSurface(out_w, out_h, SDL_PIXELFORMAT_RGBA32);
+  if (!output) { SDL_DestroySurface(src); return; }
+  SDL_memset(output->pixels, 0, (size_t)out_h * output->pitch);
+
+  // --- Render shadow via distance field ---
+  uint32_t *op = (uint32_t *)output->pixels;
+  int op_pitch = output->pitch / 4;
+  // Window rect center in output coordinates
+  float win_cx = (float)pad + half_w;
+  float win_cy = (float)pad + half_h;
+  float inv_sqrt2_sigma = 1.0f / (sigma * 1.4142135f);
+
+  for (int y = 0; y < out_h; y++) {
+    for (int x = 0; x < out_w; x++) {
+      // Shadow offset: shift shadow down
+      float py = (float)y - (float)shadow_off_y;
+      float d = sdl3_sdf_roundrect((float)x + 0.5f, py + 0.5f,
+                                   win_cx, win_cy, half_w, half_h, corner_r);
+      if (d > -sigma * 3.0f) {
+        // erfc-based Gaussian shadow: full inside, fading outside
+        float alpha_f = (float)shadow_max_a * 0.5f * erfcf(d * inv_sqrt2_sigma);
+        uint8_t a = (alpha_f > 255.0f) ? 255 : (uint8_t)(alpha_f + 0.5f);
+        if (a > 0) {
+          op[y * op_pitch + x] = (uint32_t)a << 24; // black with alpha
+        }
+      }
+    }
+  }
+
+  // --- Composite window surface onto output ---
+  // Use NONE to avoid blending AA corner pixels over the black shadow,
+  // which would produce dark fringing.  The shadow extends well beyond the
+  // window rect, so the tiny shadow sliver erased in the corner triangles
+  // is invisible in practice.
+  SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
+  SDL_Rect dst_rect = { pad, pad, src_w, src_h };
+  SDL_BlitSurface(src, NULL, output, &dst_rect);
+  SDL_DestroySurface(src);
+
+  // --- Save as PNG ---
   const char *home = getenv("HOME");
   if (!home) home = "/tmp";
   char path[512];
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
-  snprintf(path, sizeof(path), "%s/Pictures/Screenshot_%04d%02d%02d_%02d%02d%02d.bmp",
+  snprintf(path, sizeof(path), "%s/Pictures/Screenshot_%04d%02d%02d_%02d%02d%02d.png",
            home, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
            t->tm_hour, t->tm_min, t->tm_sec);
 
-  SDL_SaveBMP(surface, path);
-  SDL_DestroySurface(surface);
+#if defined(COGITO_HAS_SDL3_IMAGE)
+  IMG_SavePNG(output, path);
+#else
+  // Fallback: save as BMP (no transparency)
+  snprintf(path, sizeof(path), "%s/Pictures/Screenshot_%04d%02d%02d_%02d%02d%02d.bmp",
+           home, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+           t->tm_hour, t->tm_min, t->tm_sec);
+  SDL_SaveBMP(output, path);
+#endif
+  SDL_DestroySurface(output);
 }
 
 // ============================================================================
