@@ -3177,8 +3177,11 @@ static void sdl3_window_screenshot(CogitoWindow *window) {
   float scale = SDL_GetWindowDisplayScale(win->sdl_window);
   if (scale < 1.0f) scale = 1.0f;
 
-  // macOS window corner radius = 10pt
-  float corner_r = 10.0f * scale;
+  // Window corner radius = 18dp
+  float corner_r = 18.0f * scale;
+  // 1dp border stroke at 38% black
+  float border_w = 1.0f * scale;
+  uint8_t border_a = 97; // 38% of 255
 
   // Shadow parameters (in surface pixels)
   int pad = (int)(64.0f * scale);
@@ -3191,7 +3194,6 @@ static void sdl3_window_screenshot(CogitoWindow *window) {
   SDL_DestroySurface(raw);
   if (!src) return;
 
-  // --- Apply rounded-corner mask to source surface ---
   uint32_t *sp = (uint32_t *)src->pixels;
   int sp_pitch = src->pitch / 4;
   float half_w = src_w * 0.5f;
@@ -3199,31 +3201,35 @@ static void sdl3_window_screenshot(CogitoWindow *window) {
   float cx = half_w;
   float cy = half_h;
 
-  // Only process pixels in the corner regions (within corner_r of each corner)
-  int cr = (int)(corner_r + 2.0f); // +2 for AA band
-  for (int corner = 0; corner < 4; corner++) {
-    int x0 = (corner & 1) ? (src_w - cr) : 0;
-    int y0 = (corner & 2) ? (src_h - cr) : 0;
-    int x1 = (corner & 1) ? src_w : cr;
-    int y1 = (corner & 2) ? src_h : cr;
-    if (x0 < 0) x0 = 0;
-    if (y0 < 0) y0 = 0;
-    if (x1 > src_w) x1 = src_w;
-    if (y1 > src_h) y1 = src_h;
-    for (int y = y0; y < y1; y++) {
-      for (int x = x0; x < x1; x++) {
-        float d = sdl3_sdf_roundrect((float)x + 0.5f, (float)y + 0.5f,
-                                     cx, cy, half_w, half_h, corner_r);
-        if (d > 0.5f) {
-          sp[y * sp_pitch + x] = 0; // fully outside → transparent
-        } else if (d > -0.5f) {
-          // AA band: scale alpha by coverage
-          float coverage = 0.5f - d;
-          uint32_t px = sp[y * sp_pitch + x];
-          uint8_t a = (px >> 24) & 0xFF;
-          a = (uint8_t)(a * coverage);
-          sp[y * sp_pitch + x] = (px & 0x00FFFFFF) | ((uint32_t)a << 24);
-        }
+  // --- SDF-based alpha mask (full perimeter, not just corners) ---
+  // Non-transparent SDL windows have undefined alpha in the framebuffer.
+  // We set alpha from SDF coverage for edge/corner pixels and force 255
+  // for interior pixels.  A 1px inset ensures the outermost pixel ring
+  // transitions cleanly instead of showing the raw clear-color.
+  float inset = 1.0f; // pixels
+  float mask_hw = half_w - inset;
+  float mask_hh = half_h - inset;
+  // Band width: how far inside the SDF boundary we process edge pixels
+  int edge_band = (int)(corner_r + 3.0f);
+  for (int y = 0; y < src_h; y++) {
+    for (int x = 0; x < src_w; x++) {
+      // Skip deep-interior pixels (they only need alpha forced)
+      if (x >= edge_band && x < src_w - edge_band &&
+          y >= edge_band && y < src_h - edge_band) {
+        sp[y * sp_pitch + x] |= 0xFF000000;
+        continue;
+      }
+      float d = sdl3_sdf_roundrect((float)x + 0.5f, (float)y + 0.5f,
+                                   cx, cy, mask_hw, mask_hh, corner_r);
+      if (d > 0.5f) {
+        sp[y * sp_pitch + x] = 0; // fully outside → transparent black
+      } else if (d > -0.5f) {
+        float coverage = 0.5f - d;
+        uint32_t px = sp[y * sp_pitch + x];
+        uint8_t a = (uint8_t)(255.0f * coverage + 0.5f);
+        sp[y * sp_pitch + x] = (px & 0x00FFFFFF) | ((uint32_t)a << 24);
+      } else {
+        sp[y * sp_pitch + x] |= 0xFF000000;
       }
     }
   }
@@ -3238,19 +3244,16 @@ static void sdl3_window_screenshot(CogitoWindow *window) {
   // --- Render shadow via distance field ---
   uint32_t *op = (uint32_t *)output->pixels;
   int op_pitch = output->pitch / 4;
-  // Window rect center in output coordinates
   float win_cx = (float)pad + half_w;
   float win_cy = (float)pad + half_h;
   float inv_sqrt2_sigma = 1.0f / (sigma * 1.4142135f);
 
   for (int y = 0; y < out_h; y++) {
     for (int x = 0; x < out_w; x++) {
-      // Shadow offset: shift shadow down
       float py = (float)y - (float)shadow_off_y;
       float d = sdl3_sdf_roundrect((float)x + 0.5f, py + 0.5f,
-                                   win_cx, win_cy, half_w, half_h, corner_r);
+                                   win_cx, win_cy, mask_hw, mask_hh, corner_r);
       if (d > -sigma * 3.0f) {
-        // erfc-based Gaussian shadow: full inside, fading outside
         float alpha_f = (float)shadow_max_a * 0.5f * erfcf(d * inv_sqrt2_sigma);
         uint8_t a = (alpha_f > 255.0f) ? 255 : (uint8_t)(alpha_f + 0.5f);
         if (a > 0) {
@@ -3260,14 +3263,84 @@ static void sdl3_window_screenshot(CogitoWindow *window) {
     }
   }
 
-  // --- Composite window surface onto output ---
-  // Use NONE to avoid blending AA corner pixels over the black shadow,
-  // which would produce dark fringing.  The shadow extends well beyond the
-  // window rect, so the tiny shadow sliver erased in the corner triangles
-  // is invisible in practice.
-  SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
-  SDL_Rect dst_rect = { pad, pad, src_w, src_h };
-  SDL_BlitSurface(src, NULL, output, &dst_rect);
+  // --- Draw 1dp border stroke around the rounded window ---
+  // Rendered directly into the output surface before the window composite
+  // so only the exposed border ring (outside the opaque window) is visible.
+  for (int y = 0; y < src_h + (int)(border_w * 2 + 2); y++) {
+    for (int x = 0; x < src_w + (int)(border_w * 2 + 2); x++) {
+      int ox = pad - (int)(border_w + 1) + x;
+      int oy = pad - (int)(border_w + 1) + y;
+      if (ox < 0 || oy < 0 || ox >= out_w || oy >= out_h) continue;
+      float px = (float)x - (border_w + 1.0f) + 0.5f;
+      float py_b = (float)y - (border_w + 1.0f) + 0.5f;
+      float d = sdl3_sdf_roundrect(px, py_b, half_w, half_h,
+                                   mask_hw, mask_hh, corner_r);
+      // Ring: visible where d is between -border_w and 0 (the outer edge)
+      float ring = fmaxf(0.0f, fminf(d + border_w, 1.0f)) *
+                   fmaxf(0.0f, fminf(0.5f - d, 1.0f));
+      if (ring <= 0.0f) continue;
+      uint8_t ba = (uint8_t)((float)border_a * ring + 0.5f);
+      // Source-over: black(ba) onto existing pixel
+      uint32_t dpx = op[oy * op_pitch + ox];
+      uint8_t da = dpx >> 24;
+      if (da == 0) {
+        op[oy * op_pitch + ox] = (uint32_t)ba << 24;
+      } else {
+        float saf = ba * (1.0f / 255.0f);
+        float daf = da * (1.0f / 255.0f);
+        float oaf = saf + daf * (1.0f - saf);
+        uint8_t oa = (uint8_t)(oaf * 255.0f + 0.5f);
+        // Both src and dst are black, so RGB stays 0
+        uint32_t dr = dpx & 0xFF;
+        uint32_t dg = (dpx >> 8) & 0xFF;
+        uint32_t db = (dpx >> 16) & 0xFF;
+        float inv_oaf = (oaf > 0.0f) ? 1.0f / oaf : 0.0f;
+        uint8_t or2 = (uint8_t)(daf * (1.0f - saf) * inv_oaf * (float)dr + 0.5f);
+        uint8_t og2 = (uint8_t)(daf * (1.0f - saf) * inv_oaf * (float)dg + 0.5f);
+        uint8_t ob2 = (uint8_t)(daf * (1.0f - saf) * inv_oaf * (float)db + 0.5f);
+        op[oy * op_pitch + ox] = (uint32_t)or2 | ((uint32_t)og2 << 8) |
+                                  ((uint32_t)ob2 << 16) | ((uint32_t)oa << 24);
+      }
+    }
+  }
+
+  // --- Composite window over shadow + border (manual source-over) ---
+  for (int y = 0; y < src_h; y++) {
+    for (int x = 0; x < src_w; x++) {
+      uint32_t s = sp[y * sp_pitch + x];
+      uint8_t sa = s >> 24;
+      if (sa == 0) continue; // corner cutout → shadow shows through
+      int ox = x + pad;
+      int oy = y + pad;
+      if (sa == 255) {
+        // Opaque (vast majority of pixels) → direct overwrite
+        op[oy * op_pitch + ox] = s;
+        continue;
+      }
+      // Semi-transparent AA band: source-over composite in straight alpha.
+      // Shadow is black so dst RGB contribution is 0; only alpha adds up.
+      uint32_t dpx = op[oy * op_pitch + ox];
+      uint8_t da = dpx >> 24;
+      if (da == 0) {
+        op[oy * op_pitch + ox] = s;
+        continue;
+      }
+      float saf = sa * (1.0f / 255.0f);
+      float daf = da * (1.0f / 255.0f);
+      float oaf = saf + daf * (1.0f - saf);
+      float inv_oaf = 1.0f / oaf;
+      // Shadow is (0,0,0,da) so only src RGB contributes to output RGB
+      float sr = (float)(s & 0xFF);
+      float sg = (float)((s >> 8) & 0xFF);
+      float sb = (float)((s >> 16) & 0xFF);
+      uint8_t or_ = (uint8_t)(sr * saf * inv_oaf + 0.5f);
+      uint8_t og = (uint8_t)(sg * saf * inv_oaf + 0.5f);
+      uint8_t ob = (uint8_t)(sb * saf * inv_oaf + 0.5f);
+      uint8_t oa = (uint8_t)(oaf * 255.0f + 0.5f);
+      op[oy * op_pitch + ox] = (uint32_t)or_ | ((uint32_t)og << 8) |
+                                ((uint32_t)ob << 16) | ((uint32_t)oa << 24);
+    }
+  }
   SDL_DestroySurface(src);
 
   // --- Save as PNG ---
@@ -3283,7 +3356,6 @@ static void sdl3_window_screenshot(CogitoWindow *window) {
 #if defined(COGITO_HAS_SDL3_IMAGE)
   IMG_SavePNG(output, path);
 #else
-  // Fallback: save as BMP (no transparency)
   snprintf(path, sizeof(path), "%s/Pictures/Screenshot_%04d%02d%02d_%02d%02d%02d.bmp",
            home, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
            t->tm_hour, t->tm_min, t->tm_sec);

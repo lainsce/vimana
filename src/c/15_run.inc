@@ -3159,7 +3159,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
       double __frame_start = now;
       int damage_x = 0, damage_y = 0, damage_w = 0, damage_h = 0;
       bool use_damage_clip = false;
-      if (cogito_draw_pending(win) && cogito_draw_pending_damage(win, &damage_x, &damage_y, &damage_w, &damage_h)) {
+      if (!cogito_screenshot_pending &&
+          cogito_draw_pending(win) && cogito_draw_pending_damage(win, &damage_x, &damage_y, &damage_w, &damage_h)) {
         if (damage_x < 0) {
           damage_w += damage_x;
           damage_x = 0;
