@@ -1054,7 +1054,7 @@ static void __cogito_card_add_action(YisVal cardv, YisVal btnv) {
 static void __cogito_card_add_overflow(YisVal cardv, YisVal labelv, YisVal handler) {
   cogito_node* card = cogito_node_from_val(cardv);
   // Use public API to create icon button
-  YisStr* icon_str = stdr_str_lit("more-vert-symbolic");
+  YisStr* icon_str = stdr_str_lit("sf:ellipsis");
   YisStr* tmp = NULL;
   const char* icon = cogito_required_cstr(YV_STR(icon_str), &tmp);
   cogito_node* btn = cogito_iconbtn_new(icon);
