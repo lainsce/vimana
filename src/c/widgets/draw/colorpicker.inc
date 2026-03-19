@@ -175,9 +175,11 @@ case COGITO_COLORPICKER: {
           if (a > b) { int tmp = a; a = b; b = tmp; }
           int sx_sel = cogito_text_width_size_n_node(n, hex, a, size);
           int ex = cogito_text_width_size_n_node(n, hex, b, size);
-          int x0 = hx + pad + sx_sel;
-          int x1 = hx + pad + ex;
-          if (x1 > x0) cogito_draw_rect(x0, ty, x1 - x0, th, accent, 2);
+          int pill_pad = 4;
+          int pill_r = th / 2;
+          int x0 = hx + pad + sx_sel - pill_pad;
+          int x1 = hx + pad + ex + pill_pad;
+          if (x1 > x0) cogito_draw_rect(x0, ty, x1 - x0, th, accent, pill_r);
         }
 
         cogito_draw_text_ellipsis(n, hx + pad, ty, hw - pad * 2, hex, text_col, size, false, false, 0);

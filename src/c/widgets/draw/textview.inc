@@ -66,8 +66,13 @@ case COGITO_TEXTVIEW: {
         if (max_w < 1) max_w = 1;
         int len = (int)strlen(t);
         int idx = 0;
-        int line_h = cogito_text_height_size(size);
+        int base_line_h = cogito_text_height_size(size);
+        int line_h = base_line_h;
+        if (n->line_height_set && n->line_height > 0.0f)
+          line_h = (int)lroundf(base_line_h * n->line_height);
         int cy = n->y + pad;
+        int pill_r = base_line_h / 2;
+        int pill_pad = 4; // horizontal padding around text in pill
         CogitoColor sel = s.has_selection ? s.selection : n->selection_color;
         while (idx < len) {
           int line_start = idx;
@@ -103,10 +108,12 @@ case COGITO_TEXTVIEW: {
             int sb = b < line_end ? b : line_end;
             int sx = cogito_text_width_size_n_node(n, t + line_start, sa - line_start, size);
             int ex = cogito_text_width_size_n_node(n, t + line_start, sb - line_start, size);
-            int x0 = n->x + pad + sx;
-            int x1 = n->x + pad + ex;
+            int x0 = n->x + pad + sx - pill_pad;
+            int x1 = n->x + pad + ex + pill_pad;
+            if (x0 < n->x) x0 = n->x;
+            if (x1 > n->x + n->w) x1 = n->x + n->w;
             if (x1 > x0) {
-              cogito_draw_rect(x0, cy, x1 - x0, line_h, sel, 2);
+              cogito_draw_rect(x0, cy, x1 - x0, base_line_h, sel, pill_r);
             }
           }
           cy += line_h;
@@ -121,7 +128,10 @@ case COGITO_TEXTVIEW: {
         if (max_w2 < 1) max_w2 = 1;
         int len2 = (int)strlen(t);
         int idx2 = 0;
-        int line_h2 = cogito_text_height_size(size);
+        int base_line_h2 = cogito_text_height_size(size);
+        int line_h2 = base_line_h2;
+        if (n->line_height_set && n->line_height > 0.0f)
+          line_h2 = (int)lroundf(base_line_h2 * n->line_height);
         int cy2 = n->y + pad;
         CogitoColor sel2 = s.has_selection ? s.selection : n->selection_color;
         CogitoColor sel_text = cogito_on_color(sel2);
@@ -189,7 +199,10 @@ case COGITO_TEXTVIEW: {
         if (max_w < 1) max_w = 1;
         int len = (int)strlen(t);
         int idx = 0;
-        int line_h = cogito_text_height_size(size);
+        int base_line_h_c = cogito_text_height_size(size);
+        int line_h = base_line_h_c;
+        if (n->line_height_set && n->line_height > 0.0f)
+          line_h = (int)lroundf(base_line_h_c * n->line_height);
         int cy = n->y + pad;
         int caret_idx = n->kd->text_input.caret;
         if (caret_idx < 0) caret_idx = 0;

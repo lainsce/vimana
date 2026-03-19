@@ -68,10 +68,12 @@ case COGITO_SEARCHFIELD: {
     int sx = cogito_text_width_size_n_node(n, txt, a, size);
     int ex = cogito_text_width_size_n_node(n, txt, b, size);
     CogitoColor sel = s.has_selection ? s.selection : n->selection_color;
-    int x0 = text_x + sx, x1 = text_x + ex;
-    if (x1 > x0 && x1 <= text_x + text_avail) {
+    int pill_pad = 4;
+    int pill_r = text_h / 2;
+    int x0 = text_x + sx - pill_pad, x1 = text_x + ex + pill_pad;
+    if (x1 > x0 && x1 - pill_pad <= text_x + text_avail) {
       cogito_draw_rect(x0, text_y, x1 - x0, text_h, sel,
-      2);
+      pill_r);
     }
   }
   if (has_text) {

@@ -257,13 +257,15 @@ case COGITO_TEXTFIELD: {
         if (a > b) { int tmp = a; a = b; b = tmp; }
         int sx = cogito_text_width_size_n_node(n, t, a, size);
         int ex = cogito_text_width_size_n_node(n, t, b, size);
-        int x0 = text_x + sx;
-        int x1 = text_x + ex;
-        if (x0 < text_x) x0 = text_x;
-        if (x1 > text_x + text_w) x1 = text_x + text_w;
+        int pill_pad = 4;
+        int pill_r = th / 2;
+        int x0 = text_x + sx - pill_pad;
+        int x1 = text_x + ex + pill_pad;
+        if (x0 < text_x - pill_pad) x0 = text_x - pill_pad;
+        if (x1 > text_x + text_w + pill_pad) x1 = text_x + text_w + pill_pad;
         if (x1 > x0) {
           CogitoColor sel = s.has_selection ? s.selection : n->selection_color;
-          cogito_draw_rect(x0, ty, x1 - x0, th, sel, 2);
+          cogito_draw_rect(x0, ty, x1 - x0, th, sel, pill_r);
         }
       }
 
