@@ -1,0 +1,138 @@
+cask collection_view
+
+bring stdr
+bring cogito
+bring models
+bring widgets.note_card
+
+-- Build the Collection view
+-- Mobile: List of note cards with title, overflow menu
+-- Desktop: Grid of compact note cards, 2 columns
+
+: make_full_card(
+    note = any,
+    idx = num,
+    on_open = any,
+    on_edit = any,
+    on_delete = any
+) (( cogito.Card ))
+    <- note_card.build_note_card(
+        note,
+        () => { on_open(idx) },
+        () => { on_edit(idx) },
+        () => { on_delete(idx) }
+    )
+;
+
+:: build(
+    col_idx = num,
+    is_compact = bool,
+    on_back = any,
+    on_help = any,
+    on_settings = any,
+    on_open_note = any,
+    on_edit_note = any,
+    on_delete_note = any
+) (( cogito.VStack ))
+    let panel = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let col = models.get_collection(col_idx)
+    let col_name = str(col["name"] ?? "Collection")
+
+    -- AppBar with collection name
+    let bar = cogito.appbar(col_name, "")
+    .set_class("small sidebar")
+    .set_hexpand(true)
+
+    -- Back button in compact mode / mobile
+    if is_compact
+        bar.leading_button("sf:chevron.backward", (b = any) => {
+            on_back()
+        })
+
+    let menu = bar.add_trailing_menu_button("sf:gearshape")
+    menu.add_menu("Settings", (b = any) => {
+        on_settings()
+    })
+    menu.add_menu("About Anthology", (b = any) => {
+        on_help()
+    })
+    panel.add(bar)
+
+    -- Scrollable content area
+    let scroll = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    if !is_compact
+        scroll.set_class("surface-container-lowest content-panel")
+
+    bar.pair_with_scroller(scroll)
+
+    let content = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_padding(0, 0, 90, 0)
+
+    let col_notes = models.notes_for_collection(col_idx)
+
+    if len(col_notes) == 0
+        content.add(
+            cogito.empty_page("No Entries Yet")
+            .set_description("Tap the + button to write your first journal entry in this collection.")
+            .set_icon("sf:note.text")
+            .set_hexpand(true)
+        )
+
+    if len(col_notes) > 0 && !is_compact
+        let ?num_cols = 2
+        if len(col_notes) == 1
+            num_cols = 1
+
+        let grid = cogito.grid(num_cols)
+        .set_gap(12, 12)
+        .set_padding(16, 16, 0, 16)
+        .set_hexpand(true)
+
+        let ?row_num = 0
+        let ?col_num = 0
+        for (let ?i = 0; i < len(col_notes); i += 1)
+            let note = col_notes[i] ?? []: [string => any]
+            let note_id = note["id"] ?? -1
+            let nidx = models.note_index_by_id(note_id)
+
+            let card = note_card.build_note_card_compact(
+                note,
+                () => { on_open_note(nidx) }
+            )
+            grid.add(card, col_num, row_num, 1, 1)
+
+            col_num += 1
+            if col_num >= 2
+                col_num = 0
+                row_num += 1
+
+        content.add(grid)
+
+    if len(col_notes) > 0 && is_compact
+        let list = cogito.vstack()
+        .set_gap(12)
+        .set_padding(0, 16, 0, 16)
+        .set_hexpand(true)
+
+        for (let ?i = 0; i < len(col_notes); i += 1)
+            let note = col_notes[i] ?? []: [string => any]
+            let note_id = note["id"] ?? -1
+            let ?nidx = models.note_index_by_id(note_id)
+
+            list.add(make_full_card(note, nidx, on_open_note, on_edit_note, on_delete_note))
+
+        content.add(list)
+
+    scroll.add(content)
+    panel.add(scroll)
+    <- panel
+;

@@ -1,0 +1,159 @@
+cask note_card
+
+bring stdr
+bring cogito
+
+-- Build a note card matching the mockup design:
+-- Title (bold serif), modified date (caption), preview text (body), tag chips
+
+:: build_note_card(
+    note = any,
+    on_click_handler = any,
+    on_overflow_edit = any,
+    on_overflow_delete = any
+) (( cogito.Card ))
+    let title = str(note["title"] ?? "")
+    let body = str(note["body"] ?? "")
+    let modified = str(note["modified"] ?? "")
+    let tags = note["tags"] ?? []: [any]
+
+    -- Truncate preview text
+    let ?preview = body
+    if stdr.len(preview) > 160
+        preview = stdr.slice(preview, 0, 160)
+        preview = "$$preview$$..."
+
+    let card = cogito.card_untitled()
+    .set_variant(cogito.CARD_FILLED())
+    .set_hexpand(true)
+    .set_gap(4)
+    .set_class("note-card")
+
+    card.on_click((c = cogito.Card) => {
+        on_click_handler()
+    })
+
+    -- Title
+    let title_label = cogito.label(title)
+    .set_class("note-card-title")
+    .set_align(0)
+    .set_text_align(0)
+    .set_hexpand(true)
+    card.add(title_label)
+
+    -- Subtitle
+    let sub_label = cogito.label("Last edited: $$modified$$")
+    .set_class("note-card-date")
+    .set_align(0)
+    .set_text_align(0)
+    card.add(sub_label)
+
+    let body_label = cogito.label(preview)
+    .set_class("note-card-preview")
+    .set_wrap(true)
+    .set_line_chars(50)
+    .set_hexpand(true)
+    .set_align(0)
+    .set_text_align(0)
+    card.add(body_label)
+
+    -- Tags row
+    if len(tags) > 0
+        let tags_row = cogito.hstack()
+        .set_gap(8)
+        .set_padding(4, 0, 0, 0)
+        .set_align(0)
+
+        for (let ?i = 0; i < len(tags) && i < 4; i += 1)
+            let tag_text = str(tags[i] ?? "")
+            if len(tag_text) > 0
+                let chip = cogito.chip(tag_text)
+                .set_class("note-tag")
+                .set_disabled(true)
+                tags_row.add(chip)
+
+        card.add(tags_row)
+
+    -- Overflow menu for edit/delete
+    card.add_overflow("Edit", (b = any) => {
+        on_overflow_edit()
+    })
+    card.add_overflow("Delete", (b = any) => {
+        on_overflow_delete()
+    })
+
+    <- card
+;
+
+-- Compact card for grids (used in desktop collection view)
+:: build_note_card_compact(
+    note = any,
+    on_click_handler = any
+) (( cogito.Card ))
+    let title = str(note["title"] ?? "")
+    let body = str(note["body"] ?? "")
+    let date_val = str(note["date"] ?? "")
+    let tags = note["tags"] ?? []: [any]
+
+    let ?preview = body
+    if stdr.len(preview) > 120
+        preview = stdr.slice(preview, 0, 120)
+        preview = "$$preview$$..."
+
+    let card = cogito.card("")
+    .set_variant(cogito.CARD_FILLED())
+    .set_hexpand(true)
+    .set_gap(4)
+    .set_class("note-card-compact")
+
+    card.on_click((c = cogito.Card) => {
+        on_click_handler()
+    })
+
+    -- Date label (small caps style)
+    if len(date_val) > 0
+        let date_label = cogito.label(date_val)
+        .set_class("note-card-date")
+        .set_align(0)
+        .set_text_align(0)
+        .set_hexpand(true)
+        card.add(date_label)
+
+    -- Title
+    let title_label = cogito.label(title)
+    .set_class("note-card-title-compact")
+    .set_align(0)
+    .set_text_align(0)
+    .set_hexpand(true)
+    .set_ellipsis(true)
+    .set_max_width_chars(30)
+    card.add(title_label)
+
+    let body_label = cogito.label(preview)
+    .set_class("note-card-preview")
+    .set_wrap(true)
+    .set_line_chars(40)
+    .set_hexpand(true)
+    .set_align(0)
+    .set_text_align(0)
+    card.add(body_label)
+
+    -- Tags row
+    if len(tags) > 0
+        let tags_row = cogito.hstack()
+        .set_gap(6)
+        .set_padding(4, 0, 0, 0)
+        .set_align(0)
+
+        for (let ?i = 0; i < len(tags) && i < 3; i += 1)
+            let tag_text = str(tags[i] ?? "")
+            if len(tag_text) > 0
+                let chip = cogito.chip(tag_text)
+                .set_class("note-tag")
+                .set_disabled(true)
+                tags_row.add(chip)
+
+        card.add(tags_row)
+
+    <- card
+;

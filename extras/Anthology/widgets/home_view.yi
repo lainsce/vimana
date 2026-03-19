@@ -1,0 +1,280 @@
+cask home_view
+
+bring stdr
+bring cogito
+bring models
+bring widgets.note_card
+
+-- Build the Home view: "Home" header, Collections carousel, Recent Entry
+-- Returns a complete VStack panel for the home screen
+
+:: build(
+    selected_collection = num,
+    is_compact = bool,
+    on_help = any,
+    on_settings = any,
+    on_select_collection = any,
+    on_open_note = any,
+    on_edit_note = any,
+    on_delete_note = any,
+    on_rename_collection = any,
+    on_delete_collection = any
+) (( cogito.VStack ))
+    let panel = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    -- AppBar: "Home" with help and settings icons
+    let bar = cogito.appbar("Home", "")
+    .set_class("small sidebar")
+    .set_hexpand(true)
+
+    let menu = bar.add_trailing_menu_button("sf:gearshape")
+    menu.add_menu("Settings", (b = any) => {
+        on_settings()
+    })
+    menu.add_menu("About Anthology", (b = any) => {
+        on_help()
+    })
+    panel.add(bar)
+
+    -- Scrollable content
+    let scroll = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    if !is_compact
+        scroll.set_class("surface-container-lowest content-panel")
+
+    bar.pair_with_scroller(scroll)
+
+    let content = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_padding(0, 0, 90, 0)
+
+    let cols = models.get_collections()
+    let all_notes = models.get_notes()
+
+    if !is_compact
+        -- ── Medium/Desktop Layout ────────────────────────────
+        -- Collection title heading + 2-col grid of note cards
+
+        let ?col_idx = selected_collection
+        if col_idx < 0 && len(cols) > 0
+            col_idx = 0
+
+        if col_idx >= 0 && col_idx < len(cols)
+            let col = cols[col_idx] ?? []: [string => any]
+            let col_name = str(col["name"] ?? "Collection")
+
+            -- Collection heading with overflow menu
+            let heading_row = cogito.hstack()
+            .set_hexpand(true)
+            .set_padding(24, 24, 8, 24)
+            .set_align(3)
+
+            let heading = cogito.label(col_name)
+            .set_class("home-collection-heading")
+            .set_align(3)
+            .set_text_align(0)
+            .set_hexpand(true)
+            heading_row.add(heading)
+
+            let overflow = cogito.iconbtn("sf:ellipsis")
+            .set_class("iconic")
+            .set_size(0)
+            overflow.add_menu("Rename Collection", (b = any) => {
+                on_rename_collection(col_idx)
+            })
+            overflow.add_menu("Delete Collection", (b = any) => {
+                on_delete_collection(col_idx)
+            })
+            heading_row.add(overflow)
+
+            content.add(heading_row)
+
+            -- 2-column grid of note cards
+            let col_notes = models.notes_for_collection(col_idx)
+
+            if len(col_notes) == 0
+                content.add(
+                    cogito.empty_page("No Entries Yet")
+                    .set_description("Tap the + button to write your first journal entry.")
+                    .set_icon("sf:note.text")
+                    .set_hexpand(true)
+                )
+
+            if len(col_notes) > 0
+                let ?num_cols = 2
+                if len(col_notes) == 1
+                    num_cols = 1
+
+                let grid = cogito.grid(num_cols)
+                .set_gap(12, 12)
+                .set_padding(16, 24, 0, 24)
+                .set_hexpand(true)
+
+                let ?row_num = 0
+                let ?grid_col = 0
+                for (let ?i = 0; i < len(col_notes); i += 1)
+                    let note = col_notes[i] ?? []: [string => any]
+                    let note_id = note["id"] ?? -1
+                    let nidx = models.note_index_by_id(note_id)
+
+                    let card = note_card.build_note_card(
+                        note,
+                        () => { on_open_note(nidx) },
+                        () => { on_edit_note(nidx) },
+                        () => { on_delete_note(nidx) }
+                    )
+                    grid.add(card, grid_col, row_num, 1, 1)
+
+                    grid_col += 1
+                    if grid_col >= num_cols
+                        grid_col = 0
+                        row_num += 1
+
+                content.add(grid)
+
+    if is_compact
+        -- ── Compact Layout ───────────────────────────────────
+        -- Collections carousel + recent entries
+
+        let section_header = cogito.hstack()
+        .set_hexpand(true)
+        .set_padding(8, 20, 4, 20)
+        .set_align(3)
+
+        let section_title = cogito.label("Collections")
+        .set_class("home-section-title")
+        .set_align(0)
+        .set_text_align(0)
+        .set_hexpand(true)
+        section_header.add(section_title)
+
+        let view_all_btn = cogito.button("VIEW ALL")
+        .set_class("text")
+        view_all_btn.on_click((b = cogito.Button) => {
+            if len(cols) > 0
+                on_select_collection(0)
+        })
+        section_header.add(view_all_btn)
+
+        content.add(section_header)
+
+        -- Collections carousel
+        let carousel = cogito.carousel()
+        .set_hexpand(true)
+        .set_class("collection-carousel")
+
+        for (let ?i = 0; i < len(cols); i += 1)
+            let col = cols[i] ?? []: [string => any]
+            let col_name = str(col["name"] ?? "")
+            let col_icon = str(col["icon"] ?? "sf:folder")
+            let col_count = models.count_notes_in_collection(col_name)
+            let ?carousel_col_idx = i
+
+            let ?card_color_class = "collection-card item-primary"
+            if i % 3 == 1
+                card_color_class = "collection-card item-secondary"
+            elif i % 3 == 2
+                card_color_class = "collection-card item-tertiary"
+
+            let item = cogito.carousel_item()
+            .set_hexpand(true)
+            .set_vexpand(true)
+
+            let col_card = cogito.card_untitled()
+            .set_gap(0)
+            .set_hexpand(true)
+            .set_vexpand(true)
+            .set_class(card_color_class)
+
+            col_card.on_click((c = cogito.Card) => {
+                on_select_collection(carousel_col_idx)
+            })
+
+            let col_content = cogito.vstack()
+            .set_vexpand(true)
+            .set_gap(4)
+            .set_align(6)
+
+            -- Icon
+            let icon_widget = cogito.image(col_icon)
+            .set_size(24, 24)
+            .set_align(6)
+            col_content.add(icon_widget)
+
+            -- Name
+            let name_label = cogito.label(col_name)
+            .set_class("collection-card-name")
+            .set_align(6)
+            .set_text_align(0)
+            .set_hexpand(true)
+            col_content.add(name_label)
+
+            -- Count
+            let count_label = cogito.label("$$col_count$$ entries")
+            .set_class("caption")
+            .set_align(6)
+            .set_text_align(0)
+            col_content.add(count_label)
+
+            col_card.add(col_content)
+
+            item.add(col_card)
+
+            carousel.add(item)
+
+        content.add(carousel)
+
+        -- ── Recent Entry Section ─────────────────────────────
+
+        if len(all_notes) > 0
+            let recent_header = cogito.label("Recent Entry")
+            .set_class("home-section-title")
+            .set_align(0)
+            .set_text_align(0)
+            .set_padding(16, 20, 8, 20)
+            .set_hexpand(true)
+            content.add(recent_header)
+
+            let recent_idx = len(all_notes) - 1
+            let recent = all_notes[recent_idx] ?? []: [string => any]
+
+            let wrapper1 = cogito.vstack()
+            .set_padding(0, 16, 0, 16)
+            .set_hexpand(true)
+
+            let card1 = note_card.build_note_card(
+                recent,
+                () => { on_open_note(recent_idx) },
+                () => { on_edit_note(recent_idx) },
+                () => { on_delete_note(recent_idx) }
+            )
+            wrapper1.add(card1)
+            content.add(wrapper1)
+
+            if len(all_notes) > 1
+                let prev_idx = len(all_notes) - 2
+                let prev = all_notes[prev_idx] ?? []: [string => any]
+
+                let wrapper2 = cogito.vstack()
+                .set_padding(8, 16, 0, 16)
+                .set_hexpand(true)
+
+                let card2 = note_card.build_note_card(
+                    prev,
+                    () => { on_open_note(prev_idx) },
+                    () => { on_edit_note(prev_idx) },
+                    () => { on_delete_note(prev_idx) }
+                )
+                wrapper2.add(card2)
+                content.add(wrapper2)
+
+    scroll.add(content)
+    panel.add(scroll)
+    <- panel
+;

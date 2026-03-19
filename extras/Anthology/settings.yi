@@ -1,0 +1,149 @@
+cask settings
+
+bring stdr
+bring json
+bring cogito
+
+def SETTINGS_PATH = ".anthology_settings.json"
+
+-- ── Settings State ───────────────────────────────────────────
+
+def ?focus_mode = false
+def ?font_size = 16
+def ?autosave = false
+
+:: get_focus_mode() (( bool ))
+    <- focus_mode
+;
+
+:: get_font_size() (( num ))
+    <- font_size
+;
+
+:: get_autosave() (( bool ))
+    <- autosave
+;
+
+:: set_focus_mode(on = bool) (( -- ))
+    focus_mode = on
+    save_settings()
+;
+
+:: set_font_size(size = num) (( -- ))
+    font_size = size
+    save_settings()
+;
+
+:: set_autosave(on = bool) (( -- ))
+    autosave = on
+    save_settings()
+;
+
+-- ── Persistence ──────────────────────────────────────────────
+
+:: save_settings() (( -- ))
+    let fm = "false"
+    if focus_mode
+        fm = "true"
+    let asv = "false"
+    if autosave
+        asv = "true"
+    let payload = "{\"focus_mode\":$$fm$$,\"font_size\":$$font_size$$,\"autosave\":$$asv$$}"
+    stdr.write_text_file(SETTINGS_PATH, payload)
+;
+
+:: load_settings() (( -- ))
+    let raw = stdr.read_text_file(SETTINGS_PATH)
+    if is_null(raw)
+        <-
+
+    let parsed = json.parse_result(str(raw))
+    if !(parsed["ok"] ?? false)
+        <-
+
+    let root = parsed["value"]
+    focus_mode = json.get(root, "focus_mode", false)
+    autosave = json.get(root, "autosave", false)
+    let fs = json.get(root, "font_size", 16)
+    if fs >= 10 && fs <= 30
+        font_size = fs
+;
+
+-- ── Dialog ───────────────────────────────────────────────────
+
+:: show_settings_dialog(win = cogito.Window, on_done = any) (( -- ))
+    let dlg = cogito.dialog("Settings")
+    let content = cogito.vstack()
+    .set_gap(16)
+    .set_padding(24, 24, 24, 24)
+    .set_hexpand(true)
+
+    -- Focus Mode toggle
+    let focus_sw = cogito.switch("Focus Mode")
+    .set_checked(focus_mode)
+    .set_hexpand(true)
+    focus_sw.on_change((s = cogito.Switch) => {
+        focus_mode = s.checked()
+        save_settings()
+    })
+    content.add(focus_sw)
+
+    let focus_desc = cogito.label("Hide all UI except the title and text area")
+    .set_class("settings-desc")
+    .set_hexpand(true)
+    .set_align(0)
+    .set_text_align(0)
+    content.add(focus_desc)
+
+    -- Font Size slider
+    let size_label = cogito.label("Font Size: $$font_size$$dp")
+    .set_class("settings-label")
+    .set_hexpand(true)
+    .set_align(0)
+    .set_text_align(0)
+    content.add(size_label)
+
+    let size_slider = cogito.slider(10, 30, font_size)
+    .set_step(2)
+    .set_hexpand(true)
+    size_slider.on_change((s = cogito.Slider) => {
+        font_size = s.value()
+        save_settings()
+        size_label.set_text("Font Size: $$font_size$$dp")
+    })
+    content.add(size_slider)
+
+    -- Autosave toggle
+    let auto_sw = cogito.switch("Autosave")
+    .set_checked(autosave)
+    .set_hexpand(true)
+    auto_sw.on_change((s = cogito.Switch) => {
+        autosave = s.checked()
+        save_settings()
+    })
+    content.add(auto_sw)
+
+    let auto_desc = cogito.label("Automatically save entries while editing")
+    .set_class("settings-desc")
+    .set_hexpand(true)
+    .set_align(0)
+    .set_text_align(0)
+    content.add(auto_desc)
+
+    -- Close button
+    let actions = cogito.hstack()
+    .set_hexpand(true)
+    .set_gap(12)
+
+    let close_btn = cogito.button("Done")
+    .set_hexpand(true)
+    close_btn.on_click((b = cogito.Button) => {
+        dlg.close()
+        on_done()
+    })
+    actions.add(close_btn)
+
+    content.add(actions)
+    dlg.add(content)
+    win.set_dialog(dlg)
+;
