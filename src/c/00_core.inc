@@ -344,6 +344,7 @@ typedef enum {
   COGITO_WEBVIEW,
   COGITO_SIDE_SHEET,
   COGITO_WINDOW_BAR,
+  COGITO_TABLEVIEW,
   COGITO_KIND_COUNT
 } CogitoKind;
 
@@ -755,10 +756,26 @@ typedef struct {
   uint8_t fit;
 } CogitoImageData;
 
+// Undo/redo history for text inputs
+#define COGITO_UNDO_MAX 64
+typedef struct {
+  YisStr* text;   // snapshot of full text
+  int caret;      // caret position after this edit
+  int sel_start, sel_end;
+} CogitoUndoEntry;
+
+typedef struct {
+  CogitoUndoEntry entries[COGITO_UNDO_MAX];
+  int pos;        // current position in ring (-1 = empty)
+  int count;      // total entries stored
+  int redo_count; // entries available for redo
+} CogitoUndoHistory;
+
 typedef struct {
   int caret;
   int sel_start, sel_end;
   bool selecting;
+  CogitoUndoHistory* undo;
 } CogitoTextInputData;
 
 typedef struct {
@@ -944,6 +961,31 @@ typedef struct {
   int appmenu_h;
 } CogitoWindowBarData;
 
+typedef struct {
+  int col_count;         // Number of columns
+  YisStr** headers;      // Column header labels [col_count]
+  int* col_widths;       // Column widths in px (0 = equal share)
+  int selected_row;      // Currently selected row index (-1 = none)
+  int header_height;     // Height of header row in px
+  int row_height;        // Height of each data row in px
+  int scroll_y;          // Vertical scroll offset
+  int sort_col;          // Column index being sorted (-1 = none)
+  int sort_dir;          // 0 = ascending, 1 = descending
+  bool show_grid;        // Show grid lines
+  bool striped;          // Alternate row colors
+  // Checkbox support
+  bool show_checkboxes;  // Show checkbox column
+  bool* row_checked;     // Per-row checked state (dynamic, n->len entries)
+  int checked_count;     // Cached count of checked rows
+  // Pagination
+  int page;              // Current page (0-indexed)
+  int rows_per_page;     // Rows per page (0 = all, no pagination)
+  int* page_size_options; // Available page sizes (e.g., {1, 5, 10})
+  int page_size_option_count; // Count of page size options
+  bool show_page_size_dropdown; // Whether page size dropdown is open
+  int pagination_height; // Height of pagination bar (default 48)
+} CogitoTableViewData;
+
 // Named union of all per-kind data (allocated per-kind, not full union size)
 typedef union {
   CogitoScrollerData scroller;
@@ -980,6 +1022,7 @@ typedef union {
   CogitoButtonGroupData buttongroup;
   CogitoCardData card;
   CogitoWindowBarData window_bar;
+  CogitoTableViewData tableview;
 } CogitoKindData;
 
 // ──── End per-kind data structs ────
@@ -1036,6 +1079,7 @@ typedef struct CogitoNode {
   YisFn* on_change;
   YisFn* on_select;
   YisFn* on_activate;
+  YisFn* on_check;
   YisFn* builder;
   YisFn* on_action;
   YisFn* on_draw;
@@ -1527,6 +1571,23 @@ static CogitoNode* cogito_pointer_capture = NULL;
 static CogitoNode* cogito_canvas_active = NULL;
 static CogitoNode* cogito_tooltip_hovered = NULL;
 static CogitoApp* cogito_active_app = NULL;
+
+// Keyboard shortcut registry
+#define COGITO_SHORTCUT_MOD_CMD   1
+#define COGITO_SHORTCUT_MOD_SHIFT 2
+#define COGITO_SHORTCUT_MOD_ALT   4
+#define COGITO_MAX_SHORTCUTS 128
+
+typedef struct CogitoShortcut {
+  int scancode;      // SDL_Scancode
+  int modifiers;     // Bitmask of COGITO_SHORTCUT_MOD_*
+  YisVal callback;   // Yis closure
+  bool active;
+} CogitoShortcut;
+
+static CogitoShortcut cogito_shortcuts[COGITO_MAX_SHORTCUTS];
+static int cogito_shortcut_count = 0;
+
 static CogitoNode* cogito_active_window = NULL;
 static CogitoWindow* cogito_active_backend_window = NULL;
 static bool cogito_theme_dark = false;

@@ -1776,6 +1776,116 @@ int cogito_gst_last_tag_track_number(void) {
 #endif
 }
 
+// ---- System Notifications ----
+
+bool cogito_notify(const char *title, const char *body) {
+  if (!title) title = "";
+  if (!body) body = "";
+#if defined(__APPLE__)
+  // Use osascript to show a system notification
+  char cmd[8192];
+  snprintf(cmd, sizeof(cmd),
+           "osascript -e 'display notification \"%s\" with title \"%s\"' 2>/dev/null &",
+           body, title);
+  return system(cmd) == 0;
+#elif defined(__linux__)
+  char cmd[8192];
+  snprintf(cmd, sizeof(cmd),
+           "notify-send \"%s\" \"%s\" 2>/dev/null &",
+           title, body);
+  return system(cmd) == 0;
+#else
+  (void)title;
+  (void)body;
+  return false;
+#endif
+}
+
+// ---- MPRIS / Media Key Integration ----
+
+static cogito_mpris_callback cogito_mpris_cb = NULL;
+static void *cogito_mpris_cb_user = NULL;
+static int cogito_mpris_playback = 0; // 0=stopped, 1=playing, 2=paused
+
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+// macOS uses MediaPlayer framework for Now Playing + remote commands.
+// This requires Objective-C, so we use an external .mm file.
+extern bool cogito_mpris_init_native(const char *app_name);
+extern void cogito_mpris_shutdown_native(void);
+extern void cogito_mpris_set_metadata_native(const char *title, const char *artist,
+                                             const char *album, int64_t length_ms);
+extern void cogito_mpris_set_playback_status_native(int status);
+extern int cogito_mpris_poll_native(void);
+#endif
+
+bool cogito_mpris_init(const char *app_name) {
+  if (!app_name) app_name = "Cogito";
+#if defined(__APPLE__)
+  return cogito_mpris_init_native(app_name);
+#elif defined(__linux__)
+  // Linux: MPRIS over D-Bus via helper script or direct dbus-send.
+  // Full implementation requires GDBus; for now, store state for polling.
+  (void)app_name;
+  return true;
+#else
+  (void)app_name;
+  return false;
+#endif
+}
+
+void cogito_mpris_shutdown(void) {
+#if defined(__APPLE__)
+  cogito_mpris_shutdown_native();
+#endif
+  cogito_mpris_cb = NULL;
+  cogito_mpris_cb_user = NULL;
+  cogito_mpris_playback = 0;
+}
+
+void cogito_mpris_set_metadata(const char *title, const char *artist,
+                               const char *album, int64_t length_ms) {
+  if (!title) title = "";
+  if (!artist) artist = "";
+  if (!album) album = "";
+#if defined(__APPLE__)
+  cogito_mpris_set_metadata_native(title, artist, album, length_ms);
+#elif defined(__linux__)
+  // TODO: Emit MPRIS PropertiesChanged signal via D-Bus
+  (void)title;
+  (void)artist;
+  (void)album;
+  (void)length_ms;
+#else
+  (void)title;
+  (void)artist;
+  (void)album;
+  (void)length_ms;
+#endif
+}
+
+void cogito_mpris_set_playback_status(int status) {
+  cogito_mpris_playback = status;
+#if defined(__APPLE__)
+  cogito_mpris_set_playback_status_native(status);
+#endif
+}
+
+void cogito_mpris_set_callback(cogito_mpris_callback cb, void *user) {
+  cogito_mpris_cb = cb;
+  cogito_mpris_cb_user = user;
+}
+
+int cogito_mpris_poll(void) {
+#if defined(__APPLE__)
+  return cogito_mpris_poll_native();
+#else
+  int a = cogito_mpris_pending_action;
+  cogito_mpris_pending_action = 0;
+  return a;
+#endif
+}
+
 cogito_timer_id cogito_timer_set_timeout(uint32_t delay_ms, cogito_timer_fn fn,
                                          void *user) {
   return (cogito_timer_id)cogito_timer_schedule_c(delay_ms, false, fn, user);
@@ -3362,6 +3472,22 @@ void cogito_node_on_select(cogito_node *node, cogito_index_fn fn, void *user) {
   env->node = n;
   YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
   cogito_set_fn(&n->on_select, wrap);
+}
+
+void cogito_node_on_check(cogito_node *node, cogito_index_fn fn, void *user) {
+  if (!node)
+    return;
+  CogitoNode *n = (CogitoNode *)node;
+  if (!fn) {
+    cogito_set_fn(&n->on_check, NULL);
+    return;
+  }
+  CogitoCbIndex *env = (CogitoCbIndex *)calloc(1, sizeof(*env));
+  env->fn = fn;
+  env->user = user;
+  env->node = n;
+  YisFn *wrap = cogito_make_fn(cogito_cb_index, env);
+  cogito_set_fn(&n->on_check, wrap);
 }
 
 void cogito_node_on_activate(cogito_node *node, cogito_index_fn fn,

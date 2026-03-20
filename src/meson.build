@@ -83,8 +83,8 @@ cogito_link_args = []
 
 # macOS-specific: Objective-C autorelease pool and Cocoa frameworks
 if target_system == 'darwin'
-  cogito_src += files('c/backend/cocoa_autoreleasepool.mm', 'c/backend/font_dialog_macos.mm', 'c/backend/svg_native_macos.mm')
-  cogito_link_args += ['-framework', 'Cocoa', '-framework', 'CoreGraphics', '-framework', 'Foundation', '-framework', 'AppKit', '-framework', 'CoreText']
+  cogito_src += files('c/backend/cocoa_autoreleasepool.mm', 'c/backend/font_dialog_macos.mm', 'c/backend/svg_native_macos.mm', 'c/backend/mpris_macos.mm')
+  cogito_link_args += ['-framework', 'Cocoa', '-framework', 'CoreGraphics', '-framework', 'Foundation', '-framework', 'AppKit', '-framework', 'CoreText', '-framework', 'MediaPlayer']
 endif
 
 # Linux-specific: librsvg SVG renderer

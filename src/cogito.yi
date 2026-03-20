@@ -164,6 +164,30 @@ bring stdr
 : __cogito_grid_set_gap(grid = Grid, x = num, y = num) (( -- )) { }
 : __cogito_grid_set_span(child = any, col_span = num, row_span = num) (( -- )) { }
 : __cogito_grid(cols = num) (( Grid )) { }
+: __cogito_tableview(cols = num) (( any )) { }
+: __cogito_tableview_set_headers(tv = any, headers = any) (( -- )) { }
+: __cogito_tableview_set_col_width(tv = any, col = num, width = num) (( -- )) { }
+: __cogito_tableview_get_selected(tv = any) (( num )) { }
+: __cogito_tableview_set_selected(tv = any, row = num) (( -- )) { }
+: __cogito_tableview_set_show_grid(tv = any, show = bool) (( -- )) { }
+: __cogito_tableview_set_striped(tv = any, striped = bool) (( -- )) { }
+: __cogito_tableview_set_row_height(tv = any, h = num) (( -- )) { }
+: __cogito_tableview_set_header_height(tv = any, h = num) (( -- )) { }
+: __cogito_tableview_add_row(tv = any, row = any) (( -- )) { }
+: __cogito_tableview_clear(tv = any) (( -- )) { }
+: __cogito_tableview_set_checkboxes(tv = any, show = bool) (( -- )) { }
+: __cogito_tableview_check_row(tv = any, row = num, checked = bool) (( -- )) { }
+: __cogito_tableview_is_row_checked(tv = any, row = num) (( bool )) { }
+: __cogito_tableview_check_all(tv = any, checked = bool) (( -- )) { }
+: __cogito_tableview_get_checked_count(tv = any) (( num )) { }
+: __cogito_tableview_set_page(tv = any, page = num) (( -- )) { }
+: __cogito_tableview_get_page(tv = any) (( num )) { }
+: __cogito_tableview_set_rows_per_page(tv = any, rpp = num) (( -- )) { }
+: __cogito_tableview_get_rows_per_page(tv = any) (( num )) { }
+: __cogito_tableview_get_page_count(tv = any) (( num )) { }
+: __cogito_tableview_set_page_sizes(tv = any, sizes = any) (( -- )) { }
+: __cogito_node_on_check(node = any, handler = any) (( -- )) { }
+: __cogito_node_on_select(node = any, handler = any) (( -- )) { }
 : __cogito_hstack() (( HStack )) { }
 : __cogito_iconbtn_add_menu(btn = IconButton, label = string, handler = any) (( -- )) { }
 : __cogito_iconbtn_add_menu_section(btn = IconButton, label = string, handler = any) (( -- )) { }
@@ -282,6 +306,15 @@ bring stdr
 : __cogito_gst_last_tag_artist() (( string )) { }
 : __cogito_gst_last_tag_album() (( string )) { }
 : __cogito_gst_last_tag_track_number() (( num )) { }
+: __cogito_notify(title = string, body = string) (( bool )) { }
+: __cogito_mpris_init(app_name = string) (( bool )) { }
+: __cogito_mpris_shutdown() (( -- )) { }
+: __cogito_mpris_set_metadata(title = string, artist = string, album = string, length_ms = num) (( -- )) { }
+: __cogito_mpris_set_playback_status(status = num) (( -- )) { }
+: __cogito_mpris_poll() (( num )) { }
+: __cogito_shortcut_register(scancode = num, modifiers = num, handler = any) (( num )) { }
+: __cogito_shortcut_unregister(id = num) (( bool )) { }
+: __cogito_shortcut_unregister_all() (( -- )) { }
 : __cogito_pointer_capture(node = any) (( -- )) { }
 : __cogito_pointer_release() (( -- )) { }
 : __cogito_progress_get_circular(p = Progress) (( bool )) { }
@@ -1596,6 +1629,127 @@ pub ,: Grid : Component
     ;
     :: set_id(this, id = string) (( Grid ))
         __cogito_node_set_id(this, id)
+        <- this
+    ;
+;
+
+pub ,: TableView : Component
+    :: set_headers(this, headers = any) (( TableView ))
+        __cogito_tableview_set_headers(this, headers)
+        <- this
+    ;
+    :: set_col_width(this, col = num, width = num) (( TableView ))
+        __cogito_tableview_set_col_width(this, col, width)
+        <- this
+    ;
+    :: get_selected(this) (( num ))
+        <- __cogito_tableview_get_selected(this)
+    ;
+    :: set_selected(this, row = num) (( TableView ))
+        __cogito_tableview_set_selected(this, row)
+        <- this
+    ;
+    :: set_show_grid(this, show = bool) (( TableView ))
+        __cogito_tableview_set_show_grid(this, show)
+        <- this
+    ;
+    :: set_striped(this, striped = bool) (( TableView ))
+        __cogito_tableview_set_striped(this, striped)
+        <- this
+    ;
+    :: set_row_height(this, h = num) (( TableView ))
+        __cogito_tableview_set_row_height(this, h)
+        <- this
+    ;
+    :: set_header_height(this, h = num) (( TableView ))
+        __cogito_tableview_set_header_height(this, h)
+        <- this
+    ;
+    :: add_row(this, row = any) (( TableView ))
+        __cogito_tableview_add_row(this, row)
+        <- this
+    ;
+    :: clear(this) (( TableView ))
+        __cogito_tableview_clear(this)
+        <- this
+    ;
+    :: set_checkboxes(this, show = bool) (( TableView ))
+        __cogito_tableview_set_checkboxes(this, show)
+        <- this
+    ;
+    :: check_row(this, row = num, checked = bool) (( TableView ))
+        __cogito_tableview_check_row(this, row, checked)
+        <- this
+    ;
+    :: is_row_checked(this, row = num) (( bool ))
+        <- __cogito_tableview_is_row_checked(this, row)
+    ;
+    :: check_all(this, checked = bool) (( TableView ))
+        __cogito_tableview_check_all(this, checked)
+        <- this
+    ;
+    :: get_checked_count(this) (( num ))
+        <- __cogito_tableview_get_checked_count(this)
+    ;
+    :: set_page(this, page = num) (( TableView ))
+        __cogito_tableview_set_page(this, page)
+        <- this
+    ;
+    :: get_page(this) (( num ))
+        <- __cogito_tableview_get_page(this)
+    ;
+    :: set_rows_per_page(this, rpp = num) (( TableView ))
+        __cogito_tableview_set_rows_per_page(this, rpp)
+        <- this
+    ;
+    :: get_rows_per_page(this) (( num ))
+        <- __cogito_tableview_get_rows_per_page(this)
+    ;
+    :: get_page_count(this) (( num ))
+        <- __cogito_tableview_get_page_count(this)
+    ;
+    :: set_page_sizes(this, sizes = any) (( TableView ))
+        __cogito_tableview_set_page_sizes(this, sizes)
+        <- this
+    ;
+    :: on_check(this, handler = any) (( TableView ))
+        __cogito_node_on_check(this, handler)
+        <- this
+    ;
+    :: on_select(this, handler = any) (( TableView ))
+        __cogito_node_on_select(this, handler)
+        <- this
+    ;
+    :: set_margins(this, top = num, right = num, bottom = num, left = num) (( TableView ))
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_padding(this, top = num, right = num, bottom = num, left = num) (( TableView ))
+        __cogito_container_set_padding(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_hexpand(this, expand = bool) (( TableView ))
+        __cogito_container_set_hexpand(this, expand)
+        <- this
+    ;
+    :: set_vexpand(this, expand = bool) (( TableView ))
+        __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_visible(this, on = bool) (( TableView ))
+        __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_class(this, cls = string) (( TableView ))
+        __cogito_node_set_class(this, cls)
+        <- this
+    ;
+    :: set_id(this, id = string) (( TableView ))
+        __cogito_node_set_id(this, id)
+        <- this
+    ;
+    :: build(this, builder = any) (( TableView ))
+        __cogito_build(this, builder)
         <- this
     ;
 ;
@@ -4170,6 +4324,33 @@ pub ,: State
 :: gst_last_tag_track_number() (( num ))
     <- __cogito_gst_last_tag_track_number()
 ;
+:: notify(title = string, body = string) (( bool ))
+    <- __cogito_notify(title, body)
+;
+:: mpris_init(app_name = string) (( bool ))
+    <- __cogito_mpris_init(app_name)
+;
+:: mpris_shutdown() (( -- ))
+    __cogito_mpris_shutdown()
+;
+:: mpris_set_metadata(title = string, artist = string, album = string, length_ms = num) (( -- ))
+    __cogito_mpris_set_metadata(title, artist, album, length_ms)
+;
+:: mpris_set_playback_status(status = num) (( -- ))
+    __cogito_mpris_set_playback_status(status)
+;
+:: mpris_poll() (( num ))
+    <- __cogito_mpris_poll()
+;
+:: register_shortcut(scancode = num, modifiers = num, handler = any) (( num ))
+    <- __cogito_shortcut_register(scancode, modifiers, handler)
+;
+:: unregister_shortcut(id = num) (( bool ))
+    <- __cogito_shortcut_unregister(id)
+;
+:: unregister_all_shortcuts() (( -- ))
+    __cogito_shortcut_unregister_all()
+;
 :: set_timeout(ms = num, handler = any) (( num ))
     <- __cogito_timer_timeout(ms, handler)
 ;
@@ -4279,6 +4460,10 @@ pub ,: State
 
 :: grid(cols = num) (( Grid ))
     <- __cogito_grid(cols)
+;
+
+:: tableview(cols = num) (( TableView ))
+    <- __cogito_tableview(cols)
 ;
 
 :: tabs() (( Tabs ))

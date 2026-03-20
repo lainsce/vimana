@@ -1,3 +1,6 @@
+// Forward declaration for undo cleanup (defined in widgets/util/undo.inc)
+static void cogito_undo_free(CogitoUndoHistory* h);
+
 static bool cogito_val_equal(YisVal a, YisVal b) {
   if (a.tag != b.tag) return false;
   switch (a.tag) {
@@ -184,6 +187,25 @@ static void cogito_node_drop(YisObj* o) {
   if (n->kind == COGITO_SLIDER && n->kd->slider.bubble_format) {
     yis_release_val(YV_STR(n->kd->slider.bubble_format));
     n->kd->slider.bubble_format = NULL;
+  }
+  if ((n->kind == COGITO_TEXTFIELD || n->kind == COGITO_TEXTVIEW ||
+       n->kind == COGITO_SEARCHFIELD) && n->kd && n->kd->text_input.undo) {
+    cogito_undo_free(n->kd->text_input.undo);
+    n->kd->text_input.undo = NULL;
+  }
+  if (n->kind == COGITO_TABLEVIEW && n->kd) {
+    CogitoTableViewData* tv = &n->kd->tableview;
+    if (tv->headers) {
+      for (int i = 0; i < tv->col_count; i++) {
+        if (tv->headers[i]) yis_release_val(YV_STR(tv->headers[i]));
+      }
+      free(tv->headers);
+      tv->headers = NULL;
+    }
+    if (tv->col_widths) {
+      free(tv->col_widths);
+      tv->col_widths = NULL;
+    }
   }
   if (n->textfield_regex) {
     yis_release_val(YV_STR(n->textfield_regex));
@@ -409,6 +431,15 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
     case COGITO_BUTTON_GROUP: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoButtonGroupData)); break;
     case COGITO_CARD: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoCardData)); break;
     case COGITO_WINDOW_BAR: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoWindowBarData)); break;
+    case COGITO_TABLEVIEW: {
+      n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoTableViewData));
+      n->kd->tableview.selected_row = -1;
+      n->kd->tableview.header_height = 36;
+      n->kd->tableview.row_height = 40;
+      n->kd->tableview.sort_col = -1;
+      n->kd->tableview.show_grid = true;
+      break;
+    }
     default: break;
   }
   cogito_apply_style_to_node(n);
@@ -940,6 +971,7 @@ static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
 
     #include "widgets/intrinsic/window_bar.inc"
 
+    case COGITO_TABLEVIEW:
     case COGITO_KIND_COUNT:
       break;
 

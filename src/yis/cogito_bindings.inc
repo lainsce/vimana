@@ -187,6 +187,38 @@
 #undef cogito_gst_last_tag_artist
 #undef cogito_gst_last_tag_album
 #undef cogito_gst_last_tag_track_number
+#undef cogito_notify
+#undef cogito_mpris_init
+#undef cogito_mpris_shutdown
+#undef cogito_mpris_set_metadata
+#undef cogito_mpris_set_playback_status
+#undef cogito_mpris_poll
+#undef cogito_shortcut_register
+#undef cogito_shortcut_unregister
+#undef cogito_shortcut_unregister_all
+#undef cogito_tableview_new
+#undef cogito_tableview_set_headers
+#undef cogito_tableview_set_col_width
+#undef cogito_tableview_get_selected
+#undef cogito_tableview_set_selected
+#undef cogito_tableview_set_show_grid
+#undef cogito_tableview_set_striped
+#undef cogito_tableview_set_row_height
+#undef cogito_tableview_set_header_height
+#undef cogito_tableview_add_row
+#undef cogito_tableview_clear
+#undef cogito_tableview_set_checkboxes
+#undef cogito_tableview_check_row
+#undef cogito_tableview_is_row_checked
+#undef cogito_tableview_check_all
+#undef cogito_tableview_get_checked_count
+#undef cogito_tableview_set_page
+#undef cogito_tableview_get_page
+#undef cogito_tableview_set_rows_per_page
+#undef cogito_tableview_get_rows_per_page
+#undef cogito_tableview_get_page_count
+#undef cogito_tableview_set_page_sizes
+#undef cogito_node_on_check
 #undef cogito_pointer_capture
 #undef cogito_pointer_release
 #undef cogito_progress_get_circular
@@ -339,6 +371,35 @@
 #undef cogito_canvas_circle
 #undef cogito_canvas_fill_circle
 
+// Forward declarations for shortcut functions (exported from libcogito, use YisVal)
+extern int cogito_shortcut_register(int scancode, int modifiers, YisVal callback);
+extern bool cogito_shortcut_unregister(int id);
+extern void cogito_shortcut_unregister_all(void);
+
+// Forward declarations for tableview functions (exported from libcogito)
+extern cogito_node* cogito_tableview_new_obj(int cols);
+extern void cogito_tableview_set_headers(cogito_node* n, YisStr** headers, int count);
+extern void cogito_tableview_set_col_width(cogito_node* n, int col, int width);
+extern int cogito_tableview_get_selected(cogito_node* n);
+extern void cogito_tableview_set_selected(cogito_node* n, int row);
+extern void cogito_tableview_set_show_grid(cogito_node* n, bool show);
+extern void cogito_tableview_set_striped(cogito_node* n, bool striped);
+extern void cogito_tableview_set_row_height(cogito_node* n, int h);
+extern void cogito_tableview_set_header_height(cogito_node* n, int h);
+extern void cogito_tableview_add_row(cogito_node* n, cogito_node* row);
+extern void cogito_tableview_clear(cogito_node* n);
+extern void cogito_tableview_set_checkboxes(cogito_node* n, bool show);
+extern void cogito_tableview_check_row(cogito_node* n, int row, bool checked);
+extern bool cogito_tableview_is_row_checked(cogito_node* n, int row);
+extern void cogito_tableview_check_all(cogito_node* n, bool checked);
+extern int cogito_tableview_get_checked_count(cogito_node* n);
+extern void cogito_tableview_set_page(cogito_node* n, int page);
+extern int cogito_tableview_get_page(cogito_node* n);
+extern void cogito_tableview_set_rows_per_page(cogito_node* n, int rpp);
+extern int cogito_tableview_get_rows_per_page(cogito_node* n);
+extern int cogito_tableview_get_page_count(cogito_node* n);
+extern void cogito_tableview_set_page_sizes(cogito_node* n, int* sizes, int count);
+
 #ifndef COGITO_DEFINED_COGITO_DEBUG_ENABLED
 static bool cogito_debug_enabled(void) {
   const char* env = getenv("COGITO_DEBUG");
@@ -364,6 +425,7 @@ typedef struct CogitoHandle {
   YisVal on_action;
   YisVal on_draw;
   YisVal on_resize;
+  YisVal on_check;
   YisVal builder;
 } CogitoHandle;
 
@@ -578,6 +640,13 @@ static void cogito_cb_select(cogito_node* node, int idx, void* user) {
   CogitoHandle* h = (CogitoHandle*)user;
   if (!h) return;
   cogito_invoke_index_handler(h->on_select, idx);
+}
+
+static void cogito_cb_check(cogito_node* node, int idx, void* user) {
+  (void)node;
+  CogitoHandle* h = (CogitoHandle*)user;
+  if (!h) return;
+  cogito_invoke_index_handler(h->on_check, idx);
 }
 
 static void cogito_cb_activate(cogito_node* node, int idx, void* user) {
@@ -3929,6 +3998,212 @@ static YisVal __cogito_gst_last_tag_album(void) {
 static YisVal __cogito_gst_last_tag_track_number(void) {
   return YV_INT(cogito_gst_last_tag_track_number());
 }
+
+static YisVal __cogito_notify(YisVal titlev, YisVal bodyv) {
+  const char *title = (titlev.tag == EVT_STR && titlev.as.p) ? ((YisStr*)titlev.as.p)->data : "";
+  const char *body = (bodyv.tag == EVT_STR && bodyv.as.p) ? ((YisStr*)bodyv.as.p)->data : "";
+  return YV_BOOL(cogito_notify(title, body));
+}
+
+static YisVal __cogito_mpris_init(YisVal namev) {
+  const char *name = (namev.tag == EVT_STR && namev.as.p) ? ((YisStr*)namev.as.p)->data : "Cogito";
+  return YV_BOOL(cogito_mpris_init(name));
+}
+
+static void __cogito_mpris_shutdown(void) {
+  cogito_mpris_shutdown();
+}
+
+static void __cogito_mpris_set_metadata(YisVal tv, YisVal artv, YisVal alv, YisVal lenv) {
+  const char *title = (tv.tag == EVT_STR && tv.as.p) ? ((YisStr*)tv.as.p)->data : "";
+  const char *artist = (artv.tag == EVT_STR && artv.as.p) ? ((YisStr*)artv.as.p)->data : "";
+  const char *album = (alv.tag == EVT_STR && alv.as.p) ? ((YisStr*)alv.as.p)->data : "";
+  int64_t len_ms = (int64_t)(lenv.tag == EVT_INT ? lenv.as.i : (int64_t)lenv.as.f);
+  cogito_mpris_set_metadata(title, artist, album, len_ms);
+}
+
+static void __cogito_mpris_set_playback_status(YisVal sv) {
+  int status = (sv.tag == EVT_INT) ? (int)sv.as.i : (int)sv.as.f;
+  cogito_mpris_set_playback_status(status);
+}
+
+static YisVal __cogito_mpris_poll(void) {
+  return YV_INT(cogito_mpris_poll());
+}
+
+static YisVal __cogito_shortcut_register(YisVal scanv, YisVal modv, YisVal cb) {
+  int scancode = (scanv.tag == EVT_INT) ? (int)scanv.as.i : (int)scanv.as.f;
+  int modifiers = (modv.tag == EVT_INT) ? (int)modv.as.i : (int)modv.as.f;
+  int id = cogito_shortcut_register(scancode, modifiers, cb);
+  return YV_INT(id);
+}
+
+static YisVal __cogito_shortcut_unregister(YisVal idv) {
+  int id = (idv.tag == EVT_INT) ? (int)idv.as.i : (int)idv.as.f;
+  return YV_BOOL(cogito_shortcut_unregister(id));
+}
+
+static void __cogito_shortcut_unregister_all(void) {
+  cogito_shortcut_unregister_all();
+}
+
+// ---- TableView bindings ----
+static YisVal __cogito_tableview(YisVal colsv) {
+  int cols = (int)yis_as_int(colsv);
+  return YV_OBJ(cogito_tableview_new_obj(cols));
+}
+static void __cogito_tableview_set_headers(YisVal tvv, YisVal headersv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  if (!n) return;
+  if (headersv.tag != EVT_ARR) return;
+  YisArr* arr = (YisArr*)headersv.as.p;
+  int count = (int)arr->len;
+  YisStr** hdrs = (YisStr**)calloc((size_t)count, sizeof(YisStr*));
+  for (int i = 0; i < count; i++) {
+    YisVal elem = yis_arr_get(arr, (int64_t)i);
+    if (elem.tag == EVT_STR && elem.as.p) {
+      hdrs[i] = (YisStr*)elem.as.p;
+    } else {
+      hdrs[i] = NULL;
+    }
+  }
+  cogito_tableview_set_headers(n, hdrs, count);
+  free(hdrs);
+}
+static void __cogito_tableview_set_col_width(YisVal tvv, YisVal colv, YisVal wv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_col_width(n, (int)yis_as_int(colv), (int)yis_as_int(wv));
+}
+static YisVal __cogito_tableview_get_selected(YisVal tvv) {
+  if (tvv.tag != EVT_OBJ) return YV_INT(-1);
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  return YV_INT(cogito_tableview_get_selected(n));
+}
+static void __cogito_tableview_set_selected(YisVal tvv, YisVal rv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_selected(n, (int)yis_as_int(rv));
+}
+static void __cogito_tableview_set_show_grid(YisVal tvv, YisVal sv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_show_grid(n, yis_as_bool(sv));
+}
+static void __cogito_tableview_set_striped(YisVal tvv, YisVal sv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_striped(n, yis_as_bool(sv));
+}
+static void __cogito_tableview_set_row_height(YisVal tvv, YisVal hv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_row_height(n, (int)yis_as_int(hv));
+}
+static void __cogito_tableview_set_header_height(YisVal tvv, YisVal hv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_header_height(n, (int)yis_as_int(hv));
+}
+static void __cogito_tableview_add_row(YisVal tvv, YisVal rowv) {
+  if (tvv.tag != EVT_OBJ || rowv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_node* row = (cogito_node*)rowv.as.p;
+  cogito_tableview_add_row(n, row);
+}
+static void __cogito_tableview_clear(YisVal tvv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_clear(n);
+}
+static void __cogito_tableview_set_checkboxes(YisVal tvv, YisVal sv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_checkboxes(n, yis_as_bool(sv));
+}
+static void __cogito_tableview_check_row(YisVal tvv, YisVal rv, YisVal cv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_check_row(n, (int)yis_as_int(rv), yis_as_bool(cv));
+}
+static YisVal __cogito_tableview_is_row_checked(YisVal tvv, YisVal rv) {
+  if (tvv.tag != EVT_OBJ) return YV_BOOL(false);
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  return YV_BOOL(cogito_tableview_is_row_checked(n, (int)yis_as_int(rv)));
+}
+static void __cogito_tableview_check_all(YisVal tvv, YisVal cv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_check_all(n, yis_as_bool(cv));
+}
+static YisVal __cogito_tableview_get_checked_count(YisVal tvv) {
+  if (tvv.tag != EVT_OBJ) return YV_INT(0);
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  return YV_INT(cogito_tableview_get_checked_count(n));
+}
+static void __cogito_tableview_set_page(YisVal tvv, YisVal pv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_page(n, (int)yis_as_int(pv));
+}
+static YisVal __cogito_tableview_get_page(YisVal tvv) {
+  if (tvv.tag != EVT_OBJ) return YV_INT(0);
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  return YV_INT(cogito_tableview_get_page(n));
+}
+static void __cogito_tableview_set_rows_per_page(YisVal tvv, YisVal rv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  cogito_tableview_set_rows_per_page(n, (int)yis_as_int(rv));
+}
+static YisVal __cogito_tableview_get_rows_per_page(YisVal tvv) {
+  if (tvv.tag != EVT_OBJ) return YV_INT(0);
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  return YV_INT(cogito_tableview_get_rows_per_page(n));
+}
+static YisVal __cogito_tableview_get_page_count(YisVal tvv) {
+  if (tvv.tag != EVT_OBJ) return YV_INT(1);
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  return YV_INT(cogito_tableview_get_page_count(n));
+}
+static void __cogito_tableview_set_page_sizes(YisVal tvv, YisVal sizesv) {
+  if (tvv.tag != EVT_OBJ) return;
+  cogito_node* n = (cogito_node*)tvv.as.p;
+  if (sizesv.tag != EVT_ARR) return;
+  YisArr* arr = (YisArr*)sizesv.as.p;
+  int count = (int)arr->len;
+  int* sizes = (int*)calloc((size_t)count, sizeof(int));
+  for (int i = 0; i < count; i++) {
+    YisVal elem = yis_arr_get(arr, (int64_t)i);
+    sizes[i] = (int)yis_as_int(elem);
+  }
+  cogito_tableview_set_page_sizes(n, sizes, count);
+  free(sizes);
+}
+static void __cogito_node_on_check(YisVal nodev, YisVal handler) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  CogitoHandle* h = (CogitoHandle*)nodev.as.p;
+  if (handler.tag != EVT_FN) {
+    cogito_set_handler(h, &h->on_check, handler);
+    cogito_node_on_check(node, NULL, NULL);
+    return;
+  }
+  cogito_set_handler(h, &h->on_check, handler);
+  cogito_node_on_check(node, cogito_cb_check, h);
+}
+static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  CogitoHandle* h = (CogitoHandle*)nodev.as.p;
+  if (handler.tag != EVT_FN) {
+    cogito_set_handler(h, &h->on_select, handler);
+    cogito_node_on_select(node, NULL, NULL);
+    return;
+  }
+  cogito_set_handler(h, &h->on_select, handler);
+  cogito_node_on_select(node, cogito_cb_select, h);
+}
+
 // ---- Codegen aliases ----
 #define cogito_app_new __cogito_app
 #define cogito_app_set_appid __cogito_app_set_appid
@@ -3961,6 +4236,39 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
 #define cogito_gst_last_tag_artist __cogito_gst_last_tag_artist
 #define cogito_gst_last_tag_album __cogito_gst_last_tag_album
 #define cogito_gst_last_tag_track_number __cogito_gst_last_tag_track_number
+#define cogito_notify __cogito_notify
+#define cogito_mpris_init __cogito_mpris_init
+#define cogito_mpris_shutdown __cogito_mpris_shutdown
+#define cogito_mpris_set_metadata __cogito_mpris_set_metadata
+#define cogito_mpris_set_playback_status __cogito_mpris_set_playback_status
+#define cogito_mpris_poll __cogito_mpris_poll
+#define cogito_shortcut_register __cogito_shortcut_register
+#define cogito_shortcut_unregister __cogito_shortcut_unregister
+#define cogito_shortcut_unregister_all __cogito_shortcut_unregister_all
+#define cogito_tableview_new __cogito_tableview
+#define cogito_tableview_set_headers __cogito_tableview_set_headers
+#define cogito_tableview_set_col_width __cogito_tableview_set_col_width
+#define cogito_tableview_get_selected __cogito_tableview_get_selected
+#define cogito_tableview_set_selected __cogito_tableview_set_selected
+#define cogito_tableview_set_show_grid __cogito_tableview_set_show_grid
+#define cogito_tableview_set_striped __cogito_tableview_set_striped
+#define cogito_tableview_set_row_height __cogito_tableview_set_row_height
+#define cogito_tableview_set_header_height __cogito_tableview_set_header_height
+#define cogito_tableview_add_row __cogito_tableview_add_row
+#define cogito_tableview_clear __cogito_tableview_clear
+#define cogito_tableview_set_checkboxes __cogito_tableview_set_checkboxes
+#define cogito_tableview_check_row __cogito_tableview_check_row
+#define cogito_tableview_is_row_checked __cogito_tableview_is_row_checked
+#define cogito_tableview_check_all __cogito_tableview_check_all
+#define cogito_tableview_get_checked_count __cogito_tableview_get_checked_count
+#define cogito_tableview_set_page __cogito_tableview_set_page
+#define cogito_tableview_get_page __cogito_tableview_get_page
+#define cogito_tableview_set_rows_per_page __cogito_tableview_set_rows_per_page
+#define cogito_tableview_get_rows_per_page __cogito_tableview_get_rows_per_page
+#define cogito_tableview_get_page_count __cogito_tableview_get_page_count
+#define cogito_tableview_set_page_sizes __cogito_tableview_set_page_sizes
+#define cogito_node_on_check __cogito_node_on_check
+#define cogito_node_on_select __cogito_node_on_select
 #define cogito_window_new __cogito_window
 #define cogito_window_set_resizable __cogito_window_set_resizable
 #define cogito_window_set_autosize __cogito_window_set_autosize

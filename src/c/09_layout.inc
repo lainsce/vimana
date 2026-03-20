@@ -146,6 +146,7 @@ static bool cogito_layout_effective_vexpand(const CogitoNode* n) {
 #include "widgets/layout/hstack.inc"
 #include "widgets/layout/list.inc"
 #include "widgets/layout/grid.inc"
+#include "widgets/layout/tableview.inc"
 #include "widgets/layout/window.inc"
 #include "widgets/layout/revealer.inc"
 #include "widgets/layout/bin.inc"
@@ -320,6 +321,10 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
 
     case COGITO_GRID:
       cogito_layout_grid(n, x, y);
+      break;
+
+    case COGITO_TABLEVIEW:
+      cogito_layout_tableview(n, x, y);
       break;
 
     case COGITO_REVEALER:

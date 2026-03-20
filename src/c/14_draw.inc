@@ -1731,6 +1731,7 @@ static void cogito_draw_node(CogitoNode* n) {
     #include "widgets/draw/switch.inc"
     #include "widgets/draw/list.inc"
     #include "widgets/draw/grid.inc"
+    #include "widgets/draw/tableview.inc"
     #include "widgets/draw/appbar.inc"
     #include "widgets/draw/dialog.inc"
     #include "widgets/draw/popover.inc"

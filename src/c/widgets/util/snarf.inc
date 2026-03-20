@@ -250,21 +250,25 @@ static void cogito_ctx_menu_init(void) {
   if (cogito_ctx_menu_inited) return;
   memset(&cogito_ctx_menu_node, 0, sizeof(cogito_ctx_menu_node));
   // Static labels — no refcount needed
+  static YisStr lbl_undo  = { INT32_MAX, 4, "Undo" };
+  static YisStr lbl_redo  = { INT32_MAX, 4, "Redo" };
   static YisStr lbl_cut   = { INT32_MAX, 3, "Cut" };
   static YisStr lbl_copy  = { INT32_MAX, 4, "Copy" };
   static YisStr lbl_paste = { INT32_MAX, 5, "Paste" };
   static YisStr lbl_all   = { INT32_MAX, 10, "Select All" };
+  static YisStr sc_z  = { INT32_MAX, 4, "\xE2\x8C\x98" "Z" };  // ⌘Z
+  static YisStr sc_sz = { INT32_MAX, 7, "\xE2\x87\xA7\xE2\x8C\x98" "Z" }; // ⇧⌘Z
   static YisStr sc_x = { INT32_MAX, 4, "\xE2\x8C\x98" "X" };  // ⌘X
   static YisStr sc_c = { INT32_MAX, 4, "\xE2\x8C\x98" "C" };  // ⌘C
   static YisStr sc_v = { INT32_MAX, 4, "\xE2\x8C\x98" "V" };  // ⌘V
   static YisStr sc_a = { INT32_MAX, 4, "\xE2\x8C\x98" "A" };  // ⌘A
-  static YisStr* labels[4]    = { &lbl_cut, &lbl_copy, &lbl_paste, &lbl_all };
-  static YisFn*  handlers[4]  = { NULL, NULL, NULL, NULL };  // handled internally
-  static bool    sections[4]  = { false, false, true, false };
-  static YisStr* icons[4]     = { NULL, NULL, NULL, NULL };
-  static YisStr* shortcuts[4] = { &sc_x, &sc_c, &sc_v, &sc_a };
-  static bool    submenu[4]   = { false, false, false, false };
-  static bool    toggled[4]   = { false, false, false, false };
+  static YisStr* labels[6]    = { &lbl_undo, &lbl_redo, &lbl_cut, &lbl_copy, &lbl_paste, &lbl_all };
+  static YisFn*  handlers[6]  = { NULL, NULL, NULL, NULL, NULL, NULL };
+  static bool    sections[6]  = { false, true, false, false, true, false };
+  static YisStr* icons[6]     = { NULL, NULL, NULL, NULL, NULL, NULL };
+  static YisStr* shortcuts[6] = { &sc_z, &sc_sz, &sc_x, &sc_c, &sc_v, &sc_a };
+  static bool    submenu[6]   = { false, false, false, false, false, false };
+  static bool    toggled[6]   = { false, false, false, false, false, false };
 
   cogito_ctx_menu_node.menu_labels = labels;
   cogito_ctx_menu_node.menu_handlers = handlers;
@@ -273,8 +277,8 @@ static void cogito_ctx_menu_init(void) {
   cogito_ctx_menu_node.menu_shortcuts = shortcuts;
   cogito_ctx_menu_node.menu_submenu = submenu;
   cogito_ctx_menu_node.menu_toggled = toggled;
-  cogito_ctx_menu_node.menu_len = 4;
-  cogito_ctx_menu_node.menu_cap = 4;
+  cogito_ctx_menu_node.menu_len = 6;
+  cogito_ctx_menu_node.menu_cap = 6;
   cogito_ctx_menu_inited = true;
 }
 
@@ -302,10 +306,12 @@ static bool cogito_ctx_menu_invoke(size_t idx) {
   CogitoNode* t = cogito_ctx_menu_target;
   if (!t) return false;
   switch (idx) {
-    case 0: cogito_text_input_cut(t); break;
-    case 1: cogito_text_input_copy(t); break;
-    case 2: cogito_text_input_paste(t); break;
-    case 3: cogito_text_input_select_all(t); break;
+    case 0: cogito_undo_perform(t); break;
+    case 1: cogito_redo_perform(t); break;
+    case 2: cogito_undo_push(t); cogito_text_input_cut(t); break;
+    case 3: cogito_text_input_copy(t); break;
+    case 4: cogito_undo_push(t); cogito_text_input_paste(t); break;
+    case 5: cogito_text_input_select_all(t); break;
     default: return false;
   }
   cogito_ctx_menu_target = NULL;

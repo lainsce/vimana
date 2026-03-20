@@ -166,6 +166,19 @@ const char *cogito_gst_last_tag_artist(void);
 const char *cogito_gst_last_tag_album(void);
 int cogito_gst_last_tag_track_number(void);
 
+// System notifications
+bool cogito_notify(const char *title, const char *body);
+
+// MPRIS / media key integration
+bool cogito_mpris_init(const char *app_name);
+void cogito_mpris_shutdown(void);
+void cogito_mpris_set_metadata(const char *title, const char *artist,
+                               const char *album, int64_t length_ms);
+void cogito_mpris_set_playback_status(int status); // 0=stopped, 1=playing, 2=paused
+typedef void (*cogito_mpris_callback)(int action, void *user);
+void cogito_mpris_set_callback(cogito_mpris_callback cb, void *user);
+int cogito_mpris_poll(void); // Returns: 0=none, 1=play, 2=pause, 3=next, 4=prev, 5=stop
+
 cogito_timer_id cogito_timer_set_timeout(uint32_t delay_ms,
                                          cogito_timer_fn fn, void *user);
 cogito_timer_id cogito_timer_set_interval(uint32_t interval_ms,
@@ -405,6 +418,7 @@ void cogito_node_on_click(cogito_node *node, cogito_node_fn fn, void *user);
 void cogito_node_on_change(cogito_node *node, cogito_node_fn fn, void *user);
 void cogito_node_on_select(cogito_node *node, cogito_index_fn fn, void *user);
 void cogito_node_on_activate(cogito_node *node, cogito_index_fn fn, void *user);
+void cogito_node_on_check(cogito_node *node, cogito_index_fn fn, void *user);
 
 // Widget-specific helpers
 void cogito_dropdown_set_items(cogito_node *dropdown, const char **items,

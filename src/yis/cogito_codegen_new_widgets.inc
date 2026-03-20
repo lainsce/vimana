@@ -6,6 +6,19 @@
                         out->tmp = t;
                         return true;
                     }
+                    // --- TableView ---
+                    if (str_eq_c(fname, "__cogito_tableview")) {
+                        GenExpr cols;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &cols, err)) return false;
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_tableview_new(%s);", t, cols.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", cols.tmp);
+                        gen_expr_release_except(cg, &cols, cols.tmp);
+                        gen_expr_free(&cols);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
                     // --- SwitchBar ---
                     if (str_eq_c(fname, "__cogito_switchbar")) {
                         GenExpr text;
