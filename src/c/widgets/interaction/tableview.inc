@@ -251,7 +251,6 @@ static bool cogito_tableview_handle_click(CogitoNode* n, int mx, int my) {
       }
       // Page navigation (right area)
       int nav_x = tx + inner_w - 220;
-      int nav_cy = footer_y + footer_h / 2;
       int btn_size = 32;
       // Prev button
       if (mx >= nav_x && mx < nav_x + btn_size) {
