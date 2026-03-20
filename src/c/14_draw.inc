@@ -1691,6 +1691,8 @@ static void cogito_draw_offset_subtree(CogitoNode* n, int dx, int dy) {
   }
 }
 
+#include "widgets/draw/virtual_list.inc"
+
 static void cogito_draw_node(CogitoNode* n) {
   if (!n) return;
   if (cogito_node_is_hidden(n)) return;
@@ -1755,6 +1757,10 @@ static void cogito_draw_node(CogitoNode* n) {
       break;
     #include "widgets/draw/vstack.inc"
     #include "widgets/draw/hstack.inc"
+    #include "widgets/draw/flow.inc"
+    case COGITO_VIRTUAL_LIST:
+      cogito_draw_virtual_list(n);
+      break;
     #include "widgets/draw/zstack.inc"
     #include "widgets/draw/revealer.inc"
     #include "widgets/draw/bin.inc"
@@ -1766,6 +1772,7 @@ static void cogito_draw_node(CogitoNode* n) {
     #include "widgets/draw/treeview.inc"
     #include "widgets/draw/tooltip.inc"
     #include "widgets/draw/divider.inc"
+    case COGITO_CONTEXT_MENU:
     #include "widgets/draw/menu_section.inc"
     #include "widgets/draw/card.inc"
     #include "widgets/draw/avatar.inc"

@@ -12,6 +12,10 @@
 #undef cogito_app_new
 #undef cogito_app_run
 #undef cogito_app_copy_to_clipboard
+#undef cogito_app_paste_from_clipboard
+#undef cogito_clipboard_has
+#undef cogito_clipboard_get_data
+#undef cogito_clipboard_set_data
 #undef cogito_app_set_accent_color
 #undef cogito_app_set_dark_mode
 #undef cogito_app_set_accent_from_image
@@ -126,6 +130,7 @@
 #undef cogito_timer_clear
 #undef cogito_timer_clear_for
 #undef cogito_timer_clear_all
+#undef cogito_transition_start
 #undef cogito_label_new
 #undef cogito_label_set_align
 #undef cogito_label_set_ellipsis
@@ -169,6 +174,15 @@
 #undef cogito_node_set_valign
 #undef cogito_node_window
 #undef cogito_open_url
+#undef cogito_popover_new
+#undef cogito_popover_show
+#undef cogito_popover_close
+#undef cogito_context_menu_new
+#undef cogito_context_menu_add_item
+#undef cogito_context_menu_add_section
+#undef cogito_context_menu_set_icon
+#undef cogito_context_menu_set_shortcut
+#undef cogito_node_set_context_menu
 #undef cogito_gst_init
 #undef cogito_gst_shutdown
 #undef cogito_gst_load
@@ -218,6 +232,7 @@
 #undef cogito_tableview_get_rows_per_page
 #undef cogito_tableview_get_page_count
 #undef cogito_tableview_set_page_sizes
+#undef cogito_task_run
 #undef cogito_node_on_check
 #undef cogito_pointer_capture
 #undef cogito_pointer_release
@@ -333,6 +348,10 @@
 #undef cogito_view_dual_set_ratio
 #undef cogito_view_switcher_new
 #undef cogito_view_switcher_set_active
+#undef cogito_virtual_list_new
+#undef cogito_virtual_list_set_item_count
+#undef cogito_virtual_list_set_item_height
+#undef cogito_virtual_list_set_builder
 #undef cogito_welcome_screen_new
 #undef cogito_welcome_screen_set_action
 #undef cogito_welcome_screen_set_description
@@ -345,6 +364,7 @@
 #undef cogito_window_set_autosize
 #undef cogito_window_set_builder
 #undef cogito_window_on_resize
+#undef cogito_window_on_file_drop
 #undef cogito_window_is_compact
 #undef cogito_window_set_dialog
 #undef cogito_window_set_side_sheet
@@ -400,6 +420,21 @@ extern int cogito_tableview_get_rows_per_page(cogito_node* n);
 extern int cogito_tableview_get_page_count(cogito_node* n);
 extern void cogito_tableview_set_page_sizes(cogito_node* n, int* sizes, int count);
 
+// Forward declarations for popover functions
+extern cogito_node* cogito_popover_new(void);
+extern void cogito_popover_show(cogito_node* anchor, cogito_node* popover);
+extern void cogito_popover_close(cogito_window* window);
+
+// Forward declarations for context menu functions
+extern cogito_node* cogito_context_menu_new(void);
+extern void cogito_context_menu_add_item(cogito_node* menu, const char* label,
+                                         cogito_node_fn fn, void* user);
+extern void cogito_context_menu_add_section(cogito_node* menu, const char* label,
+                                            cogito_node_fn fn, void* user);
+extern void cogito_context_menu_set_icon(cogito_node* menu, const char* icon);
+extern void cogito_context_menu_set_shortcut(cogito_node* menu, const char* shortcut);
+extern void cogito_node_set_context_menu(cogito_node* node, cogito_node* menu);
+
 #ifndef COGITO_DEFINED_COGITO_DEBUG_ENABLED
 static bool cogito_debug_enabled(void) {
   const char* env = getenv("COGITO_DEBUG");
@@ -425,6 +460,7 @@ typedef struct CogitoHandle {
   YisVal on_action;
   YisVal on_draw;
   YisVal on_resize;
+  YisVal on_file_drop;
   YisVal on_check;
   YisVal builder;
 } CogitoHandle;
@@ -818,6 +854,107 @@ static YisVal __cogito_app_copy_to_clipboard(YisVal appv, YisVal textv) {
   return YV_BOOL(ok);
 }
 
+static YisVal __cogito_app_paste_from_clipboard(YisVal appv) {
+  cogito_app* app = cogito_app_from_val(appv);
+  char* text = cogito_app_paste_from_clipboard(app);
+  if (!text) return YV_STR(stdr_str_lit(""));
+  YisStr* s = stdr_str_lit(text);
+  free(text);
+  return YV_STR(s);
+}
+
+static YisVal __cogito_clipboard_has(YisVal mimev) {
+  YisStr* tmp = NULL;
+  const char* mime = cogito_required_cstr(mimev, &tmp);
+  bool ok = cogito_clipboard_has(mime);
+  if (tmp) yis_release_val(YV_STR(tmp));
+  return YV_BOOL(ok);
+}
+
+static YisVal __cogito_clipboard_set_data(YisVal mimev, YisVal datav) {
+  YisStr* tmp_m = NULL;
+  const char* mime = cogito_required_cstr(mimev, &tmp_m);
+  YisStr* dstr = (datav.tag == EVT_STR) ? (YisStr*)datav.as.p : NULL;
+  bool ok = false;
+  if (mime && dstr && dstr->data)
+    ok = cogito_clipboard_set_data(mime, dstr->data, dstr->len);
+  if (tmp_m) yis_release_val(YV_STR(tmp_m));
+  return YV_BOOL(ok);
+}
+
+static YisVal __cogito_clipboard_get_data(YisVal mimev) {
+  YisStr* tmp = NULL;
+  const char* mime = cogito_required_cstr(mimev, &tmp);
+  size_t size = 0;
+  void* data = cogito_clipboard_get_data(mime, &size);
+  if (tmp) yis_release_val(YV_STR(tmp));
+  if (!data || size == 0) return YV_STR(stdr_str_lit(""));
+  YisStr* s = stdr_str_from_slice((const char*)data, (int)size);
+  free(data);
+  return YV_STR(s);
+}
+
+static YisVal __cogito_print_text(YisVal textv) {
+  YisStr* tmp = NULL;
+  const char* text = cogito_required_cstr(textv, &tmp);
+  bool ok = cogito_print_text(text);
+  if (tmp) yis_release_val(YV_STR(tmp));
+  return YV_BOOL(ok);
+}
+
+static void __cogito_async_run(YisVal workv, YisVal donev) {
+  YisFn* work = (workv.tag == EVT_FN) ? (YisFn*)workv.as.p : NULL;
+  YisFn* done = (donev.tag == EVT_FN) ? (YisFn*)donev.as.p : NULL;
+  if (!work) return;
+  cogito_task_run(work, done);
+}
+
+static YisVal __cogito_i18n(YisVal keyv) {
+  YisStr* tmp = NULL;
+  const char* key = cogito_required_cstr(keyv, &tmp);
+  const char* val = cogito_i18n(key);
+  YisVal result = val ? YV_STR(stdr_str_lit(val)) : YV_NULLV;
+  if (tmp) yis_release_val(YV_STR(tmp));
+  return result;
+}
+
+static void __cogito_i18n_load(YisVal pathv) {
+  YisStr* tmp = NULL;
+  const char* path = cogito_required_cstr(pathv, &tmp);
+  cogito_i18n_load(path);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_set_locale(YisVal localev) {
+  YisStr* tmp = NULL;
+  const char* locale = cogito_required_cstr(localev, &tmp);
+  cogito_set_locale(locale);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static YisVal __cogito_get_locale(void) {
+  const char* locale = cogito_get_locale();
+  return locale ? YV_STR(stdr_str_lit(locale)) : YV_NULLV;
+}
+
+static void __cogito_set_i18n_domain(YisVal domainv) {
+  YisStr* tmp = NULL;
+  const char* domain = cogito_required_cstr(domainv, &tmp);
+  cogito_set_i18n_domain(domain);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_transition(YisVal fromv, YisVal tov, YisVal msv, YisVal easev, YisVal updatev, YisVal completev) {
+  double from = yis_as_float(fromv);
+  double to = yis_as_float(tov);
+  int ms = (int)yis_as_int(msv);
+  int ease = (int)yis_as_int(easev);
+  YisFn* upd = (updatev.tag == EVT_FN) ? (YisFn*)updatev.as.p : NULL;
+  YisFn* cpl = (completev.tag == EVT_FN) ? (YisFn*)completev.as.p : NULL;
+  if (!upd) return;
+  cogito_transition_start(from, to, ms, ease, upd, cpl);
+}
+
 static YisVal __cogito_window(YisVal titlev, YisVal wv, YisVal hv) {
   YisStr* tmp = NULL;
   const char* title = cogito_required_cstr(titlev, &tmp);
@@ -875,6 +1012,12 @@ static void __cogito_window_on_resize(YisVal winv, YisVal handler) {
   }
   cogito_set_handler(h, &h->on_resize, handler);
   cogito_window_on_resize(win, cogito_cb_resize, h);
+}
+
+static void __cogito_window_on_file_drop(YisVal winv, YisVal handler) {
+  cogito_node* win = cogito_node_from_val(winv);
+  void *fn = (handler.tag == EVT_FN) ? handler.as.p : NULL;
+  cogito_window_set_file_drop_fn(win, fn);
 }
 
 static YisVal __cogito_window_is_compact(YisVal winv) {
@@ -1992,6 +2135,71 @@ static void __cogito_window_clear_dialog(YisVal winv) {
   cogito_window_clear_dialog(win);
 }
 
+static YisVal __cogito_popover(void) {
+  cogito_node* n = cogito_popover_new();
+  return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+
+static void __cogito_popover_show(YisVal anchorv, YisVal popoverv) {
+  cogito_node* anchor = cogito_node_from_val(anchorv);
+  cogito_node* pop = cogito_node_from_val(popoverv);
+  cogito_popover_show(anchor, pop);
+}
+
+static void __cogito_popover_close(YisVal winv) {
+  cogito_window* win = cogito_window_from_val(winv);
+  cogito_popover_close(win);
+}
+
+static YisVal __cogito_context_menu(void) {
+  cogito_node* n = cogito_context_menu_new();
+  return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+
+static void __cogito_context_menu_add_item(YisVal menuv, YisVal labelv, YisVal handlerv) {
+  cogito_node* menu = cogito_node_from_val(menuv);
+  if (!menu) return;
+  YisStr* tmp = NULL;
+  const char* label = cogito_required_cstr(labelv, &tmp);
+  CogitoMenuHandler* mh = handlerv.tag == EVT_FN ? cogito_menu_handler_new(handlerv) : NULL;
+  cogito_context_menu_add_item(menu, label, mh ? cogito_cb_menu : NULL, mh);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_context_menu_add_section(YisVal menuv, YisVal labelv, YisVal handlerv) {
+  cogito_node* menu = cogito_node_from_val(menuv);
+  if (!menu) return;
+  YisStr* tmp = NULL;
+  const char* label = cogito_required_cstr(labelv, &tmp);
+  CogitoMenuHandler* mh = handlerv.tag == EVT_FN ? cogito_menu_handler_new(handlerv) : NULL;
+  cogito_context_menu_add_section(menu, label, mh ? cogito_cb_menu : NULL, mh);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_context_menu_set_icon(YisVal menuv, YisVal iconv) {
+  cogito_node* menu = cogito_node_from_val(menuv);
+  if (!menu) return;
+  YisStr* tmp = NULL;
+  const char* icon = cogito_required_cstr(iconv, &tmp);
+  cogito_context_menu_set_icon(menu, icon);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_context_menu_set_shortcut(YisVal menuv, YisVal shortcutv) {
+  cogito_node* menu = cogito_node_from_val(menuv);
+  if (!menu) return;
+  YisStr* tmp = NULL;
+  const char* shortcut = cogito_required_cstr(shortcutv, &tmp);
+  cogito_context_menu_set_shortcut(menu, shortcut);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+static void __cogito_node_set_context_menu(YisVal nodev, YisVal menuv) {
+  cogito_node* n = cogito_node_from_val(nodev);
+  cogito_node* menu = (menuv.tag == EVT_OBJ) ? cogito_node_from_val(menuv) : NULL;
+  cogito_node_set_context_menu(n, menu);
+}
+
 static void __cogito_window_set_side_sheet(YisVal winv, YisVal side_sheetv) {
   cogito_window* win = cogito_window_from_val(winv);
   cogito_node* side_sheet = cogito_node_from_val(side_sheetv);
@@ -2370,6 +2578,27 @@ static YisVal __cogito_vstack(void) {
 
 static YisVal __cogito_hstack(void) {
   return cogito_wrap_node(cogito_node_new(COGITO_NODE_HSTACK), COGITO_HANDLE_NODE);
+}
+
+static YisVal __cogito_flow(void) {
+  return cogito_wrap_node(cogito_node_new(COGITO_NODE_FLOW), COGITO_HANDLE_NODE);
+}
+
+static YisVal __cogito_virtual_list(void) {
+  return cogito_wrap_node(cogito_virtual_list_new(), COGITO_HANDLE_NODE);
+}
+
+static void __cogito_virtual_list_set_item_count(YisVal nodev, YisVal countv) {
+  cogito_virtual_list_set_item_count(cogito_node_from_val(nodev), (int)yis_as_int(countv));
+}
+
+static void __cogito_virtual_list_set_item_height(YisVal nodev, YisVal hv) {
+  cogito_virtual_list_set_item_height(cogito_node_from_val(nodev), (int)yis_as_int(hv));
+}
+
+static void __cogito_virtual_list_set_builder(YisVal nodev, YisVal builderv) {
+  YisFn* builder = (builderv.tag == EVT_FN) ? (YisFn*)builderv.as.p : NULL;
+  cogito_virtual_list_set_builder(cogito_node_from_val(nodev), builder);
 }
 
 static YisVal __cogito_zstack(void) {
@@ -4276,6 +4505,7 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_window_set_a11y_label __cogito_window_set_a11y_label
 #define cogito_window_set_builder __cogito_window_set_builder
 #define cogito_window_on_resize __cogito_window_on_resize
+#define cogito_window_on_file_drop __cogito_window_on_file_drop
 #define cogito_window_is_compact __cogito_window_is_compact
 #define cogito_button_new __cogito_button
 #define cogito_iconbtn_new __cogito_iconbtn
@@ -4315,6 +4545,11 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_window_bar_new __cogito_window_bar
 #define cogito_vstack_new __cogito_vstack
 #define cogito_hstack_new __cogito_hstack
+#define cogito_flow_new __cogito_flow
+#define cogito_virtual_list_new __cogito_virtual_list
+#define cogito_virtual_list_set_item_count __cogito_virtual_list_set_item_count
+#define cogito_virtual_list_set_item_height __cogito_virtual_list_set_item_height
+#define cogito_virtual_list_set_builder __cogito_virtual_list_set_builder
 #define cogito_zstack_new __cogito_zstack
 #define cogito_revealer_new __cogito_revealer
 #define cogito_revealer_set_show_children __cogito_revealer_set_show_children
@@ -4346,6 +4581,15 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_container_set_row_homogeneous __cogito_container_set_row_homogeneous
 #define cogito_dialog_slot_show __cogito_dialog_slot_show
 #define cogito_dialog_slot_clear __cogito_dialog_slot_clear
+#define cogito_popover_new __cogito_popover
+#define cogito_popover_show __cogito_popover_show
+#define cogito_popover_close __cogito_popover_close
+#define cogito_context_menu_new __cogito_context_menu
+#define cogito_context_menu_add_item __cogito_context_menu_add_item
+#define cogito_context_menu_add_section __cogito_context_menu_add_section
+#define cogito_context_menu_set_icon __cogito_context_menu_set_icon
+#define cogito_context_menu_set_shortcut __cogito_context_menu_set_shortcut
+#define cogito_node_set_context_menu __cogito_node_set_context_menu
 #define cogito_container_set_padding __cogito_container_set_padding
 #define cogito_fixed_set_pos __cogito_fixed_set_pos
 #define cogito_scroller_set_axes __cogito_scroller_set_axes

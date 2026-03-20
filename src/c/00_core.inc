@@ -345,6 +345,9 @@ typedef enum {
   COGITO_SIDE_SHEET,
   COGITO_WINDOW_BAR,
   COGITO_TABLEVIEW,
+  COGITO_CONTEXT_MENU,
+  COGITO_FLOW,
+  COGITO_VIRTUAL_LIST,
   COGITO_KIND_COUNT
 } CogitoKind;
 
@@ -666,6 +669,18 @@ typedef struct {
   uint8_t bar_alpha;
   double bar_hover_until;
 } CogitoScrollerData;
+
+typedef struct {
+  int item_count;
+  int item_height;       // fixed height per item
+  int scroll_y;          // current scroll offset (pixels)
+  int viewport_h;        // visible area height
+  int first_visible;     // first visible item index
+  int visible_count;     // number of visible items
+  int prev_first;        // previous first_visible (for change detection)
+  int prev_count;        // previous visible_count
+  YisFn *builder;        // (index) => Node — called to create/recycle items
+} CogitoVirtualListData;
 
 typedef struct {
   double min, max, value;
@@ -1023,6 +1038,7 @@ typedef union {
   CogitoCardData card;
   CogitoWindowBarData window_bar;
   CogitoTableViewData tableview;
+  CogitoVirtualListData virtual_list;
 } CogitoKindData;
 
 // ──── End per-kind data structs ────
@@ -1034,6 +1050,7 @@ typedef struct CogitoNode {
   struct CogitoNode** children;
   size_t len;
   size_t cap;
+  int child_count; // Cached count of all descendant nodes (for efficient treeview rendering)
 
   // Content
   YisStr* text;
@@ -1084,6 +1101,10 @@ typedef struct CogitoNode {
   YisFn* on_action;
   YisFn* on_draw;
   YisFn* on_resize;
+  YisFn* on_file_drop;
+
+  // Context menu (right-click menu)
+  struct CogitoNode* context_menu;
 
   // State
   YisVal group;

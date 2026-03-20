@@ -1,5 +1,7 @@
 // Forward declaration for undo cleanup (defined in widgets/util/undo.inc)
 static void cogito_undo_free(CogitoUndoHistory* h);
+// Forward declaration (defined in widgets/layout/virtual_list.inc)
+static int cogito_measure_virtual_list_h(CogitoNode *n);
 
 static bool cogito_val_equal(YisVal a, YisVal b) {
   if (a.tag != b.tag) return false;
@@ -294,7 +296,7 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
   // Layout widgets default to 0 gap, content widgets default to 8 for natural spacing
   bool is_layout = (kind == COGITO_VSTACK || kind == COGITO_HSTACK || kind == COGITO_ZSTACK ||
                     kind == COGITO_FIXED || kind == COGITO_SCROLLER || kind == COGITO_GRID ||
-                    kind == COGITO_REVEALER || kind == COGITO_BIN);
+                    kind == COGITO_REVEALER || kind == COGITO_BIN || kind == COGITO_FLOW);
   n->gap = is_layout ? 0 : 8;
   n->revealer_show_children = true;
   n->bin_accent_set = false;
@@ -344,7 +346,8 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
     kind == COGITO_VIEW_CHOOSER ||
     kind == COGITO_ABOUT_WINDOW ||
     kind == COGITO_MENU_SECTION ||
-    kind == COGITO_SIDE_SHEET;
+    kind == COGITO_SIDE_SHEET ||
+    kind == COGITO_FLOW;
 
   n->margin_left = 0;
   n->margin_top = 0;
@@ -518,6 +521,7 @@ static const char* cogito_node_default_a11y_role(CogitoKind kind) {
     case COGITO_VSTACK:
     case COGITO_HSTACK:
     case COGITO_ZSTACK:
+    case COGITO_FLOW:
     case COGITO_REVEALER:
     case COGITO_BIN:
     case COGITO_FIXED:
@@ -967,12 +971,18 @@ static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
 
     #include "widgets/intrinsic/hstack.inc"
 
+    #include "widgets/intrinsic/flow.inc"
+
     #include "widgets/intrinsic/window.inc"
 
     #include "widgets/intrinsic/window_bar.inc"
 
     case COGITO_TABLEVIEW:
+    case COGITO_CONTEXT_MENU:
     case COGITO_KIND_COUNT:
+      break;
+    case COGITO_VIRTUAL_LIST:
+      h = cogito_measure_virtual_list_h(n);
       break;
 
   }

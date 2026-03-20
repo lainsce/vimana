@@ -95,6 +95,7 @@ static CogitoNode* cogito_find_scroller(CogitoNode* n, int x, int y) {
     }
   }
   if (n->kind == COGITO_SCROLLER && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;
+  if (n->kind == COGITO_VIRTUAL_LIST && !cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return NULL;
   if (n->kind == COGITO_VIEWSWITCHER) {
     CogitoNode* active = cogito_view_switcher_active_child(n);
     if (active) {
@@ -108,6 +109,7 @@ static CogitoNode* cogito_find_scroller(CogitoNode* n, int x, int y) {
     }
   }
   if (n->kind == COGITO_SCROLLER && cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return n;
+  if (n->kind == COGITO_VIRTUAL_LIST && cogito_hit_rect(x, y, n->x, n->y, n->w, n->h)) return n;
   return NULL;
 }
 

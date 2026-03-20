@@ -80,6 +80,9 @@ static const char* cogito_kind_name(CogitoKind kind) {
     case COGITO_WEBVIEW: return "webview";
     case COGITO_WINDOW_BAR: return "window-bar";
     case COGITO_TABLEVIEW: return "tableview";
+    case COGITO_CONTEXT_MENU: return "context-menu";
+    case COGITO_FLOW: return "flow";
+    case COGITO_VIRTUAL_LIST: return "virtual-list";
     case COGITO_KIND_COUNT: return "unknown";
   }
   return "unknown";

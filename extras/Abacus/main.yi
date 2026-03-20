@@ -513,6 +513,12 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     .set_editable(false)
     .set_class("conv-output")
 
+    let conv_menu = cogito.context_menu()
+    .add_item("Copy Value", (m) => {
+        cogito.app().copy_to_clipboard(conv_output.text())
+    })
+    .attach(conv_output)
+
     to_row.add(conv_output)
     to_row.add(conv_to_dd)
     panel.add(to_row)
@@ -583,6 +589,21 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     .set_text_align(2)
     .set_class("calc-display-working")
     display_box.add(display_working)
+
+    let display_menu = cogito.context_menu()
+    .add_item("Copy Result", (m) => {
+        cogito.app().copy_to_clipboard(display_working.text())
+    })
+    .add_item("Copy Expression", (m) => {
+        cogito.app().copy_to_clipboard(display_expression.text())
+    })
+    .add_item("Paste", (m) => {
+        let ?pasted = cogito.app().paste_from_clipboard()
+        if pasted != ""
+            update_display_value(pasted)
+        ;
+    })
+    .attach(display_box)
 
     calc_view.add(display_box)
 

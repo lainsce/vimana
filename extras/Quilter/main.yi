@@ -947,7 +947,7 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
         export_html()
     })
     doc_btn.add_menu("Export PDF…", (b = any) => {
-        set_status("PDF export is not available in this sample")
+        cogito.app().print_text(markdown_text)
     })
 
     let view_btn = bar.add_trailing_menu_button("sf:rectangle.split.2x1")
@@ -1237,6 +1237,15 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
     .set_resizable(true)
     .build((w = cogito.Window) => {
         build_window(w)
+    })
+
+    win.on_file_drop((paths = any, count = num) => {
+        if count > 0
+            let ?path = str(paths[0])
+            if stdr.ends_with(path, ".md")
+                open_path_now(path, win)
+            else
+                set_status("Drop a .md file to open it")
     })
 
     app.run(win)

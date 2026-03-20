@@ -423,6 +423,17 @@ def status_text = cogito.label("Add a location to start")
     row.add(location_image)
     row.add(text_col)
     row.add(remove_btn)
+
+    let loc_menu = cogito.context_menu()
+    .add_item("Copy Location", (m) => {
+        let ?full = name
+        if stdr.len(subtitle) > 0
+            full = name + ", " + subtitle
+        cogito.app().copy_to_clipboard(full)
+    })
+    .add_item("Remove", (m) => { _remove_location(index) })
+    .attach(row)
+
     <- row
 ;
 
@@ -521,7 +532,7 @@ def status_text = cogito.label("Add a location to start")
     current_temp.set_class("kairos-current-temp $$hdr_cls$$")
     current_desc.set_class("kairos-current-desc $$hdr_cls$$")
     current_feels.set_class("kairos-current-feels $$hdr_cls$$")
-    content_bar.set_class("small kairos-content-bar $$hdr_cls$$")
+    content_bar.set_class("large kairos-content-bar $$hdr_cls$$")
     refreshbtn.set_class("trailing $$hdr_cls$$")
 
     current_temp.set_text(_temp_short(temp_c))
@@ -747,6 +758,10 @@ def status_text = cogito.label("Add a location to start")
 
     card.add(cogito.label(title).set_class("kairos-metric-title"))
     card.add(value_label.set_class("kairos-metric-value"))
+
+    let mc = cogito.context_menu()
+    .attach(card)
+
     <- card
 ;
 
@@ -779,7 +794,7 @@ def status_text = cogito.label("Add a location to start")
 
 : _build_content_panel(win = cogito.Window) (( any ))
     content_bar
-    .set_class("small kairos-content-bar kairos-header-on-dark")
+    .set_class("large kairos-content-bar kairos-header-on-dark")
     .set_window_controls("close,minimize,maximize:")
 
     loc_nav_btn = content_bar.leading_button("sf:mappin.and.ellipse", (b = any) => {

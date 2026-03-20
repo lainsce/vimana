@@ -201,6 +201,9 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     file_btn.add_menu("Save As…", (b = any) => {
         show_save_dialog()
     })
+    file_btn.add_menu("Print…", (b = any) => {
+        cogito.app().print_text(editor.text())
+    })
 
     let about_btn = bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         show_about_window(win)
@@ -226,5 +229,25 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
     win.add(cogito.window_bar())
     win.add(root)
+
+    win.on_file_drop((paths = any, count = num) => {
+        if count > 0
+            let ?path = str(paths[0])
+            if is_txt_path(path)
+                let ?text = stdr.read_text_file(path)
+                if !is_null(text)
+                    set_editor_text(str(text))
+                    current_path = path
+                    is_dirty = false
+                    refresh_header()
+                    let ?base = basename(path)
+                    set_status("Opened $$base$$ (dropped)")
+                    save_session_state()
+                else
+                    set_status("Cannot read dropped file")
+            else
+                set_status("Drop a .txt file to open it")
+    })
+
     app.run(win)
 ;

@@ -92,6 +92,12 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_chip_set_selected cogito_chip_set_selected_yis
 #define cogito_colorpicker_new cogito_colorpicker_new_yis
 #define cogito_colorpicker_on_change cogito_colorpicker_on_change_yis
+#define cogito_context_menu_new cogito_context_menu_new_yis
+#define cogito_context_menu_add_item cogito_context_menu_add_item_yis
+#define cogito_context_menu_add_section cogito_context_menu_add_section_yis
+#define cogito_context_menu_set_icon cogito_context_menu_set_icon_yis
+#define cogito_context_menu_set_shortcut cogito_context_menu_set_shortcut_yis
+#define cogito_node_set_context_menu cogito_node_set_context_menu_yis
 #define cogito_fontbutton_new cogito_fontbutton_new_yis
 #define cogito_fontbutton_set_font cogito_fontbutton_set_font_yis
 #define cogito_fontbutton_get_font cogito_fontbutton_get_font_yis
@@ -104,6 +110,9 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_dialog_slot_clear cogito_dialog_slot_clear_yis
 #define cogito_dialog_slot_new cogito_dialog_slot_new_yis
 #define cogito_dialog_slot_show cogito_dialog_slot_show_yis
+#define cogito_popover_new cogito_popover_new_yis
+#define cogito_popover_show cogito_popover_show_yis
+#define cogito_popover_close cogito_popover_close_yis
 #define cogito_divider_new cogito_divider_new_yis
 #define cogito_card_new cogito_card_new_yis
 #define cogito_avatar_new cogito_avatar_new_yis
@@ -144,6 +153,13 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_grid_set_gap cogito_grid_set_gap_yis
 #define cogito_grid_set_span cogito_grid_set_span_yis
 #define cogito_hstack_new cogito_hstack_new_yis
+#define cogito_flow_new cogito_flow_new_yis
+#define cogito_virtual_list_new cogito_virtual_list_new_yis
+#define cogito_virtual_list_set_item_count cogito_virtual_list_set_item_count_yis
+#define cogito_virtual_list_set_item_height cogito_virtual_list_set_item_height_yis
+#define cogito_virtual_list_set_builder cogito_virtual_list_set_builder_yis
+#define cogito_task_run cogito_task_run_yis
+#define cogito_transition_start cogito_transition_start_yis
 #define cogito_revealer_set_show_children cogito_revealer_set_show_children_yis
 #define cogito_bin_set_accent_color cogito_bin_set_accent_color_yis
 #define cogito_iconbtn_add_menu cogito_iconbtn_add_menu_yis
@@ -372,6 +388,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_window_set_autosize cogito_window_set_autosize_yis
 #define cogito_window_set_builder cogito_window_set_builder_yis
 #define cogito_window_on_resize cogito_window_on_resize_yis
+#define cogito_window_on_file_drop cogito_window_on_file_drop_yis
 #define cogito_window_is_compact cogito_window_is_compact_yis
 #define cogito_window_set_dialog cogito_window_set_dialog_yis
 #define cogito_window_set_side_sheet cogito_window_set_side_sheet_yis
@@ -496,6 +513,12 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_chip_set_selected
 #undef cogito_colorpicker_new
 #undef cogito_colorpicker_on_change
+#undef cogito_context_menu_new
+#undef cogito_context_menu_add_item
+#undef cogito_context_menu_add_section
+#undef cogito_context_menu_set_icon
+#undef cogito_context_menu_set_shortcut
+#undef cogito_node_set_context_menu
 #undef cogito_fontbutton_new
 #undef cogito_fontbutton_set_font
 #undef cogito_fontbutton_get_font
@@ -508,6 +531,9 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_dialog_slot_clear
 #undef cogito_dialog_slot_new
 #undef cogito_dialog_slot_show
+#undef cogito_popover_new
+#undef cogito_popover_show
+#undef cogito_popover_close
 #undef cogito_divider_new
 #undef cogito_card_new
 #undef cogito_avatar_new
@@ -548,6 +574,13 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_grid_set_gap
 #undef cogito_grid_set_span
 #undef cogito_hstack_new
+#undef cogito_flow_new
+#undef cogito_virtual_list_new
+#undef cogito_virtual_list_set_item_count
+#undef cogito_virtual_list_set_item_height
+#undef cogito_virtual_list_set_builder
+#undef cogito_task_run
+#undef cogito_transition_start
 #undef cogito_revealer_set_show_children
 #undef cogito_bin_set_accent_color
 #undef cogito_iconbtn_add_menu
@@ -776,6 +809,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_window_set_autosize
 #undef cogito_window_set_builder
 #undef cogito_window_on_resize
+#undef cogito_window_on_file_drop
 #undef cogito_window_is_compact
 #undef cogito_window_set_dialog
 #undef cogito_window_set_side_sheet
@@ -1144,6 +1178,193 @@ bool cogito_app_copy_to_clipboard(cogito_app *app, const char *text) {
   if (!cogito_backend || !cogito_backend->set_clipboard_text)
     return false;
   return cogito_backend->set_clipboard_text(text);
+}
+
+char *cogito_app_paste_from_clipboard(cogito_app *app) {
+  if (!app)
+    return NULL;
+  if (!cogito_backend || !cogito_backend->get_clipboard_text)
+    return NULL;
+  return cogito_backend->get_clipboard_text();
+}
+
+bool cogito_clipboard_has(const char *mime_type) {
+  if (!mime_type)
+    return false;
+  if (!cogito_backend || !cogito_backend->clipboard_has)
+    return false;
+  return cogito_backend->clipboard_has(mime_type);
+}
+
+void *cogito_clipboard_get_data(const char *mime_type, size_t *size) {
+  if (!mime_type || !size)
+    return NULL;
+  if (!cogito_backend || !cogito_backend->clipboard_get_data)
+    return NULL;
+  return cogito_backend->clipboard_get_data(mime_type, size);
+}
+
+bool cogito_clipboard_set_data(const char *mime_type, const void *data,
+                                size_t size) {
+  if (!mime_type || !data || size == 0)
+    return false;
+  if (!cogito_backend || !cogito_backend->clipboard_set_data)
+    return false;
+  return cogito_backend->clipboard_set_data(mime_type, data, size);
+}
+
+// ---- Printing ----
+
+#if defined(__APPLE__)
+extern bool cogito_macos_print_text(const char *text);
+extern bool cogito_macos_print_image(const unsigned char *pixels, int w, int h);
+#endif
+
+bool cogito_print_text(const char *text) {
+  if (!text || !text[0])
+    return false;
+#if defined(__APPLE__)
+  return cogito_macos_print_text(text);
+#else
+  (void)text;
+  return false;
+#endif
+}
+
+bool cogito_print_image(const unsigned char *rgba_pixels, int width,
+                         int height) {
+  if (!rgba_pixels || width <= 0 || height <= 0)
+    return false;
+#if defined(__APPLE__)
+  return cogito_macos_print_image(rgba_pixels, width, height);
+#else
+  (void)rgba_pixels;
+  (void)width;
+  (void)height;
+  return false;
+#endif
+}
+
+// ---- Async tasks ----
+
+typedef struct {
+  cogito_task_fn work;
+  cogito_task_done_fn done;
+  void *user;
+} CogitoCbTask;
+
+static YisVal cogito_cb_task_work(void *self_env, int argc, YisVal *argv) {
+  (void)argc;
+  (void)argv;
+  CogitoCbTask *env = (CogitoCbTask *)self_env;
+  if (env && env->work)
+    env->work(env->user);
+  return YV_NULLV;
+}
+
+static YisVal cogito_cb_task_done(void *self_env, int argc, YisVal *argv) {
+  (void)argc;
+  (void)argv;
+  CogitoCbTask *env = (CogitoCbTask *)self_env;
+  if (env && env->done)
+    env->done(env->user);
+  free(env);
+  return YV_NULLV;
+}
+
+void cogito_async_run(cogito_task_fn work, cogito_task_done_fn done,
+                       void *user) {
+  if (!work)
+    return;
+  CogitoCbTask *env = (CogitoCbTask *)calloc(1, sizeof(*env));
+  env->work = work;
+  env->done = done;
+  env->user = user;
+  YisFn *work_fn = cogito_make_fn(cogito_cb_task_work, env);
+  YisFn *done_fn = done ? cogito_make_fn(cogito_cb_task_done, env) : NULL;
+  cogito_task_run_yis(work_fn, done_fn);
+  yis_release_val(YV_FN(work_fn));
+  if (done_fn)
+    yis_release_val(YV_FN(done_fn));
+}
+
+void cogito_task_run(void *work_fn, void *done_fn) {
+  cogito_task_run_yis((YisFn *)work_fn, (YisFn *)done_fn);
+}
+
+// ---- i18n ----
+
+const char *cogito_i18n(const char *key) {
+  return cogito_i18n_get(key);
+}
+
+void cogito_i18n_load(const char *json_path) {
+  cogito_i18n_load_json(json_path);
+}
+
+void cogito_set_locale(const char *locale) {
+  cogito_i18n_set_locale(locale);
+}
+
+const char *cogito_get_locale(void) {
+  return cogito_i18n_get_locale();
+}
+
+void cogito_set_i18n_domain(const char *domain) {
+  cogito_i18n_set_domain(domain);
+}
+
+// ---- Transitions (public C API) ----
+
+typedef struct {
+  cogito_transition_update_fn on_update;
+  cogito_transition_done_fn on_complete;
+  void *user;
+} CogitoCbTransition;
+
+static YisVal cogito_cb_transition_update(void *self_env, int argc,
+                                           YisVal *argv) {
+  CogitoCbTransition *env = (CogitoCbTransition *)self_env;
+  double value = (argc > 0) ? cogito_compat_as_float(argv[0]) : 0.0;
+  if (env && env->on_update)
+    env->on_update(value, env->user);
+  return YV_NULLV;
+}
+
+static YisVal cogito_cb_transition_complete(void *self_env, int argc,
+                                             YisVal *argv) {
+  (void)argc;
+  (void)argv;
+  CogitoCbTransition *env = (CogitoCbTransition *)self_env;
+  if (env && env->on_complete)
+    env->on_complete(env->user);
+  free(env);
+  return YV_NULLV;
+}
+
+void cogito_transition(double from, double to, int duration_ms, int ease,
+                       cogito_transition_update_fn on_update,
+                       cogito_transition_done_fn on_complete, void *user) {
+  if (!on_update)
+    return;
+  CogitoCbTransition *env =
+      (CogitoCbTransition *)calloc(1, sizeof(*env));
+  env->on_update = on_update;
+  env->on_complete = on_complete;
+  env->user = user;
+  YisFn *upd = cogito_make_fn(cogito_cb_transition_update, env);
+  YisFn *cpl =
+      on_complete ? cogito_make_fn(cogito_cb_transition_complete, env) : NULL;
+  cogito_transition_start_yis(from, to, duration_ms, ease, upd, cpl);
+  yis_release_val(YV_FN(upd));
+  if (cpl)
+    yis_release_val(YV_FN(cpl));
+}
+
+void cogito_transition_start(double from, double to, int ms, int ease,
+                             void *update_fn, void *complete_fn) {
+  cogito_transition_start_yis(from, to, ms, ease,
+                              (YisFn *)update_fn, (YisFn *)complete_fn);
 }
 
 #if defined(COGITO_HAS_GSTREAMER)
@@ -2014,6 +2235,60 @@ void cogito_window_on_resize(cogito_window *window, cogito_node_fn handler,
   yis_release_val(YV_FN(wrap));
 }
 
+typedef struct {
+  cogito_file_drop_fn fn;
+  void *user;
+} CogitoCbFileDrop;
+
+static YisVal cogito_cb_file_drop(void *self_env, int argc, YisVal *argv) {
+  CogitoCbFileDrop *env = (CogitoCbFileDrop *)self_env;
+  if (!env || !env->fn || argc < 2)
+    return YV_NULLV;
+  cogito_window *win = (cogito_window *)argv[0].as.p;
+  YisArr *arr = (YisArr *)argv[1].as.p;
+  int count = arr ? (int)arr->len : 0;
+  const char **paths = NULL;
+  char **tmp_strs = NULL;
+  if (count > 0) {
+    paths = (const char **)calloc((size_t)count, sizeof(char *));
+    tmp_strs = (char **)calloc((size_t)count, sizeof(char *));
+    for (int i = 0; i < count; i++) {
+      YisVal v = yis_arr_get(arr, i);
+      YisStr *s = (YisStr *)v.as.p;
+      if (s && s->data) {
+        tmp_strs[i] = strndup(s->data, s->len);
+        paths[i] = tmp_strs[i];
+      } else {
+        paths[i] = "";
+      }
+    }
+  }
+  env->fn(win, paths, count, env->user);
+  for (int i = 0; i < count; i++)
+    free(tmp_strs[i]);
+  free(tmp_strs);
+  free(paths);
+  return YV_NULLV;
+}
+
+void cogito_window_on_file_drop(cogito_window *window,
+                                 cogito_file_drop_fn handler, void *user) {
+  if (!window || !handler)
+    return;
+  CogitoCbFileDrop *env = (CogitoCbFileDrop *)calloc(1, sizeof(*env));
+  env->fn = handler;
+  env->user = user;
+  YisFn *wrap = cogito_make_fn(cogito_cb_file_drop, env);
+  cogito_window_on_file_drop_yis(YV_OBJ(window), YV_FN(wrap));
+  yis_release_val(YV_FN(wrap));
+}
+
+void cogito_window_set_file_drop_fn(cogito_node *node, void *handler_fn) {
+  YisVal winv = YV_OBJ(node);
+  YisVal hv = handler_fn ? YV_FN((YisFn *)handler_fn) : YV_NULLV;
+  cogito_window_on_file_drop_yis(winv, hv);
+}
+
 bool cogito_window_is_compact(cogito_window *window) {
   if (!window)
     return false;
@@ -2179,6 +2454,10 @@ static CogitoKind cogito_kind_from_public(cogito_node_kind kind) {
     return COGITO_DRAWING_AREA;
   case COGITO_NODE_SHAPE:
     return COGITO_SHAPE;
+  case COGITO_NODE_FLOW:
+    return COGITO_FLOW;
+  case COGITO_NODE_VIRTUAL_LIST:
+    return COGITO_VIRTUAL_LIST;
   default:
     return COGITO_KIND_COUNT;
   }
@@ -3247,6 +3526,26 @@ cogito_node *cogito_vstack_new(void) {
 
 cogito_node *cogito_hstack_new(void) {
   return cogito_from_val(cogito_hstack_new_yis());
+}
+
+cogito_node *cogito_flow_new(void) {
+  return cogito_from_val(cogito_flow_new_yis());
+}
+
+void *cogito_virtual_list_new(void) {
+  return cogito_from_val(cogito_virtual_list_new_yis());
+}
+
+void cogito_virtual_list_set_item_count(void *node, int count) {
+  cogito_virtual_list_set_item_count_yis((CogitoNode *)node, count);
+}
+
+void cogito_virtual_list_set_item_height(void *node, int height) {
+  cogito_virtual_list_set_item_height_yis((CogitoNode *)node, height);
+}
+
+void cogito_virtual_list_set_builder(void *node, void *builder_fn) {
+  cogito_virtual_list_set_builder_yis((CogitoNode *)node, (YisFn *)builder_fn);
 }
 
 cogito_node *cogito_zstack_new(void) {
@@ -4415,6 +4714,90 @@ void cogito_dialog_slot_show(cogito_node *slot, cogito_node *dialog) {
   if (!slot || !dialog)
     return;
   cogito_dialog_slot_show_yis(YV_OBJ(slot), YV_OBJ(dialog));
+}
+
+cogito_node *cogito_popover_new(void) {
+  return cogito_from_val(cogito_popover_new_yis());
+}
+
+void cogito_popover_show(cogito_node *anchor, cogito_node *popover) {
+  if (!anchor || !popover)
+    return;
+  cogito_popover_show_yis(YV_OBJ(anchor), YV_OBJ(popover));
+}
+
+void cogito_popover_close(cogito_window *window) {
+  if (!window)
+    return;
+  cogito_popover_close_yis(YV_OBJ(window));
+}
+
+cogito_node *cogito_context_menu_new(void) {
+  return cogito_from_val(cogito_context_menu_new_yis());
+}
+
+void cogito_context_menu_add_item(cogito_node *menu, const char *label,
+                                  cogito_node_fn fn, void *user) {
+  if (!menu || !label)
+    return;
+  YisVal lv = cogito_val_from_cstr(label);
+  YisVal handler = YV_NULLV;
+  if (fn) {
+    CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
+    env->fn = fn;
+    env->user = user;
+    YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
+    handler = YV_FN(wrap);
+  }
+  cogito_context_menu_add_item_yis(YV_OBJ(menu), lv, handler);
+  if (lv.tag == EVT_STR)
+    yis_release_val(lv);
+  if (handler.tag == EVT_FN)
+    yis_release_val(handler);
+}
+
+void cogito_context_menu_add_section(cogito_node *menu, const char *label,
+                                     cogito_node_fn fn, void *user) {
+  if (!menu || !label)
+    return;
+  YisVal lv = cogito_val_from_cstr(label);
+  YisVal handler = YV_NULLV;
+  if (fn) {
+    CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
+    env->fn = fn;
+    env->user = user;
+    YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
+    handler = YV_FN(wrap);
+  }
+  cogito_context_menu_add_section_yis(YV_OBJ(menu), lv, handler);
+  if (lv.tag == EVT_STR)
+    yis_release_val(lv);
+  if (handler.tag == EVT_FN)
+    yis_release_val(handler);
+}
+
+void cogito_context_menu_set_icon(cogito_node *menu, const char *icon) {
+  if (!menu || !icon)
+    return;
+  YisVal iv = cogito_val_from_cstr(icon);
+  cogito_context_menu_set_icon_yis(YV_OBJ(menu), iv);
+  if (iv.tag == EVT_STR)
+    yis_release_val(iv);
+}
+
+void cogito_context_menu_set_shortcut(cogito_node *menu, const char *shortcut) {
+  if (!menu || !shortcut)
+    return;
+  YisVal sv = cogito_val_from_cstr(shortcut);
+  cogito_context_menu_set_shortcut_yis(YV_OBJ(menu), sv);
+  if (sv.tag == EVT_STR)
+    yis_release_val(sv);
+}
+
+void cogito_node_set_context_menu(cogito_node *node, cogito_node *menu) {
+  if (!node)
+    return;
+  cogito_node_set_context_menu_yis(YV_OBJ(node), menu ? YV_OBJ(menu) : YV_NULLV);
 }
 
 void cogito_dialog_slot_clear(cogito_node *slot) {

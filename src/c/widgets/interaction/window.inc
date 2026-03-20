@@ -100,6 +100,17 @@ static void cogito_window_on_resize(YisVal winv, YisVal handler) {
     win->on_resize = NULL;
   }
 }
+static void cogito_window_on_file_drop(YisVal winv, YisVal handler) {
+  if (winv.tag != EVT_OBJ) yis_trap("cogito.window_on_file_drop expects window");
+  CogitoNode* win = (CogitoNode*)winv.as.p;
+  if (win->on_file_drop) yis_release_val(YV_FN(win->on_file_drop));
+  if (handler.tag == EVT_FN) {
+    win->on_file_drop = (YisFn*)handler.as.p;
+    yis_retain_val(YV_FN(win->on_file_drop));
+  } else {
+    win->on_file_drop = NULL;
+  }
+}
 static YisVal cogito_window_is_compact(YisVal winv) {
   if (winv.tag != EVT_OBJ) return YV_BOOL(false);
   CogitoNode* win = (CogitoNode*)winv.as.p;

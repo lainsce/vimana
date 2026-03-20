@@ -96,6 +96,10 @@ typedef struct CogitoBackend {
   bool (*open_url)(const char *url);
   char *(*choose_font_name)(CogitoWindow *window, const char *current_name);
   bool (*set_clipboard_text)(const char *text);
+  char *(*get_clipboard_text)(void);  // returns malloc'd string, caller frees
+  bool (*clipboard_has)(const char *mime_type);
+  void *(*clipboard_get_data)(const char *mime_type, size_t *size);  // returns malloc'd data
+  bool (*clipboard_set_data)(const char *mime_type, const void *data, size_t size);
 
   // Frame rendering
   void (*begin_frame)(CogitoWindow *window);

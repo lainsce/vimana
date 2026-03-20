@@ -233,9 +233,9 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     .add(swatch("Surface", "surface"))
     .add(swatch("Surface Bright", "surface-bright"))
 
-    let containers = cogito.hstack()
+    let containers = cogito.flow()
     .set_hexpand(true)
-    .set_homogeneous(true)
+    .set_gap(4)
     .add(swatch("Surface Container Lowest", "surface-container-lowest"))
     .add(swatch("Surface Container Low", "surface-container-low"))
     .add(swatch("Surface Container", "surface-container"))
@@ -406,6 +406,16 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     source_controls.add(cogito.iconbtn("sf:doc.on.doc").set_class("iconic").on_click((b = cogito.Button) => {
         gafu_app.copy_to_clipboard(source_hex)
     }))
+
+    let source_menu = cogito.context_menu()
+    .add_item("Copy Hex", (m) => { gafu_app.copy_to_clipboard(source_hex) })
+    .add_item("Paste Hex", (m) => {
+        let ?pasted = gafu_app.paste_from_clipboard()
+        if stdr.len(pasted) > 0
+            source_picker.set_hex(pasted)
+            apply_source_color(pasted)
+    })
+    .attach(source_picker)
 
     source.add(source_controls)
 

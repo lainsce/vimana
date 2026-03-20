@@ -15,6 +15,11 @@ bring cogito
     if stdr.len(thumb) > 0
         card.set_header_image(thumb)
 
+    let cm = cogito.context_menu()
+    .add_item("Open", (m) => { on_click() })
+    .add_item("Copy Title", (m) => { cogito.app().copy_to_clipboard(title) })
+    .attach(card)
+
     <- card
 ;
 
@@ -35,6 +40,11 @@ bring cogito
 
     if stdr.len(thumb) > 0
         card.set_header_image(thumb)
+
+    let cm = cogito.context_menu()
+    .add_item("Open", (m) => { on_click() })
+    .add_item("Copy Title", (m) => { cogito.app().copy_to_clipboard(title) })
+    .attach(card)
 
     <- card
 ;

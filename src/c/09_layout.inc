@@ -143,6 +143,8 @@ static bool cogito_layout_effective_vexpand(const CogitoNode* n) {
 #include "widgets/layout/scroller.inc"
 #include "widgets/layout/carousel.inc"
 #include "widgets/layout/carousel_item.inc"
+#include "widgets/layout/flow.inc"
+#include "widgets/layout/virtual_list.inc"
 #include "widgets/layout/hstack.inc"
 #include "widgets/layout/list.inc"
 #include "widgets/layout/grid.inc"
@@ -229,6 +231,7 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
 
     #include "widgets/layout/divider.inc"
 
+    case COGITO_CONTEXT_MENU:
     #include "widgets/layout/menu_section.inc"
 
     #include "widgets/layout/webview.inc"
@@ -317,6 +320,14 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
 
     case COGITO_HSTACK:
       cogito_layout_hstack(n, x, y);
+      break;
+
+    case COGITO_FLOW:
+      cogito_layout_flow(n, x, y);
+      break;
+
+    case COGITO_VIRTUAL_LIST:
+      cogito_layout_virtual_list(n);
       break;
 
     case COGITO_GRID:

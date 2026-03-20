@@ -49,8 +49,8 @@ vstack.kairos-chart-card-compact
 
 zstack.kairos-header
   background: transparent
-  min-height: 120
-  max-height: 120
+  min-height: 170
+  max-height: 170
 
 zstack.kairos-header-compact
   background: transparent

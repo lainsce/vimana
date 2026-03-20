@@ -63,6 +63,11 @@ bring utils.model
             .set_align(4)
         )
 
+    let song_menu = cogito.context_menu()
+    .add_item("Copy Title", (m) => { cogito.app().copy_to_clipboard(title) })
+    .add_item("Copy Artist", (m) => { cogito.app().copy_to_clipboard(subtitle) })
+    .attach(row)
+
     <- row
 ;
 

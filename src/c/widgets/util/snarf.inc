@@ -141,6 +141,9 @@ static void cogito_text_input_copy(CogitoNode* n) {
   char* sel = cogito_text_input_get_selected(n);
   if (!sel) return;
   cogito_snarf_write(sel);
+  // Also copy to OS clipboard
+  if (cogito_backend && cogito_backend->set_clipboard_text)
+    cogito_backend->set_clipboard_text(sel);
   free(sel);
 }
 
@@ -172,7 +175,11 @@ static void cogito_text_input_cut(CogitoNode* n) {
 
 static void cogito_text_input_paste(CogitoNode* n) {
   if (!n) return;
-  char* text = cogito_snarf_read();
+  // Prefer OS clipboard, fall back to snarf
+  char* text = NULL;
+  if (cogito_backend && cogito_backend->get_clipboard_text)
+    text = cogito_backend->get_clipboard_text();
+  if (!text) text = cogito_snarf_read();
   if (!text) return;
   // For single-line inputs, strip newlines
   if (n->kind == COGITO_TEXTFIELD || n->kind == COGITO_SEARCHFIELD) {

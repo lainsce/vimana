@@ -919,6 +919,63 @@ static bool sdl3_set_clipboard_text(const char *text) {
   return SDL_SetClipboardText(text);
 }
 
+static char *sdl3_get_clipboard_text(void) {
+  char *text = SDL_GetClipboardText();
+  if (!text || !text[0]) return NULL;
+  char *copy = strdup(text);
+  SDL_free(text);
+  return copy;
+}
+
+static bool sdl3_clipboard_has(const char *mime_type) {
+  if (!mime_type) return false;
+  return SDL_HasClipboardData(mime_type);
+}
+
+static void *sdl3_clipboard_get_data(const char *mime_type, size_t *size) {
+  if (!mime_type || !size) return NULL;
+  void *data = SDL_GetClipboardData(mime_type, size);
+  if (!data || *size == 0) return NULL;
+  void *copy = malloc(*size);
+  if (!copy) { SDL_free(data); *size = 0; return NULL; }
+  memcpy(copy, data, *size);
+  SDL_free(data);
+  return copy;
+}
+
+typedef struct {
+  void *data;
+  size_t size;
+} CogitoClipboardPayload;
+
+static const void *sdl3_clipboard_data_callback(
+    void *userdata, const char *mime_type, size_t *size) {
+  CogitoClipboardPayload *p = (CogitoClipboardPayload *)userdata;
+  if (!p) { *size = 0; return NULL; }
+  *size = p->size;
+  return p->data;
+}
+
+static void sdl3_clipboard_cleanup_callback(void *userdata) {
+  CogitoClipboardPayload *p = (CogitoClipboardPayload *)userdata;
+  if (p) { free(p->data); free(p); }
+}
+
+static bool sdl3_clipboard_set_data(const char *mime_type,
+                                     const void *data, size_t size) {
+  if (!mime_type || !data || size == 0) return false;
+  CogitoClipboardPayload *p = (CogitoClipboardPayload *)malloc(sizeof(*p));
+  if (!p) return false;
+  p->data = malloc(size);
+  if (!p->data) { free(p); return false; }
+  memcpy(p->data, data, size);
+  p->size = size;
+  const char *mime_types[] = { mime_type };
+  return SDL_SetClipboardData(sdl3_clipboard_data_callback,
+                              sdl3_clipboard_cleanup_callback, p,
+                              mime_types, 1);
+}
+
 // ============================================================================
 // Frame Rendering
 // ============================================================================
@@ -1024,6 +1081,28 @@ static void sdl3_clear(CogitoColor color) {
 // non-motion event (click, key, scroll, etc.) that needs a visual update.
 // Readable from 14_run.inc via extern.
 bool cogito_last_poll_had_non_motion = false;
+
+// ---- File drop queue (per-window) ----
+#define COGITO_DROP_MAX 64
+static struct {
+  uint32_t window_id;
+  char *paths[COGITO_DROP_MAX];
+  int count;
+} cogito_drop_queue = {0};
+
+void cogito_drop_queue_reset(void) {
+  for (int i = 0; i < cogito_drop_queue.count; i++)
+    free(cogito_drop_queue.paths[i]);
+  cogito_drop_queue.count = 0;
+  cogito_drop_queue.window_id = 0;
+}
+
+int cogito_drop_queue_count(void) { return cogito_drop_queue.count; }
+const char *cogito_drop_queue_path(int i) {
+  if (i < 0 || i >= cogito_drop_queue.count) return NULL;
+  return cogito_drop_queue.paths[i];
+}
+uint32_t cogito_drop_queue_window_id(void) { return cogito_drop_queue.window_id; }
 
 static bool process_events(void) {
   // Reset per-frame state
@@ -1180,6 +1259,24 @@ static bool process_events(void) {
           }
           text += len;
         }
+      }
+      break;
+    }
+
+    case SDL_EVENT_DROP_FILE: {
+      const char *file = event.drop.data;
+      if (file && cogito_drop_queue.count < COGITO_DROP_MAX) {
+        cogito_drop_queue.window_id = event.drop.windowID;
+        cogito_drop_queue.paths[cogito_drop_queue.count++] = strdup(file);
+      }
+      break;
+    }
+
+    case SDL_EVENT_DROP_TEXT: {
+      const char *text = event.drop.data;
+      if (text && cogito_drop_queue.count < COGITO_DROP_MAX) {
+        cogito_drop_queue.window_id = event.drop.windowID;
+        cogito_drop_queue.paths[cogito_drop_queue.count++] = strdup(text);
       }
       break;
     }
@@ -3394,6 +3491,10 @@ static CogitoBackend sdl3_backend = {
     .open_url = sdl3_open_url,
     .choose_font_name = sdl3_choose_font_name,
     .set_clipboard_text = sdl3_set_clipboard_text,
+    .get_clipboard_text = sdl3_get_clipboard_text,
+    .clipboard_has = sdl3_clipboard_has,
+    .clipboard_get_data = sdl3_clipboard_get_data,
+    .clipboard_set_data = sdl3_clipboard_set_data,
     .begin_frame = sdl3_begin_frame,
     .end_frame = sdl3_end_frame,
     .present = sdl3_present,

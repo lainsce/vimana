@@ -107,6 +107,8 @@ typedef enum {
   COGITO_NODE_DRAWING_AREA,
   COGITO_NODE_SHAPE,
   COGITO_NODE_WEBVIEW,
+  COGITO_NODE_FLOW,
+  COGITO_NODE_VIRTUAL_LIST,
 } cogito_node_kind;
 
 // App / window lifecycle
@@ -137,11 +139,47 @@ void cogito_app_set_baseline_font(cogito_app *app, const char *path);
 void cogito_app_set_emphasized_font(cogito_app *app, const char *path);
 bool cogito_open_url(const char *url);
 bool cogito_app_copy_to_clipboard(cogito_app *app, const char *text);
+char *cogito_app_paste_from_clipboard(cogito_app *app);  // returns malloc'd string
+bool cogito_clipboard_has(const char *mime_type);
+void *cogito_clipboard_get_data(const char *mime_type, size_t *size);
+bool cogito_clipboard_set_data(const char *mime_type, const void *data, size_t size);
 
 // Text direction (RTL support)
 void cogito_set_direction(int dir); // 0 = LTR, 1 = RTL
 int cogito_get_direction(void);
 bool cogito_is_rtl(void);
+
+// Printing
+bool cogito_print_text(const char *text);
+bool cogito_print_image(const unsigned char *rgba_pixels, int width, int height);
+
+// Async task system
+typedef void (*cogito_task_fn)(void *user);
+typedef void (*cogito_task_done_fn)(void *user);
+void cogito_async_run(cogito_task_fn work, cogito_task_done_fn done, void *user);
+void cogito_task_run(void *work_fn, void *done_fn);
+
+// i18n
+const char *cogito_i18n(const char *key);
+void cogito_i18n_load(const char *json_path);
+void cogito_set_locale(const char *locale);
+const char *cogito_get_locale(void);
+void cogito_set_i18n_domain(const char *domain);
+
+// Transitions (value animators)
+typedef void (*cogito_transition_update_fn)(double value, void *user);
+typedef void (*cogito_transition_done_fn)(void *user);
+void cogito_transition(double from, double to, int duration_ms, int ease,
+                       cogito_transition_update_fn on_update,
+                       cogito_transition_done_fn on_complete, void *user);
+void cogito_transition_start(double from, double to, int ms, int ease,
+                             void *update_fn, void *complete_fn);
+
+// VirtualList
+void *cogito_virtual_list_new(void);
+void cogito_virtual_list_set_item_count(void *node, int count);
+void cogito_virtual_list_set_item_height(void *node, int height);
+void cogito_virtual_list_set_builder(void *node, void *builder_fn);
 
 // GStreamer playback API (single global player instance)
 bool cogito_gst_init(void);
@@ -215,6 +253,12 @@ void cogito_window_set_builder(cogito_window *window, cogito_node_fn builder,
                                void *user);
 void cogito_window_on_resize(cogito_window *window, cogito_node_fn handler,
                              void *user);
+typedef void (*cogito_file_drop_fn)(cogito_window *window,
+                                     const char **paths, int count,
+                                     void *user);
+void cogito_window_on_file_drop(cogito_window *window,
+                                 cogito_file_drop_fn handler, void *user);
+void cogito_window_set_file_drop_fn(cogito_node *node, void *handler_fn);
 bool cogito_window_is_compact(cogito_window *window);
 void *cogito_window_get_native_handle(cogito_window *window);
 bool cogito_window_has_native_handle(cogito_window *window);
@@ -309,6 +353,17 @@ void cogito_toolbar_set_vertical(cogito_node *toolbar, bool vertical);
 bool cogito_toolbar_get_vertical(cogito_node *toolbar);
 cogito_node *cogito_dialog_new(const char *title);
 cogito_node *cogito_dialog_slot_new(void);
+cogito_node *cogito_popover_new(void);
+void cogito_popover_show(cogito_node *anchor, cogito_node *popover);
+void cogito_popover_close(cogito_window *window);
+cogito_node *cogito_context_menu_new(void);
+void cogito_context_menu_add_item(cogito_node *menu, const char *label,
+                                  cogito_node_fn fn, void *user);
+void cogito_context_menu_add_section(cogito_node *menu, const char *label,
+                                     cogito_node_fn fn, void *user);
+void cogito_context_menu_set_icon(cogito_node *menu, const char *icon);
+void cogito_context_menu_set_shortcut(cogito_node *menu, const char *shortcut);
+void cogito_node_set_context_menu(cogito_node *node, cogito_node *menu);
 cogito_node *cogito_appbar_new(const char *title, const char *subtitle);
 void cogito_appbar_set_title(cogito_node *appbar, const char *title);
 void cogito_appbar_set_subtitle(cogito_node *appbar, const char *subtitle);

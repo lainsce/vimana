@@ -2489,6 +2489,26 @@ def ?shape_instruction_text = "5 - Inhale"
         "drawing_area"
     } elif idx == 51 {
         "shape_gallery"
+    } elif idx == 52 {
+        "popover"
+    } elif idx == 53 {
+        "context_menu"
+    } elif idx == 54 {
+        "flow"
+    } elif idx == 55 {
+        "virtual_list"
+    } elif idx == 56 {
+        "transition"
+    } elif idx == 57 {
+        "i18n"
+    } elif idx == 58 {
+        "async_task"
+    } elif idx == 59 {
+        "clipboard"
+    } elif idx == 60 {
+        "file_drop"
+    } elif idx == 61 {
+        "printing"
     } else {
         "appbar"
     }
@@ -2599,6 +2619,26 @@ def ?shape_instruction_text = "5 - Inhale"
         "DrawingArea"
     } elif idx == 51 {
         "Shape Gallery"
+    } elif idx == 52 {
+        "Popover"
+    } elif idx == 53 {
+        "ContextMenu"
+    } elif idx == 54 {
+        "Flow"
+    } elif idx == 55 {
+        "VirtualList"
+    } elif idx == 56 {
+        "Transition"
+    } elif idx == 57 {
+        "i18n"
+    } elif idx == 58 {
+        "AsyncTask"
+    } elif idx == 59 {
+        "Rich Clipboard"
+    } elif idx == 60 {
+        "File Drop"
+    } elif idx == 61 {
+        "Printing"
     } else {
         "AppBar"
     }
@@ -2702,6 +2742,458 @@ def ?shape_instruction_text = "5 - Inhale"
     <- vstack
 ;
 
+-- ── New Feature Pages ──────────────────────────────────────────────
+
+: build_popover_page() (( cogito.VStack ))
+    let vstack = build_page("Popover", "Popovers display rich content anchored to a trigger element.")
+
+    let status = cogito.label("Tap a button to show a popover.")
+    .set_class("body")
+    vstack.add(status)
+
+    let anchor_btn = cogito.button("Show Popover")
+    .set_style(0)
+    anchor_btn.on_click((b = cogito.Button) => {
+        let pop = cogito.popover()
+        .set_padding(16, 16, 16, 16)
+        let pop_content = cogito.vstack().set_gap(8)
+        pop_content.add(cogito.label("Popover Title").set_class("content-title"))
+        pop_content.add(cogito.label("This content floats above the page, anchored to the button that triggered it.").set_class("body").set_wrap(true))
+        pop_content.add(cogito.button("Got it").set_style(2).on_click((b2 = cogito.Button) => {
+            status.set_text("Popover dismissed.")
+        }))
+        pop.add(pop_content)
+        pop.show(anchor_btn)
+        status.set_text("Popover shown.")
+    })
+    vstack.add(anchor_btn)
+
+    let divider = cogito.divider("", false)
+    vstack.add(divider)
+
+    let note = cogito.label("Popovers can hold any content: forms, lists, or multi-step flows. They anchor to the element that triggered them and dismiss on outside tap.")
+    .set_class("body")
+    .set_wrap(true)
+    .set_hexpand(true)
+    vstack.add(note)
+
+    <- vstack
+;
+
+: build_context_menu_page() (( cogito.VStack ))
+    let vstack = build_page("ContextMenu", "Context menus surface actions on right-click or long-press.")
+
+    let status = cogito.label("Right-click the areas below.")
+    .set_class("body")
+    vstack.add(status)
+
+    let target = cogito.label("Right-click this text")
+    .set_class("content-title")
+    .set_padding(24, 24, 24, 24)
+    .set_hexpand(true)
+    vstack.add(target)
+
+    let menu = cogito.context_menu()
+    .add_item("Cut", (m) => { status.set_text("Cut.") })
+    .add_item("Copy", (m) => { status.set_text("Copy.") })
+    .add_item("Paste", (m) => { status.set_text("Paste.") })
+    .add_item("Select All", (m) => { status.set_text("Select All.") })
+    .attach(target)
+
+    let divider = cogito.divider("", false)
+    vstack.add(divider)
+
+    let target2 = cogito.button("Button with Menu")
+    .set_style(1)
+    vstack.add(target2)
+
+    let menu2 = cogito.context_menu()
+    .add_item("Duplicate", (m) => { status.set_text("Duplicated.") })
+    .add_item("Archive", (m) => { status.set_text("Archived.") })
+    .add_item("Delete", (m) => { status.set_text("Deleted.") })
+    .attach(target2)
+
+    <- vstack
+;
+
+: build_flow_page() (( cogito.VStack ))
+    let vstack = build_page("Flow", "Flow arranges children in a wrapping row, like text reflow.")
+
+    let status = cogito.label("Items wrap when they run out of horizontal space.")
+    .set_class("body")
+    vstack.add(status)
+
+    let flow = cogito.flow()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_padding(8, 8, 8, 8)
+
+    let ?i = 0
+    loop i < 20
+        let tag = "Item $$i$$"
+        flow.add(cogito.chip(tag).on_click((c = cogito.Chip) => {
+            status.set_text("Tapped: $$tag$$")
+        }))
+        i = i + 1
+    ;
+    vstack.add(flow)
+
+    let divider = cogito.divider("", false)
+    vstack.add(divider)
+
+    let gap_label = cogito.label("Wider gap (16)")
+    .set_class("heading")
+    vstack.add(gap_label)
+
+    let gap_flow = cogito.flow()
+    .set_gap(16)
+    .set_hexpand(true)
+    .set_padding(8, 8, 8, 8)
+
+    let ?j = 0
+    loop j < 12
+        gap_flow.add(cogito.button("Tag $$j$$").set_style(1))
+        j = j + 1
+    ;
+    vstack.add(gap_flow)
+
+    <- vstack
+;
+
+: build_virtual_list_page() (( cogito.VStack ))
+    let vstack = build_page("VirtualList", "VirtualList renders only the visible slice of a large data set.")
+
+    let status = cogito.label("Scroll through 10 000 items below.")
+    .set_class("body")
+    vstack.add(status)
+
+    let vl = cogito.virtual_list()
+    .set_item_count(10000)
+    .set_item_height(48)
+    .set_builder((idx = num) => {
+        let row = cogito.hstack()
+        .set_gap(12)
+        .set_padding(8, 16, 8, 16)
+        .set_hexpand(true)
+        row.add(cogito.label("#$$idx$$").set_class("body"))
+        row.add(cogito.label("Row item number $$idx$$").set_class("body").set_hexpand(true))
+        <- row
+    })
+    vstack.add(vl)
+
+    <- vstack
+;
+
+: build_transition_page() (( cogito.VStack ))
+    let vstack = build_page("Transition", "Animate a numeric value between two endpoints with easing curves.")
+
+    let status = cogito.label("Value: 0")
+    .set_class("content-title")
+    vstack.add(status)
+
+    let bar = cogito.progress()
+    .set_value(0)
+    .set_hexpand(true)
+    vstack.add(bar)
+
+    let row = cogito.hstack().set_gap(8)
+
+    let btn1 = cogito.button("Standard").set_style(0)
+    btn1.on_click((b = cogito.Button) => {
+        cogito.transition(0, 100, 600, cogito.EASE_STANDARD(), (v = num) => {
+            let ?iv = stdr.floor(v + 0.5)
+            status.set_text("Value: $$iv$$")
+            bar.set_value(v / 100)
+        }, (v = num) => {
+            status.set_text("Done: 100")
+        })
+    })
+    row.add(btn1)
+
+    let btn2 = cogito.button("Ease In").set_style(1)
+    btn2.on_click((b = cogito.Button) => {
+        cogito.transition(0, 100, 600, cogito.EASE_IN(), (v = num) => {
+            let ?iv = stdr.floor(v + 0.5)
+            status.set_text("Value: $$iv$$")
+            bar.set_value(v / 100)
+        }, null)
+    })
+    row.add(btn2)
+
+    let btn3 = cogito.button("Ease Out").set_style(2)
+    btn3.on_click((b = cogito.Button) => {
+        cogito.transition(0, 100, 600, cogito.EASE_OUT(), (v = num) => {
+            let ?iv = stdr.floor(v + 0.5)
+            status.set_text("Value: $$iv$$")
+            bar.set_value(v / 100)
+        }, null)
+    })
+    row.add(btn3)
+
+    let btn4 = cogito.button("Emphasized").set_style(0)
+    btn4.on_click((b = cogito.Button) => {
+        cogito.transition(0, 100, 800, cogito.EASE_EMPHASIZED(), (v = num) => {
+            let ?iv = stdr.floor(v + 0.5)
+            status.set_text("Value: $$iv$$")
+            bar.set_value(v / 100)
+        }, null)
+    })
+    row.add(btn4)
+    vstack.add(row)
+
+    let divider = cogito.divider("", false)
+    vstack.add(divider)
+
+    let btn_slow = cogito.button("Linear (2 s)").set_style(1)
+    btn_slow.on_click((b = cogito.Button) => {
+        cogito.transition(0, 100, 2000, cogito.EASE_LINEAR(), (v = num) => {
+            let ?iv = stdr.floor(v + 0.5)
+            status.set_text("Value: $$iv$$")
+            bar.set_value(v / 100)
+        }, (v = num) => {
+            status.set_text("Linear complete.")
+        })
+    })
+    vstack.add(btn_slow)
+
+    <- vstack
+;
+
+: build_i18n_page() (( cogito.VStack ))
+    let vstack = build_page("i18n", "Switch locale and display translated strings at runtime.")
+
+    let status = cogito.label("Current locale: default")
+    .set_class("body")
+    vstack.add(status)
+
+    let greeting = cogito.label("Hello, World!")
+    .set_class("content-title")
+    vstack.add(greeting)
+
+    let row = cogito.hstack().set_gap(8)
+
+    let btn_en = cogito.button("English").set_style(0)
+    btn_en.on_click((b = cogito.Button) => {
+        cogito.set_locale("en")
+        let ?loc = cogito.get_locale()
+        status.set_text("Current locale: $$loc$$")
+        greeting.set_text("Hello, World!")
+    })
+    row.add(btn_en)
+
+    let btn_es = cogito.button("Español").set_style(1)
+    btn_es.on_click((b = cogito.Button) => {
+        cogito.set_locale("es")
+        let ?loc = cogito.get_locale()
+        status.set_text("Current locale: $$loc$$")
+        greeting.set_text("¡Hola, Mundo!")
+    })
+    row.add(btn_es)
+
+    let btn_ja = cogito.button("日本語").set_style(1)
+    btn_ja.on_click((b = cogito.Button) => {
+        cogito.set_locale("ja")
+        let ?loc = cogito.get_locale()
+        status.set_text("Current locale: $$loc$$")
+        greeting.set_text("こんにちは世界！")
+    })
+    row.add(btn_ja)
+
+    let btn_ar = cogito.button("العربية").set_style(1)
+    btn_ar.on_click((b = cogito.Button) => {
+        cogito.set_locale("ar")
+        let ?loc = cogito.get_locale()
+        status.set_text("Current locale: $$loc$$")
+        greeting.set_text("!مرحبا بالعالم")
+    })
+    row.add(btn_ar)
+    vstack.add(row)
+
+    let divider = cogito.divider("", false)
+    vstack.add(divider)
+
+    let note = cogito.label("In production, load a JSON translation file with cogito.i18n_load(path), then look up keys with cogito._(key).")
+    .set_class("body")
+    .set_wrap(true)
+    .set_hexpand(true)
+    vstack.add(note)
+
+    <- vstack
+;
+
+: build_async_task_page() (( cogito.VStack ))
+    let vstack = build_page("AsyncTask", "Run work off the main thread and receive results on completion.")
+
+    let status = cogito.label("Tap Run to start a background task.")
+    .set_class("body")
+    vstack.add(status)
+
+    let bar = cogito.progress()
+    .set_indeterminate(false)
+    .set_hexpand(true)
+    vstack.add(bar)
+
+    let run_btn = cogito.button("Run Background Task").set_style(0)
+    run_btn.on_click((b = cogito.Button) => {
+        status.set_text("Working...")
+        bar.set_indeterminate(true)
+        cogito.async_run(
+            () => {
+                let ?sum = 0
+                let ?k = 0
+                loop k < 1000000
+                    sum = sum + k
+                    k = k + 1
+                ;
+                <- sum
+            },
+            (result = any) => {
+                bar.set_indeterminate(false)
+                bar.set_value(1)
+                status.set_text("Done. Sum of 0..999999 = $$result$$")
+            }
+        )
+    })
+    vstack.add(run_btn)
+
+    let divider = cogito.divider("", false)
+    vstack.add(divider)
+
+    let note = cogito.label("The work closure runs on a background thread. The done callback executes on the main thread with the return value.")
+    .set_class("body")
+    .set_wrap(true)
+    .set_hexpand(true)
+    vstack.add(note)
+
+    <- vstack
+;
+
+: build_clipboard_page() (( cogito.VStack ))
+    let vstack = build_page("Rich Clipboard", "Read and write clipboard data with MIME-type support.")
+
+    let status = cogito.label("Use the buttons to interact with the clipboard.")
+    .set_class("body")
+    vstack.add(status)
+
+    let row1 = cogito.hstack().set_gap(8)
+
+    let copy_btn = cogito.button("Copy Text").set_style(0)
+    copy_btn.on_click((b = cogito.Button) => {
+        let ?ok = app.copy_to_clipboard("Hello from Cogito Gallery!")
+        if ok
+            status.set_text("Copied plain text to clipboard.")
+        else
+            status.set_text("Copy failed.")
+        ;
+    })
+    row1.add(copy_btn)
+
+    let paste_btn = cogito.button("Paste Text").set_style(1)
+    paste_btn.on_click((b = cogito.Button) => {
+        let ?text = app.paste_from_clipboard()
+        status.set_text("Pasted: $$text$$")
+    })
+    row1.add(paste_btn)
+    vstack.add(row1)
+
+    let divider = cogito.divider("", false)
+    vstack.add(divider)
+
+    let mime_label = cogito.label("MIME-typed data")
+    .set_class("heading")
+    vstack.add(mime_label)
+
+    let row2 = cogito.hstack().set_gap(8)
+
+    let set_btn = cogito.button("Set JSON").set_style(0)
+    set_btn.on_click((b = cogito.Button) => {
+        let ?ok = app.clipboard_set_data("application/json", "{\"gallery\": true}")
+        if ok
+            status.set_text("Wrote JSON to clipboard.")
+        else
+            status.set_text("Set failed.")
+        ;
+    })
+    row2.add(set_btn)
+
+    let get_btn = cogito.button("Get JSON").set_style(1)
+    get_btn.on_click((b = cogito.Button) => {
+        let ?has = app.clipboard_has("application/json")
+        if has
+            let ?data = app.clipboard_get_data("application/json")
+            status.set_text("Got: $$data$$")
+        else
+            status.set_text("No JSON on clipboard.")
+        ;
+    })
+    row2.add(get_btn)
+    vstack.add(row2)
+
+    <- vstack
+;
+
+: build_file_drop_page(win = cogito.Window) (( cogito.VStack ))
+    let vstack = build_page("File Drop", "Receive files dragged from the system onto the window.")
+
+    let status = cogito.label("Drop files onto this window.")
+    .set_class("body")
+    vstack.add(status)
+
+    let file_list = cogito.vstack()
+    .set_gap(4)
+    .set_hexpand(true)
+    .set_padding(16, 16, 16, 16)
+    vstack.add(file_list)
+
+    win.on_file_drop((paths = any, count = num) => {
+        status.set_text("Received $$count$$ file(s):")
+        let ?idx = 0
+        loop idx < count
+            let ?p = paths[idx]
+            file_list.add(cogito.label(p).set_class("body"))
+            idx = idx + 1
+        ;
+    })
+
+    let note = cogito.label("Drag files from Finder onto the application window to see their paths listed here.")
+    .set_class("body")
+    .set_wrap(true)
+    .set_hexpand(true)
+    vstack.add(note)
+
+    <- vstack
+;
+
+: build_printing_page() (( cogito.VStack ))
+    let vstack = build_page("Printing", "Send text content to the system print dialog.")
+
+    let status = cogito.label("Tap Print to open the system dialog.")
+    .set_class("body")
+    vstack.add(status)
+
+    let sample = "Cogito Gallery — Print Test\n\nThis is a sample document printed from the Cogito GUI framework gallery.\n\nFeatures demonstrated:\n- Text printing via system dialog\n- Single-call API"
+
+    let preview = cogito.label(sample)
+    .set_class("body")
+    .set_wrap(true)
+    .set_hexpand(true)
+    .set_padding(16, 16, 16, 16)
+    vstack.add(preview)
+
+    let print_btn = cogito.button("Print").set_style(0)
+    print_btn.on_click((b = cogito.Button) => {
+        let ?ok = app.print_text(sample)
+        if ok
+            status.set_text("Print dialog opened.")
+        else
+            status.set_text("Printing not available.")
+        ;
+    })
+    vstack.add(print_btn)
+
+    <- vstack
+;
+
 : build_ui(win = cogito.Window) (( -- ))
     let sidebar_bar = cogito.appbar("", "")
     .set_class("small sidebar")
@@ -2768,6 +3260,16 @@ def ?shape_instruction_text = "5 - Inhale"
     .add("bin", (vs = cogito.ViewSwitcher) => build_bin_page())
     .add("drawing_area", (vs = cogito.ViewSwitcher) => build_drawing_area_page())
     .add("shape_gallery", (vs = cogito.ViewSwitcher) => build_shape_gallery_page())
+    .add("popover", (vs = cogito.ViewSwitcher) => build_popover_page())
+    .add("context_menu", (vs = cogito.ViewSwitcher) => build_context_menu_page())
+    .add("flow", (vs = cogito.ViewSwitcher) => build_flow_page())
+    .add("virtual_list", (vs = cogito.ViewSwitcher) => build_virtual_list_page())
+    .add("transition", (vs = cogito.ViewSwitcher) => build_transition_page())
+    .add("i18n", (vs = cogito.ViewSwitcher) => build_i18n_page())
+    .add("async_task", (vs = cogito.ViewSwitcher) => build_async_task_page())
+    .add("clipboard", (vs = cogito.ViewSwitcher) => build_clipboard_page())
+    .add("file_drop", (vs = cogito.ViewSwitcher) => build_file_drop_page(win))
+    .add("printing", (vs = cogito.ViewSwitcher) => build_printing_page())
 
     let sidebar = cogito.vstack()
     .set_class("sidebar")
@@ -2829,6 +3331,16 @@ def ?shape_instruction_text = "5 - Inhale"
     .add(sidebar_item("Bin"))
     .add(sidebar_item("DrawingArea"))
     .add(sidebar_item("Shape Gallery"))
+    .add(sidebar_item("Popover"))
+    .add(sidebar_item("ContextMenu"))
+    .add(sidebar_item("Flow"))
+    .add(sidebar_item("VirtualList"))
+    .add(sidebar_item("Transition"))
+    .add(sidebar_item("i18n"))
+    .add(sidebar_item("AsyncTask"))
+    .add(sidebar_item("Rich Clipboard"))
+    .add(sidebar_item("File Drop"))
+    .add(sidebar_item("Printing"))
     .on_select((idx) => {
         let vid = view_id_from_index(idx)
         views.set_active(vid)

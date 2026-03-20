@@ -13,6 +13,9 @@ static const int COGITO_VIEW_DUAL_HIDE_INTENT_FROM_DETENTE = 72;
 #include "widgets/util/undo.inc"
 #include "widgets/util/snarf.inc"
 #include "widgets/util/shortcuts.inc"
+#include "widgets/util/async_task.inc"
+#include "widgets/util/i18n.inc"
+#include "widgets/util/transition.inc"
 
 static bool cogito_about_window_is_actions_row(const CogitoNode* n) {
   return n && n->kind == COGITO_HSTACK &&
@@ -294,9 +297,13 @@ static bool cogito_keyboard_activate_focus(CogitoNode* n, int mx, int my) {
     case COGITO_ICONBTN:
     case COGITO_FAB:
     case COGITO_FAB_MENU:
-    case COGITO_CHIP:
     case COGITO_SPLIT_BUTTON:
       cogito_invoke_click(n);
+      return true;
+    case COGITO_CHIP:
+      n->kd->chip.selected = !n->kd->chip.selected;
+      cogito_invoke_click(n);
+      cogito_window_relayout(cogito_node_window(n));
       return true;
     case COGITO_CHECKBOX:
     case COGITO_SWITCH:
@@ -1031,6 +1038,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
     }
     bool timer_fired = cogito_timer_dispatch_due();
     if (timer_fired) cogito_queue_draw(win);
+    cogito_task_dispatch_done();
+    if (cogito_transition_tick() > 0) cogito_queue_draw(win);
     // Only update inspector button metrics when the inspector is actually open
     if (cogito_inspector_open && inspector_window) {
       cogito_appbar_button_metrics(&inspector_traffic_btn, &inspector_traffic_gap, &inspector_traffic_pad_top, &inspector_traffic_pad_x);
@@ -1159,6 +1168,31 @@ static void cogito_run(YisVal appv, YisVal winv) {
     extern bool cogito_last_poll_had_non_motion;
     if (window_resized) cogito_queue_draw(win);
     if (had_events && cogito_last_poll_had_non_motion) cogito_queue_draw(win);
+
+    // Dispatch file drop events
+    extern int cogito_drop_queue_count(void);
+    extern const char *cogito_drop_queue_path(int i);
+    extern uint32_t cogito_drop_queue_window_id(void);
+    extern void cogito_drop_queue_reset(void);
+    if (cogito_drop_queue_count() > 0 && win->on_file_drop) {
+      uint32_t drop_wid = cogito_drop_queue_window_id();
+      uint32_t this_wid = cogito_backend->window_get_id(window);
+      if (drop_wid == this_wid) {
+        int dc = cogito_drop_queue_count();
+        YisArr* arr = yis_arr_new(dc);
+        for (int di = 0; di < dc; di++) {
+          const char *dp = cogito_drop_queue_path(di);
+          yis_arr_set(arr, di, YV_STR(stdr_str_lit(dp ? dp : "")));
+        }
+        YisVal args[2];
+        args[0] = YV_OBJ(win);
+        args[1] = YV_ARR(arr);
+        cogito_invoke(win->on_file_drop, 2, args);
+        yis_release_val(YV_ARR(arr));
+        cogito_drop_queue_reset();
+        cogito_queue_draw(win);
+      }
+    }
 
     // Get mouse position in the main window coordinate space.
     int mx = 0;
@@ -1426,7 +1460,11 @@ static void cogito_run(YisVal appv, YisVal winv) {
           : cogito_find_dialog_slot(win);
         CogitoNode* root = (slot && slot->dialog) ? slot->dialog : win;
         CogitoNode* scroller = cogito_find_scroller(root, mx, my);
-        if (scroller) {
+        if (scroller && scroller->kind == COGITO_VIRTUAL_LIST) {
+          int delta = (int)(wheel * 10.0f);
+          cogito_virtual_list_scroll(scroller, -delta);
+          cogito_relayout_subtree(scroller);
+        } else if (scroller) {
           int delta = (int)(wheel * 10.0f);
           bool horiz = scroller->kd->scroller.horz && (cogito_backend->is_key_down(SDL_SCANCODE_LSHIFT) || 
                                                  cogito_backend->is_key_down(SDL_SCANCODE_RSHIFT) || 
@@ -2419,6 +2457,20 @@ static void cogito_run(YisVal appv, YisVal winv) {
         }
         if (ti) {
           cogito_ctx_menu_open(ti, mx, my);
+        } else {
+          // Right-click on a node with a context menu
+          CogitoNode* cm_root = ctx_root;
+          if (win->popover_open && win->popover) cm_root = win->popover;
+          CogitoNode* cm_node = cogito_find_context_menu_node(cm_root, mx, my);
+          if (!cm_node && cm_root != ctx_root)
+            cm_node = cogito_find_context_menu_node(ctx_root, mx, my);
+          if (cm_node && cm_node->context_menu) {
+            cm_node->context_menu->x = mx;
+            cm_node->context_menu->y = my;
+            cm_node->context_menu->w = 0;
+            cm_node->context_menu->h = 0;
+            cogito_menu_open_for(cm_node->context_menu);
+          }
         }
       }
     }
@@ -3187,7 +3239,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
     double now = cogito_refresh_now();
     bool anim_running = now < cogito_anim_end_time;
     bool need_redraw = !window_being_dragged && (cogito_draw_pending(win) || anim_running
-        || (cogito_carousel_animating_count > 0) || (cogito_marquee_animating_count > 0));
+        || (cogito_carousel_animating_count > 0) || (cogito_marquee_animating_count > 0)
+        || (cogito_transition_count > 0));
 
     // Debug redraw: set COGITO_DEBUG_REDRAW=1 to see why each frame redraws
     {
@@ -3393,7 +3446,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
         double __frame_end = cogito_refresh_now();
         double __elapsed = __frame_end - __frame_start;
         double __target = 1.0 / 60.0;
-        if (!anim_running && cogito_carousel_animating_count <= 0 && cogito_marquee_animating_count <= 0) {
+        if (!anim_running && cogito_carousel_animating_count <= 0 && cogito_marquee_animating_count <= 0 && cogito_transition_count <= 0) {
           // Static redraws (without active animation) can run slower.
           __target = had_events ? (1.0 / 50.0) : (1.0 / 36.0);
         }
@@ -3440,6 +3493,8 @@ static void cogito_run(YisVal appv, YisVal winv) {
 #endif
   }
   // Cleanup
+  cogito_task_pool_shutdown();
+  cogito_transition_cancel_all();
   cogito_timer_clear_all_internal();
   cogito_font_cache_clear();
   cogito_ft_library_done();

@@ -38,6 +38,7 @@ bring utils.dates
     let date = str(article["date"] ?? "")
     let image_url = str(article["image"] ?? "")
     let local_image = str(article["local_image"] ?? "")
+    let link = str(article["link"] ?? "")
     let short_date = dates.format_date_short(date)
 
     let row = cogito.hstack()
@@ -77,5 +78,12 @@ bring utils.dates
         .set_hexpand(true)
     )
     row.add(text_col)
+
+    let cm = cogito.context_menu()
+    .add_item("Copy Title", (m) => { cogito.app().copy_to_clipboard(title) })
+    if len(link) > 0
+        cm.add_item("Copy Link", (m) => { cogito.app().copy_to_clipboard(link) })
+    cm.attach(row)
+
     <- row
 ;

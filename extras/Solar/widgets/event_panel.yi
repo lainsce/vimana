@@ -284,5 +284,11 @@ bring utils.calendar
     })
     row.add(overflow_btn)
 
+    let ev_menu = cogito.context_menu()
+    .add_item("Copy Title", (m) => { cogito.app().copy_to_clipboard(title) })
+    .add_item("Copy Time", (m) => { cogito.app().copy_to_clipboard(time_str) })
+    .add_item("Delete", (m) => { on_delete_event(index) })
+    .attach(row)
+
     <- row
 ;

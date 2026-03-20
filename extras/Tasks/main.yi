@@ -185,6 +185,12 @@ def TASKS_STATE_PATH = ".tasks_state.json"
 
     card.add(actions)
 
+    let task_menu = cogito.context_menu()
+    .add_item("Copy Task", (m) => { cogito.app().copy_to_clipboard(text) })
+    .add_item(if checked { "Mark Undone" } else { "Mark Done" }, (m) => { set_task_done(index, !checked) })
+    .add_item("Delete", (m) => { remove_task(index) })
+    .attach(card)
+
     <- card
 ;
 

@@ -788,6 +788,7 @@ static bool cogito_sum_selector_kind(const char* sel, CogitoKind* out_kind, bool
   if (strcmp(s, "fab") == 0) { if (out_kind) *out_kind = COGITO_FAB; return true; }
   if (strcmp(s, "fab-menu") == 0 || strcmp(s, "fab_menu") == 0 || strcmp(s, "fabmenu") == 0) { if (out_kind) *out_kind = COGITO_FAB_MENU; return true; }
   if (strcmp(s, "fixed") == 0) { if (out_kind) *out_kind = COGITO_FIXED; return true; }
+  if (strcmp(s, "flow") == 0) { if (out_kind) *out_kind = COGITO_FLOW; return true; }
   if (strcmp(s, "grid") == 0) { if (out_kind) *out_kind = COGITO_GRID; return true; }
   if (strcmp(s, "hstack") == 0) { if (out_kind) *out_kind = COGITO_HSTACK; return true; }
   if (strcmp(s, "iconbtn") == 0) { if (out_kind) *out_kind = COGITO_ICONBTN; return true; }
