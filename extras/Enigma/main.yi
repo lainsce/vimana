@@ -230,7 +230,8 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     win.add(cogito.window_bar())
     win.add(root)
 
-    win.on_file_drop((paths = any, count = num) => {
+    win.on_file_drop((w = any, paths = any) => {
+        let ?count = stdr.len(paths)
         if count > 0
             let ?path = str(paths[0])
             if is_txt_path(path)

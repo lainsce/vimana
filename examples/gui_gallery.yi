@@ -3145,7 +3145,8 @@ def ?shape_instruction_text = "5 - Inhale"
     .set_padding(16, 16, 16, 16)
     vstack.add(file_list)
 
-    win.on_file_drop((paths = any, count = num) => {
+    win.on_file_drop((w = any, paths = any) => {
+        let ?count = stdr.len(paths)
         status.set_text("Received $$count$$ file(s):")
         let ?idx = 0
         loop idx < count

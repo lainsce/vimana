@@ -1239,8 +1239,8 @@ def status_hint = cogito.label("Tracks words, sentences or reading time here")
         build_window(w)
     })
 
-    win.on_file_drop((paths = any, count = num) => {
-        if count > 0
+    win.on_file_drop((w = any, paths = any) => {
+        if stdr.len(paths) > 0
             let ?path = str(paths[0])
             if stdr.ends_with(path, ".md")
                 open_path_now(path, win)
