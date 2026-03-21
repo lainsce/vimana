@@ -562,6 +562,51 @@ static bool cogito_apply_window_icon(CogitoWindow* window, CogitoApp* app) {
   return icon_set;
 }
 
+// ---------------------------------------------------------------------------
+// Live-resize synchronous redraw (macOS)
+// On macOS, window resize enters a modal tracking loop that blocks the main
+// event loop.  The compositor stretches the last rendered frame to fill the
+// new size until the app draws again.  By using an SDL event watch (which
+// fires even inside the modal loop) we can do a full relayout + redraw as
+// the user drags the resize handle, so the content reflows instead of
+// stretching.
+// ---------------------------------------------------------------------------
+static bool cogito_live_resize_active = false;
+
+static void cogito_live_resize_redraw(CogitoNode *win, CogitoWindow *window) {
+  if (!win || !window || !cogito_backend_ready) return;
+  int sw, sh;
+  cogito_backend->window_get_size(window, &sw, &sh);
+  if (sw == win->w && sh == win->h) return;  // size unchanged
+  win->w = sw;
+  win->h = sh;
+  cogito_window_relayout(win);
+  if (win->on_resize) {
+    YisVal args[3];
+    args[0] = YV_OBJ(win);
+    args[1] = YV_INT(sw);
+    args[2] = YV_INT(sh);
+    cogito_invoke(win->on_resize, 3, args);
+  }
+  // Full-frame redraw (no damage clipping — size changed)
+  cogito_backend->begin_frame(window);
+  CogitoColor win_bg = win->bg_set ? win->bg : cogito_rgba(245, 245, 245, 255);
+  cogito_backend->clear(win_bg);
+  cogito_draw_node(win);
+  cogito_backend->end_frame(window);
+  cogito_backend->present(window);
+  cogito_draw_clear_pending(win);
+}
+
+static bool cogito_resize_event_watch(void *userdata, SDL_Event *event) {
+  (void)userdata;
+  if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
+    cogito_live_resize_active = true;
+    cogito_live_resize_redraw(cogito_active_window, cogito_active_backend_window);
+  }
+  return true;
+}
+
 static void cogito_run(YisVal appv, YisVal winv) {
   if (appv.tag != EVT_OBJ) yis_trap("cogito.run expects app");
   if (winv.tag != EVT_OBJ) yis_trap("cogito.run expects window");
@@ -970,6 +1015,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
   }
   double startup_t_done = cogito_startup_now();
   cogito_backend->window_show(window);
+  SDL_AddEventWatch(cogito_resize_event_watch, NULL);
   {
     double icon_t0 = cogito_startup_now();
     (void)cogito_apply_window_icon(window, app);
@@ -1149,6 +1195,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
     // Get window size
     int sw, sh;
     bool window_resized = false;
+    // If the live-resize watch already handled this size change, skip.
     cogito_backend->window_get_size(window, &sw, &sh);
     if (sw != win->w || sh != win->h) {
       win->w = sw;
@@ -1162,6 +1209,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
         args[2] = YV_INT(sh);
         cogito_invoke(win->on_resize, 3, args);
       }
+    }
+    if (cogito_live_resize_active) {
+      cogito_live_resize_active = false;
+      window_resized = false;  // already drawn by the watch
     }
     // GTK-style selective invalidation: only redraw when something visual changed.
     // Mouse motion alone doesn't trigger redraw — hover-change detection below handles it.
@@ -3238,7 +3289,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
         || inspector_drag_active || inspector_drag_pending;
     double now = cogito_refresh_now();
     bool anim_running = now < cogito_anim_end_time;
-    bool need_redraw = !window_being_dragged && (cogito_draw_pending(win) || anim_running
+    bool need_redraw = (!window_being_dragged || window_resized) && (cogito_draw_pending(win) || anim_running
         || (cogito_carousel_animating_count > 0) || (cogito_marquee_animating_count > 0)
         || (cogito_transition_count > 0));
 
@@ -3493,6 +3544,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
 #endif
   }
   // Cleanup
+  SDL_RemoveEventWatch(cogito_resize_event_watch, NULL);
   cogito_task_pool_shutdown();
   cogito_transition_cancel_all();
   cogito_timer_clear_all_internal();
