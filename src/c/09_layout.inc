@@ -282,6 +282,8 @@ static void cogito_layout_node(CogitoNode* n, int x, int y, int w, int h) {
 
     #include "widgets/layout/shape.inc"
 
+    #include "widgets/layout/video_view.inc"
+
     case COGITO_TREEVIEW:
       cogito_layout_treeview(n, x, y);
       break;

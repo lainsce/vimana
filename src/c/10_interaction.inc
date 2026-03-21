@@ -145,6 +145,7 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
 #include "widgets/interaction/hstack.inc"
 #include "widgets/interaction/iconbtn.inc"
 #include "widgets/interaction/image.inc"
+#include "widgets/interaction/video_view.inc"
 #include "widgets/interaction/label.inc"
 #include "widgets/interaction/list.inc"
 #include "widgets/interaction/nav_rail.inc"
@@ -501,6 +502,33 @@ static void cogito_container_remove_child(CogitoNode* parent, CogitoNode* child)
     parent->children[i - 1] = parent->children[i];
   }
   parent->len--;
+}
+
+static void cogito_container_reparent(CogitoNode* new_parent, CogitoNode* child) {
+  if (!new_parent || !child) return;
+  CogitoNode* old_parent = child->parent;
+  if (old_parent == new_parent) return;
+  // Detach from old parent without release/timer cancel
+  if (old_parent && old_parent->children) {
+    size_t idx = old_parent->len;
+    for (size_t i = 0; i < old_parent->len; i++) {
+      if (old_parent->children[i] == child) { idx = i; break; }
+    }
+    if (idx < old_parent->len) {
+      for (size_t i = idx + 1; i < old_parent->len; i++) {
+        old_parent->children[i - 1] = old_parent->children[i];
+      }
+      old_parent->len--;
+    }
+  }
+  // Add to new parent (retain/release balanced: skip both)
+  if (new_parent->len + 1 > new_parent->cap) {
+    size_t next = new_parent->cap == 0 ? 4 : new_parent->cap * 2;
+    new_parent->children = (CogitoNode**)realloc(new_parent->children, sizeof(CogitoNode*) * next);
+    new_parent->cap = next;
+  }
+  new_parent->children[new_parent->len++] = child;
+  child->parent = new_parent;
 }
 
 static void cogito_clear_children(CogitoNode* node) {

@@ -37,8 +37,8 @@ extern "C" bool cogito_macos_print_image(const unsigned char *pixels,
     [view setImageScaling:NSImageScaleProportionallyUpOrDown];
 
     NSPrintInfo *info = [NSPrintInfo sharedPrintInfo];
-    [info setHorizontalPagination:NSFitPagination];
-    [info setVerticalPagination:NSFitPagination];
+    [info setHorizontalPagination:NSPrintingPaginationModeFit];
+    [info setVerticalPagination:NSPrintingPaginationModeFit];
     [info setOrientation:(width > height) ? NSPaperOrientationLandscape
                                           : NSPaperOrientationPortrait];
 
@@ -72,8 +72,8 @@ extern "C" bool cogito_macos_print_text(const char *text) {
     [[view textStorage] setAttributedString:attrStr];
 
     NSPrintInfo *info = [NSPrintInfo sharedPrintInfo];
-    [info setHorizontalPagination:NSFitPagination];
-    [info setVerticalPagination:NSAutoPagination];
+    [info setHorizontalPagination:NSPrintingPaginationModeFit];
+    [info setVerticalPagination:NSPrintingPaginationModeAutomatic];
 
     NSPrintOperation *op = [NSPrintOperation printOperationWithView:view
                                                           printInfo:info];

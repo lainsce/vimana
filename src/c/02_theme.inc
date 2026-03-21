@@ -422,10 +422,6 @@ static CogitoStyle cogito_theme_resolve_node(const CogitoNode* n) {
   }
   // Apply custom class styles if class_name is set
   if (n->class_name && n->class_name->data && n->class_name->len > 0) {
-    // Preserve window background color - custom classes should not override it
-    bool is_window = (n->kind == COGITO_WINDOW);
-    CogitoColor saved_bg = s.bg;
-    bool saved_has_bg = s.has_bg;
     for (int i = 0; i < cogito_theme.custom_class_count; i++) {
       if (n->kind == COGITO_APPBAR &&
           strcmp(cogito_theme.custom_classes[i].name, "sidebar") == 0 &&
@@ -442,11 +438,6 @@ static CogitoStyle cogito_theme_resolve_node(const CogitoNode* n) {
         s = cogito_style_merge(&s, &cogito_theme.custom_classes[i
         ].style);
       }
-    }
-    // Restore window background if it was overridden by custom class
-    if (is_window && saved_has_bg) {
-      s.bg = saved_bg;
-      s.has_bg = saved_has_bg;
     }
   }
   return s;

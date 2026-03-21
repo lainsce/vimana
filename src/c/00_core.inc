@@ -348,6 +348,7 @@ typedef enum {
   COGITO_CONTEXT_MENU,
   COGITO_FLOW,
   COGITO_VIRTUAL_LIST,
+  COGITO_VIDEO_VIEW,
   COGITO_KIND_COUNT
 } CogitoKind;
 
@@ -681,6 +682,12 @@ typedef struct {
   int prev_count;        // previous visible_count
   YisFn *builder;        // (index) => Node — called to create/recycle items
 } CogitoVirtualListData;
+
+typedef struct {
+  CogitoTexture *texture;
+  int video_w, video_h;
+  uint8_t fit; // 0=cover, 1=contain
+} CogitoVideoViewData;
 
 typedef struct {
   double min, max, value;
@@ -1039,6 +1046,7 @@ typedef union {
   CogitoWindowBarData window_bar;
   CogitoTableViewData tableview;
   CogitoVirtualListData virtual_list;
+  CogitoVideoViewData video_view;
 } CogitoKindData;
 
 // ──── End per-kind data structs ────

@@ -1,0 +1,83 @@
+cask library
+
+bring stdr
+bring cogito
+
+bring utils.util
+
+-- Build a grid card for one video.
+-- thumbnail_path = path to .jpg or "" for placeholder.
+:: build_video_card(title = string, thumbnail_path = string) (( cogito.Card ))
+    let card = cogito.card(title)
+        .set_class("lumiere-video-card")
+    if stdr.len(thumbnail_path) > 0
+        card.set_header_image(thumbnail_path)
+    <- card
+;
+
+-- Build a list row for one video (compact mode).
+:: build_video_row(title = string, filename = string, thumbnail_path = string) (( cogito.HStack ))
+    let row = cogito.hstack()
+        .set_class("lumiere-video-row")
+        .set_padding(8, 8, 12, 12)
+        .set_gap(12)
+        .set_hexpand(true)
+        .align_begin()
+
+    let thumb = cogito.image("sf:film")
+        .set_class("lumiere-row-thumb")
+        .set_hexpand(true)
+        .set_vexpand(true)
+    if stdr.len(thumbnail_path) > 0
+        thumb.set_source(thumbnail_path)
+    let clip = cogito.shape(1)
+        .set_clip(true)
+        .set_size(56)
+        .add(thumb)
+    row.add(clip)
+
+    let label = cogito.label(title)
+        .set_class("lumiere-row-title")
+        .set_hexpand(true)
+        .align_begin()
+    row.add(label)
+
+    <- row
+;
+
+-- Populate a grid with video entries. Returns final row count.
+:: fill_grid(grid = cogito.Grid, videos = any, thumbnails = any, cols = num) (( num ))
+    grid.clear()
+    let count = stdr.len(videos)
+    let ?row_count = 0
+    for (let ?i = 0; i < count; i = i + 1)
+        let v = videos[i] ?? null
+        if v == null
+            continue
+        let path = stdr.str(v["path"] ?? "")
+        let title = stdr.str(v["title"] ?? "Untitled")
+        let thumb = stdr.str(thumbnails[path] ?? "")
+        let card = build_video_card(title, thumb)
+        let col = i % cols
+        let row = (i - col) / cols
+        grid.add(card, col, row, 1, 1)
+        if row >= row_count
+            row_count = row + 1
+    <- row_count
+;
+
+-- Populate a content list with video rows.
+:: fill_list(list = cogito.ContentList, videos = any, thumbnails = any) (( -- ))
+    list.clear()
+    let count = stdr.len(videos)
+    for (let ?i = 0; i < count; i = i + 1)
+        let v = videos[i] ?? null
+        if v == null
+            continue
+        let path = stdr.str(v["path"] ?? "")
+        let title = stdr.str(v["title"] ?? "Untitled")
+        let fname = stdr.str(v["filename"] ?? "")
+        let thumb = stdr.str(thumbnails[path] ?? "")
+        let row = build_video_row(title, fname, thumb)
+        list.add(row)
+;

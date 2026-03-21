@@ -443,6 +443,7 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
       n->kd->tableview.show_grid = true;
       break;
     }
+    case COGITO_VIDEO_VIEW: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoVideoViewData)); break;
     default: break;
   }
   cogito_apply_style_to_node(n);
@@ -977,6 +978,7 @@ static void cogito_intrinsic_size(CogitoNode* n, int* out_w, int* out_h) {
 
     #include "widgets/intrinsic/window_bar.inc"
 
+    case COGITO_VIDEO_VIEW:
     case COGITO_TABLEVIEW:
     case COGITO_CONTEXT_MENU:
     case COGITO_KIND_COUNT:

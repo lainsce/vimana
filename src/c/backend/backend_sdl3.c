@@ -945,6 +945,7 @@ static void *sdl3_clipboard_get_data(const char *mime_type, size_t *size) {
 
 typedef struct {
   void *data;
+  char *mime_type;
   size_t size;
 } CogitoClipboardPayload;
 
@@ -953,12 +954,16 @@ static const void *sdl3_clipboard_data_callback(
   CogitoClipboardPayload *p = (CogitoClipboardPayload *)userdata;
   if (!p) { *size = 0; return NULL; }
   *size = p->size;
+  const char *mime_types[] = { mime_type };
+  if (!mime_types[0]) { *size = 0; return NULL; }
+  p->mime_type = strdup(mime_type);
+  if (!p->mime_type) { *size = 0; return NULL; }
   return p->data;
 }
 
 static void sdl3_clipboard_cleanup_callback(void *userdata) {
   CogitoClipboardPayload *p = (CogitoClipboardPayload *)userdata;
-  if (p) { free(p->data); free(p); }
+  if (p) { free(p->data); free(p->mime_type); free(p); }
 }
 
 static bool sdl3_clipboard_set_data(const char *mime_type,

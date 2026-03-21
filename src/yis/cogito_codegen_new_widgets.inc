@@ -1,4 +1,4 @@
-// --- ActiveIndicator ---
+                    // --- ActiveIndicator ---
                     if (str_eq_c(fname, "__cogito_active_indicator")) {
                         char *t = codegen_new_tmp(cg);
                         w_line(&cg->w, "YisVal %s = cogito_active_indicator_new();", t);
@@ -1078,6 +1078,53 @@
                         w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
                         gen_expr_release_except(cg, &wv, wv.tmp);
                         gen_expr_free(&wv);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    // --- VideoView ---
+                    if (str_eq_c(fname, "__cogito_video_view_new")) {
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_video_view_new();", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_video_view_set_fit")) {
+                        GenExpr nv, fit;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &nv, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &fit, err)) { gen_expr_free(&nv); return false; }
+                        w_line(&cg->w, "cogito_video_view_set_fit(%s, %s);", nv.tmp, fit.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", nv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", fit.tmp);
+                        gen_expr_release_except(cg, &nv, nv.tmp);
+                        gen_expr_release_except(cg, &fit, fit.tmp);
+                        gen_expr_free(&nv);
+                        gen_expr_free(&fit);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    // --- GStreamer video frame ---
+                    if (str_eq_c(fname, "__cogito_gst_has_video_frame")) {
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_gst_has_video_frame();", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_gst_video_width")) {
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_gst_video_width();", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_gst_video_height")) {
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = cogito_gst_video_height();", t);
                         gen_expr_add(out, t);
                         out->tmp = t;
                         return true;

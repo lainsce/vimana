@@ -83,6 +83,7 @@ static const char* cogito_kind_name(CogitoKind kind) {
     case COGITO_CONTEXT_MENU: return "context-menu";
     case COGITO_FLOW: return "flow";
     case COGITO_VIRTUAL_LIST: return "virtual-list";
+    case COGITO_VIDEO_VIEW: return "video-view";
     case COGITO_KIND_COUNT: return "unknown";
   }
   return "unknown";

@@ -1,0 +1,42 @@
+cask player
+
+bring stdr
+bring cogito
+
+bring gst
+bring utils.util
+
+-- Sync play/pause button icon and slider wavy based on paused state.
+:: sync_play_pause(paused = bool, btn = cogito.IconButton, seek = cogito.Slider) (( -- ))
+    if paused
+        btn.set_icon("sf:play.fill")
+        btn.set_class("lumiere-play-btn")
+        btn.set_shape(0)
+        seek.set_wavy(false)
+    else
+        btn.set_icon("sf:pause.fill")
+        btn.set_class("lumiere-play-btn")
+        btn.set_shape(1)
+        seek.set_wavy(true)
+;
+
+-- Update seek slider and time labels from gst state.
+:: update_seek_ui(seek = cogito.Slider, time_left_lbl = cogito.Label, time_right_lbl = cogito.Label) (( -- ))
+    let pos_ms = gst.position_ms()
+    let dur_ms = gst.duration_ms()
+    if dur_ms > 0
+        let scaled = (pos_ms * 1000) / dur_ms
+        seek.set_value(scaled)
+    let pos_s = stdr.floor(pos_ms / 1000)
+    let dur_s = stdr.floor(dur_ms / 1000)
+    time_left_lbl.set_text(util.format_time(pos_s))
+    time_right_lbl.set_text(util.format_time(dur_s))
+;
+
+-- Reset controls to initial state.
+:: reset_ui(seek = cogito.Slider, time_left_lbl = cogito.Label, time_right_lbl = cogito.Label, btn = cogito.IconButton) (( -- ))
+    seek.set_value(0)
+    time_left_lbl.set_text("00:00")
+    time_right_lbl.set_text("00:00")
+    sync_play_pause(true, btn, seek)
+;

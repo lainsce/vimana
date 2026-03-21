@@ -17,6 +17,9 @@
 
 #if defined(COGITO_HAS_GSTREAMER)
 #include <gst/gst.h>
+#include <gst/video/video.h>
+#include <gst/app/gstappsink.h>
+#include <pthread.h>
 #endif
 
 static const char *cogito_font_path_active = NULL;
@@ -199,6 +202,8 @@ static const char *cogito_font_medium_path_active = NULL;
   cogito_webview_get_open_external_on_click_yis
 #define cogito_webview_open cogito_webview_open_yis
 #define cogito_drawing_area_new cogito_drawing_area_new_yis
+#define cogito_video_view_new cogito_video_view_new_yis
+#define cogito_video_view_set_fit cogito_video_view_set_fit_yis
 #define cogito_drawing_area_get_x cogito_drawing_area_get_x_yis
 #define cogito_drawing_area_get_y cogito_drawing_area_get_y_yis
 #define cogito_drawing_area_get_pressed cogito_drawing_area_get_pressed_yis
@@ -624,6 +629,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_webview_get_open_external_on_click
 #undef cogito_webview_open
 #undef cogito_drawing_area_new
+#undef cogito_video_view_new
+#undef cogito_video_view_set_fit
 #undef cogito_drawing_area_get_x
 #undef cogito_drawing_area_get_y
 #undef cogito_drawing_area_get_pressed
@@ -1380,6 +1387,49 @@ static char cogito_gst_tag_album[512] = "";
 static int cogito_gst_tag_track_number = 0;
 static uint32_t cogito_gst_cover_seq = 0;
 
+static pthread_mutex_t cogito_gst_frame_mutex = PTHREAD_MUTEX_INITIALIZER;
+static uint8_t *cogito_gst_frame_data = NULL;
+static int cogito_gst_frame_w = 0;
+static int cogito_gst_frame_h = 0;
+static bool cogito_gst_frame_dirty = false;
+static GstElement *cogito_gst_appsink = NULL;
+
+static GstFlowReturn cogito_gst_on_new_sample(GstAppSink *sink, gpointer data) {
+  (void)data;
+  GstSample *sample = gst_app_sink_pull_sample(sink);
+  if (!sample) return GST_FLOW_OK;
+  GstCaps *caps = gst_sample_get_caps(sample);
+  GstVideoInfo info;
+  if (!gst_video_info_from_caps(&info, caps)) {
+    gst_sample_unref(sample);
+    return GST_FLOW_OK;
+  }
+  GstBuffer *buffer = gst_sample_get_buffer(sample);
+  GstMapInfo map;
+  if (!gst_buffer_map(buffer, &map, GST_MAP_READ)) {
+    gst_sample_unref(sample);
+    return GST_FLOW_OK;
+  }
+  int w = GST_VIDEO_INFO_WIDTH(&info);
+  int h = GST_VIDEO_INFO_HEIGHT(&info);
+  size_t size = (size_t)w * h * 4; // RGBA
+  pthread_mutex_lock(&cogito_gst_frame_mutex);
+  if (cogito_gst_frame_w != w || cogito_gst_frame_h != h) {
+    free(cogito_gst_frame_data);
+    cogito_gst_frame_data = (uint8_t *)malloc(size);
+  }
+  if (cogito_gst_frame_data) {
+    memcpy(cogito_gst_frame_data, map.data, size);
+    cogito_gst_frame_w = w;
+    cogito_gst_frame_h = h;
+    cogito_gst_frame_dirty = true;
+  }
+  pthread_mutex_unlock(&cogito_gst_frame_mutex);
+  gst_buffer_unmap(buffer, &map);
+  gst_sample_unref(sample);
+  return GST_FLOW_OK;
+}
+
 static void cogito_gst_set_error_msg(const char *msg) {
   if (!msg)
     msg = "";
@@ -1644,6 +1694,28 @@ static bool cogito_gst_ensure_player(void) {
   }
   cogito_gst_pending_event = 0;
   cogito_gst_set_error_msg("");
+
+  // Set up video sink: videoconvert ! appsink for frame capture
+  GstElement *videoconvert = gst_element_factory_make("videoconvert", "vconv");
+  cogito_gst_appsink = gst_element_factory_make("appsink", "vsink");
+  if (videoconvert && cogito_gst_appsink) {
+    GstElement *bin = gst_bin_new("video-sink-bin");
+    gst_bin_add_many(GST_BIN(bin), videoconvert, cogito_gst_appsink, NULL);
+    gst_element_link(videoconvert, cogito_gst_appsink);
+    GstPad *pad = gst_element_get_static_pad(videoconvert, "sink");
+    gst_element_add_pad(bin, gst_ghost_pad_new("sink", pad));
+    gst_object_unref(pad);
+    GstCaps *caps = gst_caps_from_string("video/x-raw,format=RGBA");
+    gst_app_sink_set_caps(GST_APP_SINK(cogito_gst_appsink), caps);
+    gst_caps_unref(caps);
+    gst_app_sink_set_max_buffers(GST_APP_SINK(cogito_gst_appsink), 2);
+    gst_app_sink_set_drop(GST_APP_SINK(cogito_gst_appsink), TRUE);
+    GstAppSinkCallbacks callbacks = {0};
+    callbacks.new_sample = cogito_gst_on_new_sample;
+    gst_app_sink_set_callbacks(GST_APP_SINK(cogito_gst_appsink), &callbacks, NULL, NULL);
+    g_object_set(cogito_gst_player, "video-sink", bin, NULL);
+  }
+
   return true;
 }
 
@@ -1706,6 +1778,14 @@ void cogito_gst_shutdown(void) {
     gst_object_unref(cogito_gst_player);
     cogito_gst_player = NULL;
   }
+  pthread_mutex_lock(&cogito_gst_frame_mutex);
+  free(cogito_gst_frame_data);
+  cogito_gst_frame_data = NULL;
+  cogito_gst_frame_w = 0;
+  cogito_gst_frame_h = 0;
+  cogito_gst_frame_dirty = false;
+  pthread_mutex_unlock(&cogito_gst_frame_mutex);
+  cogito_gst_appsink = NULL;
   cogito_gst_clear_cover_path();
   cogito_gst_pending_event = 0;
   cogito_gst_set_error_msg("");
@@ -1994,6 +2074,70 @@ int cogito_gst_last_tag_track_number(void) {
   return cogito_gst_tag_track_number;
 #else
   return 0;
+#endif
+}
+
+bool cogito_gst_has_video_frame(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  pthread_mutex_lock(&cogito_gst_frame_mutex);
+  bool has = cogito_gst_frame_data != NULL && cogito_gst_frame_w > 0;
+  pthread_mutex_unlock(&cogito_gst_frame_mutex);
+  return has;
+#else
+  return false;
+#endif
+}
+
+int cogito_gst_video_width(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  pthread_mutex_lock(&cogito_gst_frame_mutex);
+  int w = cogito_gst_frame_w;
+  pthread_mutex_unlock(&cogito_gst_frame_mutex);
+  return w;
+#else
+  return 0;
+#endif
+}
+
+int cogito_gst_video_height(void) {
+#if defined(COGITO_HAS_GSTREAMER)
+  pthread_mutex_lock(&cogito_gst_frame_mutex);
+  int h = cogito_gst_frame_h;
+  pthread_mutex_unlock(&cogito_gst_frame_mutex);
+  return h;
+#else
+  return 0;
+#endif
+}
+
+CogitoTexture *cogito_gst_update_video_texture(CogitoTexture *existing) {
+#if defined(COGITO_HAS_GSTREAMER)
+  if (!cogito_backend || !cogito_backend->texture_create)
+    return existing;
+  pthread_mutex_lock(&cogito_gst_frame_mutex);
+  if (!cogito_gst_frame_dirty || !cogito_gst_frame_data) {
+    pthread_mutex_unlock(&cogito_gst_frame_mutex);
+    return existing;
+  }
+  int w = cogito_gst_frame_w;
+  int h = cogito_gst_frame_h;
+  size_t size = (size_t)w * h * 4;
+  uint8_t *copy = (uint8_t *)malloc(size);
+  if (!copy) {
+    pthread_mutex_unlock(&cogito_gst_frame_mutex);
+    return existing;
+  }
+  memcpy(copy, cogito_gst_frame_data, size);
+  cogito_gst_frame_dirty = false;
+  pthread_mutex_unlock(&cogito_gst_frame_mutex);
+  if (existing && cogito_backend->texture_destroy)
+    cogito_backend->texture_destroy(existing);
+  CogitoTexture *tex = cogito_backend->texture_create(w, h, copy, 4);
+  free(copy);
+  return tex;
+#else
+  (void)existing;
+  return NULL;
 #endif
 }
 
@@ -2932,6 +3076,13 @@ cogito_node *cogito_webview_new(const char *url) {
 cogito_node *cogito_drawing_area_new(void) {
   return cogito_from_val(cogito_drawing_area_new_yis());
 }
+cogito_node *cogito_video_view_new(void) {
+  return cogito_from_val(cogito_video_view_new_yis());
+}
+void cogito_video_view_set_fit(cogito_node *view, int fit) {
+  if (!view) return;
+  cogito_video_view_set_fit_yis(YV_OBJ(view), YV_INT(fit));
+}
 cogito_node *cogito_shape_new(int preset) {
   return cogito_from_val(cogito_shape_new_yis(YV_INT(preset)));
 }
@@ -3399,6 +3550,18 @@ void cogito_node_remove(cogito_node *parent, cogito_node *child) {
   if (!parent || !child)
     return;
   cogito_container_remove_child((CogitoNode *)parent, (CogitoNode *)child);
+}
+
+void cogito_node_reparent(cogito_node *new_parent, cogito_node *child) {
+  if (!new_parent || !child)
+    return;
+  cogito_container_reparent((CogitoNode *)new_parent, (CogitoNode *)child);
+  cogito_apply_style_tree((CogitoNode *)child);
+  if (cogito_backend_ready) {
+    CogitoNode *win = cogito_node_window((CogitoNode *)new_parent);
+    if (win)
+      cogito_window_relayout(win);
+  }
 }
 
 void cogito_node_free(cogito_node *node) {

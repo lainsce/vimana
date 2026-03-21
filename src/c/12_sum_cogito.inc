@@ -793,6 +793,7 @@ static bool cogito_sum_selector_kind(const char* sel, CogitoKind* out_kind, bool
   if (strcmp(s, "hstack") == 0) { if (out_kind) *out_kind = COGITO_HSTACK; return true; }
   if (strcmp(s, "iconbtn") == 0) { if (out_kind) *out_kind = COGITO_ICONBTN; return true; }
   if (strcmp(s, "image") == 0) { if (out_kind) *out_kind = COGITO_IMAGE; return true; }
+  if (strcmp(s, "video-view") == 0 || strcmp(s, "video_view") == 0 || strcmp(s, "videoview") == 0) { if (out_kind) *out_kind = COGITO_VIDEO_VIEW; return true; }
   if (strcmp(s, "label") == 0) { if (out_kind) *out_kind = COGITO_LABEL; return true; }
   if (strcmp(s, "list") == 0) { if (out_kind) *out_kind = COGITO_CONTENT_LIST; return true; }
   if (strcmp(s, "menu") == 0) { if (out_menu) *out_menu = true; return true; }

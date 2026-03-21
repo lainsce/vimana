@@ -12,6 +12,7 @@ extern "C" {
 typedef struct CogitoApp cogito_app;
 typedef struct CogitoNode cogito_node;
 typedef struct CogitoNode cogito_window;
+typedef struct CogitoTexture CogitoTexture;
 typedef uint64_t cogito_timer_id;
 
 typedef void (*cogito_node_fn)(cogito_node *node, void *user);
@@ -109,6 +110,7 @@ typedef enum {
   COGITO_NODE_WEBVIEW,
   COGITO_NODE_FLOW,
   COGITO_NODE_VIRTUAL_LIST,
+  COGITO_NODE_VIDEO_VIEW,
 } cogito_node_kind;
 
 // App / window lifecycle
@@ -203,6 +205,12 @@ const char *cogito_gst_last_tag_title(void);
 const char *cogito_gst_last_tag_artist(void);
 const char *cogito_gst_last_tag_album(void);
 int cogito_gst_last_tag_track_number(void);
+
+// GStreamer video frame API
+bool cogito_gst_has_video_frame(void);
+int cogito_gst_video_width(void);
+int cogito_gst_video_height(void);
+CogitoTexture *cogito_gst_update_video_texture(CogitoTexture *existing);
 
 // System notifications
 bool cogito_notify(const char *title, const char *body);
@@ -421,6 +429,7 @@ void cogito_split_button_set_variant(cogito_node *sb, int variant);
 // Tree / layout
 void cogito_node_add(cogito_node *parent, cogito_node *child);
 void cogito_node_remove(cogito_node *parent, cogito_node *child);
+void cogito_node_reparent(cogito_node *new_parent, cogito_node *child);
 void cogito_node_free(cogito_node *node);
 
 void cogito_node_set_margins(cogito_node *node, int top, int right, int bottom,
@@ -641,6 +650,8 @@ int cogito_drawing_area_get_x(cogito_node *area);
 int cogito_drawing_area_get_y(cogito_node *area);
 bool cogito_drawing_area_get_pressed(cogito_node *area);
 void cogito_drawing_area_clear(cogito_node *area);
+cogito_node *cogito_video_view_new(void);
+void cogito_video_view_set_fit(cogito_node *view, int fit);
 void cogito_canvas_set_color(cogito_node *area, const char *color);
 void cogito_canvas_set_line_width(cogito_node *area, int width);
 void cogito_canvas_line(cogito_node *area, int x1, int y1, int x2, int y2);

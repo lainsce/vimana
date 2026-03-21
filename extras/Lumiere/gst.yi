@@ -1,0 +1,109 @@
+cask gst
+
+bring stdr
+bring cogito
+
+pub def EVENT_NONE = 0
+pub def EVENT_EOS = 1
+pub def EVENT_ERROR = 2
+pub def EVENT_TAG = 3
+
+def ?is_loaded = false
+def ?is_playing_state = false
+def ?current_path = ""
+
+:: init() (( bool ))
+    <- cogito.gst_init()
+;
+
+:: shutdown() (( -- ))
+    cogito.gst_shutdown()
+;
+
+:: load(path_or_uri = string) (( bool ))
+    let ok = cogito.gst_load(path_or_uri)
+    if ok
+        current_path = path_or_uri
+        is_loaded = true
+    <- ok
+;
+
+:: play() (( bool ))
+    let ok = cogito.gst_play()
+    if ok
+        is_playing_state = true
+    <- ok
+;
+
+:: pause() (( bool ))
+    let ok = cogito.gst_pause()
+    if ok
+        is_playing_state = false
+    <- ok
+;
+
+:: stop() (( bool ))
+    let ok = cogito.gst_stop()
+    is_playing_state = false
+    is_loaded = false
+    current_path = ""
+    <- ok
+;
+
+:: toggle_pause() (( -- ))
+    if is_playing_state
+        pause()
+    else
+        play()
+;
+
+:: seek_ms(position_ms = num) (( bool ))
+    <- cogito.gst_seek_ms(position_ms)
+;
+
+:: position_ms() (( num ))
+    <- cogito.gst_position_ms()
+;
+
+:: duration_ms() (( num ))
+    <- cogito.gst_duration_ms()
+;
+
+:: set_volume(value = num) (( bool ))
+    <- cogito.gst_set_volume(value)
+;
+
+:: volume() (( num ))
+    <- cogito.gst_volume()
+;
+
+:: poll() (( num ))
+    <- cogito.gst_poll_event()
+;
+
+:: last_error() (( string ))
+    <- cogito.gst_last_error()
+;
+
+:: is_playing() (( bool ))
+    <- is_playing_state
+;
+
+:: loaded() (( bool ))
+    <- is_loaded
+;
+
+:: current_file() (( string ))
+    <- current_path
+;
+
+:: has_video() (( bool ))
+    <- cogito.gst_has_video_frame()
+;
+
+:: open_file(path = string) (( bool ))
+    let ok = load(path)
+    if ok
+        <- play()
+    <- false
+;

@@ -1,0 +1,21 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="1024" height="1024" rx="0" fill="url(#paint0_linear)"/>
+<path d="M332 260C332 241.222 349.222 226 368 226H656C674.778 226 692 241.222 692 260V764C692 782.778 674.778 798 656 798H368C349.222 798 332 782.778 332 764V260Z" fill="#FAFAFA" fill-opacity="0.15"/>
+<rect x="352" y="260" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="352" y="360" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="352" y="460" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="352" y="560" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="352" y="660" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="632" y="260" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="632" y="360" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="632" y="460" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="632" y="560" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<rect x="632" y="660" width="40" height="80" rx="6" fill="#FAFAFA"/>
+<path d="M476 424L476 600L600 512L476 424Z" fill="#FAFAFA"/>
+<defs>
+<linearGradient id="paint0_linear" x1="192" y1="0" x2="832" y2="1024" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E8637A"/>
+<stop offset="1" stop-color="#9B2335"/>
+</linearGradient>
+</defs>
+</svg>

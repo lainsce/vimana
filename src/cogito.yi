@@ -123,6 +123,7 @@ bring stdr
 : __cogito_node_set_context_menu(node = any, menu = ContextMenu) (( -- )) { }
 : __cogito_colorpicker_get_hex(cp = ColorPicker) (( string )) { }
 : __cogito_container_add(parent = any, child = any) (( -- )) { }
+: __cogito_container_reparent(new_parent = any, child = any) (( -- )) { }
 : __cogito_container_set_align(node = any, align = num) (( -- )) { }
 : __cogito_container_set_col_homogeneous(node = any, on = bool) (( -- )) { }
 : __cogito_container_set_gap(node = any, gap = num) (( -- )) { }
@@ -135,6 +136,7 @@ bring stdr
 : __cogito_container_set_valign(node = any, align = num) (( -- )) { }
 : __cogito_container_set_vexpand(node = any, expand = bool) (( -- )) { }
 : __cogito_container_set_vexpand_set(node = any, set = bool) (( -- )) { }
+: __cogito_container_set_size_request(node = any, w = num, h = num) (( -- )) { }
 : __cogito_content_list() (( ContentList )) { }
 : __cogito_content_list_set_selected(list = ContentList, idx = num) (( -- )) { }
 : __cogito_content_list_remove_at(list = ContentList, idx = num) (( -- )) { }
@@ -267,6 +269,8 @@ bring stdr
 : __cogito_shape(preset = num) (( Shape )) { }
 : __cogito_shape_set_preset(shape = Shape, preset = num) (( -- )) { }
 : __cogito_shape_get_preset(shape = Shape) (( num )) { }
+: __cogito_video_view_new() (( any )) { }
+: __cogito_video_view_set_fit(node = any, fit = num) (( -- )) { }
 : __cogito_shape_set_size(shape = Shape, size = num) (( -- )) { }
 : __cogito_shape_set_size_h(shape = Shape, h = num) (( -- )) { }
 : __cogito_shape_get_size(shape = Shape) (( num )) { }
@@ -332,6 +336,10 @@ bring stdr
 : __cogito_gst_last_tag_artist() (( string )) { }
 : __cogito_gst_last_tag_album() (( string )) { }
 : __cogito_gst_last_tag_track_number() (( num )) { }
+: __cogito_gst_has_video_frame() (( bool )) { }
+: __cogito_gst_video_width() (( num )) { }
+: __cogito_gst_video_height() (( num )) { }
+: __cogito_gst_update_video_texture(existing = any) (( any )) { }
 : __cogito_notify(title = string, body = string) (( bool )) { }
 : __cogito_mpris_init(app_name = string) (( bool )) { }
 : __cogito_mpris_shutdown() (( -- )) { }
@@ -4468,6 +4476,9 @@ pub ,: State
 :: load_sum(path = string) (( -- ))
     __cogito_load_sum(path)
 ;
+:: reparent(new_parent = any, child = any) (( -- ))
+    __cogito_container_reparent(new_parent, child)
+;
 :: set_script_dir(dir = string) (( -- ))
     __cogito_set_script_dir(dir)
 ;
@@ -4536,6 +4547,15 @@ pub ,: State
 ;
 :: gst_last_tag_track_number() (( num ))
     <- __cogito_gst_last_tag_track_number()
+;
+:: gst_has_video_frame() (( bool ))
+    <- __cogito_gst_has_video_frame()
+;
+:: gst_video_width() (( num ))
+    <- __cogito_gst_video_width()
+;
+:: gst_video_height() (( num ))
+    <- __cogito_gst_video_height()
 ;
 :: notify(title = string, body = string) (( bool ))
     <- __cogito_notify(title, body)
@@ -4932,6 +4952,10 @@ pub ,: State
     <- __cogito_drawing_area()
 ;
 
+:: video_view() (( VideoView ))
+    <- __cogito_video_view_new()
+;
+
 :: shape(preset = num) (( Shape ))
     <- __cogito_shape(preset)
 ;
@@ -5135,6 +5159,41 @@ pub ,: DrawingArea : Component
     ;
     :: set_id(this, id = string) (( DrawingArea ))
         __cogito_node_set_id(this, id)
+        <- this
+    ;
+;
+
+pub ,: VideoView : Component
+    :: set_fit(this, fit = num) (( VideoView ))
+        __cogito_video_view_set_fit(this, fit)
+        <- this
+    ;
+    :: set_margins(this, top = num, right = num, bottom = num, left = num) (( VideoView ))
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_padding(this, top = num, right = num, bottom = num, left = num) (( VideoView ))
+        __cogito_container_set_padding(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_hexpand(this, expand = bool) (( VideoView ))
+        __cogito_container_set_hexpand(this, expand)
+        <- this
+    ;
+    :: set_vexpand(this, expand = bool) (( VideoView ))
+        __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_class(this, cls = string) (( VideoView ))
+        __cogito_node_set_class(this, cls)
+        <- this
+    ;
+    :: set_id(this, id = string) (( VideoView ))
+        __cogito_node_set_id(this, id)
+        <- this
+    ;
+    :: set_visible(this, on = bool) (( VideoView ))
+        __cogito_node_set_visible(this, on)
         <- this
     ;
 ;

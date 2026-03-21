@@ -28,6 +28,8 @@ endif
 
 # Optional GStreamer playback backend used by Extras/Victrola gst.yi
 gst_dep = dependency('gstreamer-1.0', required : false)
+gst_video_dep = dependency('gstreamer-video-1.0', required : false)
+gst_app_dep = dependency('gstreamer-app-1.0', required : false)
 
 # FriBidi for Unicode Bidirectional Algorithm (RTL text support)
 fribidi_dep = dependency('fribidi', required : false)
@@ -60,6 +62,12 @@ if sdl3_image_dep.found()
 endif
 if gst_dep.found()
   cogito_deps += gst_dep
+endif
+if gst_video_dep.found()
+  cogito_deps += gst_video_dep
+endif
+if gst_app_dep.found()
+  cogito_deps += gst_app_dep
 endif
 if fribidi_dep.found()
   cogito_deps += fribidi_dep

@@ -7,38 +7,57 @@
 #undef cogito_about_window_set_issue_url
 #undef cogito_about_window_set_website
 #undef cogito_active_indicator_new
+#undef cogito_app_copy_to_clipboard
 #undef cogito_app_free
 #undef cogito_app_get_icon
 #undef cogito_app_new
-#undef cogito_app_run
-#undef cogito_app_copy_to_clipboard
 #undef cogito_app_paste_from_clipboard
-#undef cogito_clipboard_has
-#undef cogito_clipboard_get_data
-#undef cogito_clipboard_set_data
+#undef cogito_app_run
 #undef cogito_app_set_accent_color
-#undef cogito_app_set_dark_mode
 #undef cogito_app_set_accent_from_image
 #undef cogito_app_set_app_name
 #undef cogito_app_set_appid
+#undef cogito_app_set_baseline_font
 #undef cogito_app_set_contrast
+#undef cogito_app_set_dark_mode
+#undef cogito_app_set_emphasized_font
 #undef cogito_app_set_ensor_variant
 #undef cogito_app_set_icon
-#undef cogito_app_set_baseline_font
-#undef cogito_app_set_emphasized_font
 #undef cogito_appbar_add_button
 #undef cogito_appbar_new
 #undef cogito_appbar_pair_scroller
 #undef cogito_appbar_set_controls
 #undef cogito_appbar_set_subtitle
 #undef cogito_appbar_set_title
-#undef cogito_toolbar_new
+#undef cogito_bin_set_accent_color
+#undef cogito_bottom_sheet_add_action
 #undef cogito_button_add_menu
 #undef cogito_button_add_menu_section
 #undef cogito_button_get_size
 #undef cogito_button_new
 #undef cogito_button_set_size
 #undef cogito_button_set_text
+#undef cogito_buttongroup_get_connected
+#undef cogito_buttongroup_get_shape
+#undef cogito_buttongroup_get_size
+#undef cogito_buttongroup_new
+#undef cogito_buttongroup_on_select
+#undef cogito_buttongroup_set_connected
+#undef cogito_buttongroup_set_shape
+#undef cogito_buttongroup_set_size
+#undef cogito_canvas_circle
+#undef cogito_canvas_fill_circle
+#undef cogito_canvas_fill_rect
+#undef cogito_canvas_line
+#undef cogito_canvas_rect
+#undef cogito_canvas_set_color
+#undef cogito_canvas_set_line_width
+#undef cogito_card_add_action
+#undef cogito_card_add_overflow
+#undef cogito_card_on_click
+#undef cogito_card_set_header_image
+#undef cogito_card_set_subtitle
+#undef cogito_card_set_variant
 #undef cogito_carousel_item_set_halign
 #undef cogito_carousel_item_set_text
 #undef cogito_carousel_item_set_valign
@@ -46,17 +65,37 @@
 #undef cogito_checkbox_new
 #undef cogito_checkbox_on_change
 #undef cogito_checkbox_set_checked
+#undef cogito_clipboard_get_data
+#undef cogito_clipboard_has
+#undef cogito_clipboard_set_data
+#undef cogito_colorpicker_get_hex
 #undef cogito_colorpicker_new
 #undef cogito_colorpicker_on_change
 #undef cogito_colorpicker_set_hex
-#undef cogito_colorpicker_get_hex
 #undef cogito_content_list_new
+#undef cogito_content_list_on_activate
+#undef cogito_content_list_on_select
+#undef cogito_content_list_set_selected
+#undef cogito_context_menu_add_item
+#undef cogito_context_menu_add_section
+#undef cogito_context_menu_new
+#undef cogito_context_menu_set_icon
+#undef cogito_context_menu_set_shortcut
 #undef cogito_datepicker_new
 #undef cogito_datepicker_on_change
 #undef cogito_dialog_new
 #undef cogito_dialog_slot_clear
 #undef cogito_dialog_slot_new
 #undef cogito_dialog_slot_show
+#undef cogito_drawing_area_clear
+#undef cogito_drawing_area_get_pressed
+#undef cogito_drawing_area_get_x
+#undef cogito_drawing_area_get_y
+#undef cogito_drawing_area_new
+#undef cogito_drawing_area_on_drag
+#undef cogito_drawing_area_on_draw
+#undef cogito_drawing_area_on_press
+#undef cogito_drawing_area_on_release
 #undef cogito_dropdown_get_selected
 #undef cogito_dropdown_new
 #undef cogito_dropdown_on_change
@@ -66,71 +105,44 @@
 #undef cogito_empty_page_set_action
 #undef cogito_empty_page_set_description
 #undef cogito_empty_page_set_icon
+#undef cogito_fab_menu_set_color
+#undef cogito_fab_menu_set_size
 #undef cogito_find_children
 #undef cogito_find_parent
 #undef cogito_fixed_set_pos
+#undef cogito_grid_clear
 #undef cogito_grid_new_with_cols
 #undef cogito_grid_on_activate
 #undef cogito_grid_on_select
 #undef cogito_grid_set_align
 #undef cogito_grid_set_cols
-#undef cogito_grid_clear
 #undef cogito_grid_set_gap
 #undef cogito_grid_set_span
-#undef cogito_revealer_set_show_children
-#undef cogito_bin_set_accent_color
+#undef cogito_gst_get_duration_ms
+#undef cogito_gst_get_position_ms
+#undef cogito_gst_get_volume
+#undef cogito_gst_init
+#undef cogito_gst_last_cover_path
+#undef cogito_gst_last_error
+#undef cogito_gst_last_tag_album
+#undef cogito_gst_last_tag_artist
+#undef cogito_gst_last_tag_title
+#undef cogito_gst_last_tag_track_number
+#undef cogito_gst_load
+#undef cogito_gst_pause
+#undef cogito_gst_play
+#undef cogito_gst_poll_event
+#undef cogito_gst_seek_ms
+#undef cogito_gst_set_volume
+#undef cogito_gst_shutdown
+#undef cogito_gst_stop
 #undef cogito_iconbtn_add_menu
 #undef cogito_iconbtn_add_menu_section
 #undef cogito_iconbtn_new
 #undef cogito_iconbtn_set_icon
 #undef cogito_image_new
-#undef cogito_image_set_icon
 #undef cogito_image_set_blur
-#undef cogito_webview_new
-#undef cogito_webview_set_url
-#undef cogito_webview_get_url
-#undef cogito_webview_set_open_external_on_click
-#undef cogito_webview_get_open_external_on_click
-#undef cogito_webview_open
-#undef cogito_drawing_area_new
-#undef cogito_drawing_area_on_press
-#undef cogito_drawing_area_on_drag
-#undef cogito_drawing_area_on_release
-#undef cogito_drawing_area_get_x
-#undef cogito_drawing_area_get_y
-#undef cogito_drawing_area_get_pressed
-#undef cogito_drawing_area_clear
-#undef cogito_drawing_area_on_draw
-#undef cogito_canvas_set_color
-#undef cogito_canvas_set_line_width
-#undef cogito_canvas_line
-#undef cogito_canvas_rect
-#undef cogito_canvas_fill_rect
-#undef cogito_shape_new
-#undef cogito_shape_set_preset
-#undef cogito_shape_get_preset
-#undef cogito_shape_set_size
-#undef cogito_shape_set_size_h
-#undef cogito_shape_get_size
-#undef cogito_shape_set_color
-#undef cogito_shape_set_color_style
-#undef cogito_shape_get_color_style
-#undef cogito_shape_set_vertex
-#undef cogito_shape_get_vertex_x
-#undef cogito_shape_get_vertex_y
-#undef cogito_shape_set_clip
-#undef cogito_timer_set_timeout
-#undef cogito_timer_set_interval
-#undef cogito_timer_set_timeout_ex
-#undef cogito_timer_set_interval_ex
-#undef cogito_timer_set_timeout_for
-#undef cogito_timer_set_interval_for
-#undef cogito_timer_set_timeout_for_ex
-#undef cogito_timer_set_interval_for_ex
-#undef cogito_timer_clear
-#undef cogito_timer_clear_for
-#undef cogito_timer_clear_all
-#undef cogito_transition_start
+#undef cogito_image_set_icon
 #undef cogito_label_new
 #undef cogito_label_set_align
 #undef cogito_label_set_ellipsis
@@ -138,15 +150,17 @@
 #undef cogito_label_set_marquee
 #undef cogito_label_set_text
 #undef cogito_label_set_wrap
-#undef cogito_content_list_on_activate
-#undef cogito_content_list_on_select
-#undef cogito_content_list_set_selected
 #undef cogito_load_sum_file
 #undef cogito_menu_button_new
 #undef cogito_menu_set_icon
 #undef cogito_menu_set_shortcut
 #undef cogito_menu_set_submenu
 #undef cogito_menu_set_toggled
+#undef cogito_mpris_init
+#undef cogito_mpris_poll
+#undef cogito_mpris_set_metadata
+#undef cogito_mpris_set_playback_status
+#undef cogito_mpris_shutdown
 #undef cogito_node_add
 #undef cogito_node_build
 #undef cogito_node_free
@@ -155,87 +169,40 @@
 #undef cogito_node_new
 #undef cogito_node_on_activate
 #undef cogito_node_on_change
+#undef cogito_node_on_check
 #undef cogito_node_on_click
 #undef cogito_node_on_select
 #undef cogito_node_remove
 #undef cogito_node_set_a11y_label
 #undef cogito_node_set_a11y_role
 #undef cogito_node_set_align
+#undef cogito_node_set_border_color
+#undef cogito_node_set_border_radius
+#undef cogito_node_set_border_width
 #undef cogito_node_set_class
+#undef cogito_node_set_context_menu
 #undef cogito_node_set_disabled
 #undef cogito_node_set_editable
-#undef cogito_node_set_opacity
+#undef cogito_node_set_font_family
+#undef cogito_node_set_font_size
+#undef cogito_node_set_font_weight
 #undef cogito_node_set_halign
 #undef cogito_node_set_id
 #undef cogito_node_set_margins
+#undef cogito_node_set_opacity
 #undef cogito_node_set_padding
+#undef cogito_node_set_shadow
 #undef cogito_node_set_text
 #undef cogito_node_set_tooltip
 #undef cogito_node_set_valign
 #undef cogito_node_window
-#undef cogito_open_url
-#undef cogito_popover_new
-#undef cogito_popover_show
-#undef cogito_popover_close
-#undef cogito_context_menu_new
-#undef cogito_context_menu_add_item
-#undef cogito_context_menu_add_section
-#undef cogito_context_menu_set_icon
-#undef cogito_context_menu_set_shortcut
-#undef cogito_node_set_context_menu
-#undef cogito_gst_init
-#undef cogito_gst_shutdown
-#undef cogito_gst_load
-#undef cogito_gst_play
-#undef cogito_gst_pause
-#undef cogito_gst_stop
-#undef cogito_gst_seek_ms
-#undef cogito_gst_get_position_ms
-#undef cogito_gst_get_duration_ms
-#undef cogito_gst_set_volume
-#undef cogito_gst_get_volume
-#undef cogito_gst_poll_event
-#undef cogito_gst_last_error
-#undef cogito_gst_last_cover_path
-#undef cogito_gst_last_tag_title
-#undef cogito_gst_last_tag_artist
-#undef cogito_gst_last_tag_album
-#undef cogito_gst_last_tag_track_number
 #undef cogito_notify
-#undef cogito_mpris_init
-#undef cogito_mpris_shutdown
-#undef cogito_mpris_set_metadata
-#undef cogito_mpris_set_playback_status
-#undef cogito_mpris_poll
-#undef cogito_shortcut_register
-#undef cogito_shortcut_unregister
-#undef cogito_shortcut_unregister_all
-#undef cogito_tableview_new
-#undef cogito_tableview_set_headers
-#undef cogito_tableview_set_col_width
-#undef cogito_tableview_get_selected
-#undef cogito_tableview_set_selected
-#undef cogito_tableview_set_show_grid
-#undef cogito_tableview_set_striped
-#undef cogito_tableview_set_row_height
-#undef cogito_tableview_set_header_height
-#undef cogito_tableview_add_row
-#undef cogito_tableview_clear
-#undef cogito_tableview_set_checkboxes
-#undef cogito_tableview_check_row
-#undef cogito_tableview_is_row_checked
-#undef cogito_tableview_check_all
-#undef cogito_tableview_get_checked_count
-#undef cogito_tableview_set_page
-#undef cogito_tableview_get_page
-#undef cogito_tableview_set_rows_per_page
-#undef cogito_tableview_get_rows_per_page
-#undef cogito_tableview_get_page_count
-#undef cogito_tableview_set_page_sizes
-#undef cogito_task_run
-#undef cogito_node_on_check
+#undef cogito_open_url
 #undef cogito_pointer_capture
 #undef cogito_pointer_release
+#undef cogito_popover_close
+#undef cogito_popover_new
+#undef cogito_popover_show
 #undef cogito_progress_get_circular
 #undef cogito_progress_get_indeterminate
 #undef cogito_progress_get_thickness
@@ -248,48 +215,58 @@
 #undef cogito_progress_set_value
 #undef cogito_progress_set_wavy
 #undef cogito_rebuild_active_window
+#undef cogito_revealer_set_show_children
 #undef cogito_scroller_set_axes
 #undef cogito_scroller_set_sync
 #undef cogito_searchfield_get_text
 #undef cogito_searchfield_new
 #undef cogito_searchfield_on_change
 #undef cogito_searchfield_set_text
-#undef cogito_buttongroup_new
-#undef cogito_buttongroup_on_select
-#undef cogito_buttongroup_set_size
-#undef cogito_buttongroup_get_size
-#undef cogito_buttongroup_set_shape
-#undef cogito_buttongroup_get_shape
-#undef cogito_buttongroup_set_connected
-#undef cogito_buttongroup_get_connected
 #undef cogito_settings_list_new
 #undef cogito_settings_page_new
 #undef cogito_settings_row_new
 #undef cogito_settings_window_new
+#undef cogito_shape_get_color_style
+#undef cogito_shape_get_preset
+#undef cogito_shape_get_size
+#undef cogito_shape_get_vertex_x
+#undef cogito_shape_get_vertex_y
+#undef cogito_shape_new
+#undef cogito_shape_set_clip
+#undef cogito_shape_set_color
+#undef cogito_shape_set_color_style
+#undef cogito_shape_set_preset
+#undef cogito_shape_set_size
+#undef cogito_shape_set_size_h
+#undef cogito_shape_set_vertex
+#undef cogito_shortcut_register
+#undef cogito_shortcut_unregister
+#undef cogito_shortcut_unregister_all
+#undef cogito_side_sheet_set_mode
 #undef cogito_slider_get_centered
 #undef cogito_slider_get_end_dots
-#undef cogito_slider_get_step
-#undef cogito_slider_get_step_dots
 #undef cogito_slider_get_range_end
 #undef cogito_slider_get_range_start
 #undef cogito_slider_get_size
+#undef cogito_slider_get_step
+#undef cogito_slider_get_step_dots
 #undef cogito_slider_get_value
+#undef cogito_slider_get_wavy
 #undef cogito_slider_new
 #undef cogito_slider_on_change
 #undef cogito_slider_range_new
+#undef cogito_slider_set_bounds
 #undef cogito_slider_set_centered
 #undef cogito_slider_set_end_dots
-#undef cogito_slider_set_wavy
-#undef cogito_slider_get_wavy
-#undef cogito_slider_set_step
-#undef cogito_slider_set_step_dots
 #undef cogito_slider_set_icon
-#undef cogito_slider_set_bounds
 #undef cogito_slider_set_range
 #undef cogito_slider_set_range_end
 #undef cogito_slider_set_range_start
 #undef cogito_slider_set_size
+#undef cogito_slider_set_step
+#undef cogito_slider_set_step_dots
 #undef cogito_slider_set_value
+#undef cogito_slider_set_wavy
 #undef cogito_split_button_add_menu
 #undef cogito_split_button_add_menu_section
 #undef cogito_split_button_new
@@ -307,6 +284,28 @@
 #undef cogito_switchbar_new
 #undef cogito_switchbar_on_change
 #undef cogito_switchbar_set_checked
+#undef cogito_tableview_add_row
+#undef cogito_tableview_check_all
+#undef cogito_tableview_check_row
+#undef cogito_tableview_clear
+#undef cogito_tableview_get_checked_count
+#undef cogito_tableview_get_page
+#undef cogito_tableview_get_page_count
+#undef cogito_tableview_get_rows_per_page
+#undef cogito_tableview_get_selected
+#undef cogito_tableview_is_row_checked
+#undef cogito_tableview_new
+#undef cogito_tableview_set_checkboxes
+#undef cogito_tableview_set_col_width
+#undef cogito_tableview_set_header_height
+#undef cogito_tableview_set_headers
+#undef cogito_tableview_set_page
+#undef cogito_tableview_set_page_sizes
+#undef cogito_tableview_set_row_height
+#undef cogito_tableview_set_rows_per_page
+#undef cogito_tableview_set_selected
+#undef cogito_tableview_set_show_grid
+#undef cogito_tableview_set_striped
 #undef cogito_tabs_bind
 #undef cogito_tabs_get_selected
 #undef cogito_tabs_new
@@ -314,82 +313,83 @@
 #undef cogito_tabs_set_ids
 #undef cogito_tabs_set_items
 #undef cogito_tabs_set_selected
+#undef cogito_task_run
 #undef cogito_textfield_get_hint
 #undef cogito_textfield_get_prefix
 #undef cogito_textfield_get_regex
 #undef cogito_textfield_get_suffix
-#undef cogito_textfield_is_valid
 #undef cogito_textfield_get_text
+#undef cogito_textfield_is_valid
 #undef cogito_textfield_new
 #undef cogito_textfield_on_change
-#undef cogito_textfield_set_regex
 #undef cogito_textfield_set_hint
 #undef cogito_textfield_set_prefix
+#undef cogito_textfield_set_regex
 #undef cogito_textfield_set_suffix
 #undef cogito_textfield_set_text
 #undef cogito_textview_get_text
 #undef cogito_textview_new
 #undef cogito_textview_on_change
 #undef cogito_textview_set_text
+#undef cogito_timer_clear
+#undef cogito_timer_clear_all
+#undef cogito_timer_clear_for
+#undef cogito_timer_set_interval
+#undef cogito_timer_set_interval_ex
+#undef cogito_timer_set_interval_for
+#undef cogito_timer_set_interval_for_ex
+#undef cogito_timer_set_timeout
+#undef cogito_timer_set_timeout_ex
+#undef cogito_timer_set_timeout_for
+#undef cogito_timer_set_timeout_for_ex
 #undef cogito_tip_view_new
 #undef cogito_tip_view_set_title
 #undef cogito_toast_new
 #undef cogito_toast_on_click
 #undef cogito_toast_set_action
 #undef cogito_toasts_new
+#undef cogito_toolbar_new
+#undef cogito_transition_start
 #undef cogito_treeview_new
 #undef cogito_view_chooser_bind
+#undef cogito_view_chooser_get_selected
 #undef cogito_view_chooser_new
+#undef cogito_view_chooser_on_change
 #undef cogito_view_chooser_set_items
 #undef cogito_view_chooser_set_selected
-#undef cogito_view_chooser_get_selected
-#undef cogito_view_chooser_on_change
 #undef cogito_view_dual_new
 #undef cogito_view_dual_set_ratio
 #undef cogito_view_switcher_new
 #undef cogito_view_switcher_set_active
 #undef cogito_virtual_list_new
+#undef cogito_virtual_list_set_builder
 #undef cogito_virtual_list_set_item_count
 #undef cogito_virtual_list_set_item_height
-#undef cogito_virtual_list_set_builder
+#undef cogito_webview_get_open_external_on_click
+#undef cogito_webview_get_url
+#undef cogito_webview_new
+#undef cogito_webview_open
+#undef cogito_webview_set_open_external_on_click
+#undef cogito_webview_set_url
 #undef cogito_welcome_screen_new
 #undef cogito_welcome_screen_set_action
 #undef cogito_welcome_screen_set_description
-#undef cogito_welcome_screen_set_icon
 #undef cogito_welcome_screen_set_has_seen
+#undef cogito_welcome_screen_set_icon
 #undef cogito_window_clear_dialog
+#undef cogito_window_clear_side_sheet
 #undef cogito_window_free
+#undef cogito_window_is_compact
 #undef cogito_window_new
+#undef cogito_window_on_file_drop
+#undef cogito_window_on_resize
 #undef cogito_window_set_a11y_label
 #undef cogito_window_set_autosize
 #undef cogito_window_set_builder
-#undef cogito_window_on_resize
-#undef cogito_window_on_file_drop
-#undef cogito_window_is_compact
 #undef cogito_window_set_dialog
-#undef cogito_window_set_side_sheet
-#undef cogito_side_sheet_set_mode
-#undef cogito_window_clear_side_sheet
 #undef cogito_window_set_resizable
+#undef cogito_window_set_side_sheet
 #undef cogito_window_set_size_request
-#undef cogito_fab_menu_set_size
-#undef cogito_fab_menu_set_color
-#undef cogito_card_set_subtitle
-#undef cogito_card_on_click
-#undef cogito_card_set_variant
-#undef cogito_card_set_header_image
-#undef cogito_card_add_action
-#undef cogito_card_add_overflow
-#undef cogito_bottom_sheet_add_action
-#undef cogito_node_set_font_size
-#undef cogito_node_set_font_weight
-#undef cogito_node_set_font_family
-#undef cogito_node_set_shadow
-#undef cogito_node_set_border_width
-#undef cogito_node_set_border_radius
-#undef cogito_node_set_border_color
-#undef cogito_canvas_circle
-#undef cogito_canvas_fill_circle
 
 // Forward declarations for shortcut functions (exported from libcogito, use YisVal)
 extern int cogito_shortcut_register(int scancode, int modifiers, YisVal callback);
@@ -2685,6 +2685,12 @@ static void __cogito_container_add(YisVal parentv, YisVal childv) {
   cogito_node_add(parent, child);
 }
 
+static void __cogito_container_reparent(YisVal new_parentv, YisVal childv) {
+  cogito_node* new_parent = cogito_node_from_val(new_parentv);
+  cogito_node* child = cogito_node_from_val(childv);
+  cogito_node_reparent(new_parent, child);
+}
+
 static void __cogito_container_set_margins(YisVal nodev, YisVal top, YisVal right, YisVal bottom, YisVal left) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_margins(node, (int)yis_as_int(top), (int)yis_as_int(right), (int)yis_as_int(bottom), (int)yis_as_int(left));
@@ -4228,6 +4234,28 @@ static YisVal __cogito_gst_last_tag_track_number(void) {
   return YV_INT(cogito_gst_last_tag_track_number());
 }
 
+static YisVal __cogito_gst_has_video_frame(void) {
+  return YV_BOOL(cogito_gst_has_video_frame());
+}
+
+static YisVal __cogito_gst_video_width(void) {
+  return YV_INT(cogito_gst_video_width());
+}
+
+static YisVal __cogito_gst_video_height(void) {
+  return YV_INT(cogito_gst_video_height());
+}
+
+// --- VideoView ---
+static YisVal __cogito_video_view_new(void) {
+  cogito_node* n = cogito_video_view_new();
+  return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+static void __cogito_video_view_set_fit(YisVal nv, YisVal fitv) {
+  cogito_node* n = cogito_node_from_val(nv);
+  cogito_video_view_set_fit(n, (int)yis_as_int(fitv));
+}
+
 static YisVal __cogito_notify(YisVal titlev, YisVal bodyv) {
   const char *title = (titlev.tag == EVT_STR && titlev.as.p) ? ((YisStr*)titlev.as.p)->data : "";
   const char *body = (bodyv.tag == EVT_STR && bodyv.as.p) ? ((YisStr*)bodyv.as.p)->data : "";
@@ -4465,6 +4493,11 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_gst_last_tag_artist __cogito_gst_last_tag_artist
 #define cogito_gst_last_tag_album __cogito_gst_last_tag_album
 #define cogito_gst_last_tag_track_number __cogito_gst_last_tag_track_number
+#define cogito_gst_has_video_frame __cogito_gst_has_video_frame
+#define cogito_gst_video_width __cogito_gst_video_width
+#define cogito_gst_video_height __cogito_gst_video_height
+#define cogito_video_view_new __cogito_video_view_new
+#define cogito_video_view_set_fit __cogito_video_view_set_fit
 #define cogito_notify __cogito_notify
 #define cogito_mpris_init __cogito_mpris_init
 #define cogito_mpris_shutdown __cogito_mpris_shutdown
@@ -4567,6 +4600,7 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_list_new __cogito_list
 #define cogito_grid_new __cogito_grid
 #define cogito_container_add __cogito_container_add
+#define cogito_container_reparent __cogito_container_reparent
 #define cogito_container_set_margins __cogito_container_set_margins
 #define cogito_container_set_align __cogito_container_set_align
 #define cogito_container_set_halign __cogito_container_set_halign

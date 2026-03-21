@@ -1,0 +1,77 @@
+cask scanner
+
+bring stdr
+bring utils.util
+
+def VIDEO_EXTENSIONS = [".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v", ".flv", ".wmv", ".mpg", ".mpeg", ".ts", ".3gp", ".ogv"]: [string]
+
+-- macOS folder picker via osascript.
+:: pick_folder_macos() (( string ))
+    let cmd = "osascript -e 'POSIX path of (choose folder with prompt \"Choose Video Folder\")'"
+    let run = stdr.run_command(cmd)
+    let exit_code = run[0] ?? 1
+    let out = stdr.trim(stdr.str(run[1] ?? ""))
+    if exit_code == 0 && stdr.len(out) > 0
+        <- out
+    <- ""
+;
+
+-- macOS file picker for a single video file.
+:: pick_file_macos() (( string ))
+    let ?exts = ""
+    for (let ?i = 0; i < stdr.len(VIDEO_EXTENSIONS); i = i + 1)
+        let ext = VIDEO_EXTENSIONS[i] ?? ""
+        let bare = stdr.slice(ext, 1, stdr.len(ext))
+        if i > 0
+            exts = exts + ", "
+        exts = exts + "\"" + bare + "\""
+    let cmd = "osascript -e 'POSIX path of (choose file of type {" + exts + "} with prompt \"Choose Video\")'"
+    let run = stdr.run_command(cmd)
+    let exit_code = run[0] ?? 1
+    let out = stdr.trim(stdr.str(run[1] ?? ""))
+    if exit_code == 0 && stdr.len(out) > 0
+        <- out
+    <- ""
+;
+
+-- Scan a folder recursively for video files.
+:: scan_folder(folder = string) (( any ))
+    let chosen = stdr.trim(folder)
+    if stdr.len(chosen) == 0
+        <- []: [string]
+
+    let quoted = stdr.shell_quote(chosen)
+    let ?cmd = "find " + quoted + " -type f \\("
+    for (let ?i = 0; i < stdr.len(VIDEO_EXTENSIONS); i = i + 1)
+        let ext = VIDEO_EXTENSIONS[i] ?? ""
+        if stdr.len(ext) == 0
+            continue
+        if i > 0
+            cmd = cmd + " -o"
+        cmd = cmd + " -iname '*" + ext + "'"
+    cmd = cmd + " \\) | sort"
+
+    let run = stdr.run_command(cmd)
+    let exit_code = run[0] ?? 1
+    if exit_code != 0
+        <- []: [string]
+
+    <- util.split_lines(stdr.str(run[1] ?? ""))
+;
+
+-- Generate a thumbnail for a video file using ffmpeg.
+-- Saves to cache_dir/{hash}.jpg. Returns the output path, or "" on failure.
+:: generate_thumbnail(video_path = string, cache_dir = string) (( string ))
+    let safe = util.safe_filename(video_path)
+    let out_path = cache_dir + "/" + safe + ".jpg"
+    if stdr.file_exists(out_path)
+        <- out_path
+    let quoted_in = stdr.shell_quote(video_path)
+    let quoted_out = stdr.shell_quote(out_path)
+    let cmd = "ffmpeg -y -i " + quoted_in + " -ss 00:00:05 -vframes 1 -q:v 3 -vf scale=320:-1 " + quoted_out + " 2>/dev/null"
+    let run = stdr.run_command(cmd)
+    let exit_code = run[0] ?? 1
+    if exit_code == 0 && stdr.file_exists(out_path)
+        <- out_path
+    <- ""
+;
