@@ -258,6 +258,30 @@ bool cogito_is_rtl(void) {
   return cogito_direction == COGITO_DIR_RTL;
 }
 
+bool cogito_is_shift_down(void) {
+  if (!cogito_backend || !cogito_backend->is_key_down)
+    return false;
+  return cogito_backend->is_key_down(SDL_SCANCODE_LSHIFT)
+      || cogito_backend->is_key_down(SDL_SCANCODE_RSHIFT);
+}
+
+// Forward declarations for pointer state (defined after layout section)
+static int cogito_main_pointer_x;
+static int cogito_main_pointer_y;
+static bool cogito_main_pointer_down;
+
+bool cogito_is_mouse_down(void) {
+  return cogito_main_pointer_down;
+}
+
+int cogito_pointer_x_pos(void) {
+  return cogito_main_pointer_x;
+}
+
+int cogito_pointer_y_pos(void) {
+  return cogito_main_pointer_y;
+}
+
 // Flip horizontal alignment (0=start, 1=center, 2=end) for RTL
 static inline int cogito_resolve_halign(int halign) {
   if (cogito_direction == COGITO_DIR_RTL) {
@@ -2048,7 +2072,31 @@ static id cogito_nsstring(const char* s) {
   return ((id (*)(id, SEL, const char*))objc_msgSend)(nsstring, sel, s ? s : "");
 }
 
+// Prevent the macOS compositor from stretching the old frame buffer during
+// live window resize.  By pinning the layer contents to the top-left corner
+// (NSViewLayerContentsPlacementTopLeft = 11) the exposed region is simply
+// cleared to the window background instead of showing a distorted ghost of
+// the previous frame.
+static void cogito_configure_macos_resize_layer(void) {
+  if (!cogito_backend || !cogito_active_backend_window) return;
+  id nsw =
+#if defined(__OBJC__)
+      (__bridge id)cogito_backend->window_get_native_handle(cogito_active_backend_window);
+#else
+      (id)cogito_backend->window_get_native_handle(cogito_active_backend_window);
+#endif
+  if (!nsw) return;
+  SEL sel_content_view = sel_registerName("contentView");
+  id view = ((id (*)(id, SEL))objc_msgSend)(nsw, sel_content_view);
+  if (!view) return;
+  // NSViewLayerContentsPlacementTopLeft = 11
+  SEL sel_set_placement = sel_registerName("setLayerContentsPlacement:");
+  ((void (*)(id, SEL, CogitoNSInteger))objc_msgSend)(view, sel_set_placement, (CogitoNSInteger)11);
+}
+
 static void cogito_configure_macos_window(bool has_appbar) {
+  // Always configure resize layer behaviour, even for windows without appbar.
+  cogito_configure_macos_resize_layer();
   if (!has_appbar) return;
   // Get native window handle from backend
   if (!cogito_backend || !cogito_active_backend_window) return;

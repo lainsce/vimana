@@ -106,6 +106,7 @@ typedef struct CogitoBackend {
   void (*end_frame)(CogitoWindow *window);
   void (*present)(CogitoWindow *window);
   void (*clear)(CogitoColor color);
+  void (*set_vsync)(CogitoWindow *window, int vsync);
 
   // Event loop
   bool (*poll_events)(void); // true if at least one event was processed

@@ -1,0 +1,332 @@
+cask main
+
+bring stdr
+bring cogito
+
+bring utils.csv as csv
+bring utils.formula as formula
+bring widgets.sheet_grid as sheet_grid
+
+-- ── Constants ────────────────────────────────────────────────
+
+def NUM_COLS = 26
+def NUM_ROWS = 26
+
+-- ── State ────────────────────────────────────────────────────
+
+def ?cells = []: [string => any]
+def ?sel_col = 0
+def ?sel_row = 0
+def ?sel_col2 = 0
+def ?sel_row2 = 0
+def ?sheet_name = "Working Sheet"
+def ?file_path = ""
+def ?formula_text = ""
+def ?drag_timer_id = 0
+
+def rebuild_state = cogito.state(false)
+def sheet_grid_w = cogito.grid(1)
+def formula_field = cogito.textfield("")
+
+-- ── Helpers ──────────────────────────────────────────────────
+
+: request_rebuild() (( -- ))
+    let v = rebuild_state.get()
+    rebuild_state.set(v)
+;
+
+: selected_key() (( string ))
+    if sel_col == sel_col2 && sel_row == sel_row2
+        <- csv.col_letter(sel_col) + str(sel_row + 1)
+    let ?c1 = sel_col
+    if sel_col2 < sel_col { c1 = sel_col2 }
+    let ?r1 = sel_row
+    if sel_row2 < sel_row { r1 = sel_row2 }
+    let ?c2 = sel_col
+    if sel_col2 > sel_col { c2 = sel_col2 }
+    let ?r2 = sel_row
+    if sel_row2 > sel_row { r2 = sel_row2 }
+    <- csv.col_letter(c1) + str(r1 + 1) + ":" + csv.col_letter(c2) + str(r2 + 1)
+;
+
+: sync_formula_bar() (( -- ))
+    let key = selected_key()
+    let cell = cells[key] ?? []: [string => any]
+    let raw = str(cell["raw"] ?? "")
+    formula_text = raw
+    formula_field.set_text(raw)
+;
+
+-- ── Cell Editing ─────────────────────────────────────────────
+
+: commit_formula() (( -- ))
+    let key = selected_key()
+    let raw = stdr.trim(formula_text)
+
+    let ?cell = cells[key] ?? []: [string => any]
+    cell["raw"] = raw
+
+    -- Evaluate
+    if stdr.len(raw) > 0 && stdr.char_at(raw, 0) == "="
+        cell["value"] = formula.evaluate(raw, cells, key)
+    else
+        cell["value"] = raw
+
+    cells[key] = cell
+
+    -- Recalculate dependent cells
+    formula.recalculate(cells, NUM_COLS, NUM_ROWS)
+
+    request_rebuild()
+;
+
+: on_cell_click(col = num, row = num) (( -- ))
+    -- Commit current formula before switching
+    commit_formula()
+
+    sel_col = col
+    sel_row = row
+    sel_col2 = col
+    sel_row2 = row
+    sync_formula_bar()
+    request_rebuild()
+
+    -- Start drag-tracking: poll mouse at ~60fps
+    if drag_timer_id > 0
+        cogito.clear_timer(drag_timer_id)
+    drag_timer_id = cogito.set_interval(16, () => {
+        drag_tick()
+    })
+;
+
+: drag_tick() (( -- ))
+    if cogito.is_mouse_down() == false
+        -- Mouse released: stop tracking
+        if drag_timer_id > 0
+            cogito.clear_timer(drag_timer_id)
+            drag_timer_id = 0
+        <-
+
+    -- Compute which cell the pointer is over (using actual cell layout)
+    let ?new_col = sheet_grid.ptr_to_col(sheet_grid_w, cogito.pointer_x(), NUM_COLS)
+    let ?new_row = sheet_grid.ptr_to_row(sheet_grid_w, cogito.pointer_y(), NUM_ROWS)
+
+    if new_col != sel_col2 || new_row != sel_row2
+        sel_col2 = new_col
+        sel_row2 = new_row
+        request_rebuild()
+;
+
+: on_cell_shift_click(col = num, row = num) (( -- ))
+    -- Extend selection range to clicked cell (anchor stays)
+    sel_col2 = col
+    sel_row2 = row
+    request_rebuild()
+;
+
+: on_cell_change(col = num, row = num, text = string) (( -- ))
+    let key = csv.col_letter(col) + str(row + 1)
+    formula_text = text
+    formula_field.set_text(text)
+;
+
+-- ── File Operations ──────────────────────────────────────────
+
+: new_sheet() (( -- ))
+    cells = []: [string => any]
+    sel_col = 0
+    sel_row = 0
+    sel_col2 = 0
+    sel_row2 = 0
+    sheet_name = "Working Sheet"
+    file_path = ""
+    sync_formula_bar()
+    request_rebuild()
+;
+
+: open_file() (( -- ))
+    let path = stdr.open_file_dialog("Open Spreadsheet", "csv")
+    if stdr.is_null(path)
+        <-
+
+    let content = stdr.read_text_file(str(path))
+    if stdr.is_null(content)
+        <-
+
+    file_path = str(path)
+    sheet_name = stdr.stem(stdr.basename(file_path))
+
+    cells = []: [string => any]
+    let rows = csv.parse(str(content))
+    for (let ?r = 0; r < len(rows); r += 1)
+        let row = rows[r] ?? []: [any]
+        for (let ?c = 0; c < len(row); c += 1)
+            let val = stdr.trim(str(row[c] ?? ""))
+            if stdr.len(val) > 0
+                let key = csv.col_letter(c) + str(r + 1)
+                let ?cell = []: [string => any]
+                cell["raw"] = val
+                cell["value"] = val
+                cells[key] = cell
+
+    -- Evaluate formulas
+    formula.recalculate(cells, NUM_COLS, NUM_ROWS)
+
+    sel_col = 0
+    sel_row = 0
+    sel_col2 = 0
+    sel_row2 = 0
+    sync_formula_bar()
+    request_rebuild()
+;
+
+: save_file() (( -- ))
+    let ?path = file_path
+    if stdr.len(path) == 0
+        let picked = stdr.save_file_dialog("Save Spreadsheet", "spreadsheet.csv", "csv")
+        if stdr.is_null(picked)
+            <-
+        path = str(picked)
+        file_path = path
+        sheet_name = stdr.stem(stdr.basename(path))
+
+    let content = csv.export(cells, NUM_COLS, NUM_ROWS)
+    stdr.write_text_file(path, content)
+;
+
+: save_file_as() (( -- ))
+    let picked = stdr.save_file_dialog("Save Spreadsheet As", "spreadsheet.csv", "csv")
+    if stdr.is_null(picked)
+        <-
+    file_path = str(picked)
+    sheet_name = stdr.stem(stdr.basename(file_path))
+
+    let content = csv.export(cells, NUM_COLS, NUM_ROWS)
+    stdr.write_text_file(file_path, content)
+;
+
+-- ── About ────────────────────────────────────────────────────
+
+: show_about(win = cogito.Window) (( -- ))
+    let dlg = cogito.dialog("")
+    let aw = cogito.about_window("Tabula", "GPLv3 License")
+    .set_icon("sf:tablecells")
+    dlg.add(aw)
+    win.set_dialog(dlg)
+;
+
+-- ── Window Builder ───────────────────────────────────────────
+
+: build_window(win = cogito.Window) (( -- ))
+    let _ = rebuild_state.get()
+
+    win.add(cogito.window_bar())
+
+    -- AppBar with sheet name and gear menu
+    let bar = cogito.appbar(sheet_name, "")
+    .set_class("small tab-appbar")
+    .set_hexpand(true)
+
+    let gear_btn = bar.add_trailing_menu_button("sf:gearshape")
+    gear_btn.add_menu("New", (b = any) => {
+        new_sheet()
+    })
+    gear_btn.add_menu("Open...", (b = any) => {
+        open_file()
+    })
+    gear_btn.add_menu("Save", (b = any) => {
+        save_file()
+    })
+    gear_btn.add_menu("Save As...", (b = any) => {
+        save_file_as()
+    })
+
+    bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+        show_about(win)
+    })
+    win.add(bar)
+
+    -- Formula bar
+    let fx_bar = cogito.hstack()
+    .set_class("tab-formula-bar")
+    .set_padding(8, 24, 8, 24)
+    .set_gap(8)
+    .set_hexpand(true)
+
+    let fx_label = cogito.image("fx")
+    .set_size(24, 24)
+    .set_align(4)
+
+    formula_field
+    .set_text(formula_text)
+    .set_class("outline tab-formula-field")
+    .set_hexpand(true)
+    formula_field.on_change((tf = cogito.TextField) => {
+        formula_text = tf.text()
+    })
+
+    let commit_btn = cogito.iconbtn("sf:return")
+    .set_shape(1)
+    .set_size(0)
+    commit_btn.on_click((b = cogito.Button) => {
+        commit_formula()
+    })
+
+    fx_bar.add(fx_label)
+    fx_bar.add(formula_field)
+    fx_bar.add(commit_btn)
+    win.add(fx_bar)
+
+    -- Spreadsheet grid in scroller
+    let scroller = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_axes(true, true)
+    .set_class("tab-scroller")
+
+    sheet_grid.populate(
+        sheet_grid_w,
+        cells,
+        NUM_COLS,
+        NUM_ROWS,
+        sel_col,
+        sel_row,
+        sel_col2,
+        sel_row2,
+        selected_key(),
+        (col = num, row = num) => {
+            on_cell_click(col, row)
+        },
+        (col = num, row = num) => {
+            on_cell_shift_click(col, row)
+        },
+        (col = num, row = num, text = string) => {
+            on_cell_change(col, row, text)
+        }
+    )
+
+    scroller.add(sheet_grid_w)
+    win.add(scroller)
+;
+
+-- ── Entry Point ──────────────────────────────────────────────
+
+-> ()
+    let app = cogito.app()
+    .set_appid("com.fyralabs.Tabula")
+    .set_app_name("Tabula")
+    .set_icon("com.fyralabs.Tabula.svg")
+    .set_mono_icon("com.fyralabs.Tabula-symbolic.svg")
+    .set_accent_color("#7B8264", false)
+
+    cogito.load_sum("tabula.sum")
+
+    let win = cogito.window_size("Tabula", 1024, 720)
+    .set_resizable(true)
+    .set_size_request(412, 720)
+    .build((w = cogito.Window) => {
+        build_window(w)
+    })
+
+    app.run(win)
+;

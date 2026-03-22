@@ -1,0 +1,160 @@
+cask sheet_grid
+
+bring stdr
+bring cogito
+
+bring utils.csv as csv
+
+-- ── Grid geometry constants (must match .sum) ────────────────
+
+def HEADER_W = 40
+def HEADER_H = 28
+def CELL_H   = 32
+
+-- ── Build the spreadsheet grid ───────────────────────────────
+
+:: populate(
+    grid = cogito.Grid,
+    cells = any,
+    num_cols = num,
+    num_rows = num,
+    sel_col = num,
+    sel_row = num,
+    sel_col2 = num,
+    sel_row2 = num,
+    sel_key = string,
+    on_cell_click = any,
+    on_cell_shift_click = any,
+    on_cell_change = any
+) (( -- ))
+    grid.clear()
+    grid.set_cols(num_cols + 1)
+    grid.set_col_homogeneous(false)
+    grid.set_gap(0, 0)
+
+    -- Compute selection rectangle (min/max)
+    let ?rc1 = sel_col
+    if sel_col2 < sel_col { rc1 = sel_col2 }
+    let ?rr1 = sel_row
+    if sel_row2 < sel_row { rr1 = sel_row2 }
+    let ?rc2 = sel_col
+    if sel_col2 > sel_col { rc2 = sel_col2 }
+    let ?rr2 = sel_row
+    if sel_row2 > sel_row { rr2 = sel_row2 }
+
+    -- Top-left corner cell shows selected cell ref
+    let corner = cogito.label(sel_key)
+    .set_class("tab-header-corner")
+    .set_hexpand(false)
+    .set_max_width_chars(6)
+    .set_line_chars(6)
+    .set_align(4)
+    .set_padding(4, 10, 4, 10)
+    grid.add(corner, 0, 0, 1, 1)
+
+    -- Column headers (A, B, C, ...)
+    for (let ?c = 0; c < num_cols; c += 1)
+        let letter = csv.col_letter(c)
+        let hdr = cogito.label(letter)
+        .set_class("tab-col-header")
+        .set_hexpand(false)
+        .set_padding(4, 8, 4, 8)
+        grid.add(hdr, c + 1, 0, 1, 1)
+
+    -- Rows
+    for (let ?r = 0; r < num_rows; r += 1)
+        -- Row header (1, 2, 3, ...)
+        let row_hdr = cogito.label(str(r + 1))
+        .set_class("tab-row-header")
+        .set_hexpand(false)
+        .set_padding(4, 10, 4, 10)
+        grid.add(row_hdr, 0, r + 1, 1, 1)
+
+        -- Data cells
+        for (let ?c = 0; c < num_cols; c += 1)
+            let key = csv.col_letter(c) + str(r + 1)
+            let cell = cells[key] ?? []: [string => any]
+            let display = str(cell["value"] ?? "")
+            let raw = str(cell["raw"] ?? "")
+            let is_anchor = (c == sel_col && r == sel_row)
+            let in_range = (c >= rc1 && c <= rc2 && r >= rr1 && r <= rr2)
+            let is_single = (sel_col == sel_col2 && sel_row == sel_row2)
+            if is_anchor && is_single
+                build_edit_cell(grid, c, r, display, raw, on_cell_change)
+            elif in_range
+                build_range_cell(grid, c, r, display, on_cell_click, on_cell_shift_click)
+            else
+                build_cell(grid, c, r, display, on_cell_click, on_cell_shift_click)
+;
+
+-- Must be a function so closure captures col/row as params
+: build_cell(grid = cogito.Grid, col = num, row = num, display = string, on_click = any, on_shift_click = any) (( any ))
+    let btn = cogito.button(display)
+    .set_class("tab-cell")
+    .set_hexpand(false)
+    btn.on_click((b = cogito.Button) => {
+        if cogito.is_shift_down()
+            on_shift_click(col, row)
+        else
+            on_click(col, row)
+    })
+    grid.add(btn, col + 1, row + 1, 1, 1)
+    <- btn
+;
+
+: build_range_cell(grid = cogito.Grid, col = num, row = num, display = string, on_click = any, on_shift_click = any) (( any ))
+    let btn = cogito.button(display)
+    .set_class("tab-cell-selected")
+    .set_hexpand(false)
+    btn.on_click((b = cogito.Button) => {
+        if cogito.is_shift_down()
+            on_shift_click(col, row)
+        else
+            on_click(col, row)
+    })
+    grid.add(btn, col + 1, row + 1, 1, 1)
+    <- btn
+;
+
+: build_edit_cell(grid = cogito.Grid, col = num, row = num, display = string, raw = string, on_change = any) (( any ))
+    let tf = cogito.textfield(raw)
+    .set_class("outline tab-cell-edit")
+    .set_hexpand(false)
+    .set_vexpand(false)
+    .set_padding(0, 0, 0, 0)
+    tf.on_change((t = cogito.TextField) => {
+        on_change(col, row, t.text())
+    })
+    grid.add(tf, col + 1, row + 1, 1, 1)
+    <- tf
+;
+
+-- ── Coordinate helpers (used by drag tracking in main.yi) ─────
+
+-- Convert absolute pointer position to a data column index.
+-- Uses the grid's own layout to compute cell width from total width.
+:: ptr_to_col(grid = any, px = num, num_cols = num) (( num ))
+    let grid_x = cogito.node_x(grid)
+    let grid_w = cogito.node_w(grid)
+    let cell_w = (grid_w - HEADER_W) / num_cols
+    if cell_w < 1
+        <- 0
+    let ?col = (px - grid_x - HEADER_W) / cell_w
+    if col < 0 { col = 0 }
+    if col >= num_cols { col = num_cols - 1 }
+    <- col
+;
+
+-- Convert absolute pointer position to a data row index.
+-- Uses the grid's own layout to compute cell height from total height.
+:: ptr_to_row(grid = any, py = num, num_rows = num) (( num ))
+    let grid_y = cogito.node_y(grid)
+    let grid_h = cogito.node_h(grid)
+    let cell_h = (grid_h - HEADER_H) / num_rows
+    if cell_h < 1
+        <- 0
+    let ?row = (py - grid_y - HEADER_H) / cell_h
+    if row < 0 { row = 0 }
+    if row >= num_rows { row = num_rows - 1 }
+    <- row
+;

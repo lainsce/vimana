@@ -578,7 +578,7 @@ def hero_month = cogito.label("")
         cal_title_expanded.set_visible(true)
         viewing_events_compact = false
         evt_panel.set_visible(true)
-        evt_panel.set_hexpand(true)
+        evt_panel.set_hexpand(false)
         evt_panel.set_class("solar-evt-panel")
         cal_panel.set_visible(true)
         cal_panel.set_hexpand(true)
@@ -683,7 +683,8 @@ def hero_month = cogito.label("")
         date_hero, hero_weekday, hero_day_num, hero_month
     )
     evt_panel.set_class("solar-evt-panel")
-    evt_panel.set_hexpand(true)
+    evt_panel.set_hexpand(false)
+    evt_panel.set_size_request(412, -1)
     evt_panel.set_padding(0, 0, 0, 0)
     main_content.add(evt_panel)
 

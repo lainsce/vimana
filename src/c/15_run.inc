@@ -589,12 +589,17 @@ static void cogito_live_resize_redraw(CogitoNode *win, CogitoWindow *window) {
     cogito_invoke(win->on_resize, 3, args);
   }
   // Full-frame redraw (no damage clipping — size changed)
+  // Disable vsync so the frame is submitted immediately — with vsync the
+  // present() call blocks until the next vblank, leaving the compositor to
+  // show a stretched stale frame in the meantime.
+  if (cogito_backend->set_vsync) cogito_backend->set_vsync(window, 0);
   cogito_backend->begin_frame(window);
   CogitoColor win_bg = win->bg_set ? win->bg : cogito_rgba(245, 245, 245, 255);
   cogito_backend->clear(win_bg);
   cogito_draw_node(win);
   cogito_backend->end_frame(window);
   cogito_backend->present(window);
+  if (cogito_backend->set_vsync) cogito_backend->set_vsync(window, 1);
   cogito_draw_clear_pending(win);
 }
 

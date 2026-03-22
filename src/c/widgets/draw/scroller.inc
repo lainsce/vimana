@@ -98,21 +98,15 @@ case COGITO_SCROLLER: {
         if (n->kd->scroller.bar_alpha > 0) {
       // Scrollbar uses on-surface tint derived from theme text, not hardcoded grey
           CogitoColor on_surface = s.has_text ? s.text : n->text_color;
-          CogitoColor track = on_surface;
-          track.a = (uint8_t)((int)n->kd->scroller.bar_alpha * 30 / 255);
           CogitoColor thumb = on_surface;
           thumb.a = (uint8_t)((int)n->kd->scroller.bar_alpha * 160 / 255);
           int vtx, vty, vtw, vth, vux, vuy, vuw, vuh;
           if (cogito_scroller_vert_scrollbar_rects(n, sb_w, &vtx, &vty, &vtw, &vth, &vux, &vuy, &vuw, &vuh)) {
-            cogito_draw_rect(vtx, vty, vtw, vth, track,
-        4);
             cogito_draw_rect(vux, vuy, vuw, vuh, thumb,
         4);
       }
           int htx, hty, htw, hth, hux, huy, huw, huh;
           if (cogito_scroller_horz_scrollbar_rects(n, sb_h, &htx, &hty, &htw, &hth, &hux, &huy, &huw, &huh)) {
-            cogito_draw_rect(htx, hty, htw, hth, track,
-        4);
             cogito_draw_rect(hux, huy, huw, huh, thumb,
         4);
       }

@@ -120,6 +120,15 @@ static void cogito_container_set_vexpand_set(YisVal nodev, YisVal setv) {
   node->vexpand_set = yis_as_bool(setv);
 }
 
+static void cogito_container_set_size_request(YisVal nodev, YisVal wv, YisVal hv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_size_request expects object");
+  CogitoNode* node = (CogitoNode*)nodev.as.p;
+  int w = (int)yis_as_int(wv);
+  int h = (int)yis_as_int(hv);
+  if (w >= 0) { node->min_w = w; node->min_w_set = true; }
+  if (h >= 0) { node->min_h = h; node->min_h_set = true; }
+}
+
 static void cogito_scroller_set_min_content_width(YisVal scv, YisVal wv) {
   if (scv.tag != EVT_OBJ) yis_trap("cogito.scroller_set_min_content_width expects scroller");
   CogitoNode* n = (CogitoNode*)scv.as.p;

@@ -28,6 +28,25 @@ case COGITO_LABEL: {
         int size = cogito_label_font_size(n);
         CogitoColor text = n->text_color;
         CogitoStyle s = cogito_theme_resolve_node_state(n, hover, active);
+
+        // Draw background and border if styled
+        {
+          CogitoColor bg = n->bg;
+          CogitoColor border = n->border_color;
+          int border_w = n->border_width;
+          int radius = n->border_radius;
+          if (s.has_bg) bg = s.bg;
+          if (s.has_border) border = s.border;
+          if (s.has_border_width) border_w = s.border_width;
+          if (s.has_radius) radius = s.radius;
+          if (bg.a > 0) {
+            cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, bg, radius);
+          }
+          if (border_w > 0) {
+            cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, border, radius, border_w);
+          }
+        }
+
         if (cogito_has_selection_text) {
           text = cogito_selection_text;
           if (text.a < 8) text = s.has_text ? s.text : n->text_color;

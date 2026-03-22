@@ -16,6 +16,8 @@ bring widgets.pdf_card
     panel
     .set_gap(0)
     .set_vexpand(true)
+    .set_hexpand(false)
+    .set_size_request(412, -1)
     .set_class("corpus-sidebar")
 
     bar

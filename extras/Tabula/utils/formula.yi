@@ -1,0 +1,301 @@
+cask formula
+
+bring stdr
+bring utils.csv as csv
+
+-- ── Cell Reference Parsing ───────────────────────────────────
+
+: is_alpha(ch = string) (( bool ))
+    let code = stdr.char_code(ch)
+    <- (code >= 65 && code <= 90) || (code >= 97 && code <= 122)
+;
+
+: is_digit(ch = string) (( bool ))
+    let code = stdr.char_code(ch)
+    <- code >= 48 && code <= 57
+;
+
+: parse_cell_ref(text = string, start = num) (( [any] ))
+    let n = stdr.len(text)
+    let ?pos = start
+
+    -- Parse column letters
+    let ?col_str = ""
+    for (; pos < n; pos += 1)
+        let ch = stdr.char_at(text, pos)
+        if is_alpha(ch)
+            col_str = col_str + ch
+        else
+            break
+
+    if stdr.len(col_str) == 0
+        <- [-1, -1, pos]
+
+    -- Parse row digits
+    let ?row_str = ""
+    for (; pos < n; pos += 1)
+        let ch = stdr.char_at(text, pos)
+        if is_digit(ch)
+            row_str = row_str + ch
+        else
+            break
+
+    if stdr.len(row_str) == 0
+        <- [-1, -1, pos]
+
+    let col = csv.col_index(col_str)
+    let row = stdr.num(row_str) - 1
+    <- [col, row, pos]
+;
+
+-- ── Cell Accessors ───────────────────────────────────────────
+
+: cell_num(cells = any, key = string) (( num ))
+    let cell = cells[key] ?? []: [string => any]
+    let val = str(cell["value"] ?? "")
+    if stdr.len(val) == 0
+        <- 0
+    <- stdr.num(val)
+;
+
+: cell_str(cells = any, key = string) (( string ))
+    let cell = cells[key] ?? []: [string => any]
+    <- str(cell["value"] ?? "")
+;
+
+: cell_empty(cells = any, key = string) (( bool ))
+    let cell = cells[key] ?? []: [string => any]
+    <- stdr.len(stdr.trim(str(cell["value"] ?? ""))) == 0
+;
+
+-- ── Operators ────────────────────────────────────────────────
+
+: agg(vals = [any], op = string) (( num ))
+    let n = stdr.len(vals)
+    if n == 0
+        <- 0
+    if op == "+"
+        let ?sum = 0
+        for (let ?i = 0; i < n; i += 1)
+            sum = sum + stdr.num(vals[i])
+        <- sum
+    if op == "*"
+        let ?prod = 1
+        for (let ?i = 0; i < n; i += 1)
+            prod = prod * stdr.num(vals[i])
+        <- prod
+    let ?acc = stdr.num(vals[0])
+    if op == "-"
+        for (let ?i = 1; i < n; i += 1)
+            acc = acc - stdr.num(vals[i])
+        <- acc
+    if op == "/"
+        for (let ?i = 1; i < n; i += 1)
+            let v = stdr.num(vals[i])
+            if v != 0
+                acc = acc / v
+        <- acc
+    if op == "<"
+        for (let ?i = 1; i < n; i += 1)
+            let v = stdr.num(vals[i])
+            if v < acc { acc = v }
+        <- acc
+    if op == ">"
+        for (let ?i = 1; i < n; i += 1)
+            let v = stdr.num(vals[i])
+            if v > acc { acc = v }
+        <- acc
+    if op == "#"
+        <- n
+    <- acc
+;
+
+: bin(a = num, b = num, op = string) (( num ))
+    if op == "+" { <- a + b }
+    if op == "-" { <- a - b }
+    if op == "*" { <- a * b }
+    if op == "/"
+        if b != 0 { <- a / b }
+        <- 0
+    if op == "<" { <- if a < b { a } else { b } }
+    if op == ">" { <- if a > b { a } else { b } }
+    <- 0
+;
+
+-- ── Evaluate (postfix / RPN) ─────────────────────────────────
+--
+-- Tokens are read left-to-right:
+--   number    → push literal onto the value list
+--   cell ref  → push that cell's numeric value
+--   range     → push every non-empty cell value from the range
+--   operator  → consume the value list:
+--       3+ values  → aggregate  (e.g. + = sum, * = product)
+--       2  values  → binary     (e.g. a / b)
+--       1  value   → identity   (keep it)
+--
+-- Examples:
+--   =B2:B6 +          sum of range
+--   =B2:B6 + 5 /      sum of range ÷ 5
+--   =B2:B6 + A1 -     sum of range − A1
+--   =A1 B1 +          A1 + B1
+--   =B2:B6 <          min of range
+--   =B2:B6 #          count non-empty cells
+
+:: evaluate(raw = string, cells = any, self_key = string) (( string ))
+    let trimmed = stdr.trim(raw)
+    let n = stdr.len(trimmed)
+    if n == 0
+        <- ""
+    if stdr.char_at(trimmed, 0) != "="
+        <- trimmed
+
+    let ?pending = []: [any]
+    let ?pos = 1
+    let ?last_was_value = false
+    -- Track last range for string operators (" = !)
+    let ?rc1 = -1
+    let ?rr1 = -1
+    let ?rc2 = -1
+    let ?rr2 = -1
+
+    for (; pos < n;)
+        let ch = stdr.char_at(trimmed, pos)
+
+        if ch == " "
+            pos += 1
+            continue
+
+        -- Negative literal: unary minus before a digit
+        if ch == "-" && !last_was_value && pos + 1 < n && is_digit(stdr.char_at(trimmed, pos + 1))
+            pos += 1
+            let ?ns = "-"
+            for (; pos < n; pos += 1)
+                let c = stdr.char_at(trimmed, pos)
+                if is_digit(c) || c == "."
+                    ns = ns + c
+                else
+                    break
+            stdr.push(pending, stdr.num(ns))
+            last_was_value = true
+            continue
+
+        -- Number literal
+        if is_digit(ch) || (ch == "." && pos + 1 < n && is_digit(stdr.char_at(trimmed, pos + 1)))
+            let ?ns = ""
+            for (; pos < n; pos += 1)
+                let c = stdr.char_at(trimmed, pos)
+                if is_digit(c) || c == "."
+                    ns = ns + c
+                else
+                    break
+            stdr.push(pending, stdr.num(ns))
+            last_was_value = true
+            continue
+
+        -- Cell reference or range
+        if is_alpha(ch)
+            let ref1 = parse_cell_ref(trimmed, pos)
+            let c1 = stdr.num(ref1[0])
+            let r1 = stdr.num(ref1[1])
+            pos = stdr.num(ref1[2])
+            if c1 < 0 || r1 < 0
+                <- "ERR"
+
+            if pos < n && stdr.char_at(trimmed, pos) == ":"
+                pos += 1
+                let ref2 = parse_cell_ref(trimmed, pos)
+                let c2 = stdr.num(ref2[0])
+                let r2 = stdr.num(ref2[1])
+                pos = stdr.num(ref2[2])
+                if c2 < 0 || r2 < 0
+                    <- "ERR"
+                let mc1 = if c1 < c2 { c1 } else { c2 }
+                let mc2 = if c1 > c2 { c1 } else { c2 }
+                let mr1 = if r1 < r2 { r1 } else { r2 }
+                let mr2 = if r1 > r2 { r1 } else { r2 }
+                rc1 = mc1
+                rr1 = mr1
+                rc2 = mc2
+                rr2 = mr2
+                for (let ?r = mr1; r <= mr2; r += 1)
+                    for (let ?c = mc1; c <= mc2; c += 1)
+                        let key = csv.col_letter(c) + str(r + 1)
+                        if key != self_key && !cell_empty(cells, key)
+                            stdr.push(pending, cell_num(cells, key))
+            else
+                let key = csv.col_letter(c1) + str(r1 + 1)
+                if key == self_key
+                    stdr.push(pending, 0)
+                else
+                    stdr.push(pending, cell_num(cells, key))
+            last_was_value = true
+            continue
+
+        -- Operator
+        let op = ch
+        pos += 1
+
+        -- String concat on a range
+        if op == "\"" && rc1 >= 0
+            let ?parts = []: [any]
+            for (let ?r = rr1; r <= rr2; r += 1)
+                for (let ?c = rc1; c <= rc2; c += 1)
+                    let key = csv.col_letter(c) + str(r + 1)
+                    if key != self_key && !cell_empty(cells, key)
+                        stdr.push(parts, cell_str(cells, key))
+            <- stdr.join(parts)
+
+        -- Equality / inequality on a range
+        if (op == "=" || op == "!") && rc1 >= 0
+            let ?fv = ""
+            let ?ff = false
+            let ?eq = true
+            for (let ?r = rr1; r <= rr2; r += 1)
+                for (let ?c = rc1; c <= rc2; c += 1)
+                    let key = csv.col_letter(c) + str(r + 1)
+                    if key == self_key || cell_empty(cells, key) { continue }
+                    let val = cell_str(cells, key)
+                    if !ff
+                        fv = val
+                        ff = true
+                    elif val != fv
+                        eq = false
+            if op == "="
+                <- if eq { "1" } else { "0" }
+            <- if eq { "0" } else { "1" }
+
+        -- Numeric: aggregate (3+) or binary (2)
+        let plen = stdr.len(pending)
+        if plen >= 3
+            let result = agg(pending, op)
+            pending = []: [any]
+            stdr.push(pending, result)
+        elif plen == 2
+            let a = stdr.num(pending[0])
+            let b = stdr.num(pending[1])
+            pending = []: [any]
+            stdr.push(pending, bin(a, b, op))
+        last_was_value = false
+        rc1 = -1
+
+    -- No operator given: default to sum for multiple values
+    let flen = stdr.len(pending)
+    if flen == 0
+        <- "ERR"
+    if flen > 1
+        <- str(agg(pending, "+"))
+    <- str(stdr.num(pending[0]))
+;
+
+-- ── Recalculate All Cells ────────────────────────────────────
+
+:: recalculate(cells = any, num_cols = num, num_rows = num) (( -- ))
+    for (let ?r = 0; r < num_rows; r += 1)
+        for (let ?c = 0; c < num_cols; c += 1)
+            let key = csv.col_letter(c) + str(r + 1)
+            let cell = cells[key] ?? []: [string => any]
+            let raw = str(cell["raw"] ?? "")
+            if stdr.len(raw) > 0 && stdr.char_at(raw, 0) == "="
+                cell["value"] = evaluate(raw, cells, key)
+                cells[key] = cell
+;

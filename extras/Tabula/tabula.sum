@@ -1,0 +1,118 @@
+@diagnostics: warn
+
+; ── Base ──────────────────────────────────────────────────────
+
+button
+  padding: 0
+  margin: 0
+  min-width: 0
+  min-height: 0
+  max-width: 0
+  max-height: 0
+
+vstack
+hstack
+grid
+zstack
+  background: transparent
+
+; ── Title ─────────────────────────────────────────────────────
+
+appbar.tab-appbar
+  font-size: 32
+  font-variation: wdth 125, opsz 20
+  font-weight: bold
+
+; ── Grid Headers ──────────────────────────────────────────────
+
+label.tab-header-corner
+  background: #D9DBCD
+  border: 1 solid #CDCFBF
+  min-width: 40
+  min-height: 28
+  font-size: 12
+  font-variant-numeric: tabular-nums
+
+label.tab-col-header
+  background: #D9DBCD
+  border: 1 solid #CDCFBF
+  min-width: 80
+  min-height: 28
+  font-size: 12
+  font-weight: bold
+  text-align: center
+  font-variant-numeric: tabular-nums
+
+label.tab-row-header
+  background: #D9DBCD
+  border: 1 solid #CDCFBF
+  min-width: 40
+  min-height: 32
+  font-size: 12
+  text-align: center
+  font-variant-numeric: tabular-nums
+
+; ── Grid Cells ────────────────────────────────────────────────
+
+button.tab-cell
+  background: #F0F1EA
+  border: 1 solid #DFE0D6
+  border-radius: 0
+  min-width: 80
+  min-height: 32
+  max-height: 32
+  font-size: 13
+  text-align: left
+  padding-left: 6
+  padding-right: 6
+
+button.tab-cell-selected
+  background: #D0D4AF
+  color: #3D3E32
+  border: 2 solid #909654
+  border-radius: 0
+  min-width: 80
+  min-height: 32
+  max-height: 32
+  font-size: 13
+  text-align: left
+  padding-left: 6
+  padding-right: 6
+
+textfield.tab-cell-edit
+  background: #E5E6DB
+  border: 2 solid #909654
+  border-radius: 0
+  min-width: 80
+  min-height: 32
+  max-height: 32
+  font-size: 13
+  padding: 0
+  padding-left: 6
+  padding-right: 6
+
+; ── Formula Bar ───────────────────────────────────────────────
+
+hstack.tab-formula-bar
+  padding: 24 0 24 6
+
+label.tab-fx-label
+  font-size: 16
+  font-weight: bold
+  opacity: 0.5
+  min-width: 24
+  font-variant-numeric: tabular-nums
+
+textfield.tab-formula-field
+  background: transparent
+  border-width: 0
+  min-height: 32
+  max-height: 32
+  font-size: 14
+
+
+; ── Scroller ──────────────────────────────────────────────────
+
+scroller.tab-scroller
+  border: 1 solid #DAD6CA
+  border-radius: 6

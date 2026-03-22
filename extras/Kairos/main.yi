@@ -976,6 +976,7 @@ def status_text = cogito.label("Add a location to start")
     .set_padding(0, 12, 12, 12)
     .set_hexpand(false)
     .set_vexpand(true)
+    .set_size_request(412, -1)
 
     sidebar_panel.add(sidebar_bar)
     sidebar_panel.add(list_scroll)

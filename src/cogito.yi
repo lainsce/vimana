@@ -25,6 +25,10 @@ bring stdr
 : __cogito_async_run(work = any, done = any) (( -- )) { }
 : __cogito_i18n(key = string) (( string )) { }
 : __cogito_i18n_load(path = string) (( -- )) { }
+: __cogito_is_shift_down() (( bool )) { }
+: __cogito_is_mouse_down() (( bool )) { }
+: __cogito_pointer_x() (( num )) { }
+: __cogito_pointer_y() (( num )) { }
 : __cogito_set_locale(locale = string) (( -- )) { }
 : __cogito_get_locale() (( string )) { }
 : __cogito_set_i18n_domain(domain = string) (( -- )) { }
@@ -306,6 +310,10 @@ bring stdr
 : __cogito_nav_rail_set_centered(rail = NavRail, on = bool) (( -- )) { }
 : __cogito_nav_rail() (( NavRail )) { }
 : __cogito_node_get_editable(node = any) (( bool )) { }
+: __cogito_node_get_w(node = any) (( num )) { }
+: __cogito_node_get_h(node = any) (( num )) { }
+: __cogito_node_get_x(node = any) (( num )) { }
+: __cogito_node_get_y(node = any) (( num )) { }
 : __cogito_node_set_a11y_label(node = any, label = string) (( -- )) { }
 : __cogito_node_set_a11y_role(node = any, role = string) (( -- )) { }
 : __cogito_node_set_class(node = any, cls = string) (( -- )) { }
@@ -1240,6 +1248,10 @@ pub ,: VStack : Component
     ;
     :: set_id(this, id = string) (( VStack ))
         __cogito_node_set_id(this, id)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( VStack ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
 ;
@@ -4490,6 +4502,30 @@ pub ,: State
 ;
 :: is_rtl() (( bool ))
     <- __cogito_get_direction() == 1
+;
+:: is_shift_down() (( bool ))
+    <- __cogito_is_shift_down()
+;
+:: node_w(node = any) (( num ))
+    <- __cogito_node_get_w(node)
+;
+:: node_h(node = any) (( num ))
+    <- __cogito_node_get_h(node)
+;
+:: node_x(node = any) (( num ))
+    <- __cogito_node_get_x(node)
+;
+:: node_y(node = any) (( num ))
+    <- __cogito_node_get_y(node)
+;
+:: is_mouse_down() (( bool ))
+    <- __cogito_is_mouse_down()
+;
+:: pointer_x() (( num ))
+    <- __cogito_pointer_x()
+;
+:: pointer_y() (( num ))
+    <- __cogito_pointer_y()
 ;
 :: open_url(url = string) (( bool ))
     <- __cogito_open_url(url)

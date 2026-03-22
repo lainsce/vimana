@@ -3623,6 +3623,16 @@ void cogito_node_set_vexpand_set(cogito_node *node, bool set) {
   cogito_container_set_vexpand_set(YV_OBJ(node), YV_BOOL(set));
 }
 
+void cogito_node_set_min_w(cogito_node *node, int w) {
+  if (!node) return;
+  cogito_container_set_size_request(YV_OBJ(node), YV_INT(w), YV_INT(-1));
+}
+
+void cogito_node_set_min_h(cogito_node *node, int h) {
+  if (!node) return;
+  cogito_container_set_size_request(YV_OBJ(node), YV_INT(-1), YV_INT(h));
+}
+
 void cogito_node_set_gap(cogito_node *node, int gap) {
   if (!node)
     return;
@@ -3821,6 +3831,22 @@ bool cogito_node_get_visible(cogito_node *node) {
     return false;
   YisVal v = cogito_node_get_visible_yis(YV_OBJ(node));
   return yis_as_bool(v);
+}
+
+int cogito_node_get_x(cogito_node *node) {
+  return node ? ((CogitoNode *)node)->x : 0;
+}
+
+int cogito_node_get_y(cogito_node *node) {
+  return node ? ((CogitoNode *)node)->y : 0;
+}
+
+int cogito_node_get_w(cogito_node *node) {
+  return node ? ((CogitoNode *)node)->w : 0;
+}
+
+int cogito_node_get_h(cogito_node *node) {
+  return node ? ((CogitoNode *)node)->h : 0;
 }
 
 void cogito_node_set_editable(cogito_node *node, bool on) {

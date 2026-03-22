@@ -165,7 +165,14 @@
 #undef cogito_node_build
 #undef cogito_node_free
 #undef cogito_node_get_editable
+#undef cogito_node_get_h
 #undef cogito_node_get_text
+#undef cogito_node_get_w
+#undef cogito_node_get_x
+#undef cogito_node_get_y
+#undef cogito_is_mouse_down
+#undef cogito_pointer_x_pos
+#undef cogito_pointer_y_pos
 #undef cogito_node_new
 #undef cogito_node_on_activate
 #undef cogito_node_on_change
@@ -2732,6 +2739,14 @@ static void __cogito_container_set_vexpand_set(YisVal nodev, YisVal setv) {
   cogito_node_set_vexpand_set(node, yis_as_bool(setv));
 }
 
+static void __cogito_container_set_size_request(YisVal nodev, YisVal wv, YisVal hv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  int w = (int)yis_as_int(wv);
+  int h = (int)yis_as_int(hv);
+  if (w >= 0) cogito_node_set_min_w(node, w);
+  if (h >= 0) cogito_node_set_min_h(node, h);
+}
+
 static void __cogito_container_set_gap(YisVal nodev, YisVal gap) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_gap(node, (int)yis_as_int(gap));
@@ -4142,6 +4157,42 @@ static YisVal __cogito_get_direction(void) {
   return YV_INT(cogito_get_direction());
 }
 
+static YisVal __cogito_is_shift_down(void) {
+  return YV_BOOL(cogito_is_shift_down());
+}
+
+static YisVal __cogito_node_get_w(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_node_get_w(node));
+}
+
+static YisVal __cogito_node_get_h(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_node_get_h(node));
+}
+
+static YisVal __cogito_node_get_x(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_node_get_x(node));
+}
+
+static YisVal __cogito_node_get_y(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_node_get_y(node));
+}
+
+static YisVal __cogito_is_mouse_down(void) {
+  return YV_BOOL(cogito_is_mouse_down());
+}
+
+static YisVal __cogito_pointer_x(void) {
+  return YV_INT(cogito_pointer_x_pos());
+}
+
+static YisVal __cogito_pointer_y(void) {
+  return YV_INT(cogito_pointer_y_pos());
+}
+
 static YisVal __cogito_open_url(YisVal urlv) {
   YisStr* tmp = NULL;
   const char* url = cogito_optional_cstr(urlv, &tmp);
@@ -4609,6 +4660,7 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_container_set_hexpand_set __cogito_container_set_hexpand_set
 #define cogito_container_set_vexpand __cogito_container_set_vexpand
 #define cogito_container_set_vexpand_set __cogito_container_set_vexpand_set
+#define cogito_container_set_size_request __cogito_container_set_size_request
 #define cogito_container_set_gap __cogito_container_set_gap
 #define cogito_container_set_homogeneous __cogito_container_set_homogeneous
 #define cogito_container_set_col_homogeneous __cogito_container_set_col_homogeneous
@@ -4873,6 +4925,14 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_set_script_dir __cogito_set_script_dir
 #define cogito_set_direction __cogito_set_direction
 #define cogito_get_direction __cogito_get_direction
+#define cogito_is_shift_down __cogito_is_shift_down
+#define cogito_node_get_w __cogito_node_get_w
+#define cogito_node_get_h __cogito_node_get_h
+#define cogito_node_get_x __cogito_node_get_x
+#define cogito_node_get_y __cogito_node_get_y
+#define cogito_is_mouse_down __cogito_is_mouse_down
+#define cogito_pointer_x __cogito_pointer_x
+#define cogito_pointer_y __cogito_pointer_y
 #define cogito_active_indicator_new __cogito_active_indicator
 #define cogito_switchbar_new __cogito_switchbar
 #define cogito_switchbar_get_checked __cogito_switchbar_get_checked

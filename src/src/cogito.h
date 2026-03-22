@@ -151,6 +151,12 @@ void cogito_set_direction(int dir); // 0 = LTR, 1 = RTL
 int cogito_get_direction(void);
 bool cogito_is_rtl(void);
 
+// Input state
+bool cogito_is_shift_down(void);
+bool cogito_is_mouse_down(void);
+int cogito_pointer_x_pos(void);
+int cogito_pointer_y_pos(void);
+
 // Printing
 bool cogito_print_text(const char *text);
 bool cogito_print_image(const unsigned char *rgba_pixels, int width, int height);
@@ -443,6 +449,8 @@ void cogito_node_set_hexpand(cogito_node *node, bool expand);
 void cogito_node_set_vexpand(cogito_node *node, bool expand);
 void cogito_node_set_hexpand_set(cogito_node *node, bool set);
 void cogito_node_set_vexpand_set(cogito_node *node, bool set);
+void cogito_node_set_min_w(cogito_node *node, int w);
+void cogito_node_set_min_h(cogito_node *node, int h);
 void cogito_node_set_gap(cogito_node *node, int gap);
 void cogito_node_set_homogeneous(cogito_node *node, bool on);
 void cogito_node_set_col_homogeneous(cogito_node *node, bool on);
@@ -464,6 +472,10 @@ void cogito_node_set_border_width(cogito_node *node, int width);
 void cogito_node_set_border_radius(cogito_node *node, int radius);
 void cogito_node_set_border_color(cogito_node *node, const char *hex);
 bool cogito_node_get_visible(cogito_node *node);
+int cogito_node_get_x(cogito_node *node);
+int cogito_node_get_y(cogito_node *node);
+int cogito_node_get_w(cogito_node *node);
+int cogito_node_get_h(cogito_node *node);
 void cogito_node_set_editable(cogito_node *node, bool on);
 bool cogito_node_get_editable(cogito_node *node);
 void cogito_node_set_class(cogito_node *node, const char *cls);

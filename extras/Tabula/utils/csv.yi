@@ -1,0 +1,122 @@
+cask csv
+
+bring stdr
+
+-- ── CSV Parsing ──────────────────────────────────────────────
+
+:: parse(content = string) (( [any] ))
+    let ?rows = []: [any]
+    let ?current_row = []: [any]
+    let ?field = ""
+    let ?in_quotes = false
+    let total = stdr.len(content)
+
+    for (let ?i = 0; i < total; i += 1)
+        let ch = stdr.char_at(content, i)
+
+        if in_quotes
+            if ch == "\""
+                if i + 1 < total && stdr.char_at(content, i + 1) == "\""
+                    field = "$$field$$\""
+                    i += 1
+                else
+                    in_quotes = false
+            else
+                field = "$$field$$$$ch$$"
+        elif ch == "\""
+            in_quotes = true
+        elif ch == ","
+            stdr.push(current_row, field)
+            field = ""
+        elif ch == "\n"
+            stdr.push(current_row, field)
+            stdr.push(rows, current_row)
+            current_row = []: [any]
+            field = ""
+        elif ch == "\r"
+            continue
+        else
+            field = "$$field$$$$ch$$"
+
+    if stdr.len(field) > 0 || len(current_row) > 0
+        stdr.push(current_row, field)
+        stdr.push(rows, current_row)
+
+    <- rows
+;
+
+-- ── CSV Export ───────────────────────────────────────────────
+
+: escape_field(value = string) (( string ))
+    let ?needs_quote = false
+    let total = stdr.len(value)
+    for (let ?i = 0; i < total; i += 1)
+        let ch = stdr.char_at(value, i)
+        if ch == "," || ch == "\"" || ch == "\n"
+            needs_quote = true
+            break
+
+    if !needs_quote
+        <- value
+
+    let ?out = "\""
+    for (let ?i = 0; i < total; i += 1)
+        let ch = stdr.char_at(value, i)
+        if ch == "\""
+            out = "$$out$$\"\""
+        else
+            out = "$$out$$$$ch$$"
+    out = "$$out$$\""
+    <- out
+;
+
+:: export(cells = any, num_cols = num, num_rows = num) (( string ))
+    let ?parts = []: [any]
+
+    for (let ?r = 0; r < num_rows; r += 1)
+        let ?row_parts = []: [any]
+        for (let ?c = 0; c < num_cols; c += 1)
+            let key = col_letter(c) + str(r + 1)
+            let cell = cells[key] ?? []: [string => any]
+            let raw = str(cell["raw"] ?? "")
+            if c > 0
+                stdr.push(row_parts, ",")
+            stdr.push(row_parts, escape_field(raw))
+        if r > 0
+            stdr.push(parts, "\n")
+        stdr.push(parts, stdr.join(row_parts))
+
+    <- stdr.join(parts)
+;
+
+-- ── Helpers ──────────────────────────────────────────────────
+
+:: col_letter(index = num) (( string ))
+    let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    if index < 26
+        <- stdr.char_at(letters, index)
+    let first = stdr.floor(index / 26) - 1
+    let second = index % 26
+    <- stdr.char_at(letters, first) + stdr.char_at(letters, second)
+;
+
+: to_upper_char(ch = string) (( string ))
+    let code = stdr.char_code(ch)
+    if code >= 97 && code <= 122
+        <- stdr.char_from_code(code - 32)
+    <- ch
+;
+
+:: col_index(letter = string) (( num ))
+    let n = stdr.len(letter)
+    if n == 0
+        <- -1
+    if n == 1
+        let ch = to_upper_char(stdr.char_at(letter, 0))
+        <- stdr.char_code(ch) - 65
+    let ch1 = to_upper_char(stdr.char_at(letter, 0))
+    let ch2 = to_upper_char(stdr.char_at(letter, 1))
+    let first = stdr.char_code(ch1) - 65
+    let second = stdr.char_code(ch2) - 65
+    <- (first + 1) * 26 + second
+;

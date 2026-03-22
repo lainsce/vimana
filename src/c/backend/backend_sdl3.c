@@ -616,26 +616,29 @@ static void sdl3_sync_logical_presentation(CogitoSDL3Window *win) {
   if (!win || !win->sdl_window || !win->renderer)
     return;
 
-  int logical_w = 0;
-  int logical_h = 0;
-  SDL_GetWindowSize(win->sdl_window, &logical_w, &logical_h);
-  if (logical_w <= 0 || logical_h <= 0)
-    return;
-
-  int current_w = 0;
-  int current_h = 0;
+  // Disable the intermediate render-target that SDL logical presentation
+  // creates.  The extra texture copy adds a full frame of latency during
+  // live window resize on macOS, because the compositor stretches the stale
+  // back-buffer before the app can present a fresh frame — visible as
+  // jitter / ghosting on every element.
+  //
+  // Instead we apply the display-pixel-density via SDL_SetRenderScale so
+  // that all drawing coordinates stay in logical (point) space while
+  // rendering goes directly to the swap-chain.
+  int current_w = 0, current_h = 0;
   SDL_RendererLogicalPresentation current_mode =
       SDL_LOGICAL_PRESENTATION_DISABLED;
-
-  bool have_current = SDL_GetRenderLogicalPresentation(
-      win->renderer, &current_w, &current_h, &current_mode);
-  if (have_current && current_w == logical_w && current_h == logical_h &&
-      current_mode == SDL_LOGICAL_PRESENTATION_INTEGER_SCALE) {
-    return;
+  SDL_GetRenderLogicalPresentation(win->renderer, &current_w, &current_h,
+                                   &current_mode);
+  if (current_mode != SDL_LOGICAL_PRESENTATION_DISABLED) {
+    SDL_SetRenderLogicalPresentation(win->renderer, 0, 0,
+                                     SDL_LOGICAL_PRESENTATION_DISABLED);
   }
 
-  SDL_SetRenderLogicalPresentation(win->renderer, logical_w, logical_h,
-                                   SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+  float density = SDL_GetWindowPixelDensity(win->sdl_window);
+  if (density <= 0.0f)
+    density = 1.0f;
+  SDL_SetRenderScale(win->renderer, density, density);
 }
 
 // ============================================================================
@@ -1037,6 +1040,13 @@ static void sdl3_begin_frame(CogitoWindow *window) {
 }
 
 static void sdl3_end_frame(CogitoWindow *window) { (void)window; }
+
+static void sdl3_set_vsync(CogitoWindow *window, int vsync) {
+  CogitoSDL3Window *win = (CogitoSDL3Window *)window;
+  if (!win || !win->renderer)
+    return;
+  SDL_SetRenderVSync(win->renderer, vsync);
+}
 
 static void sdl3_present(CogitoWindow *window) {
   CogitoSDL3Window *win = (CogitoSDL3Window *)window;
@@ -2796,8 +2806,16 @@ static void sdl3_set_render_target(CogitoTexture *target) {
   if (target) {
     CogitoSDL3Texture *t = (CogitoSDL3Texture *)target;
     SDL_SetRenderTarget(renderer, t->sdl_texture);
+    // Offscreen targets are sized in pixels — draw 1:1 without DPI scale.
+    SDL_SetRenderScale(renderer, 1.0f, 1.0f);
   } else {
     SDL_SetRenderTarget(renderer, NULL);
+    // Restore DPI scale for the main window output.
+    float density = 1.0f;
+    if (g_current_window && g_current_window->sdl_window)
+      density = SDL_GetWindowPixelDensity(g_current_window->sdl_window);
+    if (density <= 0.0f) density = 1.0f;
+    SDL_SetRenderScale(renderer, density, density);
   }
 }
 
@@ -3504,6 +3522,7 @@ static CogitoBackend sdl3_backend = {
     .end_frame = sdl3_end_frame,
     .present = sdl3_present,
     .clear = sdl3_clear,
+    .set_vsync = sdl3_set_vsync,
     .poll_events = sdl3_poll_events,
     .wait_event_timeout = sdl3_wait_event_timeout,
     .window_should_close = sdl3_window_should_close,
