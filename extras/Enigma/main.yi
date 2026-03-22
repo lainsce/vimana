@@ -223,7 +223,12 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
                 set_status("Modified document")
             save_session_state()
     })
-    root.add(editor)
+
+    let editor_scroll = cogito.scroller()
+    editor_scroll.set_hexpand(true)
+    editor_scroll.set_vexpand(true)
+    editor_scroll.add(editor)
+    root.add(editor_scroll)
 
     refresh_header()
 
