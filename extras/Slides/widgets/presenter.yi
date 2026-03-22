@@ -1,0 +1,139 @@
+cask presenter
+
+bring stdr
+bring cogito
+
+bring models
+
+def pres_bar = cogito.appbar("Presenting", "")
+def slide_view = cogito.vstack()
+def notes_view = cogito.vstack()
+def counter_label = cogito.label("")
+
+:: build_presenter(
+    view = cogito.VStack,
+    on_back = any
+) (( -- ))
+    view
+    .set_gap(0)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    pres_bar
+    .set_class("slides-bar")
+    .set_hexpand(true)
+    .set_medium()
+
+    pres_bar.leading_button("sf:chevron.left", (b = any) => {
+        on_back()
+    })
+
+    view.add(pres_bar)
+
+    -- Slide display
+    slide_view
+    .set_class("slide-canvas")
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(48, 48, 48, 48)
+
+    view.add(slide_view)
+
+    -- Controls
+    let controls = cogito.hstack()
+    .set_gap(16)
+    .set_align(4)
+    .set_hexpand(true)
+    .set_padding(16, 16, 16, 16)
+
+    let prev_btn = cogito.iconbtn("sf:backward.fill")
+    .set_shape(1)
+    .on_click((b = cogito.Button) => {
+        models.prev_slide()
+        refresh()
+    })
+
+    let next_btn = cogito.iconbtn("sf:forward.fill")
+    .set_shape(1)
+    .on_click((b = cogito.Button) => {
+        models.next_slide()
+        refresh()
+    })
+
+    counter_label
+    .set_class("presenter-counter")
+
+    controls.add(prev_btn)
+    controls.add(counter_label)
+    controls.add(next_btn)
+
+    view.add(controls)
+
+    -- Notes
+    let notes_title = cogito.label("Speaker Notes")
+    .set_class("presenter-notes-label")
+    .set_align(0)
+    .set_padding(16, 8, 16, 0)
+
+    notes_view
+    .set_padding(16, 16, 16, 16)
+    .set_hexpand(true)
+
+    view.add(notes_title)
+    view.add(notes_view)
+;
+
+:: refresh() (( -- ))
+    slide_view.clear()
+    notes_view.clear()
+
+    let idx = models.current()
+    let color = models.get_color(idx)
+    let title = models.get_title(idx)
+    let body = models.get_body(idx)
+    let notes = models.get_notes(idx)
+
+    slide_view.set_bg_color(color)
+
+    let title_lbl = cogito.label(title)
+    .set_class("presenter-slide-title")
+    .set_align(4)
+    .set_wrap(true)
+    .set_line_chars(40)
+
+    let body_lbl = cogito.label(body)
+    .set_class("slide-body-text")
+    .set_align(4)
+    .set_wrap(true)
+    .set_line_chars(60)
+
+    slide_view.add(title_lbl)
+    slide_view.add(body_lbl)
+
+    -- Extra elements
+    let ecount = models.elem_count(idx)
+    for (let ?i = 0; i < ecount; i += 1)
+        let etype = models.get_elem_type(idx, i)
+        let etext = models.get_elem_text(idx, i)
+        let ?cls = "slide-text-elem"
+        if etype == "link" { cls = "slide-link-text" }
+        elif etype == "image" { cls = "slide-image-text" }
+        elif etype == "chart" { cls = "slide-chart-text" }
+        elif etype == "comment" { cls = "slide-comment-text" }
+        let elem_lbl = cogito.label(etext)
+        .set_class(cls)
+        .set_wrap(true)
+        .set_line_chars(60)
+        slide_view.add(elem_lbl)
+
+    let notes_lbl = cogito.label(notes)
+    .set_wrap(true)
+    .set_line_chars(80)
+
+    notes_view.add(notes_lbl)
+
+    let num_val = idx + 1
+    let total = models.count()
+    counter_label.set_text("$$num_val$$ / $$total$$")
+;

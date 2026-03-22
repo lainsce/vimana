@@ -1,0 +1,134 @@
+cask slide_panel
+
+bring stdr
+bring cogito
+
+bring models
+
+def slide_list = cogito.content_list()
+def ?_on_select = 0
+def ?_on_add = 0
+def ?_on_remove = 0
+def ?suspend_select = false
+
+:: build_panel(
+    panel = cogito.VStack,
+    on_select = any,
+    on_add = any,
+    on_remove = any
+) (( -- ))
+    _on_select = on_select
+    _on_add = on_add
+    _on_remove = on_remove
+
+    panel
+    .set_class("slide-panel")
+    .set_gap(0)
+    .set_padding(42, 0, 24, 48)
+    .set_vexpand(true)
+    .set_hexpand(false)
+    .set_align(1)
+    .set_size_request(250, -1)
+
+    let scroll = cogito.scroller()
+    .set_vexpand(true)
+    .set_hexpand(true)
+
+    slide_list
+    .set_gap(24)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(0, 0, 0, 0)
+    .on_select((idx = num) => {
+        if !suspend_select
+            _on_select(idx)
+    })
+
+    scroll.add(slide_list)
+    panel.add(scroll)
+
+    let add_btn = cogito.button("+")
+    .set_class("large slide-add-btn")
+    .set_hexpand(true)
+    .on_click((b = cogito.Button) => {
+        _on_add()
+    })
+    panel.add(add_btn)
+
+    refresh()
+;
+
+:: refresh() (( -- ))
+    suspend_select = true
+    slide_list.clear()
+    let count = models.count()
+
+    for (let ?i = 0; i < count; i += 1)
+        add_thumb(i)
+
+    slide_list.set_selected(models.current())
+    suspend_select = false
+;
+
+: add_thumb(index = num) (( -- ))
+    let title = models.get_title(index)
+    let body = models.get_body(index)
+    let color = models.get_color(index)
+
+    let card = cogito.zstack()
+    .set_class("slide-thumb-card")
+    .set_hexpand(true)
+
+    -- Background DA for slide color
+    let bg_da = cogito.drawing_area()
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_line_width(0)
+    .on_draw((da = cogito.DrawingArea, w = any, h = any) => {
+        let pw = num(w)
+        let ph = num(h)
+        let r = 12
+        da.set_color(color)
+        da.fill_rect(r, 0, pw - 2 * r, ph)
+        da.fill_rect(0, r, pw, ph - 2 * r)
+        da.fill_circle(r, r, r)
+        da.fill_circle(pw - r, r, r)
+        da.fill_circle(r, ph - r, r)
+        da.fill_circle(pw - r, ph - r, r)
+    })
+    card.add(bg_da)
+
+    let text_col = cogito.vstack()
+    .set_gap(2)
+    .set_padding(8, 10, 8, 10)
+    .set_hexpand(true)
+
+    let title_lbl = cogito.label(title)
+    .set_class("slide-thumb-title")
+    .set_ellipsis(true)
+    text_col.add(title_lbl)
+
+    if len(body) > 0
+        let body_lbl = cogito.label(body)
+        .set_class("slide-thumb-body")
+        .set_ellipsis(true)
+        text_col.add(body_lbl)
+
+    card.add(text_col)
+
+    build_remove_btn(card, index)
+
+    slide_list.add(card)
+;
+
+: build_remove_btn(card = cogito.ZStack, index = num) (( -- ))
+    let remove_btn = cogito.iconbtn("sf:xmark.circle.fill")
+    .set_class("slide-remove-btn")
+    .set_shape(1)
+    .set_size(0)
+    .set_align(2)
+    .on_click((b = cogito.Button) => {
+        _on_remove(index)
+    })
+    card.add(remove_btn)
+;

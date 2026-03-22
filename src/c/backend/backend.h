@@ -16,6 +16,11 @@ extern "C" {
 // Text direction (declared in cogito.h / 00_core.inc, used by backend for shaping)
 extern bool cogito_is_rtl(void);
 
+// Font style flags (combinable via bitwise OR)
+#define COGITO_FONT_STYLE_NORMAL        0
+#define COGITO_FONT_STYLE_ITALIC        (1 << 1)
+#define COGITO_FONT_STYLE_STRIKETHROUGH (1 << 3)
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -157,6 +162,7 @@ typedef struct CogitoBackend {
   // set.
   bool (*font_set_variation)(CogitoFont *font, uint32_t axis_tag, float value);
   void (*font_set_direction)(CogitoFont *font, bool rtl);
+  void (*font_set_style)(CogitoFont *font, int style);
   int (*text_measure_width)(CogitoFont *font, const char *text, int size);
   int (*text_measure_width_dir)(CogitoFont *font, const char *text, int size, bool rtl);
   int (*text_measure_height)(CogitoFont *font, int size);

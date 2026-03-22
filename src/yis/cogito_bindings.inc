@@ -111,6 +111,9 @@
 #undef cogito_find_parent
 #undef cogito_fixed_set_pos
 #undef cogito_grid_clear
+#undef cogito_vstack_clear
+#undef cogito_hstack_clear
+#undef cogito_node_set_bg_color
 #undef cogito_grid_new_with_cols
 #undef cogito_grid_on_activate
 #undef cogito_grid_on_select
@@ -191,6 +194,7 @@
 #undef cogito_node_set_disabled
 #undef cogito_node_set_editable
 #undef cogito_node_set_font_family
+#undef cogito_node_set_font_italic
 #undef cogito_node_set_font_size
 #undef cogito_node_set_font_weight
 #undef cogito_node_set_halign
@@ -199,6 +203,7 @@
 #undef cogito_node_set_opacity
 #undef cogito_node_set_padding
 #undef cogito_node_set_shadow
+#undef cogito_node_set_strikethrough
 #undef cogito_node_set_text
 #undef cogito_node_set_tooltip
 #undef cogito_node_set_valign
@@ -2824,6 +2829,34 @@ static void __cogito_grid_clear(YisVal gridv) {
   cogito_grid_clear(grid);
 }
 
+static void __cogito_vstack_clear(YisVal vstackv) {
+  cogito_node* vstack = cogito_node_from_val(vstackv);
+  cogito_vstack_clear(vstack);
+}
+
+static void __cogito_hstack_clear(YisVal hstackv) {
+  cogito_node* hstack = cogito_node_from_val(hstackv);
+  cogito_hstack_clear(hstack);
+}
+
+static void __cogito_node_set_bg_color(YisVal nodev, YisVal colorv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  if (colorv.tag == EVT_NULL) {
+    cogito_node_set_bg_color(node, NULL);
+    return;
+  }
+  YisStr* s = NULL;
+  bool temp = false;
+  if (colorv.tag == EVT_STR) {
+    s = (YisStr*)colorv.as.p;
+  } else {
+    s = stdr_to_string(colorv);
+    temp = true;
+  }
+  cogito_node_set_bg_color(node, s ? s->data : NULL);
+  if (temp && s) yis_release_val(YV_STR(s));
+}
+
 static void __cogito_grid_add(YisVal gridv, YisVal childv, YisVal colv, YisVal rowv, YisVal wv, YisVal hv) {
   cogito_node* grid = cogito_node_from_val(gridv);
   cogito_node* child = cogito_node_from_val(childv);
@@ -2858,6 +2891,14 @@ static void __cogito_node_set_font_size(YisVal nodev, YisVal sizev) {
 static void __cogito_node_set_font_weight(YisVal nodev, YisVal weightv) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_font_weight(node, (int)yis_as_int(weightv));
+}
+static void __cogito_node_set_font_italic(YisVal nodev, YisVal italicv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_font_italic(node, yis_as_bool(italicv));
+}
+static void __cogito_node_set_strikethrough(YisVal nodev, YisVal onv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_strikethrough(node, yis_as_bool(onv));
 }
 static void __cogito_node_set_font_family(YisVal nodev, YisVal familyv) {
   cogito_node* node = cogito_node_from_val(nodev);
@@ -4685,6 +4726,8 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_scroller_set_scroll_y __cogito_scroller_set_scroll_y
 #define cogito_grid_set_cols __cogito_grid_set_cols
 #define cogito_grid_clear __cogito_grid_clear
+#define cogito_vstack_clear __cogito_vstack_clear
+#define cogito_hstack_clear __cogito_hstack_clear
 #define cogito_grid_add __cogito_grid_add
 #define cogito_grid_set_gap __cogito_grid_set_gap
 #define cogito_grid_set_span __cogito_grid_set_span
@@ -4701,6 +4744,7 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_node_set_disabled __cogito_node_set_disabled
 #define cogito_node_set_opacity __cogito_node_set_opacity
 #define cogito_node_set_visible __cogito_node_set_visible
+#define cogito_node_set_bg_color __cogito_node_set_bg_color
 #define cogito_node_set_editable __cogito_node_set_editable
 #define cogito_node_get_editable __cogito_node_get_editable
 #define cogito_node_get_visible __cogito_node_get_visible
@@ -4974,6 +5018,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_content_list_set_visible_dividers __cogito_content_list_set_visible_dividers
 #define cogito_grid_set_cols __cogito_grid_set_cols
 #define cogito_grid_clear __cogito_grid_clear
+#define cogito_vstack_clear __cogito_vstack_clear
+#define cogito_hstack_clear __cogito_hstack_clear
 #define cogito_empty_page_new __cogito_empty_page
 #define cogito_empty_page_set_description __cogito_empty_page_set_description
 #define cogito_empty_page_set_icon __cogito_empty_page_set_icon
@@ -5031,6 +5077,8 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_bottom_sheet_add_action __cogito_bottom_sheet_add_action
 #define cogito_node_set_font_size __cogito_node_set_font_size
 #define cogito_node_set_font_weight __cogito_node_set_font_weight
+#define cogito_node_set_font_italic __cogito_node_set_font_italic
+#define cogito_node_set_strikethrough __cogito_node_set_strikethrough
 #define cogito_node_set_font_family __cogito_node_set_font_family
 #define cogito_node_set_shadow __cogito_node_set_shadow
 #define cogito_node_set_border_width __cogito_node_set_border_width

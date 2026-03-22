@@ -1172,10 +1172,22 @@ static int cogito_text_width_size_node(const CogitoNode* n, const char* s, int s
   bool medium = n && cogito_node_medium(n);
   CogitoFont* f = cogito_font_variant_for_node(n, size, bold, medium);
   float spacing = (n && n->letter_spacing_set) ? n->letter_spacing : 0.0f;
-  if (n && n->font_tabular) {
-    return cogito_text_width_size_font_spaced_tabular(f, s, size, spacing);
+  int style_flags = COGITO_FONT_STYLE_NORMAL;
+  if (cogito_node_italic(n)) style_flags |= COGITO_FONT_STYLE_ITALIC;
+  if (cogito_node_strikethrough(n)) style_flags |= COGITO_FONT_STYLE_STRIKETHROUGH;
+  if (style_flags && cogito_backend && cogito_backend->font_set_style) {
+    cogito_backend->font_set_style(f, style_flags);
   }
-  return cogito_text_width_size_font_spaced(f, s, size, spacing);
+  int w;
+  if (n && n->font_tabular) {
+    w = cogito_text_width_size_font_spaced_tabular(f, s, size, spacing);
+  } else {
+    w = cogito_text_width_size_font_spaced(f, s, size, spacing);
+  }
+  if (style_flags && cogito_backend && cogito_backend->font_set_style) {
+    cogito_backend->font_set_style(f, COGITO_FONT_STYLE_NORMAL);
+  }
+  return w;
 }
 
 static int cogito_text_width_size_n_font(CogitoFont* f, const char* s, int len, int size) {
@@ -1193,14 +1205,26 @@ static int cogito_text_width_size_n_node(const CogitoNode* n, const char* s, int
   CogitoFont* f = cogito_font_variant_for_node(n, size, bold, medium);
   float spacing = (n && n->letter_spacing_set) ? n->letter_spacing : 0.0f;
   if (!s || len <= 0) return 0;
+  int style_flags = COGITO_FONT_STYLE_NORMAL;
+  if (cogito_node_italic(n)) style_flags |= COGITO_FONT_STYLE_ITALIC;
+  if (cogito_node_strikethrough(n)) style_flags |= COGITO_FONT_STYLE_STRIKETHROUGH;
+  if (style_flags && cogito_backend && cogito_backend->font_set_style) {
+    cogito_backend->font_set_style(f, style_flags);
+  }
   if (len > 1023) len = 1023;
   char buf[1024];
   memcpy(buf, s, (size_t)len);
   buf[len] = '\0';
+  int w;
   if (n && n->font_tabular) {
-    return cogito_text_width_size_font_spaced_tabular(f, buf, size, spacing);
+    w = cogito_text_width_size_font_spaced_tabular(f, buf, size, spacing);
+  } else {
+    w = cogito_text_width_size_font_spaced(f, buf, size, spacing);
   }
-  return cogito_text_width_size_font_spaced(f, buf, size, spacing);
+  if (style_flags && cogito_backend && cogito_backend->font_set_style) {
+    cogito_backend->font_set_style(f, COGITO_FONT_STYLE_NORMAL);
+  }
+  return w;
 }
 
 static void cogito_text_set_from_buf(CogitoNode* n, const char* buf, size_t len) {
@@ -1517,6 +1541,13 @@ static void cogito_draw_text_size_node(const CogitoNode* n, int x, int y, const 
     (f == cogito_font && !cogito_font_medium_ready) ||
     (f == cogito_font_medium && cogito_font_medium_variable)
   );
+  // Apply italic / strikethrough font style flags
+  int style_flags = COGITO_FONT_STYLE_NORMAL;
+  if (cogito_node_italic(n)) style_flags |= COGITO_FONT_STYLE_ITALIC;
+  if (cogito_node_strikethrough(n)) style_flags |= COGITO_FONT_STYLE_STRIKETHROUGH;
+  if (style_flags && cogito_backend->font_set_style) {
+    cogito_backend->font_set_style(f, style_flags);
+  }
   if (cogito_backend && cogito_backend->draw_text) {
     // Check if text needs bidi processing (mixed directional text)
     bool needs_bidi = cogito_text_needs_bidi(text);
@@ -1540,6 +1571,9 @@ static void cogito_draw_text_size_node(const CogitoNode* n, int x, int y, const 
                                  pen_x + 1, y, size, c2, runs[r].rtl);
           }
           pen_x += run_w;
+        }
+        if (style_flags && cogito_backend->font_set_style) {
+          cogito_backend->font_set_style(f, COGITO_FONT_STYLE_NORMAL);
         }
         return;
       }
@@ -1568,6 +1602,10 @@ static void cogito_draw_text_size_node(const CogitoNode* n, int x, int y, const 
         cogito_backend->draw_text(f, text, x + 1, y, size, c2);
       }
     }
+  }
+  // Restore normal font style
+  if (style_flags && cogito_backend->font_set_style) {
+    cogito_backend->font_set_style(f, COGITO_FONT_STYLE_NORMAL);
   }
 }
 

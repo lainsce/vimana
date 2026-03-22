@@ -250,6 +250,7 @@ typedef struct CogitoTextCacheKey {
   TTF_Font *font;
   SDL_Renderer *renderer; // textures are renderer-specific in SDL3
   uint8_t rtl; // 0=LTR, 1=RTL — part of cache key
+  uint8_t font_style; // TTF style flags (italic, strikethrough, etc.)
 } CogitoTextCacheKey;
 
 typedef struct CogitoTextCacheEntry {
@@ -275,7 +276,8 @@ static uint32_t cogito_text_cache_hash(TTF_Font *font, const char *text,
                                        size_t text_len,
                                        uint16_t raster_size_q64,
                                        uint8_t rtl,
-                                       SDL_Renderer *renderer) {
+                                       SDL_Renderer *renderer,
+                                       uint8_t font_style) {
   uint32_t h = 5381;
   for (size_t i = 0; i < text_len; i++) {
     h = ((h << 5) + h) ^ (uint8_t)text[i];
@@ -285,6 +287,7 @@ static uint32_t cogito_text_cache_hash(TTF_Font *font, const char *text,
   h ^= ((uint32_t)raster_size_q64 << 1);
   h ^= ((uint32_t)rtl << 17);
   h ^= (uint32_t)(uintptr_t)renderer;
+  h ^= ((uint32_t)font_style << 21);
   return h;
 }
 
@@ -292,6 +295,7 @@ static bool cogito_text_cache_key_eq(const CogitoTextCacheKey *a,
                                      const CogitoTextCacheKey *b) {
   return a->font == b->font && a->text_len == b->text_len &&
          a->rtl == b->rtl && a->renderer == b->renderer &&
+         a->font_style == b->font_style &&
          memcmp(a->text, b->text, a->text_len) == 0;
 }
 
@@ -352,9 +356,10 @@ cogito_text_cache_lookup(TTF_Font *font, const char *text, size_t text_len,
   key.font = font;
   key.renderer = g_current_renderer;
   key.rtl = rtl;
+  key.font_style = (uint8_t)TTF_GetFontStyle(font);
 
   uint32_t hash =
-      cogito_text_cache_hash(font, key.text, text_len, raster_size_q64, rtl, g_current_renderer);
+      cogito_text_cache_hash(font, key.text, text_len, raster_size_q64, rtl, g_current_renderer, key.font_style);
   int idx = (int)(hash & (COGITO_TEXT_CACHE_SIZE - 1));
 
   // Linear probing
@@ -2605,6 +2610,13 @@ static void sdl3_font_set_direction(CogitoFont *font, bool rtl) {
                        rtl ? TTF_DIRECTION_RTL : TTF_DIRECTION_LTR);
 }
 
+// Set TTF style flags (italic, strikethrough, etc.)
+static void sdl3_font_set_style(CogitoFont *font, int style) {
+  CogitoSDL3Font *f = (CogitoSDL3Font *)font;
+  if (!f || !f->ttf_font) return;
+  TTF_SetFontStyle(f->ttf_font, (TTF_FontStyleFlags)style);
+}
+
 // Draw text with explicit direction (bypasses global cogito_is_rtl())
 static void sdl3_draw_text_dir(CogitoFont *font, const char *text, int x, int y,
                                 int size, CogitoColor color, bool rtl) {
@@ -3552,6 +3564,7 @@ static CogitoBackend sdl3_backend = {
     .font_get_internal_face = sdl3_font_get_internal_face,
     .font_set_variation = sdl3_font_set_variation,
     .font_set_direction = sdl3_font_set_direction,
+    .font_set_style = sdl3_font_set_style,
     .text_measure_width = sdl3_text_measure_width,
     .text_measure_width_dir = sdl3_text_measure_width_dir,
     .text_measure_height = sdl3_text_measure_height,

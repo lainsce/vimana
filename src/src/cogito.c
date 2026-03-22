@@ -156,6 +156,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_grid_set_gap cogito_grid_set_gap_yis
 #define cogito_grid_set_span cogito_grid_set_span_yis
 #define cogito_hstack_new cogito_hstack_new_yis
+#define cogito_hstack_clear cogito_hstack_clear_yis
 #define cogito_flow_new cogito_flow_new_yis
 #define cogito_virtual_list_new cogito_virtual_list_new_yis
 #define cogito_virtual_list_set_item_count cogito_virtual_list_set_item_count_yis
@@ -260,6 +261,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_node_set_class cogito_node_set_class_yis
 #define cogito_node_set_disabled cogito_node_set_disabled_yis
 #define cogito_node_set_opacity cogito_node_set_opacity_yis
+#define cogito_node_set_bg_color cogito_node_set_bg_color_yis
 #define cogito_node_set_visible cogito_node_set_visible_yis
 #define cogito_node_get_visible cogito_node_get_visible_yis
 #define cogito_node_set_editable cogito_node_set_editable_yis
@@ -387,6 +389,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_view_switcher_get_active cogito_view_switcher_get_active_yis
 #define cogito_view_switcher_add_lazy cogito_view_switcher_add_lazy_yis
 #define cogito_vstack_new cogito_vstack_new_yis
+#define cogito_vstack_clear cogito_vstack_clear_yis
 #define cogito_window_clear_dialog cogito_window_clear_dialog_yis
 #define cogito_window_new cogito_window_new_yis
 #define cogito_window_set_a11y_label cogito_window_set_a11y_label_yis
@@ -579,6 +582,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_grid_set_gap
 #undef cogito_grid_set_span
 #undef cogito_hstack_new
+#undef cogito_hstack_clear
 #undef cogito_flow_new
 #undef cogito_virtual_list_new
 #undef cogito_virtual_list_set_item_count
@@ -688,6 +692,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_node_set_disabled
 #undef cogito_node_set_opacity
 #undef cogito_node_set_visible
+#undef cogito_node_set_bg_color
 #undef cogito_node_get_visible
 #undef cogito_node_set_editable
 #undef cogito_node_set_id
@@ -810,6 +815,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_view_switcher_get_active
 #undef cogito_view_switcher_add_lazy
 #undef cogito_vstack_new
+#undef cogito_vstack_clear
 #undef cogito_window_clear_dialog
 #undef cogito_window_new
 #undef cogito_window_set_a11y_label
@@ -3781,6 +3787,22 @@ void cogito_node_set_font_weight(cogito_node *node, int weight) {
   if (win) cogito_window_relayout(win);
 }
 
+void cogito_node_set_font_italic(cogito_node *node, bool italic) {
+  if (!node) return;
+  node->font_italic = italic;
+  node->font_italic_set = true;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_node_set_strikethrough(cogito_node *node, bool on) {
+  if (!node) return;
+  node->font_strikethrough = on;
+  node->font_strikethrough_set = true;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
 void cogito_node_set_font_family(cogito_node *node, const char *family) {
   if (!node || !family) return;
   strncpy(node->font_family, family, sizeof(node->font_family) - 1);
@@ -5594,6 +5616,27 @@ void cogito_grid_clear(cogito_node *grid) {
   if (!grid)
     return;
   cogito_grid_clear_yis(YV_OBJ(grid));
+}
+
+void cogito_vstack_clear(cogito_node *vstack) {
+  if (!vstack) return;
+  cogito_vstack_clear_yis(YV_OBJ(vstack));
+}
+
+void cogito_hstack_clear(cogito_node *hstack) {
+  if (!hstack) return;
+  cogito_hstack_clear_yis(YV_OBJ(hstack));
+}
+
+void cogito_node_set_bg_color(cogito_node *node, const char *hex) {
+  if (!node) return;
+  if (!hex) {
+    cogito_node_set_bg_color_yis(YV_OBJ(node), YV_NULLV);
+    return;
+  }
+  YisVal sv = cogito_val_from_cstr(hex);
+  cogito_node_set_bg_color_yis(YV_OBJ(node), sv);
+  yis_release_val(sv);
 }
 
 void cogito_content_list_on_select(cogito_node *list, cogito_index_fn fn, void *user) {

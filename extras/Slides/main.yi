@@ -1,0 +1,159 @@
+cask main
+
+bring stdr
+bring cogito
+
+bring models
+bring widgets.slide_panel
+bring widgets.slide_editor
+bring widgets.presenter
+
+-- View state: 0 = editor, 1 = presenter
+def ?view_mode = 0
+
+-- Top-level containers
+def panel_box = cogito.vstack()
+def editor_box = cogito.vstack()
+def presenter_box = cogito.vstack()
+
+def editor_revealer = cogito.revealer()
+def presenter_revealer = cogito.revealer()
+
+-- ── Refresh helpers ──────────────────────────────────────────
+
+: refresh_all() (( -- ))
+    slide_panel.refresh()
+    slide_editor.refresh()
+;
+
+: select_slide(idx = num) (( -- ))
+    models.select_slide(idx)
+    refresh_all()
+;
+
+: add_slide() (( -- ))
+    let new_idx = models.add_slide()
+    models.select_slide(new_idx)
+    refresh_all()
+;
+
+: remove_slide(idx = num) (( -- ))
+    if models.count() <= 1
+        <-
+    models.remove_slide(idx)
+    let cur = models.current()
+    if cur >= models.count()
+        models.select_slide(models.count() - 1)
+    refresh_all()
+;
+
+: enter_presenter() (( -- ))
+    view_mode = 1
+    editor_revealer.set_show_children(false)
+    presenter_revealer.set_show_children(true)
+    presenter.refresh()
+;
+
+: exit_presenter() (( -- ))
+    view_mode = 0
+    presenter_revealer.set_show_children(false)
+    editor_revealer.set_show_children(true)
+    refresh_all()
+;
+
+-- ── Entry Point ──────────────────────────────────────────────
+
+-> ()
+    let app = cogito.app()
+    .set_appid("com.fyralabs.Slides")
+    .set_app_name("Slides")
+    .set_icon("com.fyralabs.Slides.svg")
+    .set_mono_icon("com.fyralabs.Slides-symbolic.svg")
+    .set_accent_color("#7C5CFC", false)
+
+    cogito.load_sum("slides.sum")
+
+    let win = cogito.window_size("Slides", 1100, 720)
+    .set_resizable(true)
+    .set_size_request(600, 480)
+
+    -- AppBar (flat)
+    let bar = cogito.appbar("Slideshow", "")
+    .set_class("small slides-bar")
+    .set_hexpand(true)
+
+    let gear = bar.add_trailing_menu_button("sf:gearshape")
+    gear.add_menu("About Slides", (b = any) => {
+        let dlg = cogito.dialog("")
+        let aw = cogito.about_window("Slides", "GPLv3 License")
+        .set_icon("sf:play.rectangle")
+        .set_website("https://github.com/nickvdl/cogito")
+        .set_issue_url("https://github.com/nickvdl/cogito/issues")
+        dlg.add(aw)
+        win.set_dialog(dlg)
+    })
+
+    bar.add_trailing_button("sf:play.rectangle", (b = cogito.Button) => {
+        enter_presenter()
+    })
+
+    -- Build sidebar
+    panel_box.set_class("slide-panel")
+
+    slide_panel.build_panel(panel_box, (idx = num) => {
+        select_slide(idx)
+    }, () => {
+        add_slide()
+    }, (idx = num) => {
+        remove_slide(idx)
+    })
+
+    -- Build editor
+    editor_box.add(bar)
+
+    slide_editor.build_editor(editor_box, (text = string) => {
+        models.set_notes(models.current(), text)
+    })
+
+    -- Editor view: sidebar + editor side by side
+    let editor_content = cogito.hstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    editor_content.add(panel_box)
+    editor_content.add(editor_box)
+
+    editor_revealer.add(editor_content)
+    editor_revealer.set_hexpand(true)
+    editor_revealer.set_vexpand(true)
+    editor_revealer.set_show_children(true)
+
+    -- Build presenter
+    presenter.build_presenter(
+        presenter_box,
+        () => { exit_presenter() }
+    )
+
+    presenter_revealer.add(presenter_box)
+    presenter_revealer.set_hexpand(true)
+    presenter_revealer.set_vexpand(true)
+    presenter_revealer.set_show_children(false)
+
+    -- Assemble window
+    let root = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    root.add(editor_revealer)
+    root.add(presenter_revealer)
+
+    win.add(cogito.window_bar())
+    win.add(root)
+
+    -- Initial state
+    refresh_all()
+
+    app.run(win)
+;

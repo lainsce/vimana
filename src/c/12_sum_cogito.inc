@@ -251,6 +251,26 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
     if (cogito_css_read_number(p, &v)) { style->has_font_weight = true; style->font_weight = (int)lround(v); }
     return;
   }
+  if (strcmp(prop, "font-style") == 0) {
+    const char* s = *p;
+    char ident[32];
+    if (cogito_css_read_ident(&s, ident, sizeof(ident))) {
+      style->has_font_italic = true;
+      style->font_italic = (strcmp(ident, "italic") == 0);
+      *p = s;
+    }
+    return;
+  }
+  if (strcmp(prop, "text-decoration") == 0) {
+    const char* s = *p;
+    char ident[32];
+    if (cogito_css_read_ident(&s, ident, sizeof(ident))) {
+      style->has_strikethrough = true;
+      style->strikethrough = (strcmp(ident, "line-through") == 0);
+      *p = s;
+    }
+    return;
+  }
   if (strcmp(prop, "font-variant-numeric") == 0) {
     const char* s = *p;
     char ident[64];

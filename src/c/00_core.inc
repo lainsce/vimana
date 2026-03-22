@@ -426,6 +426,8 @@ typedef struct CogitoStyle {
   bool has_knob;
   bool has_check;
   bool has_font_weight;
+  bool has_font_italic;
+  bool has_strikethrough;
   bool has_letter_spacing;
   bool has_line_height;
   bool has_font_tabular;
@@ -484,6 +486,8 @@ typedef struct CogitoStyle {
   int radius_bl;
   int font_size;
   int font_weight;
+  bool font_italic;
+  bool strikethrough;
   float letter_spacing;
   float line_height;
   bool font_tabular;
@@ -1168,6 +1172,8 @@ typedef struct CogitoNode {
   bool font_mono;
   bool font_tabular;
   bool font_emphasized;
+  bool font_italic;
+  bool font_strikethrough;
 
   // Geometry
   int x, y, w, h;
@@ -1219,6 +1225,8 @@ typedef struct CogitoNode {
   bool knob_set;
   bool check_set;
   bool font_weight_set;
+  bool font_italic_set;
+  bool font_strikethrough_set;
   bool letter_spacing_set;
   bool line_height_set;
   bool min_w_set;

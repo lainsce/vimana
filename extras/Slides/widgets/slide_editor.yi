@@ -1,0 +1,1047 @@
+cask slide_editor
+
+bring stdr
+bring cogito
+
+bring models
+
+-- Element bounding sizes for hit testing
+def TITLE_W = 300
+def TITLE_H = 50
+def BODY_W = 400
+def BODY_H = 40
+
+-- Module-level widgets
+def canvas_wrapper = cogito.vstack()
+def canvas_fixed = cogito.fixed()
+def canvas_bg_da = cogito.drawing_area()
+def canvas_da = cogito.drawing_area()
+def title_lbl = cogito.label("")
+def body_lbl = cogito.label("")
+def notes_field = cogito.textfield("")
+
+-- Extra element labels (rebuilt on refresh)
+def ?extra_labels = []
+
+-- Canvas size (updated each frame from on_draw)
+def ?canvas_w = 0
+def ?canvas_h = 0
+def ?current_bg_color = "#FFFFFF"
+
+-- DnD state: 0=none, 1=title, 2=body, 3+=extra element (index = selected_elem - 3)
+def ?selected_elem = 0
+def ?is_dragging = false
+def ?drag_off_x = 0
+def ?drag_off_y = 0
+
+-- Resize state: corner 0=none, 1=TL, 2=TR, 3=BL, 4=BR
+def ?is_resizing = false
+def ?resize_corner = 0
+def ?resize_orig_x = 0
+def ?resize_orig_y = 0
+def ?resize_orig_w = 0
+def ?resize_orig_h = 0
+def ?resize_start_x = 0
+def ?resize_start_y = 0
+
+-- Selection tooltip (floats above canvas DA)
+def tooltip_fixed = cogito.fixed()
+def tooltip_bar = cogito.hstack()
+
+:: build_editor(
+    editor = cogito.VStack,
+    on_notes_change = any
+) (( -- ))
+    editor
+    .set_class("slide-editor")
+    .set_gap(8)
+    .set_padding(0, 16, 16, 16)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    -- Toolbar
+    let toolbar = cogito.toolbar()
+    .set_class("slide-toolbar")
+    .set_hexpand(true)
+    .set_vibrant(true)
+
+    toolbar.add(cogito.iconbtn("sf:text.badge.plus").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+        show_add_text_dialog(b.window())
+    }))
+    toolbar.add(cogito.iconbtn("sf:link.badge.plus").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+        show_add_link_dialog(b.window())
+    }))
+    toolbar.add(cogito.iconbtn("sf:photo.badge.plus").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+        show_add_image_dialog(b.window())
+    }))
+    toolbar.add(cogito.iconbtn("sf:chart.bar.xaxis").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+        show_add_chart_dialog(b.window())
+    }))
+    toolbar.add(cogito.iconbtn("sf:text.bubble").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+        show_add_comment_dialog(b.window())
+    }))
+
+    editor.add(toolbar)
+
+    -- Canvas: VStack wrapper (bg_color) > ZStack > Fixed + DrawingArea
+    canvas_wrapper
+    .set_class("slide-canvas")
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let canvas = cogito.zstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    canvas_fixed
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    title_lbl
+    .set_class("slide-title-text")
+    .set_wrap(true)
+    .set_line_chars(30)
+
+    body_lbl
+    .set_class("slide-body-text")
+    .set_wrap(true)
+    .set_line_chars(50)
+
+    canvas_fixed.add(title_lbl)
+    canvas_fixed.add(body_lbl)
+
+    canvas_da
+    .set_class("slide-canvas-overlay")
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_color("#00000000")
+    .set_line_width(0)
+    .on_press((da = cogito.DrawingArea) => {
+        handle_press()
+        update_tooltip()
+        da.clear()
+    })
+    .on_drag((da = cogito.DrawingArea) => {
+        handle_drag(da)
+        if selected_elem > 0
+            position_tooltip()
+        da.clear()
+    })
+    .on_release((da = cogito.DrawingArea) => {
+        is_dragging = false
+        is_resizing = false
+        da.clear()
+    })
+    .on_draw((da = cogito.DrawingArea, w = any, h = any) => {
+        canvas_w = num(w)
+        canvas_h = num(h)
+        redraw_handles(da)
+    })
+
+    canvas_bg_da
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_color(current_bg_color)
+    .set_line_width(0)
+    .on_draw((da = cogito.DrawingArea, w = any, h = any) => {
+        let pw = num(w)
+        let ph = num(h)
+        let r = 16
+        da.set_color(current_bg_color)
+        da.fill_rect(r, 0, pw - 2 * r, ph)
+        da.fill_rect(0, r, pw, ph - 2 * r)
+        da.fill_circle(r, r, r)
+        da.fill_circle(pw - r, r, r)
+        da.fill_circle(r, ph - r, r)
+        da.fill_circle(pw - r, ph - r, r)
+    })
+
+    -- Tooltip layer (above DA so dropdowns receive clicks)
+    tooltip_fixed
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    tooltip_bar
+    .set_class("slide-tooltip")
+    .set_gap(6)
+    .set_padding(6, 8, 6, 8)
+    .set_visible(false)
+
+    tooltip_fixed.add(tooltip_bar)
+
+    canvas.add(canvas_bg_da)
+    canvas.add(canvas_fixed)
+    canvas.add(canvas_da)
+    canvas.add(tooltip_fixed)
+    canvas_wrapper.add(canvas)
+    editor.add(canvas_wrapper)
+
+    -- Notes row
+    let notes_row = cogito.hstack()
+    .set_gap(8)
+    .set_hexpand(true)
+    .set_align(3)
+
+    let notes_label = cogito.label("Speaker Notes:")
+    .set_class("slide-notes-label")
+
+    notes_field
+    .set_class("slide-notes")
+    .set_hexpand(true)
+    .on_change((tf = cogito.TextField) => {
+        on_notes_change(tf.text())
+    })
+
+    notes_row.add(notes_label)
+    notes_row.add(notes_field)
+    editor.add(notes_row)
+;
+
+:: refresh() (( -- ))
+    let idx = models.current()
+    let color = models.get_color(idx)
+
+    current_bg_color = color
+    canvas_bg_da.clear()
+
+    -- Rebuild canvas_fixed contents
+    canvas_fixed.clear()
+
+    title_lbl.set_text(models.get_title(idx))
+    title_lbl.set_font_family(models.get_title_font(idx))
+    title_lbl.set_font_size(models.get_title_size(idx))
+    if models.get_title_bold(idx)
+        title_lbl.set_font_weight(700)
+    else
+        title_lbl.set_font_weight(400)
+    title_lbl.set_font_italic(models.get_title_italic(idx))
+    title_lbl.set_strikethrough(models.get_title_strikethrough(idx))
+    canvas_fixed.add(title_lbl)
+    canvas_fixed.set_pos(title_lbl, models.get_title_x(idx), models.get_title_y(idx))
+
+    body_lbl.set_text(models.get_body(idx))
+    body_lbl.set_font_family(models.get_body_font(idx))
+    body_lbl.set_font_size(models.get_body_size(idx))
+    if models.get_body_bold(idx)
+        body_lbl.set_font_weight(700)
+    else
+        body_lbl.set_font_weight(400)
+    body_lbl.set_font_italic(models.get_body_italic(idx))
+    body_lbl.set_strikethrough(models.get_body_strikethrough(idx))
+    canvas_fixed.add(body_lbl)
+    canvas_fixed.set_pos(body_lbl, models.get_body_x(idx), models.get_body_y(idx))
+
+    -- Add extra elements
+    extra_labels = []
+    let ecount = models.elem_count(idx)
+    for (let ?i = 0; i < ecount; i += 1)
+        let etype = models.get_elem_type(idx, i)
+        let text = models.get_elem_text(idx, i)
+        let lbl = build_elem_label(etype, text)
+        lbl.set_font_family(models.get_elem_font(idx, i))
+        lbl.set_font_size(models.get_elem_size(idx, i))
+        if models.get_elem_bold(idx, i)
+            lbl.set_font_weight(700)
+        else
+            lbl.set_font_weight(400)
+        lbl.set_font_italic(models.get_elem_italic(idx, i))
+        lbl.set_strikethrough(models.get_elem_strikethrough(idx, i))
+        canvas_fixed.add(lbl)
+        canvas_fixed.set_pos(lbl, models.get_elem_x(idx, i), models.get_elem_y(idx, i))
+        stdr.push(extra_labels, lbl)
+
+    notes_field.set_text(models.get_notes(idx))
+
+    selected_elem = 0
+    is_dragging = false
+    tooltip_bar.set_visible(false)
+;
+
+-- ── Element helpers ──────────────────────────────────────────
+
+: build_elem_label(etype = string, text = string) (( cogito.Label ))
+    if etype == "link"
+        <- cogito.label(text).set_class("slide-link-text").set_wrap(true).set_line_chars(25)
+    if etype == "image"
+        <- cogito.label(text).set_class("slide-image-text").set_wrap(true).set_line_chars(20)
+    if etype == "chart"
+        <- cogito.label(text).set_class("slide-chart-text").set_wrap(true).set_line_chars(25)
+    if etype == "comment"
+        <- cogito.label(text).set_class("slide-comment-text").set_wrap(true).set_line_chars(30)
+    <- cogito.label(text).set_class("slide-text-elem").set_wrap(true).set_line_chars(30)
+;
+
+: elem_hit_w(etype = string) (( num ))
+    if etype == "link" { <- 200 }
+    if etype == "image" { <- 200 }
+    if etype == "chart" { <- 300 }
+    if etype == "comment" { <- 250 }
+    <- 300
+;
+
+: elem_hit_h(etype = string) (( num ))
+    if etype == "link" { <- 30 }
+    if etype == "image" { <- 150 }
+    if etype == "chart" { <- 200 }
+    if etype == "comment" { <- 60 }
+    <- 40
+;
+
+-- ── DnD interaction ──────────────────────────────────────────
+
+: hit_corner(mx = num, my = num) (( num ))
+    let idx = models.current()
+    let ?ex = 0
+    let ?ey = 0
+    let ?ew = 0
+    let ?eh = 0
+
+    if selected_elem == 1
+        ex = models.get_title_x(idx)
+        ey = models.get_title_y(idx)
+        ew = models.get_title_w(idx)
+        eh = models.get_title_h(idx)
+    elif selected_elem == 2
+        ex = models.get_body_x(idx)
+        ey = models.get_body_y(idx)
+        ew = models.get_body_w(idx)
+        eh = models.get_body_h(idx)
+    elif selected_elem >= 3
+        let ei = selected_elem - 3
+        ex = models.get_elem_x(idx, ei)
+        ey = models.get_elem_y(idx, ei)
+        ew = models.get_elem_w(idx, ei)
+        eh = models.get_elem_h(idx, ei)
+    else
+        <- 0
+
+    let half = 8
+    if mx >= ex - half && mx <= ex + half && my >= ey - half && my <= ey + half
+        <- 1
+    if mx >= ex + ew - half && mx <= ex + ew + half && my >= ey - half && my <= ey + half
+        <- 2
+    if mx >= ex - half && mx <= ex + half && my >= ey + eh - half && my <= ey + eh + half
+        <- 3
+    if mx >= ex + ew - half && mx <= ex + ew + half && my >= ey + eh - half && my <= ey + eh + half
+        <- 4
+    <- 0
+;
+
+: handle_resize(da = cogito.DrawingArea) (( -- ))
+    let x = da.get_x()
+    let y = da.get_y()
+    let idx = models.current()
+    let dx = x - resize_start_x
+    let dy = y - resize_start_y
+
+    let ?nx = resize_orig_x
+    let ?ny = resize_orig_y
+    let ?nw = resize_orig_w
+    let ?nh = resize_orig_h
+
+    if resize_corner == 1
+        nx = resize_orig_x + dx
+        ny = resize_orig_y + dy
+        nw = resize_orig_w - dx
+        nh = resize_orig_h - dy
+    elif resize_corner == 2
+        ny = resize_orig_y + dy
+        nw = resize_orig_w + dx
+        nh = resize_orig_h - dy
+    elif resize_corner == 3
+        nx = resize_orig_x + dx
+        nw = resize_orig_w - dx
+        nh = resize_orig_h + dy
+    elif resize_corner == 4
+        nw = resize_orig_w + dx
+        nh = resize_orig_h + dy
+
+    if nw < 40
+        if resize_corner == 1 || resize_corner == 3
+            nx = resize_orig_x + resize_orig_w - 40
+        nw = 40
+    if nh < 20
+        if resize_corner == 1 || resize_corner == 2
+            ny = resize_orig_y + resize_orig_h - 20
+        nh = 20
+
+    if nx < 0 { nx = 0 }
+    if ny < 0 { ny = 0 }
+
+    if selected_elem == 1
+        models.set_title_pos(idx, nx, ny)
+        models.set_title_wh(idx, nw, nh)
+        canvas_fixed.set_pos(title_lbl, nx, ny)
+    elif selected_elem == 2
+        models.set_body_pos(idx, nx, ny)
+        models.set_body_wh(idx, nw, nh)
+        canvas_fixed.set_pos(body_lbl, nx, ny)
+    elif selected_elem >= 3
+        let ei = selected_elem - 3
+        models.set_elem_pos(idx, ei, nx, ny)
+        models.set_elem_wh(idx, ei, nw, nh)
+        canvas_fixed.set_pos(extra_labels[ei], nx, ny)
+;
+
+: handle_press() (( -- ))
+    let x = canvas_da.get_x()
+    let y = canvas_da.get_y()
+    let idx = models.current()
+
+    -- Check corner handles of current selection first
+    if selected_elem > 0
+        let corner = hit_corner(x, y)
+        if corner > 0
+            is_resizing = true
+            resize_corner = corner
+            resize_start_x = x
+            resize_start_y = y
+            if selected_elem == 1
+                resize_orig_x = models.get_title_x(idx)
+                resize_orig_y = models.get_title_y(idx)
+                resize_orig_w = models.get_title_w(idx)
+                resize_orig_h = models.get_title_h(idx)
+            elif selected_elem == 2
+                resize_orig_x = models.get_body_x(idx)
+                resize_orig_y = models.get_body_y(idx)
+                resize_orig_w = models.get_body_w(idx)
+                resize_orig_h = models.get_body_h(idx)
+            elif selected_elem >= 3
+                let ei = selected_elem - 3
+                resize_orig_x = models.get_elem_x(idx, ei)
+                resize_orig_y = models.get_elem_y(idx, ei)
+                resize_orig_w = models.get_elem_w(idx, ei)
+                resize_orig_h = models.get_elem_h(idx, ei)
+            <-
+
+    -- Hit test extra elements (reverse z-order)
+    let ecount = models.elem_count(idx)
+    for (let ?i = ecount - 1; i >= 0; i -= 1)
+        let ex = models.get_elem_x(idx, i)
+        let ey = models.get_elem_y(idx, i)
+        let ew = models.get_elem_w(idx, i)
+        let eh = models.get_elem_h(idx, i)
+        if x >= ex && x <= ex + ew && y >= ey && y <= ey + eh
+            selected_elem = i + 3
+            is_dragging = true
+            drag_off_x = x - ex
+            drag_off_y = y - ey
+            <-
+
+    -- Hit test body
+    let bx = models.get_body_x(idx)
+    let by = models.get_body_y(idx)
+    let bw = models.get_body_w(idx)
+    let bh = models.get_body_h(idx)
+    if x >= bx && x <= bx + bw && y >= by && y <= by + bh
+        selected_elem = 2
+        is_dragging = true
+        drag_off_x = x - bx
+        drag_off_y = y - by
+        <-
+
+    -- Hit test title
+    let tx = models.get_title_x(idx)
+    let ty = models.get_title_y(idx)
+    let tw = models.get_title_w(idx)
+    let th = models.get_title_h(idx)
+    if x >= tx && x <= tx + tw && y >= ty && y <= ty + th
+        selected_elem = 1
+        is_dragging = true
+        drag_off_x = x - tx
+        drag_off_y = y - ty
+        <-
+
+    -- Nothing hit
+    selected_elem = 0
+    is_dragging = false
+;
+
+: handle_drag(da = cogito.DrawingArea) (( -- ))
+    if is_resizing
+        handle_resize(da)
+        da.clear()
+        <-
+    if !is_dragging
+        <-
+
+    let x = da.get_x()
+    let y = da.get_y()
+    let idx = models.current()
+    let ?nx = x - drag_off_x
+    let ?ny = y - drag_off_y
+
+    if selected_elem == 1
+        let tw = models.get_title_w(idx)
+        let th = models.get_title_h(idx)
+        if nx < 0 { nx = 0 }
+        if ny < 0 { ny = 0 }
+        if canvas_w > 0 && nx + tw > canvas_w { nx = canvas_w - tw }
+        if canvas_h > 0 && ny + th > canvas_h { ny = canvas_h - th }
+        models.set_title_pos(idx, nx, ny)
+        canvas_fixed.set_pos(title_lbl, nx, ny)
+    elif selected_elem == 2
+        let bw = models.get_body_w(idx)
+        let bh = models.get_body_h(idx)
+        if nx < 0 { nx = 0 }
+        if ny < 0 { ny = 0 }
+        if canvas_w > 0 && nx + bw > canvas_w { nx = canvas_w - bw }
+        if canvas_h > 0 && ny + bh > canvas_h { ny = canvas_h - bh }
+        models.set_body_pos(idx, nx, ny)
+        canvas_fixed.set_pos(body_lbl, nx, ny)
+    elif selected_elem >= 3
+        let ei = selected_elem - 3
+        let ew = models.get_elem_w(idx, ei)
+        let eh = models.get_elem_h(idx, ei)
+        if nx < 0 { nx = 0 }
+        if ny < 0 { ny = 0 }
+        if canvas_w > 0 && nx + ew > canvas_w { nx = canvas_w - ew }
+        if canvas_h > 0 && ny + eh > canvas_h { ny = canvas_h - eh }
+        models.set_elem_pos(idx, ei, nx, ny)
+        canvas_fixed.set_pos(extra_labels[ei], nx, ny)
+;
+
+: redraw_handles(da = cogito.DrawingArea) (( -- ))
+    if selected_elem == 0
+        <-
+
+    let idx = models.current()
+    da.set_color("#7C5CFC")
+    da.set_line_width(2)
+
+    if selected_elem == 1
+        let tx = models.get_title_x(idx)
+        let ty = models.get_title_y(idx)
+        let tw = models.get_title_w(idx)
+        let th = models.get_title_h(idx)
+        da.rect(tx, ty, tw, th)
+        draw_corners(da, tx, ty, tw, th)
+    elif selected_elem == 2
+        let bx = models.get_body_x(idx)
+        let by = models.get_body_y(idx)
+        let bw = models.get_body_w(idx)
+        let bh = models.get_body_h(idx)
+        da.rect(bx, by, bw, bh)
+        draw_corners(da, bx, by, bw, bh)
+    elif selected_elem >= 3
+        let ei = selected_elem - 3
+        let ex = models.get_elem_x(idx, ei)
+        let ey = models.get_elem_y(idx, ei)
+        let ew = models.get_elem_w(idx, ei)
+        let eh = models.get_elem_h(idx, ei)
+        da.rect(ex, ey, ew, eh)
+        draw_corners(da, ex, ey, ew, eh)
+;
+
+: draw_corners(da = cogito.DrawingArea, x = num, y = num, w = num, h = num) (( -- ))
+    let s = 10
+    let half = 5
+    da.fill_rect(x - half, y - half, s, s)
+    da.fill_rect(x + w - half, y - half, s, s)
+    da.fill_rect(x - half, y + h - half, s, s)
+    da.fill_rect(x + w - half, y + h - half, s, s)
+;
+
+-- ── Selection tooltip ─────────────────────────────────────────
+
+: update_tooltip() (( -- ))
+    tooltip_bar.clear()
+
+    if selected_elem == 0
+        tooltip_bar.set_visible(false)
+        <-
+
+    if selected_elem == 1 || selected_elem == 2
+        build_text_tooltip()
+    elif selected_elem >= 3
+        let idx = models.current()
+        let ei = selected_elem - 3
+        let etype = models.get_elem_type(idx, ei)
+        if etype == "text"
+            build_text_tooltip()
+        elif etype == "link"
+            build_link_tooltip()
+        elif etype == "image"
+            build_image_tooltip()
+        elif etype == "chart"
+            build_chart_tooltip()
+        elif etype == "comment"
+            build_comment_tooltip()
+        else
+            build_text_tooltip()
+
+    position_tooltip()
+    tooltip_bar.set_visible(true)
+;
+
+: position_tooltip() (( -- ))
+    if selected_elem == 0
+        <-
+
+    let idx = models.current()
+    let ?ex = 0
+    let ?ey = 0
+    let ?ew = 0
+    let ?eh = 0
+
+    if selected_elem == 1
+        ex = models.get_title_x(idx)
+        ey = models.get_title_y(idx)
+        ew = models.get_title_w(idx)
+        eh = models.get_title_h(idx)
+    elif selected_elem == 2
+        ex = models.get_body_x(idx)
+        ey = models.get_body_y(idx)
+        ew = models.get_body_w(idx)
+        eh = models.get_body_h(idx)
+    elif selected_elem >= 3
+        let ei = selected_elem - 3
+        ex = models.get_elem_x(idx, ei)
+        ey = models.get_elem_y(idx, ei)
+        ew = models.get_elem_w(idx, ei)
+        eh = models.get_elem_h(idx, ei)
+
+    let tw = 200
+    let ?tx = ex + (ew - tw) / 2
+    let ?ty = ey + eh + 16
+
+    if tx < 8
+        tx = 8
+    if canvas_w > 0 && tx + tw > canvas_w - 8
+        tx = canvas_w - tw - 8
+    if canvas_h > 0 && ty + 44 > canvas_h - 8
+        ty = ey - 52
+
+    tooltip_fixed.set_pos(tooltip_bar, tx, ty)
+;
+
+def FONT_NAMES = ["Inter", "Roboto", "Serif", "Mono"]
+def FONT_SIZES = [12, 14, 16, 18, 24, 28, 32, 36, 40, 48]
+def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "48"]
+
+: font_index(name = string) (( num ))
+    for (let ?i = 0; i < len(FONT_NAMES); i += 1)
+        if str(FONT_NAMES[i]) == name
+            <- i
+    <- 0
+;
+
+: size_index(size = num) (( num ))
+    for (let ?i = 0; i < len(FONT_SIZES); i += 1)
+        if num(FONT_SIZES[i]) == size
+            <- i
+    <- 0
+;
+
+: build_text_tooltip() (( -- ))
+    let idx = models.current()
+    let ?cur_font = "Inter"
+    let ?cur_size = 16
+    let ?cur_bold = false
+    let ?cur_italic = false
+    let ?cur_strike = false
+
+    if selected_elem == 1
+        cur_font = models.get_title_font(idx)
+        cur_size = models.get_title_size(idx)
+        cur_bold = models.get_title_bold(idx)
+        cur_italic = models.get_title_italic(idx)
+        cur_strike = models.get_title_strikethrough(idx)
+    elif selected_elem == 2
+        cur_font = models.get_body_font(idx)
+        cur_size = models.get_body_size(idx)
+        cur_bold = models.get_body_bold(idx)
+        cur_italic = models.get_body_italic(idx)
+        cur_strike = models.get_body_strikethrough(idx)
+    elif selected_elem >= 3
+        let ei = selected_elem - 3
+        cur_font = models.get_elem_font(idx, ei)
+        cur_size = models.get_elem_size(idx, ei)
+        cur_bold = models.get_elem_bold(idx, ei)
+        cur_italic = models.get_elem_italic(idx, ei)
+        cur_strike = models.get_elem_strikethrough(idx, ei)
+
+    let font_dd = cogito.dropdown()
+    .set_class("slide-tooltip-dd")
+    .set_items(FONT_NAMES)
+    .set_selected(font_index(cur_font))
+    .on_change((d = cogito.Dropdown) => {
+        let sel = d.selected()
+        let fname = str(FONT_NAMES[sel])
+        let si = models.current()
+        if selected_elem == 1
+            models.set_title_font(si, fname)
+            title_lbl.set_font_family(fname)
+        elif selected_elem == 2
+            models.set_body_font(si, fname)
+            body_lbl.set_font_family(fname)
+        elif selected_elem >= 3
+            let eei = selected_elem - 3
+            models.set_elem_font(si, eei, fname)
+            cogito.node_set_font_family(extra_labels[eei], fname)
+    })
+
+    let size_dd = cogito.dropdown()
+    .set_class("slide-tooltip-dd")
+    .set_items(FONT_SIZE_LABELS)
+    .set_selected(size_index(cur_size))
+    .on_change((d = cogito.Dropdown) => {
+        let sel = d.selected()
+        let sz = num(FONT_SIZES[sel])
+        let si = models.current()
+        if selected_elem == 1
+            models.set_title_size(si, sz)
+            title_lbl.set_font_size(sz)
+        elif selected_elem == 2
+            models.set_body_size(si, sz)
+            body_lbl.set_font_size(sz)
+        elif selected_elem >= 3
+            let eei = selected_elem - 3
+            models.set_elem_size(si, eei, sz)
+            cogito.node_set_font_size(extra_labels[eei], sz)
+    })
+
+    let ?bold_label = "B"
+    if cur_bold
+        bold_label = "B*"
+    let bold_btn = cogito.button(bold_label)
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        let si = models.current()
+        let ?is_bold = false
+        if selected_elem == 1
+            is_bold = models.get_title_bold(si)
+            models.set_title_bold(si, !is_bold)
+            if is_bold
+                title_lbl.set_font_weight(400)
+            else
+                title_lbl.set_font_weight(700)
+        elif selected_elem == 2
+            is_bold = models.get_body_bold(si)
+            models.set_body_bold(si, !is_bold)
+            if is_bold
+                body_lbl.set_font_weight(400)
+            else
+                body_lbl.set_font_weight(700)
+        elif selected_elem >= 3
+            let eei = selected_elem - 3
+            is_bold = models.get_elem_bold(si, eei)
+            models.set_elem_bold(si, eei, !is_bold)
+            if is_bold
+                cogito.node_set_font_weight(extra_labels[eei], 400)
+            else
+                cogito.node_set_font_weight(extra_labels[eei], 700)
+        if is_bold
+            b.set_text("B")
+        else
+            b.set_text("B*")
+    })
+
+    let ?italic_label = "I"
+    if cur_italic
+        italic_label = "I*"
+    let italic_btn = cogito.button(italic_label)
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        let si = models.current()
+        let ?is_it = false
+        if selected_elem == 1
+            is_it = models.get_title_italic(si)
+            models.set_title_italic(si, !is_it)
+            title_lbl.set_font_italic(!is_it)
+        elif selected_elem == 2
+            is_it = models.get_body_italic(si)
+            models.set_body_italic(si, !is_it)
+            body_lbl.set_font_italic(!is_it)
+        elif selected_elem >= 3
+            let eei = selected_elem - 3
+            is_it = models.get_elem_italic(si, eei)
+            models.set_elem_italic(si, eei, !is_it)
+            cogito.node_set_font_italic(extra_labels[eei], !is_it)
+        if is_it
+            b.set_text("I")
+        else
+            b.set_text("I*")
+    })
+
+    let ?strike_label = "S"
+    if cur_strike
+        strike_label = "S*"
+    let strike_btn = cogito.button(strike_label)
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        let si = models.current()
+        let ?is_st = false
+        if selected_elem == 1
+            is_st = models.get_title_strikethrough(si)
+            models.set_title_strikethrough(si, !is_st)
+            title_lbl.set_strikethrough(!is_st)
+        elif selected_elem == 2
+            is_st = models.get_body_strikethrough(si)
+            models.set_body_strikethrough(si, !is_st)
+            body_lbl.set_strikethrough(!is_st)
+        elif selected_elem >= 3
+            let eei = selected_elem - 3
+            is_st = models.get_elem_strikethrough(si, eei)
+            models.set_elem_strikethrough(si, eei, !is_st)
+            cogito.node_set_strikethrough(extra_labels[eei], !is_st)
+        if is_st
+            b.set_text("S")
+        else
+            b.set_text("S*")
+    })
+
+    tooltip_bar.add(font_dd)
+    tooltip_bar.add(size_dd)
+    tooltip_bar.add(bold_btn)
+    tooltip_bar.add(italic_btn)
+    tooltip_bar.add(strike_btn)
+;
+
+: build_link_tooltip() (( -- ))
+    let edit_btn = cogito.button("Edit Label")
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        show_edit_elem_dialog(b.window(), "Edit Label")
+    })
+    let url_btn = cogito.button("Edit URL")
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        show_edit_elem_dialog(b.window(), "Edit URL")
+    })
+    tooltip_bar.add(edit_btn)
+    tooltip_bar.add(url_btn)
+;
+
+: build_image_tooltip() (( -- ))
+    let fit_dd = cogito.dropdown()
+    .set_class("slide-tooltip-dd")
+    .set_items(["Fill", "Fit", "Stretch"])
+
+    let edit_btn = cogito.button("Edit")
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        show_edit_elem_dialog(b.window(), "Edit Image")
+    })
+
+    tooltip_bar.add(fit_dd)
+    tooltip_bar.add(edit_btn)
+;
+
+: build_chart_tooltip() (( -- ))
+    let type_dd = cogito.dropdown()
+    .set_class("slide-tooltip-dd")
+    .set_items(["Bar", "Line", "Pie", "Area"])
+
+    let edit_btn = cogito.button("Edit")
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        show_edit_elem_dialog(b.window(), "Edit Chart")
+    })
+
+    tooltip_bar.add(type_dd)
+    tooltip_bar.add(edit_btn)
+;
+
+: build_comment_tooltip() (( -- ))
+    let edit_btn = cogito.button("Edit")
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        show_edit_elem_dialog(b.window(), "Edit Comment")
+    })
+    let del_btn = cogito.button("Delete")
+    .set_class("slide-tooltip-del")
+    .on_click((b = cogito.Button) => {
+        delete_selected()
+    })
+
+    tooltip_bar.add(edit_btn)
+    tooltip_bar.add(del_btn)
+;
+
+: show_edit_elem_dialog(win = cogito.Window, dialog_title = string) (( -- ))
+    if selected_elem < 3
+        <-
+    let idx = models.current()
+    let ei = selected_elem - 3
+    let dlg = cogito.dialog(dialog_title)
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+
+    let tf = cogito.textfield(models.get_elem_text(idx, ei))
+    .set_hexpand(true)
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Apply").set_class("suggested").on_click((b = cogito.Button) => {
+        models.set_elem_text(idx, ei, tf.text())
+        refresh()
+        dlg.close()
+    }))
+
+    box.add(tf)
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+-- ── Toolbar actions ──────────────────────────────────────────
+
+: show_add_text_dialog(win = cogito.Window) (( -- ))
+    let idx = models.current()
+    let dlg = cogito.dialog("Add Text Box")
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+
+    let tf = cogito.textfield("")
+    .set_hexpand(true)
+    .set_hint_text("Enter text...")
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Add").set_class("suggested").on_click((b = cogito.Button) => {
+        let offset = models.elem_count(idx) * 20
+        models.add_elem(idx, "text", tf.text(), 100 + offset, 280 + offset)
+        refresh()
+        dlg.close()
+    }))
+
+    box.add(tf)
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+: show_add_link_dialog(win = cogito.Window) (( -- ))
+    let idx = models.current()
+    let dlg = cogito.dialog("Add Link")
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+
+    let label_tf = cogito.textfield("")
+    .set_hexpand(true)
+    .set_hint_text("Link label")
+
+    let url_tf = cogito.textfield("")
+    .set_hexpand(true)
+    .set_hint_text("https://...")
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Add").set_class("suggested").on_click((b = cogito.Button) => {
+        let offset = models.elem_count(idx) * 20
+        let ?display = label_tf.text()
+        if len(display) == 0
+            display = url_tf.text()
+        models.add_elem(idx, "link", display, 100 + offset, 280 + offset)
+        refresh()
+        dlg.close()
+    }))
+
+    box.add(label_tf)
+    box.add(url_tf)
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+: show_add_image_dialog(win = cogito.Window) (( -- ))
+    let idx = models.current()
+    let dlg = cogito.dialog("Add Image")
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+
+    let tf = cogito.textfield("")
+    .set_hexpand(true)
+    .set_hint_text("Image label or filename")
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Add").set_class("suggested").on_click((b = cogito.Button) => {
+        let offset = models.elem_count(idx) * 20
+        let ?label = tf.text()
+        if len(label) == 0
+            label = "Image"
+        models.add_elem(idx, "image", label, 100 + offset, 250 + offset)
+        refresh()
+        dlg.close()
+    }))
+
+    box.add(tf)
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+: show_add_chart_dialog(win = cogito.Window) (( -- ))
+    let idx = models.current()
+    let dlg = cogito.dialog("Add Chart")
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+
+    let tf = cogito.textfield("")
+    .set_hexpand(true)
+    .set_hint_text("Chart title")
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Add").set_class("suggested").on_click((b = cogito.Button) => {
+        let offset = models.elem_count(idx) * 20
+        let ?label = tf.text()
+        if len(label) == 0
+            label = "Chart"
+        models.add_elem(idx, "chart", label, 100 + offset, 200 + offset)
+        refresh()
+        dlg.close()
+    }))
+
+    box.add(tf)
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+: show_add_comment_dialog(win = cogito.Window) (( -- ))
+    let idx = models.current()
+    let dlg = cogito.dialog("Add Comment")
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+
+    let tf = cogito.textfield("")
+    .set_hexpand(true)
+    .set_hint_text("Comment text...")
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Add").set_class("suggested").on_click((b = cogito.Button) => {
+        let offset = models.elem_count(idx) * 20
+        models.add_elem(idx, "comment", tf.text(), 100 + offset, 300 + offset)
+        refresh()
+        dlg.close()
+    }))
+
+    box.add(tf)
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+: delete_selected() (( -- ))
+    let idx = models.current()
+    if selected_elem == 1
+        models.set_title(idx, "")
+        title_lbl.set_text("")
+    elif selected_elem == 2
+        models.set_body(idx, "")
+        body_lbl.set_text("")
+    elif selected_elem >= 3
+        models.remove_elem(idx, selected_elem - 3)
+        refresh()
+    selected_elem = 0
+;

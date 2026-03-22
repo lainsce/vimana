@@ -966,6 +966,20 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
     n->font_weight_set = false;
     n->font_weight = 400;
   }
+  if (s.has_font_italic) {
+    n->font_italic = s.font_italic;
+    n->font_italic_set = true;
+  } else {
+    n->font_italic_set = false;
+    n->font_italic = false;
+  }
+  if (s.has_strikethrough) {
+    n->font_strikethrough = s.strikethrough;
+    n->font_strikethrough_set = true;
+  } else {
+    n->font_strikethrough_set = false;
+    n->font_strikethrough = false;
+  }
   if (s.has_letter_spacing) {
     n->letter_spacing = s.letter_spacing;
     n->letter_spacing_set = true;
@@ -1284,6 +1298,16 @@ static bool cogito_node_medium(const CogitoNode* n) {
     return w >= 500 && w < 600;
   }
   return false;
+}
+
+static bool cogito_node_italic(const CogitoNode* n) {
+  if (!n) return false;
+  return n->font_italic_set && n->font_italic;
+}
+
+static bool cogito_node_strikethrough(const CogitoNode* n) {
+  if (!n) return false;
+  return n->font_strikethrough_set && n->font_strikethrough;
 }
 
 static bool cogito_node_disabled(const CogitoNode* n) {

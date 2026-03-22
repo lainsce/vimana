@@ -188,6 +188,8 @@ bring stdr
 : __cogito_grid_set_align(child = any, halign = num, valign = num) (( -- )) { }
 : __cogito_grid_set_cols(grid = Grid, cols = num) (( -- )) { }
 : __cogito_grid_clear(grid = Grid) (( -- )) { }
+: __cogito_vstack_clear(vstack = VStack) (( -- )) { }
+: __cogito_hstack_clear(hstack = HStack) (( -- )) { }
 : __cogito_grid_set_gap(grid = Grid, x = num, y = num) (( -- )) { }
 : __cogito_grid_set_span(child = any, col_span = num, row_span = num) (( -- )) { }
 : __cogito_grid(cols = num) (( Grid )) { }
@@ -270,6 +272,8 @@ bring stdr
 : __cogito_canvas_line(ctx = any, x1 = num, y1 = num, x2 = num, y2 = num) (( -- )) { }
 : __cogito_canvas_rect(ctx = any, x = num, y = num, w = num, h = num) (( -- )) { }
 : __cogito_canvas_fill_rect(ctx = any, x = num, y = num, w = num, h = num) (( -- )) { }
+: __cogito_canvas_circle(ctx = any, cx = num, cy = num, r = num) (( -- )) { }
+: __cogito_canvas_fill_circle(ctx = any, cx = num, cy = num, r = num) (( -- )) { }
 : __cogito_shape(preset = num) (( Shape )) { }
 : __cogito_shape_set_preset(shape = Shape, preset = num) (( -- )) { }
 : __cogito_shape_get_preset(shape = Shape) (( num )) { }
@@ -321,8 +325,29 @@ bring stdr
 : __cogito_node_set_editable(node = any, on = bool) (( -- )) { }
 : __cogito_node_set_opacity(node = any, opacity = num) (( -- )) { }
 : __cogito_node_set_visible(node = any, on = bool) (( -- )) { }
+: __cogito_node_set_bg_color(node = any, color = string) (( -- )) { }
 : __cogito_node_get_visible(node = any) (( bool )) { }
 : __cogito_node_set_id(node = any, id = string) (( -- )) { }
+: __cogito_node_set_font_size(node = any, size = num) (( -- )) { }
+: __cogito_node_set_font_weight(node = any, weight = num) (( -- )) { }
+: __cogito_node_set_font_family(node = any, family = string) (( -- )) { }
+: __cogito_node_set_font_italic(node = any, italic = bool) (( -- )) { }
+: __cogito_node_set_strikethrough(node = any, on = bool) (( -- )) { }
+:: node_set_font_size(node = any, size = num) (( -- ))
+    __cogito_node_set_font_size(node, size)
+;
+:: node_set_font_family(node = any, family = string) (( -- ))
+    __cogito_node_set_font_family(node, family)
+;
+:: node_set_font_weight(node = any, weight = num) (( -- ))
+    __cogito_node_set_font_weight(node, weight)
+;
+:: node_set_font_italic(node = any, italic = bool) (( -- ))
+    __cogito_node_set_font_italic(node, italic)
+;
+:: node_set_strikethrough(node = any, on = bool) (( -- ))
+    __cogito_node_set_strikethrough(node, on)
+;
 : __cogito_node_set_tooltip(node = any, text = string) (( -- )) { }
 : __cogito_node_window(node = any) (( Window )) { }
 : __cogito_open_url(url = string) (( bool )) { }
@@ -1254,6 +1279,14 @@ pub ,: VStack : Component
         __cogito_container_set_size_request(this, w, h)
         <- this
     ;
+    :: clear(this) (( VStack ))
+        __cogito_vstack_clear(this)
+        <- this
+    ;
+    :: set_bg_color(this, color = string) (( VStack ))
+        __cogito_node_set_bg_color(this, color)
+        <- this
+    ;
 ;
 
 pub ,: Revealer : Component
@@ -1431,6 +1464,14 @@ pub ,: HStack : Component
         __cogito_node_set_id(this, id)
         <- this
     ;
+    :: clear(this) (( HStack ))
+        __cogito_hstack_clear(this)
+        <- this
+    ;
+    :: set_bg_color(this, color = string) (( HStack ))
+        __cogito_node_set_bg_color(this, color)
+        <- this
+    ;
 ;
 
 pub ,: Flow : Component
@@ -1563,6 +1604,10 @@ pub ,: ZStack : Component
 pub ,: Fixed : Component
     :: add(this, child = any) (( Fixed ))
         __cogito_container_add(this, child)
+        <- this
+    ;
+    :: clear(this) (( Fixed ))
+        __cogito_vstack_clear(this)
         <- this
     ;
     :: set_pos(this, child = any, x = num, y = num) (( Fixed ))
@@ -2083,6 +2128,26 @@ pub ,: Label : Component
     ;
     :: set_id(this, id = string) (( Label ))
         __cogito_node_set_id(this, id)
+        <- this
+    ;
+    :: set_font_size(this, size = num) (( Label ))
+        __cogito_node_set_font_size(this, size)
+        <- this
+    ;
+    :: set_font_weight(this, weight = num) (( Label ))
+        __cogito_node_set_font_weight(this, weight)
+        <- this
+    ;
+    :: set_font_family(this, family = string) (( Label ))
+        __cogito_node_set_font_family(this, family)
+        <- this
+    ;
+    :: set_font_italic(this, italic = bool) (( Label ))
+        __cogito_node_set_font_italic(this, italic)
+        <- this
+    ;
+    :: set_strikethrough(this, on = bool) (( Label ))
+        __cogito_node_set_strikethrough(this, on)
         <- this
     ;
 ;
@@ -5173,6 +5238,14 @@ pub ,: DrawingArea : Component
         __cogito_canvas_fill_rect(this, x, y, w, h)
         <- this
     ;
+    :: circle(this, cx = num, cy = num, r = num) (( DrawingArea ))
+        __cogito_canvas_circle(this, cx, cy, r)
+        <- this
+    ;
+    :: fill_circle(this, cx = num, cy = num, r = num) (( DrawingArea ))
+        __cogito_canvas_fill_circle(this, cx, cy, r)
+        <- this
+    ;
     :: set_margins(this, top = num, right = num, bottom = num, left = num) (( DrawingArea ))
         __cogito_container_set_margins(this, top, right, bottom, left)
         <- this
@@ -5253,6 +5326,14 @@ pub ,: Canvas
     ;
     :: fill_rect(this, x = num, y = num, w = num, h = num) (( Canvas ))
         __cogito_canvas_fill_rect(this, x, y, w, h)
+        <- this
+    ;
+    :: circle(this, cx = num, cy = num, r = num) (( Canvas ))
+        __cogito_canvas_circle(this, cx, cy, r)
+        <- this
+    ;
+    :: fill_circle(this, cx = num, cy = num, r = num) (( Canvas ))
+        __cogito_canvas_fill_circle(this, cx, cy, r)
         <- this
     ;
 ;

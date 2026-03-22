@@ -1,0 +1,653 @@
+cask models
+
+bring stdr
+
+-- ── Slide Data ───────────────────────────────────────────────
+
+def ?slide_titles = ["Title", "Overview", "Details", "Summary"]
+def ?slide_bodies = [
+    "Subtitle",
+    "Here is what we will cover",
+    "Let's dive into the details",
+    "Thank you for listening"
+]
+def ?slide_notes = [
+    "Greet the audience warmly",
+    "Give a brief roadmap",
+    "Explain each point carefully",
+    "Open the floor for questions"
+]
+def ?slide_colors = ["#FFFFFF", "#F4F0FA", "#EDE8FF", "#FFFFFF"]
+
+-- Element positions per slide
+def ?title_xs = [175, 175, 175, 175]
+def ?title_ys = [100, 100, 100, 100]
+def ?title_ws = [300, 300, 300, 300]
+def ?title_hs = [50, 50, 50, 50]
+def ?body_xs = [175, 135, 135, 135]
+def ?body_ys = [200, 200, 200, 200]
+def ?body_ws = [400, 400, 400, 400]
+def ?body_hs = [40, 40, 40, 40]
+
+-- Font properties per slide (title, body)
+def ?title_fonts = ["Inter", "Inter", "Inter", "Inter"]
+def ?title_sizes = [36, 36, 36, 36]
+def ?title_bolds = [true, false, false, false]
+def ?title_italics = [false, false, false, false]
+def ?title_strikethroughs = [false, false, false, false]
+def ?body_fonts = ["Inter", "Inter", "Inter", "Inter"]
+def ?body_sizes = [18, 18, 18, 18]
+def ?body_bolds = [false, false, false, false]
+def ?body_italics = [false, false, false, false]
+def ?body_strikethroughs = [false, false, false, false]
+
+-- Extra elements per slide (arrays of arrays)
+def ?slide_elem_types = [[], [], [], []]
+def ?slide_elem_texts = [[], [], [], []]
+def ?slide_elem_xs = [[], [], [], []]
+def ?slide_elem_ys = [[], [], [], []]
+def ?slide_elem_ws = [[], [], [], []]
+def ?slide_elem_hs = [[], [], [], []]
+def ?slide_elem_fonts = [[], [], [], []]
+def ?slide_elem_sizes = [[], [], [], []]
+def ?slide_elem_bolds = [[], [], [], []]
+def ?slide_elem_italics = [[], [], [], []]
+def ?slide_elem_strikethroughs = [[], [], [], []]
+
+def ?slide_count = 4
+def ?current_idx = 0
+def ?slideshow_name = "Slideshow"
+
+-- ── State accessors ──────────────────────────────────────────
+
+:: count() (( num ))
+    <- slide_count
+;
+
+:: current() (( num ))
+    <- current_idx
+;
+
+:: name() (( string ))
+    <- slideshow_name
+;
+
+-- ── Content accessors ────────────────────────────────────────
+
+:: get_title(idx = num) (( string ))
+    if idx < 0 || idx >= slide_count
+        <- ""
+    <- str(slide_titles[idx])
+;
+
+:: get_body(idx = num) (( string ))
+    if idx < 0 || idx >= slide_count
+        <- ""
+    <- str(slide_bodies[idx])
+;
+
+:: get_notes(idx = num) (( string ))
+    if idx < 0 || idx >= slide_count
+        <- ""
+    <- str(slide_notes[idx])
+;
+
+:: get_color(idx = num) (( string ))
+    if idx < 0 || idx >= slide_count
+        <- "#FFFFFF"
+    <- str(slide_colors[idx])
+;
+
+-- ── Position accessors ───────────────────────────────────────
+
+:: get_title_x(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 175
+    <- num(title_xs[idx])
+;
+
+:: get_title_y(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 100
+    <- num(title_ys[idx])
+;
+
+:: get_body_x(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 135
+    <- num(body_xs[idx])
+;
+
+:: get_body_y(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 200
+    <- num(body_ys[idx])
+;
+
+-- ── Dimension accessors ──────────────────────────────────────
+
+:: get_title_w(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 300
+    <- num(title_ws[idx])
+;
+
+:: get_title_h(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 50
+    <- num(title_hs[idx])
+;
+
+:: get_body_w(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 400
+    <- num(body_ws[idx])
+;
+
+:: get_body_h(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 40
+    <- num(body_hs[idx])
+;
+
+-- ── Font accessors ───────────────────────────────────────────
+
+:: get_title_font(idx = num) (( string ))
+    if idx < 0 || idx >= slide_count
+        <- "Inter"
+    <- str(title_fonts[idx])
+;
+
+:: get_title_size(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 36
+    <- num(title_sizes[idx])
+;
+
+:: get_body_font(idx = num) (( string ))
+    if idx < 0 || idx >= slide_count
+        <- "Inter"
+    <- str(body_fonts[idx])
+;
+
+:: get_body_size(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 18
+    <- num(body_sizes[idx])
+;
+
+:: get_title_bold(idx = num) (( bool ))
+    if idx < 0 || idx >= slide_count
+        <- false
+    if title_bolds[idx]
+        <- true
+    <- false
+;
+
+:: get_body_bold(idx = num) (( bool ))
+    if idx < 0 || idx >= slide_count
+        <- false
+    if body_bolds[idx]
+        <- true
+    <- false
+;
+
+:: get_title_italic(idx = num) (( bool ))
+    if idx < 0 || idx >= slide_count
+        <- false
+    if title_italics[idx]
+        <- true
+    <- false
+;
+
+:: get_body_italic(idx = num) (( bool ))
+    if idx < 0 || idx >= slide_count
+        <- false
+    if body_italics[idx]
+        <- true
+    <- false
+;
+
+:: get_title_strikethrough(idx = num) (( bool ))
+    if idx < 0 || idx >= slide_count
+        <- false
+    if title_strikethroughs[idx]
+        <- true
+    <- false
+;
+
+:: get_body_strikethrough(idx = num) (( bool ))
+    if idx < 0 || idx >= slide_count
+        <- false
+    if body_strikethroughs[idx]
+        <- true
+    <- false
+;
+
+-- ── Content mutators ─────────────────────────────────────────
+
+:: set_title(idx = num, text = string) (( -- ))
+    if idx >= 0 && idx < slide_count
+        slide_titles[idx] = text
+;
+
+:: set_body(idx = num, text = string) (( -- ))
+    if idx >= 0 && idx < slide_count
+        slide_bodies[idx] = text
+;
+
+:: set_notes(idx = num, text = string) (( -- ))
+    if idx >= 0 && idx < slide_count
+        slide_notes[idx] = text
+;
+
+:: set_color(idx = num, color = string) (( -- ))
+    if idx >= 0 && idx < slide_count
+        slide_colors[idx] = color
+;
+
+-- ── Position mutators ────────────────────────────────────────
+
+:: set_title_pos(idx = num, x = num, y = num) (( -- ))
+    if idx >= 0 && idx < slide_count
+        title_xs[idx] = x
+        title_ys[idx] = y
+;
+
+:: set_body_pos(idx = num, x = num, y = num) (( -- ))
+    if idx >= 0 && idx < slide_count
+        body_xs[idx] = x
+        body_ys[idx] = y
+;
+
+:: set_title_wh(idx = num, w = num, h = num) (( -- ))
+    if idx >= 0 && idx < slide_count
+        title_ws[idx] = w
+        title_hs[idx] = h
+;
+
+:: set_body_wh(idx = num, w = num, h = num) (( -- ))
+    if idx >= 0 && idx < slide_count
+        body_ws[idx] = w
+        body_hs[idx] = h
+;
+
+:: set_title_font(idx = num, font = string) (( -- ))
+    if idx >= 0 && idx < slide_count
+        title_fonts[idx] = font
+;
+
+:: set_title_size(idx = num, size = num) (( -- ))
+    if idx >= 0 && idx < slide_count
+        title_sizes[idx] = size
+;
+
+:: set_body_font(idx = num, font = string) (( -- ))
+    if idx >= 0 && idx < slide_count
+        body_fonts[idx] = font
+;
+
+:: set_body_size(idx = num, size = num) (( -- ))
+    if idx >= 0 && idx < slide_count
+        body_sizes[idx] = size
+;
+
+:: set_title_bold(idx = num, bold = bool) (( -- ))
+    if idx >= 0 && idx < slide_count
+        title_bolds[idx] = bold
+;
+
+:: set_body_bold(idx = num, bold = bool) (( -- ))
+    if idx >= 0 && idx < slide_count
+        body_bolds[idx] = bold
+;
+
+:: set_title_italic(idx = num, italic = bool) (( -- ))
+    if idx >= 0 && idx < slide_count
+        title_italics[idx] = italic
+;
+
+:: set_body_italic(idx = num, italic = bool) (( -- ))
+    if idx >= 0 && idx < slide_count
+        body_italics[idx] = italic
+;
+
+:: set_title_strikethrough(idx = num, st = bool) (( -- ))
+    if idx >= 0 && idx < slide_count
+        title_strikethroughs[idx] = st
+;
+
+:: set_body_strikethrough(idx = num, st = bool) (( -- ))
+    if idx >= 0 && idx < slide_count
+        body_strikethroughs[idx] = st
+;
+
+-- ── Extra element accessors ──────────────────────────────────
+
+:: elem_count(idx = num) (( num ))
+    if idx < 0 || idx >= slide_count
+        <- 0
+    <- len(slide_elem_types[idx])
+;
+
+:: get_elem_type(slide = num, elem = num) (( string ))
+    <- str(slide_elem_types[slide][elem])
+;
+
+:: get_elem_text(slide = num, elem = num) (( string ))
+    <- str(slide_elem_texts[slide][elem])
+;
+
+:: get_elem_x(slide = num, elem = num) (( num ))
+    <- num(slide_elem_xs[slide][elem])
+;
+
+:: get_elem_y(slide = num, elem = num) (( num ))
+    <- num(slide_elem_ys[slide][elem])
+;
+
+:: get_elem_w(slide = num, elem = num) (( num ))
+    <- num(slide_elem_ws[slide][elem])
+;
+
+:: get_elem_h(slide = num, elem = num) (( num ))
+    <- num(slide_elem_hs[slide][elem])
+;
+
+:: get_elem_font(slide = num, elem = num) (( string ))
+    <- str(slide_elem_fonts[slide][elem])
+;
+
+:: get_elem_size(slide = num, elem = num) (( num ))
+    <- num(slide_elem_sizes[slide][elem])
+;
+
+:: get_elem_bold(slide = num, elem = num) (( bool ))
+    if slide_elem_bolds[slide][elem]
+        <- true
+    <- false
+;
+
+:: get_elem_italic(slide = num, elem = num) (( bool ))
+    if slide_elem_italics[slide][elem]
+        <- true
+    <- false
+;
+
+:: get_elem_strikethrough(slide = num, elem = num) (( bool ))
+    if slide_elem_strikethroughs[slide][elem]
+        <- true
+    <- false
+;
+
+-- ── Extra element mutators ───────────────────────────────────
+
+:: add_elem(slide = num, etype = string, text = string, x = num, y = num) (( -- ))
+    if slide < 0 || slide >= slide_count
+        <-
+    stdr.push(slide_elem_types[slide], etype)
+    stdr.push(slide_elem_texts[slide], text)
+    stdr.push(slide_elem_xs[slide], x)
+    stdr.push(slide_elem_ys[slide], y)
+    let ?dw = 300
+    let ?dh = 40
+    if etype == "link"
+        dw = 200
+        dh = 30
+    if etype == "image"
+        dw = 200
+        dh = 150
+    if etype == "chart"
+        dw = 300
+        dh = 200
+    if etype == "comment"
+        dw = 250
+        dh = 60
+    stdr.push(slide_elem_ws[slide], dw)
+    stdr.push(slide_elem_hs[slide], dh)
+    stdr.push(slide_elem_fonts[slide], "Inter")
+    stdr.push(slide_elem_sizes[slide], 16)
+    stdr.push(slide_elem_bolds[slide], false)
+    stdr.push(slide_elem_italics[slide], false)
+    stdr.push(slide_elem_strikethroughs[slide], false)
+;
+
+:: set_elem_text(slide = num, elem = num, text = string) (( -- ))
+    slide_elem_texts[slide][elem] = text
+;
+
+:: set_elem_pos(slide = num, elem = num, x = num, y = num) (( -- ))
+    slide_elem_xs[slide][elem] = x
+    slide_elem_ys[slide][elem] = y
+;
+
+:: set_elem_wh(slide = num, elem = num, w = num, h = num) (( -- ))
+    slide_elem_ws[slide][elem] = w
+    slide_elem_hs[slide][elem] = h
+;
+
+:: set_elem_font(slide = num, elem = num, font = string) (( -- ))
+    slide_elem_fonts[slide][elem] = font
+;
+
+:: set_elem_size(slide = num, elem = num, size = num) (( -- ))
+    slide_elem_sizes[slide][elem] = size
+;
+
+:: set_elem_bold(slide = num, elem = num, bold = bool) (( -- ))
+    slide_elem_bolds[slide][elem] = bold
+;
+
+:: set_elem_italic(slide = num, elem = num, italic = bool) (( -- ))
+    slide_elem_italics[slide][elem] = italic
+;
+
+:: set_elem_strikethrough(slide = num, elem = num, st = bool) (( -- ))
+    slide_elem_strikethroughs[slide][elem] = st
+;
+
+:: remove_elem(slide = num, elem = num) (( -- ))
+    let ?new_types = []
+    let ?new_texts = []
+    let ?new_xs = []
+    let ?new_ys = []
+    let ?new_ws = []
+    let ?new_hs = []
+    let ?new_fonts = []
+    let ?new_sizes = []
+    let ?new_bolds = []
+    let ?new_italics = []
+    let ?new_strikethroughs = []
+    let count = len(slide_elem_types[slide])
+    for (let ?i = 0; i < count; i += 1)
+        if i != elem
+            stdr.push(new_types, slide_elem_types[slide][i])
+            stdr.push(new_texts, slide_elem_texts[slide][i])
+            stdr.push(new_xs, slide_elem_xs[slide][i])
+            stdr.push(new_ys, slide_elem_ys[slide][i])
+            stdr.push(new_ws, slide_elem_ws[slide][i])
+            stdr.push(new_hs, slide_elem_hs[slide][i])
+            stdr.push(new_fonts, slide_elem_fonts[slide][i])
+            stdr.push(new_sizes, slide_elem_sizes[slide][i])
+            stdr.push(new_bolds, slide_elem_bolds[slide][i])
+            stdr.push(new_italics, slide_elem_italics[slide][i])
+            stdr.push(new_strikethroughs, slide_elem_strikethroughs[slide][i])
+    slide_elem_types[slide] = new_types
+    slide_elem_texts[slide] = new_texts
+    slide_elem_xs[slide] = new_xs
+    slide_elem_ys[slide] = new_ys
+    slide_elem_ws[slide] = new_ws
+    slide_elem_hs[slide] = new_hs
+    slide_elem_fonts[slide] = new_fonts
+    slide_elem_sizes[slide] = new_sizes
+    slide_elem_bolds[slide] = new_bolds
+    slide_elem_italics[slide] = new_italics
+    slide_elem_strikethroughs[slide] = new_strikethroughs
+;
+
+-- ── Slide management ─────────────────────────────────────────
+
+:: add_slide() (( num ))
+    let new_idx = slide_count
+    stdr.push(slide_titles, "New Slide")
+    stdr.push(slide_bodies, "")
+    stdr.push(slide_notes, "")
+    stdr.push(slide_colors, "#FFFFFF")
+    stdr.push(title_xs, 175)
+    stdr.push(title_ys, 100)
+    stdr.push(title_ws, 300)
+    stdr.push(title_hs, 50)
+    stdr.push(body_xs, 135)
+    stdr.push(body_ys, 200)
+    stdr.push(body_ws, 400)
+    stdr.push(body_hs, 40)
+    stdr.push(slide_elem_types, [])
+    stdr.push(slide_elem_texts, [])
+    stdr.push(slide_elem_xs, [])
+    stdr.push(slide_elem_ys, [])
+    stdr.push(slide_elem_ws, [])
+    stdr.push(slide_elem_hs, [])
+    stdr.push(slide_elem_fonts, [])
+    stdr.push(slide_elem_sizes, [])
+    stdr.push(slide_elem_bolds, [])
+    stdr.push(slide_elem_italics, [])
+    stdr.push(slide_elem_strikethroughs, [])
+    stdr.push(title_fonts, "Inter")
+    stdr.push(title_sizes, 36)
+    stdr.push(title_bolds, false)
+    stdr.push(title_italics, false)
+    stdr.push(title_strikethroughs, false)
+    stdr.push(body_fonts, "Inter")
+    stdr.push(body_sizes, 18)
+    stdr.push(body_bolds, false)
+    stdr.push(body_italics, false)
+    stdr.push(body_strikethroughs, false)
+    slide_count = slide_count + 1
+    <- new_idx
+;
+
+:: remove_slide(idx = num) (( -- ))
+    if slide_count <= 1
+        <-
+    if idx < 0 || idx >= slide_count
+        <-
+    let ?new_titles = []
+    let ?new_bodies = []
+    let ?new_notes = []
+    let ?new_colors = []
+    let ?new_tx = []
+    let ?new_ty = []
+    let ?new_tw = []
+    let ?new_th = []
+    let ?new_bx = []
+    let ?new_by = []
+    let ?new_bw = []
+    let ?new_bh = []
+    let ?new_et = []
+    let ?new_ex = []
+    let ?new_ey = []
+    let ?new_ew = []
+    let ?new_eh = []
+    let ?new_etext = []
+    let ?new_ef = []
+    let ?new_es = []
+    let ?new_tf = []
+    let ?new_ts = []
+    let ?new_tb = []
+    let ?new_ti = []
+    let ?new_tst = []
+    let ?new_bf = []
+    let ?new_bs = []
+    let ?new_bb = []
+    let ?new_bi = []
+    let ?new_bst = []
+    let ?new_eb = []
+    let ?new_ei = []
+    let ?new_est = []
+    for (let ?i = 0; i < slide_count; i += 1)
+        if i != idx
+            stdr.push(new_titles, slide_titles[i])
+            stdr.push(new_bodies, slide_bodies[i])
+            stdr.push(new_notes, slide_notes[i])
+            stdr.push(new_colors, slide_colors[i])
+            stdr.push(new_tx, title_xs[i])
+            stdr.push(new_ty, title_ys[i])
+            stdr.push(new_tw, title_ws[i])
+            stdr.push(new_th, title_hs[i])
+            stdr.push(new_bx, body_xs[i])
+            stdr.push(new_by, body_ys[i])
+            stdr.push(new_bw, body_ws[i])
+            stdr.push(new_bh, body_hs[i])
+            stdr.push(new_et, slide_elem_types[i])
+            stdr.push(new_etext, slide_elem_texts[i])
+            stdr.push(new_ex, slide_elem_xs[i])
+            stdr.push(new_ey, slide_elem_ys[i])
+            stdr.push(new_ew, slide_elem_ws[i])
+            stdr.push(new_eh, slide_elem_hs[i])
+            stdr.push(new_ef, slide_elem_fonts[i])
+            stdr.push(new_es, slide_elem_sizes[i])
+            stdr.push(new_eb, slide_elem_bolds[i])
+            stdr.push(new_ei, slide_elem_italics[i])
+            stdr.push(new_est, slide_elem_strikethroughs[i])
+            stdr.push(new_tf, title_fonts[i])
+            stdr.push(new_ts, title_sizes[i])
+            stdr.push(new_tb, title_bolds[i])
+            stdr.push(new_ti, title_italics[i])
+            stdr.push(new_tst, title_strikethroughs[i])
+            stdr.push(new_bf, body_fonts[i])
+            stdr.push(new_bs, body_sizes[i])
+            stdr.push(new_bb, body_bolds[i])
+            stdr.push(new_bi, body_italics[i])
+            stdr.push(new_bst, body_strikethroughs[i])
+    slide_titles = new_titles
+    slide_bodies = new_bodies
+    slide_notes = new_notes
+    slide_colors = new_colors
+    title_xs = new_tx
+    title_ys = new_ty
+    title_ws = new_tw
+    title_hs = new_th
+    body_xs = new_bx
+    body_ys = new_by
+    body_ws = new_bw
+    body_hs = new_bh
+    slide_elem_types = new_et
+    slide_elem_texts = new_etext
+    slide_elem_xs = new_ex
+    slide_elem_ys = new_ey
+    slide_elem_ws = new_ew
+    slide_elem_hs = new_eh
+    slide_elem_fonts = new_ef
+    slide_elem_sizes = new_es
+    slide_elem_bolds = new_eb
+    slide_elem_italics = new_ei
+    slide_elem_strikethroughs = new_est
+    title_fonts = new_tf
+    title_sizes = new_ts
+    title_bolds = new_tb
+    title_italics = new_ti
+    title_strikethroughs = new_tst
+    body_fonts = new_bf
+    body_sizes = new_bs
+    body_bolds = new_bb
+    body_italics = new_bi
+    body_strikethroughs = new_bst
+    slide_count = slide_count - 1
+    if current_idx >= slide_count
+        current_idx = slide_count - 1
+;
+
+:: select_slide(idx = num) (( -- ))
+    if idx >= 0 && idx < slide_count
+        current_idx = idx
+;
+
+:: next_slide() (( -- ))
+    if current_idx < slide_count - 1
+        current_idx = current_idx + 1
+;
+
+:: prev_slide() (( -- ))
+    if current_idx > 0
+        current_idx = current_idx - 1
+;

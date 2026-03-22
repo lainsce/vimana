@@ -466,6 +466,8 @@ void cogito_node_set_opacity(cogito_node *node, float opacity);
 void cogito_node_set_visible(cogito_node *node, bool on);
 void cogito_node_set_font_size(cogito_node *node, int size);
 void cogito_node_set_font_weight(cogito_node *node, int weight);
+void cogito_node_set_font_italic(cogito_node *node, bool italic);
+void cogito_node_set_strikethrough(cogito_node *node, bool on);
 void cogito_node_set_font_family(cogito_node *node, const char *family);
 void cogito_node_set_shadow(cogito_node *node, int level);
 void cogito_node_set_border_width(cogito_node *node, int width);
@@ -788,6 +790,9 @@ void cogito_content_list_set_visible_dividers(cogito_node *list, bool on);
 void cogito_content_list_on_select(cogito_node *list, cogito_index_fn fn, void *user);
 void cogito_content_list_on_activate(cogito_node *list, cogito_index_fn fn, void *user);
 void cogito_grid_clear(cogito_node *grid);
+void cogito_vstack_clear(cogito_node *vstack);
+void cogito_hstack_clear(cogito_node *hstack);
+void cogito_node_set_bg_color(cogito_node *node, const char *hex);
 void cogito_grid_on_select(cogito_node *grid, cogito_index_fn fn, void *user);
 void cogito_grid_on_activate(cogito_node *grid, cogito_index_fn fn, void *user);
 

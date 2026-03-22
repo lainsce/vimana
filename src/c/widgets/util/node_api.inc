@@ -519,6 +519,31 @@ static void cogito_node_set_tooltip_val(YisVal nodev, YisVal textv) {
   }
 }
 
+static void cogito_node_set_bg_color(YisVal nodev, YisVal colorv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_set_bg_color expects node");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  if (colorv.tag == EVT_NULL) {
+    n->bg_set = false;
+    cogito_window_relayout(cogito_node_window(n));
+    return;
+  }
+  YisStr* s = NULL;
+  bool temp = false;
+  if (colorv.tag == EVT_STR) {
+    s = (YisStr*)colorv.as.p;
+  } else {
+    s = stdr_to_string(colorv);
+    temp = true;
+  }
+  CogitoColor c = {0};
+  if (s && s->data && cogito_hex_to_color(s->data, &c)) {
+    n->bg = c;
+    n->bg_set = true;
+  }
+  if (temp && s) yis_release_val(YV_STR(s));
+  cogito_window_relayout(cogito_node_window(n));
+}
+
 static void cogito_build(YisVal nodev, YisVal builder) {
   if (builder.tag != EVT_FN) yis_trap("cogito.build expects function");
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.build expects object");

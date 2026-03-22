@@ -1,0 +1,240 @@
+@diagnostics: warn
+
+; ── Base transparent backgrounds ──────────────────────────────
+
+hstack
+grid
+fixed
+zstack
+scroller
+content-list
+  background: transparent
+
+; ── DrawingArea overlay ───────────────────────────────────────
+
+drawing_area.slide-canvas-overlay
+  background: transparent
+
+; ── Slide panel (left sidebar) ────────────────────────────────
+
+vstack.slide-panel
+  min-width: 250
+  max-width: 250
+  background: #EFEDF7
+
+vstack.slide-editor
+  background: transparent
+
+@when dark
+  vstack.slide-panel
+    background: #2A2640
+
+; ── Thumbnail cards in content list ──────────────────────────
+
+zstack.slide-thumb-card
+  min-height: 100
+  max-height: 100
+  min-width: 154
+  max-width: 154
+  border-radius: 12
+  background: #FFFFFF
+  border: 1 solid #E0DCF0
+
+@when dark
+  zstack.slide-thumb-card
+    background: #2A2640
+    border: 1 solid #3A3650
+
+label.slide-thumb-title
+  font-size: 12
+  font-weight: 600
+
+label.slide-thumb-body
+  font-size: 10
+  opacity: 0.6
+
+button.slide-remove-btn
+  background: #333333
+  color: #FFFFFF
+  border-radius: 99
+  min-width: 24
+  max-width: 24
+  min-height: 24
+  max-height: 24
+
+@when dark
+  button.slide-remove-btn
+    background: #CCCCCC
+    color: #222222
+
+; ── Add slide button ─────────────────────────────────────────
+
+button.slide-add-btn
+  min-height: 100
+  max-height: 100
+  min-width: 154
+  max-width: 154
+  border-radius: 12
+  border: 2 dashed #B0A4D8
+  background: transparent
+  color: #7C5CFC
+  font-size: 24
+
+@when dark
+  button.slide-add-btn
+    border: 2 dashed #6B5FA0
+    color: #B0A4D8
+
+; ── Toolbar ───────────────────────────────────────────────────
+
+toolbar.slide-toolbar
+  background: transparent
+  border: 0
+  border-radius: 0
+  min-height: 80
+  max-height: 80
+  min-width: 817
+  max-width: 817
+
+@when dark
+  toolbar.slide-toolbar
+    background: #2A2640
+
+; ── Canvas ────────────────────────────────────────────────────
+
+vstack.slide-canvas
+  background: #FFFFFF
+  border-radius: 16
+  border: 1 solid #E0DCF0
+  min-height: 426
+  max-height: 426
+  min-width: 817
+  max-width: 817
+
+@when dark
+  vstack.slide-canvas
+    background: #1E1B2E
+    border: 1 solid #3A3650
+
+; ── Slide text elements ──────────────────────────────────────
+
+label.slide-title-text
+  font-size: 36
+  font-variation: wdth 120, opsz 18
+  font-weight: 700
+
+label.slide-body-text
+  font-size: 18
+  opacity: 0.8
+
+; ── Extra element styles ─────────────────────────────────────
+
+label.slide-text-elem
+  font-size: 16
+
+label.slide-link-text
+  font-size: 16
+  color: #3366CC
+
+@when dark
+  label.slide-link-text
+    color: #6699FF
+
+label.slide-image-text
+  font-size: 14
+  color: #666666
+  font-weight: 500
+
+@when dark
+  label.slide-image-text
+    color: #AAAAAA
+
+label.slide-chart-text
+  font-size: 14
+  color: #336633
+  font-weight: 500
+
+@when dark
+  label.slide-chart-text
+    color: #88BB88
+
+label.slide-comment-text
+  font-size: 14
+  color: #886600
+  font-weight: 500
+
+@when dark
+  label.slide-comment-text
+    color: #CCAA44
+
+; ── Selection tooltip ─────────────────────────────────────────
+
+hstack.slide-tooltip
+  background: #333333
+  border-radius: 12
+
+@when dark
+  hstack.slide-tooltip
+    background: #1A1A2E
+
+dropdown.slide-tooltip-dd
+  background: #444444
+  color: #FFFFFF
+  border-radius: 8
+
+@when dark
+  dropdown.slide-tooltip-dd
+    background: #2A2650
+    color: #FFFFFF
+
+button.slide-tooltip-btn
+  background: #444444
+  color: #FFFFFF
+  border-radius: 8
+  font-size: 13
+
+@when dark
+  button.slide-tooltip-btn
+    background: #2A2650
+    color: #FFFFFF
+
+button.slide-tooltip-del
+  background: #CC3333
+  color: #FFFFFF
+  border-radius: 8
+  font-size: 13
+
+; ── Speaker notes ─────────────────────────────────────────────
+
+label.slide-notes-label
+  font-size: 16
+  font-weight: 500
+  opacity: 0.66
+
+textfield.slide-notes
+  border-radius: 8
+  min-height: 56
+  min-width: 700
+  max-width: 700
+
+; ── Presenter view ────────────────────────────────────────────
+
+label.presenter-slide-title
+  font-size: 42
+  font-variation: wdth 125, opsz 20
+  font-weight: 700
+
+label.presenter-notes-label
+  font-size: 14
+  font-weight: 600
+  opacity: 0.5
+
+label.presenter-counter
+  font-size: 14
+  font-weight: 500
+  opacity: 0.6
+
+; ── AppBar ────────────────────────────────────────────────────
+
+appbar.slides-bar
+  background: transparent
