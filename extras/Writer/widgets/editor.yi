@@ -11,6 +11,22 @@ def ?current_doc_idx = -1
 def ?pending_sel_a = -1
 def ?pending_sel_b = -1
 
+: spacing_value(v = any) (( num ))
+    let s = str(v)
+    if s == "1" || s == "1.0"
+        <- 1.0
+    if s == "1.2"
+        <- 1.2
+    if s == "1.5"
+        <- 1.5
+    if s == "2" || s == "2.0"
+        <- 2.0
+    let n = stdr.num(v)
+    if n > 0
+        <- n
+    <- 1.0
+;
+
 :: apply_current_style() (( -- ))
     if current_tv != null
         let ?a = cogito.textview_get_sel_start(current_tv)
@@ -97,7 +113,7 @@ def ?pending_sel_b = -1
         let ?best_si = 0
         let ?best_diff = 9999.0
         for (let ?si = 0; si < len(sp_opts); si += 1)
-            let diff = num(sp_opts[si]) - plh
+            let diff = spacing_value(sp_opts[si]) - plh
             if diff < 0
                 diff = 0 - diff
             if diff < best_diff
@@ -119,7 +135,7 @@ def ?pending_sel_b = -1
     cogito.node_set_strikethrough(tv, models.get_is_strikethrough())
     cogito.node_set_text_align(tv, models.get_alignment_idx())
     let sp_opts = models.get_spacing_options()
-    cogito.node_set_line_height(tv, num(sp_opts[models.get_spacing_idx()]))
+    cogito.node_set_line_height(tv, spacing_value(sp_opts[models.get_spacing_idx()]))
     let colors = models.get_palette_colors()
     cogito.node_set_text_color(tv, str(colors[models.get_text_color_idx()]))
 ;
@@ -154,7 +170,7 @@ def ?pending_sel_b = -1
     let sp_opts = models.get_spacing_options()
     for (let ?i = first_pi; i <= last_pi; i += 1)
         cogito.textview_set_para_align(tv, i, models.get_alignment_idx())
-        cogito.textview_set_para_line_height(tv, i, num(sp_opts[models.get_spacing_idx()]))
+        cogito.textview_set_para_line_height(tv, i, spacing_value(sp_opts[models.get_spacing_idx()]))
 ;
 
 : capture_spans(tv = any, doc_idx = num) (( -- ))
@@ -242,7 +258,7 @@ def ?pending_sel_b = -1
     for (let ?pi = 0; pi < len(pps); pi += 1)
         let pp = pps[pi]
         cogito.textview_set_para_align(tv, pi, num(pp["align"] ?? 0))
-        let sp = num(pp["spacing"] ?? 0)
+        let sp = spacing_value(pp["spacing"] ?? 0)
         if sp > 0
             cogito.textview_set_para_line_height(tv, pi, sp)
 ;

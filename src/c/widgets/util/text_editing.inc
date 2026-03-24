@@ -93,7 +93,7 @@ static bool cogito_textview_move_caret_v(CogitoNode* n, int dir) {
       }
       int w = cogito_text_width_size_n_node(n, t + idx, i - idx + 1, size);
       if (c == ' ') last_space = i;
-      if (w > max_w) {
+      if (w > max_w && i > idx) {
         if (last_space >= idx) {
           line_len = last_space - idx;
           idx = last_space + 1;
@@ -141,7 +141,7 @@ static bool cogito_textview_move_caret_v(CogitoNode* n, int dir) {
             }
             int w = cogito_text_width_size_n_node(n, t + next_start, i - next_start + 1, size);
             if (c == ' ') next_last_space = i;
-            if (w > max_w) {
+            if (w > max_w && i > next_start) {
               if (next_last_space >= next_start) {
                 next_len = next_last_space - next_start;
               } else {
