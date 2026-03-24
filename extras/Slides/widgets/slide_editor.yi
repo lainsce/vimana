@@ -19,6 +19,7 @@ def canvas_da = cogito.drawing_area()
 def title_lbl = cogito.label("")
 def body_lbl = cogito.label("")
 def notes_field = cogito.textfield("")
+def ?host_win = 0
 
 -- Extra element labels (rebuilt on refresh)
 def ?extra_labels = []
@@ -44,14 +45,21 @@ def ?resize_orig_h = 0
 def ?resize_start_x = 0
 def ?resize_start_y = 0
 
+def ?click_edit_candidate = 0
+def ?click_start_x = 0
+def ?click_start_y = 0
+
 -- Selection tooltip (floats above canvas DA)
 def tooltip_fixed = cogito.fixed()
 def tooltip_bar = cogito.hstack()
 
 :: build_editor(
     editor = cogito.VStack,
+    win = cogito.Window,
     on_notes_change = any
 ) (( -- ))
+    host_win = win
+
     editor
     .set_class("slide-editor")
     .set_gap(8)
@@ -130,6 +138,9 @@ def tooltip_bar = cogito.hstack()
     .on_release((da = cogito.DrawingArea) => {
         is_dragging = false
         is_resizing = false
+        if click_edit_candidate > 0 && selected_elem == click_edit_candidate
+            edit_selected_from_canvas()
+        click_edit_candidate = 0
         da.clear()
     })
     .on_draw((da = cogito.DrawingArea, w = any, h = any) => {
@@ -237,15 +248,17 @@ def tooltip_bar = cogito.hstack()
     for (let ?i = 0; i < ecount; i += 1)
         let etype = models.get_elem_type(idx, i)
         let text = models.get_elem_text(idx, i)
-        let lbl = build_elem_label(etype, text)
-        lbl.set_font_family(models.get_elem_font(idx, i))
-        lbl.set_font_size(models.get_elem_size(idx, i))
-        if models.get_elem_bold(idx, i)
-            lbl.set_font_weight(700)
-        else
-            lbl.set_font_weight(400)
-        lbl.set_font_italic(models.get_elem_italic(idx, i))
-        lbl.set_strikethrough(models.get_elem_strikethrough(idx, i))
+        let meta = models.get_elem_meta(idx, i)
+        let lbl = build_elem_label(etype, text, meta)
+        if etype != "image"
+            lbl.set_font_family(models.get_elem_font(idx, i))
+            lbl.set_font_size(models.get_elem_size(idx, i))
+            if models.get_elem_bold(idx, i)
+                lbl.set_font_weight(700)
+            else
+                lbl.set_font_weight(400)
+            lbl.set_font_italic(models.get_elem_italic(idx, i))
+            lbl.set_strikethrough(models.get_elem_strikethrough(idx, i))
         canvas_fixed.add(lbl)
         canvas_fixed.set_pos(lbl, models.get_elem_x(idx, i), models.get_elem_y(idx, i))
         stdr.push(extra_labels, lbl)
@@ -259,13 +272,264 @@ def tooltip_bar = cogito.hstack()
 
 -- ── Element helpers ──────────────────────────────────────────
 
-: build_elem_label(etype = string, text = string) (( cogito.Label ))
+: normalize_url(url = string) (( string ))
+    let ?u = stdr.trim(url)
+    if len(u) == 0
+        <- ""
+    if stdr.starts_with(u, "http://") || stdr.starts_with(u, "https://")
+        <- u
+    <- "https://$$u$$"
+;
+
+: chart_type_from_meta(meta = string) (( string ))
+    let sep = stdr.index_of(meta, "|")
+    if sep < 0
+        <- "Bar"
+    let out = stdr.trim(stdr.slice(meta, 0, sep))
+    if len(out) == 0
+        <- "Bar"
+    <- out
+;
+
+: chart_values_from_meta(meta = string) (( string ))
+    let sep = stdr.index_of(meta, "|")
+    if sep < 0
+        <- "10,20,30"
+    let out = stdr.trim(stdr.slice(meta, sep + 1, len(meta)))
+    if len(out) == 0
+        <- "10,20,30"
+    <- out
+;
+
+: chart_meta_from_parts(chart_type = string, values = string) (( string ))
+    let ?ctype = stdr.trim(chart_type)
+    let ?vals = stdr.trim(values)
+    if len(ctype) == 0
+        ctype = "Bar"
+    if len(vals) == 0
+        vals = "10,20,30"
+    <- "$$ctype$$|$$vals$$"
+;
+
+: chart_type_index(name = string) (( num ))
+    for (let ?i = 0; i < len(CHART_TYPES); i += 1)
+        if str(CHART_TYPES[i]) == name
+            <- i
+    <- 0
+;
+
+: can_edit_elem_from_canvas(elem = num) (( bool ))
+    if elem == 1 || elem == 2
+        <- true
+    if elem < 3
+        <- false
+
+    let idx = models.current()
+    let ei = elem - 3
+    let etype = models.get_elem_type(idx, ei)
+    if etype == "image"
+        <- false
+    <- true
+;
+
+: edit_selected_from_canvas() (( -- ))
+    if selected_elem == 0 || host_win == 0
+        <-
+
+    let idx = models.current()
+    if selected_elem == 1 || selected_elem == 2
+        show_edit_elem_dialog(host_win, "Edit Text")
+        <-
+
+    let ei = selected_elem - 3
+    let etype = models.get_elem_type(idx, ei)
+    if etype == "chart"
+        show_edit_chart_dialog(host_win)
+    elif etype == "link"
+        show_edit_elem_dialog(host_win, "Edit Label")
+    elif etype == "comment" || etype == "text"
+        show_edit_elem_dialog(host_win, "Edit")
+;
+
+: parse_chart_values(raw = string) (( [any] ))
+    let ?vals = []: [any]
+    let text = stdr.trim(raw)
+    let n = len(text)
+    let ?start = 0
+
+    for (let ?i = 0; i <= n; i += 1)
+        if i == n || stdr.slice(text, i, i + 1) == ","
+            let piece = stdr.trim(stdr.slice(text, start, i))
+            if len(piece) > 0
+                stdr.push(vals, num(piece))
+            start = i + 1
+
+    if len(vals) == 0
+        stdr.push(vals, 10)
+        stdr.push(vals, 20)
+        stdr.push(vals, 30)
+
+    <- vals
+;
+
+: chart_color(i = num) (( string ))
+    let slot = i % 5
+    if slot == 0 { <- "#7C5CFC" }
+    if slot == 1 { <- "#4A7DFF" }
+    if slot == 2 { <- "#30A46C" }
+    if slot == 3 { <- "#D97706" }
+    <- "#E11D48"
+;
+
+: draw_line_series(da = cogito.DrawingArea, vals = [any], px = num, py = num, pw = num, ph = num, max_v = num, draw_fill = bool) (( -- ))
+    let nvals = len(vals)
+    if nvals <= 0
+        <-
+
+    if draw_fill
+        da.set_color("#DDE9E0")
+        for (let ?i = 0; i < nvals; i += 1)
+            let ?v = num(vals[i])
+            if v < 0
+                v = 0
+            let x0 = px + (pw * i) / nvals
+            let x1 = px + (pw * (i + 1)) / nvals
+            let y = py + ph - (v * ph) / max_v
+            da.fill_rect(x0, y, x1 - x0 - 1, py + ph - y)
+
+    da.set_color("#2B6F42")
+    da.set_line_width(2)
+
+    let ?prev_x = px
+    let ?prev_y = py + ph
+    for (let ?i = 0; i < nvals; i += 1)
+        let ?v = num(vals[i])
+        if v < 0
+            v = 0
+
+        let ?x = px
+        if nvals > 1
+            x = px + (pw * i) / (nvals - 1)
+        let y = py + ph - (v * ph) / max_v
+
+        if i > 0
+            da.line(prev_x, prev_y, x, y)
+        da.fill_circle(x, y, 3)
+
+        prev_x = x
+        prev_y = y
+;
+
+: draw_chart_preview(da = cogito.DrawingArea, x = num, y = num, w = num, h = num, meta = string) (( -- ))
+    if w <= 20 || h <= 24
+        <-
+
+    let ctype = chart_type_from_meta(meta)
+    let vals = parse_chart_values(chart_values_from_meta(meta))
+    let nvals = len(vals)
+    if nvals <= 0
+        <-
+
+    let ?max_v = 1
+    let ?sum_v = 0
+    for (let ?i = 0; i < nvals; i += 1)
+        let ?v = num(vals[i])
+        if v < 0
+            v = 0
+        if v > max_v
+            max_v = v
+        sum_v = sum_v + v
+    if max_v <= 0
+        max_v = 1
+    if sum_v <= 0
+        sum_v = 1
+
+    let pad = 8
+    let px = x + pad
+    let py = y + 22
+    let pw = w - 2 * pad
+    let ph = h - 26
+    if pw <= 10 || ph <= 10
+        <-
+
+    da.set_color("#EEF2ED")
+    da.fill_rect(px, py, pw, ph)
+    da.set_color("#D5DED3")
+    da.set_line_width(1)
+    da.rect(px, py, pw, ph)
+
+    if ctype == "line"
+        draw_line_series(da, vals, px + 2, py + 2, pw - 4, ph - 4, max_v, false)
+        <-
+
+    if ctype == "area"
+        draw_line_series(da, vals, px + 2, py + 2, pw - 4, ph - 4, max_v, true)
+        <-
+
+    if ctype == "pie"
+        let ?cur_x = px
+        for (let ?i = 0; i < nvals; i += 1)
+            let ?v = num(vals[i])
+            if v < 0
+                v = 0
+            let ?seg_w = (v * pw) / sum_v
+            if i == nvals - 1
+                seg_w = px + pw - cur_x
+            if seg_w < 0
+                seg_w = 0
+            da.set_color(chart_color(i))
+            da.fill_rect(cur_x, py + ph / 3, seg_w, ph / 3)
+            cur_x = cur_x + seg_w
+        <-
+
+    -- Default: Bar
+    let gap = 4
+    let ?bar_w = (pw - gap * (nvals + 1)) / nvals
+    if bar_w < 2
+        bar_w = 2
+
+    for (let ?i = 0; i < nvals; i += 1)
+        let ?v = num(vals[i])
+        if v < 0
+            v = 0
+        let bh = (v * (ph - 4)) / max_v
+        let bx = px + gap + i * (bar_w + gap)
+        let by = py + ph - bh - 2
+        da.set_color(chart_color(i))
+        da.fill_rect(bx, by, bar_w, bh)
+;
+
+: draw_chart_previews(da = cogito.DrawingArea) (( -- ))
+    let idx = models.current()
+    let ecount = models.elem_count(idx)
+    for (let ?i = 0; i < ecount; i += 1)
+        if models.get_elem_type(idx, i) == "chart"
+            draw_chart_preview(
+                da,
+                models.get_elem_x(idx, i),
+                models.get_elem_y(idx, i),
+                models.get_elem_w(idx, i),
+                models.get_elem_h(idx, i),
+                models.get_elem_meta(idx, i)
+            )
+;
+
+: build_elem_label(etype = string, text = string, meta = string) (( cogito.Label ))
     if etype == "link"
         <- cogito.label(text).set_class("slide-link-text").set_wrap(true).set_line_chars(25)
     if etype == "image"
-        <- cogito.label(text).set_class("slide-image-text").set_wrap(true).set_line_chars(20)
+        let ?name = stdr.basename(meta)
+        if len(name) == 0
+            name = stdr.basename(text)
+        if len(name) == 0
+            name = "Choose image"
+        <- cogito.label("Image: $$name$$").set_class("slide-image-text").set_wrap(true).set_line_chars(20)
     if etype == "chart"
-        <- cogito.label(text).set_class("slide-chart-text").set_wrap(true).set_line_chars(25)
+        let ctype = chart_type_from_meta(meta)
+        let ?title = stdr.trim(text)
+        if len(title) == 0
+            title = "Chart"
+        <- cogito.label("$$ctype$$ Chart: $$title$$").set_class("slide-chart-text").set_wrap(true).set_line_chars(25)
     if etype == "comment"
         <- cogito.label(text).set_class("slide-comment-text").set_wrap(true).set_line_chars(30)
     <- cogito.label(text).set_class("slide-text-elem").set_wrap(true).set_line_chars(30)
@@ -387,6 +651,8 @@ def tooltip_bar = cogito.hstack()
     let x = canvas_da.get_x()
     let y = canvas_da.get_y()
     let idx = models.current()
+    let prev_selected = selected_elem
+    click_edit_candidate = 0
 
     -- Check corner handles of current selection first
     if selected_elem > 0
@@ -423,6 +689,10 @@ def tooltip_bar = cogito.hstack()
         let eh = models.get_elem_h(idx, i)
         if x >= ex && x <= ex + ew && y >= ey && y <= ey + eh
             selected_elem = i + 3
+            if prev_selected == selected_elem && can_edit_elem_from_canvas(selected_elem)
+                click_edit_candidate = selected_elem
+                click_start_x = x
+                click_start_y = y
             is_dragging = true
             drag_off_x = x - ex
             drag_off_y = y - ey
@@ -435,6 +705,10 @@ def tooltip_bar = cogito.hstack()
     let bh = models.get_body_h(idx)
     if x >= bx && x <= bx + bw && y >= by && y <= by + bh
         selected_elem = 2
+        if prev_selected == selected_elem && can_edit_elem_from_canvas(selected_elem)
+            click_edit_candidate = selected_elem
+            click_start_x = x
+            click_start_y = y
         is_dragging = true
         drag_off_x = x - bx
         drag_off_y = y - by
@@ -447,6 +721,10 @@ def tooltip_bar = cogito.hstack()
     let th = models.get_title_h(idx)
     if x >= tx && x <= tx + tw && y >= ty && y <= ty + th
         selected_elem = 1
+        if prev_selected == selected_elem && can_edit_elem_from_canvas(selected_elem)
+            click_edit_candidate = selected_elem
+            click_start_x = x
+            click_start_y = y
         is_dragging = true
         drag_off_x = x - tx
         drag_off_y = y - ty
@@ -468,6 +746,13 @@ def tooltip_bar = cogito.hstack()
     let x = da.get_x()
     let y = da.get_y()
     let idx = models.current()
+
+    if click_edit_candidate > 0
+        let dx = x - click_start_x
+        let dy = y - click_start_y
+        if dx > 3 || dx < -3 || dy > 3 || dy < -3
+            click_edit_candidate = 0
+
     let ?nx = x - drag_off_x
     let ?ny = y - drag_off_y
 
@@ -502,6 +787,8 @@ def tooltip_bar = cogito.hstack()
 ;
 
 : redraw_handles(da = cogito.DrawingArea) (( -- ))
+    draw_chart_previews(da)
+
     if selected_elem == 0
         <-
 
@@ -618,6 +905,7 @@ def tooltip_bar = cogito.hstack()
 def FONT_NAMES = ["Inter", "Roboto", "Serif", "Mono"]
 def FONT_SIZES = [12, 14, 16, 18, 24, 28, 32, 36, 40, 48]
 def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "48"]
+def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
 
 : font_index(name = string) (( num ))
     for (let ?i = 0; i < len(FONT_NAMES); i += 1)
@@ -791,11 +1079,18 @@ def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "4
             b.set_text("S*")
     })
 
+    let edit_btn = cogito.button("Edit")
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        show_edit_elem_dialog(b.window(), "Edit Text")
+    })
+
     tooltip_bar.add(font_dd)
     tooltip_bar.add(size_dd)
     tooltip_bar.add(bold_btn)
     tooltip_bar.add(italic_btn)
     tooltip_bar.add(strike_btn)
+    tooltip_bar.add(edit_btn)
 ;
 
 : build_link_tooltip() (( -- ))
@@ -807,36 +1102,60 @@ def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "4
     let url_btn = cogito.button("Edit URL")
     .set_class("slide-tooltip-btn")
     .on_click((b = cogito.Button) => {
-        show_edit_elem_dialog(b.window(), "Edit URL")
+        show_edit_link_url_dialog(b.window())
+    })
+    let open_btn = cogito.button("Open")
+    .set_class("slide-tooltip-btn")
+    .on_click((b = cogito.Button) => {
+        open_selected_link()
     })
     tooltip_bar.add(edit_btn)
     tooltip_bar.add(url_btn)
+    tooltip_bar.add(open_btn)
 ;
 
 : build_image_tooltip() (( -- ))
-    let fit_dd = cogito.dropdown()
-    .set_class("slide-tooltip-dd")
-    .set_items(["Fill", "Fit", "Stretch"])
-
-    let edit_btn = cogito.button("Edit")
+    let pick_btn = cogito.button("Choose Image")
     .set_class("slide-tooltip-btn")
     .on_click((b = cogito.Button) => {
-        show_edit_elem_dialog(b.window(), "Edit Image")
+        choose_image_for_selected()
     })
 
-    tooltip_bar.add(fit_dd)
-    tooltip_bar.add(edit_btn)
+    let del_btn = cogito.button("Delete")
+    .set_class("slide-tooltip-del")
+    .on_click((b = cogito.Button) => {
+        delete_selected()
+    })
+
+    tooltip_bar.add(pick_btn)
+    tooltip_bar.add(del_btn)
 ;
 
 : build_chart_tooltip() (( -- ))
+    let idx = models.current()
+    let ei = selected_elem - 3
+    let meta = models.get_elem_meta(idx, ei)
+
     let type_dd = cogito.dropdown()
     .set_class("slide-tooltip-dd")
-    .set_items(["Bar", "Line", "Pie", "Area"])
+    .set_items(CHART_TYPES)
+    .set_selected(chart_type_index(chart_type_from_meta(meta)))
+    .on_change((d = cogito.Dropdown) => {
+        let si = models.current()
+        let eei = selected_elem - 3
+        let cur = models.get_elem_meta(si, eei)
+        let values = chart_values_from_meta(cur)
+        let chart_type = str(CHART_TYPES[d.selected()])
+        models.set_elem_meta(si, eei, chart_meta_from_parts(chart_type, values))
+        refresh()
+        selected_elem = eei + 3
+        update_tooltip()
+    })
 
     let edit_btn = cogito.button("Edit")
     .set_class("slide-tooltip-btn")
     .on_click((b = cogito.Button) => {
-        show_edit_elem_dialog(b.window(), "Edit Chart")
+        show_edit_chart_dialog(b.window())
     })
 
     tooltip_bar.add(type_dd)
@@ -859,15 +1178,147 @@ def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "4
     tooltip_bar.add(del_btn)
 ;
 
-: show_edit_elem_dialog(win = cogito.Window, dialog_title = string) (( -- ))
+: open_selected_link() (( -- ))
     if selected_elem < 3
         <-
     let idx = models.current()
     let ei = selected_elem - 3
+    if models.get_elem_type(idx, ei) != "link"
+        <-
+
+    let ?url = stdr.trim(models.get_elem_meta(idx, ei))
+    if len(url) == 0
+        let guess = stdr.trim(models.get_elem_text(idx, ei))
+        if stdr.starts_with(guess, "http://") || stdr.starts_with(guess, "https://") || stdr.contains(guess, ".")
+            url = guess
+    url = normalize_url(url)
+    if len(url) == 0
+        <-
+
+    models.set_elem_meta(idx, ei, url)
+    cogito.open_url(url)
+;
+
+: show_edit_link_url_dialog(win = cogito.Window) (( -- ))
+    if selected_elem < 3
+        <-
+    let idx = models.current()
+    let ei = selected_elem - 3
+    if models.get_elem_type(idx, ei) != "link"
+        <-
+
+    let ?initial = stdr.trim(models.get_elem_meta(idx, ei))
+    if len(initial) == 0
+        initial = stdr.trim(models.get_elem_text(idx, ei))
+
+    let dlg = cogito.dialog("Edit URL")
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+
+    let tf = cogito.textfield(initial)
+    .set_hexpand(true)
+    .set_hint_text("https://...")
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Apply").set_class("suggested").on_click((b = cogito.Button) => {
+        models.set_elem_meta(idx, ei, normalize_url(tf.text()))
+        dlg.close()
+    }))
+
+    box.add(tf)
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+: choose_image_for_selected() (( -- ))
+    if selected_elem < 3
+        <-
+    let idx = models.current()
+    let ei = selected_elem - 3
+    if models.get_elem_type(idx, ei) != "image"
+        <-
+
+    let picked = stdr.open_file_dialog("Choose Image", "png")
+    if is_null(picked)
+        <-
+    let path = stdr.trim(str(picked))
+    if len(path) == 0
+        <-
+
+    let name = stdr.basename(path)
+    models.set_elem_text(idx, ei, name)
+    models.set_elem_meta(idx, ei, path)
+    refresh()
+;
+
+: show_edit_chart_dialog(win = cogito.Window) (( -- ))
+    if selected_elem < 3
+        <-
+    let idx = models.current()
+    let ei = selected_elem - 3
+    if models.get_elem_type(idx, ei) != "chart"
+        <-
+
+    let meta = models.get_elem_meta(idx, ei)
+    let dlg = cogito.dialog("Edit Chart")
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+
+    let title_tf = cogito.textfield(models.get_elem_text(idx, ei))
+    .set_hexpand(true)
+    .set_hint_text("Chart title")
+
+    let type_dd = cogito.dropdown()
+    .set_items(CHART_TYPES)
+    .set_selected(chart_type_index(chart_type_from_meta(meta)))
+
+    let values_tf = cogito.textfield(chart_values_from_meta(meta))
+    .set_hexpand(true)
+    .set_hint_text("Values, e.g. 10,20,30")
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Apply").set_class("suggested").on_click((b = cogito.Button) => {
+        let ?title = stdr.trim(title_tf.text())
+        if len(title) == 0
+            title = "Chart"
+        let ctype = str(CHART_TYPES[type_dd.selected()])
+        models.set_elem_text(idx, ei, title)
+        models.set_elem_meta(idx, ei, chart_meta_from_parts(ctype, values_tf.text()))
+        refresh()
+        dlg.close()
+    }))
+
+    box.add(title_tf)
+    box.add(type_dd)
+    box.add(values_tf)
+    box.add(actions)
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+: show_edit_elem_dialog(win = cogito.Window, dialog_title = string) (( -- ))
+    if selected_elem == 0
+        <-
+
+    let idx = models.current()
+    let ?initial = ""
+    if selected_elem == 1
+        initial = models.get_title(idx)
+    elif selected_elem == 2
+        initial = models.get_body(idx)
+    elif selected_elem >= 3
+        let ei = selected_elem - 3
+        initial = models.get_elem_text(idx, ei)
+
     let dlg = cogito.dialog(dialog_title)
     let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
 
-    let tf = cogito.textfield(models.get_elem_text(idx, ei))
+    let tf = cogito.textfield(initial)
     .set_hexpand(true)
 
     let actions = cogito.hstack().set_gap(8).set_align(5)
@@ -875,7 +1326,15 @@ def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "4
         dlg.close()
     }))
     actions.add(cogito.button("Apply").set_class("suggested").on_click((b = cogito.Button) => {
-        models.set_elem_text(idx, ei, tf.text())
+        if selected_elem == 1
+            models.set_title(idx, tf.text())
+            title_lbl.set_text(tf.text())
+        elif selected_elem == 2
+            models.set_body(idx, tf.text())
+            body_lbl.set_text(tf.text())
+        elif selected_elem >= 3
+            let ei = selected_elem - 3
+            models.set_elem_text(idx, ei, tf.text())
         refresh()
         dlg.close()
     }))
@@ -933,10 +1392,16 @@ def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "4
     }))
     actions.add(cogito.button("Add").set_class("suggested").on_click((b = cogito.Button) => {
         let offset = models.elem_count(idx) * 20
-        let ?display = label_tf.text()
+        let ?display = stdr.trim(label_tf.text())
+        let ?raw_url = stdr.trim(url_tf.text())
+        let ?url = normalize_url(raw_url)
         if len(display) == 0
-            display = url_tf.text()
+            display = raw_url
+        if len(display) == 0
+            display = "Link"
         models.add_elem(idx, "link", display, 100 + offset, 280 + offset)
+        let ei = models.elem_count(idx) - 1
+        models.set_elem_meta(idx, ei, url)
         refresh()
         dlg.close()
     }))
@@ -950,31 +1415,23 @@ def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "4
 
 : show_add_image_dialog(win = cogito.Window) (( -- ))
     let idx = models.current()
-    let dlg = cogito.dialog("Add Image")
-    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+    let picked = stdr.open_file_dialog("Choose Image", "png")
+    if is_null(picked)
+        <-
 
-    let tf = cogito.textfield("")
-    .set_hexpand(true)
-    .set_hint_text("Image label or filename")
+    let path = stdr.trim(str(picked))
+    if len(path) == 0
+        <-
 
-    let actions = cogito.hstack().set_gap(8).set_align(5)
-    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
-        dlg.close()
-    }))
-    actions.add(cogito.button("Add").set_class("suggested").on_click((b = cogito.Button) => {
-        let offset = models.elem_count(idx) * 20
-        let ?label = tf.text()
-        if len(label) == 0
-            label = "Image"
-        models.add_elem(idx, "image", label, 100 + offset, 250 + offset)
-        refresh()
-        dlg.close()
-    }))
+    let offset = models.elem_count(idx) * 20
+    let ?label = stdr.basename(path)
+    if len(label) == 0
+        label = "Image"
 
-    box.add(tf)
-    box.add(actions)
-    dlg.add(box)
-    win.set_dialog(dlg)
+    models.add_elem(idx, "image", label, 100 + offset, 250 + offset)
+    let ei = models.elem_count(idx) - 1
+    models.set_elem_meta(idx, ei, path)
+    refresh()
 ;
 
 : show_add_chart_dialog(win = cogito.Window) (( -- ))
@@ -986,21 +1443,35 @@ def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "4
     .set_hexpand(true)
     .set_hint_text("Chart title")
 
+    let type_dd = cogito.dropdown()
+    .set_items(CHART_TYPES)
+    .set_selected(0)
+
+    let values_tf = cogito.textfield("10,20,30")
+    .set_hexpand(true)
+    .set_hint_text("Values, e.g. 10,20,30")
+
     let actions = cogito.hstack().set_gap(8).set_align(5)
     actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
         dlg.close()
     }))
     actions.add(cogito.button("Add").set_class("suggested").on_click((b = cogito.Button) => {
         let offset = models.elem_count(idx) * 20
-        let ?label = tf.text()
+        let ?label = stdr.trim(tf.text())
         if len(label) == 0
             label = "Chart"
+
+        let chart_type = str(CHART_TYPES[type_dd.selected()])
         models.add_elem(idx, "chart", label, 100 + offset, 200 + offset)
+        let ei = models.elem_count(idx) - 1
+        models.set_elem_meta(idx, ei, chart_meta_from_parts(chart_type, values_tf.text()))
         refresh()
         dlg.close()
     }))
 
     box.add(tf)
+    box.add(type_dd)
+    box.add(values_tf)
     box.add(actions)
     dlg.add(box)
     win.set_dialog(dlg)

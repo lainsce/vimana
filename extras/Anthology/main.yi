@@ -27,11 +27,6 @@ def nav_state = cogito.state(0)
 
 def ?compact = false
 
--- Dialog state (module-level so closures share the same variable)
-def ?dlg_name = ""
-def ?dlg_icon = "sf:folder"
-def ?dlg_loc = ""
-
 -- ── Helpers ──────────────────────────────────────────────────
 
 : request_rebuild() (( -- ))
@@ -158,15 +153,15 @@ def ?dlg_loc = ""
     .set_gap(12)
     .set_padding(16, 16, 16, 16)
 
-    dlg_name = ""
-    dlg_icon = "sf:folder"
+    let ?name = ""
+    let ?icon = "sf:folder"
 
     let name_field = cogito.textfield("")
     .set_hint_text("Collection Name")
     .set_class("outline")
     .set_hexpand(true)
     name_field.on_change((tf = cogito.TextField) => {
-        dlg_name = tf.text()
+        name = tf.text()
     })
     dlg_content.add(name_field)
 
@@ -188,7 +183,7 @@ def ?dlg_loc = ""
 
     icon_group.set_selected(7)
     icon_group.on_select((idx = num) => {
-        dlg_icon = str(icons[idx])
+        icon = str(icons[idx])
     })
 
     dlg_content.add(icon_group)
@@ -208,8 +203,8 @@ def ?dlg_loc = ""
     let create_btn = cogito.button("Create")
     .set_hexpand(true)
     create_btn.on_click((b = cogito.Button) => {
-        if len(dlg_name) > 0
-            models.add_collection(dlg_name, dlg_icon)
+        if len(name) > 0
+            models.add_collection(name, icon)
             state.save_state()
         dlg.close()
         request_rebuild()
@@ -230,14 +225,15 @@ def ?dlg_loc = ""
     .set_gap(12)
     .set_padding(16, 16, 16, 16)
 
+    let ?name = old_name
+
     let name_field = cogito.textfield("")
     .set_hint_text("Collection Name")
     .set_class("outline")
     .set_hexpand(true)
     .set_text(old_name)
-    dlg_name = old_name
     name_field.on_change((tf = cogito.TextField) => {
-        dlg_name = tf.text()
+        name = tf.text()
     })
     dlg_content.add(name_field)
 
@@ -256,8 +252,8 @@ def ?dlg_loc = ""
     let rename_btn = cogito.button("Rename")
     .set_hexpand(true)
     rename_btn.on_click((b = cogito.Button) => {
-        if len(dlg_name) > 0
-            models.rename_collection(col_idx, dlg_name)
+        if len(name) > 0
+            models.rename_collection(col_idx, name)
             state.save_state()
         dlg.close()
         request_rebuild()
@@ -281,6 +277,7 @@ def ?dlg_loc = ""
 
 : show_set_location_dialog(win = cogito.Window) (( -- ))
     let ?old_loc = draft_location
+    let ?loc = old_loc
 
     let dlg = cogito.dialog("Set Location")
     let dlg_content = cogito.vstack()
@@ -292,9 +289,8 @@ def ?dlg_loc = ""
     .set_class("outline")
     .set_hexpand(true)
     .set_text(old_loc)
-    dlg_loc = old_loc
     loc_field.on_change((tf = cogito.TextField) => {
-        dlg_loc = tf.text()
+        loc = tf.text()
     })
     dlg_content.add(loc_field)
 
@@ -313,9 +309,9 @@ def ?dlg_loc = ""
     let save_btn = cogito.button("Save")
     .set_hexpand(true)
     save_btn.on_click((b = cogito.Button) => {
-        draft_location = dlg_loc
+        draft_location = loc
         if editing_note >= 0
-            models.set_note_location(editing_note, dlg_loc)
+            models.set_note_location(editing_note, loc)
             state.save_state()
         dlg.close()
         request_rebuild()

@@ -5,11 +5,7 @@ bring cogito
 
 bring models
 
-def slide_list = cogito.content_list()
-def ?_on_select = 0
-def ?_on_add = 0
-def ?_on_remove = 0
-def ?suspend_select = false
+def ?refresh_cb = null
 
 :: build_panel(
     panel = cogito.VStack,
@@ -17,9 +13,8 @@ def ?suspend_select = false
     on_add = any,
     on_remove = any
 ) (( -- ))
-    _on_select = on_select
-    _on_add = on_add
-    _on_remove = on_remove
+    let slide_list = cogito.content_list()
+    let ?suspend_select = false
 
     panel
     .set_class("slide-panel")
@@ -41,7 +36,7 @@ def ?suspend_select = false
     .set_padding(0, 0, 0, 0)
     .on_select((idx = num) => {
         if !suspend_select
-            _on_select(idx)
+            on_select(idx)
     })
 
     scroll.add(slide_list)
@@ -51,26 +46,31 @@ def ?suspend_select = false
     .set_class("large slide-add-btn")
     .set_hexpand(true)
     .on_click((b = cogito.Button) => {
-        _on_add()
+        on_add()
     })
     panel.add(add_btn)
+
+    refresh_cb = () => {
+        suspend_select = true
+        slide_list.clear()
+        let count = models.count()
+
+        for (let ?i = 0; i < count; i += 1)
+            add_thumb(slide_list, i, on_remove)
+
+        slide_list.set_selected(models.current())
+        suspend_select = false
+    }
 
     refresh()
 ;
 
 :: refresh() (( -- ))
-    suspend_select = true
-    slide_list.clear()
-    let count = models.count()
-
-    for (let ?i = 0; i < count; i += 1)
-        add_thumb(i)
-
-    slide_list.set_selected(models.current())
-    suspend_select = false
+    if !is_null(refresh_cb)
+        refresh_cb()
 ;
 
-: add_thumb(index = num) (( -- ))
+: add_thumb(slide_list = cogito.ContentList, index = num, on_remove = any) (( -- ))
     let title = models.get_title(index)
     let body = models.get_body(index)
     let color = models.get_color(index)
@@ -116,19 +116,19 @@ def ?suspend_select = false
 
     card.add(text_col)
 
-    build_remove_btn(card, index)
+    build_remove_btn(card, index, on_remove)
 
     slide_list.add(card)
 ;
 
-: build_remove_btn(card = cogito.ZStack, index = num) (( -- ))
+: build_remove_btn(card = cogito.ZStack, index = num, on_remove = any) (( -- ))
     let remove_btn = cogito.iconbtn("sf:xmark.circle.fill")
     .set_class("slide-remove-btn")
     .set_shape(1)
     .set_size(0)
     .set_align(2)
     .on_click((b = cogito.Button) => {
-        _on_remove(index)
+        on_remove(index)
     })
     card.add(remove_btn)
 ;

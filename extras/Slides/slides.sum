@@ -140,6 +140,17 @@ label.slide-link-text
   label.slide-link-text
     color: #6699FF
 
+button.slide-link-btn
+  background: transparent
+  border: 0 solid #00000000
+  color: #3366CC
+  font-size: 16
+  padding: 0 0 0 0
+
+@when dark
+  button.slide-link-btn
+    color: #6699FF
+
 label.slide-image-text
   font-size: 14
   color: #666666
@@ -162,10 +173,16 @@ label.slide-comment-text
   font-size: 14
   color: #886600
   font-weight: 500
+  background: #FFF4CC
+  border: 1 solid #E6D08A
+  border-radius: 10
+  padding: 6 10 6 10
 
 @when dark
   label.slide-comment-text
     color: #CCAA44
+    background: #3B3420
+    border: 1 solid #6D5A2F
 
 ; ── Selection tooltip ─────────────────────────────────────────
 

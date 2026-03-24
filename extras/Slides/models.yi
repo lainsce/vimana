@@ -44,6 +44,7 @@ def ?body_strikethroughs = [false, false, false, false]
 -- Extra elements per slide (arrays of arrays)
 def ?slide_elem_types = [[], [], [], []]
 def ?slide_elem_texts = [[], [], [], []]
+def ?slide_elem_meta = [[], [], [], []]
 def ?slide_elem_xs = [[], [], [], []]
 def ?slide_elem_ys = [[], [], [], []]
 def ?slide_elem_ws = [[], [], [], []]
@@ -338,6 +339,10 @@ def ?slideshow_name = "Slideshow"
     <- str(slide_elem_texts[slide][elem])
 ;
 
+:: get_elem_meta(slide = num, elem = num) (( string ))
+    <- str(slide_elem_meta[slide][elem])
+;
+
 :: get_elem_x(slide = num, elem = num) (( num ))
     <- num(slide_elem_xs[slide][elem])
 ;
@@ -387,6 +392,10 @@ def ?slideshow_name = "Slideshow"
         <-
     stdr.push(slide_elem_types[slide], etype)
     stdr.push(slide_elem_texts[slide], text)
+    let ?meta = ""
+    if etype == "chart"
+        meta = "Bar|10,20,30"
+    stdr.push(slide_elem_meta[slide], meta)
     stdr.push(slide_elem_xs[slide], x)
     stdr.push(slide_elem_ys[slide], y)
     let ?dw = 300
@@ -414,6 +423,10 @@ def ?slideshow_name = "Slideshow"
 
 :: set_elem_text(slide = num, elem = num, text = string) (( -- ))
     slide_elem_texts[slide][elem] = text
+;
+
+:: set_elem_meta(slide = num, elem = num, meta = string) (( -- ))
+    slide_elem_meta[slide][elem] = meta
 ;
 
 :: set_elem_pos(slide = num, elem = num, x = num, y = num) (( -- ))
@@ -449,6 +462,7 @@ def ?slideshow_name = "Slideshow"
 :: remove_elem(slide = num, elem = num) (( -- ))
     let ?new_types = []
     let ?new_texts = []
+    let ?new_meta = []
     let ?new_xs = []
     let ?new_ys = []
     let ?new_ws = []
@@ -463,6 +477,7 @@ def ?slideshow_name = "Slideshow"
         if i != elem
             stdr.push(new_types, slide_elem_types[slide][i])
             stdr.push(new_texts, slide_elem_texts[slide][i])
+            stdr.push(new_meta, slide_elem_meta[slide][i])
             stdr.push(new_xs, slide_elem_xs[slide][i])
             stdr.push(new_ys, slide_elem_ys[slide][i])
             stdr.push(new_ws, slide_elem_ws[slide][i])
@@ -474,6 +489,7 @@ def ?slideshow_name = "Slideshow"
             stdr.push(new_strikethroughs, slide_elem_strikethroughs[slide][i])
     slide_elem_types[slide] = new_types
     slide_elem_texts[slide] = new_texts
+    slide_elem_meta[slide] = new_meta
     slide_elem_xs[slide] = new_xs
     slide_elem_ys[slide] = new_ys
     slide_elem_ws[slide] = new_ws
@@ -503,6 +519,7 @@ def ?slideshow_name = "Slideshow"
     stdr.push(body_hs, 40)
     stdr.push(slide_elem_types, [])
     stdr.push(slide_elem_texts, [])
+    stdr.push(slide_elem_meta, [])
     stdr.push(slide_elem_xs, [])
     stdr.push(slide_elem_ys, [])
     stdr.push(slide_elem_ws, [])
@@ -544,6 +561,7 @@ def ?slideshow_name = "Slideshow"
     let ?new_bw = []
     let ?new_bh = []
     let ?new_et = []
+    let ?new_emeta = []
     let ?new_ex = []
     let ?new_ey = []
     let ?new_ew = []
@@ -580,6 +598,7 @@ def ?slideshow_name = "Slideshow"
             stdr.push(new_bh, body_hs[i])
             stdr.push(new_et, slide_elem_types[i])
             stdr.push(new_etext, slide_elem_texts[i])
+            stdr.push(new_emeta, slide_elem_meta[i])
             stdr.push(new_ex, slide_elem_xs[i])
             stdr.push(new_ey, slide_elem_ys[i])
             stdr.push(new_ew, slide_elem_ws[i])
@@ -613,6 +632,7 @@ def ?slideshow_name = "Slideshow"
     body_hs = new_bh
     slide_elem_types = new_et
     slide_elem_texts = new_etext
+    slide_elem_meta = new_emeta
     slide_elem_xs = new_ex
     slide_elem_ys = new_ey
     slide_elem_ws = new_ew

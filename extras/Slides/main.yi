@@ -111,7 +111,7 @@ def presenter_revealer = cogito.revealer()
     -- Build editor
     editor_box.add(bar)
 
-    slide_editor.build_editor(editor_box, (text = string) => {
+    slide_editor.build_editor(editor_box, win, (text = string) => {
         models.set_notes(models.current(), text)
     })
 

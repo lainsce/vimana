@@ -32,9 +32,7 @@ bring api.open_meteo
     <- stdr.num(value)
 ;
 
-: _rebuild_results_ui(state = any, list = cogito.ContentList, add_btn = cogito.Button) (( -- ))
-    let results = state["results"] ?? []: [any]
-    let selected = _num_or(state["selected"] ?? null, -1.0)
+: _rebuild_results_ui(results = any, selected = num, list = cogito.ContentList, add_btn = cogito.Button) (( -- ))
 
     list.clear()
 
@@ -58,51 +56,13 @@ bring api.open_meteo
         add_btn.set_disabled(true)
 ;
 
-: _run_search(
-    ?state = any,
-    search = cogito.SearchField,
-    info = cogito.Label,
-    list = cogito.ContentList,
-    add_btn = cogito.Button
-) (( -- ))
-    state["selected"] = -1
-    let query = stdr.trim(search.text())
-    state["query"] = query
-
-    if len(query) < 2
-        info.set_text("Type at least 2 letters to search")
-        state["results"] = []: [any]
-        _rebuild_results_ui(state, list, add_btn)
-        <-
-
-    info.set_text("Searching...")
-    let resp = open_meteo.search_locations(query, 8)
-    if !(resp["ok"] ?? false)
-        state["results"] = []: [any]
-        info.set_text(str(resp["error"] ?? "Search failed"))
-        _rebuild_results_ui(state, list, add_btn)
-        <-
-
-    let results = resp["results"] ?? []: [any]
-    state["results"] = results
-
-    if len(results) == 0
-        info.set_text("No locations found")
-    else
-        info.set_text("Select a location")
-        state["selected"] = 0
-
-    _rebuild_results_ui(state, list, add_btn)
-;
-
 :: build_add_dialog(on_added = any) (( cogito.Dialog ))
     let dlg = cogito.dialog("")
     .set_class("kairos-add-dialog")
 
-    let ?state = []: [string => any]
-    state["query"] = ""
-    state["results"] = []: [any]
-    state["selected"] = -1
+    let ?query = ""
+    let ?results = []: [any]
+    let ?selected = -1
 
     let title = cogito.label("Add Location")
     .set_class("kairos-dialog-title")
@@ -138,13 +98,36 @@ bring api.open_meteo
     .set_disabled(true)
 
     search.on_change((field = cogito.SearchField) => {
-        _run_search(state, field, info, list, add_btn)
+        selected = -1
+        query = stdr.trim(field.text())
+
+        if len(query) < 2
+            info.set_text("Type at least 2 letters to search")
+            results = []: [any]
+            _rebuild_results_ui(results, selected, list, add_btn)
+            <-
+
+        info.set_text("Searching...")
+        let resp = open_meteo.search_locations(query, 8)
+        if !(resp["ok"] ?? false)
+            results = []: [any]
+            info.set_text(str(resp["error"] ?? "Search failed"))
+            _rebuild_results_ui(results, selected, list, add_btn)
+            <-
+
+        results = resp["results"] ?? []: [any]
+        if len(results) == 0
+            info.set_text("No locations found")
+        else
+            info.set_text("Select a location")
+            selected = 0
+
+        _rebuild_results_ui(results, selected, list, add_btn)
     })
 
     list.on_activate((idx = any) => {
         let picked = _num_or(idx, -1.0)
-        state["selected"] = picked
-        let results = state["results"] ?? []: [any]
+        selected = picked
         if picked >= 0 && picked < len(results)
             list.set_selected(picked)
             add_btn.set_disabled(false)
@@ -157,8 +140,6 @@ bring api.open_meteo
     })
 
     add_btn.on_click((b = cogito.Button) => {
-        let selected = _num_or(state["selected"] ?? null, -1.0)
-        let results = state["results"] ?? []: [any]
         if selected >= 0 && selected < len(results)
             let loc = results[selected] ?? []: [string => any]
             on_added(loc)
@@ -185,6 +166,6 @@ bring api.open_meteo
     body.add(actions)
 
     dlg.add(body)
-    _rebuild_results_ui(state, list, add_btn)
+    _rebuild_results_ui(results, selected, list, add_btn)
     <- dlg
 ;

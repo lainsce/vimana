@@ -10,6 +10,25 @@ def slide_view = cogito.vstack()
 def notes_view = cogito.vstack()
 def counter_label = cogito.label("")
 
+: normalize_url(url = string) (( string ))
+    let ?u = stdr.trim(url)
+    if len(u) == 0
+        <- ""
+    if stdr.starts_with(u, "http://") || stdr.starts_with(u, "https://")
+        <- u
+    <- "https://$$u$$"
+;
+
+: chart_type_from_meta(meta = string) (( string ))
+    let sep = stdr.index_of(meta, "|")
+    if sep < 0
+        <- "Bar"
+    let out = stdr.trim(stdr.slice(meta, 0, sep))
+    if len(out) == 0
+        <- "Bar"
+    <- out
+;
+
 :: build_presenter(
     view = cogito.VStack,
     on_back = any
@@ -115,7 +134,36 @@ def counter_label = cogito.label("")
     let ecount = models.elem_count(idx)
     for (let ?i = 0; i < ecount; i += 1)
         let etype = models.get_elem_type(idx, i)
-        let etext = models.get_elem_text(idx, i)
+        let ?etext = models.get_elem_text(idx, i)
+        let meta = models.get_elem_meta(idx, i)
+        if etype == "image"
+            let ?img_name = stdr.basename(meta)
+            if len(img_name) == 0
+                img_name = etext
+            etext = "Image: $$img_name$$"
+        elif etype == "chart"
+            let chart_type = chart_type_from_meta(meta)
+            let ?chart_title = stdr.trim(etext)
+            if len(chart_title) == 0
+                chart_title = "Chart"
+            etext = "$$chart_type$$ Chart: $$chart_title$$"
+
+        if etype == "link"
+            let ?url = stdr.trim(meta)
+            if len(url) == 0
+                let guess = stdr.trim(etext)
+                if stdr.starts_with(guess, "http://") || stdr.starts_with(guess, "https://") || stdr.contains(guess, ".")
+                    url = guess
+            url = normalize_url(url)
+            let link_btn = cogito.button(etext)
+            .set_class("slide-link-btn")
+            .on_click((b = cogito.Button) => {
+                if len(url) > 0
+                    cogito.open_url(url)
+            })
+            slide_view.add(link_btn)
+            continue
+
         let ?cls = "slide-text-elem"
         if etype == "link" { cls = "slide-link-text" }
         elif etype == "image" { cls = "slide-image-text" }
