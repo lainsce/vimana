@@ -10,14 +10,12 @@ def ?CACHE_DIR = ""
     if stdr.len(CACHE_DIR) > 0
         <- CACHE_DIR
 
-    let run = stdr.run_command("echo $HOME")
-    let ?home = stdr.trim(stdr.str(run[1] ?? ""))
+    let ?home = stdr.trim(stdr.home_dir())
     if stdr.len(home) == 0
         home = "/tmp"
 
     let dir = stdr.join_path(home, ".cache/victrola/artist-images")
-    let qdir = stdr.shell_quote(dir)
-    stdr.run_command("mkdir -p $$qdir$$")
+    stdr.ensure_dir(dir)
     CACHE_DIR = dir
     <- dir
 ;
@@ -76,12 +74,8 @@ def ?CACHE_DIR = ""
     if stdr.len(img_url) == 0
         <- ""
 
-    let qdest = stdr.shell_quote(dest)
-    let qurl = stdr.shell_quote(img_url)
-    let dl_cmd = "curl -sS -L --max-time 10 -o $$qdest$$ $$qurl$$"
-    let run = stdr.run_command(dl_cmd)
-    let exit = stdr.num(run[0] ?? 1)
-    if exit != 0
+    let dl = net.download_file(img_url, dest, []: [any], 10)
+    if !(dl["ok"] ?? false)
         <- ""
 
     if stdr.file_exists(dest)

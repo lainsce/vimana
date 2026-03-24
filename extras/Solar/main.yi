@@ -54,10 +54,9 @@ def hero_month = cogito.label("")
 : _ensure_state_path() (( string ))
     if stdr.len(SOLAR_STATE_PATH) > 0
         <- SOLAR_STATE_PATH
-    let run = stdr.run_command("echo $HOME")
-    let home = stdr.trim(str(run[1] ?? ""))
+    let home = stdr.trim(stdr.home_dir())
     let dir = stdr.join_path(home, ".cache/solar")
-    stdr.run_command("mkdir -p $$dir$$")
+    stdr.ensure_dir(dir)
     SOLAR_STATE_PATH = stdr.join_path(dir, "events.ics")
     <- SOLAR_STATE_PATH
 ;

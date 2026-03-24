@@ -2,37 +2,15 @@ cask time_utils
 
 bring stdr
 
-: _to_num_text(text = string, fallback = num) (( num ))
-    let t = stdr.trim(text)
-    if len(t) == 0
-        <- fallback
-    <- stdr.num(t)
-;
-
 :: now_epoch() (( num ))
-    let run = stdr.run_command("date +%s")
-    let code = stdr.num(run[0] ?? 1)
-    if code != 0
-        <- -1
-    <- _to_num_text(str(run[1] ?? ""), -1)
+    <- stdr.unix_time()
 ;
 
 :: iso_to_epoch(iso = string, tz = string) (( num ))
     let t = stdr.trim(iso)
     if len(t) < 16
         <- -1
-
-    let quoted = stdr.shell_quote(t)
-    let ?tz_prefix = ""
-    if len(stdr.trim(tz)) > 0
-        let tz_q = stdr.shell_quote(tz)
-        tz_prefix = "TZ=$$tz_q$$ "
-    let cmd = "$$tz_prefix$$date -j -f '%Y-%m-%dT%H:%M' $$quoted$$ +%s"
-    let run = stdr.run_command(cmd)
-    let code = stdr.num(run[0] ?? 1)
-    if code != 0
-        <- -1
-    <- _to_num_text(str(run[1] ?? ""), -1)
+    <- stdr.iso_to_epoch(t, stdr.trim(tz))
 ;
 
 :: format_hhmm(iso = string) (( string ))

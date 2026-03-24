@@ -156,12 +156,10 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 : ensure_state_path() (( string ))
     if stdr.len(STATE_PATH) > 0 { <- STATE_PATH }
-    let run = stdr.run_command("echo $HOME")
-    let ?home = stdr.trim(stdr.str(run[1] ?? ""))
+    let ?home = stdr.trim(stdr.home_dir())
     if stdr.len(home) == 0 { home = "/tmp" }
     let dir = stdr.join_path(home, ".cache/victrola")
-    let qdir = stdr.shell_quote(dir)
-    stdr.run_command("mkdir -p $$qdir$$")
+    stdr.ensure_dir(dir)
     STATE_PATH = stdr.join_path(dir, "state.json")
     <- STATE_PATH
 ;
@@ -948,7 +946,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 ;
 
 : choose_and_scan() (( -- ))
-    let folder = scanner.pick_folder_macos()
+    let folder = scanner.pick_folder("Choose Music Folder")
     if len(folder) == 0
         <-
     scan_folder(folder)

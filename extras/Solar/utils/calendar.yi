@@ -48,25 +48,19 @@ def DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday
 ;
 
 :: first_weekday_of_month(year = num, month = num) (( num ))
-    let m_str = if month < 10 { "0$$month$$" } else { str(month) }
-    let cmd = "date -j -f %Y-%m-%d $$year$$-$$m_str$$-01 +%w"
-    let result = stdr.run_command(cmd)
-    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+    <- stdr.weekday(year, month, 1)
 ;
 
 :: current_year() (( num ))
-    let result = stdr.run_command("date +%Y")
-    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+    <- stdr.current_year()
 ;
 
 :: current_month() (( num ))
-    let result = stdr.run_command("date +%-m")
-    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+    <- stdr.current_month()
 ;
 
 :: current_day() (( num ))
-    let result = stdr.run_command("date +%-d")
-    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+    <- stdr.current_day()
 ;
 
 :: format_time_12h(hour = num, minute = num) (( string ))
@@ -89,11 +83,7 @@ def DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday
 ;
 
 :: weekday_of_date(year = num, month = num, day = num) (( num ))
-    let m_str = if month < 10 { "0$$month$$" } else { str(month) }
-    let d_str = if day < 10 { "0$$day$$" } else { str(day) }
-    let cmd = "date -j -f %Y-%m-%d $$year$$-$$m_str$$-$$d_str$$ +%w"
-    let result = stdr.run_command(cmd)
-    <- stdr.num(stdr.trim(str(result[1] ?? "0")))
+    <- stdr.weekday(year, month, day)
 ;
 
 :: format_day_subtitle(year = num, month = num, day = num) (( string ))

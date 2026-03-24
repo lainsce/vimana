@@ -10,13 +10,11 @@ def ?FAVICON_CACHE_DIR = ""
 :: ensure_cache_dir() (( string ))
     if len(CACHE_DIR) > 0
         <- CACHE_DIR
-    let run = stdr.run_command("echo $HOME")
-    let ?home = stdr.trim(str(run[1] ?? ""))
+    let ?home = stdr.trim(stdr.home_dir())
     if len(home) == 0
         home = "/tmp"
     let dir = stdr.join_path(home, ".cache/fortnightly")
-    let qdir = stdr.shell_quote(dir)
-    stdr.run_command("mkdir -p $$qdir$$")
+    stdr.ensure_dir(dir)
     CACHE_DIR = dir
     <- dir
 ;
@@ -26,8 +24,7 @@ def ?FAVICON_CACHE_DIR = ""
         <- IMAGE_CACHE_DIR
     let base = ensure_cache_dir()
     let dir = stdr.join_path(base, "images")
-    let qdir = stdr.shell_quote(dir)
-    stdr.run_command("mkdir -p $$qdir$$")
+    stdr.ensure_dir(dir)
     IMAGE_CACHE_DIR = dir
     <- dir
 ;
@@ -37,8 +34,7 @@ def ?FAVICON_CACHE_DIR = ""
         <- FAVICON_CACHE_DIR
     let base = ensure_cache_dir()
     let dir = stdr.join_path(base, "favicons")
-    let qdir = stdr.shell_quote(dir)
-    stdr.run_command("mkdir -p $$qdir$$")
+    stdr.ensure_dir(dir)
     FAVICON_CACHE_DIR = dir
     <- dir
 ;
@@ -71,11 +67,8 @@ def ?FAVICON_CACHE_DIR = ""
     let dest = stdr.join_path(dir, fname)
     if stdr.file_exists(dest)
         <- dest
-    let qdest = stdr.shell_quote(dest)
-    let qurl = stdr.shell_quote(url)
-    let run = stdr.run_command("curl -sS -L --max-time 10 -o $$qdest$$ $$qurl$$")
-    let exit_code = stdr.num(run[0] ?? 1)
-    if exit_code != 0
+    let resp = net.download_file(url, dest, []: [any], 10)
+    if !(resp["ok"] ?? false)
         <- ""
     if stdr.file_exists(dest)
         <- dest
@@ -106,11 +99,8 @@ def ?FAVICON_CACHE_DIR = ""
     if stdr.file_exists(dest)
         <- dest
     let fav_url = "https://www.google.com/s2/favicons?domain=$$domain$$&sz=64"
-    let qdest = stdr.shell_quote(dest)
-    let qurl = stdr.shell_quote(fav_url)
-    let run = stdr.run_command("curl -sS -L --max-time 10 -o $$qdest$$ $$qurl$$")
-    let exit_code = stdr.num(run[0] ?? 1)
-    if exit_code != 0
+    let resp = net.download_file(fav_url, dest, []: [any], 10)
+    if !(resp["ok"] ?? false)
         <- ""
     if stdr.file_exists(dest)
         <- dest
@@ -119,7 +109,5 @@ def ?FAVICON_CACHE_DIR = ""
 
 :: prune_old_images() (( -- ))
     let dir = ensure_image_cache_dir()
-    let qdir = stdr.shell_quote(dir)
-    -- Delete files older than 14 days
-    stdr.run_command("find $$qdir$$ -type f -mtime +14 -delete 2>/dev/null")
+    stdr.prune_files_older_than(dir, 14)
 ;

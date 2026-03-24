@@ -1,63 +1,22 @@
 cask pdf
 
 bring stdr
-
-: _parse_info_field(output = string, field = string) (( string ))
-    let idx = stdr.index_of(output, field)
-    if idx < 0 { <- "" }
-    let after = stdr.slice(output, idx + stdr.len(field), stdr.len(output))
-    let ?nl = stdr.index_of(after, "\n")
-    if nl < 0 { nl = stdr.len(after) }
-    <- stdr.trim(stdr.slice(after, 0, nl))
-;
+bring poppler
 
 :: get_page_count(path = string) (( num ))
-    let qp = stdr.shell_quote(path)
-    let result = stdr.run_command("/opt/homebrew/bin/pdfinfo $$qp$$")
-    let code = stdr.num(result[0] ?? -1)
-    if code != 0 { <- 0 }
-    let output = str(result[1] ?? "")
-    let pages_str = _parse_info_field(output, "Pages:")
-    let ?pages = stdr.num(pages_str)
-    if pages < 0 { pages = 0 }
-    <- pages
+    <- poppler.get_page_count(path)
 ;
 
 :: get_title(path = string) (( string ))
-    let qp = stdr.shell_quote(path)
-    let result = stdr.run_command("/opt/homebrew/bin/pdfinfo $$qp$$")
-    let code = stdr.num(result[0] ?? -1)
-    if code != 0 { <- "" }
-    let output = str(result[1] ?? "")
-    <- _parse_info_field(output, "Title:")
+    <- poppler.get_title(path)
 ;
 
 :: render_page(path = string, page = num, dpi = num, output_prefix = string) (( bool ))
-    let qp = stdr.shell_quote(path)
-    let qo = stdr.shell_quote(output_prefix)
-    let result = stdr.run_command("/opt/homebrew/bin/pdftoppm -png -r $$dpi$$ -f $$page$$ -l $$page$$ -singlefile $$qp$$ $$qo$$")
-    let code = stdr.num(result[0] ?? -1)
-    <- code == 0
+    <- poppler.render_page(path, page, dpi, output_prefix)
 ;
 
 :: get_page_pixel_size(path = string, page = num, dpi = num) (( [num] ))
-    let qp = stdr.shell_quote(path)
-    let result = stdr.run_command("/opt/homebrew/bin/pdfinfo -f $$page$$ -l $$page$$ $$qp$$")
-    let code = stdr.num(result[0] ?? -1)
-    if code != 0 { <- [0, 0] }
-    let output = str(result[1] ?? "")
-    let size_str = _parse_info_field(output, "Page size:")
-    let x_idx = stdr.index_of(size_str, " x ")
-    if x_idx < 0 { <- [0, 0] }
-    let w_pts = stdr.num(stdr.trim(stdr.slice(size_str, 0, x_idx)))
-    let after_x = stdr.slice(size_str, x_idx + 3, stdr.len(size_str))
-    let sp_idx = stdr.index_of(after_x, " ")
-    let ?h_str = after_x
-    if sp_idx >= 0 { h_str = stdr.slice(after_x, 0, sp_idx) }
-    let h_pts = stdr.num(stdr.trim(h_str))
-    let pw = stdr.floor(w_pts * dpi / 72)
-    let ph = stdr.floor(h_pts * dpi / 72)
-    <- [pw, ph]
+    <- poppler.get_page_pixel_size(path, page, dpi)
 ;
 
 :: render_thumb(path = string, output_prefix = string) (( bool ))

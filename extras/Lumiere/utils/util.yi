@@ -82,18 +82,16 @@ bring stdr
 
 -- Ensure cache directory exists.
 :: ensure_cache_dir() (( string ))
-    let dir = stdr.str(stdr.run_command("echo $HOME")[1] ?? "")
-    let home = stdr.trim(dir)
+    let home = stdr.trim(stdr.home_dir())
     let cache = home + "/.cache/lumiere/thumbnails"
-    stdr.run_command("mkdir -p " + stdr.shell_quote(cache))
+    stdr.ensure_dir(cache)
     <- cache
 ;
 
 :: config_path() (( string ))
-    let dir = stdr.str(stdr.run_command("echo $HOME")[1] ?? "")
-    let home = stdr.trim(dir)
+    let home = stdr.trim(stdr.home_dir())
     let cfg_dir = home + "/.config/com.fyralabs.Lumiere"
-    stdr.run_command("mkdir -p " + stdr.shell_quote(cfg_dir))
+    stdr.ensure_dir(cfg_dir)
     <- cfg_dir + "/library_folder"
 ;
 

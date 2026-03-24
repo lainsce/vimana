@@ -1,6 +1,7 @@
 cask lyrics
 
 bring stdr
+bring ffmpeg
 bring json
 bring net
 bring cogito
@@ -9,14 +10,10 @@ bring cogito
     if stdr.len(path) == 0
         <- ""
 
-    let quoted = stdr.shell_quote(path)
-    let cmd = "ffprobe -v quiet -show_entries format_tags -of json $$quoted$$ 2>/dev/null"
-    let run = stdr.run_command(cmd)
-    let exit = run[0] ?? 1
-    if exit != 0
+    let body = ffmpeg.probe_format_tags_json(path)
+    if stdr.len(body) == 0
         <- ""
 
-    let body = stdr.str(run[1] ?? "")
     let root = json.parse(body)
     if stdr.is_null(root)
         <- ""
@@ -43,11 +40,8 @@ bring cogito
         <- false
 
     let tmp = stdr.str_concat(path, ".victrola_tmp")
-    let quoted_in = stdr.shell_quote(path)
-    let quoted_out = stdr.shell_quote(tmp)
 
     let lyrics_file = stdr.str_concat(path, ".lyrics.txt")
-    let quoted_lf = stdr.shell_quote(lyrics_file)
     if !stdr.write_text_file(lyrics_file, lyrics)
         <- false
 
@@ -55,21 +49,16 @@ bring cogito
     if stdr.ends_with(path, ".flac")
         tag_key = "LYRICS"
 
-    let cmd = "ffmpeg -y -i $$quoted_in$$ -c copy -map_metadata 0 -metadata $$tag_key$$=\"$(cat $$quoted_lf$$)\" $$quoted_out$$ 2>/dev/null"
-    let run = stdr.run_command(cmd)
-    let exit = run[0] ?? 1
+    let ok = ffmpeg.copy_with_metadata_from_file(path, tmp, tag_key, lyrics_file)
 
-    stdr.run_command(stdr.str_concat("rm -f ", quoted_lf))
+    stdr.remove_file(lyrics_file)
 
-    if exit != 0
-        stdr.run_command(stdr.str_concat("rm -f ", quoted_out))
+    if !ok
+        stdr.remove_file(tmp)
         <- false
 
-    let mv_cmd = "mv -f $$quoted_out$$ $$quoted_in$$"
-    let mv_run = stdr.run_command(mv_cmd)
-    let mv_exit = mv_run[0] ?? 1
-    if mv_exit != 0
-        stdr.run_command(stdr.str_concat("rm -f ", quoted_out))
+    if !stdr.move_file(tmp, path)
+        stdr.remove_file(tmp)
         <- false
 
     <- true

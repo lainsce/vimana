@@ -211,7 +211,7 @@ def ?controls_container = cogito.hstack()
 
     add_folder_btn.on_click((b = cogito.IconButton) => {
         cogito.async_run(() => {
-            let folder = scanner.pick_folder_macos()
+            let folder = scanner.pick_folder("Choose Video Folder")
             if stdr.len(folder) > 0
                 scan_folder(folder)
                 generate_all_thumbnails()

@@ -196,12 +196,10 @@ def status_text = cogito.label("Add a location to start")
 
 : _ensure_state_path() (( string ))
     if len(KAIROS_STATE_PATH) > 0 { <- KAIROS_STATE_PATH }
-    let run = stdr.run_command("echo $HOME")
-    let ?home = stdr.trim(str(run[1] ?? ""))
+    let ?home = stdr.trim(stdr.home_dir())
     if len(home) == 0 { home = "/tmp" }
     let dir = stdr.join_path(home, ".cache/kairos")
-    let qdir = stdr.shell_quote(dir)
-    stdr.run_command("mkdir -p $$qdir$$")
+    stdr.ensure_dir(dir)
     KAIROS_STATE_PATH = stdr.join_path(dir, "state.json")
     <- KAIROS_STATE_PATH
 ;

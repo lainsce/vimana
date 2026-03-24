@@ -7,11 +7,10 @@ def ?CACHE_DIR = ""
 
 :: ensure_cache_dir() (( string ))
     if stdr.len(CACHE_DIR) > 0 { <- CACHE_DIR }
-    let r = stdr.run_command("echo $HOME")
-    let home = stdr.trim(str(r[1] ?? ""))
+    let home = stdr.trim(stdr.home_dir())
     let dir = stdr.join_path(home, ".cache/corpus")
-    stdr.run_command("mkdir -p '$$dir$$/thumbs'")
-    stdr.run_command("mkdir -p '$$dir$$/pages'")
+    stdr.ensure_dir(stdr.join_path(dir, "thumbs"))
+    stdr.ensure_dir(stdr.join_path(dir, "pages"))
     CACHE_DIR = dir
     <- dir
 ;
