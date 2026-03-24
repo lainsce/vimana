@@ -7,11 +7,15 @@ case COGITO_TEXTVIEW: {
       CogitoStyle s = cogito_theme_resolve_node_state(n, hover, false);
       CogitoColor bg = base.has_bg ? base.bg : n->bg;
       CogitoColor text = base.has_text ? base.text : n->text_color;
+  CogitoColor border = base.has_border ? base.border : n->border_color;
+  int border_w = base.has_border_width ? base.border_width : n->border_width;
       int radius = base.has_radius ? base.radius : n->border_radius;
       if (s.has_bg) bg = s.bg;
       if (s.has_radius) radius = s.radius;
       if (s.has_text) text = s.text;
-      cogito_anim_apply(n, &s, &bg, &text, NULL, NULL);
+  if (s.has_border) border = s.border;
+  if (s.has_border_width) border_w = s.border_width;
+  cogito_anim_apply(n, &s, &bg, &text, &border, NULL);
       if (text.a < 8) {
         if (cogito_cached_on_surface.a) text = cogito_cached_on_surface;
         else text = cogito_rgba(30, 30, 30, 255);
@@ -39,6 +43,15 @@ case COGITO_TEXTVIEW: {
           if (vis_y + vis_h > sv_b) vis_h = sv_b - vis_y;
           if (vis_w < 0) vis_w = 0;
           if (vis_h < 0) vis_h = 0;
+        }
+      }
+      if (!tv_in_scroller && vis_w > 0 && vis_h > 0) {
+        if (s.has_box_shadow && s.box_shadow.blur > 0) {
+          cogito_draw_shadow_node_box(n, &s, n->x, n->y, n->w, n->h, radius, &s.box_shadow);
+        } else if (s.has_shadow && s.shadow_level >= 0) {
+          cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, s.shadow_level);
+        } else if (n->shadow_set && n->shadow_level >= 0) {
+          cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, radius, n->shadow_level);
         }
       }
       if (n->bg_set) {
@@ -86,7 +99,7 @@ case COGITO_TEXTVIEW: {
               ? cogito_line_width_with_spans(n, t, idx, i - idx + 1, size)
               : cogito_text_width_size_n_node(n, t + idx, i - idx + 1, size);
             if (c == ' ') last_space = i;
-            if (w > max_w) {
+            if (w > max_w && i > idx) {
               if (last_space >= idx) {
                 line_len = last_space - idx;
                 idx = last_space + 1;
@@ -168,7 +181,7 @@ case COGITO_TEXTVIEW: {
               ? cogito_line_width_with_spans(n, t, idx2, i - idx2 + 1, size)
               : cogito_text_width_size_n_node(n, t + idx2, i - idx2 + 1, size);
             if (c == ' ') last_space2 = i;
-            if (w2 > max_w2) {
+            if (w2 > max_w2 && i > idx2) {
               if (last_space2 >= idx2) {
                 line_len2 = last_space2 - idx2;
                 idx2 = last_space2 + 1;
@@ -275,7 +288,7 @@ case COGITO_TEXTVIEW: {
               ? cogito_line_width_with_spans(n, t, idx, i - idx + 1, size)
               : cogito_text_width_size_n_node(n, t + idx, i - idx + 1, size);
             if (c == ' ') last_space = i;
-            if (w > max_w) {
+            if (w > max_w && i > idx) {
               if (last_space >= idx) {
                 line_len = last_space - idx;
                 idx = last_space + 1;
@@ -341,6 +354,15 @@ case COGITO_TEXTVIEW: {
       }
       if (tv_in_scroller && cogito_backend && cogito_backend->end_scissor) {
         cogito_backend->end_scissor();
+      }
+      if (border_w > 0 && border.a > 0 && vis_w > 0 && vis_h > 0) {
+        int b_tl = radius, b_tr = radius, b_br = radius, b_bl = radius;
+        cogito_resolve_node_radii(n, &s, radius, vis_w, vis_h, &b_tl, &b_tr, &b_br, &b_bl);
+        if (tv_in_scroller) {
+          if (vis_y > n->y) { b_tl = 0; b_tr = 0; }
+          if (vis_y + vis_h < n->y + n->h) { b_br = 0; b_bl = 0; }
+        }
+        cogito_draw_rect_lines_radii_aa(vis_x, vis_y, vis_w, vis_h, border, b_tl, b_tr, b_br, b_bl, border_w);
       }
       break;
     }

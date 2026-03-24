@@ -1492,7 +1492,7 @@ static int cogito_text_line_index_from_pos(const CogitoNode* n, const char* text
       }
       int char_w = cogito_text_width_size_n_node(n, text + i, 1, size);
       if (c == ' ') last_space = i;
-      if (cumulative_w + char_w > max_w) {
+      if (cumulative_w + char_w > max_w && i > idx) {
         if (last_space >= idx) {
           line_len = last_space - idx;
           idx = last_space + 1;

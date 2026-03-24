@@ -1318,9 +1318,9 @@ static void cogito_draw_focus_ring(void) {
   if (cogito_focused->disabled) return;
   CogitoNode* n = cogito_focused;
 
-  // TextFields have their own focus indicators (indicator line or border
-  // thickening), so skip the generic focus ring entirely.
-  if (n->kind == COGITO_TEXTFIELD) return;
+  // Text input widgets have their own focus indicators, so skip the
+  // generic focus ring entirely.
+  if (n->kind == COGITO_TEXTFIELD || n->kind == COGITO_TEXTVIEW) return;
 
   // Ring parameters: 3dp thick, 2dp offset from component bounds
   int offset = 2;
