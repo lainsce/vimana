@@ -12,12 +12,12 @@ case COGITO_APPBAR: {
       CogitoNode* win = cogito_node_window(n);
       bool allow_max = !win || win->resizable;
       // Only show traffic lights on the first (leftmost) appbar
+      CogitoNode* wb = cogito_find_window_bar(win);
       if (cogito_is_first_appbar(win, n)) {
         int controls_x = win ? win->x : x;
         int controls_w = win ? win->w : w;
         cogito_appbar_controls_positions(n, controls_x, controls_w, btn_size, btn_gap, controls_edge_pad, allow_max,
                                          &n->kd->appbar.btn_close_x, &n->kd->appbar.btn_min_x, &n->kd->appbar.btn_max_x);
-        CogitoNode* wb = cogito_find_window_bar(win);
         if (wb && wb->h > 0) {
           // Center traffic lights vertically in the WindowBar
           n->kd->appbar.btn_y = (win ? win->y : 0) + (wb->h - btn_size) / 2;
@@ -134,7 +134,11 @@ case COGITO_APPBAR: {
       } else {
         lx = x + 16;
       }
-      if (n->kd->appbar.btn_close_x >= 0 || n->kd->appbar.btn_min_x >= 0 || n->kd->appbar.btn_max_x >= 0) {
+      // Only reserve space for traffic lights when they render on this appbar
+      // (i.e. no WindowBar is absorbing them above).
+      bool lights_on_appbar = (n->kd->appbar.btn_close_x >= 0 || n->kd->appbar.btn_min_x >= 0 || n->kd->appbar.btn_max_x >= 0)
+                              && !(wb && wb->h > 0);
+      if (lights_on_appbar) {
         // Traffic lights are always on the left (macOS convention), even in RTL
         int rightmost_light = n->kd->appbar.btn_close_x;
         if (n->kd->appbar.btn_min_x > rightmost_light) rightmost_light = n->kd->appbar.btn_min_x;

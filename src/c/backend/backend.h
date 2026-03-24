@@ -19,6 +19,7 @@ extern bool cogito_is_rtl(void);
 // Font style flags (combinable via bitwise OR)
 #define COGITO_FONT_STYLE_NORMAL        0
 #define COGITO_FONT_STYLE_ITALIC        (1 << 1)
+#define COGITO_FONT_STYLE_UNDERLINE     (1 << 2)
 #define COGITO_FONT_STYLE_STRIKETHROUGH (1 << 3)
 
 // ============================================================================

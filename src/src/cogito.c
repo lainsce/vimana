@@ -137,6 +137,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_dropdown_new cogito_dropdown_new_yis
 #define cogito_dropdown_on_change cogito_dropdown_on_change_yis
 #define cogito_dropdown_set_items cogito_dropdown_set_items_yis
+#define cogito_dropdown_set_icon cogito_dropdown_set_icon_yis
 #define cogito_dropdown_set_selected cogito_dropdown_set_selected_yis
 #define cogito_fab_new cogito_fab_new_yis
 #define cogito_fab_on_click cogito_fab_on_click_yis
@@ -563,6 +564,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_dropdown_new
 #undef cogito_dropdown_on_change
 #undef cogito_dropdown_set_items
+#undef cogito_dropdown_set_icon
 #undef cogito_dropdown_set_selected
 #undef cogito_fab_new
 #undef cogito_fab_on_click
@@ -3812,6 +3814,278 @@ void cogito_node_set_font_family(cogito_node *node, const char *family) {
   if (win) cogito_window_relayout(win);
 }
 
+void cogito_node_set_underline(cogito_node *node, bool on) {
+  if (!node) return;
+  node->font_underline = on;
+  node->font_underline_set = true;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_node_set_text_color(cogito_node *node, const char *hex) {
+  if (!node || !hex) return;
+  const char *p = hex;
+  CogitoColor c;
+  if (cogito_css_parse_color(&p, &c)) {
+    node->text_color = c;
+    node->text_color_set = true;
+    cogito_window *win = cogito_node_window(node);
+    if (win) cogito_window_relayout(win);
+  }
+}
+
+void cogito_node_set_text_align(cogito_node *node, int align) {
+  if (!node) return;
+  if (align < 0) align = 0;
+  if (align > 2) align = 2;
+  node->text_align = align;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_node_set_line_height(cogito_node *node, float height) {
+  if (!node) return;
+  node->line_height = height;
+  node->line_height_set = true;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+// ── Span-based rich text API ──────────────────────────────────
+int cogito_textview_get_sel_start(cogito_node *node) {
+  if (!node || !node->kd) return 0;
+  return node->kd->text_input.sel_start;
+}
+
+int cogito_textview_get_sel_end(cogito_node *node) {
+  if (!node || !node->kd) return 0;
+  return node->kd->text_input.sel_end;
+}
+
+void cogito_textview_set_selection(cogito_node *node, int start, int end) {
+  if (!node || !node->kd) return;
+  node->kd->text_input.sel_start = start;
+  node->kd->text_input.sel_end = end;
+}
+
+void cogito_textview_apply_bold(cogito_node *node, int start, int end, bool val) {
+  if (!node || start >= end) return;
+  cogito_spans_apply_bold(node, start, end, val);
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_textview_apply_italic(cogito_node *node, int start, int end, bool val) {
+  if (!node || start >= end) return;
+  cogito_spans_apply_italic(node, start, end, val);
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_textview_apply_underline(cogito_node *node, int start, int end, bool val) {
+  if (!node || start >= end) return;
+  cogito_spans_apply_underline(node, start, end, val);
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_textview_apply_strikethrough(cogito_node *node, int start, int end, bool val) {
+  if (!node || start >= end) return;
+  cogito_spans_apply_strikethrough(node, start, end, val);
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_textview_apply_color(cogito_node *node, int start, int end, const char *hex) {
+  if (!node || start >= end || !hex) return;
+  const char *p = hex;
+  CogitoColor c;
+  if (!cogito_css_parse_color(&p, &c)) return;
+  cogito_spans_apply_color(node, start, end, c);
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_textview_apply_size(cogito_node *node, int start, int end, int size) {
+  if (!node || start >= end || size <= 0) return;
+  cogito_spans_apply_size(node, start, end, size);
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_textview_apply_family(cogito_node *node, int start, int end, const char *family) {
+  if (!node || start >= end || !family) return;
+  cogito_spans_apply_family(node, start, end, family);
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+void cogito_textview_clear_spans(cogito_node *node) {
+  if (!node) return;
+  cogito_spans_clear(node);
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+int cogito_textview_span_count(cogito_node *node) {
+  return (node && node->spans) ? node->span_count : 0;
+}
+
+int cogito_textview_span_start(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return 0;
+  return node->spans[idx].start;
+}
+
+int cogito_textview_span_end(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return 0;
+  return node->spans[idx].end;
+}
+
+int cogito_textview_span_bold(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return -1;
+  CogitoTextSpan *s = &node->spans[idx];
+  return s->bold_set ? (s->bold ? 1 : 0) : -1;
+}
+
+int cogito_textview_span_italic(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return -1;
+  CogitoTextSpan *s = &node->spans[idx];
+  return s->italic_set ? (s->italic ? 1 : 0) : -1;
+}
+
+int cogito_textview_span_underline(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return -1;
+  CogitoTextSpan *s = &node->spans[idx];
+  return s->underline_set ? (s->underline ? 1 : 0) : -1;
+}
+
+int cogito_textview_span_strikethrough(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return -1;
+  CogitoTextSpan *s = &node->spans[idx];
+  return s->strikethrough_set ? (s->strikethrough ? 1 : 0) : -1;
+}
+
+int cogito_textview_span_size(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return -1;
+  CogitoTextSpan *s = &node->spans[idx];
+  return s->size_set ? s->size : -1;
+}
+
+const char *cogito_textview_span_color(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return "";
+  CogitoTextSpan *s = &node->spans[idx];
+  if (!s->color_set) return "";
+  static char buf[10];
+  snprintf(buf, sizeof(buf), "#%02X%02X%02X", s->color.r, s->color.g, s->color.b);
+  return buf;
+}
+
+const char *cogito_textview_span_family(cogito_node *node, int idx) {
+  if (!node || !node->spans || idx < 0 || idx >= node->span_count) return "";
+  CogitoTextSpan *s = &node->spans[idx];
+  return s->family_set ? s->family : "";
+}
+
+int cogito_textview_para_count(cogito_node *node) {
+  if (!node) return 0;
+  return node->para_props_count > 0 ? node->para_props_count :
+    cogito_para_count_from_text(node->text ? node->text->data : NULL,
+                                node->text ? (int)node->text->len : 0);
+}
+
+void cogito_textview_set_para_align(cogito_node *node, int para_idx, int align) {
+  if (!node || para_idx < 0) return;
+  if (align < 0) align = 0;
+  if (align > 2) align = 2;
+  // Auto-init paragraph props array if not yet active
+  if (!node->para_props) {
+    int pc = cogito_para_count_from_text(
+      node->text ? node->text->data : NULL,
+      node->text ? (int)node->text->len : 0);
+    cogito_para_props_ensure(node, pc);
+    // Initialize all paragraphs with node-level defaults
+    for (int i = 0; i < pc; i++) {
+      node->para_props[i].text_align = node->text_align;
+      node->para_props[i].line_height = node->line_height;
+      node->para_props[i].line_height_set = node->line_height_set;
+    }
+    node->para_props_count = pc;
+  }
+  if (para_idx >= node->para_props_count) return;
+  node->para_props[para_idx].text_align = align;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+int cogito_textview_get_para_align(cogito_node *node, int para_idx) {
+  if (!node || para_idx < 0) return 0;
+  if (node->para_props && para_idx < node->para_props_count)
+    return node->para_props[para_idx].text_align;
+  return node->text_align;
+}
+
+void cogito_textview_set_para_line_height(cogito_node *node, int para_idx, float height) {
+  if (!node || para_idx < 0) return;
+  // Auto-init paragraph props array if not yet active
+  if (!node->para_props) {
+    int pc = cogito_para_count_from_text(
+      node->text ? node->text->data : NULL,
+      node->text ? (int)node->text->len : 0);
+    cogito_para_props_ensure(node, pc);
+    for (int i = 0; i < pc; i++) {
+      node->para_props[i].text_align = node->text_align;
+      node->para_props[i].line_height = node->line_height;
+      node->para_props[i].line_height_set = node->line_height_set;
+    }
+    node->para_props_count = pc;
+  }
+  if (para_idx >= node->para_props_count) return;
+  node->para_props[para_idx].line_height = height;
+  node->para_props[para_idx].line_height_set = true;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
+float cogito_textview_get_para_line_height(cogito_node *node, int para_idx) {
+  if (!node || para_idx < 0) return 1.0f;
+  if (node->para_props && para_idx < node->para_props_count &&
+      node->para_props[para_idx].line_height_set)
+    return node->para_props[para_idx].line_height;
+  return node->line_height_set ? node->line_height : 1.0f;
+}
+
+int cogito_textview_get_caret(cogito_node *node) {
+  if (!node || !node->kd) return 0;
+  return node->kd->text_input.caret;
+}
+
+void cogito_textview_set_on_key_fn(cogito_node *node, void *handler_fn) {
+  CogitoNode* n = (CogitoNode*)node;
+  if (!n) return;
+  if (n->on_key) yis_release_val(YV_FN(n->on_key));
+  if (handler_fn) {
+    n->on_key = (YisFn*)handler_fn;
+    yis_retain_val(YV_FN(n->on_key));
+  } else {
+    n->on_key = NULL;
+  }
+}
+
+void cogito_node_set_dropdown_selected(cogito_node *node, int idx) {
+  if (!node) return;
+  cogito_dropdown_set_selected(node, idx);
+}
+
+void cogito_node_set_iconbtn_checked(cogito_node *node, bool checked) {
+  if (!node) return;
+  cogito_iconbtn_set_checked(node, checked);
+}
+
+void cogito_node_set_textfield_text(cogito_node *node, const char *text) {
+  if (!node) return;
+  cogito_textfield_set_text(node, text ? text : "");
+}
+
 void cogito_node_set_shadow(cogito_node *node, int level) {
   if (!node) return;
   if (level < 0) level = 0;
@@ -4043,6 +4317,15 @@ void cogito_dropdown_set_selected(cogito_node *dropdown, int idx) {
   if (!dropdown)
     return;
   cogito_dropdown_set_selected_yis(YV_OBJ(dropdown), YV_INT(idx));
+}
+
+void cogito_dropdown_set_icon(cogito_node *dropdown, const char *icon) {
+  if (!dropdown)
+    return;
+  YisVal iv = cogito_val_from_cstr(icon);
+  cogito_dropdown_set_icon_yis(YV_OBJ(dropdown), iv);
+  if (iv.tag == EVT_STR)
+    yis_release_val(iv);
 }
 
 void cogito_tabs_set_items(cogito_node *tabs, const char **items,

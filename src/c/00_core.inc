@@ -806,12 +806,35 @@ typedef struct {
   uint8_t fit;
 } CogitoImageData;
 
+// Rich text span: style overrides for a byte range within text
+typedef struct {
+  int start, end;               // byte offsets into text
+  bool bold_set;    bool bold;
+  bool italic_set;  bool italic;
+  bool underline_set; bool underline;
+  bool strikethrough_set; bool strikethrough;
+  bool color_set;   CogitoColor color;
+  bool size_set;    int size;
+  bool family_set;  char family[64];
+} CogitoTextSpan;
+
+// Per-paragraph block properties (alignment + line spacing)
+typedef struct {
+  int text_align;       // 0=left, 1=center, 2=right
+  float line_height;    // multiplier (e.g. 1.5)
+  bool line_height_set; // if false, use node-level default
+} CogitoParagraphProps;
+
 // Undo/redo history for text inputs
 #define COGITO_UNDO_MAX 64
 typedef struct {
   YisStr* text;   // snapshot of full text
   int caret;      // caret position after this edit
   int sel_start, sel_end;
+  CogitoTextSpan* spans;  // snapshot of span array (heap, owned)
+  int span_count;
+  CogitoParagraphProps* para_props;  // snapshot of paragraph props (heap, owned)
+  int para_props_count;
 } CogitoUndoEntry;
 
 typedef struct {
@@ -1138,6 +1161,7 @@ typedef struct CogitoNode {
   YisFn* on_draw;
   YisFn* on_resize;
   YisFn* on_file_drop;
+  YisFn* on_key;
 
   // Context menu (right-click menu)
   struct CogitoNode* context_menu;
@@ -1173,6 +1197,7 @@ typedef struct CogitoNode {
   bool font_tabular;
   bool font_emphasized;
   bool font_italic;
+  bool font_underline;
   bool font_strikethrough;
 
   // Geometry
@@ -1226,6 +1251,7 @@ typedef struct CogitoNode {
   bool check_set;
   bool font_weight_set;
   bool font_italic_set;
+  bool font_underline_set;
   bool font_strikethrough_set;
   bool letter_spacing_set;
   bool line_height_set;
@@ -1370,6 +1396,16 @@ typedef struct CogitoNode {
   double overlay_anim_duration;
   float overlay_anim_from;
   float overlay_anim_to;
+
+  // Rich text spans (non-overlapping, sorted by start byte offset)
+  CogitoTextSpan* spans;
+  int span_count;
+  int span_cap;
+
+  // Per-paragraph block properties (parallel array indexed by paragraph number)
+  CogitoParagraphProps* para_props;
+  int para_props_count;
+  int para_props_cap;
 
   // Kind-specific data (heap-allocated per-kind, NULL for kinds without extra data)
   CogitoKindData* kd;

@@ -34,6 +34,22 @@ static void cogito_invoke(YisFn* fn, int argc, YisVal* argv) {
   }
 }
 
+/* Invoke on_key callback and return true if the key was consumed. */
+static bool cogito_invoke_on_key(CogitoNode* n, int scancode, bool shift, bool cmd) {
+  if (!n || !n->on_key) return false;
+  YisVal args[4];
+  args[0] = YV_OBJ(n);
+  args[1] = YV_INT(scancode);
+  args[2] = YV_BOOL(shift);
+  args[3] = YV_BOOL(cmd);
+  YisVal ret = n->on_key->fn(n->on_key->env, 4, args);
+  bool consumed = false;
+  if (ret.tag == EVT_BOOL) consumed = ret.as.b;
+  else if (ret.tag == EVT_INT) consumed = ret.as.i != 0;
+  if (ret.tag != EVT_NULL) yis_release_val(ret);
+  return consumed;
+}
+
 static void cogito_invoke_click(CogitoNode* n) {
   if (!n || !n->on_click) return;
   static int cogito_debug_click = -1;

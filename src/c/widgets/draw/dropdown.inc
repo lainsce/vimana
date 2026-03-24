@@ -35,10 +35,22 @@ case COGITO_DROPDOWN: {
       int icon_size = s.has_icon_size ? s.icon_size : 12;
       if (icon_size < 8) icon_size = 8;
       int icon_box = icon_size + 4;
-      int text_w = n->w - pad * 2 - icon_box;
+      int leading_icon_box = 0;
+      if (n->icon && n->icon->data && n->icon->data[0]) {
+        int li_size = icon_size + 4;
+        leading_icon_box = li_size + 6;
+      }
+      int text_w = n->w - pad * 2 - icon_box - leading_icon_box;
       bool dd_rtl = cogito_is_rtl();
-      int label_x = dd_rtl ? (n->x + pad + icon_box) : (n->x + pad);
+      int label_x = dd_rtl ? (n->x + pad + icon_box) : (n->x + pad + leading_icon_box);
       cogito_draw_text_ellipsis(n, label_x, ty, text_w, label, text, size, cogito_node_bold(n), cogito_node_medium(n), dd_rtl ? 2 : 0);
+      if (n->icon && n->icon->data && n->icon->data[0]) {
+        int li_size = icon_size + 4;
+        CogitoColor li_color = s.has_icon_color ? s.icon_color : text;
+        int li_x = dd_rtl ? (n->x + n->w - pad - li_size) : (n->x + pad);
+        int li_y = n->y + (n->h - li_size) / 2;
+        cogito_draw_icon_fallback(n, n->icon->data, li_x, li_y, li_size, li_color);
+      }
       int ix = dd_rtl
           ? (n->x + pad + (icon_box - icon_size) / 2)
           : (n->x + n->w - pad - icon_box + (icon_box - icon_size) / 2);

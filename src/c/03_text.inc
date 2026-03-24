@@ -5,6 +5,9 @@
 #include FT_FREETYPE_H
 #include FT_MULTIPLE_MASTERS_H
 
+#include "widgets/util/text_spans.inc"
+#include "widgets/util/text_paragraphs.inc"
+
 static bool cogito_node_bold(const CogitoNode* n);
 static bool cogito_node_medium(const CogitoNode* n);
 
@@ -992,6 +995,7 @@ typedef struct {
   int size;
   int spacing_q64;
   uint8_t mode; // 0: normal, 1: tabular
+  uint8_t style; // font style flags (italic, underline, etc.)
   uint8_t len;
   char text[COGITO_TEXT_MEASURE_KEY_MAX];
   int width;
@@ -1004,12 +1008,14 @@ static void cogito_text_measure_cache_clear(void) {
 }
 
 static uint32_t cogito_text_measure_hash(CogitoFont* f, const char* s, int len,
-                                         int size, int spacing_q64, uint8_t mode) {
+                                         int size, int spacing_q64, uint8_t mode,
+                                         uint8_t style) {
   uint32_t h = 2166136261u;
   h ^= (uint32_t)(uintptr_t)f; h *= 16777619u;
   h ^= (uint32_t)size; h *= 16777619u;
   h ^= (uint32_t)(spacing_q64 + 32768); h *= 16777619u;
   h ^= (uint32_t)mode; h *= 16777619u;
+  h ^= (uint32_t)style; h *= 16777619u;
   h ^= (uint32_t)len; h *= 16777619u;
   for (int i = 0; i < len; i++) {
     h ^= (uint8_t)s[i];
@@ -1019,15 +1025,17 @@ static uint32_t cogito_text_measure_hash(CogitoFont* f, const char* s, int len,
 }
 
 static bool cogito_text_measure_cache_lookup(CogitoFont* f, const char* s, int size,
-                                             float spacing, uint8_t mode, int* out_w) {
+                                             float spacing, uint8_t mode,
+                                             uint8_t style, int* out_w) {
   if (!s || !out_w) return false;
   int len = (int)strnlen(s, COGITO_TEXT_MEASURE_KEY_MAX);
   if (len <= 0 || len >= COGITO_TEXT_MEASURE_KEY_MAX) return false;
   int spacing_q64 = (int)lroundf(spacing * 64.0f);
-  uint32_t h = cogito_text_measure_hash(f, s, len, size, spacing_q64, mode);
+  uint32_t h = cogito_text_measure_hash(f, s, len, size, spacing_q64, mode, style);
   CogitoTextMeasureCacheEntry* e = &cogito_text_measure_cache[h % COGITO_TEXT_MEASURE_CACHE_SIZE];
   if (!e->valid || e->hash != h || e->font != f || e->size != size ||
-      e->spacing_q64 != spacing_q64 || e->mode != mode || e->len != (uint8_t)len ||
+      e->spacing_q64 != spacing_q64 || e->mode != mode || e->style != style ||
+      e->len != (uint8_t)len ||
       memcmp(e->text, s, (size_t)len) != 0) {
     return false;
   }
@@ -1036,12 +1044,13 @@ static bool cogito_text_measure_cache_lookup(CogitoFont* f, const char* s, int s
 }
 
 static void cogito_text_measure_cache_store(CogitoFont* f, const char* s, int size,
-                                            float spacing, uint8_t mode, int width) {
+                                            float spacing, uint8_t mode,
+                                            uint8_t style, int width) {
   if (!s) return;
   int len = (int)strnlen(s, COGITO_TEXT_MEASURE_KEY_MAX);
   if (len <= 0 || len >= COGITO_TEXT_MEASURE_KEY_MAX) return;
   int spacing_q64 = (int)lroundf(spacing * 64.0f);
-  uint32_t h = cogito_text_measure_hash(f, s, len, size, spacing_q64, mode);
+  uint32_t h = cogito_text_measure_hash(f, s, len, size, spacing_q64, mode, style);
   CogitoTextMeasureCacheEntry* e = &cogito_text_measure_cache[h % COGITO_TEXT_MEASURE_CACHE_SIZE];
   e->valid = true;
   e->hash = h;
@@ -1049,28 +1058,15 @@ static void cogito_text_measure_cache_store(CogitoFont* f, const char* s, int si
   e->size = size;
   e->spacing_q64 = spacing_q64;
   e->mode = mode;
+  e->style = style;
   e->len = (uint8_t)len;
   memcpy(e->text, s, (size_t)len);
   e->text[len] = '\0';
   e->width = width;
 }
 
-static int cogito_text_width_size_span_font(CogitoFont* f, const char* s, int len, int size) {
-  if (!s || len <= 0) return 0;
-  char stack_buf[1024];
-  char* buf = stack_buf;
-  bool heap = false;
-  if (len >= (int)sizeof(stack_buf)) {
-    buf = (char*)malloc((size_t)len + 1);
-    if (!buf) return 0;
-    heap = true;
-  }
-  memcpy(buf, s, (size_t)len);
-  buf[len] = '\0';
-  int w = cogito_text_width_size_font(f, buf, size);
-  if (heap) free(buf);
-  return w;
-}
+// Forward declaration — defined below cogito_text_width_size_n
+static int cogito_text_width_size_n_font(CogitoFont* f, const char* s, int len, int size);
 
 static int cogito_tabular_digit_width(CogitoFont* f, int size) {
   int max_w = 0;
@@ -1084,13 +1080,13 @@ static int cogito_tabular_digit_width(CogitoFont* f, int size) {
   return max_w;
 }
 
-static int cogito_text_width_size_font_spaced(CogitoFont* f, const char* s, int size, float spacing) {
+static int cogito_text_width_size_font_spaced(CogitoFont* f, const char* s, int size, float spacing, uint8_t style) {
   if (!s) return 0;
   if (size <= 0) size = cogito_font_size();
   f = cogito_font_resolve_size(f, size);
 
   int cached_w = 0;
-  if (cogito_text_measure_cache_lookup(f, s, size, spacing, 0, &cached_w)) {
+  if (cogito_text_measure_cache_lookup(f, s, size, spacing, 0, style, &cached_w)) {
     return cached_w;
   }
 
@@ -1114,7 +1110,7 @@ static int cogito_text_width_size_font_spaced(CogitoFont* f, const char* s, int 
     }
   }
 
-  cogito_text_measure_cache_store(f, s, size, spacing, 0, base);
+  cogito_text_measure_cache_store(f, s, size, spacing, 0, style, base);
   return base;
 }
 
@@ -1124,7 +1120,7 @@ static int cogito_text_width_size_font_spaced_tabular(CogitoFont* f, const char*
   f = cogito_font_resolve_size(f, size);
 
   int cached_w = 0;
-  if (cogito_text_measure_cache_lookup(f, s, size, spacing, 1, &cached_w)) {
+  if (cogito_text_measure_cache_lookup(f, s, size, spacing, 1, 0, &cached_w)) {
     return cached_w;
   }
 
@@ -1136,7 +1132,7 @@ static int cogito_text_width_size_font_spaced_tabular(CogitoFont* f, const char*
     if (cogito_is_ascii_digit_char(*p)) {
       int seg_len = (int)(p - seg);
       if (seg_len > 0) {
-        total += cogito_text_width_size_span_font(f, seg, seg_len, size);
+        total += cogito_text_width_size_n_font(f, seg, seg_len, size);
       }
       while (*p && cogito_is_ascii_digit_char(*p)) {
         total += digit_adv;
@@ -1149,7 +1145,7 @@ static int cogito_text_width_size_font_spaced_tabular(CogitoFont* f, const char*
   }
   int tail_len = (int)(p - seg);
   if (tail_len > 0) {
-    total += cogito_text_width_size_span_font(f, seg, tail_len, size);
+    total += cogito_text_width_size_n_font(f, seg, tail_len, size);
   }
 
   if (spacing != 0.0f) {
@@ -1159,12 +1155,12 @@ static int cogito_text_width_size_font_spaced_tabular(CogitoFont* f, const char*
     }
   }
 
-  cogito_text_measure_cache_store(f, s, size, spacing, 1, total);
+  cogito_text_measure_cache_store(f, s, size, spacing, 1, 0, total);
   return total;
 }
 
 static int cogito_text_width_size_font(CogitoFont* f, const char* s, int size) {
-  return cogito_text_width_size_font_spaced(f, s, size, 0.0f);
+  return cogito_text_width_size_font_spaced(f, s, size, 0.0f, 0);
 }
 
 static int cogito_text_width_size_node(const CogitoNode* n, const char* s, int size) {
@@ -1174,6 +1170,7 @@ static int cogito_text_width_size_node(const CogitoNode* n, const char* s, int s
   float spacing = (n && n->letter_spacing_set) ? n->letter_spacing : 0.0f;
   int style_flags = COGITO_FONT_STYLE_NORMAL;
   if (cogito_node_italic(n)) style_flags |= COGITO_FONT_STYLE_ITALIC;
+  if (cogito_node_underline(n)) style_flags |= COGITO_FONT_STYLE_UNDERLINE;
   if (cogito_node_strikethrough(n)) style_flags |= COGITO_FONT_STYLE_STRIKETHROUGH;
   if (style_flags && cogito_backend && cogito_backend->font_set_style) {
     cogito_backend->font_set_style(f, style_flags);
@@ -1182,12 +1179,21 @@ static int cogito_text_width_size_node(const CogitoNode* n, const char* s, int s
   if (n && n->font_tabular) {
     w = cogito_text_width_size_font_spaced_tabular(f, s, size, spacing);
   } else {
-    w = cogito_text_width_size_font_spaced(f, s, size, spacing);
+    w = cogito_text_width_size_font_spaced(f, s, size, spacing, (uint8_t)style_flags);
   }
   if (style_flags && cogito_backend && cogito_backend->font_set_style) {
     cogito_backend->font_set_style(f, COGITO_FONT_STYLE_NORMAL);
   }
   return w;
+}
+
+static int cogito_text_width_size_n(const char* s, int len, int size) {
+  if (!s || len <= 0) return 0;
+  if (len > 1023) len = 1023;
+  char buf[1024];
+  memcpy(buf, s, (size_t)len);
+  buf[len] = '\0';
+  return cogito_text_width_size(buf, size);
 }
 
 static int cogito_text_width_size_n_font(CogitoFont* f, const char* s, int len, int size) {
@@ -1207,6 +1213,7 @@ static int cogito_text_width_size_n_node(const CogitoNode* n, const char* s, int
   if (!s || len <= 0) return 0;
   int style_flags = COGITO_FONT_STYLE_NORMAL;
   if (cogito_node_italic(n)) style_flags |= COGITO_FONT_STYLE_ITALIC;
+  if (cogito_node_underline(n)) style_flags |= COGITO_FONT_STYLE_UNDERLINE;
   if (cogito_node_strikethrough(n)) style_flags |= COGITO_FONT_STYLE_STRIKETHROUGH;
   if (style_flags && cogito_backend && cogito_backend->font_set_style) {
     cogito_backend->font_set_style(f, style_flags);
@@ -1219,7 +1226,7 @@ static int cogito_text_width_size_n_node(const CogitoNode* n, const char* s, int
   if (n && n->font_tabular) {
     w = cogito_text_width_size_font_spaced_tabular(f, buf, size, spacing);
   } else {
-    w = cogito_text_width_size_font_spaced(f, buf, size, spacing);
+    w = cogito_text_width_size_font_spaced(f, buf, size, spacing, (uint8_t)style_flags);
   }
   if (style_flags && cogito_backend && cogito_backend->font_set_style) {
     cogito_backend->font_set_style(f, COGITO_FONT_STYLE_NORMAL);
@@ -1261,6 +1268,8 @@ static void cogito_text_delete_range(CogitoNode* n, size_t start, size_t end) {
   buf[new_len] = '\0';
   cogito_text_set_from_buf(n, buf, new_len);
   if (!use_static) free(buf);
+  // Adjust span positions for the deleted range
+  cogito_spans_shift_delete(n, (int)start, (int)end);
 }
 
 static void cogito_text_append_codepoint(CogitoNode* n, int cp) {
@@ -1323,6 +1332,24 @@ static void cogito_text_append_codepoint(CogitoNode* n, int cp) {
   buf[out_len] = '\0';
   cogito_text_set_from_buf(n, buf, out_len);
   if (!use_static) free(buf);
+  // Adjust span positions for the inserted bytes.
+  // If the cursor sits right at the end of a span (not inside it),
+  // inherit that span's style by extending it to cover the new bytes.
+  if (n->span_count > 0) {
+    CogitoTextSpan probe = cogito_spans_at(n, (int)insert_at);
+    if (!probe.bold_set && !probe.italic_set && !probe.underline_set &&
+        !probe.strikethrough_set && !probe.color_set && !probe.size_set &&
+        !probe.family_set) {
+      // Not inside any span — check the span ending right at the cursor
+      for (int si = 0; si < n->span_count; si++) {
+        if (n->spans[si].end == (int)insert_at) {
+          n->spans[si].end += ulen;
+          break;
+        }
+      }
+    }
+  }
+  cogito_spans_shift_insert(n, (int)insert_at, ulen);
   *caret = (int)(insert_at + (size_t)ulen);
   *sel_start = *caret;
   *sel_end = *caret;
@@ -1361,6 +1388,33 @@ static void cogito_text_backspace(CogitoNode* n) {
   *sel_end = *caret;
 }
 
+static int cogito_line_width_with_spans(const CogitoNode* n,
+                                        const char* full_text,
+                                        int line_start, int line_len,
+                                        int base_size);
+
+// Compute the line height for a wrapped line, accounting for spans.
+// Returns the tallest of the base font height and any span's font height
+// that overlaps the given character range [line_start, line_start+line_len).
+static int cogito_line_height_with_spans(const CogitoNode* n,
+                                          int line_start, int line_len,
+                                          int base_size) {
+  int base_h = cogito_text_height_size(base_size);
+  if (!n || n->span_count <= 0 || line_len <= 0) return base_h;
+  int line_end = line_start + line_len;
+  int max_h = base_h;
+  for (int i = 0; i < n->span_count; i++) {
+    const CogitoTextSpan* s = &n->spans[i];
+    if (s->start >= line_end) break;
+    if (s->end <= line_start) continue;
+    if (s->size_set && s->size > 0) {
+      int sh = cogito_text_height_size(s->size);
+      if (sh > max_h) max_h = sh;
+    }
+  }
+  return max_h;
+}
+
 static int cogito_text_index_from_x(const CogitoNode* n, const char* text, int size, int target_x) {
   if (!text || target_x <= 0) return 0;
   int len = (int)strlen(text);
@@ -1390,6 +1444,29 @@ static int cogito_text_index_from_x(const CogitoNode* n, const char* text, int s
   return lo;
 }
 
+// Span-aware version: converts a pixel x-offset into a character index
+// within a line starting at line_start in full_text.
+static int cogito_text_index_from_x_spans(const CogitoNode* n,
+                                           const char* full_text,
+                                           int line_start, int line_len,
+                                           int base_size, int target_x) {
+  if (!full_text || target_x <= 0 || line_len <= 0) return 0;
+  if (n->span_count == 0)
+    return cogito_text_index_from_x(n, full_text + line_start, base_size, target_x);
+
+  // Linear scan: measure cumulative width char-by-char using span metrics.
+  int prev_w = 0;
+  for (int i = 1; i <= line_len; i++) {
+    int w = cogito_line_width_with_spans(n, full_text, line_start, i, base_size);
+    if (w >= target_x) {
+      // Pick whichever side of this character the click is closer to.
+      return (target_x - prev_w < w - target_x) ? i - 1 : i;
+    }
+    prev_w = w;
+  }
+  return line_len;
+}
+
 static int cogito_text_line_index_from_pos(const CogitoNode* n, const char* text, int size, int max_w, int line_y, int line_h, int x, int y) {
   if (!text) return 0;
   if (max_w <= 0) max_w = 1;
@@ -1400,7 +1477,12 @@ static int cogito_text_line_index_from_pos(const CogitoNode* n, const char* text
     int line_start = idx;
     int line_len = 0;
     int last_space = -1;
-    int cumulative_w = 0;  // Track width incrementally for better performance
+    int cumulative_w = 0;
+    // Resolve per-paragraph line height, fall back to caller-provided line_h
+    bool lh_set = false;
+    float lh_mul = cogito_get_para_line_height(n, idx, &lh_set);
+    int base_h = cogito_text_height_size(size);
+    int this_line_h = lh_set && lh_mul > 0.0f ? (int)lroundf(base_h * lh_mul) : line_h;
     for (int i = idx; i < len; i++) {
       char c = text[i];
       if (c == '\n') {
@@ -1408,7 +1490,6 @@ static int cogito_text_line_index_from_pos(const CogitoNode* n, const char* text
         idx = i + 1;
         break;
       }
-      // Get width of just this character
       int char_w = cogito_text_width_size_n_node(n, text + i, 1, size);
       if (c == ' ') last_space = i;
       if (cumulative_w + char_w > max_w) {
@@ -1428,66 +1509,177 @@ static int cogito_text_line_index_from_pos(const CogitoNode* n, const char* text
       }
     }
     if (line_len < 0) line_len = 0;
-    if (y >= cur_y && y <= cur_y + line_h) {
-      int local_x = x;
+    if (y >= cur_y && y <= cur_y + this_line_h) {
+      int line_w = cogito_text_width_size_n_node(n, text + line_start, line_len, size);
+      int para_align = cogito_get_para_align(n, line_start);
+      int align_off = 0;
+      if (para_align == 1) align_off = (max_w - line_w) / 2;
+      else if (para_align == 2) align_off = max_w - line_w;
+      if (align_off < 0) align_off = 0;
+      int local_x = x - align_off;
       if (local_x < 0) local_x = 0;
       int caret = cogito_text_index_from_x(n, text + line_start, size, local_x);
       if (caret > line_len) caret = line_len;
       return line_start + caret;
     }
-    cur_y += line_h;
+    cur_y += this_line_h;
   }
   return len;
 }
 
-__attribute__((unused))
-static int cogito_text_width_size_n(const char* s, int len, int size) {
-  return cogito_text_width_size_n_font(cogito_font, s, len, size);
+// Span-aware version: converts (x, y) to a character index in multi-line
+// wrapped text, using per-span font metrics for accurate hit-testing.
+// Word-wrap decisions use the base size to match cogito_draw_text_wrapped_spans.
+static int cogito_text_line_index_from_pos_spans(const CogitoNode* n,
+                                                  const char* text, int size,
+                                                  int max_w, int line_y,
+                                                  int line_h, int x, int y) {
+  if (!text) return 0;
+  (void)line_h;
+  if (n->span_count == 0)
+    return cogito_text_line_index_from_pos(n, text, size, max_w, line_y, line_h, x, y);
+  if (max_w <= 0) max_w = 1;
+  int len = (int)strlen(text);
+  int idx = 0;
+  int cur_y = line_y;
+  while (idx < len) {
+    int line_start = idx;
+    int line_len = 0;
+    int last_space = -1;
+    for (int i = idx; i < len; i++) {
+      char c = text[i];
+      if (c == '\n') {
+        line_len = i - idx;
+        idx = i + 1;
+        break;
+      }
+      int w = cogito_line_width_with_spans(n, text, idx, i - idx + 1, size);
+      if (c == ' ') last_space = i;
+      if (w > max_w && i > idx) {
+        if (last_space >= idx) {
+          line_len = last_space - idx;
+          idx = last_space + 1;
+        } else {
+          line_len = i - idx;
+          idx = i;
+        }
+        break;
+      }
+      if (i == len - 1) {
+        line_len = i - idx + 1;
+        idx = len;
+      }
+    }
+    if (line_len < 0) line_len = 0;
+    // Per-line height from tallest span on this line.
+    int this_h = cogito_line_height_with_spans(n, line_start, line_len, size);
+    int adv = this_h;
+    {
+      bool lh_set = false;
+      float lh = cogito_get_para_line_height(n, line_start, &lh_set);
+      if (lh_set && lh > 0.0f)
+        adv = (int)lroundf(this_h * lh);
+    }
+    if (y >= cur_y && y <= cur_y + adv) {
+      int line_w = cogito_line_width_with_spans(n, text, line_start, line_len, size);
+      int para_align = cogito_get_para_align(n, line_start);
+      int align_off = 0;
+      if (para_align == 1) align_off = (max_w - line_w) / 2;
+      else if (para_align == 2) align_off = max_w - line_w;
+      if (align_off < 0) align_off = 0;
+      int local_x = x - align_off;
+      if (local_x < 0) local_x = 0;
+      int caret = cogito_text_index_from_x_spans(n, text, line_start,
+                                                   line_len, size, local_x);
+      if (caret > line_len) caret = line_len;
+      return line_start + caret;
+    }
+    cur_y += adv;
+  }
+  return len;
 }
 
-// Node-aware text drawing
-
-static int cogito_text_wrap_height(const CogitoNode* n, const char* text, int size, int max_w) {
-  if (!text || max_w <= 0) return 0;
+static int cogito_text_wrap_height(const CogitoNode* n, const char* text, int size, int w) {
+  if (!text || w <= 0) return 0;
   if (size <= 0) size = cogito_font_size();
-  int line_h = cogito_text_height_size(size);
-  if (n && n->line_height_set && n->line_height > 0.0f) line_h = (int)lroundf(line_h * n->line_height);
+
+  const bool has_spans = (n && n->span_count > 0);
+  int base_line_h = cogito_text_height_size(size);
+  int base_adv = base_line_h;
+  if (n) {
+    bool lh_set = false;
+    float lh = cogito_get_para_line_height(n, 0, &lh_set);
+    if (lh_set && lh > 0.0f)
+      base_adv = (int)lroundf(base_line_h * lh);
+  }
+
   int lines = 0;
+  int total_h = 0;
   const char* p = text;
+  int text_offset = 0;
   while (*p) {
-    while (*p == '\n') { lines++; p++; }
+    while (*p == '\n') {
+      lines++;
+      bool lh_set = false;
+      float lh = n ? cogito_get_para_line_height(n, text_offset, &lh_set) : 0.0f;
+      int empty_h = base_line_h;
+      if (lh_set && lh > 0.0f) empty_h = (int)lroundf(base_line_h * lh);
+      total_h += empty_h;
+      p++;
+      text_offset++;
+    }
     if (!*p) break;
-    int line_len = 0;
-    int line_w = 0;
-    int last_space = -1;
-    int last_space_w = 0;
+
     const char* start = p;
+    int start_offset = text_offset;
+    int line_len = 0;
+    int last_space = -1;
+
     while (*p && *p != '\n') {
-      int w = cogito_text_width_size_n_node(n, start, line_len + 1, size);
-      if (*p == ' ' || *p == '\t') {
-        last_space = line_len;
-        last_space_w = w;
-      }
-      if (w > max_w && line_len > 0) {
+      int line_w = has_spans
+        ? cogito_line_width_with_spans(n, text, start_offset, line_len + 1, size)
+        : (n
+            ? cogito_text_width_size_n_node(n, start, line_len + 1, size)
+            : cogito_text_width_size_n(start, line_len + 1, size));
+
+      if (*p == ' ' || *p == '\t') last_space = line_len;
+      if (line_w > w && line_len > 0) {
         if (last_space >= 0) {
           line_len = last_space;
-          line_w = last_space_w;
           p = start + line_len + 1;
+          text_offset = start_offset + line_len + 1;
         } else {
-          line_w = cogito_text_width_size_n_node(n, start, line_len, size);
+          p = start + line_len;
+          text_offset = start_offset + line_len;
         }
         break;
       }
       line_len++;
-      line_w = w;
       p++;
+      text_offset++;
     }
-    if (*p == '\n') p++;
-    (void)line_w;
+
+    int line_h = has_spans
+      ? cogito_line_height_with_spans(n, start_offset, line_len, size)
+      : base_line_h;
+    {
+      bool lh_set = false;
+      float lh = n ? cogito_get_para_line_height(n, start_offset, &lh_set) : 0.0f;
+      if (lh_set && lh > 0.0f)
+        line_h = (int)lroundf(line_h * lh);
+    }
+    if (line_h <= 0) line_h = base_adv;
+    total_h += line_h;
+
+    if (*p == '\n') {
+      p++;
+      text_offset++;
+    }
     lines++;
   }
-  if (lines == 0) lines = 1;
-  return lines * line_h;
+
+  if (lines == 0) return base_adv;
+  return total_h;
 }
 
 static void cogito_draw_text_tabular(CogitoFont* f, const char* text, int x, int y, int size, CogitoColor color);
@@ -1541,9 +1733,10 @@ static void cogito_draw_text_size_node(const CogitoNode* n, int x, int y, const 
     (f == cogito_font && !cogito_font_medium_ready) ||
     (f == cogito_font_medium && cogito_font_medium_variable)
   );
-  // Apply italic / strikethrough font style flags
+  // Apply italic / underline / strikethrough font style flags
   int style_flags = COGITO_FONT_STYLE_NORMAL;
   if (cogito_node_italic(n)) style_flags |= COGITO_FONT_STYLE_ITALIC;
+  if (cogito_node_underline(n)) style_flags |= COGITO_FONT_STYLE_UNDERLINE;
   if (cogito_node_strikethrough(n)) style_flags |= COGITO_FONT_STYLE_STRIKETHROUGH;
   if (style_flags && cogito_backend->font_set_style) {
     cogito_backend->font_set_style(f, style_flags);
@@ -1727,16 +1920,34 @@ static void cogito_draw_text_tabular(CogitoFont* f, const char* text, int x, int
 static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, const char* text, CogitoColor color, int size, bool bold, bool medium, int align, bool draw, int max_lines) {
   if (!text || w <= 0) return 0;
   if (size <= 0) size = cogito_font_size();
-  int line_h = cogito_text_height_size(size);
-  if (n && n->line_height_set && n->line_height > 0.0f) line_h = (int)lroundf(line_h * n->line_height);
+  int base_line_h = cogito_text_height_size(size);
   int lines = 0;
+  int total_h = 0;
   const char* p = text;
+  int text_offset = 0;
   while (*p) {
     if (max_lines > 0 && lines >= max_lines) break;
-    while (*p == '\n') { lines++; p++; if (max_lines > 0 && lines >= max_lines) goto wrapped_done; }
+    while (*p == '\n') {
+      bool lh_set = false;
+      float lh = n ? cogito_get_para_line_height(n, text_offset, &lh_set) : 0.0f;
+      int empty_h = base_line_h;
+      if (lh_set && lh > 0.0f) empty_h = (int)lroundf(base_line_h * lh);
+      total_h += empty_h;
+      lines++; p++; text_offset++;
+      if (max_lines > 0 && lines >= max_lines) goto wrapped_done;
+    }
     if (!*p) break;
+
+    // Resolve per-paragraph properties for this line
+    int para_align = n ? cogito_get_para_align(n, text_offset) : align;
+    bool lh_set = false;
+    float lh_mul = n ? cogito_get_para_line_height(n, text_offset, &lh_set) : 0.0f;
+    int line_h = base_line_h;
+    if (lh_set && lh_mul > 0.0f) line_h = (int)lroundf(base_line_h * lh_mul);
+
     bool is_last_line = (max_lines > 0 && lines == max_lines - 1);
     const char* start = p;
+    int start_offset = text_offset;
     if (is_last_line) {
       int para_len = 0;
       while (start[para_len] && start[para_len] != '\n') para_len++;
@@ -1748,20 +1959,21 @@ static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, co
           int len_n = para_len > 1000 ? 1000 : para_len;
           memcpy(buf, start, (size_t)len_n);
           buf[len_n] = '\0';
-          cogito_draw_text_ellipsis(n, x, y + lines * line_h, w, buf, color, size, bold, medium, align);
+          cogito_draw_text_ellipsis(n, x, y + total_h, w, buf, color, size, bold, medium, para_align);
         }
       } else if (para_len > 0) {
         int tx = x;
-        if (align == 1) tx = x + (w - para_w) / 2;
-        else if (align == 2) tx = x + (w - para_w);
+        if (para_align == 1) tx = x + (w - para_w) / 2;
+        else if (para_align == 2) tx = x + (w - para_w);
         if (draw) {
           char buf[1024];
           int len_n = para_len > 1000 ? 1000 : para_len;
           memcpy(buf, start, (size_t)len_n);
           buf[len_n] = '\0';
-          cogito_draw_text_size_node(n, tx, y + lines * line_h, buf, color, size, bold, medium);
+          cogito_draw_text_size_node(n, tx, y + total_h, buf, color, size, bold, medium);
         }
       }
+      total_h += line_h;
       lines++;
       break;
     }
@@ -1780,6 +1992,7 @@ static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, co
           line_len = last_space;
           line_w = last_space_w;
           p = start + line_len + 1;
+          text_offset = start_offset + line_len + 1;
         } else {
           line_w = cogito_text_width_size_n_node(n, start, line_len, size);
         }
@@ -1788,24 +2001,314 @@ static int cogito_draw_text_wrapped(const CogitoNode* n, int x, int y, int w, co
       line_len++;
       line_w = wcur;
       p++;
+      text_offset++;
     }
     if (line_len > 0) {
       int tx = x;
-      if (align == 1) tx = x + (w - line_w) / 2;
-      else if (align == 2) tx = x + (w - line_w);
+      if (para_align == 1) tx = x + (w - line_w) / 2;
+      else if (para_align == 2) tx = x + (w - line_w);
       if (draw) {
         char buf[1024];
         int len_n = line_len;
         if (len_n > 1000) len_n = 1000;
         memcpy(buf, start, (size_t)len_n);
         buf[len_n] = '\0';
-        cogito_draw_text_size_node(n, tx, y + lines * line_h, buf, color, size, bold, medium);
+        cogito_draw_text_size_node(n, tx, y + total_h, buf, color, size, bold, medium);
       }
     }
-    if (*p == '\n') p++;
+    total_h += line_h;
+    if (*p == '\n') { p++; text_offset++; }
     lines++;
   }
   wrapped_done:
-  if (lines == 0) lines = 1;
-  return lines * line_h;
+  if (lines == 0) { lines = 1; total_h = base_line_h; }
+  return total_h;
+}
+
+// ── Span-aware text drawing ─────────────────────────────────────
+// Draws a single text segment with style resolved from a span + node defaults.
+static void cogito_draw_span_segment(const CogitoNode* n, int x, int y,
+                                     const char* text, int text_len,
+                                     CogitoColor color, int size,
+                                     const CogitoTextSpan* span) {
+  if (!text || text_len <= 0 || !n) return;
+  if (size <= 0) size = cogito_font_size();
+
+  // Resolve bold/medium from span or node defaults
+  bool bold = span && span->bold_set ? span->bold : cogito_node_bold(n);
+  bool medium = cogito_node_medium(n);
+
+  // Resolve font family: if span overrides family, we need a custom font lookup
+  CogitoFont* f;
+  if (span && span->family_set && span->family[0]) {
+    const char* path = cogito_resolve_font_by_name(span->family);
+    if (path && path[0]) {
+      int weight = cogito_font_weight_normal();
+      if (bold) weight = cogito_font_weight_bold();
+      else if (medium) weight = cogito_font_weight_medium();
+      f = cogito_font_cache_get_var(
+        cogito_font_cache,
+        (int)(sizeof(cogito_font_cache) / sizeof(cogito_font_cache[0])),
+        path, size, weight, NULL, 0);
+      if (!f) f = cogito_font_variant_for_node(n, size, bold, medium);
+    } else {
+      f = cogito_font_variant_for_node(n, size, bold, medium);
+    }
+  } else {
+    f = cogito_font_variant_for_node(n, size, bold, medium);
+  }
+
+  bool faux_bold = bold && (
+    (f == cogito_font && !cogito_font_bold_ready) ||
+    (f == cogito_font_bold && cogito_font_bold_variable)
+  );
+
+  // Resolve style flags from span or node defaults
+  int style_flags = COGITO_FONT_STYLE_NORMAL;
+  bool is_italic = span && span->italic_set ? span->italic : cogito_node_italic(n);
+  bool is_underline = span && span->underline_set ? span->underline : cogito_node_underline(n);
+  bool is_strike = span && span->strikethrough_set ? span->strikethrough : cogito_node_strikethrough(n);
+  if (is_italic) style_flags |= COGITO_FONT_STYLE_ITALIC;
+  if (is_underline) style_flags |= COGITO_FONT_STYLE_UNDERLINE;
+  if (is_strike) style_flags |= COGITO_FONT_STYLE_STRIKETHROUGH;
+
+  if (style_flags && cogito_backend && cogito_backend->font_set_style)
+    cogito_backend->font_set_style(f, style_flags);
+
+  // Resolve color from span or use default
+  CogitoColor draw_color = (span && span->color_set) ? span->color : color;
+
+  // Copy to null-terminated buffer
+  char buf[1024];
+  int len = text_len > 1000 ? 1000 : text_len;
+  memcpy(buf, text, (size_t)len);
+  buf[len] = '\0';
+
+  if (cogito_backend && cogito_backend->draw_text) {
+    cogito_backend->draw_text(f, buf, x, y, size, draw_color);
+    if (faux_bold) {
+      CogitoColor c2 = draw_color;
+      c2.a = (unsigned char)((float)c2.a * 0.72f);
+      cogito_backend->draw_text(f, buf, x + 1, y, size, c2);
+    }
+  }
+
+  if (style_flags && cogito_backend && cogito_backend->font_set_style)
+    cogito_backend->font_set_style(f, COGITO_FONT_STYLE_NORMAL);
+}
+
+// Measure width of a text segment using span-resolved styles
+static int cogito_span_segment_width(const CogitoNode* n, const char* text, int text_len, int size, const CogitoTextSpan* span) {
+  if (!text || text_len <= 0) return 0;
+  if (size <= 0) size = cogito_font_size();
+
+  bool bold = span && span->bold_set ? span->bold : cogito_node_bold(n);
+  bool medium = cogito_node_medium(n);
+
+  CogitoFont* f;
+  if (span && span->family_set && span->family[0]) {
+    const char* path = cogito_resolve_font_by_name(span->family);
+    if (path && path[0]) {
+      int weight = cogito_font_weight_normal();
+      if (bold) weight = cogito_font_weight_bold();
+      else if (medium) weight = cogito_font_weight_medium();
+      f = cogito_font_cache_get_var(
+        cogito_font_cache,
+        (int)(sizeof(cogito_font_cache) / sizeof(cogito_font_cache[0])),
+        path, size, weight, NULL, 0);
+      if (!f) f = cogito_font_variant_for_node(n, size, bold, medium);
+    } else {
+      f = cogito_font_variant_for_node(n, size, bold, medium);
+    }
+  } else {
+    f = cogito_font_variant_for_node(n, size, bold, medium);
+  }
+
+  bool is_italic = span && span->italic_set ? span->italic : cogito_node_italic(n);
+  bool is_underline = span && span->underline_set ? span->underline : cogito_node_underline(n);
+  bool is_strike = span && span->strikethrough_set ? span->strikethrough : cogito_node_strikethrough(n);
+  int style_flags = COGITO_FONT_STYLE_NORMAL;
+  if (is_italic) style_flags |= COGITO_FONT_STYLE_ITALIC;
+  if (is_underline) style_flags |= COGITO_FONT_STYLE_UNDERLINE;
+  if (is_strike) style_flags |= COGITO_FONT_STYLE_STRIKETHROUGH;
+  if (style_flags && cogito_backend && cogito_backend->font_set_style)
+    cogito_backend->font_set_style(f, style_flags);
+
+  float spacing = (n && n->letter_spacing_set) ? n->letter_spacing : 0.0f;
+  char buf[1024];
+  int len = text_len > 1000 ? 1000 : text_len;
+  memcpy(buf, text, (size_t)len);
+  buf[len] = '\0';
+  int w = cogito_text_width_size_font_spaced(f, buf, size, spacing, (uint8_t)style_flags);
+
+  if (style_flags && cogito_backend && cogito_backend->font_set_style)
+    cogito_backend->font_set_style(f, COGITO_FONT_STYLE_NORMAL);
+  return w;
+}
+
+// Draw a single pre-wrapped line using spans.
+// line_text points into the original text at byte offset line_start.
+// line_len is the byte length of this line.
+static void cogito_draw_line_with_spans(const CogitoNode* n, int x, int y,
+                                        const char* full_text,
+                                        int line_start, int line_len,
+                                        CogitoColor base_color, int base_size,
+                                        bool draw) {
+  if (!draw || line_len <= 0) return;
+  int line_end = line_start + line_len;
+  int pen_x = x;
+  int pos = line_start;
+
+  while (pos < line_end) {
+    // Find which span (if any) covers 'pos'
+    const CogitoTextSpan* span = NULL;
+    int seg_end = line_end; // default: rest of line
+    for (int i = 0; i < n->span_count; i++) {
+      const CogitoTextSpan* s = &n->spans[i];
+      if (s->end <= pos) continue;
+      if (s->start > pos) {
+        // Gap before this span — draw unstyled up to span start
+        seg_end = s->start < line_end ? s->start : line_end;
+        break;
+      }
+      // This span covers pos
+      span = s;
+      seg_end = s->end < line_end ? s->end : line_end;
+      break;
+    }
+
+    int seg_len = seg_end - pos;
+    if (seg_len <= 0) break;
+
+    int size_to_use = (span && span->size_set) ? span->size : base_size;
+    cogito_draw_span_segment(n, pen_x, y, full_text + pos, seg_len,
+                             base_color, size_to_use, span);
+    pen_x += cogito_span_segment_width(n, full_text + pos, seg_len, size_to_use, span);
+    pos = seg_end;
+  }
+}
+
+// Measure total width of a line accounting for per-span font metrics
+static int cogito_line_width_with_spans(const CogitoNode* n,
+                                        const char* full_text,
+                                        int line_start, int line_len,
+                                        int base_size) {
+  if (line_len <= 0) return 0;
+  if (n->span_count == 0)
+    return cogito_text_width_size_n_node(n, full_text + line_start, line_len, base_size);
+
+  int line_end = line_start + line_len;
+  int total = 0;
+  int pos = line_start;
+  while (pos < line_end) {
+    const CogitoTextSpan* span = NULL;
+    int seg_end = line_end;
+    for (int i = 0; i < n->span_count; i++) {
+      const CogitoTextSpan* s = &n->spans[i];
+      if (s->end <= pos) continue;
+      if (s->start > pos) {
+        seg_end = s->start < line_end ? s->start : line_end;
+        break;
+      }
+      span = s;
+      seg_end = s->end < line_end ? s->end : line_end;
+      break;
+    }
+    int seg_len = seg_end - pos;
+    if (seg_len <= 0) break;
+    int size_to_use = (span && span->size_set) ? span->size : base_size;
+    total += cogito_span_segment_width(n, full_text + pos, seg_len, size_to_use, span);
+    pos = seg_end;
+  }
+  return total;
+}
+
+// Span-aware wrapped text drawing.  Falls back to cogito_draw_text_wrapped
+// when span_count == 0 for zero overhead on plain text.
+static int cogito_draw_text_wrapped_spans(const CogitoNode* n, int x, int y, int w,
+                                          const char* text, CogitoColor color,
+                                          int size, bool bold, bool medium,
+                                          int align, bool draw, int max_lines) {
+  if (!n || n->span_count == 0)
+    return cogito_draw_text_wrapped(n, x, y, w, text, color, size, bold, medium, align, draw, max_lines);
+
+  if (!text || w <= 0) return 0;
+  if (size <= 0) size = cogito_font_size();
+  int base_line_h = cogito_text_height_size(size);
+  int base_adv = base_line_h;
+  {
+    bool lh_set = false;
+    float lh = cogito_get_para_line_height(n, 0, &lh_set);
+    if (lh_set && lh > 0.0f)
+      base_adv = (int)lroundf(base_line_h * lh);
+  }
+
+  int lines = 0;
+  int total_h = 0;
+  const char* p = text;
+  int text_offset = 0; // byte offset from start of text
+
+  while (*p) {
+    if (max_lines > 0 && lines >= max_lines) break;
+    while (*p == '\n') {
+      // Empty paragraph line — use its paragraph's line height
+      bool lh_set = false;
+      float lh = cogito_get_para_line_height(n, text_offset, &lh_set);
+      int empty_adv = base_line_h;
+      if (lh_set && lh > 0.0f) empty_adv = (int)lroundf(base_line_h * lh);
+      lines++; total_h += empty_adv; p++; text_offset++;
+      if (max_lines > 0 && lines >= max_lines) goto spans_done;
+    }
+    if (!*p) break;
+
+    const char* start = p;
+    int start_offset = text_offset;
+    int line_len = 0;
+    int last_space = -1;
+
+    // Word-wrap loop (span-aware measurement for correct line breaks)
+    while (*p && *p != '\n') {
+      int wcur = cogito_line_width_with_spans(n, text, start_offset, line_len + 1, size);
+      if (*p == ' ' || *p == '\t') last_space = line_len;
+      if (wcur > w && line_len > 0) {
+        if (last_space >= 0) {
+          line_len = last_space;
+          p = start + line_len + 1;
+          text_offset = start_offset + line_len + 1;
+        } else {
+          p = start + line_len;
+          text_offset = start_offset + line_len;
+        }
+        break;
+      }
+      line_len++;
+      p++;
+      text_offset++;
+    }
+
+    if (line_len > 0) {
+      int line_w = cogito_line_width_with_spans(n, text, start_offset, line_len, size);
+      int para_align = cogito_get_para_align(n, start_offset);
+      int tx = x;
+      if (para_align == 1) tx = x + (w - line_w) / 2;
+      else if (para_align == 2) tx = x + (w - line_w);
+      if (draw)
+        cogito_draw_line_with_spans(n, tx, y + total_h, text,
+                                    start_offset, line_len, color, size, true);
+    }
+    // Compute per-line height from tallest span on this line.
+    int this_h = cogito_line_height_with_spans(n, start_offset, line_len, size);
+    {
+      bool lh_set = false;
+      float lh = cogito_get_para_line_height(n, start_offset, &lh_set);
+      if (lh_set && lh > 0.0f)
+        this_h = (int)lroundf(this_h * lh);
+    }
+    total_h += this_h;
+    if (*p == '\n') { p++; text_offset++; }
+    lines++;
+  }
+  spans_done:
+  if (lines == 0) { lines = 1; total_h = base_adv; }
+  return total_h;
 }

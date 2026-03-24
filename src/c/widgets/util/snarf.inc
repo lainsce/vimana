@@ -203,6 +203,20 @@ static void cogito_text_input_paste(CogitoNode* n) {
   if (*sel_start != *sel_end) {
     size_t a = (size_t)*sel_start;
     size_t b = (size_t)*sel_end;
+    // Remove paragraph entries for \n chars in deleted selection
+    if (n->para_props && n->text) {
+      const char* t = n->text->data;
+      int lo = (int)(a < b ? a : b);
+      int hi = (int)(a < b ? b : a);
+      int tlen = (int)n->text->len;
+      if (hi > tlen) hi = tlen;
+      for (int i = hi - 1; i >= lo; i--) {
+        if (t[i] == '\n') {
+          int pi = cogito_para_index_from_byte(n, i);
+          cogito_para_props_remove(n, pi + 1);
+        }
+      }
+    }
     cogito_text_delete_range(n, a, b);
     int new_pos = (int)((a < b) ? a : b);
     *caret = new_pos;
@@ -223,6 +237,18 @@ static void cogito_text_input_paste(CogitoNode* n) {
   buf[out_len] = '\0';
   cogito_text_set_from_buf(n, buf, out_len);
   free(buf);
+  // Adjust span positions for the pasted text
+  cogito_spans_shift_insert(n, (int)insert_at, (int)paste_len);
+  // Adjust paragraph props for pasted text
+  if (n->para_props) {
+    int insert_para = cogito_para_index_from_byte(n, (int)insert_at);
+    for (size_t i = 0; i < paste_len; i++) {
+      if (text[i] == '\n') {
+        insert_para++;
+        cogito_para_props_insert(n, insert_para, insert_para - 1);
+      }
+    }
+  }
   free(text);
   *caret = (int)(insert_at + paste_len);
   *sel_start = *caret;

@@ -1305,6 +1305,11 @@ static bool cogito_node_italic(const CogitoNode* n) {
   return n->font_italic_set && n->font_italic;
 }
 
+static bool cogito_node_underline(const CogitoNode* n) {
+  if (!n) return false;
+  return n->font_underline_set && n->font_underline;
+}
+
 static bool cogito_node_strikethrough(const CogitoNode* n) {
   if (!n) return false;
   return n->font_strikethrough_set && n->font_strikethrough;

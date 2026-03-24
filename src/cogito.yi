@@ -8,6 +8,19 @@ bring stdr
     this
 ;
 
+-- Key scancode constants (SDL2 values, passed to on_key callback)
+pub :: KEY_RETURN     (( num )) <- 40 ;
+pub :: KEY_BACKSPACE  (( num )) <- 42 ;
+pub :: KEY_TAB        (( num )) <- 43 ;
+pub :: KEY_HOME       (( num )) <- 74 ;
+pub :: KEY_DELETE     (( num )) <- 76 ;
+pub :: KEY_END        (( num )) <- 77 ;
+pub :: KEY_RIGHT      (( num )) <- 79 ;
+pub :: KEY_LEFT       (( num )) <- 80 ;
+pub :: KEY_DOWN       (( num )) <- 81 ;
+pub :: KEY_UP         (( num )) <- 82 ;
+pub :: KEY_KP_ENTER   (( num )) <- 88 ;
+
 -- Internal intrinsics
 : __cogito_about_window_set_description(aw = AboutWindow, desc = string) (( -- )) { }
 : __cogito_about_window_set_icon(aw = AboutWindow, icon = string) (( -- )) { }
@@ -163,6 +176,7 @@ bring stdr
 : __cogito_dropdown_get_selected(dd = Dropdown) (( num )) { }
 : __cogito_dropdown_on_change(dd = Dropdown, handler = any) (( -- )) { }
 : __cogito_dropdown_set_items(dd = Dropdown, items = [any]) (( -- )) { }
+: __cogito_dropdown_set_icon(dd = Dropdown, icon = string) (( -- )) { }
 : __cogito_dropdown_set_selected(dd = Dropdown, idx = num) (( -- )) { }
 : __cogito_dropdown() (( Dropdown )) { }
 : __cogito_empty_page_set_action(ep = EmptyPage, text = string, handler = any) (( -- )) { }
@@ -333,6 +347,41 @@ bring stdr
 : __cogito_node_set_font_family(node = any, family = string) (( -- )) { }
 : __cogito_node_set_font_italic(node = any, italic = bool) (( -- )) { }
 : __cogito_node_set_strikethrough(node = any, on = bool) (( -- )) { }
+: __cogito_node_set_underline(node = any, on = bool) (( -- )) { }
+: __cogito_node_set_text_color(node = any, hex = string) (( -- )) { }
+: __cogito_node_set_text_align(node = any, align = num) (( -- )) { }
+: __cogito_node_set_line_height(node = any, height = num) (( -- )) { }
+: __cogito_textview_get_sel_start(node = any) (( num )) { }
+: __cogito_textview_get_sel_end(node = any) (( num )) { }
+: __cogito_textview_set_selection(node = any, start = num, end = num) (( -- )) { }
+: __cogito_textview_apply_bold(node = any, start = num, end = num, val = bool) (( -- )) { }
+: __cogito_textview_apply_italic(node = any, start = num, end = num, val = bool) (( -- )) { }
+: __cogito_textview_apply_underline(node = any, start = num, end = num, val = bool) (( -- )) { }
+: __cogito_textview_apply_strikethrough(node = any, start = num, end = num, val = bool) (( -- )) { }
+: __cogito_textview_apply_color(node = any, start = num, end = num, hex = string) (( -- )) { }
+: __cogito_textview_apply_size(node = any, start = num, end = num, size = num) (( -- )) { }
+: __cogito_textview_apply_family(node = any, start = num, end = num, family = string) (( -- )) { }
+: __cogito_textview_clear_spans(node = any) (( -- )) { }
+: __cogito_textview_span_count(node = any) (( num )) { }
+: __cogito_textview_span_start(node = any, idx = num) (( num )) { }
+: __cogito_textview_span_end(node = any, idx = num) (( num )) { }
+: __cogito_textview_span_bold(node = any, idx = num) (( num )) { }
+: __cogito_textview_span_italic(node = any, idx = num) (( num )) { }
+: __cogito_textview_span_underline(node = any, idx = num) (( num )) { }
+: __cogito_textview_span_strikethrough(node = any, idx = num) (( num )) { }
+: __cogito_textview_span_size(node = any, idx = num) (( num )) { }
+: __cogito_textview_span_color(node = any, idx = num) (( string )) { }
+: __cogito_textview_span_family(node = any, idx = num) (( string )) { }
+: __cogito_textview_para_count(node = any) (( num )) { }
+: __cogito_textview_set_para_align(node = any, idx = num, align = num) (( -- )) { }
+: __cogito_textview_get_para_align(node = any, idx = num) (( num )) { }
+: __cogito_textview_set_para_line_height(node = any, idx = num, h = num) (( -- )) { }
+: __cogito_textview_get_para_line_height(node = any, idx = num) (( num )) { }
+: __cogito_textview_get_caret(node = any) (( num )) { }
+: __cogito_textview_on_key(tv = any, handler = any) (( -- )) { }
+: __cogito_node_set_dropdown_selected(node = any, idx = num) (( -- )) { }
+: __cogito_node_set_iconbtn_checked(node = any, checked = bool) (( -- )) { }
+: __cogito_node_set_textfield_text(node = any, text = string) (( -- )) { }
 :: node_set_font_size(node = any, size = num) (( -- ))
     __cogito_node_set_font_size(node, size)
 ;
@@ -347,6 +396,114 @@ bring stdr
 ;
 :: node_set_strikethrough(node = any, on = bool) (( -- ))
     __cogito_node_set_strikethrough(node, on)
+;
+:: node_set_underline(node = any, on = bool) (( -- ))
+    __cogito_node_set_underline(node, on)
+;
+:: node_set_text_color(node = any, hex = string) (( -- ))
+    __cogito_node_set_text_color(node, hex)
+;
+:: node_set_text_align(node = any, align = num) (( -- ))
+    __cogito_node_set_text_align(node, align)
+;
+:: node_set_line_height(node = any, height = num) (( -- ))
+    __cogito_node_set_line_height(node, height)
+;
+:: textview_get_sel_start(node = any) (( num ))
+    <- __cogito_textview_get_sel_start(node)
+;
+:: textview_get_sel_end(node = any) (( num ))
+    <- __cogito_textview_get_sel_end(node)
+;
+:: textview_get_text(node = any) (( string ))
+    <- __cogito_textview_get_text(node)
+;
+:: textview_set_selection(node = any, start = num, end = num) (( -- ))
+    __cogito_textview_set_selection(node, start, end)
+;
+:: textview_apply_bold(node = any, start = num, end = num, val = bool) (( -- ))
+    __cogito_textview_apply_bold(node, start, end, val)
+;
+:: textview_apply_italic(node = any, start = num, end = num, val = bool) (( -- ))
+    __cogito_textview_apply_italic(node, start, end, val)
+;
+:: textview_apply_underline(node = any, start = num, end = num, val = bool) (( -- ))
+    __cogito_textview_apply_underline(node, start, end, val)
+;
+:: textview_apply_strikethrough(node = any, start = num, end = num, val = bool) (( -- ))
+    __cogito_textview_apply_strikethrough(node, start, end, val)
+;
+:: textview_apply_color(node = any, start = num, end = num, hex = string) (( -- ))
+    __cogito_textview_apply_color(node, start, end, hex)
+;
+:: textview_apply_size(node = any, start = num, end = num, size = num) (( -- ))
+    __cogito_textview_apply_size(node, start, end, size)
+;
+:: textview_apply_family(node = any, start = num, end = num, family = string) (( -- ))
+    __cogito_textview_apply_family(node, start, end, family)
+;
+:: textview_clear_spans(node = any) (( -- ))
+    __cogito_textview_clear_spans(node)
+;
+:: textview_span_count(node = any) (( num ))
+    <- __cogito_textview_span_count(node)
+;
+:: textview_span_start(node = any, idx = num) (( num ))
+    <- __cogito_textview_span_start(node, idx)
+;
+:: textview_span_end(node = any, idx = num) (( num ))
+    <- __cogito_textview_span_end(node, idx)
+;
+:: textview_span_bold(node = any, idx = num) (( num ))
+    <- __cogito_textview_span_bold(node, idx)
+;
+:: textview_span_italic(node = any, idx = num) (( num ))
+    <- __cogito_textview_span_italic(node, idx)
+;
+:: textview_span_underline(node = any, idx = num) (( num ))
+    <- __cogito_textview_span_underline(node, idx)
+;
+:: textview_span_strikethrough(node = any, idx = num) (( num ))
+    <- __cogito_textview_span_strikethrough(node, idx)
+;
+:: textview_span_size(node = any, idx = num) (( num ))
+    <- __cogito_textview_span_size(node, idx)
+;
+:: textview_span_color(node = any, idx = num) (( string ))
+    <- __cogito_textview_span_color(node, idx)
+;
+:: textview_span_family(node = any, idx = num) (( string ))
+    <- __cogito_textview_span_family(node, idx)
+;
+:: textview_para_count(node = any) (( num ))
+    <- __cogito_textview_para_count(node)
+;
+:: textview_set_para_align(node = any, idx = num, align = num) (( -- ))
+    __cogito_textview_set_para_align(node, idx, align)
+;
+:: textview_get_para_align(node = any, idx = num) (( num ))
+    <- __cogito_textview_get_para_align(node, idx)
+;
+:: textview_set_para_line_height(node = any, idx = num, h = num) (( -- ))
+    __cogito_textview_set_para_line_height(node, idx, h)
+;
+:: textview_get_para_line_height(node = any, idx = num) (( num ))
+    <- __cogito_textview_get_para_line_height(node, idx)
+;
+:: textview_get_caret(node = any) (( num ))
+    <- __cogito_textview_get_caret(node)
+;
+:: textview_on_key(tv = any, handler = any) (( -- ))
+    __cogito_textview_on_key(tv, handler)
+;
+:: dropdown_set_selected(node = any, idx = num) (( -- ))
+    __cogito_node_set_dropdown_selected(node, idx)
+;
+:: iconbtn_set_checked(node = any, checked = bool) (( -- ))
+    __cogito_node_set_iconbtn_checked(node, checked)
+;
+:: textfield_set_text(node = any, text = string) (( -- ))
+    __cogito_node_set_textfield_text(node, text)
 ;
 : __cogito_node_set_tooltip(node = any, text = string) (( -- )) { }
 : __cogito_node_window(node = any) (( Window )) { }
@@ -2887,6 +3044,30 @@ pub ,: TextView : Component
         __cogito_node_set_id(this, id)
         <- this
     ;
+    :: para_count(this) (( num ))
+        <- __cogito_textview_para_count(this)
+    ;
+    :: set_para_align(this, idx = num, align = num) (( TextView ))
+        __cogito_textview_set_para_align(this, idx, align)
+        <- this
+    ;
+    :: get_para_align(this, idx = num) (( num ))
+        <- __cogito_textview_get_para_align(this, idx)
+    ;
+    :: set_para_line_height(this, idx = num, h = num) (( TextView ))
+        __cogito_textview_set_para_line_height(this, idx, h)
+        <- this
+    ;
+    :: get_para_line_height(this, idx = num) (( num ))
+        <- __cogito_textview_get_para_line_height(this, idx)
+    ;
+    :: caret(this) (( num ))
+        <- __cogito_textview_get_caret(this)
+    ;
+    :: on_key(this, handler = any) (( TextView ))
+        __cogito_textview_on_key(this, handler)
+        <- this
+    ;
 ;
 
 pub ,: DatePicker : Component
@@ -3038,6 +3219,10 @@ pub ,: Dropdown : Component
     ;
     :: set_items(this, items = [any]) (( Dropdown ))
         __cogito_dropdown_set_items(this, items)
+        <- this
+    ;
+    :: set_icon(this, icon = string) (( Dropdown ))
+        __cogito_dropdown_set_icon(this, icon)
         <- this
     ;
     :: set_selected(this, idx = num) (( Dropdown ))

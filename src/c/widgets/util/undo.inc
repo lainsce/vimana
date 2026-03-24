@@ -16,6 +16,8 @@ static void cogito_undo_free(CogitoUndoHistory* h) {
   if (!h) return;
   for (int i = 0; i < h->count; i++) {
     if (h->entries[i].text) yis_release_val(YV_STR(h->entries[i].text));
+    if (h->entries[i].spans) free(h->entries[i].spans);
+    if (h->entries[i].para_props) free(h->entries[i].para_props);
   }
   free(h);
 }
@@ -32,6 +34,8 @@ static void cogito_undo_push(CogitoNode* n) {
     yis_release_val(YV_STR(h->entries[next].text));
     h->entries[next].text = NULL;
   }
+  if (h->entries[next].spans) { free(h->entries[next].spans); h->entries[next].spans = NULL; }
+  if (h->entries[next].para_props) { free(h->entries[next].para_props); h->entries[next].para_props = NULL; }
   // Snapshot current text
   YisStr* snap = n->text;
   if (snap) yis_retain_val(YV_STR(snap));
@@ -39,6 +43,10 @@ static void cogito_undo_push(CogitoNode* n) {
   h->entries[next].caret = n->kd->text_input.caret;
   h->entries[next].sel_start = n->kd->text_input.sel_start;
   h->entries[next].sel_end = n->kd->text_input.sel_end;
+  h->entries[next].spans = cogito_spans_clone(n->spans, n->span_count);
+  h->entries[next].span_count = n->span_count;
+  h->entries[next].para_props = cogito_para_props_clone(n->para_props, n->para_props_count);
+  h->entries[next].para_props_count = n->para_props_count;
   h->pos = next;
   if (h->count < COGITO_UNDO_MAX) h->count++;
   // Discard redo history after a new edit
@@ -60,12 +68,18 @@ static bool cogito_undo_perform(CogitoNode* n) {
       yis_release_val(YV_STR(h->entries[redo_slot].text));
       h->entries[redo_slot].text = NULL;
     }
+    if (h->entries[redo_slot].spans) { free(h->entries[redo_slot].spans); h->entries[redo_slot].spans = NULL; }
+    if (h->entries[redo_slot].para_props) { free(h->entries[redo_slot].para_props); h->entries[redo_slot].para_props = NULL; }
     YisStr* snap = n->text;
     if (snap) yis_retain_val(YV_STR(snap));
     h->entries[redo_slot].text = snap;
     h->entries[redo_slot].caret = n->kd->text_input.caret;
     h->entries[redo_slot].sel_start = n->kd->text_input.sel_start;
     h->entries[redo_slot].sel_end = n->kd->text_input.sel_end;
+    h->entries[redo_slot].spans = cogito_spans_clone(n->spans, n->span_count);
+    h->entries[redo_slot].span_count = n->span_count;
+    h->entries[redo_slot].para_props = cogito_para_props_clone(n->para_props, n->para_props_count);
+    h->entries[redo_slot].para_props_count = n->para_props_count;
     if (h->count < COGITO_UNDO_MAX) h->count++;
   }
   // Restore from current pos
@@ -74,6 +88,16 @@ static bool cogito_undo_perform(CogitoNode* n) {
   n->kd->text_input.caret = e->caret;
   n->kd->text_input.sel_start = e->sel_start;
   n->kd->text_input.sel_end = e->sel_end;
+  // Restore spans
+  if (n->spans) { free(n->spans); n->spans = NULL; }
+  n->spans = cogito_spans_clone(e->spans, e->span_count);
+  n->span_count = e->span_count;
+  n->span_cap = e->span_count;
+  // Restore paragraph props
+  if (n->para_props) { free(n->para_props); n->para_props = NULL; }
+  n->para_props = cogito_para_props_clone(e->para_props, e->para_props_count);
+  n->para_props_count = e->para_props_count;
+  n->para_props_cap = e->para_props_count;
   // Move pos backward
   h->pos = (h->pos - 1 + COGITO_UNDO_MAX) % COGITO_UNDO_MAX;
   h->redo_count++;
@@ -97,12 +121,28 @@ static bool cogito_redo_perform(CogitoNode* n) {
     n->kd->text_input.caret = e->caret;
     n->kd->text_input.sel_start = e->sel_start;
     n->kd->text_input.sel_end = e->sel_end;
+    if (n->spans) { free(n->spans); n->spans = NULL; }
+    n->spans = cogito_spans_clone(e->spans, e->span_count);
+    n->span_count = e->span_count;
+    n->span_cap = e->span_count;
+    if (n->para_props) { free(n->para_props); n->para_props = NULL; }
+    n->para_props = cogito_para_props_clone(e->para_props, e->para_props_count);
+    n->para_props_count = e->para_props_count;
+    n->para_props_cap = e->para_props_count;
   } else {
     CogitoUndoEntry* e = &h->entries[restore_slot];
     cogito_node_set_text(n, e->text);
     n->kd->text_input.caret = e->caret;
     n->kd->text_input.sel_start = e->sel_start;
     n->kd->text_input.sel_end = e->sel_end;
+    if (n->spans) { free(n->spans); n->spans = NULL; }
+    n->spans = cogito_spans_clone(e->spans, e->span_count);
+    n->span_count = e->span_count;
+    n->span_cap = e->span_count;
+    if (n->para_props) { free(n->para_props); n->para_props = NULL; }
+    n->para_props = cogito_para_props_clone(e->para_props, e->para_props_count);
+    n->para_props_count = e->para_props_count;
+    n->para_props_cap = e->para_props_count;
   }
   return true;
 }

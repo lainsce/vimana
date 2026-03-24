@@ -99,6 +99,7 @@
 #undef cogito_dropdown_get_selected
 #undef cogito_dropdown_new
 #undef cogito_dropdown_on_change
+#undef cogito_dropdown_set_icon
 #undef cogito_dropdown_set_items
 #undef cogito_dropdown_set_selected
 #undef cogito_empty_page_new
@@ -199,13 +200,48 @@
 #undef cogito_node_set_font_weight
 #undef cogito_node_set_halign
 #undef cogito_node_set_id
+#undef cogito_node_set_line_height
 #undef cogito_node_set_margins
+#undef cogito_textview_get_sel_start
+#undef cogito_textview_get_sel_end
+#undef cogito_textview_set_selection
+#undef cogito_textview_apply_bold
+#undef cogito_textview_apply_italic
+#undef cogito_textview_apply_underline
+#undef cogito_textview_apply_strikethrough
+#undef cogito_textview_apply_color
+#undef cogito_textview_apply_size
+#undef cogito_textview_apply_family
+#undef cogito_textview_clear_spans
+#undef cogito_textview_span_count
+#undef cogito_textview_span_start
+#undef cogito_textview_span_end
+#undef cogito_textview_span_bold
+#undef cogito_textview_span_italic
+#undef cogito_textview_span_underline
+#undef cogito_textview_span_strikethrough
+#undef cogito_textview_span_size
+#undef cogito_textview_span_color
+#undef cogito_textview_span_family
+#undef cogito_textview_para_count
+#undef cogito_textview_set_para_align
+#undef cogito_textview_get_para_align
+#undef cogito_textview_set_para_line_height
+#undef cogito_textview_get_para_line_height
+#undef cogito_textview_get_caret
+#undef cogito_textview_on_key
+#undef cogito_node_set_dropdown_selected
+#undef cogito_node_set_iconbtn_checked
+#undef cogito_node_set_textfield_text
 #undef cogito_node_set_opacity
 #undef cogito_node_set_padding
 #undef cogito_node_set_shadow
 #undef cogito_node_set_strikethrough
 #undef cogito_node_set_text
+#undef cogito_node_set_text_align
+#undef cogito_node_set_text_color
 #undef cogito_node_set_tooltip
+#undef cogito_node_set_underline
 #undef cogito_node_set_valign
 #undef cogito_node_window
 #undef cogito_notify
@@ -2907,6 +2943,149 @@ static void __cogito_node_set_font_family(YisVal nodev, YisVal familyv) {
   cogito_node_set_font_family(node, fam);
   if (tmp) yis_release_val(YV_STR(tmp));
 }
+static void __cogito_node_set_underline(YisVal nodev, YisVal onv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_underline(node, yis_as_bool(onv));
+}
+static void __cogito_node_set_text_color(YisVal nodev, YisVal colorv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  YisStr* tmp = NULL;
+  const char* hex = cogito_required_cstr(colorv, &tmp);
+  cogito_node_set_text_color(node, hex);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+static void __cogito_node_set_text_align(YisVal nodev, YisVal alignv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_text_align(node, (int)yis_as_int(alignv));
+}
+static void __cogito_node_set_line_height(YisVal nodev, YisVal heightv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  float h = heightv.tag == EVT_FLOAT ? (float)heightv.as.f : (heightv.tag == EVT_INT ? (float)heightv.as.i : 1.0f);
+  cogito_node_set_line_height(node, h);
+}
+static YisVal __cogito_textview_get_sel_start(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_get_sel_start(node));
+}
+static YisVal __cogito_textview_get_sel_end(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_get_sel_end(node));
+}
+static void __cogito_textview_set_selection(YisVal nodev, YisVal startv, YisVal endv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_set_selection(node, (int)yis_as_int(startv), (int)yis_as_int(endv));
+}
+static void __cogito_textview_apply_bold(YisVal nodev, YisVal startv, YisVal endv, YisVal valv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_apply_bold(node, (int)yis_as_int(startv), (int)yis_as_int(endv), yis_as_bool(valv));
+}
+static void __cogito_textview_apply_italic(YisVal nodev, YisVal startv, YisVal endv, YisVal valv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_apply_italic(node, (int)yis_as_int(startv), (int)yis_as_int(endv), yis_as_bool(valv));
+}
+static void __cogito_textview_apply_underline(YisVal nodev, YisVal startv, YisVal endv, YisVal valv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_apply_underline(node, (int)yis_as_int(startv), (int)yis_as_int(endv), yis_as_bool(valv));
+}
+static void __cogito_textview_apply_strikethrough(YisVal nodev, YisVal startv, YisVal endv, YisVal valv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_apply_strikethrough(node, (int)yis_as_int(startv), (int)yis_as_int(endv), yis_as_bool(valv));
+}
+static void __cogito_textview_apply_color(YisVal nodev, YisVal startv, YisVal endv, YisVal hexv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  YisStr* tmp = NULL;
+  const char* hex = cogito_required_cstr(hexv, &tmp);
+  cogito_textview_apply_color(node, (int)yis_as_int(startv), (int)yis_as_int(endv), hex);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+static void __cogito_textview_apply_size(YisVal nodev, YisVal startv, YisVal endv, YisVal sizev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_apply_size(node, (int)yis_as_int(startv), (int)yis_as_int(endv), (int)yis_as_int(sizev));
+}
+static void __cogito_textview_apply_family(YisVal nodev, YisVal startv, YisVal endv, YisVal familyv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  YisStr* tmp = NULL;
+  const char* fam = cogito_required_cstr(familyv, &tmp);
+  cogito_textview_apply_family(node, (int)yis_as_int(startv), (int)yis_as_int(endv), fam);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+static void __cogito_textview_clear_spans(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_clear_spans(node);
+}
+static YisVal __cogito_textview_span_count(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_span_count(node));
+}
+static YisVal __cogito_textview_span_start(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_span_start(node, (int)yis_as_int(idxv)));
+}
+static YisVal __cogito_textview_span_end(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_span_end(node, (int)yis_as_int(idxv)));
+}
+static YisVal __cogito_textview_span_bold(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_span_bold(node, (int)yis_as_int(idxv)));
+}
+static YisVal __cogito_textview_span_italic(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_span_italic(node, (int)yis_as_int(idxv)));
+}
+static YisVal __cogito_textview_span_underline(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_span_underline(node, (int)yis_as_int(idxv)));
+}
+static YisVal __cogito_textview_span_strikethrough(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_span_strikethrough(node, (int)yis_as_int(idxv)));
+}
+static YisVal __cogito_textview_span_size(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_span_size(node, (int)yis_as_int(idxv)));
+}
+static YisVal __cogito_textview_span_color(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  const char* c = cogito_textview_span_color(node, (int)yis_as_int(idxv));
+  if (!c || !c[0]) return YV_NULLV;
+  return YV_STR(stdr_str_lit(c));
+}
+static YisVal __cogito_textview_span_family(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  const char* f = cogito_textview_span_family(node, (int)yis_as_int(idxv));
+  if (!f || !f[0]) return YV_NULLV;
+  return YV_STR(stdr_str_lit(f));
+}
+static YisVal __cogito_textview_para_count(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_para_count(node));
+}
+static void __cogito_textview_set_para_align(YisVal nodev, YisVal idxv, YisVal alignv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_set_para_align(node, (int)yis_as_int(idxv), (int)yis_as_int(alignv));
+}
+static YisVal __cogito_textview_get_para_align(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_get_para_align(node, (int)yis_as_int(idxv)));
+}
+static void __cogito_textview_set_para_line_height(YisVal nodev, YisVal idxv, YisVal hv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_textview_set_para_line_height(node, (int)yis_as_int(idxv), (float)yis_as_float(hv));
+}
+static YisVal __cogito_textview_get_para_line_height(YisVal nodev, YisVal idxv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_FLOAT(cogito_textview_get_para_line_height(node, (int)yis_as_int(idxv)));
+}
+static YisVal __cogito_textview_get_caret(YisVal nodev) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  return YV_INT(cogito_textview_get_caret(node));
+}
+static void __cogito_textview_on_key(YisVal tvv, YisVal handler) {
+  cogito_node* n = cogito_node_from_val(tvv);
+  void *fn = (handler.tag == EVT_FN) ? handler.as.p : NULL;
+  cogito_textview_set_on_key_fn(n, fn);
+}
 static void __cogito_node_set_shadow(YisVal nodev, YisVal levelv) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_shadow(node, (int)yis_as_int(levelv));
@@ -3398,6 +3577,14 @@ static void __cogito_dropdown_on_change(YisVal ddv, YisVal handler) {
   }
   cogito_set_handler(h, &h->on_change, handler);
   cogito_dropdown_on_change(dd, cogito_cb_change, h);
+}
+
+static void __cogito_dropdown_set_icon(YisVal ddv, YisVal iconv) {
+  cogito_node* dd = cogito_node_from_val(ddv);
+  YisStr* tmp = NULL;
+  const char* icon = cogito_required_cstr(iconv, &tmp);
+  cogito_dropdown_set_icon(dd, icon);
+  if (tmp) yis_release_val(YV_STR(tmp));
 }
 
 static void __cogito_slider_set_value(YisVal slv, YisVal valuev) {
@@ -4792,6 +4979,7 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_dropdown_set_selected __cogito_dropdown_set_selected
 #define cogito_dropdown_get_selected __cogito_dropdown_get_selected
 #define cogito_dropdown_on_change __cogito_dropdown_on_change
+#define cogito_dropdown_set_icon __cogito_dropdown_set_icon
 #define cogito_slider_set_value __cogito_slider_set_value
 #define cogito_slider_get_value __cogito_slider_get_value
 #define cogito_slider_set_size __cogito_slider_set_size
@@ -5079,7 +5267,61 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_node_set_font_weight __cogito_node_set_font_weight
 #define cogito_node_set_font_italic __cogito_node_set_font_italic
 #define cogito_node_set_strikethrough __cogito_node_set_strikethrough
+#define cogito_node_set_underline __cogito_node_set_underline
 #define cogito_node_set_font_family __cogito_node_set_font_family
+#define cogito_node_set_text_color __cogito_node_set_text_color
+#define cogito_node_set_text_align __cogito_node_set_text_align
+#define cogito_node_set_line_height __cogito_node_set_line_height
+#define cogito_textview_get_sel_start __cogito_textview_get_sel_start
+#define cogito_textview_get_sel_end __cogito_textview_get_sel_end
+#define cogito_textview_set_selection __cogito_textview_set_selection
+#define cogito_textview_apply_bold __cogito_textview_apply_bold
+#define cogito_textview_apply_italic __cogito_textview_apply_italic
+#define cogito_textview_apply_underline __cogito_textview_apply_underline
+#define cogito_textview_apply_strikethrough __cogito_textview_apply_strikethrough
+#define cogito_textview_apply_color __cogito_textview_apply_color
+#define cogito_textview_apply_size __cogito_textview_apply_size
+#define cogito_textview_apply_family __cogito_textview_apply_family
+#define cogito_textview_clear_spans __cogito_textview_clear_spans
+#define cogito_textview_span_count __cogito_textview_span_count
+#define cogito_textview_span_start __cogito_textview_span_start
+#define cogito_textview_span_end __cogito_textview_span_end
+#define cogito_textview_span_bold __cogito_textview_span_bold
+#define cogito_textview_span_italic __cogito_textview_span_italic
+#define cogito_textview_span_underline __cogito_textview_span_underline
+#define cogito_textview_span_strikethrough __cogito_textview_span_strikethrough
+#define cogito_textview_span_size __cogito_textview_span_size
+#define cogito_textview_span_color __cogito_textview_span_color
+#define cogito_textview_span_family __cogito_textview_span_family
+#define cogito_textview_para_count __cogito_textview_para_count
+#define cogito_textview_set_para_align __cogito_textview_set_para_align
+#define cogito_textview_get_para_align __cogito_textview_get_para_align
+#define cogito_textview_set_para_line_height __cogito_textview_set_para_line_height
+#define cogito_textview_get_para_line_height __cogito_textview_get_para_line_height
+#define cogito_textview_get_caret __cogito_textview_get_caret
+#define cogito_textview_on_key __cogito_textview_on_key
+
+static void __cogito_node_set_dropdown_selected(YisVal nodev, YisVal idxv) {
+  cogito_node* n = cogito_node_from_val(nodev);
+  cogito_node_set_dropdown_selected(n, (int)yis_as_int(idxv));
+}
+
+static void __cogito_node_set_iconbtn_checked(YisVal nodev, YisVal checkedv) {
+  cogito_node* n = cogito_node_from_val(nodev);
+  cogito_node_set_iconbtn_checked(n, yis_as_bool(checkedv));
+}
+
+static void __cogito_node_set_textfield_text(YisVal nodev, YisVal textv) {
+  cogito_node* n = cogito_node_from_val(nodev);
+  YisStr* tmp = NULL;
+  const char* text = cogito_required_cstr(textv, &tmp);
+  cogito_node_set_textfield_text(n, text);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
+#define cogito_node_set_dropdown_selected __cogito_node_set_dropdown_selected
+#define cogito_node_set_iconbtn_checked __cogito_node_set_iconbtn_checked
+#define cogito_node_set_textfield_text __cogito_node_set_textfield_text
 #define cogito_node_set_shadow __cogito_node_set_shadow
 #define cogito_node_set_border_width __cogito_node_set_border_width
 #define cogito_node_set_border_radius __cogito_node_set_border_radius

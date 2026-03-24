@@ -107,6 +107,10 @@ static void cogito_node_drop(YisObj* o) {
     yis_release_val(YV_FN(n->on_resize));
     n->on_resize = NULL;
   }
+  if (n->on_key) {
+    yis_release_val(YV_FN(n->on_key));
+    n->on_key = NULL;
+  }
   if (n->action_text) {
     yis_release_val(YV_STR(n->action_text));
     n->action_text = NULL;
@@ -264,6 +268,12 @@ static void cogito_node_drop(YisObj* o) {
     yis_release_val(YV_OBJ(n->dialog));
     n->dialog = NULL;
   }
+  // Free rich text spans
+  if (n->spans) { free(n->spans); n->spans = NULL; }
+  n->span_count = 0; n->span_cap = 0;
+  // Free paragraph properties
+  if (n->para_props) { free(n->para_props); n->para_props = NULL; }
+  n->para_props_count = 0; n->para_props_cap = 0;
   // Free per-kind data
   free(n->kd);
   n->kd = NULL;
@@ -695,6 +705,9 @@ static void cogito_node_set_text(CogitoNode* n, YisStr* s) {
   }
   if (n->kind == COGITO_TEXTFIELD) {
     cogito_textfield_refresh_regex_state(n);
+  }
+  if (n->kind == COGITO_TEXTVIEW && n->para_props) {
+    cogito_para_props_recount(n);
   }
 }
 

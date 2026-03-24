@@ -62,6 +62,15 @@ static YisVal cogito_dropdown_get_selected(YisVal nodev) {
   CogitoNode* n = (CogitoNode*)nodev.as.p;
   return YV_INT(n->selected);
 }
+static void cogito_dropdown_set_icon(YisVal nodev, YisVal iconv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("cogito.dropdown_set_icon expects dropdown");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  YisStr* s = stdr_to_string(iconv);
+  if (n->icon) yis_release_val(YV_STR(n->icon));
+  n->icon = s;
+  yis_retain_val(YV_STR(s));
+  cogito_window_relayout(cogito_node_window(n));
+}
 static void cogito_dropdown_on_change(YisVal nodev, YisVal handler) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.dropdown_on_change expects dropdown");
   if (handler.tag != EVT_FN) yis_trap("cogito.dropdown_on_change expects function");

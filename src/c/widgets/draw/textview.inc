@@ -67,9 +67,6 @@ case COGITO_TEXTVIEW: {
         int len = (int)strlen(t);
         int idx = 0;
         int base_line_h = cogito_text_height_size(size);
-        int line_h = base_line_h;
-        if (n->line_height_set && n->line_height > 0.0f)
-          line_h = (int)lroundf(base_line_h * n->line_height);
         int cy = n->y + pad;
         int pill_r = base_line_h / 2;
         int pill_pad = 4; // horizontal padding around text in pill
@@ -85,7 +82,9 @@ case COGITO_TEXTVIEW: {
               idx = i + 1;
               break;
             }
-            int w = cogito_text_width_size_n_node(n, t + idx, i - idx + 1, size);
+            int w = (n->span_count > 0)
+              ? cogito_line_width_with_spans(n, t, idx, i - idx + 1, size)
+              : cogito_text_width_size_n_node(n, t + idx, i - idx + 1, size);
             if (c == ' ') last_space = i;
             if (w > max_w) {
               if (last_space >= idx) {
@@ -102,24 +101,47 @@ case COGITO_TEXTVIEW: {
               idx = len;
             }
           }
+          int pill_h = cogito_line_height_with_spans(n, line_start, line_len, size);
+          int adv_h = pill_h;
+          {
+            bool lh_set = false;
+            float lh = cogito_get_para_line_height(n, line_start, &lh_set);
+            if (lh_set && lh > 0.0f)
+              adv_h = (int)lroundf(pill_h * lh);
+          }
           int line_end = line_start + line_len;
+          // Compute alignment offset for this line.
+          int full_lw = (n->span_count > 0)
+            ? cogito_line_width_with_spans(n, t, line_start, line_len, size)
+            : cogito_text_width_size_n_node(n, t + line_start, line_len, size);
+          int align_off = 0;
+          {
+            int pa = cogito_get_para_align(n, line_start);
+            if (pa == 1) align_off = (max_w - full_lw) / 2;
+            else if (pa == 2) align_off = max_w - full_lw;
+          }
+          if (align_off < 0) align_off = 0;
           if (b > line_start && a < line_end) {
             int sa = a > line_start ? a : line_start;
             int sb = b < line_end ? b : line_end;
-            int sx = cogito_text_width_size_n_node(n, t + line_start, sa - line_start, size);
-            int ex = cogito_text_width_size_n_node(n, t + line_start, sb - line_start, size);
-            int x0 = n->x + pad + sx - pill_pad;
-            int x1 = n->x + pad + ex + pill_pad;
+            int sx = (n->span_count > 0)
+              ? cogito_line_width_with_spans(n, t, line_start, sa - line_start, size)
+              : cogito_text_width_size_n_node(n, t + line_start, sa - line_start, size);
+            int ex = (n->span_count > 0)
+              ? cogito_line_width_with_spans(n, t, line_start, sb - line_start, size)
+              : cogito_text_width_size_n_node(n, t + line_start, sb - line_start, size);
+            int x0 = n->x + pad + align_off + sx - pill_pad;
+            int x1 = n->x + pad + align_off + ex + pill_pad;
             if (x0 < n->x) x0 = n->x;
             if (x1 > n->x + n->w) x1 = n->x + n->w;
             if (x1 > x0) {
-              cogito_draw_rect(x0, cy, x1 - x0, base_line_h, sel, pill_r);
+              cogito_draw_rect(x0, cy, x1 - x0, pill_h, sel, pill_r);
             }
           }
-          cy += line_h;
+          cy += adv_h;
         }
       }
-      cogito_draw_text_wrapped(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), cogito_node_medium(n), 0, true, 0);
+      cogito_draw_text_wrapped_spans(n, n->x + pad, n->y + pad, n->w - pad * 2, t, text, size, cogito_node_bold(n), cogito_node_medium(n), cogito_get_para_align(n, 0), true, 0);
       if (n->kd->text_input.sel_start != n->kd->text_input.sel_end) {
         int a2 = n->kd->text_input.sel_start;
         int b2 = n->kd->text_input.sel_end;
@@ -128,10 +150,6 @@ case COGITO_TEXTVIEW: {
         if (max_w2 < 1) max_w2 = 1;
         int len2 = (int)strlen(t);
         int idx2 = 0;
-        int base_line_h2 = cogito_text_height_size(size);
-        int line_h2 = base_line_h2;
-        if (n->line_height_set && n->line_height > 0.0f)
-          line_h2 = (int)lroundf(base_line_h2 * n->line_height);
         int cy2 = n->y + pad;
         CogitoColor sel2 = s.has_selection ? s.selection : n->selection_color;
         CogitoColor sel_text = cogito_on_color(sel2);
@@ -146,7 +164,9 @@ case COGITO_TEXTVIEW: {
               idx2 = i + 1;
               break;
             }
-            int w2 = cogito_text_width_size_n_node(n, t + idx2, i - idx2 + 1, size);
+            int w2 = (n->span_count > 0)
+              ? cogito_line_width_with_spans(n, t, idx2, i - idx2 + 1, size)
+              : cogito_text_width_size_n_node(n, t + idx2, i - idx2 + 1, size);
             if (c == ' ') last_space2 = i;
             if (w2 > max_w2) {
               if (last_space2 >= idx2) {
@@ -163,19 +183,44 @@ case COGITO_TEXTVIEW: {
               idx2 = len2;
             }
           }
+          int lh2 = cogito_line_height_with_spans(n, line_start2, line_len2, size);
+          int adv2 = lh2;
+          {
+            bool lh_set = false;
+            float lh = cogito_get_para_line_height(n, line_start2, &lh_set);
+            if (lh_set && lh > 0.0f)
+              adv2 = (int)lroundf(lh2 * lh);
+          }
           int line_end2 = line_start2 + line_len2;
+          int full_lw2 = (n->span_count > 0)
+            ? cogito_line_width_with_spans(n, t, line_start2, line_len2, size)
+            : cogito_text_width_size_n_node(n, t + line_start2, line_len2, size);
+          int ao2 = 0;
+          {
+            int pa2 = cogito_get_para_align(n, line_start2);
+            if (pa2 == 1) ao2 = (max_w2 - full_lw2) / 2;
+            else if (pa2 == 2) ao2 = max_w2 - full_lw2;
+          }
+          if (ao2 < 0) ao2 = 0;
           if (b2 > line_start2 && a2 < line_end2) {
             int sa = a2 > line_start2 ? a2 : line_start2;
             int sb = b2 < line_end2 ? b2 : line_end2;
-            int sx2 = cogito_text_width_size_n_node(n, t + line_start2, sa - line_start2, size);
-            char sbuf[1024];
-            int slen = sb - sa;
-            if (slen > 1000) slen = 1000;
-            memcpy(sbuf, t + sa, (size_t)slen);
-            sbuf[slen] = '\0';
-            cogito_draw_text_size_node(n, n->x + pad + sx2, cy2, sbuf, sel_text, size, cogito_node_bold(n), cogito_node_medium(n));
+            int sx2 = (n->span_count > 0)
+              ? cogito_line_width_with_spans(n, t, line_start2, sa - line_start2, size)
+              : cogito_text_width_size_n_node(n, t + line_start2, sa - line_start2, size);
+            if (n->span_count > 0) {
+              cogito_draw_line_with_spans(n, n->x + pad + ao2 + sx2, cy2, t,
+                                          sa, sb - sa, sel_text, size, true);
+            } else {
+              char sbuf[1024];
+              int slen = sb - sa;
+              if (slen > 1000) slen = 1000;
+              memcpy(sbuf, t + sa, (size_t)slen);
+              sbuf[slen] = '\0';
+              cogito_draw_text_size_node(n, n->x + pad + ao2 + sx2, cy2, sbuf, sel_text, size, cogito_node_bold(n), cogito_node_medium(n));
+            }
           }
-          cy2 += line_h2;
+          cy2 += adv2;
         }
       }
       if (cogito_focused == n && !n->disabled && n->editable) {
@@ -199,10 +244,18 @@ case COGITO_TEXTVIEW: {
         if (max_w < 1) max_w = 1;
         int len = (int)strlen(t);
         int idx = 0;
-        int base_line_h_c = cogito_text_height_size(size);
-        int line_h = base_line_h_c;
-        if (n->line_height_set && n->line_height > 0.0f)
-          line_h = (int)lroundf(base_line_h_c * n->line_height);
+        /* Compute caret height from the span at the caret position. */
+        int caret_h;
+        {
+          CogitoTextSpan caret_span = cogito_spans_at(n, n->kd->text_input.caret);
+          int ch = (caret_span.size_set && caret_span.size > 0)
+            ? cogito_text_height_size(caret_span.size)
+            : cogito_text_height_size(size);
+          bool lh_set = false;
+          float lh = cogito_get_para_line_height(n, n->kd->text_input.caret, &lh_set);
+          caret_h = (lh_set && lh > 0.0f)
+            ? (int)lroundf(ch * lh) : ch;
+        }
         int cy = n->y + pad;
         int caret_idx = n->kd->text_input.caret;
         if (caret_idx < 0) caret_idx = 0;
@@ -218,7 +271,9 @@ case COGITO_TEXTVIEW: {
               idx = i + 1;
               break;
             }
-            int w = cogito_text_width_size_n_node(n, t + idx, i - idx + 1, size);
+            int w = (n->span_count > 0)
+              ? cogito_line_width_with_spans(n, t, idx, i - idx + 1, size)
+              : cogito_text_width_size_n_node(n, t + idx, i - idx + 1, size);
             if (c == ' ') last_space = i;
             if (w > max_w) {
               if (last_space >= idx) {
@@ -238,20 +293,45 @@ case COGITO_TEXTVIEW: {
           int line_end = line_start + line_len;
           if (caret_idx >= line_start && caret_idx <= line_end) {
             int local = caret_idx - line_start;
-            int cx = n->x + pad + cogito_text_width_size_n_node(n, t + line_start, local, size);
+            int caret_lw = (n->span_count > 0)
+              ? cogito_line_width_with_spans(n, t, line_start, line_len, size)
+              : cogito_text_width_size_n_node(n, t + line_start, line_len, size);
+            int caret_ao = 0;
+            {
+              int pa = cogito_get_para_align(n, line_start);
+              if (pa == 1) caret_ao = (max_w - caret_lw) / 2;
+              else if (pa == 2) caret_ao = max_w - caret_lw;
+            }
+            if (caret_ao < 0) caret_ao = 0;
+            int cx = n->x + pad + caret_ao + ((n->span_count > 0)
+              ? cogito_line_width_with_spans(n, t, line_start, local, size)
+              : cogito_text_width_size_n_node(n, t + line_start, local, size));
             int max_x = n->x + n->w - pad;
             if (cx > max_x) cx = max_x;
-            cogito_draw_line(cx, cy, cx, cy + line_h, caret_col);
+            cogito_draw_line(cx, cy, cx, cy + caret_h, caret_col);
             break;
           }
-          cy += line_h;
+          int adv_c = cogito_line_height_with_spans(n, line_start, line_len, size);
+          {
+            bool lh_set = false;
+            float lh = cogito_get_para_line_height(n, line_start, &lh_set);
+            if (lh_set && lh > 0.0f)
+              adv_c = (int)lroundf(adv_c * lh);
+          }
+          cy += adv_c;
           if (idx >= len) {
             // If text ends with '\n', caret can be on a trailing empty line.
             if (caret_idx == len && len > 0 && t[len - 1] == '\n') {
-              int cx = n->x + pad;
+              int empty_ao = 0;
+              {
+                int pa = cogito_get_para_align(n, len);
+                if (pa == 1) empty_ao = max_w / 2;
+                else if (pa == 2) empty_ao = max_w;
+              }
+              int cx = n->x + pad + empty_ao;
               int max_x = n->x + n->w - pad;
               if (cx > max_x) cx = max_x;
-              cogito_draw_line(cx, cy, cx, cy + line_h, caret_col);
+              cogito_draw_line(cx, cy, cx, cy + caret_h, caret_col);
             }
             break;
           }

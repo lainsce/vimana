@@ -1746,29 +1746,82 @@ static void cogito_run(YisVal appv, YisVal winv) {
         }
         ch = cogito_backend->get_char_pressed();
       }
-      if (cogito_backend->is_key_pressed(SDL_SCANCODE_BACKSPACE)) {
+      // on_key callback — let textview intercept keys before default handling
+      bool on_key_consumed = false;
+      if (cogito_focused->kind == COGITO_TEXTVIEW && cogito_focused->on_key) {
+        bool shift_k = cogito_backend->is_key_down(SDL_SCANCODE_LSHIFT) || cogito_backend->is_key_down(SDL_SCANCODE_RSHIFT);
+        static const int on_key_scancodes[] = {
+          SDL_SCANCODE_BACKSPACE, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT,
+          SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, SDL_SCANCODE_RETURN,
+          SDL_SCANCODE_KP_ENTER, SDL_SCANCODE_DELETE, SDL_SCANCODE_TAB,
+          SDL_SCANCODE_HOME, SDL_SCANCODE_END
+        };
+        for (int ki = 0; ki < (int)(sizeof(on_key_scancodes)/sizeof(on_key_scancodes[0])); ki++) {
+          if (cogito_backend->is_key_pressed(on_key_scancodes[ki])) {
+            if (cogito_invoke_on_key(cogito_focused, on_key_scancodes[ki], shift_k, cmd_down)) {
+              on_key_consumed = true;
+            }
+            break;
+          }
+        }
+      }
+      if (!on_key_consumed && cogito_backend->is_key_pressed(SDL_SCANCODE_BACKSPACE)) {
         cogito_undo_push(cogito_focused);
+        // Track paragraph merges on backspace
+        if (cogito_focused->para_props && cogito_focused->text) {
+          int caret = cogito_focused->kd->text_input.caret;
+          int ss = cogito_focused->kd->text_input.sel_start;
+          int se = cogito_focused->kd->text_input.sel_end;
+          const char* t = cogito_focused->text->data;
+          int tlen = (int)cogito_focused->text->len;
+          if (ss != se) {
+            // Selection delete — count \n in range and remove para entries
+            int lo = ss < se ? ss : se;
+            int hi = ss < se ? se : ss;
+            if (hi > tlen) hi = tlen;
+            // Remove from highest para first to keep indices valid
+            for (int i = hi - 1; i >= lo; i--) {
+              if (t[i] == '\n') {
+                int pi = cogito_para_index_from_byte(cogito_focused, i);
+                cogito_para_props_remove(cogito_focused, pi + 1);
+              }
+            }
+          } else if (caret > 0) {
+            // Single char delete — check if char before caret is \n
+            int del_pos = caret - 1;
+            if (t[del_pos] == '\n') {
+              int pi = cogito_para_index_from_byte(cogito_focused, del_pos);
+              cogito_para_props_remove(cogito_focused, pi + 1);
+            }
+          }
+        }
         cogito_text_backspace(cogito_focused);
         changed = true;
       }
-      if (cogito_backend->is_key_pressed(SDL_SCANCODE_LEFT)) {
+      if (!on_key_consumed && cogito_backend->is_key_pressed(SDL_SCANCODE_LEFT)) {
         if (cogito_text_move_caret_h(cogito_focused,
         -1)) caret_changed = true;
       }
-      if (cogito_backend->is_key_pressed(SDL_SCANCODE_RIGHT)) {
+      if (!on_key_consumed && cogito_backend->is_key_pressed(SDL_SCANCODE_RIGHT)) {
         if (cogito_text_move_caret_h(cogito_focused, +1)) caret_changed = true;
       }
-      if (cogito_focused->kind == COGITO_TEXTVIEW && cogito_backend->is_key_pressed(SDL_SCANCODE_UP)) {
+      if (!on_key_consumed && cogito_focused->kind == COGITO_TEXTVIEW && cogito_backend->is_key_pressed(SDL_SCANCODE_UP)) {
         if (cogito_textview_move_caret_v(cogito_focused,
         -1)) caret_changed = true;
       }
-      if (cogito_focused->kind == COGITO_TEXTVIEW && cogito_backend->is_key_pressed(SDL_SCANCODE_DOWN)) {
+      if (!on_key_consumed && cogito_focused->kind == COGITO_TEXTVIEW && cogito_backend->is_key_pressed(SDL_SCANCODE_DOWN)) {
         if (cogito_textview_move_caret_v(cogito_focused, +1)) caret_changed = true;
       }
-      if (cogito_focused->kind == COGITO_TEXTVIEW &&
+      if (!on_key_consumed && cogito_focused->kind == COGITO_TEXTVIEW &&
           (cogito_backend->is_key_pressed(SDL_SCANCODE_RETURN) ||
            cogito_backend->is_key_pressed(SDL_SCANCODE_KP_ENTER))) {
         cogito_undo_push(cogito_focused);
+        // Insert new paragraph — inherit props from current paragraph
+        if (cogito_focused->para_props) {
+          int caret = cogito_focused->kd->text_input.caret;
+          int src_para = cogito_para_index_from_byte(cogito_focused, caret);
+          cogito_para_props_insert(cogito_focused, src_para + 1, src_para);
+        }
         cogito_text_append_codepoint(cogito_focused, '\n');
         changed = true;
       }
@@ -1782,7 +1835,7 @@ static void cogito_run(YisVal appv, YisVal winv) {
             cogito_rgb_to_hct(col, &cogito_focused->kd->colorpicker.h, &cogito_focused->kd->colorpicker.c, &cogito_focused->kd->colorpicker.t);
           }
         }
-        if (changed) {
+        if (changed || (caret_changed && cogito_focused->kind == COGITO_TEXTVIEW)) {
           cogito_invoke_change(cogito_focused);
         }
         cogito_window_relayout(win);
@@ -2286,7 +2339,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
             int rel_x = mx - (cogito_focused->x + pad);
             if (rel_x < 0) rel_x = 0;
             int line_h = cogito_text_height_size(size);
-            int idx = cogito_text_line_index_from_pos(cogito_focused, t, size, cogito_focused->w - pad * 2, cogito_focused->y + pad, line_h, rel_x, my);
+            if (cogito_focused->line_height_set && cogito_focused->line_height > 0.0f)
+              line_h = (int)lroundf(line_h * cogito_focused->line_height);
+            int idx = cogito_text_line_index_from_pos_spans(cogito_focused, t, size, cogito_focused->w - pad * 2, cogito_focused->y + pad, line_h, rel_x, my);
             cogito_focused->kd->text_input.sel_end = idx;
             cogito_focused->kd->text_input.caret = idx;
           } else if (cogito_focused->kind == COGITO_COLORPICKER) {
@@ -2305,6 +2360,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
           cogito_focused->kd->colorpicker.selecting = false;
         } else {
           cogito_focused->kd->text_input.selecting = false;
+          if (cogito_focused->kind == COGITO_TEXTVIEW) {
+            cogito_invoke_change(cogito_focused);
+          }
         }
       }
     }
@@ -2766,7 +2824,9 @@ static void cogito_run(YisVal appv, YisVal winv) {
             int rel_x = mx - (focus_hit->x + pad);
             if (rel_x < 0) rel_x = 0;
             int line_h = cogito_text_height_size(size);
-            focus_hit->kd->text_input.caret = cogito_text_line_index_from_pos(focus_hit, t, size, focus_hit->w - pad * 2, focus_hit->y + pad, line_h, rel_x, my);
+            if (focus_hit->line_height_set && focus_hit->line_height > 0.0f)
+              line_h = (int)lroundf(line_h * focus_hit->line_height);
+            focus_hit->kd->text_input.caret = cogito_text_line_index_from_pos_spans(focus_hit, t, size, focus_hit->w - pad * 2, focus_hit->y + pad, line_h, rel_x, my);
             focus_hit->kd->text_input.sel_start = focus_hit->kd->text_input.caret;
             focus_hit->kd->text_input.sel_end = focus_hit->kd->text_input.caret;
             focus_hit->kd->text_input.selecting = true;

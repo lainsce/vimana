@@ -2694,6 +2694,33 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_dropdown_set_icon")) {
+                        GenExpr node, iconv;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &node, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &iconv, err)) { gen_expr_free(&node); return false;
+                        }
+                        w_line(&cg->w,
+                        "cogito_dropdown_set_icon(%s, %s);", node.tmp, iconv.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", node.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", iconv.tmp);
+                        gen_expr_release_except(cg, &node, node.tmp);
+                        gen_expr_release_except(cg, &iconv, iconv.tmp);
+                        gen_expr_free(&node);
+                        gen_expr_free(&iconv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_slider_set_value")) {
                         GenExpr node, val;
                         if (!gen_expr(cg, path, e->as.call.args[
