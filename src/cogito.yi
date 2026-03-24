@@ -286,6 +286,9 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_canvas_line(ctx = any, x1 = num, y1 = num, x2 = num, y2 = num) (( -- )) { }
 : __cogito_canvas_rect(ctx = any, x = num, y = num, w = num, h = num) (( -- )) { }
 : __cogito_canvas_fill_rect(ctx = any, x = num, y = num, w = num, h = num) (( -- )) { }
+: __cogito_canvas_fill_linear_gradient(ctx = any, x = num, y = num, w = num, h = num, start_color = any, end_color = any, vertical = bool) (( -- )) { }
+: __cogito_canvas_fill_linear_gradient_angle(ctx = any, x = num, y = num, w = num, h = num, start_color = any, end_color = any, angle = num) (( -- )) { }
+: __cogito_canvas_fill_radial_gradient(ctx = any, x = num, y = num, w = num, h = num, inner_color = any, outer_color = any, center_x = num, center_y = num, radius = num) (( -- )) { }
 : __cogito_canvas_circle(ctx = any, cx = num, cy = num, r = num) (( -- )) { }
 : __cogito_canvas_fill_circle(ctx = any, cx = num, cy = num, r = num) (( -- )) { }
 : __cogito_shape(preset = num) (( Shape )) { }
@@ -5242,8 +5245,202 @@ pub ,: State
     <- __cogito_video_view_new()
 ;
 
+def CLIPPER_SEG_STEPS = 16
+def CLIPPER_KAPPA = 0.55228475
+
+: clipper_num_or(v = any, fallback = num) (( num ))
+    if is_null(v)
+        <- fallback
+    <- num(v)
+;
+
+: clipper_clamp(v = num, lo = num, hi = num) (( num ))
+    let ?out = v
+    if out < lo
+        out = lo
+    if out > hi
+        out = hi
+    <- out
+;
+
+: clipper_write_line(
+    shp = Shape,
+    start_idx = num,
+    x0 = num,
+    y0 = num,
+    x1 = num,
+    y1 = num
+) (( num ))
+    let ?steps = clipper_num_or(CLIPPER_SEG_STEPS, 16)
+    if steps < 2
+        steps = 2
+    for (let ?i = 0; i < steps; i += 1)
+        let ?t = 0.0
+        -- Use half-open segment sampling [0, 1) to avoid duplicate seam vertices.
+        t = (i * 1.0) / (steps * 1.0)
+        let x = x0 + ((x1 - x0) * t)
+        let y = y0 + ((y1 - y0) * t)
+        __cogito_shape_set_vertex(shp, start_idx + i, x, y)
+    <- start_idx + steps
+;
+
+: clipper_write_curve(
+    shp = Shape,
+    start_idx = num,
+    p0x = num,
+    p0y = num,
+    p1x = num,
+    p1y = num,
+    p2x = num,
+    p2y = num,
+    p3x = num,
+    p3y = num
+) (( num ))
+    let ?steps = clipper_num_or(CLIPPER_SEG_STEPS, 16)
+    if steps < 2
+        steps = 2
+    for (let ?i = 0; i < steps; i += 1)
+        let ?t = 0.0
+        -- Use half-open segment sampling [0, 1) to avoid duplicate seam vertices.
+        t = (i * 1.0) / (steps * 1.0)
+        let u = 1.0 - t
+        let uu = u * u
+        let tt = t * t
+        let uuu = uu * u
+        let ttt = tt * t
+
+        let x0 = uuu * p0x
+        let x1 = 3.0 * uu * t * p1x
+        let x2 = 3.0 * u * tt * p2x
+        let x3 = ttt * p3x
+        let y0 = uuu * p0y
+        let y1 = 3.0 * uu * t * p1y
+        let y2 = 3.0 * u * tt * p2y
+        let y3 = ttt * p3y
+        let x = x0 + x1 + x2 + x3
+        let y = y0 + y1 + y2 + y3
+        __cogito_shape_set_vertex(shp, start_idx + i, x, y)
+    <- start_idx + steps
+;
+
+: clipper_apply_round_rect(shp = Shape, width = any, height = any, radius = any) (( -- ))
+    let ?w = clipper_num_or(width, 1)
+    let ?h = clipper_num_or(height, 1)
+    let ?rad = clipper_num_or(radius, 0)
+    if w < 1
+        w = 1
+    if h < 1
+        h = 1
+
+    let ?max_r = w / 2
+    let half_h = h / 2
+    if half_h < max_r
+        max_r = half_h
+
+    let r = clipper_clamp(rad, 0, max_r)
+    let ?rx = 0
+    let ?ry = 0
+    if w > 0
+        rx = (r * 1.0) / (w * 1.0)
+    if h > 0
+        ry = (r * 1.0) / (h * 1.0)
+
+    -- Keep vertices slightly inset from exact edges to avoid backend clipping edge degeneracy.
+    if rx < 0.0001
+        rx = 0.0001
+    if ry < 0.0001
+        ry = 0.0001
+    if rx > 0.4999
+        rx = 0.4999
+    if ry > 0.4999
+        ry = 0.4999
+
+    let k = CLIPPER_KAPPA
+    let ?idx = 0
+
+    -- Write a full ordered perimeter so Clipper uses the entire Shape vertex buffer.
+    idx = clipper_write_line(shp, idx, rx, 0, 1 - rx, 0)
+
+    idx = clipper_write_curve(
+        shp,
+        idx,
+        1 - rx,
+        0,
+        1 - rx + (k * rx),
+        0,
+        1,
+        ry - (k * ry),
+        1,
+        ry
+    )
+
+    idx = clipper_write_line(shp, idx, 1, ry, 1, 1 - ry)
+
+    idx = clipper_write_curve(
+        shp,
+        idx,
+        1,
+        1 - ry,
+        1,
+        1 - ry + (k * ry),
+        1 - rx + (k * rx),
+        1,
+        1 - rx,
+        1
+    )
+
+    idx = clipper_write_line(shp, idx, 1 - rx, 1, rx, 1)
+
+    idx = clipper_write_curve(
+        shp,
+        idx,
+        rx,
+        1,
+        rx - (k * rx),
+        1,
+        0,
+        1 - ry + (k * ry),
+        0,
+        1 - ry
+    )
+
+    idx = clipper_write_line(shp, idx, 0, 1 - ry, 0, ry)
+
+    idx = clipper_write_curve(
+        shp,
+        idx,
+        0,
+        ry,
+        0,
+        ry - (k * ry),
+        rx - (k * rx),
+        0,
+        rx,
+        0
+    )
+
+;
+
 :: shape(preset = num) (( Shape ))
     <- __cogito_shape(preset)
+;
+
+:: clipper(width = any, height = any, radius = any) (( Clipper ))
+    let ?w = clipper_num_or(width, 1)
+    let ?h = clipper_num_or(height, 1)
+    let ?r = clipper_num_or(radius, 0)
+    if w < 1
+        w = 1
+    if h < 1
+        h = 1
+
+    let c = __cogito_shape(1)
+    __cogito_shape_set_size(c, w)
+    __cogito_shape_set_size_h(c, h)
+    __cogito_shape_set_color(c, "transparent")
+    __cogito_shape_set_clip(c, true)
+    clipper_apply_round_rect(c, w, h, r)
+    <- c
 ;
 
 :: content_list() (( ContentList ))
@@ -5373,6 +5570,47 @@ pub ,: SwitchBar : Component
     ;
 ;
 
+: canvas_grad_fill_linear(
+    ctx = any,
+    x = num,
+    y = num,
+    w = num,
+    h = num,
+    start_color = any,
+    end_color = any,
+    vertical = bool
+) (( -- ))
+    __cogito_canvas_fill_linear_gradient(ctx, x, y, w, h, start_color, end_color, vertical)
+;
+
+: canvas_grad_fill_linear_angle(
+    ctx = any,
+    x = num,
+    y = num,
+    w = num,
+    h = num,
+    start_color = any,
+    end_color = any,
+    angle = num
+) (( -- ))
+    __cogito_canvas_fill_linear_gradient_angle(ctx, x, y, w, h, start_color, end_color, angle)
+;
+
+: canvas_grad_fill_radial(
+    ctx = any,
+    x = num,
+    y = num,
+    w = num,
+    h = num,
+    inner_color = any,
+    outer_color = any,
+    center_x = num,
+    center_y = num,
+    radius = num
+) (( -- ))
+    __cogito_canvas_fill_radial_gradient(ctx, x, y, w, h, inner_color, outer_color, center_x, center_y, radius)
+;
+
 pub ,: DrawingArea : Component
     :: on_press(this, handler = any) (( DrawingArea ))
         __cogito_drawing_area_on_press(this, handler)
@@ -5421,6 +5659,18 @@ pub ,: DrawingArea : Component
     ;
     :: fill_rect(this, x = num, y = num, w = num, h = num) (( DrawingArea ))
         __cogito_canvas_fill_rect(this, x, y, w, h)
+        <- this
+    ;
+    :: fill_linear_gradient(this, x = num, y = num, w = num, h = num, start_color = any, end_color = any, vertical = bool) (( DrawingArea ))
+        canvas_grad_fill_linear(this, x, y, w, h, start_color, end_color, vertical)
+        <- this
+    ;
+    :: fill_linear_gradient_angle(this, x = num, y = num, w = num, h = num, start_color = any, end_color = any, angle = num) (( DrawingArea ))
+        canvas_grad_fill_linear_angle(this, x, y, w, h, start_color, end_color, angle)
+        <- this
+    ;
+    :: fill_radial_gradient(this, x = num, y = num, w = num, h = num, inner_color = any, outer_color = any, center_x = num, center_y = num, radius = num) (( DrawingArea ))
+        canvas_grad_fill_radial(this, x, y, w, h, inner_color, outer_color, center_x, center_y, radius)
         <- this
     ;
     :: circle(this, cx = num, cy = num, r = num) (( DrawingArea ))
@@ -5513,6 +5763,18 @@ pub ,: Canvas
         __cogito_canvas_fill_rect(this, x, y, w, h)
         <- this
     ;
+    :: fill_linear_gradient(this, x = num, y = num, w = num, h = num, start_color = any, end_color = any, vertical = bool) (( Canvas ))
+        canvas_grad_fill_linear(this, x, y, w, h, start_color, end_color, vertical)
+        <- this
+    ;
+    :: fill_linear_gradient_angle(this, x = num, y = num, w = num, h = num, start_color = any, end_color = any, angle = num) (( Canvas ))
+        canvas_grad_fill_linear_angle(this, x, y, w, h, start_color, end_color, angle)
+        <- this
+    ;
+    :: fill_radial_gradient(this, x = num, y = num, w = num, h = num, inner_color = any, outer_color = any, center_x = num, center_y = num, radius = num) (( Canvas ))
+        canvas_grad_fill_radial(this, x, y, w, h, inner_color, outer_color, center_x, center_y, radius)
+        <- this
+    ;
     :: circle(this, cx = num, cy = num, r = num) (( Canvas ))
         __cogito_canvas_circle(this, cx, cy, r)
         <- this
@@ -5596,6 +5858,81 @@ pub ,: Shape : Component
         <- this
     ;
     :: set_id(this, id = string) (( Shape ))
+        __cogito_node_set_id(this, id)
+        <- this
+    ;
+;
+
+pub ,: Clipper : Shape
+    :: add(this, child = any) (( Clipper ))
+        __cogito_container_add(this, child)
+        <- this
+    ;
+    :: set_frame(this, width = any, height = any, radius = any) (( Clipper ))
+        let ?w = clipper_num_or(width, 1)
+        let ?h = clipper_num_or(height, 1)
+        let ?r = clipper_num_or(radius, 0)
+        if w < 1
+            w = 1
+        if h < 1
+            h = 1
+
+        __cogito_shape_set_size(this, w)
+        __cogito_shape_set_size_h(this, h)
+        __cogito_shape_set_color(this, "transparent")
+        __cogito_shape_set_clip(this, true)
+        clipper_apply_round_rect(this, w, h, r)
+        <- this
+    ;
+    :: set_radius(this, radius = any, width = any, height = any) (( Clipper ))
+        let ?w = width
+        let ?h = height
+        let ?r = clipper_num_or(radius, 0)
+
+        if is_null(w)
+            w = __cogito_shape_get_size(this)
+        if is_null(h)
+            h = w
+
+        w = clipper_num_or(w, 1)
+        h = clipper_num_or(h, w)
+        if w < 1
+            w = 1
+        if h < 1
+            h = 1
+
+        clipper_apply_round_rect(this, w, h, r)
+        <- this
+    ;
+    :: set_clip(this, on = bool) (( Clipper ))
+        __cogito_shape_set_clip(this, on)
+        <- this
+    ;
+    :: set_margins(this, top = num, right = num, bottom = num, left = num) (( Clipper ))
+        __cogito_container_set_margins(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_padding(this, top = num, right = num, bottom = num, left = num) (( Clipper ))
+        __cogito_container_set_padding(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_hexpand(this, expand = bool) (( Clipper ))
+        __cogito_container_set_hexpand(this, expand)
+        <- this
+    ;
+    :: set_vexpand(this, expand = bool) (( Clipper ))
+        __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_visible(this, on = bool) (( Clipper ))
+        __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_class(this, cls = string) (( Clipper ))
+        __cogito_node_set_class(this, cls)
+        <- this
+    ;
+    :: set_id(this, id = string) (( Clipper ))
         __cogito_node_set_id(this, id)
         <- this
     ;

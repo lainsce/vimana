@@ -519,6 +519,8 @@ static bool cogito_inspector_apply_edit(CogitoNode* n, int prop_id, int wheel_di
     if (v > 8) v = 8;
     if (v != n->align) {
       n->align = v;
+      n->halign_set = true;
+      n->valign_set = true;
       changed = true;
     }
   } else if (prop_id == COGITO_INSPECTOR_PROP_TEXT_ALIGN) {

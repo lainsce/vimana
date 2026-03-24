@@ -93,7 +93,7 @@ static void cogito_layout_hstack(CogitoNode* n, int x, int y) {
     int child_row = c->align / 3;
     if (child_row < 0 || child_row > 2) child_row = 0;
 
-    if (child_row == 0) ch = slot_h;
+    if (child_row == 0 && !c->valign_set) ch = slot_h;
     if (ch > slot_h) ch = slot_h;
 
     int ox = 0;

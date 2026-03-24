@@ -386,8 +386,8 @@ static void cogito_layout_window(CogitoNode* win) {
       if (child_col < 0 || child_col > 2) child_col = 0;
       if (child_row < 0 || child_row > 2) child_row = 0;
 
-      int target_w = (child_col == 0) ? slot_w : cw;
-      int target_h = (child_row == 0) ? slot_h_single : ch;
+      int target_w = (child_col == 0 && !c->halign_set) ? slot_w : cw;
+      int target_h = (child_row == 0 && !c->valign_set) ? slot_h_single : ch;
       if (target_w > slot_w) target_w = slot_w;
       if (target_h > slot_h_single) target_h = slot_h_single;
 

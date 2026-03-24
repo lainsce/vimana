@@ -216,6 +216,9 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_canvas_line cogito_canvas_line_yis
 #define cogito_canvas_rect cogito_canvas_rect_yis
 #define cogito_canvas_fill_rect cogito_canvas_fill_rect_yis
+#define cogito_canvas_fill_linear_gradient cogito_canvas_fill_linear_gradient_yis
+#define cogito_canvas_fill_linear_gradient_angle cogito_canvas_fill_linear_gradient_angle_yis
+#define cogito_canvas_fill_radial_gradient cogito_canvas_fill_radial_gradient_yis
 #define cogito_canvas_circle cogito_canvas_circle_yis
 #define cogito_canvas_fill_circle cogito_canvas_fill_circle_yis
 #define cogito_shape_new cogito_shape_new_yis
@@ -647,6 +650,9 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_canvas_line
 #undef cogito_canvas_rect
 #undef cogito_canvas_fill_rect
+#undef cogito_canvas_fill_linear_gradient
+#undef cogito_canvas_fill_linear_gradient_angle
+#undef cogito_canvas_fill_radial_gradient
 #undef cogito_canvas_circle
 #undef cogito_canvas_fill_circle
 #undef cogito_shape_new
@@ -3256,6 +3262,59 @@ void cogito_canvas_fill_rect(cogito_node *area, int x, int y, int w, int h) {
     return;
   cogito_canvas_fill_rect_yis(YV_OBJ(area), YV_INT(x), YV_INT(y), YV_INT(w),
                                YV_INT(h));
+}
+
+void cogito_canvas_fill_linear_gradient(cogito_node *area, int x, int y, int w,
+                                        int h, const char *start_color,
+                                        const char *end_color,
+                                        bool vertical) {
+  if (!area)
+    return;
+  YisVal sv = cogito_val_from_cstr(start_color);
+  YisVal ev = cogito_val_from_cstr(end_color);
+  cogito_canvas_fill_linear_gradient_yis(
+    YV_OBJ(area), YV_INT(x), YV_INT(y), YV_INT(w), YV_INT(h), sv, ev,
+    YV_BOOL(vertical));
+  if (sv.tag == EVT_STR)
+    yis_release_val(sv);
+  if (ev.tag == EVT_STR)
+    yis_release_val(ev);
+}
+
+void cogito_canvas_fill_linear_gradient_angle(cogito_node *area, int x, int y,
+                                              int w, int h,
+                                              const char *start_color,
+                                              const char *end_color,
+                                              float angle_deg) {
+  if (!area)
+    return;
+  YisVal sv = cogito_val_from_cstr(start_color);
+  YisVal ev = cogito_val_from_cstr(end_color);
+  cogito_canvas_fill_linear_gradient_angle_yis(
+      YV_OBJ(area), YV_INT(x), YV_INT(y), YV_INT(w), YV_INT(h), sv, ev,
+      YV_FLOAT(angle_deg));
+  if (sv.tag == EVT_STR)
+    yis_release_val(sv);
+  if (ev.tag == EVT_STR)
+    yis_release_val(ev);
+}
+
+void cogito_canvas_fill_radial_gradient(cogito_node *area, int x, int y, int w,
+                                        int h, const char *inner_color,
+                                        const char *outer_color,
+                                        float center_x, float center_y,
+                                        float radius) {
+  if (!area)
+    return;
+  YisVal iv = cogito_val_from_cstr(inner_color);
+  YisVal ov = cogito_val_from_cstr(outer_color);
+  cogito_canvas_fill_radial_gradient_yis(
+      YV_OBJ(area), YV_INT(x), YV_INT(y), YV_INT(w), YV_INT(h), iv, ov,
+      YV_FLOAT(center_x), YV_FLOAT(center_y), YV_FLOAT(radius));
+  if (iv.tag == EVT_STR)
+    yis_release_val(iv);
+  if (ov.tag == EVT_STR)
+    yis_release_val(ov);
 }
 
 void cogito_canvas_circle(cogito_node *area, int cx, int cy, int r) {

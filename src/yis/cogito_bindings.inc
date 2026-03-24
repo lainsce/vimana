@@ -1607,6 +1607,59 @@ static void __cogito_canvas_fill_rect(YisVal dav, YisVal xv, YisVal yv,
   cogito_canvas_fill_rect(da, (int)yis_as_int(xv), (int)yis_as_int(yv),
                           (int)yis_as_int(wv), (int)yis_as_int(hv));
 }
+static void __cogito_canvas_fill_linear_gradient(YisVal dav, YisVal xv,
+                                                 YisVal yv, YisVal wv,
+                                                 YisVal hv, YisVal startv,
+                                                 YisVal endv,
+                                                 YisVal verticalv) {
+  cogito_node* da = cogito_node_from_val(dav);
+  YisStr* start_tmp = NULL;
+  YisStr* end_tmp = NULL;
+  const char* start = cogito_required_cstr(startv, &start_tmp);
+  const char* end = cogito_required_cstr(endv, &end_tmp);
+  cogito_canvas_fill_linear_gradient(da, (int)yis_as_int(xv),
+                                     (int)yis_as_int(yv), (int)yis_as_int(wv),
+                                     (int)yis_as_int(hv), start, end,
+                                     yis_as_bool(verticalv));
+  if (start_tmp) yis_release_val(YV_STR(start_tmp));
+  if (end_tmp) yis_release_val(YV_STR(end_tmp));
+}
+static void __cogito_canvas_fill_linear_gradient_angle(YisVal dav, YisVal xv,
+                                                       YisVal yv, YisVal wv,
+                                                       YisVal hv,
+                                                       YisVal startv,
+                                                       YisVal endv,
+                                                       YisVal anglev) {
+  cogito_node* da = cogito_node_from_val(dav);
+  YisStr* start_tmp = NULL;
+  YisStr* end_tmp = NULL;
+  const char* start = cogito_required_cstr(startv, &start_tmp);
+  const char* end = cogito_required_cstr(endv, &end_tmp);
+  cogito_canvas_fill_linear_gradient_angle(
+      da, (int)yis_as_int(xv), (int)yis_as_int(yv), (int)yis_as_int(wv),
+      (int)yis_as_int(hv), start, end, (float)yis_as_float(anglev));
+  if (start_tmp) yis_release_val(YV_STR(start_tmp));
+  if (end_tmp) yis_release_val(YV_STR(end_tmp));
+}
+static void __cogito_canvas_fill_radial_gradient(YisVal dav, YisVal xv,
+                                                 YisVal yv, YisVal wv,
+                                                 YisVal hv, YisVal innerv,
+                                                 YisVal outerv,
+                                                 YisVal centerxv,
+                                                 YisVal centeryv,
+                                                 YisVal radiusv) {
+  cogito_node* da = cogito_node_from_val(dav);
+  YisStr* inner_tmp = NULL;
+  YisStr* outer_tmp = NULL;
+  const char* inner = cogito_required_cstr(innerv, &inner_tmp);
+  const char* outer = cogito_required_cstr(outerv, &outer_tmp);
+  cogito_canvas_fill_radial_gradient(
+      da, (int)yis_as_int(xv), (int)yis_as_int(yv), (int)yis_as_int(wv),
+      (int)yis_as_int(hv), inner, outer, (float)yis_as_float(centerxv),
+      (float)yis_as_float(centeryv), (float)yis_as_float(radiusv));
+  if (inner_tmp) yis_release_val(YV_STR(inner_tmp));
+  if (outer_tmp) yis_release_val(YV_STR(outer_tmp));
+}
 static void __cogito_canvas_circle(YisVal dav, YisVal cxv, YisVal cyv,
                                    YisVal rv) {
   cogito_node* da = cogito_node_from_val(dav);
@@ -5184,6 +5237,9 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_canvas_line __cogito_canvas_line
 #define cogito_canvas_rect __cogito_canvas_rect
 #define cogito_canvas_fill_rect __cogito_canvas_fill_rect
+#define cogito_canvas_fill_linear_gradient __cogito_canvas_fill_linear_gradient
+#define cogito_canvas_fill_linear_gradient_angle __cogito_canvas_fill_linear_gradient_angle
+#define cogito_canvas_fill_radial_gradient __cogito_canvas_fill_radial_gradient
 #define cogito_canvas_circle __cogito_canvas_circle
 #define cogito_canvas_fill_circle __cogito_canvas_fill_circle
 #define cogito_shape_new __cogito_shape
@@ -5328,6 +5384,9 @@ static void __cogito_node_set_textfield_text(YisVal nodev, YisVal textv) {
 #define cogito_node_set_border_color __cogito_node_set_border_color
 #define cogito_canvas_circle __cogito_canvas_circle
 #define cogito_canvas_fill_circle __cogito_canvas_fill_circle
+#define cogito_canvas_fill_linear_gradient __cogito_canvas_fill_linear_gradient
+#define cogito_canvas_fill_linear_gradient_angle __cogito_canvas_fill_linear_gradient_angle
+#define cogito_canvas_fill_radial_gradient __cogito_canvas_fill_radial_gradient
 // cogito_set_script_dir is provided by the cogito library
 
 // ---- Embedded SVG auto-registration ----

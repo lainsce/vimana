@@ -118,8 +118,8 @@ static void cogito_layout_zstack(CogitoNode* n, int x, int y) {
       row_use = 2;
     }
     if (c->kind != COGITO_DIALOG_SLOT && c->kind != COGITO_TOASTS) {
-      bool fill_w = cogito_layout_effective_hexpand(c) || col_use == 0;
-      bool fill_h = cogito_layout_effective_vexpand(c) || row_use == 0;
+      bool fill_w = cogito_layout_effective_hexpand(c) || (col_use == 0 && !c->halign_set);
+      bool fill_h = cogito_layout_effective_vexpand(c) || (row_use == 0 && !c->valign_set);
       if (fill_w) cw = avail_w;
       if (fill_h) ch = avail_h;
     }

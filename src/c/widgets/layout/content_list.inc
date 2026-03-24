@@ -13,11 +13,13 @@ case COGITO_CONTENT_LIST: {
   int cy = inner_y;
   for (size_t i = 0; i < n->len; i++) {
     CogitoNode* c = n->children[i];
-    // Apply item padding to children that don't already have explicit padding
-    if (!c->padding_left) c->padding_left = item_pad_x;
-    if (!c->padding_right) c->padding_right = item_pad_x;
-    if (!c->padding_top) c->padding_top = item_pad_y;
-    if (!c->padding_bottom) c->padding_bottom = item_pad_y;
+    // Apply fallback item padding only when the child didn't set padding explicitly.
+    if (!c->padding_set) {
+      if (!c->padding_left) c->padding_left = item_pad_x;
+      if (!c->padding_right) c->padding_right = item_pad_x;
+      if (!c->padding_top) c->padding_top = item_pad_y;
+      if (!c->padding_bottom) c->padding_bottom = item_pad_y;
+    }
     int cw = 0, ch = 0;
     cogito_intrinsic_size(c, &cw, &ch);
     int slot_w = inner_w - c->margin_left - c->margin_right;

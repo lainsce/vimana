@@ -138,6 +138,13 @@ typedef struct CogitoBackend {
 
   // Drawing primitives
   void (*draw_rect)(int x, int y, int w, int h, CogitoColor color);
+  void (*draw_rect_linear_gradient)(int x, int y, int w, int h,
+                                    CogitoColor start, CogitoColor end,
+                                    float angle_deg);
+  void (*draw_rect_radial_gradient)(int x, int y, int w, int h,
+                                    CogitoColor inner, CogitoColor outer,
+                                    float center_x, float center_y,
+                                    float radius);
   void (*draw_rect_rounded)(int x, int y, int w, int h, CogitoColor color,
                             float roundness);
   void (*draw_rect_lines)(int x, int y, int w, int h, CogitoColor color,

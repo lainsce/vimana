@@ -324,6 +324,137 @@
                         out->tmp = t;
                         return true;
                     }
+                    if (str_eq_c(fname, "__cogito_canvas_fill_linear_gradient")) {
+                        GenExpr ctx, xv, yv, wv, hv, startv, endv, verticalv;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &ctx, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &xv, err)) { gen_expr_free(&ctx); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[2], &yv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[3], &wv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[4], &hv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[5], &startv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[6], &endv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); gen_expr_free(&startv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[7], &verticalv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); gen_expr_free(&startv); gen_expr_free(&endv); return false; }
+                        w_line(&cg->w, "cogito_canvas_fill_linear_gradient(%s, %s, %s, %s, %s, %s, %s, %s);", ctx.tmp, xv.tmp, yv.tmp, wv.tmp, hv.tmp, startv.tmp, endv.tmp, verticalv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", ctx.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", xv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", yv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", hv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", startv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", endv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", verticalv.tmp);
+                        gen_expr_release_except(cg, &ctx, ctx.tmp);
+                        gen_expr_release_except(cg, &xv, xv.tmp);
+                        gen_expr_release_except(cg, &yv, yv.tmp);
+                        gen_expr_release_except(cg, &wv, wv.tmp);
+                        gen_expr_release_except(cg, &hv, hv.tmp);
+                        gen_expr_release_except(cg, &startv, startv.tmp);
+                        gen_expr_release_except(cg, &endv, endv.tmp);
+                        gen_expr_release_except(cg, &verticalv, verticalv.tmp);
+                        gen_expr_free(&ctx);
+                        gen_expr_free(&xv);
+                        gen_expr_free(&yv);
+                        gen_expr_free(&wv);
+                        gen_expr_free(&hv);
+                        gen_expr_free(&startv);
+                        gen_expr_free(&endv);
+                        gen_expr_free(&verticalv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_canvas_fill_linear_gradient_angle")) {
+                        GenExpr ctx, xv, yv, wv, hv, startv, endv, anglev;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &ctx, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &xv, err)) { gen_expr_free(&ctx); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[2], &yv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[3], &wv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[4], &hv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[5], &startv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[6], &endv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); gen_expr_free(&startv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[7], &anglev, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); gen_expr_free(&startv); gen_expr_free(&endv); return false; }
+                        w_line(&cg->w, "cogito_canvas_fill_linear_gradient_angle(%s, %s, %s, %s, %s, %s, %s, %s);", ctx.tmp, xv.tmp, yv.tmp, wv.tmp, hv.tmp, startv.tmp, endv.tmp, anglev.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", ctx.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", xv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", yv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", hv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", startv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", endv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", anglev.tmp);
+                        gen_expr_release_except(cg, &ctx, ctx.tmp);
+                        gen_expr_release_except(cg, &xv, xv.tmp);
+                        gen_expr_release_except(cg, &yv, yv.tmp);
+                        gen_expr_release_except(cg, &wv, wv.tmp);
+                        gen_expr_release_except(cg, &hv, hv.tmp);
+                        gen_expr_release_except(cg, &startv, startv.tmp);
+                        gen_expr_release_except(cg, &endv, endv.tmp);
+                        gen_expr_release_except(cg, &anglev, anglev.tmp);
+                        gen_expr_free(&ctx);
+                        gen_expr_free(&xv);
+                        gen_expr_free(&yv);
+                        gen_expr_free(&wv);
+                        gen_expr_free(&hv);
+                        gen_expr_free(&startv);
+                        gen_expr_free(&endv);
+                        gen_expr_free(&anglev);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname, "__cogito_canvas_fill_radial_gradient")) {
+                        GenExpr ctx, xv, yv, wv, hv, innerv, outerv, centerxv, centeryv, radiusv;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &ctx, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &xv, err)) { gen_expr_free(&ctx); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[2], &yv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[3], &wv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[4], &hv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[5], &innerv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[6], &outerv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); gen_expr_free(&innerv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[7], &centerxv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); gen_expr_free(&innerv); gen_expr_free(&outerv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[8], &centeryv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); gen_expr_free(&innerv); gen_expr_free(&outerv); gen_expr_free(&centerxv); return false; }
+                        if (!gen_expr(cg, path, e->as.call.args[9], &radiusv, err)) { gen_expr_free(&ctx); gen_expr_free(&xv); gen_expr_free(&yv); gen_expr_free(&wv); gen_expr_free(&hv); gen_expr_free(&innerv); gen_expr_free(&outerv); gen_expr_free(&centerxv); gen_expr_free(&centeryv); return false; }
+                        w_line(&cg->w, "cogito_canvas_fill_radial_gradient(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", ctx.tmp, xv.tmp, yv.tmp, wv.tmp, hv.tmp, innerv.tmp, outerv.tmp, centerxv.tmp, centeryv.tmp, radiusv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", ctx.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", xv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", yv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", wv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", hv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", innerv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", outerv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", centerxv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", centeryv.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", radiusv.tmp);
+                        gen_expr_release_except(cg, &ctx, ctx.tmp);
+                        gen_expr_release_except(cg, &xv, xv.tmp);
+                        gen_expr_release_except(cg, &yv, yv.tmp);
+                        gen_expr_release_except(cg, &wv, wv.tmp);
+                        gen_expr_release_except(cg, &hv, hv.tmp);
+                        gen_expr_release_except(cg, &innerv, innerv.tmp);
+                        gen_expr_release_except(cg, &outerv, outerv.tmp);
+                        gen_expr_release_except(cg, &centerxv, centerxv.tmp);
+                        gen_expr_release_except(cg, &centeryv, centeryv.tmp);
+                        gen_expr_release_except(cg, &radiusv, radiusv.tmp);
+                        gen_expr_free(&ctx);
+                        gen_expr_free(&xv);
+                        gen_expr_free(&yv);
+                        gen_expr_free(&wv);
+                        gen_expr_free(&hv);
+                        gen_expr_free(&innerv);
+                        gen_expr_free(&outerv);
+                        gen_expr_free(&centerxv);
+                        gen_expr_free(&centeryv);
+                        gen_expr_free(&radiusv);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
                     // --- Shape ---
                     if (str_eq_c(fname, "__cogito_shape")) {
                         GenExpr preset;

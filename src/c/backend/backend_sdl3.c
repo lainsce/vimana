@@ -42,6 +42,7 @@ static void sdl3_sync_logical_presentation(CogitoSDL3Window *win);
 static void sdl3_get_mouse_position_in_window(CogitoWindow *window, int *x,
                                               int *y);
 static void sdl3_free_geometry_buffers(void);
+static SDL_FColor sdl3_fcolor(CogitoColor c);
 static char *sdl3_choose_font_name(CogitoWindow *window,
                                    const char *current_name);
 
@@ -1488,6 +1489,68 @@ static void sdl3_draw_rect(int x, int y, int w, int h, CogitoColor color) {
   sdl3_rect_batch_push(g_current_renderer, x, y, w, h, color);
 }
 
+static void sdl3_draw_rect_linear_gradient(int x, int y, int w, int h,
+                                           CogitoColor start,
+                                           CogitoColor end,
+                                           float angle_deg) {
+  if (!g_current_renderer || w <= 0 || h <= 0)
+    return;
+
+  sdl3_rect_batch_flush();
+
+  float rad = angle_deg * (float)M_PI / 180.0f;
+  float dx = cosf(rad);
+  float dy = sinf(rad);
+  if (fabsf(dx) < 1e-6f && fabsf(dy) < 1e-6f) {
+    dx = 1.0f;
+    dy = 0.0f;
+  }
+
+  float x0 = (float)x;
+  float y0 = (float)y;
+  float x1 = (float)(x + w);
+  float y1 = (float)(y + h);
+  float cx = x0 + ((float)w * 0.5f);
+  float cy = y0 + ((float)h * 0.5f);
+
+  float proj_tl = (x0 - cx) * dx + (y0 - cy) * dy;
+  float proj_tr = (x1 - cx) * dx + (y0 - cy) * dy;
+  float proj_br = (x1 - cx) * dx + (y1 - cy) * dy;
+  float proj_bl = (x0 - cx) * dx + (y1 - cy) * dy;
+
+  float proj_min = proj_tl;
+  float proj_max = proj_tl;
+  if (proj_tr < proj_min) proj_min = proj_tr;
+  if (proj_br < proj_min) proj_min = proj_br;
+  if (proj_bl < proj_min) proj_min = proj_bl;
+  if (proj_tr > proj_max) proj_max = proj_tr;
+  if (proj_br > proj_max) proj_max = proj_br;
+  if (proj_bl > proj_max) proj_max = proj_bl;
+
+  float denom = proj_max - proj_min;
+  if (fabsf(denom) < 1e-6f) denom = 1.0f;
+
+  float t_tl = (proj_tl - proj_min) / denom;
+  float t_tr = (proj_tr - proj_min) / denom;
+  float t_br = (proj_br - proj_min) / denom;
+  float t_bl = (proj_bl - proj_min) / denom;
+
+  SDL_FColor c_tl = sdl3_fcolor(cogito_color_lerp(start, end, t_tl));
+  SDL_FColor c_tr = sdl3_fcolor(cogito_color_lerp(start, end, t_tr));
+  SDL_FColor c_br = sdl3_fcolor(cogito_color_lerp(start, end, t_br));
+  SDL_FColor c_bl = sdl3_fcolor(cogito_color_lerp(start, end, t_bl));
+
+  SDL_Vertex verts[4] = {
+    {.position = {x0, y0}, .color = c_tl, .tex_coord = {0.0f, 0.0f}},
+    {.position = {x1, y0}, .color = c_tr, .tex_coord = {0.0f, 0.0f}},
+    {.position = {x1, y1}, .color = c_br, .tex_coord = {0.0f, 0.0f}},
+    {.position = {x0, y1}, .color = c_bl, .tex_coord = {0.0f, 0.0f}},
+  };
+  int indices[6] = {0, 1, 2, 0, 2, 3};
+
+  SDL_RenderGeometry(g_current_renderer, NULL, verts, 4, indices, 6);
+}
+
 static void sdl3_draw_point_alpha(int x, int y, CogitoColor color,
                                   float coverage) {
   if (!g_current_renderer || color.a == 0)
@@ -1691,6 +1754,110 @@ static int sdl3_build_rounded_rect_perimeter(float x, float y, float w, float h,
 static SDL_FColor sdl3_fcolor(CogitoColor c) {
   return (SDL_FColor){(float)c.r / 255.0f, (float)c.g / 255.0f,
                       (float)c.b / 255.0f, (float)c.a / 255.0f};
+}
+
+static void sdl3_draw_rect_radial_gradient(int x, int y, int w, int h,
+                                           CogitoColor inner,
+                                           CogitoColor outer,
+                                           float center_x, float center_y,
+                                           float radius) {
+  if (!g_current_renderer || w <= 0 || h <= 0)
+    return;
+
+  sdl3_rect_batch_flush();
+  sdl3_draw_rect(x, y, w, h, outer);
+  sdl3_rect_batch_flush();
+
+  float cx = center_x;
+  float cy = center_y;
+  float x0 = (float)x;
+  float y0 = (float)y;
+  float x1 = (float)(x + w);
+  float y1 = (float)(y + h);
+  if (radius <= 0.0f) {
+    float dx0 = fabsf(cx - x0);
+    float dx1 = fabsf(cx - x1);
+    float dy0 = fabsf(cy - y0);
+    float dy1 = fabsf(cy - y1);
+    float max_dx = dx0 > dx1 ? dx0 : dx1;
+    float max_dy = dy0 > dy1 ? dy0 : dy1;
+    radius = sqrtf(max_dx * max_dx + max_dy * max_dy);
+  }
+  if (radius < 1.0f)
+    radius = 1.0f;
+
+  int segments = (int)(radius * 0.35f);
+  if (segments < 24)
+    segments = 24;
+  if (segments > 96)
+    segments = 96;
+
+  int rings = (int)(radius * 0.08f);
+  if (rings < 10)
+    rings = 10;
+  if (rings > 48)
+    rings = 48;
+
+  int vert_count = 1 + (rings * segments);
+  int index_count = (segments * 3) + ((rings - 1) * segments * 6);
+
+  if (!cogito_ensure_cap((void **)&g_rounded_rect_verts,
+                         &g_rounded_rect_verts_cap, vert_count,
+                         sizeof(SDL_Vertex)) ||
+      !cogito_ensure_cap((void **)&g_rounded_rect_indices,
+                         &g_rounded_rect_indices_cap, index_count,
+                         sizeof(int))) {
+    return;
+  }
+
+  g_rounded_rect_verts[0] = (SDL_Vertex){
+      .position = {cx, cy},
+      .color = sdl3_fcolor(inner),
+      .tex_coord = {0.0f, 0.0f}};
+
+  int vi = 1;
+  for (int r = 1; r <= rings; r++) {
+    float t = (float)r / (float)rings;
+    float rr = radius * t;
+    SDL_FColor ring_color = sdl3_fcolor(cogito_color_lerp(inner, outer, t));
+    for (int i = 0; i < segments; i++) {
+      float a = ((float)i / (float)segments) * (float)(2.0 * M_PI);
+      float px = cx + cosf(a) * rr;
+      float py = cy + sinf(a) * rr;
+      g_rounded_rect_verts[vi++] = (SDL_Vertex){
+          .position = {px, py}, .color = ring_color, .tex_coord = {0.0f, 0.0f}};
+    }
+  }
+
+  int ii = 0;
+  int ring0 = 1;
+  for (int i = 0; i < segments; i++) {
+    int a = ring0 + i;
+    int b = ring0 + ((i + 1) % segments);
+    g_rounded_rect_indices[ii++] = 0;
+    g_rounded_rect_indices[ii++] = a;
+    g_rounded_rect_indices[ii++] = b;
+  }
+
+  for (int r = 1; r < rings; r++) {
+    int inner_start = 1 + ((r - 1) * segments);
+    int outer_start = 1 + (r * segments);
+    for (int i = 0; i < segments; i++) {
+      int i0 = inner_start + i;
+      int i1 = inner_start + ((i + 1) % segments);
+      int o0 = outer_start + i;
+      int o1 = outer_start + ((i + 1) % segments);
+      g_rounded_rect_indices[ii++] = i0;
+      g_rounded_rect_indices[ii++] = i1;
+      g_rounded_rect_indices[ii++] = o1;
+      g_rounded_rect_indices[ii++] = i0;
+      g_rounded_rect_indices[ii++] = o1;
+      g_rounded_rect_indices[ii++] = o0;
+    }
+  }
+
+  SDL_RenderGeometry(g_current_renderer, NULL, g_rounded_rect_verts,
+                     vert_count, g_rounded_rect_indices, index_count);
 }
 
 static bool sdl3_draw_filled_rounded_rect_fan(int x, int y, int w, int h,
@@ -2969,18 +3136,47 @@ static void sdl3_draw_texture_polygon(CogitoTexture *tex,
     return;
   sdl3_rect_batch_flush();
 
-  // Triangle fan from centroid
-  float cx = 0.0f, cy = 0.0f, cu = 0.0f, cv = 0.0f;
+  // Triangulate as a fan from area-weighted centroid to avoid directional bias.
+  float area2 = 0.0f;
+  float uv_area2 = 0.0f;
+  float cx_acc = 0.0f;
+  float cy_acc = 0.0f;
+  float cu_acc = 0.0f;
+  float cv_acc = 0.0f;
+  float cx = 0.0f;
+  float cy = 0.0f;
+  float cu = 0.0f;
+  float cv = 0.0f;
   for (int i = 0; i < point_count; i++) {
-    cx += screen_x[i];
-    cy += screen_y[i];
-    cu += uv_x[i];
-    cv += uv_y[i];
+    int j = (i + 1) % point_count;
+    float cross = screen_x[i] * screen_y[j] - screen_x[j] * screen_y[i];
+    area2 += cross;
+    cx_acc += (screen_x[i] + screen_x[j]) * cross;
+    cy_acc += (screen_y[i] + screen_y[j]) * cross;
+
+    float uv_cross = uv_x[i] * uv_y[j] - uv_x[j] * uv_y[i];
+    uv_area2 += uv_cross;
+    cu_acc += (uv_x[i] + uv_x[j]) * uv_cross;
+    cv_acc += (uv_y[i] + uv_y[j]) * uv_cross;
   }
-  cx /= (float)point_count;
-  cy /= (float)point_count;
-  cu /= (float)point_count;
-  cv /= (float)point_count;
+
+  if (fabsf(area2) > 1e-6f && fabsf(uv_area2) > 1e-6f) {
+    cx = cx_acc / (3.0f * area2);
+    cy = cy_acc / (3.0f * area2);
+    cu = cu_acc / (3.0f * uv_area2);
+    cv = cv_acc / (3.0f * uv_area2);
+  } else {
+    for (int i = 0; i < point_count; i++) {
+      cx += screen_x[i];
+      cy += screen_y[i];
+      cu += uv_x[i];
+      cv += uv_y[i];
+    }
+    cx /= (float)point_count;
+    cy /= (float)point_count;
+    cu /= (float)point_count;
+    cv /= (float)point_count;
+  }
 
   int vert_count = 1 + point_count;
   int index_count = 3 * point_count;
@@ -3551,6 +3747,8 @@ static CogitoBackend sdl3_backend = {
     .get_time = sdl3_get_time,
     .sleep = sdl3_sleep,
     .draw_rect = sdl3_draw_rect,
+    .draw_rect_linear_gradient = sdl3_draw_rect_linear_gradient,
+    .draw_rect_radial_gradient = sdl3_draw_rect_radial_gradient,
     .draw_rect_rounded = sdl3_draw_rect_rounded,
     .draw_rect_lines = sdl3_draw_rect_lines,
     .draw_rect_rounded_lines = sdl3_draw_rect_rounded_lines,

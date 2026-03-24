@@ -107,7 +107,7 @@ static void cogito_layout_vstack(CogitoNode* n, int x, int y) {
     int cell_h = assigned_h[i];
     int child_row = c->align / 3;
     if (child_row < 0 || child_row > 2) child_row = 0;
-    bool default_fill_height = (count == 1 && child_row == 0);
+    bool default_fill_height = (count == 1 && child_row == 0 && !c->valign_set);
     if (default_fill_height) cell_h = avail_content_h;
     if (cell_h < 0) cell_h = 0;
 

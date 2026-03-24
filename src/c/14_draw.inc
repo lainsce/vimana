@@ -50,6 +50,71 @@ static void cogito_draw_rect(int x, int y, int w, int h, CogitoColor bg, int rad
   }
 }
 
+static void cogito_draw_rect_linear_gradient(int x, int y, int w, int h,
+                                             CogitoColor start,
+                                             CogitoColor end,
+                                             float angle_deg) {
+  if (w <= 0 || h <= 0) return;
+  if (cogito_draw_clip_active &&
+      !cogito_rect_visible(x, y, w, h,
+                           cogito_draw_clip_x, cogito_draw_clip_y,
+                           cogito_draw_clip_w, cogito_draw_clip_h)) {
+    return;
+  }
+  if (cogito_backend && cogito_backend->draw_rect_linear_gradient) {
+    cogito_backend->draw_rect_linear_gradient(x, y, w, h, start, end,
+                                              angle_deg);
+    return;
+  }
+  if (cogito_backend && cogito_backend->draw_rect) {
+    cogito_backend->draw_rect(x, y, w, h, start);
+  }
+}
+
+static void cogito_draw_rect_radial_gradient(int x, int y, int w, int h,
+                                             CogitoColor inner,
+                                             CogitoColor outer,
+                                             float center_x, float center_y,
+                                             float radius) {
+  if (w <= 0 || h <= 0) return;
+  if (cogito_draw_clip_active &&
+      !cogito_rect_visible(x, y, w, h,
+                           cogito_draw_clip_x, cogito_draw_clip_y,
+                           cogito_draw_clip_w, cogito_draw_clip_h)) {
+    return;
+  }
+
+  if (cogito_backend && cogito_backend->draw_rect_radial_gradient) {
+    bool clipped = false;
+    if (cogito_backend->begin_scissor && cogito_backend->end_scissor) {
+      cogito_backend->begin_scissor(x, y, w, h);
+      clipped = true;
+    }
+    cogito_backend->draw_rect_radial_gradient(x, y, w, h, inner, outer,
+                                              center_x, center_y, radius);
+    if (clipped) {
+      cogito_backend->end_scissor();
+    }
+    return;
+  }
+
+  if (cogito_backend && cogito_backend->draw_rect) {
+    cogito_backend->draw_rect(x, y, w, h, outer);
+  }
+  if (cogito_backend && cogito_backend->draw_circle && radius > 0.0f) {
+    bool clipped = false;
+    if (cogito_backend->begin_scissor && cogito_backend->end_scissor) {
+      cogito_backend->begin_scissor(x, y, w, h);
+      clipped = true;
+    }
+    cogito_backend->draw_circle((int)lroundf(center_x), (int)lroundf(center_y),
+                                radius, inner);
+    if (clipped) {
+      cogito_backend->end_scissor();
+    }
+  }
+}
+
 static void cogito_draw_rect_lines(int x, int y, int w, int h, CogitoColor border, int radius, int thickness) {
   if (w <= 0 || h <= 0 || thickness <= 0) return;
   if (cogito_draw_clip_active &&

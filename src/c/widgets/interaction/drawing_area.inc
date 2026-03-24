@@ -1,6 +1,15 @@
 static void cogito_draw_line(int x1, int y1, int x2, int y2, CogitoColor color);
 static void cogito_draw_rect(int x, int y, int w, int h, CogitoColor bg,
                              int radius);
+static void cogito_draw_rect_linear_gradient(int x, int y, int w, int h,
+                                             CogitoColor start,
+                                             CogitoColor end,
+                                             float angle_deg);
+static void cogito_draw_rect_radial_gradient(int x, int y, int w, int h,
+                                             CogitoColor inner,
+                                             CogitoColor outer,
+                                             float center_x, float center_y,
+                                             float radius);
 static void cogito_draw_rect_lines(int x, int y, int w, int h,
                                    CogitoColor border, int radius,
                                    int thickness);
@@ -248,6 +257,129 @@ static void cogito_canvas_fill_rect(YisVal ctxv, YisVal xv, YisVal yv, YisVal wv
   bool clipped = false;
   cogito_canvas_scissor_begin(n, &clipped);
   cogito_draw_rect(x, y, w, h, n->kd->drawing_area.canvas_color, 0);
+  cogito_canvas_scissor_end(clipped);
+}
+
+static void cogito_canvas_fill_linear_gradient(YisVal ctxv, YisVal xv, YisVal yv,
+                                               YisVal wv, YisVal hv,
+                                               YisVal startv, YisVal endv,
+                                               YisVal verticalv) {
+  CogitoNode* n = cogito_canvas_active_node(ctxv);
+  if (!n) return;
+  int x = n->x + cogito_canvas_int(xv);
+  int y = n->y + cogito_canvas_int(yv);
+  int w = cogito_canvas_int(wv);
+  int h = cogito_canvas_int(hv);
+  if (w <= 0 || h <= 0) return;
+
+  CogitoColor start = n->kd->drawing_area.canvas_color;
+  CogitoColor end = n->kd->drawing_area.canvas_color;
+  bool has_start = cogito_canvas_parse_color(startv, &start);
+  bool has_end = cogito_canvas_parse_color(endv, &end);
+
+  if (!has_start && !has_end) {
+    bool clipped = false;
+    cogito_canvas_scissor_begin(n, &clipped);
+    cogito_draw_rect(x, y, w, h, n->kd->drawing_area.canvas_color, 0);
+    cogito_canvas_scissor_end(clipped);
+    return;
+  }
+  if (!has_start) start = end;
+  if (!has_end) end = start;
+
+  bool vertical = yis_as_bool(verticalv);
+  float angle_deg = vertical ? 90.0f : 0.0f;
+  bool clipped = false;
+  cogito_canvas_scissor_begin(n, &clipped);
+  cogito_draw_rect_linear_gradient(x, y, w, h, start, end, angle_deg);
+  cogito_canvas_scissor_end(clipped);
+}
+
+static void cogito_canvas_fill_linear_gradient_angle(YisVal ctxv, YisVal xv,
+                                                     YisVal yv, YisVal wv,
+                                                     YisVal hv, YisVal startv,
+                                                     YisVal endv,
+                                                     YisVal anglev) {
+  CogitoNode* n = cogito_canvas_active_node(ctxv);
+  if (!n) return;
+  int x = n->x + cogito_canvas_int(xv);
+  int y = n->y + cogito_canvas_int(yv);
+  int w = cogito_canvas_int(wv);
+  int h = cogito_canvas_int(hv);
+  if (w <= 0 || h <= 0) return;
+
+  CogitoColor start = n->kd->drawing_area.canvas_color;
+  CogitoColor end = n->kd->drawing_area.canvas_color;
+  bool has_start = cogito_canvas_parse_color(startv, &start);
+  bool has_end = cogito_canvas_parse_color(endv, &end);
+
+  if (!has_start && !has_end) {
+    bool clipped = false;
+    cogito_canvas_scissor_begin(n, &clipped);
+    cogito_draw_rect(x, y, w, h, n->kd->drawing_area.canvas_color, 0);
+    cogito_canvas_scissor_end(clipped);
+    return;
+  }
+  if (!has_start) start = end;
+  if (!has_end) end = start;
+
+  float angle_deg = (float)yis_as_float(anglev);
+  bool clipped = false;
+  cogito_canvas_scissor_begin(n, &clipped);
+  cogito_draw_rect_linear_gradient(x, y, w, h, start, end, angle_deg);
+  cogito_canvas_scissor_end(clipped);
+}
+
+static void cogito_canvas_fill_radial_gradient(YisVal ctxv, YisVal xv,
+                                               YisVal yv, YisVal wv,
+                                               YisVal hv, YisVal innerv,
+                                               YisVal outerv, YisVal centerxv,
+                                               YisVal centeryv,
+                                               YisVal radiusv) {
+  CogitoNode* n = cogito_canvas_active_node(ctxv);
+  if (!n) return;
+  int x = n->x + cogito_canvas_int(xv);
+  int y = n->y + cogito_canvas_int(yv);
+  int w = cogito_canvas_int(wv);
+  int h = cogito_canvas_int(hv);
+  if (w <= 0 || h <= 0) return;
+
+  CogitoColor inner = n->kd->drawing_area.canvas_color;
+  CogitoColor outer = n->kd->drawing_area.canvas_color;
+  bool has_inner = cogito_canvas_parse_color(innerv, &inner);
+  bool has_outer = cogito_canvas_parse_color(outerv, &outer);
+
+  if (!has_inner && !has_outer) {
+    bool clipped = false;
+    cogito_canvas_scissor_begin(n, &clipped);
+    cogito_draw_rect(x, y, w, h, n->kd->drawing_area.canvas_color, 0);
+    cogito_canvas_scissor_end(clipped);
+    return;
+  }
+  if (!has_inner) inner = outer;
+  if (!has_outer) outer = inner;
+
+  float center_x = (float)n->x + (float)yis_as_float(centerxv);
+  float center_y = (float)n->y + (float)yis_as_float(centeryv);
+  float radius = (float)yis_as_float(radiusv);
+  if (radius <= 0.0f) {
+    float left = (float)x;
+    float right = (float)(x + w);
+    float top = (float)y;
+    float bottom = (float)(y + h);
+    float dx0 = fabsf(center_x - left);
+    float dx1 = fabsf(center_x - right);
+    float dy0 = fabsf(center_y - top);
+    float dy1 = fabsf(center_y - bottom);
+    float max_dx = dx0 > dx1 ? dx0 : dx1;
+    float max_dy = dy0 > dy1 ? dy0 : dy1;
+    radius = sqrtf(max_dx * max_dx + max_dy * max_dy);
+  }
+
+  bool clipped = false;
+  cogito_canvas_scissor_begin(n, &clipped);
+  cogito_draw_rect_radial_gradient(x, y, w, h, inner, outer,
+                                   center_x, center_y, radius);
   cogito_canvas_scissor_end(clipped);
 }
 

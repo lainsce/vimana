@@ -1205,6 +1205,8 @@ typedef struct CogitoNode {
   int margin_left, margin_top, margin_right, margin_bottom;
   int padding_left, padding_top, padding_right, padding_bottom;
   int align;
+  bool halign_set;
+  bool valign_set;
   bool hexpand;
   bool vexpand;
   bool hexpand_set;

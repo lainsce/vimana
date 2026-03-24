@@ -68,7 +68,7 @@ static void cogito_layout_flow(CogitoNode* n, int x, int y) {
       if (child_row < 0 || child_row > 2) child_row = 0;
       int slot_h = row_h - c->margin_top - c->margin_bottom;
       if (slot_h < 0) slot_h = 0;
-      if (child_row == 0) ch = slot_h;
+      if (child_row == 0 && !c->valign_set) ch = slot_h;
       if (ch > slot_h) ch = slot_h;
 
       int oy = 0;

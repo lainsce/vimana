@@ -709,6 +709,19 @@ void cogito_canvas_set_line_width(cogito_node *area, int width);
 void cogito_canvas_line(cogito_node *area, int x1, int y1, int x2, int y2);
 void cogito_canvas_rect(cogito_node *area, int x, int y, int w, int h);
 void cogito_canvas_fill_rect(cogito_node *area, int x, int y, int w, int h);
+void cogito_canvas_fill_linear_gradient(cogito_node *area, int x, int y, int w,
+                                        int h, const char *start_color,
+                                        const char *end_color, bool vertical);
+void cogito_canvas_fill_linear_gradient_angle(cogito_node *area, int x, int y,
+                                              int w, int h,
+                                              const char *start_color,
+                                              const char *end_color,
+                                              float angle_deg);
+void cogito_canvas_fill_radial_gradient(cogito_node *area, int x, int y, int w,
+                                        int h, const char *inner_color,
+                                        const char *outer_color,
+                                        float center_x, float center_y,
+                                        float radius);
 void cogito_canvas_circle(cogito_node *area, int cx, int cy, int r);
 void cogito_canvas_fill_circle(cogito_node *area, int cx, int cy, int r);
 void cogito_shape_set_preset(cogito_node *shape, int preset);

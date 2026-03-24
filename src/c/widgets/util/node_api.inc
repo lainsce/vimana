@@ -72,6 +72,8 @@ static void cogito_container_set_align(YisVal nodev, YisVal alignv) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.container_set_align expects object");
   CogitoNode* node = (CogitoNode*)nodev.as.p;
   node->align = (int)yis_as_int(alignv);
+  node->halign_set = true;
+  node->valign_set = true;
 }
 
 static void cogito_container_set_halign(YisVal nodev, YisVal alignv) {
@@ -82,6 +84,7 @@ static void cogito_container_set_halign(YisVal nodev, YisVal alignv) {
   if (col > 2) col = 2;
   int row = node->align / 3;
   node->align = row * 3 + col;
+  node->halign_set = true;
 }
 
 static void cogito_container_set_valign(YisVal nodev, YisVal alignv) {
@@ -92,6 +95,7 @@ static void cogito_container_set_valign(YisVal nodev, YisVal alignv) {
   if (row > 2) row = 2;
   int col = node->align % 3;
   node->align = row * 3 + col;
+  node->valign_set = true;
 }
 
 static void cogito_container_set_hexpand(YisVal nodev, YisVal expandv) {
