@@ -1,0 +1,249 @@
+@diagnostics: warn
+
+; ── Theme tokens ──────────────────────────────────────────────
+
+@accent: #26A69A
+@accent-light: rgba(38, 166, 154, 0.12)
+@on-surface-variant: #5C6B66
+@surface-container: #E8EDEB
+@surface-container-lowest: #FFFFFF
+@card-bg: rgba(38, 166, 154, 0.08)
+@print-border: rgba(24, 40, 37, 0.16)
+
+; ── Base ──────────────────────────────────────────────────────
+
+vstack
+hstack
+zstack
+grid
+  background: transparent
+
+window_bar
+  background: @surface-container
+
+appbar
+  font-family: "Roboto Serif"
+
+; ── Global shapes ─────────────────────────────────────────────
+
+button
+  border-radius: 32
+
+iconbtn
+  border-radius: 32
+
+fab
+  border-radius: 16
+
+card
+  border-radius: 24
+
+; ── Content panel ─────────────────────────────────────────────
+
+.content-panel
+  border-radius: 18 0 0 0
+
+; ── Home ──────────────────────────────────────────────────────
+
+label.home-title
+  font-family: "Roboto Serif"
+  font-size: 20
+  font-weight: 500
+
+card.doc-card
+  border-radius: 24
+  padding: 20
+  background: @card-bg
+
+label.doc-card-title
+  font-size: 16
+  font-weight: 600
+
+label.doc-card-preview
+  font-size: 13
+  color: @on-surface-variant
+
+; ── Editor ────────────────────────────────────────────────────
+
+vstack.editor-text-area
+  min-width: 702
+  max-width: 702
+  background: @surface-container-lowest
+  border: 1 solid @print-border
+  border-radius: 0
+  elevation: 1
+  padding: 0
+  margin: 0
+
+textview.editor-body
+  font-size: 16
+  border-radius: 0
+  background: transparent
+  border: 0 solid transparent
+  border-radius: 0
+  padding: 0
+  margin: 0
+
+textview.editor-body:focus
+  border: 1 solid rgba(38, 166, 154, 0.34)
+  box-shadow: [ 0 1 4 0 rgba(38, 166, 154, 0.16) ]
+
+; ── Ruler ────────────────────────────────────────────────────
+
+vstack.ruler-paper
+  background: @surface-container-lowest
+  border-radius: 0
+  elevation: 1
+  padding: 0
+  margin: 0
+  min-width: 702
+  max-width: 702
+
+drawing_area.ruler-area
+  min-height: 28
+  max-height: 28
+  min-width: 702
+  max-width: 702
+  border-radius: 0
+  background: transparent
+  border: 0 solid transparent
+  padding: 0
+  margin: 0
+
+@sp-bg: #E6F0F0
+@sp-widget-bg: #F7FFFF
+@sp-text: #1B2020
+
+; ── Style sidebar ─────────────────────────────────────────────
+
+scroller.style-sidebar
+  min-width: 250
+  max-width: 250
+
+; ── Style panel ───────────────────────────────────────────────
+
+vstack.style-panel
+  background: @sp-bg
+  border-radius: 12
+  min-width: 250
+  max-width: 250
+  padding: 24
+  margin: 0
+
+label.style-section-label
+  font-size: 13
+  font-weight: 600
+  letter-spacing: 0.5
+  color: @sp-text
+
+iconbtn.sp-btn
+  min-width: 48
+  max-width: 48
+  min-height: 48
+  max-height: 48
+  background: @sp-widget-bg
+  color: @sp-text
+  border-radius: 999
+
+dropdown.sp-dropdown
+  min-height: 48
+  max-height: 48
+  background: @sp-widget-bg
+  color: @sp-text
+  border-radius: 12
+
+dropdown.font-family-dd
+  min-width: 214
+  max-width: 214
+
+textfield.font-size-field
+  min-width: 112
+  max-width: 112
+  min-height: 48
+  max-height: 48
+  background: @sp-widget-bg
+  color: @sp-text
+  border-radius: 12
+  font-size: 14
+
+; ── Color swatches ────────────────────────────────────────────
+
+button.color-swatch
+  min-width: 48
+  max-width: 48
+  min-height: 32
+  max-height: 32
+  border-radius: 999
+  padding: 0
+  font-size: 0
+  border: 0 solid transparent
+
+button.cs-0
+  background: #000000
+
+button.cs-1
+  background: #444444
+
+button.cs-2
+  background: #888888
+
+button.cs-3
+  background: #BBBBBB
+
+button.cs-4
+  background: #FFFFFF
+  border: 1 solid #DDDDDD
+
+button.cs-5
+  background: #E53935
+
+button.cs-6
+  background: #FB8C00
+
+button.cs-7
+  background: #FDD835
+
+button.cs-8
+  background: #43A047
+
+button.cs-9
+  background: #1E88E5
+
+button.cs-10
+  background: #8E24AA
+
+button.cs-11
+  background: #F06292
+
+button.cs-12
+  background: #26A69A
+
+button.cs-13
+  background: #5C6BC0
+
+button.cs-14
+  background: #8D6E63
+
+; ── Dark mode ─────────────────────────────────────────────────
+
+@when dark
+  @accent-light: rgba(38, 166, 154, 0.18)
+  @surface-container: #2B3735
+  @surface-container-lowest: #1E2422
+  @card-bg: rgba(38, 166, 154, 0.12)
+  @print-border: rgba(223, 236, 232, 0.22)
+
+  vstack.editor-text-area
+    background: @surface-container-lowest
+    border: 1 solid @print-border
+
+  vstack.ruler-paper
+    background: @surface-container-lowest
+
+  textview.editor-body:focus
+    border: 1 solid rgba(117, 211, 200, 0.42)
+    box-shadow: [ 0 1 4 0 rgba(8, 14, 13, 0.35) ]
+
+  button.cs-4
+    background: #333333
+    border: 1 solid #555555

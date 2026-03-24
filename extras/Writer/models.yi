@@ -1,0 +1,352 @@
+cask models
+
+bring stdr
+bring json
+
+-- ── Document Storage ─────────────────────────────────────────
+
+def ?doc_names = []: [string]
+def ?doc_contents = []: [string]
+def ?doc_spans = []: [any]
+def ?doc_para_props = []: [any]
+
+-- ── Style State ──────────────────────────────────────────────
+
+def ?font_family_idx = 0
+def ?font_size = 12
+def ?is_bold = false
+def ?is_italic = false
+def ?is_underline = false
+def ?is_strikethrough = false
+def ?alignment_idx = 0
+def ?spacing_idx = 1
+def ?text_color_idx = 0
+
+def font_options = ["Arial", "Roboto", "Roboto Serif", "Monospace"]
+def align_options = ["Left", "Center", "Right"]
+def spacing_options = ["1.0", "1.2", "1.5", "2.0"]
+def palette_colors = [
+    "#000000", "#444444", "#888888", "#BBBBBB", "#FFFFFF",
+    "#E53935", "#FB8C00", "#FDD835", "#43A047", "#1E88E5",
+    "#8E24AA", "#F06292", "#26A69A", "#5C6BC0", "#8D6E63"
+]
+
+-- ── Document Management ─────────────────────────────────────
+
+:: get_doc_count() (( num ))
+    <- len(doc_names)
+;
+
+:: get_doc_name(idx = num) (( string ))
+    <- str(doc_names[idx])
+;
+
+:: get_doc_content(idx = num) (( string ))
+    <- str(doc_contents[idx])
+;
+
+:: set_doc_name(idx = num, name = string) (( -- ))
+    doc_names[idx] = name
+    save_all()
+;
+
+:: set_doc_content(idx = num, content = string) (( -- ))
+    doc_contents[idx] = content
+    save_all()
+;
+
+:: get_doc_spans(idx = num) (( any ))
+    if idx >= 0 && idx < len(doc_spans)
+        <- doc_spans[idx]
+    <- []: [any]
+;
+
+:: set_doc_spans(idx = num, spans = any) (( -- ))
+    doc_spans[idx] = spans
+;
+
+:: get_doc_para_props(idx = num) (( any ))
+    if idx >= 0 && idx < len(doc_para_props)
+        <- doc_para_props[idx]
+    <- []: [any]
+;
+
+:: set_doc_para_props(idx = num, props = any) (( -- ))
+    doc_para_props[idx] = props
+;
+
+:: add_doc(name = string) (( num ))
+    let idx = len(doc_names)
+    doc_names[idx] = name
+    doc_contents[idx] = ""
+    doc_spans[idx] = []: [any]
+    doc_para_props[idx] = []: [any]
+    save_all()
+    <- idx
+;
+
+:: remove_doc(idx = num) (( -- ))
+    if idx < 0 || idx >= len(doc_names)
+        <-
+    let ?next_names = []: [string]
+    let ?next_contents = []: [string]
+    let ?next_spans = []: [any]
+    let ?next_para_props = []: [any]
+    for (let ?i = 0; i < len(doc_names); i += 1)
+        if i == idx
+            continue
+        let ni = len(next_names)
+        next_names[ni] = doc_names[i]
+        next_contents[ni] = doc_contents[i]
+        if i < len(doc_spans)
+            next_spans[ni] = doc_spans[i]
+        else
+            next_spans[ni] = []: [any]
+        if i < len(doc_para_props)
+            next_para_props[ni] = doc_para_props[i]
+        else
+            next_para_props[ni] = []: [any]
+    doc_names = next_names
+    doc_contents = next_contents
+    doc_spans = next_spans
+    doc_para_props = next_para_props
+    save_all()
+;
+
+:: clear_all_docs() (( -- ))
+    doc_names = []: [string]
+    doc_contents = []: [string]
+    doc_spans = []: [any]
+    doc_para_props = []: [any]
+    save_all()
+;
+
+-- ── Style Accessors ─────────────────────────────────────────
+
+:: get_font_family_idx() (( num ))
+    <- font_family_idx
+;
+
+:: get_font_size() (( num ))
+    <- font_size
+;
+
+:: get_is_bold() (( bool ))
+    <- is_bold
+;
+
+:: get_is_italic() (( bool ))
+    <- is_italic
+;
+
+:: get_is_underline() (( bool ))
+    <- is_underline
+;
+
+:: get_is_strikethrough() (( bool ))
+    <- is_strikethrough
+;
+
+:: get_alignment_idx() (( num ))
+    <- alignment_idx
+;
+
+:: get_spacing_idx() (( num ))
+    <- spacing_idx
+;
+
+:: get_text_color_idx() (( num ))
+    <- text_color_idx
+;
+
+:: set_font_family_idx(v = num) (( -- ))
+    font_family_idx = v
+;
+
+:: set_font_size(v = num) (( -- ))
+    if v < 6
+        font_size = 6
+    elif v > 72
+        font_size = 72
+    else
+        font_size = v
+;
+
+:: toggle_bold() (( -- ))
+    if is_bold
+        is_bold = false
+    else
+        is_bold = true
+;
+
+:: set_is_bold(v = bool) (( -- ))
+    is_bold = v
+;
+
+:: toggle_italic() (( -- ))
+    if is_italic
+        is_italic = false
+    else
+        is_italic = true
+;
+
+:: set_is_italic(v = bool) (( -- ))
+    is_italic = v
+;
+
+:: toggle_underline() (( -- ))
+    if is_underline
+        is_underline = false
+    else
+        is_underline = true
+;
+
+:: set_is_underline(v = bool) (( -- ))
+    is_underline = v
+;
+
+:: toggle_strikethrough() (( -- ))
+    if is_strikethrough
+        is_strikethrough = false
+    else
+        is_strikethrough = true
+;
+
+:: set_is_strikethrough(v = bool) (( -- ))
+    is_strikethrough = v
+;
+
+:: set_alignment_idx(v = num) (( -- ))
+    alignment_idx = v
+;
+
+:: set_spacing_idx(v = num) (( -- ))
+    spacing_idx = v
+;
+
+:: set_text_color_idx(v = num) (( -- ))
+    text_color_idx = v
+;
+
+:: get_font_options() (( any ))
+    <- font_options
+;
+
+:: get_align_options() (( any ))
+    <- align_options
+;
+
+:: get_spacing_options() (( any ))
+    <- spacing_options
+;
+
+:: get_palette_colors() (( any ))
+    <- palette_colors
+;
+
+-- ── Persistence ──────────────────────────────────────────────
+
+def DOCS_PATH = ".writer_docs.json"
+
+: serialize_span(s = any) (( string ))
+    let sv = num(s["start"] ?? 0)
+    let ev = num(s["end"] ?? 0)
+    let ?sp = "{\"start\":$$sv$$,\"end\":$$ev$$"
+    let bv = num(s["bold"] ?? -1)
+    if bv >= 0
+        sp = "$$sp$$,\"bold\":$$bv$$"
+    let iv = num(s["italic"] ?? -1)
+    if iv >= 0
+        sp = "$$sp$$,\"italic\":$$iv$$"
+    let uv = num(s["underline"] ?? -1)
+    if uv >= 0
+        sp = "$$sp$$,\"underline\":$$uv$$"
+    let stv = num(s["strikethrough"] ?? -1)
+    if stv >= 0
+        sp = "$$sp$$,\"strikethrough\":$$stv$$"
+    let szv = num(s["size"] ?? -1)
+    if szv >= 0
+        sp = "$$sp$$,\"size\":$$szv$$"
+    let cv = str(s["color"] ?? "")
+    if len(cv) > 0
+        let ce = json.escape(cv)
+        sp = "$$sp$$,\"color\":\"$$ce$$\""
+    let fv = str(s["family"] ?? "")
+    if len(fv) > 0
+        let fe = json.escape(fv)
+        sp = "$$sp$$,\"family\":\"$$fe$$\""
+    sp = "$$sp$$}"
+    <- sp
+;
+
+: save_all() (( -- ))
+    let count = len(doc_names)
+    let ?payload = "{\"docs\":["
+    for (let ?i = 0; i < count; i += 1)
+        if i > 0
+            payload = "$$payload$$,"
+        let n_esc = json.escape(str(doc_names[i]))
+        let c_esc = json.escape(str(doc_contents[i]))
+        let ?spans_json = "["
+        let spans = doc_spans[i] ?? []: [any]
+        for (let ?j = 0; j < len(spans); j += 1)
+            if j > 0
+                spans_json = "$$spans_json$$,"
+            let sp_json = serialize_span(spans[j])
+            spans_json = "$$spans_json$$$$sp_json$$"
+        spans_json = "$$spans_json$$]"
+        let ?pp_json = "["
+        let pps = doc_para_props[i] ?? []: [any]
+        for (let ?k = 0; k < len(pps); k += 1)
+            if k > 0
+                pp_json = "$$pp_json$$,"
+            let pp = pps[k] ?? []: [string => any]
+            let pa = num(pp["align"] ?? 0)
+            let ps = num(pp["spacing"] ?? 0)
+            pp_json = "$$pp_json$${\"align\":$$pa$$,\"spacing\":$$ps$$}"
+        pp_json = "$$pp_json$$]"
+        payload = "$$payload$${\"name\":\"$$n_esc$$\",\"content\":\"$$c_esc$$\",\"spans\":$$spans_json$$,\"para_props\":$$pp_json$$}"
+    payload = "$$payload$$]}"
+    stdr.write_text_file(DOCS_PATH, payload)
+;
+
+:: load_saved() (( bool ))
+    let raw = stdr.read_text_file(DOCS_PATH)
+    if is_null(raw)
+        <- false
+    let parsed = json.parse_result(str(raw))
+    if !(parsed["ok"] ?? false)
+        <- false
+    let root = parsed["value"]
+    let docs = json.get(root, "docs", []: [any])
+    doc_names = []: [string]
+    doc_contents = []: [string]
+    doc_spans = []: [any]
+    doc_para_props = []: [any]
+    for (let ?i = 0; i < len(docs); i += 1)
+        let d = docs[i] ?? []: [string => any]
+        doc_names[len(doc_names)] = str(d["name"] ?? "Untitled")
+        doc_contents[len(doc_contents)] = str(d["content"] ?? "")
+        doc_spans[len(doc_spans)] = d["spans"] ?? []: [any]
+        doc_para_props[len(doc_para_props)] = d["para_props"] ?? []: [any]
+    <- true
+;
+
+-- ── Sample Data ─────────────────────────────────────────────
+
+:: load_samples() (( -- ))
+    doc_names = []: [string]
+    doc_contents = []: [string]
+    doc_spans = []: [any]
+    doc_para_props = []: [any]
+    add_doc("Meeting Notes")
+    set_doc_content(0, "Discuss Q4 roadmap and milestones.")
+    add_doc("Project Brief")
+    set_doc_content(1, "Overview of the new product launch.")
+    add_doc("Shopping List")
+    set_doc_content(2, "Milk, eggs, bread, butter.")
+    add_doc("Travel Plans")
+    set_doc_content(3, "Book flights and hotels for December.")
+    add_doc("Recipe Ideas")
+    set_doc_content(4, "Try pasta carbonara and ramen.")
+;

@@ -1,0 +1,411 @@
+cask editor
+
+bring stdr
+bring cogito
+bring models
+bring widgets.style_panel
+bring widgets.ruler
+
+def ?current_tv = null
+def ?current_doc_idx = -1
+def ?pending_sel_a = -1
+def ?pending_sel_b = -1
+
+:: apply_current_style() (( -- ))
+    if current_tv != null
+        let ?a = cogito.textview_get_sel_start(current_tv)
+        let ?b = cogito.textview_get_sel_end(current_tv)
+        if a > b
+            let tmp = a
+            a = b
+            b = tmp
+        capture_spans(current_tv, current_doc_idx)
+        pending_sel_a = a
+        pending_sel_b = b
+;
+
+:: sync_style_from_selection() (( -- ))
+    if current_tv == null
+        <-
+    let pos = cogito.textview_get_sel_start(current_tv)
+    let count = cogito.textview_span_count(current_tv)
+    let ?found = false
+    for (let ?i = 0; i < count; i += 1)
+        let s_start = cogito.textview_span_start(current_tv, i)
+        let s_end = cogito.textview_span_end(current_tv, i)
+        if pos >= s_start && pos < s_end
+            found = true
+            let bv = cogito.textview_span_bold(current_tv, i)
+            if bv >= 0
+                models.set_is_bold(bv > 0)
+            else
+                models.set_is_bold(false)
+            let iv = cogito.textview_span_italic(current_tv, i)
+            if iv >= 0
+                models.set_is_italic(iv > 0)
+            else
+                models.set_is_italic(false)
+            let uv = cogito.textview_span_underline(current_tv, i)
+            if uv >= 0
+                models.set_is_underline(uv > 0)
+            else
+                models.set_is_underline(false)
+            let stv = cogito.textview_span_strikethrough(current_tv, i)
+            if stv >= 0
+                models.set_is_strikethrough(stv > 0)
+            else
+                models.set_is_strikethrough(false)
+            let szv = cogito.textview_span_size(current_tv, i)
+            if szv > 0
+                models.set_font_size(szv)
+            let fv = cogito.textview_span_family(current_tv, i)
+            if len(fv) > 0
+                let font_opts = models.get_font_options()
+                for (let ?fi = 0; fi < len(font_opts); fi += 1)
+                    if str(font_opts[fi]) == fv
+                        models.set_font_family_idx(fi)
+                        break
+            let cv = cogito.textview_span_color(current_tv, i)
+            if len(cv) > 0
+                let colors = models.get_palette_colors()
+                for (let ?ci = 0; ci < len(colors); ci += 1)
+                    if str(colors[ci]) == cv
+                        models.set_text_color_idx(ci)
+                        break
+            break
+    if !found
+        models.set_is_bold(false)
+        models.set_is_italic(false)
+        models.set_is_underline(false)
+        models.set_is_strikethrough(false)
+    -- Sync alignment/spacing from current paragraph
+    let caret = cogito.textview_get_caret(current_tv)
+    let pc = cogito.textview_para_count(current_tv)
+    if pc > 0
+        -- Find paragraph index from caret byte offset by counting newlines
+        let txt = cogito.textview_get_text(current_tv)
+        let ?pi = 0
+        for (let ?ci = 0; ci < caret && ci < len(txt); ci += 1)
+            if txt[ci] == "\n"
+                pi += 1
+        if pi >= pc
+            pi = pc - 1
+        let pa = cogito.textview_get_para_align(current_tv, pi)
+        models.set_alignment_idx(pa)
+        let plh = cogito.textview_get_para_line_height(current_tv, pi)
+        let sp_opts = models.get_spacing_options()
+        let ?best_si = 0
+        let ?best_diff = 9999.0
+        for (let ?si = 0; si < len(sp_opts); si += 1)
+            let diff = num(sp_opts[si]) - plh
+            if diff < 0
+                diff = 0 - diff
+            if diff < best_diff
+                best_diff = diff
+                best_si = si
+        models.set_spacing_idx(best_si)
+;
+
+: apply_defaults_to_tv(tv = any) (( -- ))
+    let font_opts = models.get_font_options()
+    cogito.node_set_font_family(tv, str(font_opts[models.get_font_family_idx()]))
+    cogito.node_set_font_size(tv, models.get_font_size())
+    if models.get_is_bold()
+        cogito.node_set_font_weight(tv, 700)
+    else
+        cogito.node_set_font_weight(tv, 400)
+    cogito.node_set_font_italic(tv, models.get_is_italic())
+    cogito.node_set_underline(tv, models.get_is_underline())
+    cogito.node_set_strikethrough(tv, models.get_is_strikethrough())
+    cogito.node_set_text_align(tv, models.get_alignment_idx())
+    let sp_opts = models.get_spacing_options()
+    cogito.node_set_line_height(tv, num(sp_opts[models.get_spacing_idx()]))
+    let colors = models.get_palette_colors()
+    cogito.node_set_text_color(tv, str(colors[models.get_text_color_idx()]))
+;
+
+: apply_spans_to_range(tv = any, sel_a = num, sel_b = num) (( -- ))
+    cogito.textview_apply_bold(tv, sel_a, sel_b, models.get_is_bold())
+    cogito.textview_apply_italic(tv, sel_a, sel_b, models.get_is_italic())
+    cogito.textview_apply_underline(tv, sel_a, sel_b, models.get_is_underline())
+    cogito.textview_apply_strikethrough(tv, sel_a, sel_b, models.get_is_strikethrough())
+    let colors = models.get_palette_colors()
+    cogito.textview_apply_color(tv, sel_a, sel_b, str(colors[models.get_text_color_idx()]))
+    cogito.textview_apply_size(tv, sel_a, sel_b, models.get_font_size())
+    let font_opts = models.get_font_options()
+    cogito.textview_apply_family(tv, sel_a, sel_b, str(font_opts[models.get_font_family_idx()]))
+    -- Apply alignment/spacing to paragraphs overlapping the selection
+    let txt = cogito.textview_get_text(tv)
+    let tlen = len(txt)
+    let ?first_pi = 0
+    let ?last_pi = 0
+    let ?pi = 0
+    for (let ?ci = 0; ci < tlen; ci += 1)
+        if ci == sel_a
+            first_pi = pi
+        if ci == sel_b
+            last_pi = pi
+        if txt[ci] == "\n"
+            pi += 1
+    if sel_a >= tlen
+        first_pi = pi
+    if sel_b >= tlen
+        last_pi = pi
+    let sp_opts = models.get_spacing_options()
+    for (let ?i = first_pi; i <= last_pi; i += 1)
+        cogito.textview_set_para_align(tv, i, models.get_alignment_idx())
+        cogito.textview_set_para_line_height(tv, i, num(sp_opts[models.get_spacing_idx()]))
+;
+
+: capture_spans(tv = any, doc_idx = num) (( -- ))
+    let count = cogito.textview_span_count(tv)
+    let ?spans = []: [any]
+    for (let ?i = 0; i < count; i += 1)
+        let ?s = []: [string => any]
+        s["start"] = cogito.textview_span_start(tv, i)
+        s["end"] = cogito.textview_span_end(tv, i)
+        let bv = cogito.textview_span_bold(tv, i)
+        if bv >= 0
+            s["bold"] = bv
+        let iv = cogito.textview_span_italic(tv, i)
+        if iv >= 0
+            s["italic"] = iv
+        let uv = cogito.textview_span_underline(tv, i)
+        if uv >= 0
+            s["underline"] = uv
+        let stv = cogito.textview_span_strikethrough(tv, i)
+        if stv >= 0
+            s["strikethrough"] = stv
+        let szv = cogito.textview_span_size(tv, i)
+        if szv >= 0
+            s["size"] = szv
+        let cv = cogito.textview_span_color(tv, i)
+        if len(cv) > 0
+            s["color"] = cv
+        let fv = cogito.textview_span_family(tv, i)
+        if len(fv) > 0
+            s["family"] = fv
+        spans[i] = s
+    models.set_doc_spans(doc_idx, spans)
+    -- Capture per-paragraph properties
+    let pc = cogito.textview_para_count(tv)
+    let ?pps = []: [any]
+    for (let ?pi = 0; pi < pc; pi += 1)
+        let ?pp = []: [string => any]
+        pp["align"] = cogito.textview_get_para_align(tv, pi)
+        pp["spacing"] = cogito.textview_get_para_line_height(tv, pi)
+        pps[pi] = pp
+    models.set_doc_para_props(doc_idx, pps)
+;
+
+: restore_spans(tv = any, doc_idx = num) (( -- ))
+    let spans = models.get_doc_spans(doc_idx)
+    for (let ?i = 0; i < len(spans); i += 1)
+        let s = spans[i]
+        let start = num(s["start"] ?? 0)
+        let end = num(s["end"] ?? 0)
+        let bv = num(s["bold"] ?? -1)
+        if bv >= 0
+            if bv > 0
+                cogito.textview_apply_bold(tv, start, end, true)
+            else
+                cogito.textview_apply_bold(tv, start, end, false)
+        let iv = num(s["italic"] ?? -1)
+        if iv >= 0
+            if iv > 0
+                cogito.textview_apply_italic(tv, start, end, true)
+            else
+                cogito.textview_apply_italic(tv, start, end, false)
+        let uv = num(s["underline"] ?? -1)
+        if uv >= 0
+            if uv > 0
+                cogito.textview_apply_underline(tv, start, end, true)
+            else
+                cogito.textview_apply_underline(tv, start, end, false)
+        let stv = num(s["strikethrough"] ?? -1)
+        if stv >= 0
+            if stv > 0
+                cogito.textview_apply_strikethrough(tv, start, end, true)
+            else
+                cogito.textview_apply_strikethrough(tv, start, end, false)
+        let cv = str(s["color"] ?? "")
+        if len(cv) > 0
+            cogito.textview_apply_color(tv, start, end, cv)
+        let szv = num(s["size"] ?? -1)
+        if szv >= 0
+            cogito.textview_apply_size(tv, start, end, szv)
+        let fv = str(s["family"] ?? "")
+        if len(fv) > 0
+            cogito.textview_apply_family(tv, start, end, fv)
+    -- Restore per-paragraph properties
+    let pps = models.get_doc_para_props(doc_idx)
+    for (let ?pi = 0; pi < len(pps); pi += 1)
+        let pp = pps[pi]
+        cogito.textview_set_para_align(tv, pi, num(pp["align"] ?? 0))
+        let sp = num(pp["spacing"] ?? 0)
+        if sp > 0
+            cogito.textview_set_para_line_height(tv, pi, sp)
+;
+
+:: build(
+    doc_idx = num,
+    show_style = bool,
+    is_compact = bool,
+    on_back = any,
+    on_format = any,
+    on_about = any,
+    on_content_change = any,
+    on_rebuild = any,
+    on_save = any,
+    on_open = any
+) (( cogito.VStack ))
+    let panel = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let ?title = "Document"
+    let ?body = ""
+    if doc_idx >= 0 && doc_idx < models.get_doc_count()
+        title = models.get_doc_name(doc_idx)
+        body = models.get_doc_content(doc_idx)
+
+    -- Create textview early so callbacks can reference it
+    -- All property/span calls happen while it's detached (not in the tree)
+    -- which avoids triggering cogito_window_rebuild
+    let text_area = cogito.textview(body)
+    .set_class("editor-body")
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    current_tv = text_area
+    current_doc_idx = doc_idx
+
+    -- Apply whole-widget defaults (safe: detached)
+    apply_defaults_to_tv(text_area)
+
+    -- Restore saved spans (safe: detached)
+    restore_spans(text_area, doc_idx)
+
+    -- Apply pending style from a style-button click (safe: detached)
+    if pending_sel_a >= 0
+        apply_spans_to_range(text_area, pending_sel_a, pending_sel_b)
+        capture_spans(text_area, doc_idx)
+        -- Restore selection on the new textview so the user sees it
+        if pending_sel_a != pending_sel_b
+            cogito.textview_set_selection(text_area, pending_sel_a, pending_sel_b)
+        pending_sel_a = -1
+        pending_sel_b = -1
+
+    let last_body = body
+    text_area.on_change((tv = cogito.TextView) => {
+        let cur = tv.text()
+        if cur != last_body
+            capture_spans(tv, doc_idx)
+            last_body = cur
+            on_content_change(cur)
+        sync_style_from_selection()
+        if show_style || !is_compact
+            style_panel.update()
+    })
+
+    -- AppBar: back, title, save/open, paintbrush, gear
+    let bar = cogito.appbar(title, "")
+    .set_type(1)
+    .set_hexpand(true)
+
+    bar.leading_button("sf:chevron.backward", (b = any) => {
+        capture_spans(text_area, doc_idx)
+        on_back()
+    })
+
+    let gear = bar.add_trailing_menu_button("sf:gearshape")
+    gear.add_menu("About Writer", (b = any) => {
+        on_about()
+    })
+
+    if is_compact
+        bar.add_trailing_button("sf:paintbrush", (b = cogito.Button) => {
+            on_format()
+        })
+
+    bar.add_trailing_button("sf:folder", (b = cogito.Button) => {
+        capture_spans(text_area, doc_idx)
+        on_open()
+    })
+
+    bar.add_trailing_button("sf:square.and.arrow.down", (b = cogito.Button) => {
+        capture_spans(text_area, doc_idx)
+        on_save()
+    })
+
+    panel.add(bar)
+
+    -- Editor + optional inline style panel
+    let body_row = cogito.hstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(0, 24, 24, 24)
+
+    -- Text column: ruler + scrollable text (paper feel)
+    let text_col = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_size_request(702, -1)
+
+    if !is_compact
+        let doc_ruler = ruler.build(() => {
+            on_rebuild()
+        })
+        text_col.add(doc_ruler)
+
+    let scroll = cogito.scroller()
+    .set_class("editor-scroller")
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    let ?top_pad = 24
+    let ?bot_pad = 24
+    let ?left_pad = 16
+    let ?right_pad = 16
+    if !is_compact
+        top_pad = 48
+        bot_pad = 48
+        let lp = ruler.get_left_px()
+        let rp = ruler.get_right_px()
+        if !is_null(lp)
+            left_pad = lp
+        if !is_null(rp)
+            right_pad = rp
+
+    let text_wrap = cogito.vstack()
+    .set_class("editor-text-area")
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_padding(top_pad, right_pad, bot_pad, left_pad)
+
+    text_wrap.add(text_area)
+    scroll.add(text_wrap)
+    text_col.add(scroll)
+    body_row.add(text_col)
+
+    -- Inline style panel (always on medium+, toggle on compact)
+    if !is_compact
+        let sp_scroll = cogito.scroller()
+        .set_vexpand(true)
+        .set_class("style-sidebar")
+
+        let sp = style_panel.build(() => {
+            on_format()
+        }, () => {
+            apply_current_style()
+            on_rebuild()
+        })
+        sp_scroll.add(sp)
+        body_row.add(sp_scroll)
+
+    panel.add(body_row)
+    <- panel
+;

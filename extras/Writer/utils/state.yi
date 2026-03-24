@@ -1,0 +1,47 @@
+cask state
+
+bring stdr
+bring json
+
+def DOCS_PATH = ".writer_docs.json"
+
+-- ── Save ─────────────────────────────────────────────────────
+
+:: save_docs(names = any, contents = any) (( -- ))
+    let count = len(names)
+    let ?payload = "{\"docs\":["
+    for (let ?i = 0; i < count; i += 1)
+        if i > 0
+            payload = "$$payload$$,"
+        let n_esc = json.escape(str(names[i]))
+        let c_esc = json.escape(str(contents[i]))
+        payload = "$$payload$${\"name\":\"$$n_esc$$\",\"content\":\"$$c_esc$$\"}"
+    payload = "$$payload$$]}"
+    stdr.write_text_file(DOCS_PATH, payload)
+;
+
+-- ── Load ─────────────────────────────────────────────────────
+-- Returns [names_array, contents_array] or null if no saved state.
+
+:: load_docs() (( any ))
+    let raw = stdr.read_text_file(DOCS_PATH)
+    if is_null(raw)
+        <- null
+    let parsed = json.parse_result(str(raw))
+    if !(parsed["ok"] ?? false)
+        <- null
+    let root = parsed["value"]
+    let docs = json.get(root, "docs", []: [any])
+    if len(docs) == 0
+        <- null
+    let ?names = []: [string]
+    let ?contents = []: [string]
+    for (let ?i = 0; i < len(docs); i += 1)
+        let d = docs[i] ?? []: [string => any]
+        names[len(names)] = str(d["name"] ?? "Untitled")
+        contents[len(contents)] = str(d["content"] ?? "")
+    let ?result = []: [any]
+    result[0] = names
+    result[1] = contents
+    <- result
+;

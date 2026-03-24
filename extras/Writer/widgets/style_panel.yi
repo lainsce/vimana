@@ -1,0 +1,270 @@
+cask style_panel
+
+bring stdr
+bring cogito
+bring models
+
+def ?updating_size_field = false
+def ?updating_controls = false
+
+-- Widget references for live updates
+def ?ref_font_dd = null
+def ?ref_size_field = null
+def ?ref_bold_btn = null
+def ?ref_italic_btn = null
+def ?ref_underline_btn = null
+def ?ref_strike_btn = null
+def ?ref_align_dd = null
+def ?ref_spacing_dd = null
+
+:: update() (( -- ))
+    updating_controls = true
+    if ref_font_dd != null
+        cogito.dropdown_set_selected(ref_font_dd, models.get_font_family_idx())
+    if ref_size_field != null
+        updating_size_field = true
+        cogito.textfield_set_text(ref_size_field, str(models.get_font_size()))
+        updating_size_field = false
+    if ref_bold_btn != null
+        cogito.iconbtn_set_checked(ref_bold_btn, models.get_is_bold())
+    if ref_italic_btn != null
+        cogito.iconbtn_set_checked(ref_italic_btn, models.get_is_italic())
+    if ref_underline_btn != null
+        cogito.iconbtn_set_checked(ref_underline_btn, models.get_is_underline())
+    if ref_strike_btn != null
+        cogito.iconbtn_set_checked(ref_strike_btn, models.get_is_strikethrough())
+    if ref_align_dd != null
+        cogito.dropdown_set_selected(ref_align_dd, models.get_alignment_idx())
+    if ref_spacing_dd != null
+        cogito.dropdown_set_selected(ref_spacing_dd, models.get_spacing_idx())
+    updating_controls = false
+;
+
+:: clear_refs() (( -- ))
+    ref_font_dd = null
+    ref_size_field = null
+    ref_bold_btn = null
+    ref_italic_btn = null
+    ref_underline_btn = null
+    ref_strike_btn = null
+    ref_align_dd = null
+    ref_spacing_dd = null
+;
+
+-- ── Helpers ──────────────────────────────────────────────────
+
+: build_color_swatch(idx = num, on_select = any) (( cogito.Button ))
+    let btn = cogito.button("")
+    .set_class("color-swatch cs-$$idx$$")
+    btn.on_click((b = cogito.Button) => {
+        on_select(idx)
+    })
+    <- btn
+;
+
+-- ── Public Build ─────────────────────────────────────────────
+
+:: build(on_close = any, on_style_change = any) (( cogito.VStack ))
+    let panel = cogito.vstack()
+    .set_gap(24)
+    .set_hexpand(true)
+    .set_class("style-panel")
+
+    -- ── Font Section ─────────────────────────────────────────
+
+    let font_label = cogito.label("Font:")
+    .set_class("style-section-label")
+    .set_text_align(0)
+    .set_hexpand(true)
+    panel.add(font_label)
+
+    let font_row = cogito.hstack()
+    .set_gap(16)
+    .set_hexpand(true)
+
+    let font_dd = cogito.dropdown()
+    .set_class("sp-dropdown font-family-dd")
+    .set_hexpand(true)
+    font_dd.set_items(models.get_font_options())
+    font_dd.set_selected(models.get_font_family_idx())
+    font_dd.on_change((dd = cogito.Dropdown) => {
+        if !updating_controls
+            models.set_font_family_idx(dd.selected())
+            on_style_change()
+    })
+    panel.add(font_dd)
+    ref_font_dd = font_dd
+
+    let cur_fs = models.get_font_size()
+    let size_field = cogito.textfield("")
+    .set_class("sp-dropdown font-size-field")
+    size_field.set_text(str(cur_fs))
+    size_field.on_change((tf = cogito.TextField) => {
+        if !updating_size_field
+            let txt = tf.text()
+            if len(txt) > 0
+                let ?val = num(txt)
+                if val > 0
+                    models.set_font_size(val)
+                    on_style_change()
+    })
+    font_row.add(size_field)
+    ref_size_field = size_field
+
+    let minus_btn = cogito.iconbtn("sf:minus")
+    .set_shape(1)
+    .set_class("sp-btn")
+    minus_btn.on_click((b = cogito.IconButton) => {
+        let cur = models.get_font_size()
+        models.set_font_size(cur - 1)
+        updating_size_field = true
+        size_field.set_text(str(models.get_font_size()))
+        updating_size_field = false
+        on_style_change()
+    })
+    font_row.add(minus_btn)
+
+    let plus_btn = cogito.iconbtn("sf:plus")
+    .set_shape(1)
+    .set_class("sp-btn")
+    plus_btn.on_click((b = cogito.IconButton) => {
+        let cur = models.get_font_size()
+        models.set_font_size(cur + 1)
+        updating_size_field = true
+        size_field.set_text(str(models.get_font_size()))
+        updating_size_field = false
+        on_style_change()
+    })
+    font_row.add(plus_btn)
+
+    panel.add(font_row)
+
+    -- ── Style & Format ───────────────────────────────────────
+
+    let style_label = cogito.label("Style & Format:")
+    .set_class("style-section-label")
+    .set_text_align(0)
+    .set_hexpand(true)
+    panel.add(style_label)
+
+    let style_row = cogito.hstack()
+    .set_gap(10)
+    .set_align(3)
+
+    let bold_btn = cogito.iconbtn("sf:bold")
+    .set_shape(1)
+    .set_class("sp-btn")
+    .set_toggle(true)
+    .set_checked(models.get_is_bold())
+    bold_btn.on_click((b = cogito.IconButton) => {
+        models.toggle_bold()
+        on_style_change()
+    })
+    style_row.add(bold_btn)
+    ref_bold_btn = bold_btn
+
+    let italic_btn = cogito.iconbtn("sf:italic")
+    .set_shape(1)
+    .set_class("sp-btn")
+    .set_toggle(true)
+    .set_checked(models.get_is_italic())
+    italic_btn.on_click((b = cogito.IconButton) => {
+        models.toggle_italic()
+        on_style_change()
+    })
+    style_row.add(italic_btn)
+    ref_italic_btn = italic_btn
+
+    let underline_btn = cogito.iconbtn("sf:underline")
+    .set_shape(1)
+    .set_class("sp-btn")
+    .set_toggle(true)
+    .set_checked(models.get_is_underline())
+    underline_btn.on_click((b = cogito.IconButton) => {
+        models.toggle_underline()
+        on_style_change()
+    })
+    style_row.add(underline_btn)
+    ref_underline_btn = underline_btn
+
+    let strike_btn = cogito.iconbtn("sf:strikethrough")
+    .set_shape(1)
+    .set_class("sp-btn")
+    .set_toggle(true)
+    .set_checked(models.get_is_strikethrough())
+    strike_btn.on_click((b = cogito.IconButton) => {
+        models.toggle_strikethrough()
+        on_style_change()
+    })
+    style_row.add(strike_btn)
+    ref_strike_btn = strike_btn
+
+    panel.add(style_row)
+
+    -- ── Alignment & Spacing ──────────────────────────────────
+
+    let layout_row = cogito.hstack()
+    .set_gap(12)
+    .set_hexpand(true)
+
+    let align_dd = cogito.dropdown()
+    .set_class("sp-dropdown")
+    .set_hexpand(true)
+    .set_icon("sf:text.alignleft")
+    align_dd.set_items(models.get_align_options())
+    align_dd.set_selected(models.get_alignment_idx())
+    align_dd.on_change((dd = cogito.Dropdown) => {
+        if !updating_controls
+            models.set_alignment_idx(dd.selected())
+            on_style_change()
+    })
+    layout_row.add(align_dd)
+    ref_align_dd = align_dd
+
+    let spacing_dd = cogito.dropdown()
+    .set_class("sp-dropdown")
+    .set_hexpand(true)
+    .set_icon("sf:arrow.up.and.down")
+    spacing_dd.set_items(models.get_spacing_options())
+    spacing_dd.set_selected(models.get_spacing_idx())
+    spacing_dd.on_change((dd = cogito.Dropdown) => {
+        if !updating_controls
+            models.set_spacing_idx(dd.selected())
+            on_style_change()
+    })
+    layout_row.add(spacing_dd)
+    ref_spacing_dd = spacing_dd
+
+    panel.add(layout_row)
+
+    -- ── Color Palette ────────────────────────────────────────
+
+    let color_label = cogito.label("Color:")
+    .set_class("style-section-label")
+    .set_text_align(0)
+    .set_hexpand(true)
+    panel.add(color_label)
+
+    let colors = models.get_palette_colors()
+    let color_grid = cogito.grid(5)
+    .set_gap(12, 12)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+
+    let ?crow = 0
+    let ?ccol = 0
+    for (let ?ci = 0; ci < len(colors); ci += 1)
+        let swatch = build_color_swatch(ci, (idx = num) => {
+            models.set_text_color_idx(idx)
+            on_style_change()
+        })
+        color_grid.add(swatch, ccol, crow, 1, 1)
+        ccol += 1
+        if ccol >= 5
+            ccol = 0
+            crow += 1
+
+    panel.add(color_grid)
+
+    <- panel
+;

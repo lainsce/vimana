@@ -1,0 +1,216 @@
+cask main
+
+bring stdr
+bring cogito
+
+bring models
+bring widgets.home
+bring widgets.editor
+bring widgets.style_panel
+
+-- ── Navigation State ─────────────────────────────────────────
+
+def ?current_view = "home"
+def ?current_doc = -1
+def ?style_panel_open = false
+def ?draft_content = ""
+
+def nav_state = cogito.state(0)
+def ?compact = false
+
+-- ── Helpers ──────────────────────────────────────────────────
+
+: request_rebuild() (( -- ))
+    let v = nav_state.get()
+    nav_state.set(v)
+;
+
+-- ── Navigation ───────────────────────────────────────────────
+
+: navigate_home() (( -- ))
+    current_view = "home"
+    style_panel_open = false
+    request_rebuild()
+;
+
+: navigate_editor(doc_idx = num) (( -- ))
+    current_view = "editor"
+    current_doc = doc_idx
+    style_panel_open = false
+    if doc_idx >= 0
+        draft_content = models.get_doc_content(doc_idx)
+    else
+        draft_content = ""
+    request_rebuild()
+;
+
+: navigate_back() (( -- ))
+    if current_view == "editor"
+        if current_doc >= 0
+            models.set_doc_content(current_doc, draft_content)
+        navigate_home()
+;
+
+-- ── Actions ──────────────────────────────────────────────────
+
+: create_new_doc() (( -- ))
+    let idx = models.add_doc("Untitled Document")
+    navigate_editor(idx)
+;
+
+: open_doc(idx = num) (( -- ))
+    navigate_editor(idx)
+;
+
+: clear_all_docs() (( -- ))
+    models.clear_all_docs()
+    request_rebuild()
+;
+
+: save_current_doc() (( -- ))
+    if current_doc >= 0
+        models.set_doc_content(current_doc, draft_content)
+;
+
+: delete_doc(idx = num) (( -- ))
+    models.remove_doc(idx)
+    request_rebuild()
+;
+
+-- ── Style Panel ──────────────────────────────────────────────
+
+: toggle_style_panel(win = cogito.Window) (( -- ))
+    if style_panel_open
+        style_panel_open = false
+        style_panel.clear_refs()
+        if compact
+            win.clear_dialog()
+        else
+            request_rebuild()
+    else
+        style_panel_open = true
+        editor.sync_style_from_selection()
+        if compact
+            let content = style_panel.build(() => {
+                style_panel_open = false
+                style_panel.clear_refs()
+                win.clear_dialog()
+            }, () => {
+                editor.apply_current_style()
+                request_rebuild()
+            })
+            let sheet = cogito.bottom_sheet("Edit style")
+            sheet.add(content)
+            win.set_dialog(sheet)
+        else
+            request_rebuild()
+;
+
+-- ── About Dialog ─────────────────────────────────────────────
+
+: show_about(win = cogito.Window) (( -- ))
+    let aw = cogito.about_window("Writer", "GPLv3 License")
+    .set_icon("sf:doc.richtext")
+    .set_website("https://github.com/nickvdl/cogito")
+    .set_issue_url("https://github.com/nickvdl/cogito/issues")
+    let dlg = cogito.dialog("")
+    dlg.add(aw)
+    win.set_dialog(dlg)
+;
+
+-- ── Build Window ─────────────────────────────────────────────
+
+: build_window(win = cogito.Window) (( -- ))
+    let is_compact = win.is_compact()
+
+    let main_layout = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    if current_view == "home"
+        main_layout.add(
+            home.build(
+                is_compact,
+                () => { show_about(win) },
+                (idx = num) => { open_doc(idx) },
+                () => { clear_all_docs() },
+                (idx = num) => { delete_doc(idx) }
+            )
+        )
+
+    if current_view == "editor"
+        main_layout.add(
+            editor.build(
+                current_doc,
+                style_panel_open,
+                is_compact,
+                () => { navigate_back() },
+                () => { toggle_style_panel(win) },
+                () => { show_about(win) },
+                (text = string) => {
+                    draft_content = text
+                    if current_doc >= 0
+                        models.set_doc_content(current_doc, text)
+                },
+                () => { request_rebuild() },
+                () => { save_current_doc() },
+                () => { navigate_back() }
+            )
+        )
+
+    -- FAB overlay (home view only)
+    let overlay = cogito.zstack()
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    overlay.add(main_layout)
+
+    if current_view == "home"
+        let fab = cogito.fab("sf:plus")
+        fab.on_click((f = cogito.FAB) => {
+            create_new_doc()
+        })
+
+        let fab_anchor = cogito.vstack()
+        .set_hexpand(true)
+        .set_vexpand(true)
+        .set_align(8)
+        .set_padding(0, 24, 24, 0)
+        fab_anchor.add(fab)
+        overlay.add(fab_anchor)
+
+    win.add(cogito.window_bar())
+    win.add(overlay)
+;
+
+-- ── Entry Point ──────────────────────────────────────────────
+
+-> ()
+    if !models.load_saved()
+        models.load_samples()
+
+    let app = cogito.app()
+    .set_appid("com.fyralabs.Writer")
+    .set_app_name("Writer")
+    .set_accent_color("#29A3A3", false)
+
+    cogito.load_sum("writer.sum")
+
+    let win = cogito.window_size("Writer", 1024, 720)
+    .set_autosize(false)
+    .set_resizable(true)
+    .set_size_request(412, 720)
+    .build((w = cogito.Window) => {
+        build_window(w)
+    })
+
+    win.on_resize((node = any) => {
+        let was_compact = compact
+        compact = win.is_compact()
+        if compact != was_compact
+            request_rebuild()
+    })
+
+    app.run(win)
+;

@@ -1,0 +1,149 @@
+cask home
+
+bring stdr
+bring cogito
+bring models
+
+-- ── Helpers ──────────────────────────────────────────────────
+
+: build_doc_card(idx = num, on_open = any, on_delete = any) (( cogito.Card ))
+    let name = models.get_doc_name(idx)
+    let content = models.get_doc_content(idx)
+    let ?preview = content
+    if len(preview) > 60
+        preview = stdr.slice(preview, 0, 60) + "..."
+
+    let card = cogito.card_untitled()
+    .set_class("doc-card")
+    .set_hexpand(true)
+
+    card.on_click((c = cogito.Card) => {
+        on_open(idx)
+    })
+
+    card.add_overflow("Delete", (b = any) => {
+        on_delete(idx)
+    })
+
+    let inner = cogito.vstack()
+    .set_gap(6)
+    .set_hexpand(true)
+
+    let title_lbl = cogito.label(name)
+    .set_class("doc-card-title")
+    .set_text_align(0)
+    .set_hexpand(true)
+    inner.add(title_lbl)
+
+    if len(preview) > 0
+        let preview_lbl = cogito.label(preview)
+        .set_class("doc-card-preview")
+        .set_text_align(0)
+        .set_hexpand(true)
+        inner.add(preview_lbl)
+
+    card.add(inner)
+    <- card
+;
+
+-- ── Public Build ─────────────────────────────────────────────
+
+:: build(
+    is_compact = bool,
+    on_about = any,
+    on_open_doc = any,
+    on_clear_all = any,
+    on_delete_doc = any
+) (( cogito.VStack ))
+    let panel = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    -- AppBar: "Home" with gear menu
+    let bar = cogito.appbar("Home", "")
+    .set_class("small")
+    .set_hexpand(true)
+
+    let gear = bar.add_trailing_menu_button("sf:gearshape")
+    gear.add_menu("Clear All", (b = any) => {
+        on_clear_all()
+    })
+    gear.add_menu("About Writer", (b = any) => {
+        on_about()
+    })
+    panel.add(bar)
+
+    -- Scrollable content
+    let scroll = cogito.scroller()
+    .set_hexpand(true)
+    .set_vexpand(true)
+
+    if !is_compact
+        scroll.set_class("surface-container-lowest content-panel")
+
+    bar.pair_with_scroller(scroll)
+
+    let content = cogito.vstack()
+    .set_gap(0)
+    .set_hexpand(true)
+    .set_padding(0, 0, 90, 0)
+
+    -- Section header
+    let section = cogito.label("Recent Files")
+    .set_class("home-title")
+    .set_text_align(0)
+    .set_hexpand(true)
+    .set_padding(16, 20, 12, 20)
+    content.add(section)
+
+    let count = models.get_doc_count()
+
+    if count == 0
+        content.add(
+            cogito.empty_page("No Documents")
+            .set_description("Tap the + button to create a new document.")
+            .set_icon("sf:doc.text")
+            .set_hexpand(true)
+        )
+
+    -- Wide layout: 4-column grid
+    if count > 0 && !is_compact
+        let ?num_cols = 4
+        if count < 4
+            num_cols = count
+
+        let grid = cogito.grid(num_cols)
+        .set_gap(12, 12)
+        .set_padding(0, 20, 0, 20)
+        .set_hexpand(true)
+
+        let ?row_num = 0
+        let ?grid_col = 0
+        for (let ?i = 0; i < count; i += 1)
+            let card = build_doc_card(i, on_open_doc, on_delete_doc)
+            grid.add(card, grid_col, row_num, 1, 1)
+            grid_col += 1
+            if grid_col >= num_cols
+                grid_col = 0
+                row_num += 1
+
+        content.add(grid)
+
+    -- Compact layout: vertical card list
+    if count > 0 && is_compact
+        let list_area = cogito.vstack()
+        .set_gap(10)
+        .set_padding(0, 16, 0, 16)
+        .set_hexpand(true)
+
+        for (let ?i = 0; i < count; i += 1)
+            let card = build_doc_card(i, on_open_doc, on_delete_doc)
+            list_area.add(card)
+
+        content.add(list_area)
+
+    scroll.add(content)
+    panel.add(scroll)
+    <- panel
+;
