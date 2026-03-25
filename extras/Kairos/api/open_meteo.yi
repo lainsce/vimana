@@ -214,10 +214,10 @@ bring json
     let hourly_precip_prob = json.get(hourly_raw, "precipitation_probability", []: [any])
 
     let start_idx = _find_hour_start(hourly_time, current_time)
+    let desired_hours = 48
     let ?hours = []: [any]
-    let ?taken = 0
 
-    for (let ?i = start_idx; i < len(hourly_time); i += 1)
+    for (let ?i = start_idx; i < len(hourly_time) && len(hours) < desired_hours; i += 1)
         let t = str(_read_array_value(hourly_time, i, current_time))
         let temp_c = stdr.num(_read_array_value(hourly_temp, i, current_temp_c))
         let humidity = stdr.num(_read_array_value(hourly_humidity, i, current_humidity))
@@ -241,7 +241,6 @@ bring json
             is_day,
             precip_prob
         )
-        taken += 1
 
     if len(hours) == 0
         hours[0] = _hour_item(

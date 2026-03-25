@@ -20,8 +20,11 @@ static CogitoNode* cogito_about_window_find_child(CogitoNode* aw, CogitoKind kin
   if (!aw) return NULL;
   for (size_t i = 0; i < aw->len; i++) {
     CogitoNode* c = aw->children[i];
-    if (c->kind != kind) continue;
-    if (!class_name || cogito_about_window_has_class(c, class_name)) return c;
+    if (c->kind == kind) {
+      if (!class_name || cogito_about_window_has_class(c, class_name)) return c;
+    }
+    CogitoNode* nested = cogito_about_window_find_child(c, kind, class_name);
+    if (nested) return nested;
   }
   return NULL;
 }
@@ -136,7 +139,7 @@ static CogitoNode* cogito_about_window_new_obj(YisStr* app_name, YisStr* version
   CogitoNode* n = cogito_node_new(COGITO_ABOUT_WINDOW);
   cogito_node_set_text(n, app_name);
   cogito_node_set_subtitle(n, version);
-  n->gap = 12;
+  n->gap = 24;
   cogito_about_window_apply_class(n, "about-window");
 
   CogitoNode* icon = cogito_node_new(COGITO_IMAGE);
@@ -144,16 +147,16 @@ static CogitoNode* cogito_about_window_new_obj(YisStr* app_name, YisStr* version
   cogito_about_window_apply_class(icon, "about-window-icon");
   cogito_children_add(n, icon);
 
+  CogitoNode* info = cogito_node_new(COGITO_VSTACK);
+  info->align = 1;
+  info->gap = 12;
+  cogito_children_add(n, info);
+
   CogitoNode* title = cogito_node_new(COGITO_LABEL);
   title->align = 1;
   title->text_align = 1;
-  title->margin_top = 12;
-  title->margin_right = 0;
-  title->margin_bottom = 0;
-  title->margin_left = 0;
-  title->margin_set = true;
   cogito_about_window_apply_class(title, "about-window-title");
-  cogito_children_add(n, title);
+  cogito_children_add(info, title);
 
   CogitoNode* meta = cogito_node_new(COGITO_LABEL);
   meta->align = 1;
@@ -161,16 +164,11 @@ static CogitoNode* cogito_about_window_new_obj(YisStr* app_name, YisStr* version
   meta->text_wrap = true;
   meta->hexpand = true;
   cogito_about_window_apply_class(meta, "about-window-license");
-  cogito_children_add(n, meta);
+  cogito_children_add(info, meta);
 
   CogitoNode* actions = cogito_node_new(COGITO_HSTACK);
   actions->align = 1;
   actions->gap = 12;
-  actions->margin_top = 12;
-  actions->margin_right = 0;
-  actions->margin_bottom = 0;
-  actions->margin_left = 0;
-  actions->margin_set = true;
   actions->padding_left = 0;
   actions->padding_top = 0;
   actions->padding_right = 0;

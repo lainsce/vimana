@@ -3,7 +3,7 @@ cask line_chart
 bring stdr
 bring cogito
 
-def MAX_POINTS = 24
+def MAX_POINTS = 48
 
 : _num_or(value = any, fallback = num) (( num ))
     if is_null(value)
