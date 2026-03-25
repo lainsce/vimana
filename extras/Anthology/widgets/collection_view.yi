@@ -49,11 +49,15 @@ bring widgets.note_card
 
     -- Back button in compact mode / mobile
     if is_compact
-        bar.leading_button("sf:chevron.backward", (b = any) => {
+        let back_btn = bar.leading_button("sf:chevron.backward", (b = any) => {
             on_back()
         })
+        cogito.set_tooltip(back_btn, "Back")
+        cogito.set_a11y_label(back_btn, "Back")
 
     let menu = bar.add_trailing_menu_button("sf:gearshape")
+    cogito.set_tooltip(menu, "Collection menu")
+    cogito.set_a11y_label(menu, "Collection menu")
     menu.add_menu("Settings", (b = any) => {
         on_settings()
     })
@@ -81,7 +85,7 @@ bring widgets.note_card
 
     if len(col_notes) == 0
         content.add(
-            cogito.empty_page("No Entries Yet")
+            cogito.empty_page("No entries yet")
             .set_description("Tap the + button to write your first journal entry in this collection.")
             .set_icon("sf:note.text")
             .set_hexpand(true)

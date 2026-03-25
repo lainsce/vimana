@@ -66,7 +66,9 @@ bring models
     .set_hexpand(true)
 
     let gear = bar.add_trailing_menu_button("sf:gearshape")
-    gear.add_menu("Clear All", (b = any) => {
+    cogito.set_tooltip(gear, "Home menu")
+    cogito.set_a11y_label(gear, "Home menu")
+    gear.add_menu("Clear all", (b = any) => {
         on_clear_all()
     })
     gear.add_menu("About Writer", (b = any) => {
@@ -90,7 +92,7 @@ bring models
     .set_padding(0, 0, 90, 0)
 
     -- Section header
-    let section = cogito.label("Recent Files")
+    let section = cogito.label("Recent files")
     .set_class("home-title")
     .set_text_align(0)
     .set_hexpand(true)
@@ -101,7 +103,7 @@ bring models
 
     if count == 0
         content.add(
-            cogito.empty_page("No Documents")
+            cogito.empty_page("No documents")
             .set_description("Tap the + button to create a new document.")
             .set_icon("sf:doc.text")
             .set_hexpand(true)

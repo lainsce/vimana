@@ -32,6 +32,8 @@ bring utils.calendar
     let back_btn = bar.leading_button("sf:chevron.backward", (b = any) => {
         close_handler()
     })
+    cogito.set_tooltip(back_btn, "Back to calendar")
+    cogito.set_a11y_label(back_btn, "Back to calendar")
     back_btn.set_visible(false)
 
     let title_col = cogito.vstack()
@@ -112,7 +114,7 @@ bring utils.calendar
     scroll.add(event_list)
     body.add(scroll)
 
-    let empty = cogito.empty_page("No Events")
+    let empty = cogito.empty_page("No events")
     .set_description("Tap + to add an event for this day.")
     .set_icon("sf:calendar.badge.plus")
     empty_holder
@@ -124,11 +126,13 @@ bring utils.calendar
     body.add(empty_holder)
 
     let fab = cogito.fab("sf:plus")
-    .set_extended(true, "New Event")
+    .set_extended(true, "New event")
     .set_align(8)
     fab.on_click((f = cogito.FAB) => {
         on_add_event()
     })
+    cogito.set_tooltip(fab, "Add event")
+    cogito.set_a11y_label(fab, "Add event")
     body.add(fab)
 
     panel.add(body)
@@ -193,7 +197,7 @@ bring utils.calendar
     let color = str(ev["color"] ?? "#6B38FB")
     let desc = str(ev["description"] ?? "")
 
-    let ?time_str = "All Day"
+    let ?time_str = "All day"
     if allday != 1
         let sh = stdr.num(ev["start_hour"] ?? 0)
         let sm = stdr.num(ev["start_min"] ?? 0)
@@ -249,7 +253,7 @@ bring utils.calendar
     .set_align(4)
     .on_click((b = cogito.Button) => {
         let win = b.window()
-        let confirm_dlg = cogito.dialog("Delete Event?")
+        let confirm_dlg = cogito.dialog("Delete event?")
         let confirm_body = cogito.vstack()
         .set_gap(24)
         .set_padding(24, 24, 24, 24)
@@ -282,11 +286,13 @@ bring utils.calendar
         confirm_dlg.add(confirm_body)
         win.set_dialog(confirm_dlg)
     })
+    cogito.set_tooltip(overflow_btn, "Event options")
+    cogito.set_a11y_label(overflow_btn, "Event options")
     row.add(overflow_btn)
 
     let ev_menu = cogito.context_menu()
-    .add_item("Copy Title", (m) => { cogito.app().copy_to_clipboard(title) })
-    .add_item("Copy Time", (m) => { cogito.app().copy_to_clipboard(time_str) })
+    .add_item("Copy title", (m) => { cogito.app().copy_to_clipboard(title) })
+    .add_item("Copy time", (m) => { cogito.app().copy_to_clipboard(time_str) })
     .add_item("Delete", (m) => { on_delete_event(index) })
     .attach(row)
 

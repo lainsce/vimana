@@ -368,7 +368,7 @@ def hero_month = cogito.label("")
 -- ── Add Event Dialog ─────────────────────────────────────────
 
 : open_add_event(win = cogito.Window) (( -- ))
-    let dlg = cogito.dialog("New Event")
+    let dlg = cogito.dialog("New event")
 
     let form = cogito.vstack()
     .set_gap(24)
@@ -402,7 +402,7 @@ def hero_month = cogito.label("")
     .set_class("surface-container-low")
     .set_padding(12, 16, 12, 16)
 
-    let allday_label = cogito.label("All Day")
+    let allday_label = cogito.label("All day")
     .set_hexpand(true)
     .set_align(3)
     allday_row.add(allday_label)
@@ -658,10 +658,12 @@ def hero_month = cogito.label("")
         (day = num) => { select_day(day) }
     )
     cal_panel.set_hexpand(true)
-    cal_bar.add_trailing_button("sf:calendar.badge.clock", (b = cogito.Button) => {
+    let today_btn = cal_bar.add_trailing_button("sf:calendar.badge.clock", (b = cogito.Button) => {
         select_day(-1)
     })
-    cal_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+    cogito.set_tooltip(today_btn, "Jump to today")
+    cogito.set_a11y_label(today_btn, "Jump to today")
+    let about_btn = cal_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         let dlg = cogito.dialog("")
         let about_content = cogito.vstack()
         about_content.align_center()
@@ -673,6 +675,8 @@ def hero_month = cogito.label("")
         dlg.add(about_content)
         win.set_dialog(dlg)
     })
+    cogito.set_tooltip(about_btn, "About Solar")
+    cogito.set_a11y_label(about_btn, "About Solar")
     main_content.add(cal_panel)
 
     evt_back_btn = event_panel.build_panel(

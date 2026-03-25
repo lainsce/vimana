@@ -19,7 +19,7 @@ def ?sel_col = 0
 def ?sel_row = 0
 def ?sel_col2 = 0
 def ?sel_row2 = 0
-def ?sheet_name = "Working Sheet"
+def ?sheet_name = "Working sheet"
 def ?file_path = ""
 def ?formula_text = ""
 def ?drag_timer_id = 0
@@ -138,14 +138,14 @@ def formula_field = cogito.textfield("")
     sel_row = 0
     sel_col2 = 0
     sel_row2 = 0
-    sheet_name = "Working Sheet"
+    sheet_name = "Working sheet"
     file_path = ""
     sync_formula_bar()
     request_rebuild()
 ;
 
 : open_file() (( -- ))
-    let path = stdr.open_file_dialog("Open Spreadsheet", "csv")
+    let path = stdr.open_file_dialog("Open spreadsheet", "csv")
     if stdr.is_null(path)
         <-
 
@@ -183,7 +183,7 @@ def formula_field = cogito.textfield("")
 : save_file() (( -- ))
     let ?path = file_path
     if stdr.len(path) == 0
-        let picked = stdr.save_file_dialog("Save Spreadsheet", "spreadsheet.csv", "csv")
+        let picked = stdr.save_file_dialog("Save spreadsheet", "spreadsheet.csv", "csv")
         if stdr.is_null(picked)
             <-
         path = str(picked)
@@ -195,7 +195,7 @@ def formula_field = cogito.textfield("")
 ;
 
 : save_file_as() (( -- ))
-    let picked = stdr.save_file_dialog("Save Spreadsheet As", "spreadsheet.csv", "csv")
+    let picked = stdr.save_file_dialog("Save spreadsheet as", "spreadsheet.csv", "csv")
     if stdr.is_null(picked)
         <-
     file_path = str(picked)
@@ -228,6 +228,8 @@ def formula_field = cogito.textfield("")
     .set_hexpand(true)
 
     let gear_btn = bar.add_trailing_menu_button("sf:gearshape")
+    cogito.set_tooltip(gear_btn, "App menu")
+    cogito.set_a11y_label(gear_btn, "App menu")
     gear_btn.add_menu("New", (b = any) => {
         new_sheet()
     })
@@ -237,13 +239,15 @@ def formula_field = cogito.textfield("")
     gear_btn.add_menu("Save", (b = any) => {
         save_file()
     })
-    gear_btn.add_menu("Save As...", (b = any) => {
+    gear_btn.add_menu("Save as...", (b = any) => {
         save_file_as()
     })
 
-    bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+    let about_btn = bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         show_about(win)
     })
+    cogito.set_tooltip(about_btn, "About Tabula")
+    cogito.set_a11y_label(about_btn, "About Tabula")
     win.add(bar)
 
     -- Formula bar
@@ -271,6 +275,8 @@ def formula_field = cogito.textfield("")
     commit_btn.on_click((b = cogito.Button) => {
         commit_formula()
     })
+    cogito.set_tooltip(commit_btn, "Apply formula")
+    cogito.set_a11y_label(commit_btn, "Apply formula")
 
     fx_bar.add(fx_label)
     fx_bar.add(formula_field)

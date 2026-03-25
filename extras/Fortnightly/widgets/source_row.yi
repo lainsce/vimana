@@ -45,6 +45,8 @@ bring utils.cache
 
     let remove_btn = cogito.iconbtn("sf:line.3.horizontal")
     .set_class("source-menu-btn")
+    cogito.set_tooltip(remove_btn, "Source options")
+    cogito.set_a11y_label(remove_btn, "Source options")
     remove_btn.add_menu("Remove", (b = any) => {
         remove_handler(index)
     })

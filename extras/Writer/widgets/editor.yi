@@ -330,30 +330,40 @@ def ?pending_sel_b = -1
     .set_type(1)
     .set_hexpand(true)
 
-    bar.leading_button("sf:chevron.backward", (b = any) => {
+    let back_btn = bar.leading_button("sf:chevron.backward", (b = any) => {
         capture_spans(text_area, doc_idx)
         on_back()
     })
+    cogito.set_tooltip(back_btn, "Back to home")
+    cogito.set_a11y_label(back_btn, "Back to home")
 
     let gear = bar.add_trailing_menu_button("sf:gearshape")
+    cogito.set_tooltip(gear, "Editor menu")
+    cogito.set_a11y_label(gear, "Editor menu")
     gear.add_menu("About Writer", (b = any) => {
         on_about()
     })
 
     if is_compact
-        bar.add_trailing_button("sf:paintbrush", (b = cogito.Button) => {
+        let format_btn = bar.add_trailing_button("sf:paintbrush", (b = cogito.Button) => {
             on_format()
         })
+        cogito.set_tooltip(format_btn, "Formatting panel")
+        cogito.set_a11y_label(format_btn, "Formatting panel")
 
-    bar.add_trailing_button("sf:folder", (b = cogito.Button) => {
+    let open_btn = bar.add_trailing_button("sf:folder", (b = cogito.Button) => {
         capture_spans(text_area, doc_idx)
         on_open()
     })
+    cogito.set_tooltip(open_btn, "Open document")
+    cogito.set_a11y_label(open_btn, "Open document")
 
-    bar.add_trailing_button("sf:square.and.arrow.down", (b = cogito.Button) => {
+    let save_btn = bar.add_trailing_button("sf:square.and.arrow.down", (b = cogito.Button) => {
         capture_spans(text_area, doc_idx)
         on_save()
     })
+    cogito.set_tooltip(save_btn, "Save document")
+    cogito.set_a11y_label(save_btn, "Save document")
 
     panel.add(bar)
 

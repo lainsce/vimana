@@ -49,6 +49,9 @@ def ?refresh_cb = null
     .on_click((b = cogito.Button) => {
         on_add()
     })
+    cogito.set_tooltip(add_btn, "Add slide")
+    cogito.set_a11y_label(add_btn, "Add slide")
+
     panel.add(add_btn)
 
     refresh_cb = () => {
@@ -803,5 +806,8 @@ def PANEL_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
     .on_click((b = cogito.Button) => {
         on_remove(index)
     })
+    cogito.set_tooltip(remove_btn, "Remove slide")
+    cogito.set_a11y_label(remove_btn, "Remove slide")
+
     card.add(remove_btn)
 ;

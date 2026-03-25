@@ -40,8 +40,8 @@ def library_center = cogito.vstack()
 def library_scroll = cogito.scroller()
 def lyrics_grid = cogito.grid(1)
 def lyrics_scroll = cogito.scroller()
-def now_artist = cogito.label("No Artist")
-def now_title = cogito.label("No Title")
+def now_artist = cogito.label("No artist")
+def now_title = cogito.label("No title")
 def mix_art_1 = cogito.image("sf:music.note")
 def mix_art_2 = cogito.image("sf:music.note")
 def mix_art_3 = cogito.image("sf:music.note")
@@ -62,7 +62,7 @@ def mix_panel = cogito.vstack()
 def mix_play_btn = cogito.iconbtn("sf:play")
 def mix_play_btn_compact = cogito.iconbtn("sf:play")
 def mix_subtitle = cogito.label("")
-def mix_title = cogito.label("Your Mix")
+def mix_title = cogito.label("Your mix")
 def play_pause_btn = cogito.iconbtn("sf:play")
 def queue_toggle_btn = cogito.iconbtn("sf:list.bullet")
 def repeat_btn = cogito.iconbtn("sf:repeat")
@@ -125,8 +125,8 @@ def ?queue_sheet_open = false
 def bottom_nav = cogito.bottom_nav()
 def mini_player_card = cogito.card("")
 def mini_cover = cogito.image("sf:music.note")
-def mini_title_lbl = cogito.label("No Title")
-def mini_artist_lbl = cogito.label("No Artist")
+def mini_title_lbl = cogito.label("No title")
+def mini_artist_lbl = cogito.label("No artist")
 def mini_play_btn = cogito.iconbtn("sf:play")
 def sidebar = cogito.vstack()
 def ?player_back_btn = cogito.button("")
@@ -215,7 +215,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         player_tint_bin.set_visible(view_mode != 0)
         player_panel.set_visible(view_mode != 0)
 
-    mix_title.set_text("Your Mix")
+    mix_title.set_text("Your mix")
     if len(top_artists) == 0
         mix_subtitle.set_text("Play a few songs to generate a queue from your favorites.")
         mix_empty.set_visible(true)
@@ -666,7 +666,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         lyrics_revealer_ref.set_show_children(true)
         lyrics_revealer_ref.set_vexpand(true)
     else
-        player_bar_ref.set_title("Now Playing")
+        player_bar_ref.set_title("Now playing")
         lyrics_revealer_ref.set_show_children(false)
         lyrics_revealer_ref.set_vexpand(false)
         now_revealer_ref.set_show_children(true)
@@ -749,10 +749,10 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 : set_now_playing(idx = num) (( -- ))
     if idx < 0 || idx >= len(tracks)
-        now_title.set_text("No Title")
-        now_artist.set_text("No Artist")
-        mini_title_lbl.set_text("No Title")
-        mini_artist_lbl.set_text("No Artist")
+        now_title.set_text("No title")
+        now_artist.set_text("No artist")
+        mini_title_lbl.set_text("No title")
+        mini_artist_lbl.set_text("No artist")
         mini_cover.set_source("sf:music.note")
         if is_compact_mode && !compact_player_open
             mini_player_card.set_visible(false)
@@ -762,8 +762,12 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         <-
 
     let t = tracks[idx] ?? []: [string => any]
-    let title = str(t["title"] ?? "")
-    let artist = str(t["artist"] ?? "")
+    let ?title = str(t["title"] ?? "")
+    let ?artist = str(t["artist"] ?? "")
+    if title == "Unknown Title"
+        title = "Unknown title"
+    if artist == "Unknown Artist"
+        artist = "Unknown artist"
     now_title.set_text(title)
     now_artist.set_text(artist)
     mini_title_lbl.set_text(title)
@@ -889,7 +893,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     for (let ?i = 0; i < len(tracks); i = i + 1)
         let t = tracks[i] ?? []: [string => any]
         let artist = str(t["artist"] ?? "")
-        if len(artist) > 0 && artist != "Unknown Artist" && stdr.is_null(seen[artist])
+        if len(artist) > 0 && artist != "Unknown Artist" && artist != "Unknown artist" && stdr.is_null(seen[artist])
             seen[artist] = true
             names[len(names)] = artist
     <- names
@@ -946,7 +950,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 ;
 
 : choose_and_scan() (( -- ))
-    let folder = scanner.pick_folder("Choose Music Folder")
+    let folder = scanner.pick_folder("Choose music folder")
     if len(folder) == 0
         <-
     scan_folder(folder)
@@ -1258,7 +1262,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     groups_revealer.set_show_children(false).set_hexpand(true).set_vexpand(true).set_padding(0, 0, 0, 0)
     library_grid.set_gap(8, 8).set_padding(0, 0, 0, 0)
     library_list.set_padding(0, 0, 0, 0)
-    library_rail.set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:star.hexagon", "sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
+    library_rail.set_items(["Your mix", "Titles", "Artists", "Albums"], ["sf:star.hexagon", "sf:music.note", "sf:person.2", "sf:square.stack"]).set_selected(0).set_toggle(false)
     library_scroll.set_hexpand(true).set_vexpand(true).set_min_content_width(360).set_min_content_height(294)
     lyrics_grid.set_gap(0, 20).set_padding(12, 12, 12, 12).set_hexpand(true).set_class("victrola-lyrics-grid")
     mix_art_1.set_hexpand(true).set_vexpand(true).set_class("surface-container")
@@ -1285,6 +1289,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         if ui_ready
             start_mix_playback()
     })
+    cogito.set_tooltip(mix_play_btn_compact, "Play your mix")
+    cogito.set_a11y_label(mix_play_btn_compact, "Play your mix")
     mix_collage.add(mix_play_btn_compact)
     mix_empty.set_class("caption").set_text_align(0).set_wrap(true).set_hexpand(true)
     mix_panel.set_gap(0).set_hexpand(true).set_vexpand(true).set_padding(60, 0, 0, 0).set_class("victrola-mix-panel")
@@ -1292,11 +1298,15 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         if ui_ready
             start_mix_playback()
     })
+    cogito.set_tooltip(mix_play_btn, "Play your mix")
+    cogito.set_a11y_label(mix_play_btn, "Play your mix")
     mix_subtitle.set_class("victrola-mix-subtitle").set_text_align(0).set_max_width_chars(60)
     mix_title.set_class("big-display-expressive").set_text_align(0)
     now_artist.set_class("view-title").set_text_align(0).set_max_width_chars(40)
     now_title.set_class("victrola-now-title").set_text_align(0).set_max_width_chars(44)
     play_pause_btn.set_l().set_class("tonal")
+    cogito.set_tooltip(play_pause_btn, "Play or pause")
+    cogito.set_a11y_label(play_pause_btn, "Play or pause")
     queue_toggle_btn.set_class("iconic").set_align(4).on_click((b = cogito.IconButton) => {
         if ui_ready
             if queue_sheet_open
@@ -1304,13 +1314,19 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
             else
                 open_queue_sheet()
     })
+    cogito.set_tooltip(queue_toggle_btn, "Queue")
+    cogito.set_a11y_label(queue_toggle_btn, "Queue")
     repeat_btn.set_class("iconic")
+    cogito.set_tooltip(repeat_btn, "Repeat mode")
+    cogito.set_a11y_label(repeat_btn, "Repeat mode")
     poll_anchor.set_size(1).set_visible(false)
     search_input.set_hexpand(true).set_class("victrola-search")
     search_revealer.set_show_children(false).set_hexpand(true).set_padding(0, 16, 6, 16)
     seek_slider.set_xs().set_class("victrola-seek").set_wavy(false).set_show_bubble(true).set_bubble_format("{time}").set_bubble_scale(1.0)
     lyrics_seek_slider.set_xs().set_hexpand(true).set_wavy(false).set_show_bubble(true).set_bubble_format("{time}").set_bubble_scale(1.0)
     lyrics_play_btn.set_class("iconic")
+    cogito.set_tooltip(lyrics_play_btn, "Play or pause")
+    cogito.set_a11y_label(lyrics_play_btn, "Play or pause")
     lyrics_time_left.set_class("caption tabular emphasized").set_text_align(0)
     time_left.set_class("caption tabular emphasized").set_text_align(0)
     time_right.set_class("caption tabular emphasized").set_text_align(2)
@@ -1324,6 +1340,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         else
             play_selected()
     })
+    cogito.set_tooltip(mini_play_btn, "Play or pause")
+    cogito.set_a11y_label(mini_play_btn, "Play or pause")
 ;
 
 : build_sidebar(root = cogito.HStack) (( -- ))
@@ -1356,22 +1374,28 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     library_center.set_hexpand(true).set_vexpand(true)
     let center = library_center
 
-    let library_bar = cogito.appbar("Your Mix", "")
+    let library_bar = cogito.appbar("Your mix", "")
     library_bar_ref = library_bar
     library_bar
     .set_hexpand(true)
     .set_class("small victrola-library-bar")
-    .add_trailing_button("sf:folder.badge.gearshape", (b = any) => {
+
+    let scan_btn = library_bar.add_trailing_button("sf:folder.badge.gearshape", (b = any) => {
         if ui_ready && !is_null(b)
             choose_and_scan()
     })
-    .add_trailing_button("sf:magnifyingglass", (b = any) => {
+    cogito.set_tooltip(scan_btn, "Choose music folder")
+    cogito.set_a11y_label(scan_btn, "Choose music folder")
+
+    let search_btn = library_bar.add_trailing_button("sf:magnifyingglass", (b = any) => {
         if ui_ready && !is_null(b)
             set_search_visible(!search_input_visible)
             search_input.set_text("")
             query_text = ""
             refresh_library_list()
     })
+    cogito.set_tooltip(search_btn, "Search library")
+    cogito.set_a11y_label(search_btn, "Search library")
 
     back_btn = library_bar.leading_button("sf:chevron.left", (b = any) => {
         if ui_ready && !is_null(b)
@@ -1381,6 +1405,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
                 close_artist_detail()
             refresh_library_list()
     })
+    cogito.set_tooltip(back_btn, "Back")
+    cogito.set_a11y_label(back_btn, "Back")
     back_btn.set_visible(false)
 
     center.add(library_bar)
@@ -1505,7 +1531,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
     player_tint_bin = player_tint
     player_tint.add(player_panel)
 
-    let player_bar = cogito.appbar("Now Playing", "")
+    let player_bar = cogito.appbar("Now playing", "")
     .set_hexpand(true)
     .set_class("small victrola-player-bar")
     player_bar_ref = player_bar
@@ -1529,6 +1555,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
             if lyrics_view_visible
                 fetch_lyrics_for_track(selected_track)
     })
+    cogito.set_tooltip(lyrics_btn, "Lyrics")
+    cogito.set_a11y_label(lyrics_btn, "Lyrics")
     lyrics_btn.set_visible(false)
     lyrics_spacer = player_bar.add_trailing_menu_button("sf:quote.bubble")
     lyrics_spacer.set_disabled(true)
@@ -1537,6 +1565,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         if ui_ready && !is_null(b)
             close_compact_player()
     })
+    cogito.set_tooltip(player_back_btn, "Back")
+    cogito.set_a11y_label(player_back_btn, "Back")
     player_back_btn.set_visible(false)
 
     player_panel.add(player_bar)
@@ -1699,7 +1729,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
 : build_bottom_nav(outer = cogito.VStack) (( -- ))
     bottom_nav
-    .set_items(["Your Mix", "Titles", "Artists", "Albums"], ["sf:star.hexagon", "sf:music.note", "sf:person.2", "sf:square.stack"])
+    .set_items(["Your mix", "Titles", "Artists", "Albums"], ["sf:star.hexagon", "sf:music.note", "sf:person.2", "sf:square.stack"])
     .set_selected(0)
     .set_visible(false)
     .set_hexpand(true)
@@ -1737,7 +1767,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
                     close_album_detail()
 
                 if view_mode == 0
-                    library_bar_ref.set_title("Your Mix")
+                    library_bar_ref.set_title("Your mix")
                 elif view_mode == 1
                     library_bar_ref.set_title("Titles")
                 elif view_mode == 2
@@ -1814,7 +1844,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
             mix_panel.set_visible(is_mix)
 
             if view_mode == 0
-                library_bar_ref.set_title("Your Mix")
+                library_bar_ref.set_title("Your mix")
             elif view_mode == 1
                 library_bar_ref.set_title("Titles")
             elif view_mode == 2
@@ -1887,7 +1917,7 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
 
     build_sidebar(root)
     build_library_center(root)
-    library_bar_ref.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+    let about_btn = library_bar_ref.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         let dlg = cogito.dialog("")
         let about_content = cogito.vstack()
         about_content.align_center()
@@ -1899,6 +1929,8 @@ def AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"]
         dlg.add(about_content)
         win.set_dialog(dlg)
     })
+    cogito.set_tooltip(about_btn, "About Victrola")
+    cogito.set_a11y_label(about_btn, "About Victrola")
     build_mix_panel(root)
     build_player_panel(root)
 

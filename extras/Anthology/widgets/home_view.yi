@@ -31,6 +31,8 @@ bring widgets.note_card
     .set_hexpand(true)
 
     let menu = bar.add_trailing_menu_button("sf:gearshape")
+    cogito.set_tooltip(menu, "Home menu")
+    cogito.set_a11y_label(menu, "Home menu")
     menu.add_menu("Settings", (b = any) => {
         on_settings()
     })
@@ -85,10 +87,12 @@ bring widgets.note_card
             let overflow = cogito.iconbtn("sf:ellipsis")
             .set_class("iconic")
             .set_size(0)
-            overflow.add_menu("Rename Collection", (b = any) => {
+            cogito.set_tooltip(overflow, "Collection options")
+            cogito.set_a11y_label(overflow, "Collection options")
+            overflow.add_menu("Rename collection", (b = any) => {
                 on_rename_collection(col_idx)
             })
-            overflow.add_menu("Delete Collection", (b = any) => {
+            overflow.add_menu("Delete collection", (b = any) => {
                 on_delete_collection(col_idx)
             })
             heading_row.add(overflow)
@@ -100,7 +104,7 @@ bring widgets.note_card
 
             if len(col_notes) == 0
                 content.add(
-                    cogito.empty_page("No Entries Yet")
+                    cogito.empty_page("No entries yet")
                     .set_description("Tap the + button to write your first journal entry.")
                     .set_icon("sf:note.text")
                     .set_hexpand(true)
@@ -154,7 +158,7 @@ bring widgets.note_card
         .set_hexpand(true)
         section_header.add(section_title)
 
-        let view_all_btn = cogito.button("VIEW ALL")
+        let view_all_btn = cogito.button("View all")
         .set_class("text")
         view_all_btn.on_click((b = cogito.Button) => {
             if len(cols) > 0
@@ -233,7 +237,7 @@ bring widgets.note_card
         -- ── Recent Entry Section ─────────────────────────────
 
         if len(all_notes) > 0
-            let recent_header = cogito.label("Recent Entry")
+            let recent_header = cogito.label("Recent entry")
             .set_class("home-section-title")
             .set_align(0)
             .set_text_align(0)

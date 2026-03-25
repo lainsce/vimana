@@ -109,24 +109,71 @@ def tooltip_bar = cogito.vstack()
     .set_hexpand(true)
     .set_vibrant(true)
 
-    toolbar.add(cogito.iconbtn("sf:text.badge.plus").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+    let add_text_btn = cogito.iconbtn("sf:text.badge.plus")
+    .set_class("iconic")
+    .set_shape(0)
+    .set_size(1)
+    .on_click((b = cogito.Button) => {
         show_add_text_dialog(b.window())
-    }))
-    toolbar.add(cogito.iconbtn("sf:link.badge.plus").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+    })
+    cogito.set_tooltip(add_text_btn, "Add text")
+    cogito.set_a11y_label(add_text_btn, "Add text")
+    toolbar.add(add_text_btn)
+
+    let add_link_btn = cogito.iconbtn("sf:link.badge.plus")
+    .set_class("iconic")
+    .set_shape(0)
+    .set_size(1)
+    .on_click((b = cogito.Button) => {
         show_add_link_dialog(b.window())
-    }))
-    toolbar.add(cogito.iconbtn("sf:photo.badge.plus").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+    })
+    cogito.set_tooltip(add_link_btn, "Add link")
+    cogito.set_a11y_label(add_link_btn, "Add link")
+    toolbar.add(add_link_btn)
+
+    let add_image_btn = cogito.iconbtn("sf:photo.badge.plus")
+    .set_class("iconic")
+    .set_shape(0)
+    .set_size(1)
+    .on_click((b = cogito.Button) => {
         show_add_image_dialog(b.window())
-    }))
-    toolbar.add(cogito.iconbtn("sf:chart.bar.xaxis").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+    })
+    cogito.set_tooltip(add_image_btn, "Add image")
+    cogito.set_a11y_label(add_image_btn, "Add image")
+    toolbar.add(add_image_btn)
+
+    let add_chart_btn = cogito.iconbtn("sf:chart.bar.xaxis")
+    .set_class("iconic")
+    .set_shape(0)
+    .set_size(1)
+    .on_click((b = cogito.Button) => {
         show_add_chart_dialog(b.window())
-    }))
-    toolbar.add(cogito.iconbtn("sf:text.bubble").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+    })
+    cogito.set_tooltip(add_chart_btn, "Add chart")
+    cogito.set_a11y_label(add_chart_btn, "Add chart")
+    toolbar.add(add_chart_btn)
+
+    let add_comment_btn = cogito.iconbtn("sf:text.bubble")
+    .set_class("iconic")
+    .set_shape(0)
+    .set_size(1)
+    .on_click((b = cogito.Button) => {
         show_add_comment_dialog(b.window())
-    }))
-    toolbar.add(cogito.iconbtn("sf:paintpalette").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+    })
+    cogito.set_tooltip(add_comment_btn, "Add comment")
+    cogito.set_a11y_label(add_comment_btn, "Add comment")
+    toolbar.add(add_comment_btn)
+
+    let slide_color_btn = cogito.iconbtn("sf:paintpalette")
+    .set_class("iconic")
+    .set_shape(0)
+    .set_size(1)
+    .on_click((b = cogito.Button) => {
         show_slide_color_dialog(b.window())
-    }))
+    })
+    cogito.set_tooltip(slide_color_btn, "Set slide colors")
+    cogito.set_a11y_label(slide_color_btn, "Set slide colors")
+    toolbar.add(slide_color_btn)
 
     editor.add(toolbar)
 
@@ -245,7 +292,7 @@ def tooltip_bar = cogito.vstack()
     .set_hexpand(true)
     .set_align(3)
 
-    let notes_label = cogito.label("Speaker Notes:")
+    let notes_label = cogito.label("Speaker notes:")
     .set_class("slide-notes-label")
 
     notes_field
@@ -1705,7 +1752,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
     let edit_btn = cogito.button("Edit")
     .set_class("slide-tooltip-btn")
     .on_click((b = cogito.Button) => {
-        show_edit_elem_dialog(b.window(), "Edit Text")
+        show_edit_elem_dialog(b.window(), "Edit text")
     })
 
     let target_elem = selected_elem
@@ -1735,10 +1782,10 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 ;
 
 : build_link_tooltip() (( -- ))
-    let edit_btn = cogito.button("Edit Label")
+    let edit_btn = cogito.button("Edit label")
     .set_class("slide-tooltip-btn")
     .on_click((b = cogito.Button) => {
-        show_edit_elem_dialog(b.window(), "Edit Label")
+        show_edit_elem_dialog(b.window(), "Edit label")
     })
     let url_btn = cogito.button("Edit URL")
     .set_class("slide-tooltip-btn")
@@ -1774,7 +1821,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 ;
 
 : build_image_tooltip() (( -- ))
-    let pick_btn = cogito.button("Choose Image")
+    let pick_btn = cogito.button("Choose image")
     .set_class("slide-tooltip-btn")
     .on_click((b = cogito.Button) => {
         choose_image_for_selected()
@@ -1845,7 +1892,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
     let edit_btn = cogito.button("Edit")
     .set_class("slide-tooltip-btn")
     .on_click((b = cogito.Button) => {
-        show_edit_elem_dialog(b.window(), "Edit Comment")
+        show_edit_elem_dialog(b.window(), "Edit comment")
     })
     let target_elem = selected_elem
     let del_btn = cogito.button("Delete")
@@ -1927,7 +1974,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
     if models.get_elem_type(idx, ei) != "image"
         <-
 
-    let picked = stdr.open_file_dialog("Choose Image", "png")
+    let picked = stdr.open_file_dialog("Choose image", "png")
     if is_null(picked)
         <-
     let path = stdr.trim(str(picked))
@@ -1950,7 +1997,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
         <-
 
     let meta = models.get_elem_meta(idx, ei)
-    let dlg = cogito.dialog("Edit Chart")
+    let dlg = cogito.dialog("Edit chart")
     let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
 
     let title_tf = cogito.textfield(models.get_elem_text(idx, ei))
@@ -2041,7 +2088,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 
 : show_add_text_dialog(win = cogito.Window) (( -- ))
     let idx = models.current()
-    let dlg = cogito.dialog("Add Text Box")
+    let dlg = cogito.dialog("Add text box")
     let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
 
     let tf = cogito.textfield("")
@@ -2068,7 +2115,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 
 : show_add_link_dialog(win = cogito.Window) (( -- ))
     let idx = models.current()
-    let dlg = cogito.dialog("Add Link")
+    let dlg = cogito.dialog("Add link")
     let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
 
     let label_tf = cogito.textfield("")
@@ -2109,7 +2156,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 
 : show_add_image_dialog(win = cogito.Window) (( -- ))
     let idx = models.current()
-    let picked = stdr.open_file_dialog("Choose Image", "png")
+    let picked = stdr.open_file_dialog("Choose image", "png")
     if is_null(picked)
         <-
 
@@ -2131,7 +2178,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 
 : show_add_chart_dialog(win = cogito.Window) (( -- ))
     let idx = models.current()
-    let dlg = cogito.dialog("Add Chart")
+    let dlg = cogito.dialog("Add chart")
     let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
 
     let tf = cogito.textfield("")
@@ -2175,7 +2222,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 
 : show_add_comment_dialog(win = cogito.Window) (( -- ))
     let idx = models.current()
-    let dlg = cogito.dialog("Add Comment")
+    let dlg = cogito.dialog("Add comment")
     let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
 
     let tf = cogito.textfield("")
@@ -2202,7 +2249,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 
 : show_slide_color_dialog(win = cogito.Window) (( -- ))
     let idx = models.current()
-    let dlg = cogito.dialog("Set Slide Color")
+    let dlg = cogito.dialog("Set slide color")
     let box = cogito.vstack()
     .set_gap(10)
     .set_padding(16, 16, 16, 16)
@@ -2210,7 +2257,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
 
     let swatch_cols = slides_constants.slide_color_dialog_columns()
 
-    let presets_label = cogito.label("Preset Colors")
+    let presets_label = cogito.label("Preset colors")
     .set_class("slide-notes-label")
 
     let preset_grid = cogito.grid(swatch_cols)
@@ -2290,7 +2337,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
     actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
         dlg.close()
     }))
-    actions.add(cogito.button("Apply Custom").set_class("suggested").on_click((b = cogito.Button) => {
+    actions.add(cogito.button("Apply custom").set_class("suggested").on_click((b = cogito.Button) => {
         let ?color = stdr.trim(custom_tf.text())
         if len(color) == 0
             color = "#FFFFFF"

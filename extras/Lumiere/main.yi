@@ -211,13 +211,15 @@ def ?controls_container = cogito.hstack()
 
     add_folder_btn.on_click((b = cogito.IconButton) => {
         cogito.async_run(() => {
-            let folder = scanner.pick_folder("Choose Video Folder")
+            let folder = scanner.pick_folder("Choose video folder")
             if stdr.len(folder) > 0
                 scan_folder(folder)
                 generate_all_thumbnails()
                 refresh_library()
         }, (result = any) => {})
     })
+    cogito.set_tooltip(add_folder_btn, "Add folder")
+    cogito.set_a11y_label(add_folder_btn, "Add folder")
 
     view.add(bar)
 
@@ -260,7 +262,7 @@ def ?controls_container = cogito.hstack()
 
     -- Context menus on grid/list
     let ctx = cogito.context_menu()
-    ctx.add_item("Copy Title", (item = any) => {
+    ctx.add_item("Copy title", (item = any) => {
         if playing_index >= 0
             let v = videos[playing_index] ?? null
             if v != null
@@ -330,6 +332,8 @@ def ?controls_container = cogito.hstack()
     back_btn.on_click((b = cogito.IconButton) => {
         show_library_view()
     })
+    cogito.set_tooltip(back_btn, "Back to library")
+    cogito.set_a11y_label(back_btn, "Back to library")
     top_bar.add(back_btn)
 
     let title_col = cogito.vstack()
@@ -389,6 +393,8 @@ def ?controls_container = cogito.hstack()
         if gst.loaded()
             gst.toggle_pause()
     })
+    cogito.set_tooltip(play_btn, "Play or pause")
+    cogito.set_a11y_label(play_btn, "Play or pause")
     controls_bar.add(play_btn)
 
     time_left.set_class("lumiere-time-label")
@@ -411,7 +417,7 @@ def ?controls_container = cogito.hstack()
         let pop_content = cogito.vstack()
             .set_padding(12, 12, 12, 12)
             .set_gap(8)
-        pop_content.add(cogito.label("Playback Settings").set_class("lumiere-settings-heading"))
+        pop_content.add(cogito.label("Playback settings").set_class("lumiere-settings-heading"))
         let vol_label = cogito.label("Volume")
         pop_content.add(vol_label)
         let vol_slider = cogito.slider(0, 100, stdr.floor(gst.volume() * 100))
@@ -423,6 +429,8 @@ def ?controls_container = cogito.hstack()
         pop.add(pop_content)
         pop.show(settings_btn)
     })
+    cogito.set_tooltip(settings_btn, "Playback settings")
+    cogito.set_a11y_label(settings_btn, "Playback settings")
     controls_bar.add(settings_btn)
 ;
 

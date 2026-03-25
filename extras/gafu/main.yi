@@ -6,7 +6,7 @@ bring json
 
 def gafu_app = cogito.app()
 def source_picker = cogito.colorpicker()
-def upload_hint = cogito.label("Choose an Image or Drop Here…")
+def upload_hint = cogito.label("Choose an image or drop here…")
 def scheme_switch = cogito.switch("")
 def ?source_hex = "#65558F"
 def ?selected_image_path = ""
@@ -17,7 +17,7 @@ def mode_moon = cogito.iconbtn("sf:moon")
 def mode_base = cogito.iconbtn("sf:sun.max")
 def mode_bright = cogito.iconbtn("sf:sun.lefthalf.filled")
 def mode_brightest = cogito.iconbtn("sf:sun.max.fill")
-def dark_switch = cogito.switchbar("Dark Mode")
+def dark_switch = cogito.switchbar("Dark mode")
 def ?mode_idx = 1
 def GAFU_STATE_PATH = ".gafu_state.json"
 
@@ -69,13 +69,13 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     apply_source_color(source_hex)
 
     if len(selected_image_path) > 0
-        upload_hint.set_text("Image Selected.")
+        upload_hint.set_text("Image selected.")
         selected_image_preview.set_source(selected_image_path)
         selected_image_preview.set_size(320, 180)
         selected_image_preview.set_radius(26)
         scheme_switch.set_disabled(false)
     else
-        upload_hint.set_text("Choose File Or Drag & Drop Here…")
+        upload_hint.set_text("Choose file or drag and drop here…")
         selected_image_preview.set_source("")
         selected_image_preview.set_size(0, 0)
         scheme_switch.set_disabled(true)
@@ -111,7 +111,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
 
     selected_image_path = path
     scheme_switch.set_disabled(false)
-    upload_hint.set_text("Image Selected.")
+    upload_hint.set_text("Image selected.")
     selected_image_preview.set_source(selected_image_path)
     selected_image_preview.set_size(320, 180)
     selected_image_preview.set_radius(26)
@@ -124,7 +124,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
 
 : reset_everything() (( -- ))
     selected_image_path = ""
-    upload_hint.set_text("Choose File Or Drag & Drop Here…")
+    upload_hint.set_text("Choose file or drag and drop here…")
     selected_image_preview.set_source("")
     selected_image_preview.set_size(0, 0)
     scheme_switch.set_checked(false)
@@ -205,18 +205,18 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     .set_gap(12)
     .set_hexpand(true)
     .set_homogeneous(true)
-    .add(tone_column("Primary", "primary", "On Primary", "on-primary", "Primary Container", "primary-container", "On Primary Container", "on-primary-container"))
-    .add(tone_column("Secondary", "secondary", "On Secondary", "on-secondary", "Secondary Container", "secondary-container", "On Secondary Container", "on-secondary-container"))
-    .add(tone_column("Tertiary", "tertiary", "On Tertiary", "on-tertiary", "Tertiary Container", "tertiary-container", "On Tertiary Container", "on-tertiary-container"))
-    .add(tone_column("Error", "error", "On Error", "on-error", "Error Container", "error-container", "On Error Container", "on-error-container"))
+    .add(tone_column("Primary", "primary", "On primary", "on-primary", "Primary container", "primary-container", "On primary container", "on-primary-container"))
+    .add(tone_column("Secondary", "secondary", "On secondary", "on-secondary", "Secondary container", "secondary-container", "On secondary container", "on-secondary-container"))
+    .add(tone_column("Tertiary", "tertiary", "On tertiary", "on-tertiary", "Tertiary container", "tertiary-container", "On tertiary container", "on-tertiary-container"))
+    .add(tone_column("Error", "error", "On error", "on-error", "Error container", "error-container", "On error container", "on-error-container"))
 
     let fixed = cogito.hstack()
     .set_gap(12)
     .set_hexpand(true)
     .set_homogeneous(true)
-    .add(fixed_column("Primary Fixed", "primary-fixed", "Primary Fixed Dim", "primary-fixed-dim", "On Primary Fixed", "on-primary-fixed", "On Primary Fixed Variant", "on-primary-fixed-variant"))
-    .add(fixed_column("Secondary Fixed", "secondary-fixed", "Secondary Fixed Dim", "secondary-fixed-dim", "On Secondary Fixed", "on-secondary-fixed", "On Secondary Fixed Variant", "on-secondary-fixed-variant"))
-    .add(fixed_column("Tertiary Fixed", "tertiary-fixed", "Tertiary Fixed Dim", "tertiary-fixed-dim", "On Tertiary Fixed", "on-tertiary-fixed", "On Tertiary Fixed Variant", "on-tertiary-fixed-variant"))
+    .add(fixed_column("Primary fixed", "primary-fixed", "Primary fixed dim", "primary-fixed-dim", "On primary fixed", "on-primary-fixed", "On primary fixed variant", "on-primary-fixed-variant"))
+    .add(fixed_column("Secondary fixed", "secondary-fixed", "Secondary fixed dim", "secondary-fixed-dim", "On secondary fixed", "on-secondary-fixed", "On secondary fixed variant", "on-secondary-fixed-variant"))
+    .add(fixed_column("Tertiary fixed", "tertiary-fixed", "Tertiary fixed dim", "tertiary-fixed-dim", "On tertiary fixed", "on-tertiary-fixed", "On tertiary fixed variant", "on-tertiary-fixed-variant"))
 
     let lower = cogito.hstack()
     .set_gap(12)
@@ -229,24 +229,24 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     let surfaces = cogito.hstack()
     .set_hexpand(true)
     .set_homogeneous(true)
-    .add(swatch("Surface Dim", "surface-dim"))
+    .add(swatch("Surface dim", "surface-dim"))
     .add(swatch("Surface", "surface"))
-    .add(swatch("Surface Bright", "surface-bright"))
+    .add(swatch("Surface bright", "surface-bright"))
 
     let containers = cogito.flow()
     .set_hexpand(true)
     .set_gap(4)
-    .add(swatch("Surface Container Lowest", "surface-container-lowest"))
-    .add(swatch("Surface Container Low", "surface-container-low"))
-    .add(swatch("Surface Container", "surface-container"))
-    .add(swatch("Surface Container High", "surface-container-high"))
-    .add(swatch("Surface Container Highest", "surface-container-highest"))
+    .add(swatch("Surface container lowest", "surface-container-lowest"))
+    .add(swatch("Surface container low", "surface-container-low"))
+    .add(swatch("Surface container", "surface-container"))
+    .add(swatch("Surface container high", "surface-container-high"))
+    .add(swatch("Surface container highest", "surface-container-highest"))
 
     let on_surface = cogito.hstack()
     .set_hexpand(true)
     .set_homogeneous(true)
-    .add(swatch("On Surface", "on-surface"))
-    .add(swatch("On Surface Variant", "on-surface-variant"))
+    .add(swatch("On surface", "on-surface"))
+    .add(swatch("On surface variant", "on-surface-variant"))
     .add(swatch("Outline", "outline-fill"))
     .add(swatch("Border", "outline-variant-fill"))
 
@@ -261,9 +261,9 @@ def GAFU_STATE_PATH = ".gafu_state.json"
 
     let inverse = cogito.vstack()
     .set_hexpand(true)
-    .add(swatch("Inverse Surface", "inverse-surface"))
-    .add(swatch("On Inverse Surface", "on-inverse-surface"))
-    .add(swatch("Inverse Primary", "inverse-primary-fill"))
+    .add(swatch("Inverse surface", "inverse-surface"))
+    .add(swatch("On inverse surface", "on-inverse-surface"))
+    .add(swatch("Inverse primary", "inverse-primary-fill"))
 
     lower.add(neutral)
     lower.add(inverse)
@@ -341,21 +341,29 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     .set_toggle(true)
     .set_checked(false)
     .set_class("tonal")
+    cogito.set_tooltip(mode_moon, "Low contrast mode")
+    cogito.set_a11y_label(mode_moon, "Low contrast mode")
 
     mode_base
     .set_toggle(true)
     .set_checked(true)
     .set_class("filled")
+    cogito.set_tooltip(mode_base, "Balanced contrast mode")
+    cogito.set_a11y_label(mode_base, "Balanced contrast mode")
 
     mode_bright
     .set_toggle(true)
     .set_checked(false)
     .set_class("tonal")
+    cogito.set_tooltip(mode_bright, "High contrast mode")
+    cogito.set_a11y_label(mode_bright, "High contrast mode")
 
     mode_brightest
     .set_toggle(true)
     .set_checked(false)
     .set_class("tonal")
+    cogito.set_tooltip(mode_brightest, "Maximum contrast mode")
+    cogito.set_a11y_label(mode_brightest, "Maximum contrast mode")
 
     mode_moon.on_click((b = cogito.IconButton) => {
         apply_mode(0)
@@ -388,7 +396,7 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     .set_class("surface-container-high")
     .set_class("gafu-source")
     source.add(
-        cogito.label("Source Color")
+        cogito.label("Source color")
         .valign(1)
     )
 
@@ -403,13 +411,18 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     })
     source_controls.add(source_picker)
 
-    source_controls.add(cogito.iconbtn("sf:doc.on.doc").set_class("iconic").on_click((b = cogito.Button) => {
+    let copy_hex_btn = cogito.iconbtn("sf:doc.on.doc")
+    .set_class("iconic")
+    .on_click((b = cogito.Button) => {
         gafu_app.copy_to_clipboard(source_hex)
-    }))
+    })
+    cogito.set_tooltip(copy_hex_btn, "Copy hex color")
+    cogito.set_a11y_label(copy_hex_btn, "Copy hex color")
+    source_controls.add(copy_hex_btn)
 
     let source_menu = cogito.context_menu()
-    .add_item("Copy Hex", (m) => { gafu_app.copy_to_clipboard(source_hex) })
-    .add_item("Paste Hex", (m) => {
+    .add_item("Copy hex", (m) => { gafu_app.copy_to_clipboard(source_hex) })
+    .add_item("Paste hex", (m) => {
         let ?pasted = gafu_app.paste_from_clipboard()
         if stdr.len(pasted) > 0
             source_picker.set_hex(pasted)
@@ -469,12 +482,14 @@ def GAFU_STATE_PATH = ".gafu_state.json"
     let right = cogito.vstack()
     .set_vexpand(true)
 
-    let bar = cogito.appbar("Source Color", "")
+    let bar = cogito.appbar("Source color", "")
     .set_class("surface-container small")
-    bar.add_trailing_button("sf:arrow.clockwise", (b = cogito.Button) => {
+    let reset_btn = bar.add_trailing_button("sf:arrow.clockwise", (b = cogito.Button) => {
         reset_everything()
     })
-    bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+    cogito.set_tooltip(reset_btn, "Reset palette")
+    cogito.set_a11y_label(reset_btn, "Reset palette")
+    let about_btn = bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         let dlg = cogito.dialog("")
         let about_content = cogito.vstack()
         about_content.align_center()
@@ -486,6 +501,8 @@ def GAFU_STATE_PATH = ".gafu_state.json"
         dlg.add(about_content)
         win.set_dialog(dlg)
     })
+    cogito.set_tooltip(about_btn, "About Gafu")
+    cogito.set_a11y_label(about_btn, "About Gafu")
 
     right.add(bar)
     right.add(build_right_panel())

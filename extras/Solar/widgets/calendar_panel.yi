@@ -46,6 +46,8 @@ bring utils.calendar
     .on_click((b = cogito.Button) => {
         on_prev_month()
     })
+    cogito.set_tooltip(up_btn, "Previous month")
+    cogito.set_a11y_label(up_btn, "Previous month")
 
     let down_btn = cogito.iconbtn("sf:chevron.down")
     .set_shape(1)
@@ -53,6 +55,8 @@ bring utils.calendar
     .on_click((b = cogito.Button) => {
         on_next_month()
     })
+    cogito.set_tooltip(down_btn, "Next month")
+    cogito.set_a11y_label(down_btn, "Next month")
 
     nav_col.add(up_btn)
     nav_col.add(down_btn)

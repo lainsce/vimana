@@ -165,7 +165,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     .set_class(if checked { "task-item-done" } else { "task-item" })
     card.add(task_text)
 
-    let toggle_btn = cogito.button(if checked { "Mark Undone" } else { "Mark Done" })
+    let toggle_btn = cogito.button(if checked { "Mark undone" } else { "Mark done" })
     .set_class("text")
     .on_click((b = cogito.Button) => {
         set_task_done(index, !checked)
@@ -186,8 +186,8 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     card.add(actions)
 
     let task_menu = cogito.context_menu()
-    .add_item("Copy Task", (m) => { cogito.app().copy_to_clipboard(text) })
-    .add_item(if checked { "Mark Undone" } else { "Mark Done" }, (m) => { set_task_done(index, !checked) })
+    .add_item("Copy task", (m) => { cogito.app().copy_to_clipboard(text) })
+    .add_item(if checked { "Mark undone" } else { "Mark done" }, (m) => { set_task_done(index, !checked) })
     .add_item("Delete", (m) => { remove_task(index) })
     .attach(card)
 
@@ -195,10 +195,10 @@ def TASKS_STATE_PATH = ".tasks_state.json"
 ;
 
 : build_task_sheet() (( cogito.BottomSheet ))
-    let sheet = cogito.bottom_sheet("Create Task")
+    let sheet = cogito.bottom_sheet("Create task")
     .set_gap(12)
 
-    let input = cogito.textfield("Task Title")
+    let input = cogito.textfield("Task title")
     .set_class("outline")
     .set_hexpand(true)
     .set_text(draft_task)
@@ -207,7 +207,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     })
     sheet.add(input)
 
-    let input2 = cogito.textfield("Task Details")
+    let input2 = cogito.textfield("Task details")
     .set_class("outline")
     .set_hexpand(true)
     .set_text(draft_task_detail)
@@ -230,7 +230,7 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     })
     actions.add(cancel_btn)
 
-    let add_btn = cogito.button("Add Task")
+    let add_btn = cogito.button("Add task")
     .set_hexpand(true)
     add_btn.on_click((b = cogito.Button) => {
         add_task_from_sheet()
@@ -251,10 +251,10 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     .set_padding(14, 14, 90, 14)
 
     if total == 0
-        let empty = cogito.empty_page("No Tasks Yet")
+        let empty = cogito.empty_page("No tasks yet")
         .set_description("Tap the + button to create your first task.")
         .set_icon("sf:checklist")
-        .set_action("Create Task", (b = any) => {
+        .set_action("Create task", (b = any) => {
             open_create_sheet()
         })
         .set_hexpand(true)
@@ -300,12 +300,14 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     let done = completed_count()
     let is_sheet_open = sheet_open_state.get() == true
 
-    let bar = cogito.appbar("Tasks", "$$done$$ of $$total$$ Done")
+    let bar = cogito.appbar("Tasks", "$$done$$ of $$total$$ done")
     .set_medium()
     .set_hexpand(true)
-    bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+    let about_btn = bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         show_about_window(win)
     })
+    cogito.set_tooltip(about_btn, "About Tasks")
+    cogito.set_a11y_label(about_btn, "About Tasks")
     win.add(cogito.window_bar())
     win.add(bar)
 
@@ -332,6 +334,8 @@ def TASKS_STATE_PATH = ".tasks_state.json"
     .on_click((f = cogito.FAB) => {
         open_create_sheet()
     })
+    cogito.set_tooltip(fab, "Add task")
+    cogito.set_a11y_label(fab, "Add task")
     fab_layer.add(fab)
     win.add(fab_layer)
 ;

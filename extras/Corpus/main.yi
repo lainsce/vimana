@@ -241,7 +241,7 @@ def rebuild_state = cogito.state(false)
 ;
 
 : show_tag_dialog(win = cogito.Window) (( -- ))
-    let dlg = cogito.dialog("Manage Tags")
+    let dlg = cogito.dialog("Manage tags")
 
     let content = cogito.vstack()
     .set_gap(12)
@@ -291,6 +291,8 @@ def rebuild_state = cogito.state(false)
             dlg.close()
             refresh_all()
         })
+        cogito.set_tooltip(del_btn, "Delete tag")
+        cogito.set_a11y_label(del_btn, "Delete tag")
         row.add(del_btn)
         content.add(row)
 
@@ -369,11 +371,22 @@ def rebuild_state = cogito.state(false)
     .set_hexpand(true)
     .set_vexpand(true)
 
+    cogito.set_tooltip(tag_fab, "Manage tags")
+    cogito.set_a11y_label(tag_fab, "Manage tags")
+    cogito.set_tooltip(add_fab, "Add PDF")
+    cogito.set_a11y_label(add_fab, "Add PDF")
+    cogito.set_tooltip(zoom_in_btn, "Zoom in")
+    cogito.set_a11y_label(zoom_in_btn, "Zoom in")
+    cogito.set_tooltip(zoom_out_btn, "Zoom out")
+    cogito.set_a11y_label(zoom_out_btn, "Zoom out")
+    cogito.set_tooltip(fullscreen_btn, "Full screen")
+    cogito.set_a11y_label(fullscreen_btn, "Full screen")
+
     sidebar.build_sidebar(
         sidebar_panel, sidebar_bar, tag_list, tag_scroll, tag_fab,
         () => { show_tag_dialog(win) }
     )
-    sidebar_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+    let about_btn = sidebar_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         let dlg = cogito.dialog("")
         let about_content = cogito.vstack()
         about_content.align_center()
@@ -385,6 +398,8 @@ def rebuild_state = cogito.state(false)
         dlg.add(about_content)
         win.set_dialog(dlg)
     })
+    cogito.set_tooltip(about_btn, "About Corpus")
+    cogito.set_a11y_label(about_btn, "About Corpus")
     home_layout.add(sidebar_panel)
 
     home.build_home(

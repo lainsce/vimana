@@ -30,21 +30,29 @@ bring cogito
     bar
     .set_class("small corpus-viewer-bar")
 
-    bar.leading_button("sf:chevron.backward", (b = any) => {
+    let back_btn = bar.leading_button("sf:chevron.backward", (b = any) => {
         on_back()
     })
+    cogito.set_tooltip(back_btn, "Back")
+    cogito.set_a11y_label(back_btn, "Back")
 
-    bar.add_trailing_button("sf:rotate.left", (b = cogito.Button) => {
+    let rotate_left_btn = bar.add_trailing_button("sf:rotate.left", (b = cogito.Button) => {
         on_rotate_ccw()
     })
+    cogito.set_tooltip(rotate_left_btn, "Rotate left")
+    cogito.set_a11y_label(rotate_left_btn, "Rotate left")
 
-    bar.add_trailing_button("sf:rotate.right", (b = cogito.Button) => {
+    let rotate_right_btn = bar.add_trailing_button("sf:rotate.right", (b = cogito.Button) => {
         on_rotate_cw()
     })
+    cogito.set_tooltip(rotate_right_btn, "Rotate right")
+    cogito.set_a11y_label(rotate_right_btn, "Rotate right")
 
-    bar.add_trailing_button("sf:bookmark", (b = cogito.Button) => {
+    let bookmark_btn = bar.add_trailing_button("sf:bookmark", (b = cogito.Button) => {
         on_bookmark()
     })
+    cogito.set_tooltip(bookmark_btn, "Toggle bookmark")
+    cogito.set_a11y_label(bookmark_btn, "Toggle bookmark")
 
     panel.add(bar)
 
@@ -86,6 +94,8 @@ bring cogito
         on_zoom_in()
     })
     zoom_controls.add(zoom_in_btn)
+    cogito.set_tooltip(zoom_in_btn, "Zoom in")
+    cogito.set_a11y_label(zoom_in_btn, "Zoom in")
 
     zoom_out_btn
     .set_size(0)
@@ -95,11 +105,15 @@ bring cogito
         on_zoom_out()
     })
     zoom_controls.add(zoom_out_btn)
+    cogito.set_tooltip(zoom_out_btn, "Zoom out")
+    cogito.set_a11y_label(zoom_out_btn, "Zoom out")
 
     fullscreen_btn
     .set_size(0)
     .set_color(4)
     .set_class("corpus-zoom-fab")
+    cogito.set_tooltip(fullscreen_btn, "Full screen")
+    cogito.set_a11y_label(fullscreen_btn, "Full screen")
     zoom_controls.add(fullscreen_btn)
 
     content.add(zoom_controls)

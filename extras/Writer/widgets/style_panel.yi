@@ -122,6 +122,8 @@ def ?ref_spacing_dd = null
         updating_size_field = false
         on_style_change()
     })
+    cogito.set_tooltip(minus_btn, "Decrease font size")
+    cogito.set_a11y_label(minus_btn, "Decrease font size")
     font_row.add(minus_btn)
 
     let plus_btn = cogito.iconbtn("sf:plus")
@@ -135,13 +137,15 @@ def ?ref_spacing_dd = null
         updating_size_field = false
         on_style_change()
     })
+    cogito.set_tooltip(plus_btn, "Increase font size")
+    cogito.set_a11y_label(plus_btn, "Increase font size")
     font_row.add(plus_btn)
 
     panel.add(font_row)
 
     -- ── Style & Format ───────────────────────────────────────
 
-    let style_label = cogito.label("Style & Format:")
+    let style_label = cogito.label("Style and format:")
     .set_class("style-section-label")
     .set_text_align(0)
     .set_hexpand(true)
@@ -160,6 +164,8 @@ def ?ref_spacing_dd = null
         models.toggle_bold()
         on_style_change()
     })
+    cogito.set_tooltip(bold_btn, "Bold")
+    cogito.set_a11y_label(bold_btn, "Bold")
     style_row.add(bold_btn)
     ref_bold_btn = bold_btn
 
@@ -172,6 +178,8 @@ def ?ref_spacing_dd = null
         models.toggle_italic()
         on_style_change()
     })
+    cogito.set_tooltip(italic_btn, "Italic")
+    cogito.set_a11y_label(italic_btn, "Italic")
     style_row.add(italic_btn)
     ref_italic_btn = italic_btn
 
@@ -184,6 +192,8 @@ def ?ref_spacing_dd = null
         models.toggle_underline()
         on_style_change()
     })
+    cogito.set_tooltip(underline_btn, "Underline")
+    cogito.set_a11y_label(underline_btn, "Underline")
     style_row.add(underline_btn)
     ref_underline_btn = underline_btn
 
@@ -196,6 +206,8 @@ def ?ref_spacing_dd = null
         models.toggle_strikethrough()
         on_style_change()
     })
+    cogito.set_tooltip(strike_btn, "Strikethrough")
+    cogito.set_a11y_label(strike_btn, "Strikethrough")
     style_row.add(strike_btn)
     ref_strike_btn = strike_btn
 

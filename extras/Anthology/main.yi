@@ -36,7 +36,7 @@ def ?compact = false
 
 : ensure_default_collection() (( -- ))
     if len(models.get_collections()) == 0
-        models.add_collection("My Journal", "sf:book")
+        models.add_collection("My journal", "sf:book")
         state.save_state()
 ;
 
@@ -112,7 +112,7 @@ def ?compact = false
 
         let ?title = draft_title
         if len(title) == 0
-            title = "Untitled Entry"
+            title = "Untitled entry"
         models.add_note(title, draft_body, col_name, "OCTOBER 24, 2023", draft_location, []: [string])
 
     state.save_state()
@@ -148,7 +148,7 @@ def ?compact = false
 ;
 
 : show_new_collection_dialog(win = cogito.Window) (( -- ))
-    let dlg = cogito.dialog("New Collection")
+    let dlg = cogito.dialog("New collection")
     let dlg_content = cogito.vstack()
     .set_gap(12)
     .set_padding(16, 16, 16, 16)
@@ -157,7 +157,7 @@ def ?compact = false
     let ?icon = "sf:folder"
 
     let name_field = cogito.textfield("")
-    .set_hint_text("Collection Name")
+    .set_hint_text("Collection name")
     .set_class("outline")
     .set_hexpand(true)
     name_field.on_change((tf = cogito.TextField) => {
@@ -220,7 +220,7 @@ def ?compact = false
     let col = models.get_collection(col_idx)
     let old_name = str(col["name"] ?? "")
 
-    let dlg = cogito.dialog("Rename Collection")
+    let dlg = cogito.dialog("Rename collection")
     let dlg_content = cogito.vstack()
     .set_gap(12)
     .set_padding(16, 16, 16, 16)
@@ -228,7 +228,7 @@ def ?compact = false
     let ?name = old_name
 
     let name_field = cogito.textfield("")
-    .set_hint_text("Collection Name")
+    .set_hint_text("Collection name")
     .set_class("outline")
     .set_hexpand(true)
     .set_text(old_name)
@@ -279,7 +279,7 @@ def ?compact = false
     let ?old_loc = draft_location
     let ?loc = old_loc
 
-    let dlg = cogito.dialog("Set Location")
+    let dlg = cogito.dialog("Set location")
     let dlg_content = cogito.vstack()
     .set_gap(12)
     .set_padding(16, 16, 16, 16)

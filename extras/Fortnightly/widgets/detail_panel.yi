@@ -30,6 +30,8 @@ bring utils.parse
     let back_btn = detail_bar.leading_button("sf:chevron.backward", (b = any) => {
         close_handler()
     })
+    cogito.set_tooltip(back_btn, "Back to stories")
+    cogito.set_a11y_label(back_btn, "Back to stories")
     back_btn.set_visible(false)
     detail_panel.add(detail_bar)
 

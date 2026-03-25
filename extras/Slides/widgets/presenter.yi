@@ -376,9 +376,11 @@ def PRES_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
     .set_hexpand(true)
     .set_medium()
 
-    pres_bar.leading_button("sf:chevron.left", (b = any) => {
+    let back_btn = pres_bar.leading_button("sf:chevron.left", (b = any) => {
         on_back()
     })
+    cogito.set_tooltip(back_btn, "Exit presenter")
+    cogito.set_a11y_label(back_btn, "Exit presenter")
 
     view.add(pres_bar)
 
@@ -406,6 +408,8 @@ def PRES_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
         models.prev_slide()
         refresh()
     })
+    cogito.set_tooltip(prev_btn, "Previous slide")
+    cogito.set_a11y_label(prev_btn, "Previous slide")
 
     let next_btn = cogito.iconbtn("sf:forward.fill")
     .set_shape(1)
@@ -413,6 +417,8 @@ def PRES_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
         models.next_slide()
         refresh()
     })
+    cogito.set_tooltip(next_btn, "Next slide")
+    cogito.set_a11y_label(next_btn, "Next slide")
 
     counter_label
     .set_class("presenter-counter")
@@ -424,7 +430,7 @@ def PRES_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
     view.add(controls)
 
     -- Notes
-    let notes_title = cogito.label("Speaker Notes")
+    let notes_title = cogito.label("Speaker notes")
     .set_class("presenter-notes-label")
     .set_align(0)
     .set_margins(0, 24, 0, 24)

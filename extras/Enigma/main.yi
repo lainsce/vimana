@@ -126,7 +126,7 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 ;
 
 : show_save_dialog() (( -- ))
-    let picked = stdr.save_file_dialog("Save As .txt", default_save_name(), "txt")
+    let picked = stdr.save_file_dialog("Save as .txt", default_save_name(), "txt")
     if is_null(picked)
         set_status("Save canceled")
         <-
@@ -190,13 +190,15 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     bar.set_hexpand(true)
 
     let file_btn = bar.add_trailing_menu_button("sf:gearshape")
+    cogito.set_tooltip(file_btn, "App menu")
+    cogito.set_a11y_label(file_btn, "App menu")
     file_btn.add_menu("New", (b = any) => {
         new_document()
     })
     file_btn.add_menu("Open…", (b = any) => {
         show_open_dialog()
     })
-    file_btn.add_menu("Save As…", (b = any) => {
+    file_btn.add_menu("Save as…", (b = any) => {
         show_save_dialog()
     })
     file_btn.add_menu("Print…", (b = any) => {
@@ -206,6 +208,8 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     let about_btn = bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         show_about_window(win)
     })
+    cogito.set_tooltip(about_btn, "About Enigma")
+    cogito.set_a11y_label(about_btn, "About Enigma")
 
     root.add(bar)
 

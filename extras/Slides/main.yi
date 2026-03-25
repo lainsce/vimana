@@ -157,7 +157,7 @@ def welcome_revealer = cogito.revealer()
 ;
 
 : save_slideshow_as(bar = cogito.AppBar) (( -- ))
-    let picked = stdr.save_file_dialog("Save As Adelie (.adl)", default_save_name(), "adl")
+    let picked = stdr.save_file_dialog("Save as Adelie (.adl)", default_save_name(), "adl")
     if is_null(picked)
         set_status(bar, "Save canceled")
         <-
@@ -227,6 +227,8 @@ def welcome_revealer = cogito.revealer()
     .set_hexpand(true)
 
     let gear = bar.add_trailing_menu_button("sf:gearshape")
+    cogito.set_tooltip(gear, "Slideshow menu")
+    cogito.set_a11y_label(gear, "Slideshow menu")
     gear.add_menu("New", (b = any) => {
         new_slideshow(bar)
     })
@@ -236,7 +238,7 @@ def welcome_revealer = cogito.revealer()
     gear.add_menu("Save", (b = any) => {
         save_slideshow(bar)
     })
-    gear.add_menu("Save As…", (b = any) => {
+    gear.add_menu("Save as…", (b = any) => {
         save_slideshow_as(bar)
     })
     gear.add_menu("About Slides", (b = any) => {
@@ -249,9 +251,11 @@ def welcome_revealer = cogito.revealer()
         win.set_dialog(dlg)
     })
 
-    bar.add_trailing_button("sf:play.rectangle", (b = cogito.Button) => {
+    let present_btn = bar.add_trailing_button("sf:play.rectangle", (b = cogito.Button) => {
         enter_presenter()
     })
+    cogito.set_tooltip(present_btn, "Start presentation")
+    cogito.set_a11y_label(present_btn, "Start presentation")
 
     -- Build sidebar
     panel_box.set_class("slide-panel")

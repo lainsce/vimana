@@ -495,6 +495,8 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     swap_btn.on_click((b = cogito.Button) => {
         swap_conv()
     })
+    cogito.set_tooltip(swap_btn, "Swap units")
+    cogito.set_a11y_label(swap_btn, "Swap units")
     swap_row.add(swap_btn)
     panel.add(swap_row)
 
@@ -514,7 +516,7 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     .set_class("conv-output")
 
     let conv_menu = cogito.context_menu()
-    .add_item("Copy Value", (m) => {
+    .add_item("Copy value", (m) => {
         cogito.app().copy_to_clipboard(conv_output.text())
     })
     .attach(conv_output)
@@ -558,6 +560,7 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
         show_about_window(win)
     })
     cogito.set_tooltip(about_btn, "About Abacus")
+    cogito.set_a11y_label(about_btn, "About Abacus")
     let toggle_btn = bar.add_trailing_button("sf:arrow.left.arrow.right", (b = cogito.Button) => {
         showing_converter = !showing_converter
         if showing_converter
@@ -566,7 +569,8 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
             switcher.set_active("calculator")
         save_state()
     })
-    cogito.set_tooltip(toggle_btn, "Unit Converter")
+    cogito.set_tooltip(toggle_btn, "Unit converter")
+    cogito.set_a11y_label(toggle_btn, "Unit converter")
     root.add(bar)
 
     -- Calculator view
@@ -591,10 +595,10 @@ def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
     display_box.add(display_working)
 
     let display_menu = cogito.context_menu()
-    .add_item("Copy Result", (m) => {
+    .add_item("Copy result", (m) => {
         cogito.app().copy_to_clipboard(display_working.text())
     })
-    .add_item("Copy Expression", (m) => {
+    .add_item("Copy expression", (m) => {
         cogito.app().copy_to_clipboard(display_expression.text())
     })
     .add_item("Paste", (m) => {

@@ -28,7 +28,7 @@ def add_location_btn = cogito.iconbtn("sf:plus")
 def sidebar_panel = cogito.vstack()
 def sidebar_bar = cogito.appbar("Locations", "")
 
-def empty_page = cogito.empty_page("No Locations")
+def empty_page = cogito.empty_page("No locations")
 def content_panel = cogito.vstack()
 def content_bar = cogito.appbar("", "")
 def forecast_content = cogito.vstack()
@@ -36,7 +36,7 @@ def ?content_tint_bin = cogito.bin()
 
 def current_icon = cogito.image("sf:sun.max.fill")
 def current_temp = cogito.label("--o")
-def current_desc = cogito.label("Clear Sky")
+def current_desc = cogito.label("Clear sky")
 def current_feels = cogito.label("Feels like --")
 def ?header_state = weather_header.new_header()
 def header_gradient = weather_header.widget(header_state)
@@ -405,6 +405,8 @@ def status_text = cogito.label("Add a location to start")
     remove_btn.on_click((b = cogito.IconButton) => {
         _remove_location(index)
     })
+    cogito.set_tooltip(remove_btn, "Remove location")
+    cogito.set_a11y_label(remove_btn, "Remove location")
 
     let row = cogito.hstack()
     .set_hexpand(true)
@@ -423,7 +425,7 @@ def status_text = cogito.label("Add a location to start")
     row.add(remove_btn)
 
     let loc_menu = cogito.context_menu()
-    .add_item("Copy Location", (m) => {
+    .add_item("Copy location", (m) => {
         let ?full = name
         if stdr.len(subtitle) > 0
             full = name + ", " + subtitle
@@ -716,7 +718,7 @@ def status_text = cogito.label("Add a location to start")
     .set_class("kairos-card")
     .set_padding(10, 10, 10, 10)
 
-    card.add(cogito.label("Hourly Conditions").set_class("kairos-section-title"))
+    card.add(cogito.label("Hourly conditions").set_class("kairos-section-title"))
 
     hourly_list
     .set_gap(6)
@@ -773,10 +775,10 @@ def status_text = cogito.label("Add a location to start")
     .set_gap(8, 8)
     .set_hexpand(true)
 
-    metrics.add(_metric_card("Wind Direction", wind_value), 0, 0, 1, 1)
-    metrics.add(_metric_card("Dew Point", dew_value), 1, 0, 1, 1)
+    metrics.add(_metric_card("Wind direction", wind_value), 0, 0, 1, 1)
+    metrics.add(_metric_card("Dew point", dew_value), 1, 0, 1, 1)
     metrics.add(_metric_card("Pressure", pressure_value), 0, 1, 1, 1)
-    metrics.add(_metric_card("UV Index", uv_value), 1, 1, 1, 1)
+    metrics.add(_metric_card("UV index", uv_value), 1, 1, 1, 1)
 
     root.add(metrics)
     root.add(sun_orbit.widget(orbit_widget))
@@ -799,12 +801,16 @@ def status_text = cogito.label("Add a location to start")
         _open_add_dialog(win)
     })
     loc_nav_btn.set_visible(false)
+    cogito.set_tooltip(loc_nav_btn, "Add location")
+    cogito.set_a11y_label(loc_nav_btn, "Add location")
 
     refreshbtn = content_bar.add_trailing_menu_button("sf:arrow.clockwise")
     refreshbtn.on_click((n = any) => {
         _refresh_forecast()
     })
     refreshbtn.set_class("trailing kairos-header-on-dark")
+    cogito.set_tooltip(refreshbtn, "Refresh forecast")
+    cogito.set_a11y_label(refreshbtn, "Refresh forecast")
 
     current_icon
     .set_class("kairos-current-icon kairos-header-on-dark")
@@ -863,7 +869,7 @@ def status_text = cogito.label("Add a location to start")
     .add(content_bar)
 
     tabs
-    .set_items(["Summary", "Hourly", "More Details"])
+    .set_items(["Summary", "Hourly", "More details"])
     .set_ids(["summary", "hourly", "details"])
     .set_selected(0)
     .set_hexpand(true)
@@ -891,7 +897,7 @@ def status_text = cogito.label("Add a location to start")
     empty_page
     .set_description("Add a location to start checking weather")
     .set_icon("sf:location.slash")
-    .set_action("Add Location", (n = any) => {
+    .set_action("Add location", (n = any) => {
         _open_add_dialog(win)
     })
     .set_hexpand(true)
@@ -921,6 +927,8 @@ def status_text = cogito.label("Add a location to start")
     .set_window_controls("")
 
     let gear_btn = sidebar_bar.add_trailing_menu_button("sf:gearshape")
+    cogito.set_tooltip(gear_btn, "App menu")
+    cogito.set_a11y_label(gear_btn, "App menu")
     gear_btn.add_menu("Toggle °C / °F", (b = any) => {
         _toggle_units()
     })
@@ -962,6 +970,8 @@ def status_text = cogito.label("Add a location to start")
     .on_click((b = cogito.IconButton) => {
         _open_add_dialog(win)
     })
+    cogito.set_tooltip(add_location_btn, "Add location")
+    cogito.set_a11y_label(add_location_btn, "Add location")
 
     let footer = cogito.hstack()
     .set_hexpand(true)

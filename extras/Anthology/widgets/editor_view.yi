@@ -31,15 +31,15 @@ bring settings
     .set_vexpand(true)
 
     -- Determine content based on editing state
-    let ?bar_title = "New Entry"
-    let ?note_title = "New Entry"
+    let ?bar_title = "New entry"
+    let ?note_title = "New entry"
     let ?note_body = ""
     let ?note_date = "OCTOBER 24, 2023"
     let ?note_location = current_location
 
     if editing_note >= 0
         let note = models.get_note(editing_note)
-        bar_title = "Edit Entry"
+        bar_title = "Edit entry"
         note_title = str(note["title"] ?? "")
         note_body = str(note["body"] ?? "")
         let d = str(note["date"] ?? "")
@@ -50,7 +50,7 @@ bring settings
             note_location = l
     else
         if current_collection >= 0
-            bar_title = "New Entry"
+            bar_title = "New entry"
 
     let ?focus = settings.get_focus_mode()
     let ?fs = settings.get_font_size()
@@ -61,9 +61,11 @@ bring settings
     .set_class("small sidebar")
     .set_hexpand(true)
 
-    bar.leading_button("sf:chevron.backward", (b = any) => {
+    let back_btn = bar.leading_button("sf:chevron.backward", (b = any) => {
         on_back()
     })
+    cogito.set_tooltip(back_btn, "Back")
+    cogito.set_a11y_label(back_btn, "Back")
 
     if !focus
         let save_btn = cogito.button("Save")
@@ -129,7 +131,7 @@ bring settings
         editor_content.add(meta)
 
     -- Title field
-    let title_field = cogito.textfield("Entry Title")
+    let title_field = cogito.textfield("Entry title")
     .set_class("editor-title")
     .set_hexpand(true)
     .set_padding(8, 0, 0, 0)
@@ -165,16 +167,18 @@ bring settings
     -- Wire overflow menu (after body_field is in scope)
     if !focus
         let overflow = bar.add_trailing_menu_button("sf:ellipsis")
-        overflow.add_menu("Add Tags", (b = any) => {
+        cogito.set_tooltip(overflow, "Entry options")
+        cogito.set_a11y_label(overflow, "Entry options")
+        overflow.add_menu("Add tags", (b = any) => {
             let cur = body_field.text()
             body_field.set_text(cur + "\n#")
             on_body_change(body_field.text())
         })
-        overflow.add_menu("Set Location", (b = any) => {
+        overflow.add_menu("Set location", (b = any) => {
             on_set_location()
         })
         if editing_note >= 0
-            overflow.add_menu("Delete Entry", (b = any) => {
+            overflow.add_menu("Delete entry", (b = any) => {
                 on_delete()
             })
 
@@ -195,6 +199,8 @@ bring settings
             body_field.set_text(cur + "*")
             on_body_change(body_field.text())
         })
+        cogito.set_tooltip(italic_btn, "Insert italic marker")
+        cogito.set_a11y_label(italic_btn, "Insert italic marker")
         toolbar.add(italic_btn)
 
         let list_btn = cogito.iconbtn("sf:list.bullet")
@@ -205,6 +211,8 @@ bring settings
             body_field.set_text(cur + "\n- ")
             on_body_change(body_field.text())
         })
+        cogito.set_tooltip(list_btn, "Insert bullet item")
+        cogito.set_a11y_label(list_btn, "Insert bullet item")
         toolbar.add(list_btn)
 
         let image_btn = cogito.iconbtn("sf:photo")
@@ -215,6 +223,8 @@ bring settings
             body_field.set_text(cur + "\n![image]()")
             on_body_change(body_field.text())
         })
+        cogito.set_tooltip(image_btn, "Insert image Markdown")
+        cogito.set_a11y_label(image_btn, "Insert image Markdown")
         toolbar.add(image_btn)
 
         panel.add(toolbar)

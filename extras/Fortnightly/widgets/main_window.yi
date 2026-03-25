@@ -37,10 +37,12 @@ bring widgets.article_row
 
     sidebar_bar
     .set_class("small list-panel")
-    sidebar_bar.add_trailing_button("sf:bookmark", (b = cogito.Button) => {
+    let sources_btn = sidebar_bar.add_trailing_button("sf:bookmark", (b = cogito.Button) => {
         on_sources()
     })
-    sidebar_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
+    cogito.set_tooltip(sources_btn, "Manage sources")
+    cogito.set_a11y_label(sources_btn, "Manage sources")
+    let about_btn = sidebar_bar.add_trailing_button("sf:questionmark", (b = cogito.Button) => {
         let dlg = cogito.dialog("")
         let about_content = cogito.vstack()
         about_content.align_center()
@@ -52,6 +54,8 @@ bring widgets.article_row
         dlg.add(about_content)
         win.set_dialog(dlg)
     })
+    cogito.set_tooltip(about_btn, "About Fortnightly")
+    cogito.set_a11y_label(about_btn, "About Fortnightly")
     list_panel.add(sidebar_bar)
 
     let list_scroll = cogito.scroller()
