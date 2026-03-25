@@ -147,6 +147,11 @@ static CogitoNode* cogito_about_window_new_obj(YisStr* app_name, YisStr* version
   CogitoNode* title = cogito_node_new(COGITO_LABEL);
   title->align = 1;
   title->text_align = 1;
+  title->margin_top = 12;
+  title->margin_right = 0;
+  title->margin_bottom = 0;
+  title->margin_left = 0;
+  title->margin_set = true;
   cogito_about_window_apply_class(title, "about-window-title");
   cogito_children_add(n, title);
 
@@ -161,6 +166,16 @@ static CogitoNode* cogito_about_window_new_obj(YisStr* app_name, YisStr* version
   CogitoNode* actions = cogito_node_new(COGITO_HSTACK);
   actions->align = 1;
   actions->gap = 12;
+  actions->margin_top = 12;
+  actions->margin_right = 0;
+  actions->margin_bottom = 0;
+  actions->margin_left = 0;
+  actions->margin_set = true;
+  actions->padding_left = 0;
+  actions->padding_top = 0;
+  actions->padding_right = 0;
+  actions->padding_bottom = 0;
+  actions->padding_set = true;
   cogito_about_window_apply_class(actions, "about-window-actions");
 
   CogitoNode* more = cogito_node_new(COGITO_BUTTON);

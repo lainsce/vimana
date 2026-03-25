@@ -20,11 +20,9 @@ def ABOUT_MORE_INFO_URL = "https://github.com/lainsce/yis"
 def ABOUT_REPORT_BUG_URL = "https://github.com/lainsce/yis/issues"
 
 : save_session_state() (( -- ))
-    let path_esc = json.escape(current_path)
-    let text_esc = json.escape(editor.text())
-    let ?payload = "{\"path\":\"$$path_esc$$\",\"dirty\":"
+    let ?payload = "{\"path\":\"$$json.escape(current_path)$$\",\"dirty\":"
     payload = if is_dirty { "$$payload$$ true" } else { "$$payload$$ false" }
-    payload = "$$payload$$,\"text\":\"$$text_esc$$\"}"
+    payload = "$$payload$$,\"text\":\"$$json.escape(editor.text())$$\"}"
     stdr.write_text_file(STATE_PATH, payload)
 ;
 

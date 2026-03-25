@@ -260,11 +260,11 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_iconbtn_get_menu_vibrant(btn = IconButton) (( bool )) { }
 : __cogito_iconbtn_on_click(btn = IconButton, handler = any) (( -- )) { }
 : __cogito_iconbtn(icon = string) (( IconButton )) { }
-: __cogito_image_set_icon(img = Image, icon = string) (( -- )) { }
+: __cogito_image_set_icon(img = any, icon = string) (( -- )) { }
 : __cogito_image_set_blur(img = Image, sigma = num) (( -- )) { }
 : __cogito_image_set_radius(img = Image, radius = num) (( -- )) { }
-: __cogito_image_set_size(img = Image, w = num, h = num) (( -- )) { }
-: __cogito_image_set_source(img = Image, source = string) (( -- )) { }
+: __cogito_image_set_size(img = any, w = num, h = num) (( -- )) { }
+: __cogito_image_set_source(img = any, source = string) (( -- )) { }
 : __cogito_image(icon = string) (( Image )) { }
 : __cogito_webview_set_url(wv = WebView, url = string) (( -- )) { }
 : __cogito_webview_get_url(wv = WebView) (( string )) { }
@@ -312,8 +312,8 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_label_set_fade(label = Label, on = bool) (( -- )) { }
 : __cogito_label_set_marquee(label = Label, on = bool) (( -- )) { }
 : __cogito_label_set_max_width_chars(label = Label, max_chars = num) (( -- )) { }
-: __cogito_label_set_line_chars(label = Label, line_chars = num) (( -- )) { }
-: __cogito_label_set_text(label = Label, text = string) (( -- )) { }
+: __cogito_label_set_line_chars(label = any, line_chars = num) (( -- )) { }
+: __cogito_label_set_text(label = any, text = string) (( -- )) { }
 : __cogito_label_set_wrap(label = Label, on = bool) (( -- )) { }
 : __cogito_label(text = string) (( Label )) { }
 : __cogito_content_list_on_activate(list = ContentList, handler = any) (( -- )) { }
@@ -411,6 +411,24 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 ;
 :: node_set_line_height(node = any, height = num) (( -- ))
     __cogito_node_set_line_height(node, height)
+;
+:: node_set_visible(node = any, on = bool) (( -- ))
+    __cogito_node_set_visible(node, on)
+;
+:: label_set_line_chars(node = any, line_chars = num) (( -- ))
+    __cogito_label_set_line_chars(node, line_chars)
+;
+:: label_set_text(node = any, text = string) (( -- ))
+    __cogito_label_set_text(node, text)
+;
+:: image_set_icon(node = any, icon = string) (( -- ))
+    __cogito_image_set_icon(node, icon)
+;
+:: image_set_size(node = any, w = num, h = num) (( -- ))
+    __cogito_image_set_size(node, w, h)
+;
+:: image_set_source(node = any, source = string) (( -- ))
+    __cogito_image_set_source(node, source)
 ;
 :: textview_get_sel_start(node = any) (( num ))
     <- __cogito_textview_get_sel_start(node)

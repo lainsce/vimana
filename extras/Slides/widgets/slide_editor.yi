@@ -6,10 +6,6 @@ bring cogito
 bring models
 bring slides_constants
 
-: __cogito_label_set_line_chars(label = any, line_chars = num) (( -- )) { }
-: __cogito_label_set_text(label = any, text = string) (( -- )) { }
-: __cogito_image_set_size(img = any, w = num, h = num) (( -- )) { }
-
 -- Element bounding sizes for hit testing
 def TITLE_W = slides_constants.editor_title_hit_w()
 def TITLE_H = slides_constants.editor_title_hit_h()
@@ -345,7 +341,7 @@ def tooltip_bar = cogito.vstack()
             let ?echars = (models.get_elem_w(idx, i) + eu - 1) / eu
             if echars < 1
                 echars = 1
-            __cogito_label_set_line_chars(lbl, echars)
+            cogito.label_set_line_chars(lbl, echars)
         canvas_fixed.add(lbl)
         canvas_fixed.set_pos(lbl, models.get_elem_x(idx, i), models.get_elem_y(idx, i))
         stdr.push(extra_labels, lbl)
@@ -472,7 +468,7 @@ def tooltip_bar = cogito.vstack()
         if etype == "image"
             <-
         models.set_elem_text(idx, ei, text)
-        __cogito_label_set_text(extra_labels[ei], label_display_text(etype, text, models.get_elem_meta(idx, ei)))
+        cogito.label_set_text(extra_labels[ei], label_display_text(etype, text, models.get_elem_meta(idx, ei)))
         notify_content_changed()
 ;
 
@@ -957,7 +953,7 @@ def tooltip_bar = cogito.vstack()
         models.set_elem_wh(idx, ei, nw, nh)
         let etype = models.get_elem_type(idx, ei)
         if etype == "image" && len(stdr.trim(models.get_elem_meta(idx, ei))) > 0
-            __cogito_image_set_size(extra_labels[ei], nw, nh)
+            cogito.image_set_size(extra_labels[ei], nw, nh)
         else
             let ?eu = models.get_elem_size(idx, ei) / 2
             if eu < 1
@@ -965,7 +961,7 @@ def tooltip_bar = cogito.vstack()
             let ?echars = (nw + eu - 1) / eu
             if echars < 1
                 echars = 1
-            __cogito_label_set_line_chars(extra_labels[ei], echars)
+            cogito.label_set_line_chars(extra_labels[ei], echars)
         canvas_fixed.set_pos(extra_labels[ei], nx, ny)
 
     notify_content_changed()
@@ -1609,7 +1605,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
             let ?echars = (models.get_elem_w(si, eei) + eu - 1) / eu
             if echars < 1
                 echars = 1
-            __cogito_label_set_line_chars(extra_labels[eei], echars)
+            cogito.label_set_line_chars(extra_labels[eei], echars)
         notify_content_changed()
     })
 
@@ -2029,7 +2025,7 @@ def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
             let ei = target_elem - 3
             models.set_elem_text(idx, ei, tf.text())
             if models.get_elem_type(idx, ei) != "image"
-                __cogito_label_set_text(extra_labels[ei], label_display_text(models.get_elem_type(idx, ei), tf.text(), models.get_elem_meta(idx, ei)))
+                cogito.label_set_text(extra_labels[ei], label_display_text(models.get_elem_type(idx, ei), tf.text(), models.get_elem_meta(idx, ei)))
         refresh()
         notify_content_changed()
         dlg.close()

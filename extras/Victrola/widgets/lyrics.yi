@@ -1,16 +1,62 @@
 cask lyrics
 
 bring stdr
-bring ffmpeg
 bring json
 bring net
 bring cogito
+
+: _is_safe_metadata_key(key = string) (( bool ))
+    if stdr.len(key) == 0
+        <- false
+    for (let ?i = 0; i < stdr.len(key); i = i + 1)
+        let code = stdr.char_code(stdr.slice(key, i, i + 1))
+        let is_alpha = (code >= 97 && code <= 122) || (code >= 65 && code <= 90)
+        let is_num = code >= 48 && code <= 57
+        let is_safe = is_alpha || is_num || code == 95 || code == 45
+        if !is_safe
+            <- false
+    <- true
+;
+
+: _ffmpeg_probe_format_tags_json(path = string) (( string ))
+    let p = stdr.trim(path)
+    if stdr.len(p) == 0
+        <- ""
+
+    let qp = stdr.shell_quote(p)
+    let cmd = "ffprobe -v quiet -show_entries format_tags -of json $$qp$$ 2>/dev/null"
+    let run = stdr.run_command(cmd)
+    let code = stdr.num(run[0] ?? 1)
+    if code != 0
+        <- ""
+
+    <- stdr.str(run[1] ?? "")
+;
+
+: _ffmpeg_copy_with_metadata_from_file(input_path = string, output_path = string, metadata_key = string, metadata_file_path = string) (( bool ))
+    let in_path = stdr.trim(input_path)
+    let out_path = stdr.trim(output_path)
+    let key = stdr.trim(metadata_key)
+    let meta_file = stdr.trim(metadata_file_path)
+
+    if stdr.len(in_path) == 0 || stdr.len(out_path) == 0 || stdr.len(meta_file) == 0
+        <- false
+    if !_is_safe_metadata_key(key)
+        <- false
+
+    let qin = stdr.shell_quote(in_path)
+    let qout = stdr.shell_quote(out_path)
+    let qmeta = stdr.shell_quote(meta_file)
+    let cmd = "ffmpeg -y -i $$qin$$ -c copy -map_metadata 0 -metadata $$key$$=\"$(cat $$qmeta$$)\" $$qout$$ 2>/dev/null"
+    let run = stdr.run_command(cmd)
+    <- stdr.num(run[0] ?? 1) == 0
+;
 
 :: read_embedded_lyrics(path = string) (( string ))
     if stdr.len(path) == 0
         <- ""
 
-    let body = ffmpeg.probe_format_tags_json(path)
+    let body = _ffmpeg_probe_format_tags_json(path)
     if stdr.len(body) == 0
         <- ""
 
@@ -49,7 +95,7 @@ bring cogito
     if stdr.ends_with(path, ".flac")
         tag_key = "LYRICS"
 
-    let ok = ffmpeg.copy_with_metadata_from_file(path, tmp, tag_key, lyrics_file)
+    let ok = _ffmpeg_copy_with_metadata_from_file(path, tmp, tag_key, lyrics_file)
 
     stdr.remove_file(lyrics_file)
 

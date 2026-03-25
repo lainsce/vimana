@@ -5,10 +5,6 @@ bring cogito
 
 def MAX_POINTS = 24
 
-: __cogito_label_set_text(label = any, text = string) (( -- )) { }
-: __cogito_image_set_icon(img = any, icon = string) (( -- )) { }
-: __cogito_node_set_visible(node = any, on = bool) (( -- )) { }
-
 : _num_or(value = any, fallback = num) (( num ))
     if is_null(value)
         <- fallback
@@ -285,26 +281,26 @@ def MAX_POINTS = 24
 
             let label_gap = px - last_label_x
             if i < len(labels) && label_gap >= min_label_gap
-                __cogito_label_set_text(labels[i], text)
-                __cogito_node_set_visible(labels[i], true)
+                cogito.label_set_text(labels[i], text)
+                cogito.node_set_visible(labels[i], true)
                 fixed.set_pos(labels[i], px - 16, 4.0)
                 last_label_x = px
             elif i < len(labels)
-                __cogito_node_set_visible(labels[i], false)
+                cogito.node_set_visible(labels[i], false)
             let icon_gap = px - last_icon_x
             if i < len(icons) && icon != "" && icon != prev_icon && icon_gap >= min_icon_gap
-                __cogito_image_set_icon(icons[i], icon)
-                __cogito_node_set_visible(icons[i], true)
+                cogito.image_set_icon(icons[i], icon)
+                cogito.node_set_visible(icons[i], true)
                 fixed.set_pos(icons[i], px - 10, h - icon_zone)
                 prev_icon = icon
                 last_icon_x = px
             elif i < len(icons)
-                __cogito_node_set_visible(icons[i], false)
+                cogito.node_set_visible(icons[i], false)
         else
             if i < len(labels)
-                __cogito_node_set_visible(labels[i], false)
+                cogito.node_set_visible(labels[i], false)
             if i < len(icons)
-                __cogito_node_set_visible(icons[i], false)
+                cogito.node_set_visible(icons[i], false)
 ;
 
 : _draw_chart(?chart = any, fixed = cogito.Fixed, area = cogito.DrawingArea, w = num, h = num) (( -- ))
