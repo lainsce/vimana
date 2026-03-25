@@ -320,6 +320,7 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_content_list_on_select(list = ContentList, handler = any) (( -- )) { }
 : __cogito_list() (( ContentList )) { }
 : __cogito_load_sum(path = string) (( -- )) { }
+: __cogito_load_sum_inline(src = string) (( -- )) { }
 : __cogito_menu_button(icon = string) (( IconButton )) { }
 : __cogito_nav_rail_get_selected(rail = NavRail) (( num )) { }
 : __cogito_nav_rail_on_change(rail = NavRail, handler = any) (( -- )) { }
@@ -4758,6 +4759,12 @@ pub ,: State
 
 :: load_sum(path = string) (( -- ))
     __cogito_load_sum(path)
+;
+:: load_sum_inline(src = string) (( -- ))
+    __cogito_load_sum_inline(src)
+;
+:: load_sum_source(src = string) (( -- ))
+    __cogito_load_sum_inline(src)
 ;
 :: reparent(new_parent = any, child = any) (( -- ))
     __cogito_container_reparent(new_parent, child)

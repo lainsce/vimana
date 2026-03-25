@@ -155,6 +155,7 @@
 #undef cogito_label_set_text
 #undef cogito_label_set_wrap
 #undef cogito_load_sum_file
+#undef cogito_load_sum_inline
 #undef cogito_menu_button_new
 #undef cogito_menu_set_icon
 #undef cogito_menu_set_shortcut
@@ -4422,6 +4423,13 @@ static void __cogito_load_sum(YisVal pathv) {
   if (tmp) yis_release_val(YV_STR(tmp));
 }
 
+static void __cogito_load_sum_inline(YisVal srcv) {
+  YisStr* tmp = NULL;
+  const char* src = cogito_required_cstr(srcv, &tmp);
+  cogito_load_sum_inline(src);
+  if (tmp) yis_release_val(YV_STR(tmp));
+}
+
 static void __cogito_set_script_dir(YisVal dirv) {
   YisStr* tmp = NULL;
   const char* dir = cogito_optional_cstr(dirv, &tmp);
@@ -5207,6 +5215,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_timer_cancel_for __cogito_timer_cancel_for
 #define cogito_timer_cancel_all __cogito_timer_cancel_all
 #define cogito_load_sum __cogito_load_sum
+#define cogito_load_sum_inline __cogito_load_sum_inline
 #define cogito_set_script_dir __cogito_set_script_dir
 #define cogito_set_direction __cogito_set_direction
 #define cogito_get_direction __cogito_get_direction
