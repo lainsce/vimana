@@ -4,24 +4,33 @@ bring stdr
 bring cogito
 
 bring models
+bring slides_constants
+
+: __cogito_label_set_line_chars(label = any, line_chars = num) (( -- )) { }
+: __cogito_label_set_text(label = any, text = string) (( -- )) { }
+: __cogito_image_set_size(img = any, w = num, h = num) (( -- )) { }
 
 -- Element bounding sizes for hit testing
-def TITLE_W = 300
-def TITLE_H = 50
-def BODY_W = 400
-def BODY_H = 40
+def TITLE_W = slides_constants.editor_title_hit_w()
+def TITLE_H = slides_constants.editor_title_hit_h()
+def BODY_W = slides_constants.editor_body_hit_w()
+def BODY_H = slides_constants.editor_body_hit_h()
 
 -- Module-level widgets
 def canvas_wrapper = cogito.vstack()
 def canvas_fixed = cogito.fixed()
+def canvas_bg_clip = cogito.clipper(725, 425, 16)
 def canvas_bg_da = cogito.drawing_area()
 def canvas_da = cogito.drawing_area()
 def title_lbl = cogito.label("")
 def body_lbl = cogito.label("")
 def notes_field = cogito.textfield("")
+def inline_edit_wrap = cogito.vstack()
+def inline_edit_tf = cogito.textfield("")
 def ?host_win = 0
+def ?content_changed_cb = null
 
--- Extra element labels (rebuilt on refresh)
+-- Extra element nodes (rebuilt on refresh)
 def ?extra_labels = []
 
 -- Canvas size (updated each frame from on_draw)
@@ -45,25 +54,56 @@ def ?resize_orig_h = 0
 def ?resize_start_x = 0
 def ?resize_start_y = 0
 
+def RESIZE_HANDLE_SIZE = slides_constants.editor_resize_handle_size()
+
 def ?click_edit_candidate = 0
 def ?click_start_x = 0
 def ?click_start_y = 0
+def ?inline_edit_elem = 0
 
 -- Selection tooltip (floats above canvas DA)
 def tooltip_fixed = cogito.fixed()
-def tooltip_bar = cogito.hstack()
+def tooltip_bar = cogito.vstack()
+
+: is_light_text_color(color = string) (( bool ))
+    let c = stdr.trim(color)
+    <- c == "#F2F2F7" || c == "#f2f2f7" || c == "#DEDEF0" || c == "#dedef0"
+;
+
+: is_accent_text_color(color = string) (( bool ))
+    let c = stdr.trim(color)
+    <- c == "#F8E34A" || c == "#f8e34a"
+;
+
+: title_text_class(color = string) (( string ))
+    if is_accent_text_color(color)
+        <- "slide-title-text-accent"
+    if is_light_text_color(color)
+        <- "slide-title-text-light"
+    <- "slide-title-text-dark"
+;
+
+: body_text_class(color = string) (( string ))
+    if is_accent_text_color(color)
+        <- "slide-body-text-accent"
+    if is_light_text_color(color)
+        <- "slide-body-text-light"
+    <- "slide-body-text-dark"
+;
 
 :: build_editor(
     editor = cogito.VStack,
     win = cogito.Window,
-    on_notes_change = any
+    on_notes_change = any,
+    on_content_change = any
 ) (( -- ))
     host_win = win
+    content_changed_cb = on_content_change
 
     editor
     .set_class("slide-editor")
     .set_gap(8)
-    .set_padding(0, 16, 16, 16)
+    .set_padding(0, 24, 24, 24)
     .set_hexpand(true)
     .set_vexpand(true)
 
@@ -88,6 +128,9 @@ def tooltip_bar = cogito.hstack()
     toolbar.add(cogito.iconbtn("sf:text.bubble").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
         show_add_comment_dialog(b.window())
     }))
+    toolbar.add(cogito.iconbtn("sf:paintpalette").set_class("iconic").set_shape(0).set_size(1).on_click((b = cogito.Button) => {
+        show_slide_color_dialog(b.window())
+    }))
 
     editor.add(toolbar)
 
@@ -105,15 +148,19 @@ def tooltip_bar = cogito.hstack()
     .set_hexpand(true)
     .set_vexpand(true)
 
+    canvas_bg_clip
+    .set_hexpand(true)
+    .set_vexpand(true)
+
     title_lbl
-    .set_class("slide-title-text")
+    .set_class("slide-title-text-dark")
     .set_wrap(true)
-    .set_line_chars(30)
+    .set_line_chars(-1)
 
     body_lbl
-    .set_class("slide-body-text")
+    .set_class("slide-body-text-dark")
     .set_wrap(true)
-    .set_line_chars(50)
+    .set_line_chars(-1)
 
     canvas_fixed.add(title_lbl)
     canvas_fixed.add(body_lbl)
@@ -146,25 +193,19 @@ def tooltip_bar = cogito.hstack()
     .on_draw((da = cogito.DrawingArea, w = any, h = any) => {
         canvas_w = num(w)
         canvas_h = num(h)
+        sync_bounds_from_layout()
         redraw_handles(da)
     })
 
     canvas_bg_da
     .set_hexpand(true)
     .set_vexpand(true)
-    .set_color(current_bg_color)
+    .set_color("#FFFFFF")
     .set_line_width(0)
     .on_draw((da = cogito.DrawingArea, w = any, h = any) => {
         let pw = num(w)
         let ph = num(h)
-        let r = 16
-        da.set_color(current_bg_color)
-        da.fill_rect(r, 0, pw - 2 * r, ph)
-        da.fill_rect(0, r, pw, ph - 2 * r)
-        da.fill_circle(r, r, r)
-        da.fill_circle(pw - r, r, r)
-        da.fill_circle(r, ph - r, r)
-        da.fill_circle(pw - r, ph - r, r)
+        draw_slide_background(da, pw, ph, 16, current_bg_color)
     })
 
     -- Tooltip layer (above DA so dropdowns receive clicks)
@@ -178,9 +219,24 @@ def tooltip_bar = cogito.hstack()
     .set_padding(6, 8, 6, 8)
     .set_visible(false)
 
-    tooltip_fixed.add(tooltip_bar)
+    inline_edit_wrap
+    .set_visible(false)
+    .set_size_request(220, 40)
 
-    canvas.add(canvas_bg_da)
+    inline_edit_tf
+    .set_class("slide-inline-edit")
+    .set_hexpand(true)
+    .on_change((tf = cogito.TextField) => {
+        apply_inline_edit(tf.text())
+    })
+
+    inline_edit_wrap.add(inline_edit_tf)
+
+    tooltip_fixed.add(tooltip_bar)
+    tooltip_fixed.add(inline_edit_wrap)
+
+    canvas_bg_clip.add(canvas_bg_da)
+    canvas.add(canvas_bg_clip)
     canvas.add(canvas_fixed)
     canvas.add(canvas_da)
     canvas.add(tooltip_fixed)
@@ -218,6 +274,7 @@ def tooltip_bar = cogito.hstack()
     -- Rebuild canvas_fixed contents
     canvas_fixed.clear()
 
+    title_lbl.set_class(title_text_class(models.get_title_color(idx)))
     title_lbl.set_text(models.get_title(idx))
     title_lbl.set_font_family(models.get_title_font(idx))
     title_lbl.set_font_size(models.get_title_size(idx))
@@ -227,9 +284,20 @@ def tooltip_bar = cogito.hstack()
         title_lbl.set_font_weight(400)
     title_lbl.set_font_italic(models.get_title_italic(idx))
     title_lbl.set_strikethrough(models.get_title_strikethrough(idx))
+    if models.get_title_auto_size(idx)
+        title_lbl.set_line_chars(-1)
+    else
+        let ?tu = models.get_title_size(idx) / 2
+        if tu < 1
+            tu = 1
+        let ?tchars = (models.get_title_w(idx) + tu - 1) / tu
+        if tchars < 1
+            tchars = 1
+        title_lbl.set_line_chars(tchars)
     canvas_fixed.add(title_lbl)
     canvas_fixed.set_pos(title_lbl, models.get_title_x(idx), models.get_title_y(idx))
 
+    body_lbl.set_class(body_text_class(models.get_body_color(idx)))
     body_lbl.set_text(models.get_body(idx))
     body_lbl.set_font_family(models.get_body_font(idx))
     body_lbl.set_font_size(models.get_body_size(idx))
@@ -239,6 +307,16 @@ def tooltip_bar = cogito.hstack()
         body_lbl.set_font_weight(400)
     body_lbl.set_font_italic(models.get_body_italic(idx))
     body_lbl.set_strikethrough(models.get_body_strikethrough(idx))
+    if models.get_body_auto_size(idx)
+        body_lbl.set_line_chars(-1)
+    else
+        let ?bu = models.get_body_size(idx) / 2
+        if bu < 1
+            bu = 1
+        let ?bchars = (models.get_body_w(idx) + bu - 1) / bu
+        if bchars < 1
+            bchars = 1
+        body_lbl.set_line_chars(bchars)
     canvas_fixed.add(body_lbl)
     canvas_fixed.set_pos(body_lbl, models.get_body_x(idx), models.get_body_y(idx))
 
@@ -249,16 +327,25 @@ def tooltip_bar = cogito.hstack()
         let etype = models.get_elem_type(idx, i)
         let text = models.get_elem_text(idx, i)
         let meta = models.get_elem_meta(idx, i)
-        let lbl = build_elem_label(etype, text, meta)
+        let ew = models.get_elem_w(idx, i)
+        let eh = models.get_elem_h(idx, i)
+        let lbl = build_elem_node(etype, text, meta, ew, eh)
         if etype != "image"
-            lbl.set_font_family(models.get_elem_font(idx, i))
-            lbl.set_font_size(models.get_elem_size(idx, i))
+            cogito.node_set_font_family(lbl, models.get_elem_font(idx, i))
+            cogito.node_set_font_size(lbl, models.get_elem_size(idx, i))
             if models.get_elem_bold(idx, i)
-                lbl.set_font_weight(700)
+                cogito.node_set_font_weight(lbl, 700)
             else
-                lbl.set_font_weight(400)
-            lbl.set_font_italic(models.get_elem_italic(idx, i))
-            lbl.set_strikethrough(models.get_elem_strikethrough(idx, i))
+                cogito.node_set_font_weight(lbl, 400)
+            cogito.node_set_font_italic(lbl, models.get_elem_italic(idx, i))
+            cogito.node_set_strikethrough(lbl, models.get_elem_strikethrough(idx, i))
+            let ?eu = models.get_elem_size(idx, i) / 2
+            if eu < 1
+                eu = 1
+            let ?echars = (models.get_elem_w(idx, i) + eu - 1) / eu
+            if echars < 1
+                echars = 1
+            __cogito_label_set_line_chars(lbl, echars)
         canvas_fixed.add(lbl)
         canvas_fixed.set_pos(lbl, models.get_elem_x(idx, i), models.get_elem_y(idx, i))
         stdr.push(extra_labels, lbl)
@@ -268,9 +355,126 @@ def tooltip_bar = cogito.hstack()
     selected_elem = 0
     is_dragging = false
     tooltip_bar.set_visible(false)
+    stop_inline_edit()
 ;
 
 -- ── Element helpers ──────────────────────────────────────────
+
+: notify_content_changed() (( -- ))
+    if !is_null(content_changed_cb)
+        content_changed_cb()
+;
+
+: safe_trim(text = string) (( string ))
+    let out = stdr.trim(text)
+    if len(out) == 0
+        <- ""
+    <- out
+;
+
+: label_display_text(etype = string, text = string, meta = string) (( string ))
+    if etype == "link"
+        <- text
+    if etype == "image"
+        let ?name = stdr.basename(meta)
+        if len(name) == 0
+            name = stdr.basename(text)
+        if len(name) == 0
+            name = "Choose image"
+        <- "Image: $$name$$"
+    if etype == "chart"
+        let ctype = chart_type_from_meta(meta)
+        let ?title = safe_trim(text)
+        if len(title) == 0
+            title = "Chart"
+        <- "$$ctype$$ Chart: $$title$$"
+    if etype == "comment"
+        <- text
+    <- text
+;
+
+: stop_inline_edit() (( -- ))
+    inline_edit_elem = 0
+    inline_edit_wrap.set_visible(false)
+;
+
+: start_inline_edit(elem = num) (( -- ))
+    if elem == 0
+        <-
+
+    let idx = models.current()
+    let ?x = 0
+    let ?y = 0
+    let ?w = 220
+    let ?h = 40
+    let ?text = ""
+
+    if elem == 1
+        x = title_box_x(idx)
+        y = title_box_y(idx)
+        w = title_box_w(idx)
+        h = title_box_h(idx)
+        text = models.get_title(idx)
+    elif elem == 2
+        x = body_box_x(idx)
+        y = body_box_y(idx)
+        w = body_box_w(idx)
+        h = body_box_h(idx)
+        text = models.get_body(idx)
+    elif elem >= 3
+        let ei = elem - 3
+        let etype = models.get_elem_type(idx, ei)
+        if etype == "image"
+            <-
+        x = models.get_elem_x(idx, ei)
+        y = models.get_elem_y(idx, ei)
+        w = models.get_elem_w(idx, ei)
+        h = models.get_elem_h(idx, ei)
+        text = models.get_elem_text(idx, ei)
+    else
+        <-
+
+    let ?iw = w
+    if iw < 140
+        iw = 140
+    let ?ih = h
+    if ih < 38
+        ih = 38
+
+    inline_edit_elem = elem
+    inline_edit_tf.set_text(text)
+    inline_edit_wrap.set_size_request(iw, ih)
+    tooltip_fixed.set_pos(inline_edit_wrap, x, y)
+    inline_edit_wrap.set_visible(true)
+    tooltip_bar.set_visible(false)
+;
+
+: apply_inline_edit(text = string) (( -- ))
+    if inline_edit_elem == 0
+        <-
+
+    let idx = models.current()
+    if inline_edit_elem == 1
+        models.set_title(idx, text)
+        title_lbl.set_text(text)
+        notify_content_changed()
+        <-
+
+    if inline_edit_elem == 2
+        models.set_body(idx, text)
+        body_lbl.set_text(text)
+        notify_content_changed()
+        <-
+
+    if inline_edit_elem >= 3
+        let ei = inline_edit_elem - 3
+        let etype = models.get_elem_type(idx, ei)
+        if etype == "image"
+            <-
+        models.set_elem_text(idx, ei, text)
+        __cogito_label_set_text(extra_labels[ei], label_display_text(etype, text, models.get_elem_meta(idx, ei)))
+        notify_content_changed()
+;
 
 : normalize_url(url = string) (( string ))
     let ?u = stdr.trim(url)
@@ -281,6 +485,31 @@ def tooltip_bar = cogito.hstack()
     <- "https://$$u$$"
 ;
 
+: chart_type_key(name = string) (( string ))
+    let raw = stdr.trim(name)
+    if len(raw) == 0
+        <- "bar"
+    let lead = stdr.slice(raw, 0, 1)
+    if lead == "l" || lead == "L"
+        <- "line"
+    if lead == "p" || lead == "P"
+        <- "pie"
+    if lead == "a" || lead == "A"
+        <- "area"
+    <- "bar"
+;
+
+: chart_type_title(name = string) (( string ))
+    let key = chart_type_key(name)
+    if key == "line"
+        <- "Line"
+    if key == "pie"
+        <- "Pie"
+    if key == "area"
+        <- "Area"
+    <- "Bar"
+;
+
 : chart_type_from_meta(meta = string) (( string ))
     let sep = stdr.index_of(meta, "|")
     if sep < 0
@@ -288,7 +517,7 @@ def tooltip_bar = cogito.hstack()
     let out = stdr.trim(stdr.slice(meta, 0, sep))
     if len(out) == 0
         <- "Bar"
-    <- out
+    <- chart_type_title(out)
 ;
 
 : chart_values_from_meta(meta = string) (( string ))
@@ -306,6 +535,7 @@ def tooltip_bar = cogito.hstack()
     let ?vals = stdr.trim(values)
     if len(ctype) == 0
         ctype = "Bar"
+    ctype = chart_type_title(ctype)
     if len(vals) == 0
         vals = "10,20,30"
     <- "$$ctype$$|$$vals$$"
@@ -313,7 +543,7 @@ def tooltip_bar = cogito.hstack()
 
 : chart_type_index(name = string) (( num ))
     for (let ?i = 0; i < len(CHART_TYPES); i += 1)
-        if str(CHART_TYPES[i]) == name
+        if chart_type_key(str(CHART_TYPES[i])) == chart_type_key(name)
             <- i
     <- 0
 ;
@@ -333,22 +563,13 @@ def tooltip_bar = cogito.hstack()
 ;
 
 : edit_selected_from_canvas() (( -- ))
-    if selected_elem == 0 || host_win == 0
+    if selected_elem == 0
         <-
 
-    let idx = models.current()
-    if selected_elem == 1 || selected_elem == 2
-        show_edit_elem_dialog(host_win, "Edit Text")
+    if !can_edit_elem_from_canvas(selected_elem)
         <-
 
-    let ei = selected_elem - 3
-    let etype = models.get_elem_type(idx, ei)
-    if etype == "chart"
-        show_edit_chart_dialog(host_win)
-    elif etype == "link"
-        show_edit_elem_dialog(host_win, "Edit Label")
-    elif etype == "comment" || etype == "text"
-        show_edit_elem_dialog(host_win, "Edit")
+    start_inline_edit(selected_elem)
 ;
 
 : parse_chart_values(raw = string) (( [any] ))
@@ -425,6 +646,7 @@ def tooltip_bar = cogito.hstack()
         <-
 
     let ctype = chart_type_from_meta(meta)
+    let ckey = chart_type_key(ctype)
     let vals = parse_chart_values(chart_values_from_meta(meta))
     let nvals = len(vals)
     if nvals <= 0
@@ -458,15 +680,15 @@ def tooltip_bar = cogito.hstack()
     da.set_line_width(1)
     da.rect(px, py, pw, ph)
 
-    if ctype == "line"
+    if ckey == "line"
         draw_line_series(da, vals, px + 2, py + 2, pw - 4, ph - 4, max_v, false)
         <-
 
-    if ctype == "area"
+    if ckey == "area"
         draw_line_series(da, vals, px + 2, py + 2, pw - 4, ph - 4, max_v, true)
         <-
 
-    if ctype == "pie"
+    if ckey == "pie"
         let ?cur_x = px
         for (let ?i = 0; i < nvals; i += 1)
             let ?v = num(vals[i])
@@ -514,25 +736,23 @@ def tooltip_bar = cogito.hstack()
             )
 ;
 
-: build_elem_label(etype = string, text = string, meta = string) (( cogito.Label ))
+: build_elem_node(etype = string, text = string, meta = string, w = num, h = num) (( any ))
     if etype == "link"
-        <- cogito.label(text).set_class("slide-link-text").set_wrap(true).set_line_chars(25)
+        <- cogito.label(label_display_text(etype, text, meta)).set_class("slide-link-text").set_wrap(true).set_line_chars(25)
     if etype == "image"
-        let ?name = stdr.basename(meta)
-        if len(name) == 0
-            name = stdr.basename(text)
-        if len(name) == 0
-            name = "Choose image"
-        <- cogito.label("Image: $$name$$").set_class("slide-image-text").set_wrap(true).set_line_chars(20)
+        let src = stdr.trim(meta)
+        if len(src) > 0
+            let img = cogito.image(src)
+            .set_class("slide-image-node")
+            .set_size(w, h)
+            .set_radius(8)
+            <- img
+        <- cogito.label(label_display_text(etype, text, meta)).set_class("slide-image-text").set_wrap(true).set_line_chars(20)
     if etype == "chart"
-        let ctype = chart_type_from_meta(meta)
-        let ?title = stdr.trim(text)
-        if len(title) == 0
-            title = "Chart"
-        <- cogito.label("$$ctype$$ Chart: $$title$$").set_class("slide-chart-text").set_wrap(true).set_line_chars(25)
+        <- cogito.label(label_display_text(etype, text, meta)).set_class("slide-chart-text").set_wrap(true).set_line_chars(25)
     if etype == "comment"
-        <- cogito.label(text).set_class("slide-comment-text").set_wrap(true).set_line_chars(30)
-    <- cogito.label(text).set_class("slide-text-elem").set_wrap(true).set_line_chars(30)
+        <- cogito.label(label_display_text(etype, text, meta)).set_class("slide-comment-text").set_wrap(true).set_line_chars(30)
+    <- cogito.label(label_display_text(etype, text, meta)).set_class("slide-text-elem").set_wrap(true).set_line_chars(30)
 ;
 
 : elem_hit_w(etype = string) (( num ))
@@ -551,6 +771,76 @@ def tooltip_bar = cogito.hstack()
     <- 40
 ;
 
+: title_box_x(idx = num) (( num ))
+    <- models.get_title_x(idx)
+;
+
+: title_box_y(idx = num) (( num ))
+    <- models.get_title_y(idx)
+;
+
+: title_box_w(idx = num) (( num ))
+    if models.get_title_auto_size(idx)
+        let tw = cogito.node_w(title_lbl)
+        if tw > 0
+            <- tw
+    <- models.get_title_w(idx)
+;
+
+: title_box_h(idx = num) (( num ))
+    if models.get_title_auto_size(idx)
+        let th = cogito.node_h(title_lbl)
+        if th > 0
+            <- th
+    <- models.get_title_h(idx)
+;
+
+: body_box_x(idx = num) (( num ))
+    <- models.get_body_x(idx)
+;
+
+: body_box_y(idx = num) (( num ))
+    <- models.get_body_y(idx)
+;
+
+: body_box_w(idx = num) (( num ))
+    if models.get_body_auto_size(idx)
+        let bw = cogito.node_w(body_lbl)
+        if bw > 0
+            <- bw
+    <- models.get_body_w(idx)
+;
+
+: body_box_h(idx = num) (( num ))
+    if models.get_body_auto_size(idx)
+        let bh = cogito.node_h(body_lbl)
+        if bh > 0
+            <- bh
+    <- models.get_body_h(idx)
+;
+
+: sync_bounds_from_layout() (( -- ))
+    if is_dragging || is_resizing
+        <-
+
+    let idx = models.current()
+
+    if models.get_title_auto_size(idx)
+        let tw = cogito.node_w(title_lbl)
+        let th = cogito.node_h(title_lbl)
+        if tw > 0 && th > 0
+            if tw != models.get_title_w(idx) || th != models.get_title_h(idx)
+                models.set_title_wh(idx, tw, th)
+
+    if models.get_body_auto_size(idx)
+        let bw = cogito.node_w(body_lbl)
+        let bh = cogito.node_h(body_lbl)
+        if bw > 0 && bh > 0
+            if bw != models.get_body_w(idx) || bh != models.get_body_h(idx)
+                models.set_body_wh(idx, bw, bh)
+
+;
+
 -- ── DnD interaction ──────────────────────────────────────────
 
 : hit_corner(mx = num, my = num) (( num ))
@@ -561,15 +851,15 @@ def tooltip_bar = cogito.hstack()
     let ?eh = 0
 
     if selected_elem == 1
-        ex = models.get_title_x(idx)
-        ey = models.get_title_y(idx)
-        ew = models.get_title_w(idx)
-        eh = models.get_title_h(idx)
+        ex = title_box_x(idx)
+        ey = title_box_y(idx)
+        ew = title_box_w(idx)
+        eh = title_box_h(idx)
     elif selected_elem == 2
-        ex = models.get_body_x(idx)
-        ey = models.get_body_y(idx)
-        ew = models.get_body_w(idx)
-        eh = models.get_body_h(idx)
+        ex = body_box_x(idx)
+        ey = body_box_y(idx)
+        ew = body_box_w(idx)
+        eh = body_box_h(idx)
     elif selected_elem >= 3
         let ei = selected_elem - 3
         ex = models.get_elem_x(idx, ei)
@@ -579,14 +869,19 @@ def tooltip_bar = cogito.hstack()
     else
         <- 0
 
-    let half = 8
-    if mx >= ex - half && mx <= ex + half && my >= ey - half && my <= ey + half
+    let ?s = RESIZE_HANDLE_SIZE
+    if ew < s
+        s = ew
+    if eh < s
+        s = eh
+
+    if mx >= ex && mx <= ex + s && my >= ey && my <= ey + s
         <- 1
-    if mx >= ex + ew - half && mx <= ex + ew + half && my >= ey - half && my <= ey + half
+    if mx >= ex + ew - s && mx <= ex + ew && my >= ey && my <= ey + s
         <- 2
-    if mx >= ex - half && mx <= ex + half && my >= ey + eh - half && my <= ey + eh + half
+    if mx >= ex && mx <= ex + s && my >= ey + eh - s && my <= ey + eh
         <- 3
-    if mx >= ex + ew - half && mx <= ex + ew + half && my >= ey + eh - half && my <= ey + eh + half
+    if mx >= ex + ew - s && mx <= ex + ew && my >= ey + eh - s && my <= ey + eh
         <- 4
     <- 0
 ;
@@ -633,18 +928,47 @@ def tooltip_bar = cogito.hstack()
     if ny < 0 { ny = 0 }
 
     if selected_elem == 1
+        models.set_title_auto_size(idx, false)
         models.set_title_pos(idx, nx, ny)
         models.set_title_wh(idx, nw, nh)
+        let ?tu = models.get_title_size(idx) / 2
+        if tu < 1
+            tu = 1
+        let ?tchars = (nw + tu - 1) / tu
+        if tchars < 1
+            tchars = 1
+        title_lbl.set_line_chars(tchars)
         canvas_fixed.set_pos(title_lbl, nx, ny)
     elif selected_elem == 2
+        models.set_body_auto_size(idx, false)
         models.set_body_pos(idx, nx, ny)
         models.set_body_wh(idx, nw, nh)
+        let ?bu = models.get_body_size(idx) / 2
+        if bu < 1
+            bu = 1
+        let ?bchars = (nw + bu - 1) / bu
+        if bchars < 1
+            bchars = 1
+        body_lbl.set_line_chars(bchars)
         canvas_fixed.set_pos(body_lbl, nx, ny)
     elif selected_elem >= 3
         let ei = selected_elem - 3
         models.set_elem_pos(idx, ei, nx, ny)
         models.set_elem_wh(idx, ei, nw, nh)
+        let etype = models.get_elem_type(idx, ei)
+        if etype == "image" && len(stdr.trim(models.get_elem_meta(idx, ei))) > 0
+            __cogito_image_set_size(extra_labels[ei], nw, nh)
+        else
+            let ?eu = models.get_elem_size(idx, ei) / 2
+            if eu < 1
+                eu = 1
+            let ?echars = (nw + eu - 1) / eu
+            if echars < 1
+                echars = 1
+            __cogito_label_set_line_chars(extra_labels[ei], echars)
         canvas_fixed.set_pos(extra_labels[ei], nx, ny)
+
+    notify_content_changed()
 ;
 
 : handle_press() (( -- ))
@@ -652,6 +976,11 @@ def tooltip_bar = cogito.hstack()
     let y = canvas_da.get_y()
     let idx = models.current()
     let prev_selected = selected_elem
+
+    if inline_edit_elem > 0
+        stop_inline_edit()
+        refresh()
+
     click_edit_candidate = 0
 
     -- Check corner handles of current selection first
@@ -663,15 +992,15 @@ def tooltip_bar = cogito.hstack()
             resize_start_x = x
             resize_start_y = y
             if selected_elem == 1
-                resize_orig_x = models.get_title_x(idx)
-                resize_orig_y = models.get_title_y(idx)
-                resize_orig_w = models.get_title_w(idx)
-                resize_orig_h = models.get_title_h(idx)
+                resize_orig_x = title_box_x(idx)
+                resize_orig_y = title_box_y(idx)
+                resize_orig_w = title_box_w(idx)
+                resize_orig_h = title_box_h(idx)
             elif selected_elem == 2
-                resize_orig_x = models.get_body_x(idx)
-                resize_orig_y = models.get_body_y(idx)
-                resize_orig_w = models.get_body_w(idx)
-                resize_orig_h = models.get_body_h(idx)
+                resize_orig_x = body_box_x(idx)
+                resize_orig_y = body_box_y(idx)
+                resize_orig_w = body_box_w(idx)
+                resize_orig_h = body_box_h(idx)
             elif selected_elem >= 3
                 let ei = selected_elem - 3
                 resize_orig_x = models.get_elem_x(idx, ei)
@@ -699,11 +1028,11 @@ def tooltip_bar = cogito.hstack()
             <-
 
     -- Hit test body
-    let bx = models.get_body_x(idx)
-    let by = models.get_body_y(idx)
-    let bw = models.get_body_w(idx)
-    let bh = models.get_body_h(idx)
-    if x >= bx && x <= bx + bw && y >= by && y <= by + bh
+    let bx = body_box_x(idx)
+    let by = body_box_y(idx)
+    let bw = body_box_w(idx)
+    let bh = body_box_h(idx)
+    if bw > 0 && bh > 0 && x >= bx && x <= bx + bw && y >= by && y <= by + bh
         selected_elem = 2
         if prev_selected == selected_elem && can_edit_elem_from_canvas(selected_elem)
             click_edit_candidate = selected_elem
@@ -715,11 +1044,11 @@ def tooltip_bar = cogito.hstack()
         <-
 
     -- Hit test title
-    let tx = models.get_title_x(idx)
-    let ty = models.get_title_y(idx)
-    let tw = models.get_title_w(idx)
-    let th = models.get_title_h(idx)
-    if x >= tx && x <= tx + tw && y >= ty && y <= ty + th
+    let tx = title_box_x(idx)
+    let ty = title_box_y(idx)
+    let tw = title_box_w(idx)
+    let th = title_box_h(idx)
+    if tw > 0 && th > 0 && x >= tx && x <= tx + tw && y >= ty && y <= ty + th
         selected_elem = 1
         if prev_selected == selected_elem && can_edit_elem_from_canvas(selected_elem)
             click_edit_candidate = selected_elem
@@ -750,15 +1079,16 @@ def tooltip_bar = cogito.hstack()
     if click_edit_candidate > 0
         let dx = x - click_start_x
         let dy = y - click_start_y
-        if dx > 3 || dx < -3 || dy > 3 || dy < -3
-            click_edit_candidate = 0
+        if dx <= 3 && dx >= -3 && dy <= 3 && dy >= -3
+            <-
+        click_edit_candidate = 0
 
     let ?nx = x - drag_off_x
     let ?ny = y - drag_off_y
 
     if selected_elem == 1
-        let tw = models.get_title_w(idx)
-        let th = models.get_title_h(idx)
+        let tw = title_box_w(idx)
+        let th = title_box_h(idx)
         if nx < 0 { nx = 0 }
         if ny < 0 { ny = 0 }
         if canvas_w > 0 && nx + tw > canvas_w { nx = canvas_w - tw }
@@ -766,8 +1096,8 @@ def tooltip_bar = cogito.hstack()
         models.set_title_pos(idx, nx, ny)
         canvas_fixed.set_pos(title_lbl, nx, ny)
     elif selected_elem == 2
-        let bw = models.get_body_w(idx)
-        let bh = models.get_body_h(idx)
+        let bw = body_box_w(idx)
+        let bh = body_box_h(idx)
         if nx < 0 { nx = 0 }
         if ny < 0 { ny = 0 }
         if canvas_w > 0 && nx + bw > canvas_w { nx = canvas_w - bw }
@@ -784,6 +1114,8 @@ def tooltip_bar = cogito.hstack()
         if canvas_h > 0 && ny + eh > canvas_h { ny = canvas_h - eh }
         models.set_elem_pos(idx, ei, nx, ny)
         canvas_fixed.set_pos(extra_labels[ei], nx, ny)
+
+    notify_content_changed()
 ;
 
 : redraw_handles(da = cogito.DrawingArea) (( -- ))
@@ -797,17 +1129,17 @@ def tooltip_bar = cogito.hstack()
     da.set_line_width(2)
 
     if selected_elem == 1
-        let tx = models.get_title_x(idx)
-        let ty = models.get_title_y(idx)
-        let tw = models.get_title_w(idx)
-        let th = models.get_title_h(idx)
+        let tx = title_box_x(idx)
+        let ty = title_box_y(idx)
+        let tw = title_box_w(idx)
+        let th = title_box_h(idx)
         da.rect(tx, ty, tw, th)
         draw_corners(da, tx, ty, tw, th)
     elif selected_elem == 2
-        let bx = models.get_body_x(idx)
-        let by = models.get_body_y(idx)
-        let bw = models.get_body_w(idx)
-        let bh = models.get_body_h(idx)
+        let bx = body_box_x(idx)
+        let by = body_box_y(idx)
+        let bw = body_box_w(idx)
+        let bh = body_box_h(idx)
         da.rect(bx, by, bw, bh)
         draw_corners(da, bx, by, bw, bh)
     elif selected_elem >= 3
@@ -821,12 +1153,18 @@ def tooltip_bar = cogito.hstack()
 ;
 
 : draw_corners(da = cogito.DrawingArea, x = num, y = num, w = num, h = num) (( -- ))
-    let s = 10
-    let half = 5
-    da.fill_rect(x - half, y - half, s, s)
-    da.fill_rect(x + w - half, y - half, s, s)
-    da.fill_rect(x - half, y + h - half, s, s)
-    da.fill_rect(x + w - half, y + h - half, s, s)
+    let ?s = RESIZE_HANDLE_SIZE
+    if w < s
+        s = w
+    if h < s
+        s = h
+    if s <= 0
+        <-
+
+    da.fill_rect(x, y, s, s)
+    da.fill_rect(x + w - s, y, s, s)
+    da.fill_rect(x, y + h - s, s, s)
+    da.fill_rect(x + w - s, y + h - s, s, s)
 ;
 
 -- ── Selection tooltip ─────────────────────────────────────────
@@ -872,15 +1210,15 @@ def tooltip_bar = cogito.hstack()
     let ?eh = 0
 
     if selected_elem == 1
-        ex = models.get_title_x(idx)
-        ey = models.get_title_y(idx)
-        ew = models.get_title_w(idx)
-        eh = models.get_title_h(idx)
+        ex = title_box_x(idx)
+        ey = title_box_y(idx)
+        ew = title_box_w(idx)
+        eh = title_box_h(idx)
     elif selected_elem == 2
-        ex = models.get_body_x(idx)
-        ey = models.get_body_y(idx)
-        ew = models.get_body_w(idx)
-        eh = models.get_body_h(idx)
+        ex = body_box_x(idx)
+        ey = body_box_y(idx)
+        ew = body_box_w(idx)
+        eh = body_box_h(idx)
     elif selected_elem >= 3
         let ei = selected_elem - 3
         ex = models.get_elem_x(idx, ei)
@@ -888,7 +1226,13 @@ def tooltip_bar = cogito.hstack()
         ew = models.get_elem_w(idx, ei)
         eh = models.get_elem_h(idx, ei)
 
-    let tw = 200
+    let tw = 240
+    let ?th = 86
+    if selected_elem >= 3
+        let ei = selected_elem - 3
+        let etype = models.get_elem_type(idx, ei)
+        if etype == "image" || etype == "chart" || etype == "comment"
+            th = 52
     let ?tx = ex + (ew - tw) / 2
     let ?ty = ey + eh + 16
 
@@ -896,16 +1240,271 @@ def tooltip_bar = cogito.hstack()
         tx = 8
     if canvas_w > 0 && tx + tw > canvas_w - 8
         tx = canvas_w - tw - 8
-    if canvas_h > 0 && ty + 44 > canvas_h - 8
-        ty = ey - 52
+    if canvas_h > 0 && ty + th > canvas_h - 8
+        ty = ey - th - 8
+    if ty < 8
+        ty = 8
 
     tooltip_fixed.set_pos(tooltip_bar, tx, ty)
 ;
 
-def FONT_NAMES = ["Inter", "Roboto", "Serif", "Mono"]
-def FONT_SIZES = [12, 14, 16, 18, 24, 28, 32, 36, 40, 48]
-def FONT_SIZE_LABELS = ["12", "14", "16", "18", "24", "28", "32", "36", "40", "48"]
-def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
+def FONT_NAMES = slides_constants.font_names()
+def FONT_SIZES = slides_constants.font_sizes()
+def FONT_SIZE_LABELS = slides_constants.font_size_labels()
+def CHART_TYPES = slides_constants.chart_types()
+def SLIDE_COLOR_PRESET_LABELS = slides_constants.slide_color_preset_labels()
+def SLIDE_COLOR_PRESET_VALUES = slides_constants.slide_color_preset_values()
+def SLIDE_GRADIENT_KEYS = slides_constants.slide_gradient_keys()
+def SLIDE_GRADIENT_LABELS = slides_constants.slide_gradient_labels()
+def SLIDE_GRADIENT_TONES = slides_constants.slide_gradient_tones()
+def SLIDE_GRADIENT_STARTS = slides_constants.slide_gradient_starts()
+def SLIDE_GRADIENT_ENDS = slides_constants.slide_gradient_ends()
+def SLIDE_GRADIENT_ANGLE = slides_constants.slide_gradient_angle()
+def EDITOR_WELCOME_GRADIENT_1 = slides_constants.welcome_gradient_1_token()
+def EDITOR_WELCOME_GRADIENT_3 = slides_constants.welcome_gradient_3_token()
+def EDITOR_WELCOME_GRADIENT_5 = slides_constants.welcome_gradient_5_token()
+def EDITOR_WELCOME_GRADIENT_7 = slides_constants.welcome_gradient_7_token()
+
+: draw_welcome_gradient_background(da = cogito.DrawingArea, pw = num, ph = num, color = string) (( bool ))
+    let raw = stdr.trim(color)
+
+    if raw == EDITOR_WELCOME_GRADIENT_1
+        let cut = (ph * slides_constants.welcome_gradient_1_cut_percent()) / 100
+        if cut < 0
+            cut = 0
+        if cut > ph
+            cut = ph
+
+        da.set_color(slides_constants.welcome_gradient_1_base_color())
+        da.fill_rect(0, 0, pw, cut)
+
+        let tail = ph - cut
+        if tail > 0
+            da.fill_linear_gradient_angle(
+                0,
+                cut,
+                pw,
+                tail,
+                slides_constants.welcome_gradient_1_base_color(),
+                slides_constants.welcome_gradient_1_tail_color(),
+                slides_constants.welcome_gradient_1_angle()
+            )
+        <- true
+
+    if raw == EDITOR_WELCOME_GRADIENT_3
+        da.fill_linear_gradient_angle(
+            0,
+            0,
+            pw,
+            ph,
+            slides_constants.welcome_gradient_3_start(),
+            slides_constants.welcome_gradient_3_end(),
+            slides_constants.welcome_gradient_3_angle()
+        )
+        <- true
+
+    if raw == EDITOR_WELCOME_GRADIENT_5
+        da.fill_linear_gradient_angle(
+            0,
+            0,
+            pw,
+            ph,
+            slides_constants.welcome_gradient_5_start(),
+            slides_constants.welcome_gradient_5_end(),
+            slides_constants.welcome_gradient_5_angle()
+        )
+        <- true
+
+    if raw == EDITOR_WELCOME_GRADIENT_7
+        da.fill_linear_gradient_angle(
+            0,
+            0,
+            pw,
+            ph,
+            slides_constants.welcome_gradient_7_start(),
+            slides_constants.welcome_gradient_7_end(),
+            slides_constants.welcome_gradient_7_angle()
+        )
+        <- true
+
+    <- false
+;
+
+: slide_bg_gradient_index(color = string) (( num ))
+    let raw = stdr.trim(color)
+    for (let ?i = 0; i < len(SLIDE_GRADIENT_KEYS); i += 1)
+        let key = str(SLIDE_GRADIENT_KEYS[i])
+        let code = "@grad:$$key$$"
+        if raw == code || raw == str(SLIDE_GRADIENT_TONES[i])
+            <- i
+    <- -1
+;
+
+: slide_bg_tone(color = string) (( string ))
+    let raw = stdr.trim(color)
+    if raw == EDITOR_WELCOME_GRADIENT_1
+        <- slides_constants.welcome_gradient_1_base_color()
+    if raw == EDITOR_WELCOME_GRADIENT_3
+        <- slides_constants.welcome_gradient_3_end()
+    if raw == EDITOR_WELCOME_GRADIENT_5
+        <- slides_constants.welcome_gradient_5_end()
+    if raw == EDITOR_WELCOME_GRADIENT_7
+        <- slides_constants.welcome_gradient_7_start()
+
+    let gi = slide_bg_gradient_index(color)
+    if gi >= 0
+        <- str(SLIDE_GRADIENT_TONES[gi])
+    <- color
+;
+
+: slide_bg_start(color = string) (( string ))
+    let gi = slide_bg_gradient_index(color)
+    if gi >= 0
+        <- str(SLIDE_GRADIENT_STARTS[gi])
+    <- color
+;
+
+: slide_bg_end(color = string) (( string ))
+    let gi = slide_bg_gradient_index(color)
+    if gi >= 0
+        <- str(SLIDE_GRADIENT_ENDS[gi])
+    <- color
+;
+
+: hex_nibble(ch = string) (( num ))
+    if ch == "0" { <- 0 }
+    if ch == "1" { <- 1 }
+    if ch == "2" { <- 2 }
+    if ch == "3" { <- 3 }
+    if ch == "4" { <- 4 }
+    if ch == "5" { <- 5 }
+    if ch == "6" { <- 6 }
+    if ch == "7" { <- 7 }
+    if ch == "8" { <- 8 }
+    if ch == "9" { <- 9 }
+    if ch == "a" || ch == "A" { <- 10 }
+    if ch == "b" || ch == "B" { <- 11 }
+    if ch == "c" || ch == "C" { <- 12 }
+    if ch == "d" || ch == "D" { <- 13 }
+    if ch == "e" || ch == "E" { <- 14 }
+    if ch == "f" || ch == "F" { <- 15 }
+    <- 0
+;
+
+: hex_pair(hex = string, offset = num) (( num ))
+    let hi = stdr.slice(hex, offset, offset + 1)
+    let lo = stdr.slice(hex, offset + 1, offset + 2)
+    <- hex_nibble(hi) * 16 + hex_nibble(lo)
+;
+
+: hex_digit(v = num) (( string ))
+    if v <= 0 { <- "0" }
+    if v == 1 { <- "1" }
+    if v == 2 { <- "2" }
+    if v == 3 { <- "3" }
+    if v == 4 { <- "4" }
+    if v == 5 { <- "5" }
+    if v == 6 { <- "6" }
+    if v == 7 { <- "7" }
+    if v == 8 { <- "8" }
+    if v == 9 { <- "9" }
+    if v == 10 { <- "A" }
+    if v == 11 { <- "B" }
+    if v == 12 { <- "C" }
+    if v == 13 { <- "D" }
+    if v == 14 { <- "E" }
+    <- "F"
+;
+
+: hex_byte(v = num) (( string ))
+    let ?n = v
+    if n < 0
+        n = 0
+    if n > 255
+        n = 255
+    let hi = n / 16
+    let lo = n % 16
+    let hs = hex_digit(hi)
+    let ls = hex_digit(lo)
+    <- "$$hs$$$$ls$$"
+;
+
+: draw_linear_gradient_swatches(
+    da = cogito.DrawingArea,
+    x = num,
+    y = num,
+    w = num,
+    h = num,
+    start_hex = string,
+    end_hex = string
+) (( -- ))
+    da.fill_linear_gradient_angle(x, y, w, h, start_hex, end_hex, SLIDE_GRADIENT_ANGLE)
+;
+
+: draw_linear_gradient_preview(
+    da = cogito.DrawingArea,
+    w = num,
+    h = num,
+    start_hex = string,
+    end_hex = string
+) (( -- ))
+    draw_linear_gradient_swatches(da, 0, 0, w, h, start_hex, end_hex)
+;
+
+: draw_slide_background(da = cogito.DrawingArea, pw = num, ph = num, radius = num, color = string) (( -- ))
+    if pw <= 0 || ph <= 0
+        <-
+
+    if draw_welcome_gradient_background(da, pw, ph, color)
+        <-
+
+    let gi = slide_bg_gradient_index(color)
+    if gi < 0
+        let fill = slide_bg_tone(color)
+        da.set_color(fill)
+        da.fill_rect(0, 0, pw, ph)
+        <-
+
+    let start = slide_bg_start(color)
+    let stop = slide_bg_end(color)
+
+    -- Draw one continuous gradient; rounded corners are handled by the clipper.
+    da.fill_linear_gradient_angle(0, 0, pw, ph, start, stop, SLIDE_GRADIENT_ANGLE)
+;
+
+: apply_slide_color(idx = num, color = string) (( -- ))
+    models.set_color(idx, color)
+    refresh()
+    notify_content_changed()
+;
+
+: build_slide_color_swatch(swatch_cls = string, on_select = any) (( cogito.Button ))
+    let btn = cogito.button("")
+    .set_class("slide-color-swatch $$swatch_cls$$")
+    btn.on_click((b = cogito.Button) => {
+        on_select()
+    })
+    <- btn
+;
+
+: build_slide_gradient_swatch(start_hex = string, end_hex = string, on_select = any) (( cogito.Clipper ))
+    let clip = cogito.clipper(44, 30, 999)
+    .set_class("slide-color-gradient-clip")
+
+    let swatch_da = cogito.drawing_area()
+    .set_class("slide-color-gradient-da")
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .on_press((da = cogito.DrawingArea) => {
+        on_select()
+    })
+    .on_draw((da = cogito.DrawingArea, w = any, h = any) => {
+        draw_linear_gradient_preview(da, num(w), num(h), start_hex, end_hex)
+    })
+
+    clip.add(swatch_da)
+    <- clip
+;
 
 : font_index(name = string) (( num ))
     for (let ?i = 0; i < len(FONT_NAMES); i += 1)
@@ -923,7 +1522,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
 
 : build_text_tooltip() (( -- ))
     let idx = models.current()
-    let ?cur_font = "Inter"
+    let ?cur_font = "Sans"
     let ?cur_size = 16
     let ?cur_bold = false
     let ?cur_italic = false
@@ -967,6 +1566,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
             let eei = selected_elem - 3
             models.set_elem_font(si, eei, fname)
             cogito.node_set_font_family(extra_labels[eei], fname)
+        notify_content_changed()
     })
 
     let size_dd = cogito.dropdown()
@@ -980,13 +1580,37 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         if selected_elem == 1
             models.set_title_size(si, sz)
             title_lbl.set_font_size(sz)
+            if !models.get_title_auto_size(si)
+                let ?tu = sz / 2
+                if tu < 1
+                    tu = 1
+                let ?tchars = (models.get_title_w(si) + tu - 1) / tu
+                if tchars < 1
+                    tchars = 1
+                title_lbl.set_line_chars(tchars)
         elif selected_elem == 2
             models.set_body_size(si, sz)
             body_lbl.set_font_size(sz)
+            if !models.get_body_auto_size(si)
+                let ?bu = sz / 2
+                if bu < 1
+                    bu = 1
+                let ?bchars = (models.get_body_w(si) + bu - 1) / bu
+                if bchars < 1
+                    bchars = 1
+                body_lbl.set_line_chars(bchars)
         elif selected_elem >= 3
             let eei = selected_elem - 3
             models.set_elem_size(si, eei, sz)
             cogito.node_set_font_size(extra_labels[eei], sz)
+            let ?eu = sz / 2
+            if eu < 1
+                eu = 1
+            let ?echars = (models.get_elem_w(si, eei) + eu - 1) / eu
+            if echars < 1
+                echars = 1
+            __cogito_label_set_line_chars(extra_labels[eei], echars)
+        notify_content_changed()
     })
 
     let ?bold_label = "B"
@@ -1023,6 +1647,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
             b.set_text("B")
         else
             b.set_text("B*")
+        notify_content_changed()
     })
 
     let ?italic_label = "I"
@@ -1050,6 +1675,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
             b.set_text("I")
         else
             b.set_text("I*")
+        notify_content_changed()
     })
 
     let ?strike_label = "S"
@@ -1077,6 +1703,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
             b.set_text("S")
         else
             b.set_text("S*")
+        notify_content_changed()
     })
 
     let edit_btn = cogito.button("Edit")
@@ -1085,12 +1712,30 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         show_edit_elem_dialog(b.window(), "Edit Text")
     })
 
-    tooltip_bar.add(font_dd)
-    tooltip_bar.add(size_dd)
-    tooltip_bar.add(bold_btn)
-    tooltip_bar.add(italic_btn)
-    tooltip_bar.add(strike_btn)
-    tooltip_bar.add(edit_btn)
+    let target_elem = selected_elem
+    let delete_btn = cogito.button("Delete")
+    .set_class("slide-tooltip-del")
+    .on_click((b = cogito.Button) => {
+        delete_elem(target_elem)
+    })
+
+    let row1 = cogito.hstack()
+    .set_gap(6)
+
+    let row2 = cogito.hstack()
+    .set_gap(6)
+
+    row1.add(font_dd)
+    row1.add(size_dd)
+
+    row2.add(bold_btn)
+    row2.add(italic_btn)
+    row2.add(strike_btn)
+    row2.add(edit_btn)
+    row2.add(delete_btn)
+
+    tooltip_bar.add(row1)
+    tooltip_bar.add(row2)
 ;
 
 : build_link_tooltip() (( -- ))
@@ -1109,9 +1754,27 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
     .on_click((b = cogito.Button) => {
         open_selected_link()
     })
-    tooltip_bar.add(edit_btn)
-    tooltip_bar.add(url_btn)
-    tooltip_bar.add(open_btn)
+
+    let target_elem = selected_elem
+    let del_btn = cogito.button("Delete")
+    .set_class("slide-tooltip-del")
+    .on_click((b = cogito.Button) => {
+        delete_elem(target_elem)
+    })
+
+    let row1 = cogito.hstack()
+    .set_gap(6)
+
+    let row2 = cogito.hstack()
+    .set_gap(6)
+
+    row1.add(edit_btn)
+    row1.add(url_btn)
+    row1.add(open_btn)
+    row2.add(del_btn)
+
+    tooltip_bar.add(row1)
+    tooltip_bar.add(row2)
 ;
 
 : build_image_tooltip() (( -- ))
@@ -1121,14 +1784,20 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         choose_image_for_selected()
     })
 
+    let target_elem = selected_elem
     let del_btn = cogito.button("Delete")
     .set_class("slide-tooltip-del")
     .on_click((b = cogito.Button) => {
-        delete_selected()
+        delete_elem(target_elem)
     })
 
-    tooltip_bar.add(pick_btn)
-    tooltip_bar.add(del_btn)
+    let row1 = cogito.hstack()
+    .set_gap(6)
+
+    row1.add(pick_btn)
+    row1.add(del_btn)
+
+    tooltip_bar.add(row1)
 ;
 
 : build_chart_tooltip() (( -- ))
@@ -1149,6 +1818,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         models.set_elem_meta(si, eei, chart_meta_from_parts(chart_type, values))
         refresh()
         selected_elem = eei + 3
+        notify_content_changed()
         update_tooltip()
     })
 
@@ -1158,8 +1828,21 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         show_edit_chart_dialog(b.window())
     })
 
-    tooltip_bar.add(type_dd)
-    tooltip_bar.add(edit_btn)
+    let target_elem = selected_elem
+    let del_btn = cogito.button("Delete")
+    .set_class("slide-tooltip-del")
+    .on_click((b = cogito.Button) => {
+        delete_elem(target_elem)
+    })
+
+    let row1 = cogito.hstack()
+    .set_gap(6)
+
+    row1.add(type_dd)
+    row1.add(edit_btn)
+    row1.add(del_btn)
+
+    tooltip_bar.add(row1)
 ;
 
 : build_comment_tooltip() (( -- ))
@@ -1168,14 +1851,20 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
     .on_click((b = cogito.Button) => {
         show_edit_elem_dialog(b.window(), "Edit Comment")
     })
+    let target_elem = selected_elem
     let del_btn = cogito.button("Delete")
     .set_class("slide-tooltip-del")
     .on_click((b = cogito.Button) => {
-        delete_selected()
+        delete_elem(target_elem)
     })
 
-    tooltip_bar.add(edit_btn)
-    tooltip_bar.add(del_btn)
+    let row1 = cogito.hstack()
+    .set_gap(6)
+
+    row1.add(edit_btn)
+    row1.add(del_btn)
+
+    tooltip_bar.add(row1)
 ;
 
 : open_selected_link() (( -- ))
@@ -1224,6 +1913,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
     }))
     actions.add(cogito.button("Apply").set_class("suggested").on_click((b = cogito.Button) => {
         models.set_elem_meta(idx, ei, normalize_url(tf.text()))
+        notify_content_changed()
         dlg.close()
     }))
 
@@ -1252,6 +1942,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
     models.set_elem_text(idx, ei, name)
     models.set_elem_meta(idx, ei, path)
     refresh()
+    notify_content_changed()
 ;
 
 : show_edit_chart_dialog(win = cogito.Window) (( -- ))
@@ -1290,6 +1981,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         models.set_elem_text(idx, ei, title)
         models.set_elem_meta(idx, ei, chart_meta_from_parts(ctype, values_tf.text()))
         refresh()
+        notify_content_changed()
         dlg.close()
     }))
 
@@ -1306,13 +1998,14 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         <-
 
     let idx = models.current()
+    let target_elem = selected_elem
     let ?initial = ""
-    if selected_elem == 1
+    if target_elem == 1
         initial = models.get_title(idx)
-    elif selected_elem == 2
+    elif target_elem == 2
         initial = models.get_body(idx)
-    elif selected_elem >= 3
-        let ei = selected_elem - 3
+    elif target_elem >= 3
+        let ei = target_elem - 3
         initial = models.get_elem_text(idx, ei)
 
     let dlg = cogito.dialog(dialog_title)
@@ -1326,16 +2019,19 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         dlg.close()
     }))
     actions.add(cogito.button("Apply").set_class("suggested").on_click((b = cogito.Button) => {
-        if selected_elem == 1
+        if target_elem == 1
             models.set_title(idx, tf.text())
             title_lbl.set_text(tf.text())
-        elif selected_elem == 2
+        elif target_elem == 2
             models.set_body(idx, tf.text())
             body_lbl.set_text(tf.text())
-        elif selected_elem >= 3
-            let ei = selected_elem - 3
+        elif target_elem >= 3
+            let ei = target_elem - 3
             models.set_elem_text(idx, ei, tf.text())
+            if models.get_elem_type(idx, ei) != "image"
+                __cogito_label_set_text(extra_labels[ei], label_display_text(models.get_elem_type(idx, ei), tf.text(), models.get_elem_meta(idx, ei)))
         refresh()
+        notify_content_changed()
         dlg.close()
     }))
 
@@ -1364,6 +2060,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         let offset = models.elem_count(idx) * 20
         models.add_elem(idx, "text", tf.text(), 100 + offset, 280 + offset)
         refresh()
+        notify_content_changed()
         dlg.close()
     }))
 
@@ -1403,6 +2100,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         let ei = models.elem_count(idx) - 1
         models.set_elem_meta(idx, ei, url)
         refresh()
+        notify_content_changed()
         dlg.close()
     }))
 
@@ -1432,6 +2130,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
     let ei = models.elem_count(idx) - 1
     models.set_elem_meta(idx, ei, path)
     refresh()
+    notify_content_changed()
 ;
 
 : show_add_chart_dialog(win = cogito.Window) (( -- ))
@@ -1466,6 +2165,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         let ei = models.elem_count(idx) - 1
         models.set_elem_meta(idx, ei, chart_meta_from_parts(chart_type, values_tf.text()))
         refresh()
+        notify_content_changed()
         dlg.close()
     }))
 
@@ -1494,6 +2194,7 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
         let offset = models.elem_count(idx) * 20
         models.add_elem(idx, "comment", tf.text(), 100 + offset, 300 + offset)
         refresh()
+        notify_content_changed()
         dlg.close()
     }))
 
@@ -1503,16 +2204,155 @@ def CHART_TYPES = ["Bar", "Line", "Pie", "Area"]
     win.set_dialog(dlg)
 ;
 
-: delete_selected() (( -- ))
+: show_slide_color_dialog(win = cogito.Window) (( -- ))
     let idx = models.current()
-    if selected_elem == 1
+    let dlg = cogito.dialog("Set Slide Color")
+    let box = cogito.vstack()
+    .set_gap(10)
+    .set_padding(16, 16, 16, 16)
+    .set_size_request(slides_constants.slide_color_dialog_width(), -1)
+
+    let swatch_cols = slides_constants.slide_color_dialog_columns()
+
+    let presets_label = cogito.label("Preset Colors")
+    .set_class("slide-notes-label")
+
+    let preset_grid = cogito.grid(swatch_cols)
+    .set_gap(8, 8)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+
+    let ?prow = 0
+    let ?pcol = 0
+
+    for (let ?i = 0; i < len(SLIDE_COLOR_PRESET_LABELS); i += 1)
+        let label = str(SLIDE_COLOR_PRESET_LABELS[i])
+        let value = str(SLIDE_COLOR_PRESET_VALUES[i])
+        let swatch = build_slide_color_swatch("scs-$$i$$", () => {
+            apply_slide_color(idx, value)
+            dlg.close()
+        })
+
+        let caption = cogito.label(label)
+        .set_class("slide-color-swatch-label")
+
+        let cell = cogito.vstack()
+        .set_gap(4)
+        .set_align(4)
+        cell.add(swatch)
+        cell.add(caption)
+
+        preset_grid.add(cell, pcol, prow, 1, 1)
+
+        pcol += 1
+        if pcol >= swatch_cols
+            pcol = 0
+            prow += 1
+
+    let gradients_label = cogito.label("Gradients")
+    .set_class("slide-notes-label")
+
+    let gradient_grid = cogito.grid(swatch_cols)
+    .set_gap(8, 8)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+
+    let ?grow = 0
+    let ?gcol = 0
+
+    for (let ?i = 0; i < len(SLIDE_GRADIENT_LABELS); i += 1)
+        let label = str(SLIDE_GRADIENT_LABELS[i])
+        let key = str(SLIDE_GRADIENT_KEYS[i])
+        let start = str(SLIDE_GRADIENT_STARTS[i])
+        let stop = str(SLIDE_GRADIENT_ENDS[i])
+        let swatch = build_slide_gradient_swatch(start, stop, () => {
+            apply_slide_color(idx, "@grad:$$key$$")
+            dlg.close()
+        })
+
+        let caption = cogito.label(label)
+        .set_class("slide-color-swatch-label")
+
+        let cell = cogito.vstack()
+        .set_gap(4)
+        .set_align(4)
+        cell.add(swatch)
+        cell.add(caption)
+
+        gradient_grid.add(cell, gcol, grow, 1, 1)
+
+        gcol += 1
+        if gcol >= swatch_cols
+            gcol = 0
+            grow += 1
+
+    let custom_tf = cogito.textfield(slide_bg_tone(models.get_color(idx)))
+    .set_hexpand(true)
+    .set_hint_text("Custom color (e.g. #F4F0FA)")
+
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Apply Custom").set_class("suggested").on_click((b = cogito.Button) => {
+        let ?color = stdr.trim(custom_tf.text())
+        if len(color) == 0
+            color = "#FFFFFF"
+        apply_slide_color(idx, color)
+        dlg.close()
+    }))
+
+    box.add(presets_label)
+    box.add(preset_grid)
+    box.add(gradients_label)
+    box.add(gradient_grid)
+    box.add(custom_tf)
+    box.add(actions)
+
+    dlg.add(box)
+    win.set_dialog(dlg)
+;
+
+: delete_selected() (( -- ))
+    delete_elem(selected_elem)
+;
+
+: delete_elem(target_elem = num) (( -- ))
+    if target_elem == 0
+        <-
+
+    let idx = models.current()
+    let ?did_delete = false
+
+    if target_elem == 1
         models.set_title(idx, "")
+        models.set_title_auto_size(idx, false)
+        models.set_title_wh(idx, 0, 0)
         title_lbl.set_text("")
-    elif selected_elem == 2
+        did_delete = true
+    elif target_elem == 2
         models.set_body(idx, "")
+        models.set_body_auto_size(idx, false)
+        models.set_body_wh(idx, 0, 0)
         body_lbl.set_text("")
-    elif selected_elem >= 3
-        models.remove_elem(idx, selected_elem - 3)
-        refresh()
+        did_delete = true
+    elif target_elem >= 3
+        let ei = target_elem - 3
+        let count = models.elem_count(idx)
+        if ei >= 0 && ei < count
+            models.remove_elem(idx, ei)
+            did_delete = true
+
     selected_elem = 0
+    is_dragging = false
+    is_resizing = false
+    click_edit_candidate = 0
+    stop_inline_edit()
+    tooltip_bar.set_visible(false)
+
+    if did_delete
+        refresh()
+        notify_content_changed()
+
+    canvas_da.clear()
 ;

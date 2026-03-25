@@ -1,0 +1,161 @@
+cask slides_constants
+
+:: slide_canvas_width() (( num ))
+    <- 817
+;
+
+:: slide_canvas_height() (( num ))
+    <- 426
+;
+
+:: thumb_width() (( num ))
+    <- 154
+;
+
+:: thumb_height() (( num ))
+    <- 100
+;
+
+:: editor_title_hit_w() (( num ))
+    <- 300
+;
+
+:: editor_title_hit_h() (( num ))
+    <- 50
+;
+
+:: editor_body_hit_w() (( num ))
+    <- 400
+;
+
+:: editor_body_hit_h() (( num ))
+    <- 40
+;
+
+:: editor_resize_handle_size() (( num ))
+    <- 10
+;
+
+:: slide_color_dialog_width() (( num ))
+    <- 360
+;
+
+:: slide_color_dialog_columns() (( num ))
+    <- 5
+;
+
+:: font_names() (( [any] ))
+    <- ["Sans", "Serif", "Mono"]
+;
+
+:: font_sizes() (( [any] ))
+    <- [12, 14, 16, 18, 24, 28, 32, 36, 40, 48]
+;
+
+:: font_size_labels() (( [any] ))
+    <- ["12", "14", "16", "18", "24", "28", "32", "36", "40", "48"]
+;
+
+:: chart_types() (( [any] ))
+    <- ["Bar", "Line", "Pie", "Area"]
+;
+
+:: slide_color_preset_labels() (( [any] ))
+    <- ["Paper", "Fog", "Lavender", "Sky", "Mint", "Peach", "Butter", "Rose", "Sand", "Slate"]
+;
+
+:: slide_color_preset_values() (( [any] ))
+    <- ["#FFFFFF", "#F5F7FA", "#F4F0FA", "#EAF2FF", "#EAF8F1", "#FFF1E8", "#FFF9E5", "#FFEFF3", "#F5EADB", "#EEF1F6"]
+;
+
+:: slide_gradient_keys() (( [any] ))
+    <- ["sunset", "aurora", "ocean", "berry", "dawn", "meadow", "coral", "twilight", "citrus", "ember"]
+;
+
+:: slide_gradient_labels() (( [any] ))
+    <- ["Sunset", "Aurora", "Ocean", "Berry", "Dawn", "Meadow", "Coral", "Twilight", "Citrus", "Ember"]
+;
+
+:: slide_gradient_tones() (( [any] ))
+    <- ["#F6B28A", "#A8D9C5", "#9FC8E8", "#D6B2E9", "#F6D5A3", "#A9D49A", "#F7B4A8", "#9EA7E8", "#F2D86A", "#D38A74"]
+;
+
+:: slide_gradient_starts() (( [any] ))
+    <- ["#FFD2A8", "#C9F3D8", "#B7E8FF", "#EFCBFF", "#FFE7C7", "#D9F5BE", "#FFD7CF", "#C7CBFF", "#FFF3B3", "#FFC39A"]
+;
+
+:: slide_gradient_ends() (( [any] ))
+    <- ["#F08AA5", "#6EA7FF", "#3F78DE", "#9A63DD", "#FDBB8A", "#5FAF6E", "#FF8A7A", "#6B72C9", "#E5B93F", "#C75C5C"]
+;
+
+:: slide_gradient_angle() (( num ))
+    <- 24
+;
+
+:: welcome_gradient_1_token() (( string ))
+    <- "@grad:welcome-1"
+;
+
+:: welcome_gradient_3_token() (( string ))
+    <- "@grad:welcome-3"
+;
+
+:: welcome_gradient_5_token() (( string ))
+    <- "@grad:welcome-5"
+;
+
+:: welcome_gradient_7_token() (( string ))
+    <- "@grad:welcome-7"
+;
+
+:: welcome_gradient_1_cut_percent() (( num ))
+    <- 90
+;
+
+:: welcome_gradient_1_base_color() (( string ))
+    <- "#FFFFFF"
+;
+
+:: welcome_gradient_1_tail_color() (( string ))
+    <- "#72DEC2"
+;
+
+:: welcome_gradient_1_angle() (( num ))
+    <- 90
+;
+
+:: welcome_gradient_3_start() (( string ))
+    <- "#000000"
+;
+
+:: welcome_gradient_3_end() (( string ))
+    <- "#8E8BA9"
+;
+
+:: welcome_gradient_3_angle() (( num ))
+    <- 90
+;
+
+:: welcome_gradient_5_start() (( string ))
+    <- "#F5C887"
+;
+
+:: welcome_gradient_5_end() (( string ))
+    <- "#F0D41A"
+;
+
+:: welcome_gradient_5_angle() (( num ))
+    <- 90
+;
+
+:: welcome_gradient_7_start() (( string ))
+    <- "#2CFFB5"
+;
+
+:: welcome_gradient_7_end() (( string ))
+    <- "#C4CBF4"
+;
+
+:: welcome_gradient_7_angle() (( num ))
+    <- 57
+;

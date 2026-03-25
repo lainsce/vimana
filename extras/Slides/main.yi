@@ -7,6 +7,7 @@ bring models
 bring widgets.slide_panel
 bring widgets.slide_editor
 bring widgets.presenter
+bring widgets.welcome
 
 -- View state: 0 = editor, 1 = presenter
 def ?view_mode = 0
@@ -15,9 +16,153 @@ def ?view_mode = 0
 def panel_box = cogito.vstack()
 def editor_box = cogito.vstack()
 def presenter_box = cogito.vstack()
+def welcome_box = cogito.vstack()
+
+def ?current_path = ""
 
 def editor_revealer = cogito.revealer()
 def presenter_revealer = cogito.revealer()
+def welcome_revealer = cogito.revealer()
+
+: is_adelie_path(path = string) (( bool ))
+    let p = stdr.trim(path)
+    let n = len(p)
+    if n >= 4
+        if stdr.slice(p, n - 4, n - 3) == "."
+            let c1 = stdr.slice(p, n - 3, n - 2)
+            let c2 = stdr.slice(p, n - 2, n - 1)
+            let c3 = stdr.slice(p, n - 1, n)
+            if (c1 == "a" || c1 == "A") &&
+            (c2 == "d" || c2 == "D") &&
+            (c3 == "l" || c3 == "L")
+                <- true
+
+    if n >= 7
+        if stdr.slice(p, n - 7, n - 6) == "."
+            let c1 = stdr.slice(p, n - 6, n - 5)
+            let c2 = stdr.slice(p, n - 5, n - 4)
+            let c3 = stdr.slice(p, n - 4, n - 3)
+            let c4 = stdr.slice(p, n - 3, n - 2)
+            let c5 = stdr.slice(p, n - 2, n - 1)
+            let c6 = stdr.slice(p, n - 1, n)
+            if (c1 == "a" || c1 == "A") &&
+            (c2 == "d" || c2 == "D") &&
+            (c3 == "e" || c3 == "E") &&
+            (c4 == "l" || c4 == "L") &&
+            (c5 == "i" || c5 == "I") &&
+            (c6 == "e" || c6 == "E")
+                <- true
+
+    <- false
+;
+
+: ensure_adelie_ext(path = string) (( string ))
+    if is_adelie_path(path)
+        <- path
+    <- "$$path$$.adl"
+;
+
+: default_save_name() (( string ))
+    if len(stdr.trim(current_path)) > 0
+        <- current_path
+    let ?base = stdr.trim(models.name())
+    if len(base) == 0
+        base = "Slideshow"
+    <- "$$base$$.adl"
+;
+
+: set_status(bar = cogito.AppBar, text = string) (( -- ))
+    bar.set_subtitle(text)
+;
+
+: enter_editor() (( -- ))
+    view_mode = 0
+    welcome_revealer.set_show_children(false)
+    presenter_revealer.set_show_children(false)
+    editor_revealer.set_show_children(true)
+;
+
+: show_welcome() (( -- ))
+    view_mode = 0
+    editor_revealer.set_show_children(false)
+    presenter_revealer.set_show_children(false)
+    welcome_revealer.set_show_children(true)
+;
+
+: refresh_header(bar = cogito.AppBar) (( -- ))
+    let ?title = stdr.trim(models.name())
+    if len(stdr.trim(current_path)) > 0
+        title = stdr.basename(current_path)
+    if len(title) == 0
+        title = "Slideshow"
+    bar.set_title(title)
+;
+
+: new_slideshow(bar = cogito.AppBar) (( -- ))
+    models.reset()
+    models.set_name("Slideshow")
+    current_path = ""
+    refresh_all()
+    refresh_header(bar)
+    set_status(bar, "New slideshow")
+;
+
+: save_slideshow_to(path = string, bar = cogito.AppBar) (( bool ))
+    let p = ensure_adelie_ext(stdr.trim(path))
+    if len(p) == 0
+        <- false
+
+    let ok = models.save_adelie(p)
+    if !ok
+        set_status(bar, "Save failed")
+        <- false
+
+    current_path = p
+    models.set_name(stdr.stem(stdr.basename(p)))
+    refresh_header(bar)
+    let base = stdr.basename(p)
+    set_status(bar, "Saved $$base$$")
+    <- true
+;
+
+: open_slideshow_dialog(bar = cogito.AppBar) (( bool ))
+    let picked = stdr.open_file_dialog("Open Adelie (.adl)", "adl,adelie")
+    if is_null(picked)
+        set_status(bar, "Open canceled")
+        <- false
+
+    let path = str(picked)
+    let ok = models.load_adelie(path)
+    if !ok
+        set_status(bar, "Open failed")
+        <- false
+
+    current_path = path
+    refresh_all()
+    refresh_header(bar)
+    let base = stdr.basename(path)
+    set_status(bar, "Opened $$base$$")
+    <- true
+;
+
+: save_slideshow(bar = cogito.AppBar) (( -- ))
+    if len(stdr.trim(current_path)) == 0
+        let picked = stdr.save_file_dialog("Save Adelie (.adl)", default_save_name(), "adl")
+        if is_null(picked)
+            set_status(bar, "Save canceled")
+            <-
+        save_slideshow_to(str(picked), bar)
+        <-
+    save_slideshow_to(current_path, bar)
+;
+
+: save_slideshow_as(bar = cogito.AppBar) (( -- ))
+    let picked = stdr.save_file_dialog("Save As Adelie (.adl)", default_save_name(), "adl")
+    if is_null(picked)
+        set_status(bar, "Save canceled")
+        <-
+    save_slideshow_to(str(picked), bar)
+;
 
 -- ── Refresh helpers ──────────────────────────────────────────
 
@@ -49,15 +194,14 @@ def presenter_revealer = cogito.revealer()
 
 : enter_presenter() (( -- ))
     view_mode = 1
+    welcome_revealer.set_show_children(false)
     editor_revealer.set_show_children(false)
     presenter_revealer.set_show_children(true)
     presenter.refresh()
 ;
 
 : exit_presenter() (( -- ))
-    view_mode = 0
-    presenter_revealer.set_show_children(false)
-    editor_revealer.set_show_children(true)
+    enter_editor()
     refresh_all()
 ;
 
@@ -73,9 +217,9 @@ def presenter_revealer = cogito.revealer()
 
     cogito.load_sum("slides.sum")
 
-    let win = cogito.window_size("Slides", 1100, 720)
+    let win = cogito.window_size("Slides", 1024, 720)
     .set_resizable(true)
-    .set_size_request(600, 480)
+    .set_size_request(1024, 480)
 
     -- AppBar (flat)
     let bar = cogito.appbar("Slideshow", "")
@@ -83,12 +227,24 @@ def presenter_revealer = cogito.revealer()
     .set_hexpand(true)
 
     let gear = bar.add_trailing_menu_button("sf:gearshape")
+    gear.add_menu("New", (b = any) => {
+        new_slideshow(bar)
+    })
+    gear.add_menu("Open…", (b = any) => {
+        open_slideshow_dialog(bar)
+    })
+    gear.add_menu("Save", (b = any) => {
+        save_slideshow(bar)
+    })
+    gear.add_menu("Save As…", (b = any) => {
+        save_slideshow_as(bar)
+    })
     gear.add_menu("About Slides", (b = any) => {
         let dlg = cogito.dialog("")
         let aw = cogito.about_window("Slides", "GPLv3 License")
         .set_icon("sf:play.rectangle")
-        .set_website("https://github.com/nickvdl/cogito")
-        .set_issue_url("https://github.com/nickvdl/cogito/issues")
+        .set_website("https://github.com/lainsce/cogito")
+        .set_issue_url("https://github.com/lainsce/cogito/issues")
         dlg.add(aw)
         win.set_dialog(dlg)
     })
@@ -113,6 +269,8 @@ def presenter_revealer = cogito.revealer()
 
     slide_editor.build_editor(editor_box, win, (text = string) => {
         models.set_notes(models.current(), text)
+    }, () => {
+        slide_panel.refresh()
     })
 
     -- Editor view: sidebar + editor side by side
@@ -127,7 +285,35 @@ def presenter_revealer = cogito.revealer()
     editor_revealer.add(editor_content)
     editor_revealer.set_hexpand(true)
     editor_revealer.set_vexpand(true)
-    editor_revealer.set_show_children(true)
+    editor_revealer.set_show_children(false)
+
+    -- Build welcome startup screen
+    welcome_box.set_class("slides-welcome")
+    welcome.build_welcome(
+        welcome_box,
+        () => {
+            new_slideshow(bar)
+            enter_editor()
+            set_status(bar, "Ready")
+        },
+        () => {
+            if open_slideshow_dialog(bar)
+                enter_editor()
+        },
+        (color = string, title_color = string, body_color = string) => {
+            new_slideshow(bar)
+            models.set_all_colors(color)
+            models.set_all_text_colors(title_color, body_color)
+            refresh_all()
+            enter_editor()
+            set_status(bar, "Template applied")
+        }
+    )
+
+    welcome_revealer.add(welcome_box)
+    welcome_revealer.set_hexpand(true)
+    welcome_revealer.set_vexpand(true)
+    welcome_revealer.set_show_children(true)
 
     -- Build presenter
     presenter.build_presenter(
@@ -146,6 +332,7 @@ def presenter_revealer = cogito.revealer()
     .set_hexpand(true)
     .set_vexpand(true)
 
+    root.add(welcome_revealer)
     root.add(editor_revealer)
     root.add(presenter_revealer)
 
@@ -154,6 +341,9 @@ def presenter_revealer = cogito.revealer()
 
     -- Initial state
     refresh_all()
+    refresh_header(bar)
+    set_status(bar, "Choose a starting point")
+    show_welcome()
 
     app.run(win)
 ;
