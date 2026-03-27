@@ -428,55 +428,11 @@ static void cogito_draw_rect_node(const CogitoNode* n, const CogitoStyle* s,
   cogito_draw_rect_radii_aa(x, y, w, h, bg, tl, tr, br, bl);
 }
 
-static void cogito_draw_pattern_frame_corners(int x, int y, int w, int h,
-                                              int inset, int tick,
-                                              CogitoColor color) {
-  if (w <= 1 || h <= 1) return;
-  if (tick < 2) tick = 2;
-  if (tick > w) tick = w;
-  if (tick > h) tick = h;
-  if (inset < 1) inset = 1;
-
-  int line = 1;
-  int right = x + w - line;
-  int bottom = y + h - line;
-  int inner_x = x + inset;
-  int inner_y = y + inset;
-  int inner_right = x + w - inset - line;
-  int inner_bottom = y + h - inset - line;
-  int tick_right = right - tick + line;
-  int tick_bottom = bottom - tick + line;
-
-  // Top corners
-  cogito_draw_rect_plain(x, y, tick, line, color);
-  cogito_draw_rect_plain(x, inner_y, tick, line, color);
-  cogito_draw_rect_plain(tick_right, y, tick, line, color);
-  cogito_draw_rect_plain(tick_right, inner_y, tick, line, color);
-
-  // Bottom corners
-  cogito_draw_rect_plain(x, bottom, tick, line, color);
-  cogito_draw_rect_plain(x, inner_bottom, tick, line, color);
-  cogito_draw_rect_plain(tick_right, bottom, tick, line, color);
-  cogito_draw_rect_plain(tick_right, inner_bottom, tick, line, color);
-
-  // Left corners
-  cogito_draw_rect_plain(x, y, line, tick, color);
-  cogito_draw_rect_plain(inner_x, y, line, tick, color);
-  cogito_draw_rect_plain(x, tick_bottom, line, tick, color);
-  cogito_draw_rect_plain(inner_x, tick_bottom, line, tick, color);
-
-  // Right corners
-  cogito_draw_rect_plain(right, y, line, tick, color);
-  cogito_draw_rect_plain(inner_right, y, line, tick, color);
-  cogito_draw_rect_plain(right, tick_bottom, line, tick, color);
-  cogito_draw_rect_plain(inner_right, tick_bottom, line, tick, color);
-}
 
 static void cogito_draw_pattern_frame(int x, int y, int w, int h,
                                       CogitoColor border, int thickness) {
   if (w <= 0 || h <= 0) return;
 
-  int line = 1;
   int inset = thickness;
   if (inset < 2) inset = 2;
   int min_side = w < h ? w : h;
@@ -484,18 +440,37 @@ static void cogito_draw_pattern_frame(int x, int y, int w, int h,
   if (max_inset < 1) max_inset = 1;
   if (inset > max_inset) inset = max_inset;
 
-  cogito_draw_rect_lines(x, y, w, h, border, 0, line);
+  // Outer 1px rectangle
+  cogito_draw_rect_lines(x, y, w, h, border, 0, 1);
 
+  // Inner 1px rectangle inset by `thickness`
   int inner_w = w - inset * 2;
   int inner_h = h - inset * 2;
-  if (inner_w > 0 && inner_h > 0) {
-    cogito_draw_rect_lines(x + inset, y + inset, inner_w, inner_h, border, 0,
-                           line);
-  }
+  if (inner_w <= 0 || inner_h <= 0) return;
+  cogito_draw_rect_lines(x + inset, y + inset, inner_w, inner_h, border, 0, 1);
 
+  // Corner ticks: extend each inner line to meet the outer rectangle.
+  // Without these, the inner rect's sides don't reach the outer corners, so
+  // the edges would look like "=" but corners would be two separate L-shapes.
+  // With these ticks the corners become "#" as the two sets of lines cross.
   int tick = inset + 1;
-  if (tick < 4) tick = 4;
-  cogito_draw_pattern_frame_corners(x, y, w, h, inset, tick, border);
+  int ix = x + inset;          // inner left x
+  int iy = y + inset;          // inner top y
+  int ir = x + w - inset - 1;  // inner right x
+  int ib = y + h - inset - 1;  // inner bottom y
+
+  // Top-left: inner top extends left to outer left; inner left extends up to outer top
+  cogito_draw_rect_plain(x,  iy, tick, 1, border);
+  cogito_draw_rect_plain(ix, y,  1, tick, border);
+  // Top-right: inner top extends right to outer right; inner right extends up to outer top
+  cogito_draw_rect_plain(ir, iy, tick, 1, border);
+  cogito_draw_rect_plain(ir, y,  1, tick, border);
+  // Bottom-left: inner bottom extends left; inner left extends down to outer bottom
+  cogito_draw_rect_plain(x,  ib, tick, 1, border);
+  cogito_draw_rect_plain(ix, ib, 1, tick, border);
+  // Bottom-right: inner bottom extends right; inner right extends down
+  cogito_draw_rect_plain(ir, ib, tick, 1, border);
+  cogito_draw_rect_plain(ir, ib, 1, tick, border);
 }
 
 static void cogito_draw_rect_lines_node(const CogitoNode* n, const CogitoStyle* s,
@@ -506,7 +481,7 @@ static void cogito_draw_rect_lines_node(const CogitoNode* n, const CogitoStyle* 
   bool patterned_border = false;
   if (n && n->class_name && n->class_name->data && n->class_name->data[0]) {
     patterned_border = cogito_class_has_token(n->class_name->data,
-                                              "world-pattern-border");
+                                              "pattern-border");
   }
   if (patterned_border && tl == 0 && tr == 0 && br == 0 && bl == 0) {
     cogito_draw_pattern_frame(x, y, w, h, border, thickness);
