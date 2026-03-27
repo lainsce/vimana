@@ -470,6 +470,7 @@ void cogito_node_set_font_italic(cogito_node *node, bool italic);
 void cogito_node_set_strikethrough(cogito_node *node, bool on);
 void cogito_node_set_underline(cogito_node *node, bool on);
 void cogito_node_set_font_family(cogito_node *node, const char *family);
+void cogito_node_set_font_pixel(cogito_node *node, bool pixel);
 void cogito_node_set_text_color(cogito_node *node, const char *hex);
 void cogito_node_set_text_align(cogito_node *node, int align);
 void cogito_node_set_line_height(cogito_node *node, float height);

@@ -3889,6 +3889,13 @@ void cogito_node_set_font_family(cogito_node *node, const char *family) {
   if (win) cogito_window_relayout(win);
 }
 
+void cogito_node_set_font_pixel(cogito_node *node, bool pixel) {
+  if (!node) return;
+  node->font_pixel = pixel;
+  cogito_window *win = cogito_node_window(node);
+  if (win) cogito_window_relayout(win);
+}
+
 void cogito_node_set_underline(cogito_node *node, bool on) {
   if (!node) return;
   node->font_underline = on;

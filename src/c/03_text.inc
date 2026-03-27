@@ -332,6 +332,53 @@ static bool cogito_load_font_file_tabular(CogitoFont** out, const char* path, in
   return cogito_load_font_file(out, path, size, weight);
 }
 
+static bool cogito_load_font_file_pixel(CogitoFont** out, const char* path, int size) {
+  if (!out || !path || !path[0] || size <= 0) return false;
+  if (!cogito_backend || !cogito_backend->font_load_pixel) return false;
+  *out = cogito_backend->font_load_pixel(path, size);
+  return *out != NULL;
+}
+
+static CogitoFont* cogito_font_pixel_cache_get(const char* path, int size, int weight) {
+  if (!path || !path[0] || size <= 0) return NULL;
+  int cap = (int)(sizeof(cogito_font_pixel_cache) / sizeof(cogito_font_pixel_cache[0]));
+
+  for (int i = 0; i < cap; i++) {
+    if (cogito_font_pixel_cache[i].ready &&
+        cogito_font_pixel_cache[i].size == size &&
+        cogito_font_pixel_cache[i].weight == weight &&
+        strcmp(cogito_font_pixel_cache[i].path, path) == 0) {
+      return cogito_font_pixel_cache[i].font;
+    }
+  }
+
+  int slot = -1;
+  for (int i = 0; i < cap; i++) {
+    if (!cogito_font_pixel_cache[i].ready) { slot = i; break; }
+  }
+  if (slot < 0) slot = 0;
+
+  if (cogito_font_pixel_cache[slot].ready) {
+    if (cogito_backend && cogito_backend->font_unload) {
+      cogito_backend->font_unload(cogito_font_pixel_cache[slot].font);
+    }
+    cogito_font_pixel_cache[slot].ready = false;
+    cogito_font_pixel_cache[slot].size = 0;
+    cogito_font_pixel_cache[slot].weight = 0;
+  }
+
+  if (!cogito_load_font_file_pixel(&cogito_font_pixel_cache[slot].font, path, size)) {
+    return NULL;
+  }
+
+  cogito_font_pixel_cache[slot].size = size;
+  cogito_font_pixel_cache[slot].weight = weight;
+  strncpy(cogito_font_pixel_cache[slot].path, path, sizeof(cogito_font_pixel_cache[slot].path) - 1);
+  cogito_font_pixel_cache[slot].path[sizeof(cogito_font_pixel_cache[slot].path) - 1] = '\0';
+  cogito_font_pixel_cache[slot].ready = true;
+  return cogito_font_pixel_cache[slot].font;
+}
+
 static CogitoFont* cogito_font_cache_get(CogitoFontCacheEntry* cache, int cap, const char* path, int size, int weight);
 static CogitoFont* cogito_font_cache_get_var(CogitoFontCacheEntry* cache, int cap,
     const char* path, int size, int weight,
@@ -601,6 +648,10 @@ static CogitoFont* cogito_font_variant_for_node(const CogitoNode* n, int size, b
       int weight = cogito_font_weight_normal();
       if (bold) weight = cogito_font_weight_bold();
       else if (medium) weight = cogito_font_weight_medium();
+      if (n->font_pixel) {
+        CogitoFont* px = cogito_font_pixel_cache_get(path, size, weight);
+        if (px) return px;
+      }
       CogitoFont* custom = cogito_font_cache_get_var(
         cogito_font_cache,
         (int)(sizeof(cogito_font_cache) / sizeof(cogito_font_cache[0])),

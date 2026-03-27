@@ -286,6 +286,16 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
     *p = s;
     return;
   }
+  if (strcmp(prop, "font-render") == 0) {
+    const char* s = *p;
+    char ident[32];
+    if (cogito_css_read_ident(&s, ident, sizeof(ident))) {
+      style->has_font_pixel = true;
+      style->font_pixel = (strcmp(ident, "pixel") == 0);
+      *p = s;
+    }
+    return;
+  }
   if (strcmp(prop, "text-overflow") == 0) {
     const char* s = *p;
     char ident[32];

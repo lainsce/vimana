@@ -354,6 +354,7 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
   n->font_mono = false;
   n->font_tabular = false;
   n->font_emphasized = false;
+  n->font_pixel = false;
   if (is_button) {
     n->kd->button.outlined = false;
     if (n->kind == COGITO_BUTTON) {
@@ -409,6 +410,10 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
           n->font_emphasized = true;
           recognized = true;
         }
+        if (!recognized && strcmp(tok, "pixel") == 0) {
+          n->font_pixel = true;
+          recognized = true;
+        }
         if (!recognized && is_button && strcmp(tok, "outlined") == 0) {
           n->kd->button.outlined = true;
           recognized = true;
@@ -448,6 +453,8 @@ static void cogito_node_set_class(YisVal nodev, YisVal classv) {
         n->font_tabular = true;
       } else if (strcmp(s, "emphasized") == 0) {
         n->font_emphasized = true;
+      } else if (strcmp(s, "pixel") == 0) {
+        n->font_pixel = true;
       } else if (is_button && strcmp(s,
       "outlined") == 0) {
         n->kd->button.outlined = true;

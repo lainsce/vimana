@@ -432,6 +432,7 @@ typedef struct CogitoStyle {
   bool has_line_height;
   bool has_font_tabular;
   bool has_font_mono;
+  bool has_font_pixel;
   bool has_font_family;
   bool has_font_variation;
   bool has_box_shadow;
@@ -492,6 +493,7 @@ typedef struct CogitoStyle {
   float line_height;
   bool font_tabular;
   bool font_mono;
+  bool font_pixel;
   char font_family[
     64
   ];
@@ -1197,6 +1199,7 @@ typedef struct CogitoNode {
   bool font_mono;
   bool font_tabular;
   bool font_emphasized;
+  bool font_pixel;
   bool font_italic;
   bool font_underline;
   bool font_strikethrough;
@@ -1541,6 +1544,9 @@ static CogitoFontCacheEntry cogito_font_tabular_cache[
   8
 ];
 static CogitoFontCacheEntry cogito_font_mono_cache[
+  8
+];
+static CogitoFontCacheEntry cogito_font_pixel_cache[
   8
 ];
 static int cogito_font_size_value = 16;

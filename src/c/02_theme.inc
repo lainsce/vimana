@@ -256,6 +256,8 @@ static void cogito_style_merge_into(const CogitoStyle* base, const CogitoStyle* 
   }
   if (over->has_font_mono) { out->has_font_mono = true; out->font_mono = over->font_mono;
   }
+  if (over->has_font_pixel) { out->has_font_pixel = true; out->font_pixel = over->font_pixel;
+  }
   if (over->has_min_w) { out->has_min_w = true; out->min_w = over->min_w;
   }
   if (over->has_min_h) { out->has_min_h = true; out->min_h = over->min_h;
@@ -999,6 +1001,9 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
   }
   if (s.has_font_mono) {
     n->font_mono = s.font_mono;
+  }
+  if (s.has_font_pixel) {
+    n->font_pixel = s.font_pixel;
   }
   if (s.has_text_fade) {
     n->text_fade = s.text_fade;

@@ -198,6 +198,7 @@
 #undef cogito_node_set_editable
 #undef cogito_node_set_font_family
 #undef cogito_node_set_font_italic
+#undef cogito_node_set_font_pixel
 #undef cogito_node_set_font_size
 #undef cogito_node_set_font_weight
 #undef cogito_node_set_halign
@@ -3018,6 +3019,10 @@ static void __cogito_node_set_font_family(YisVal nodev, YisVal familyv) {
   cogito_node_set_font_family(node, fam);
   if (tmp) yis_release_val(YV_STR(tmp));
 }
+static void __cogito_node_set_font_pixel(YisVal nodev, YisVal pixelv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_font_pixel(node, yis_as_bool(pixelv));
+}
 static void __cogito_node_set_underline(YisVal nodev, YisVal onv) {
   cogito_node* node = cogito_node_from_val(nodev);
   cogito_node_set_underline(node, yis_as_bool(onv));
@@ -5353,6 +5358,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_node_set_font_size __cogito_node_set_font_size
 #define cogito_node_set_font_weight __cogito_node_set_font_weight
 #define cogito_node_set_font_italic __cogito_node_set_font_italic
+#define cogito_node_set_font_pixel __cogito_node_set_font_pixel
 #define cogito_node_set_strikethrough __cogito_node_set_strikethrough
 #define cogito_node_set_underline __cogito_node_set_underline
 #define cogito_node_set_font_family __cogito_node_set_font_family

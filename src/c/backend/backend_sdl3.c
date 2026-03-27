@@ -130,6 +130,7 @@ typedef struct CogitoSDL3Font {
   int ascent;
   int descent;
   int height;
+  bool pixel;
 } CogitoSDL3Font;
 
 // GPU render state
@@ -2497,6 +2498,36 @@ static CogitoFont *sdl3_font_load_face(const char *path, int size,
   return (CogitoFont *)font;
 }
 
+static CogitoFont *sdl3_font_load_pixel(const char *path, int size) {
+  if (!path || !path[0] || size <= 0)
+    return NULL;
+
+  TTF_Font *ttf = TTF_OpenFont(path, size);
+  if (!ttf) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "TTF_OpenFont failed: %s",
+                 SDL_GetError());
+    return NULL;
+  }
+
+  CogitoSDL3Font *font = calloc(1, sizeof(CogitoSDL3Font));
+  if (!font) {
+    TTF_CloseFont(ttf);
+    return NULL;
+  }
+
+  font->path = strdup(path);
+  font->size = size;
+  font->ttf_font = ttf;
+  font->pixel = true;
+  TTF_SetFontKerning(ttf, false);
+  TTF_SetFontHinting(ttf, TTF_HINTING_NONE);
+  font->ascent = TTF_GetFontAscent(ttf);
+  font->descent = TTF_GetFontDescent(ttf);
+  font->height = TTF_GetFontHeight(ttf);
+
+  return (CogitoFont *)font;
+}
+
 static void sdl3_font_unload(CogitoFont *font) {
   CogitoSDL3Font *f = (CogitoSDL3Font *)font;
   if (!f)
@@ -2735,7 +2766,7 @@ static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
     return;
   }
   SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-  SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_LINEAR);
+  SDL_SetTextureScaleMode(tex, f->pixel ? SDL_SCALEMODE_NEAREST : SDL_SCALEMODE_LINEAR);
 
   SDL_FRect dst = {(float)x, (float)y, (float)surface->w / draw_scale,
                    (float)surface->h / draw_scale};
@@ -3757,6 +3788,7 @@ static CogitoBackend sdl3_backend = {
     .draw_circle_lines = sdl3_draw_circle_lines,
     .font_load = sdl3_font_load,
     .font_load_face = sdl3_font_load_face,
+    .font_load_pixel = sdl3_font_load_pixel,
     .font_unload = sdl3_font_unload,
     .font_get_metrics = sdl3_font_get_metrics,
     .font_get_internal_face = sdl3_font_get_internal_face,

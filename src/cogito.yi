@@ -351,6 +351,7 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_node_set_font_weight(node = any, weight = num) (( -- )) { }
 : __cogito_node_set_font_family(node = any, family = string) (( -- )) { }
 : __cogito_node_set_font_italic(node = any, italic = bool) (( -- )) { }
+: __cogito_node_set_font_pixel(node = any, pixel = bool) (( -- )) { }
 : __cogito_node_set_strikethrough(node = any, on = bool) (( -- )) { }
 : __cogito_node_set_underline(node = any, on = bool) (( -- )) { }
 : __cogito_node_set_text_color(node = any, hex = string) (( -- )) { }
@@ -398,6 +399,9 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 ;
 :: node_set_font_italic(node = any, italic = bool) (( -- ))
     __cogito_node_set_font_italic(node, italic)
+;
+:: node_set_font_pixel(node = any, pixel = bool) (( -- ))
+    __cogito_node_set_font_pixel(node, pixel)
 ;
 :: node_set_strikethrough(node = any, on = bool) (( -- ))
     __cogito_node_set_strikethrough(node, on)
@@ -2415,6 +2419,10 @@ pub ,: Label : Component
     ;
     :: set_font_italic(this, italic = bool) (( Label ))
         __cogito_node_set_font_italic(this, italic)
+        <- this
+    ;
+    :: set_font_pixel(this, pixel = bool) (( Label ))
+        __cogito_node_set_font_pixel(this, pixel)
         <- this
     ;
     :: set_strikethrough(this, on = bool) (( Label ))
