@@ -1337,6 +1337,20 @@ static void cogito_run(YisVal appv, YisVal winv) {
     if (main_pointer_changed) {
       CogitoNode* cur_hover = route_main_pointer
           ? cogito_find_clickable(win, mx, my) : NULL;
+
+      // DrawingArea hover/motion callbacks (including leave with -1,-1).
+      if (prev_hover_node && prev_hover_node != cur_hover &&
+          prev_hover_node->kind == COGITO_DRAWING_AREA && prev_hover_node->on_move) {
+        prev_hover_node->kd->drawing_area.pointer_x = -1;
+        prev_hover_node->kd->drawing_area.pointer_y = -1;
+        cogito_invoke_move(prev_hover_node);
+      }
+      if (cur_hover && cur_hover->kind == COGITO_DRAWING_AREA && cur_hover->on_move) {
+        cur_hover->kd->drawing_area.pointer_x = mx - cur_hover->x;
+        cur_hover->kd->drawing_area.pointer_y = my - cur_hover->y;
+        cogito_invoke_move(cur_hover);
+      }
+
       if (cur_hover != prev_hover_node) {
         prev_hover_node = cur_hover;
         cogito_queue_draw(win);

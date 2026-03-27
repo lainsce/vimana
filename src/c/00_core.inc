@@ -1153,6 +1153,7 @@ typedef struct CogitoNode {
   // Callbacks
   YisFn* on_click;
   YisFn* on_change;
+  YisFn* on_move;
   YisFn* on_select;
   YisFn* on_activate;
   YisFn* on_check;

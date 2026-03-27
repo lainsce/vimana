@@ -83,6 +83,10 @@ static void cogito_node_drop(YisObj* o) {
     yis_release_val(YV_FN(n->on_change));
     n->on_change = NULL;
   }
+  if (n->on_move) {
+    yis_release_val(YV_FN(n->on_move));
+    n->on_move = NULL;
+  }
   if (n->on_select) {
     yis_release_val(YV_FN(n->on_select));
     n->on_select = NULL;

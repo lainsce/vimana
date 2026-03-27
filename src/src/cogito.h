@@ -694,6 +694,8 @@ void cogito_drawing_area_on_press(cogito_node *area, cogito_node_fn fn,
                                   void *user);
 void cogito_drawing_area_on_drag(cogito_node *area, cogito_node_fn fn,
                                  void *user);
+void cogito_drawing_area_on_move(cogito_node *area, cogito_node_fn fn,
+                                 void *user);
 void cogito_drawing_area_on_release(cogito_node *area, cogito_node_fn fn,
                                     void *user);
 void cogito_drawing_area_on_draw(cogito_node *area, cogito_draw_fn fn,

@@ -93,6 +93,7 @@
 #undef cogito_drawing_area_get_y
 #undef cogito_drawing_area_new
 #undef cogito_drawing_area_on_drag
+#undef cogito_drawing_area_on_move
 #undef cogito_drawing_area_on_draw
 #undef cogito_drawing_area_on_press
 #undef cogito_drawing_area_on_release
@@ -504,6 +505,7 @@ typedef struct CogitoHandle {
   int kind;
   YisVal on_click;
   YisVal on_change;
+  YisVal on_move;
   YisVal on_select;
   YisVal on_activate;
   YisVal on_action;
@@ -569,6 +571,7 @@ static void cogito_handle_drop(YisObj* o) {
   if (!h) return;
   if (h->on_click.tag != EVT_NULL) yis_release_val(h->on_click);
   if (h->on_change.tag != EVT_NULL) yis_release_val(h->on_change);
+  if (h->on_move.tag != EVT_NULL) yis_release_val(h->on_move);
   if (h->on_select.tag != EVT_NULL) yis_release_val(h->on_select);
   if (h->on_activate.tag != EVT_NULL) yis_release_val(h->on_activate);
   if (h->on_action.tag != EVT_NULL) yis_release_val(h->on_action);
@@ -586,6 +589,7 @@ static CogitoHandle* cogito_handle_new(void* ptr, int kind) {
   h->kind = kind;
   h->on_click = YV_NULLV;
   h->on_change = YV_NULLV;
+  h->on_move = YV_NULLV;
   h->on_select = YV_NULLV;
   h->on_activate = YV_NULLV;
   h->on_action = YV_NULLV;
@@ -706,6 +710,12 @@ static void cogito_cb_change(cogito_node* node, void* user) {
   CogitoHandle* h = (CogitoHandle*)user;
   if (!h) return;
   cogito_invoke_node_handler(h->on_change, node);
+}
+
+static void cogito_cb_move(cogito_node* node, void* user) {
+  CogitoHandle* h = (CogitoHandle*)user;
+  if (!h) return;
+  cogito_invoke_node_handler(h->on_move, node);
 }
 
 static void cogito_cb_action(cogito_node* node, void* user) {
@@ -1540,6 +1550,17 @@ static void __cogito_drawing_area_on_drag(YisVal dav, YisVal handler) {
   }
   cogito_set_handler(h, &h->on_change, handler);
   cogito_drawing_area_on_drag(da, cogito_cb_change, h);
+}
+static void __cogito_drawing_area_on_move(YisVal dav, YisVal handler) {
+  cogito_node* da = cogito_node_from_val(dav);
+  CogitoHandle* h = (CogitoHandle*)dav.as.p;
+  if (handler.tag != EVT_FN) {
+    cogito_set_handler(h, &h->on_move, handler);
+    cogito_drawing_area_on_move(da, NULL, NULL);
+    return;
+  }
+  cogito_set_handler(h, &h->on_move, handler);
+  cogito_drawing_area_on_move(da, cogito_cb_move, h);
 }
 static void __cogito_drawing_area_on_release(YisVal dav, YisVal handler) {
   cogito_node* da = cogito_node_from_val(dav);
@@ -5235,6 +5256,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_drawing_area_new __cogito_drawing_area
 #define cogito_drawing_area_on_press __cogito_drawing_area_on_press
 #define cogito_drawing_area_on_drag __cogito_drawing_area_on_drag
+#define cogito_drawing_area_on_move __cogito_drawing_area_on_move
 #define cogito_drawing_area_on_release __cogito_drawing_area_on_release
 #define cogito_drawing_area_on_draw __cogito_drawing_area_on_draw
 #define cogito_drawing_area_get_x __cogito_drawing_area_get_x

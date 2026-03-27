@@ -275,6 +275,7 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_drawing_area() (( DrawingArea )) { }
 : __cogito_drawing_area_on_press(area = DrawingArea, handler = any) (( -- )) { }
 : __cogito_drawing_area_on_drag(area = DrawingArea, handler = any) (( -- )) { }
+: __cogito_drawing_area_on_move(area = DrawingArea, handler = any) (( -- )) { }
 : __cogito_drawing_area_on_release(area = DrawingArea, handler = any) (( -- )) { }
 : __cogito_drawing_area_on_draw(area = DrawingArea, handler = any) (( -- )) { }
 : __cogito_drawing_area_get_x(area = DrawingArea) (( num )) { }
@@ -5878,6 +5879,10 @@ pub ,: DrawingArea : Component
     ;
     :: on_drag(this, handler = any) (( DrawingArea ))
         __cogito_drawing_area_on_drag(this, handler)
+        <- this
+    ;
+    :: on_move(this, handler = any) (( DrawingArea ))
+        __cogito_drawing_area_on_move(this, handler)
         <- this
     ;
     :: on_release(this, handler = any) (( DrawingArea ))

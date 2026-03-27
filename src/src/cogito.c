@@ -3200,6 +3200,22 @@ void cogito_drawing_area_on_drag(cogito_node *area, cogito_node_fn fn,
                                  void *user) {
   cogito_node_on_change(area, fn, user);
 }
+void cogito_drawing_area_on_move(cogito_node *area, cogito_node_fn fn,
+                                 void *user) {
+  if (!area)
+    return;
+  CogitoNode *n = (CogitoNode *)area;
+  if (!fn) {
+    cogito_set_fn(&n->on_move, NULL);
+    return;
+  }
+  CogitoCbNode *env = (CogitoCbNode *)calloc(1, sizeof(*env));
+  env->fn = fn;
+  env->user = user;
+  YisFn *wrap = cogito_make_fn(cogito_cb_node, env);
+  cogito_set_fn(&n->on_move, wrap);
+  yis_release_val(YV_FN(wrap));
+}
 void cogito_drawing_area_on_release(cogito_node *area, cogito_node_fn fn,
                                     void *user) {
   if (!area)

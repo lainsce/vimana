@@ -120,6 +120,23 @@
                         out->tmp = t;
                         return true;
                     }
+                    if (str_eq_c(fname, "__cogito_drawing_area_on_move")) {
+                        GenExpr da, handler;
+                        if (!gen_expr(cg, path, e->as.call.args[0], &da, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[1], &handler, err)) { gen_expr_free(&da); return false; }
+                        w_line(&cg->w, "cogito_drawing_area_on_move(%s, %s);", da.tmp, handler.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", da.tmp);
+                        w_line(&cg->w, "yis_release_val(%s);", handler.tmp);
+                        gen_expr_release_except(cg, &da, da.tmp);
+                        gen_expr_release_except(cg, &handler, handler.tmp);
+                        gen_expr_free(&da);
+                        gen_expr_free(&handler);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w, "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
                     if (str_eq_c(fname, "__cogito_drawing_area_on_release")) {
                         GenExpr da, handler;
                         if (!gen_expr(cg, path, e->as.call.args[0], &da, err)) return false;

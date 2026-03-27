@@ -100,6 +100,12 @@ static void cogito_invoke_change(CogitoNode* n) {
   cogito_a11y_emit_event("value-changed", n, "");
 }
 
+static void cogito_invoke_move(CogitoNode* n) {
+  if (!n || !n->on_move) return;
+  YisVal arg = YV_OBJ(n);
+  cogito_invoke(n->on_move, 1, &arg);
+}
+
 static void cogito_invoke_select(CogitoNode* n, int idx, bool activate) {
   YisVal arg = YV_INT(idx);
   if (n->on_select) cogito_invoke(n->on_select, 1, &arg);
@@ -344,7 +350,7 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
       n->kind == COGITO_TIMEPICKER || n->kind == COGITO_BANNER ||
       n->kind == COGITO_BOTTOM_SHEET || n->kind == COGITO_SIDE_SHEET ||
       n->kind == COGITO_SWITCHBAR || n->kind == COGITO_SPLIT_BUTTON ||
-      (n->kind == COGITO_DRAWING_AREA && (n->on_click || n->on_change || n->on_action)) ||
+      (n->kind == COGITO_DRAWING_AREA && (n->on_click || n->on_change || n->on_move || n->on_action)) ||
       n->kind == COGITO_WEBVIEW ||
       n->kind == COGITO_VIEW_CHOOSER || n->kind == COGITO_VIEW_DUAL ||
       n->kind == COGITO_SETTINGS_WINDOW ||
