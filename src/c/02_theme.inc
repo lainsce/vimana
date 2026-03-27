@@ -1325,6 +1325,8 @@ static void cogito_apply_size_constraints(const CogitoNode* n, int* w, int* h) {
   if (n->min_h_set && *h < n->min_h) *h = n->min_h;
   if (n->max_w_set && n->max_w > 0 && *w > n->max_w) *w = n->max_w;
   if (n->max_h_set && n->max_h > 0 && *h > n->max_h) *h = n->max_h;
+  if (n->size_request_w_set) *w = n->size_request_w;
+  if (n->size_request_h_set) *h = n->size_request_h;
 }
 // Appbar widget utilities (metrics, positions, navigation)
 #include "widgets/util/appbar.inc"

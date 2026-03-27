@@ -255,12 +255,16 @@ package_macos() {
   resources_dir="$bundle_root/Contents/Resources"
   plist="$bundle_root/Contents/Info.plist"
 
-  # Copy .sum files to Resources
+  # Copy .sum files to Resources (including nested folders like themes/)
   src_dir=$(dirname_path "$entry_path")
-  for sum_file in "$src_dir"/*.sum; do
-    [ -f "$sum_file" ] || continue
-    mkdir -p "$resources_dir"
-    cp -f "$sum_file" "$resources_dir/" || true
+  find "$src_dir" -type f -name '*.sum' | while IFS= read -r sum_file; do
+    rel_path=${sum_file#"$src_dir"/}
+    dest_dir="$resources_dir"
+    case "$rel_path" in
+      */*) dest_dir="$resources_dir/$(dirname "$rel_path")" ;;
+    esac
+    mkdir -p "$dest_dir"
+    cp -f "$sum_file" "$dest_dir/" || true
   done
 
   icon_svg=$(find_icon_svg) || true

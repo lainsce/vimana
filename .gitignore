@@ -28,3 +28,5 @@ run.exe
 *.mcp.json
 INSTRUCTIONS.md
 *.json
+
+.venv

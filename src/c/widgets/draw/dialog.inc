@@ -34,9 +34,6 @@ case COGITO_DIALOG: {
       if (n->bg_set) {
         cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, n->bg, dialog_radius);
   }
-      if (n->border_width > 0) {
-        cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, n->border_color, dialog_radius, n->border_width);
-  }
 
       int pad_l = COGITO_DIALOG_HEADER_INSET;
       int pad_t = COGITO_DIALOG_HEADER_INSET;
@@ -110,5 +107,9 @@ case COGITO_DIALOG: {
         cogito_draw_node(n->children[i
     ]);
   }
+      // Draw border last so content cannot paint over the dialog frame.
+      if (n->border_width > 0) {
+        cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, n->border_color, dialog_radius, n->border_width);
+      }
       break;
 }

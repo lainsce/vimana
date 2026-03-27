@@ -375,6 +375,10 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
   n->vexpand = false;
   n->hexpand_set = false;
   n->vexpand_set = false;
+  n->size_request_w_set = false;
+  n->size_request_h_set = false;
+  n->size_request_w = 0;
+  n->size_request_h = 0;
   n->label_max_width_chars = 0;
   n->label_max_width_chars_set = false;
   n->grid_col = 0;

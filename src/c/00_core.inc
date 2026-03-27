@@ -1261,6 +1261,10 @@ typedef struct CogitoNode {
   bool min_h_set;
   bool max_w_set;
   bool max_h_set;
+  bool size_request_w_set;
+  bool size_request_h_set;
+  int size_request_w;
+  int size_request_h;
   bool shadow_set;
   bool font_size_set;
   bool border_style_set;

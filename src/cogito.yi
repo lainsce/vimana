@@ -416,6 +416,9 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 :: node_set_visible(node = any, on = bool) (( -- ))
     __cogito_node_set_visible(node, on)
 ;
+:: node_set_size_request(node = any, w = num, h = num) (( -- ))
+    __cogito_container_set_size_request(node, w, h)
+;
 :: label_set_line_chars(node = any, line_chars = num) (( -- ))
     __cogito_label_set_line_chars(node, line_chars)
 ;
@@ -810,6 +813,10 @@ pub ,: App
 .: Component() (( -- ))
     :: set_class(cls = string) (( any )) {}
     :: set_id(id = string) (( any )) {}
+    :: set_size_request(this, w = num, h = num) (( any ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
 ;
 
 pub ,: Window : Component
@@ -984,6 +991,10 @@ pub ,: AppBar : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( AppBar ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( AppBar ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1021,6 +1032,10 @@ pub ,: FABMenu : Component
     ;
     :: set_visible(this, on = bool) (( FABMenu ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( FABMenu ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( FABMenu ))
@@ -1108,6 +1123,10 @@ pub ,: Image : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Image ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Image ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1188,6 +1207,10 @@ pub ,: WebView : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( WebView ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( WebView ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1243,6 +1266,10 @@ pub ,: Dialog : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Dialog ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Dialog ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1276,6 +1303,10 @@ pub ,: DialogSlot : Component
     ;
     :: set_visible(this, on = bool) (( DialogSlot ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( DialogSlot ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( DialogSlot ))
@@ -1332,6 +1363,10 @@ pub ,: Popover : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Popover ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Popover ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1361,6 +1396,10 @@ pub ,: ContextMenu : Component
     ;
     :: attach(this, node = any) (( ContextMenu ))
         __cogito_node_set_context_menu(node, this)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( ContextMenu ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( ContextMenu ))
@@ -1505,6 +1544,10 @@ pub ,: Revealer : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Revealer ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Revealer ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1550,6 +1593,10 @@ pub ,: Bin : Component
     ;
     :: set_visible(this, on = bool) (( Bin ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Bin ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Bin ))
@@ -1635,6 +1682,10 @@ pub ,: HStack : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( HStack ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( HStack ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1700,6 +1751,10 @@ pub ,: Flow : Component
     ;
     :: set_visible(this, on = bool) (( Flow ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Flow ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Flow ))
@@ -1770,6 +1825,10 @@ pub ,: ZStack : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( ZStack ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( ZStack ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1823,6 +1882,10 @@ pub ,: Fixed : Component
     ;
     :: set_visible(this, on = bool) (( Fixed ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Fixed ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Fixed ))
@@ -1892,6 +1955,10 @@ pub ,: Scroller : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Scroller ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Scroller ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1922,6 +1989,10 @@ pub ,: Carousel : Component
         __cogito_container_set_vexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Carousel ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Carousel ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -1943,6 +2014,10 @@ pub ,: CarouselItem : Component
     ;
     :: set_vexpand(this, expand = bool) (( CarouselItem ))
         __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( CarouselItem ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( CarouselItem ))
@@ -2057,6 +2132,10 @@ pub ,: Grid : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Grid ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Grid ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -2078,6 +2157,10 @@ pub ,: VirtualList : Component
     ;
     :: set_builder(this, builder = any) (( VirtualList ))
         __cogito_virtual_list_set_builder(this, builder)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( VirtualList ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( VirtualList ))
@@ -2197,6 +2280,10 @@ pub ,: TableView : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( TableView ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( TableView ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -2250,6 +2337,10 @@ pub ,: Label : Component
     ;
     :: align_end(this) (( Label ))
         __cogito_container_set_align(this, 2)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Label ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Label ))
@@ -2471,6 +2562,10 @@ pub ,: Button : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Button ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Button ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -2656,6 +2751,10 @@ pub ,: IconButton : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( IconButton ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( IconButton ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -2728,6 +2827,10 @@ pub ,: Checkbox : Component
     ;
     :: set_visible(this, on = bool) (( Checkbox ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Checkbox ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Checkbox ))
@@ -2803,6 +2906,10 @@ pub ,: Switch : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Switch ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Switch ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -2862,6 +2969,10 @@ pub ,: SearchField : Component
     ;
     :: set_visible(this, on = bool) (( SearchField ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( SearchField ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
 
@@ -2980,6 +3091,10 @@ pub ,: TextField : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( TextField ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( TextField ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -3056,6 +3171,10 @@ pub ,: TextView : Component
     ;
     :: set_visible(this, on = bool) (( TextView ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( TextView ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( TextView ))
@@ -3145,6 +3264,10 @@ pub ,: DatePicker : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( DatePicker ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( DatePicker ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -3193,6 +3316,10 @@ pub ,: Stepper : Component
     ;
     :: set_vexpand(this, expand = bool) (( Stepper ))
         __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Stepper ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
 
@@ -3273,6 +3400,10 @@ pub ,: Dropdown : Component
     ;
     :: set_visible(this, on = bool) (( Dropdown ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Dropdown ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Dropdown ))
@@ -3466,6 +3597,10 @@ pub ,: Slider : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Slider ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Slider ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -3537,6 +3672,10 @@ pub ,: Tabs : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Tabs ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Tabs ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -3604,6 +3743,10 @@ pub ,: ButtonGroup : Component
         __cogito_container_set_vexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( ButtonGroup ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( ButtonGroup ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -3662,6 +3805,10 @@ pub ,: ViewSwitcher : Component
     ;
     :: set_visible(this, on = bool) (( ViewSwitcher ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( ViewSwitcher ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( ViewSwitcher ))
@@ -3747,6 +3894,10 @@ pub ,: Progress : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Progress ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Progress ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -3792,6 +3943,10 @@ pub ,: Divider : Component
     ;
     :: set_visible(this, on = bool) (( Divider ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Divider ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Divider ))
@@ -3860,6 +4015,10 @@ pub ,: Card : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Card ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Card ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -3923,6 +4082,10 @@ pub ,: Avatar : Component
         __cogito_container_set_vexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Avatar ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Avatar ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -3956,6 +4119,10 @@ pub ,: Badge : Component
     ;
     :: count(this) (( num ))
         <- __cogito_badge_get_count(this)
+    ;
+    :: set_size_request(this, w = num, h = num) (( Badge ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
     ;
     :: set_class(this, cls = string) (( Badge ))
         __cogito_node_set_class(this, cls)
@@ -3998,6 +4165,10 @@ pub ,: Banner : Component
     ;
     :: set_vexpand(this, expand = bool) (( Banner ))
         __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Banner ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Banner ))
@@ -4043,6 +4214,10 @@ pub ,: BottomSheet : Component
         __cogito_container_set_vexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( BottomSheet ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( BottomSheet ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -4080,6 +4255,10 @@ pub ,: SideSheet : Component
     ;
     :: set_vexpand(this, expand = bool) (( SideSheet ))
         __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( SideSheet ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( SideSheet ))
@@ -4143,6 +4322,10 @@ pub ,: TimePicker : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( TimePicker ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( TimePicker ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -4184,6 +4367,10 @@ pub ,: TreeView : Component
     ;
     :: set_vexpand(this, expand = bool) (( TreeView ))
         __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( TreeView ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
 
@@ -4254,6 +4441,10 @@ pub ,: ColorPicker : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( ColorPicker ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( ColorPicker ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -4320,6 +4511,10 @@ pub ,: FontButton : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( FontButton ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( FontButton ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -4366,6 +4561,10 @@ pub ,: Toasts : Component
     ;
     :: set_visible(this, on = bool) (( Toasts ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Toasts ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Toasts ))
@@ -4424,6 +4623,10 @@ pub ,: Toast : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( Toast ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( Toast ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -4445,6 +4648,10 @@ pub ,: Toolbar : Component
     ;
     :: set_vexpand(this, expand = bool) (( Toolbar ))
         __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Toolbar ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Toolbar ))
@@ -4472,6 +4679,10 @@ pub ,: Toolbar : Component
 ;
 
 pub ,: WindowBar : Component
+    :: set_size_request(this, w = num, h = num) (( WindowBar ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( WindowBar ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -4536,6 +4747,10 @@ pub ,: Chip : Component
     ;
     :: set_visible(this, on = bool) (( Chip ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Chip ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Chip ))
@@ -4613,6 +4828,10 @@ pub ,: FAB : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( FAB ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( FAB ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -4683,6 +4902,10 @@ pub ,: NavRail : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( NavRail ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( NavRail ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -4731,6 +4954,10 @@ pub ,: BottomNav : Component
     ;
     :: set_visible(this, on = bool) (( BottomNav ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( BottomNav ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( BottomNav ))
@@ -5543,6 +5770,10 @@ pub ,: ActiveIndicator : Component
         __cogito_container_set_padding(this, top, right, bottom, left)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( ActiveIndicator ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( ActiveIndicator ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -5583,6 +5814,10 @@ pub ,: SwitchBar : Component
     ;
     :: set_hexpand(this, expand = bool) (( SwitchBar ))
         __cogito_container_set_hexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( SwitchBar ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( SwitchBar ))
@@ -5714,12 +5949,20 @@ pub ,: DrawingArea : Component
         __cogito_container_set_padding(this, top, right, bottom, left)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( DrawingArea ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_hexpand(this, expand = bool) (( DrawingArea ))
         __cogito_container_set_hexpand(this, expand)
         <- this
     ;
     :: set_vexpand(this, expand = bool) (( DrawingArea ))
         __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_align(this, align = num) (( DrawingArea ))
+        __cogito_container_set_align(this, align)
         <- this
     ;
     :: set_class(this, cls = string) (( DrawingArea ))
@@ -5751,6 +5994,10 @@ pub ,: VideoView : Component
     ;
     :: set_vexpand(this, expand = bool) (( VideoView ))
         __cogito_container_set_vexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( VideoView ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( VideoView ))
@@ -5876,6 +6123,10 @@ pub ,: Shape : Component
     ;
     :: set_visible(this, on = bool) (( Shape ))
         __cogito_node_set_visible(this, on)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( Shape ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( Shape ))
@@ -6044,6 +6295,10 @@ pub ,: ContentList : Component
         __cogito_node_set_visible(this, on)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( ContentList ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( ContentList ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -6095,6 +6350,10 @@ pub ,: EmptyPage : Component
         __cogito_container_set_vexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( EmptyPage ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( EmptyPage ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -6124,6 +6383,10 @@ pub ,: TipView : Component
     ;
     :: set_hexpand(this, expand = bool) (( TipView ))
         __cogito_container_set_hexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( TipView ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( TipView ))
@@ -6161,6 +6424,10 @@ pub ,: SettingsWindow : Component
         __cogito_container_set_vexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( SettingsWindow ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( SettingsWindow ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -6196,6 +6463,10 @@ pub ,: SettingsPage : Component
         __cogito_container_set_hexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( SettingsPage ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( SettingsPage ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -6227,6 +6498,10 @@ pub ,: SettingsList : Component
         __cogito_container_set_hexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( SettingsList ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( SettingsList ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -6256,6 +6531,10 @@ pub ,: SettingsRow : Component
     ;
     :: set_hexpand(this, expand = bool) (( SettingsRow ))
         __cogito_container_set_hexpand(this, expand)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( SettingsRow ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( SettingsRow ))
@@ -6309,6 +6588,10 @@ pub ,: WelcomeScreen : Component
         __cogito_container_set_vexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( WelcomeScreen ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( WelcomeScreen ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -6359,6 +6642,10 @@ pub ,: ViewDual : Component
         __cogito_container_set_vexpand(this, expand)
         <- this
     ;
+    :: set_size_request(this, w = num, h = num) (( ViewDual ))
+        __cogito_container_set_size_request(this, w, h)
+        <- this
+    ;
     :: set_class(this, cls = string) (( ViewDual ))
         __cogito_node_set_class(this, cls)
         <- this
@@ -6384,6 +6671,10 @@ pub ,: ViewChooser : Component
     ;
     :: set_padding(this, top = num, right = num, bottom = num, left = num) (( ViewChooser ))
         __cogito_container_set_padding(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( ViewChooser ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( ViewChooser ))
@@ -6419,6 +6710,10 @@ pub ,: AboutWindow : Component
     ;
     :: set_padding(this, top = num, right = num, bottom = num, left = num) (( AboutWindow ))
         __cogito_container_set_padding(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( AboutWindow ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( AboutWindow ))
@@ -6466,6 +6761,10 @@ pub ,: SplitButton : Component
     ;
     :: set_padding(this, top = num, right = num, bottom = num, left = num) (( SplitButton ))
         __cogito_container_set_padding(this, top, right, bottom, left)
+        <- this
+    ;
+    :: set_size_request(this, w = num, h = num) (( SplitButton ))
+        __cogito_container_set_size_request(this, w, h)
         <- this
     ;
     :: set_class(this, cls = string) (( SplitButton ))

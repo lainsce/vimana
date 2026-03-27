@@ -129,8 +129,23 @@ static void cogito_container_set_size_request(YisVal nodev, YisVal wv, YisVal hv
   CogitoNode* node = (CogitoNode*)nodev.as.p;
   int w = (int)yis_as_int(wv);
   int h = (int)yis_as_int(hv);
-  if (w >= 0) { node->min_w = w; node->min_w_set = true; }
-  if (h >= 0) { node->min_h = h; node->min_h_set = true; }
+  if (w >= 0) {
+    node->min_w = w;
+    node->min_w_set = true;
+    node->max_w = w;
+    node->max_w_set = true;
+    node->size_request_w = w;
+    node->size_request_w_set = true;
+  }
+  if (h >= 0) {
+    node->min_h = h;
+    node->min_h_set = true;
+    node->max_h = h;
+    node->max_h_set = true;
+    node->size_request_h = h;
+    node->size_request_h_set = true;
+  }
+  cogito_window_relayout(cogito_node_window(node));
 }
 
 static void cogito_scroller_set_min_content_width(YisVal scv, YisVal wv) {

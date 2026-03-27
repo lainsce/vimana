@@ -73,12 +73,16 @@ case COGITO_WINDOW: {
           if (n->dialog->kind == COGITO_WELCOME_SCREEN) {
             cogito_draw_node(n->dialog);
           } else {
-            int clip_h = (int)lroundf((float)n->dialog->h * p);
-            if (clip_h > 0) {
-              bool can_clip = cogito_backend && cogito_backend->begin_scissor && cogito_backend->end_scissor;
-              if (can_clip) cogito_backend->begin_scissor(n->dialog->x, n->dialog->y, n->dialog->w, clip_h);
+            if (p >= 0.999f) {
               cogito_draw_node(n->dialog);
-              if (can_clip) cogito_backend->end_scissor();
+            } else {
+              int clip_h = (int)lroundf((float)n->dialog->h * p);
+              if (clip_h > 0) {
+                bool can_clip = cogito_backend && cogito_backend->begin_scissor && cogito_backend->end_scissor;
+                if (can_clip) cogito_backend->begin_scissor(n->dialog->x, n->dialog->y, n->dialog->w, clip_h);
+                cogito_draw_node(n->dialog);
+                if (can_clip) cogito_backend->end_scissor();
+              }
             }
           }
           cogito_overlay_draw_active = false;
