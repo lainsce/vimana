@@ -727,6 +727,9 @@ void cogito_canvas_fill_radial_gradient(cogito_node *area, int x, int y, int w,
                                         float radius);
 void cogito_canvas_circle(cogito_node *area, int cx, int cy, int r);
 void cogito_canvas_fill_circle(cogito_node *area, int cx, int cy, int r);
+void cogito_canvas_draw_bitmap(cogito_node *area, int x, int y,
+                               int src_w, int src_h, int dst_w, int dst_h,
+                               void *rows_arr);
 void cogito_shape_set_preset(cogito_node *shape, int preset);
 int cogito_shape_get_preset(cogito_node *shape);
 void cogito_shape_set_size(cogito_node *shape, int size_dp);

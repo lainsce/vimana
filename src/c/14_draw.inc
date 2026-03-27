@@ -441,36 +441,36 @@ static void cogito_draw_pattern_frame(int x, int y, int w, int h,
   if (inset > max_inset) inset = max_inset;
 
   // Outer 1px rectangle
-  cogito_draw_rect_lines(x, y, w, h, border, 0, 1);
+  cogito_draw_rect_lines(x, y, w, h, border, 0, 2);
 
   // Inner 1px rectangle inset by `thickness`
   int inner_w = w - inset * 2;
   int inner_h = h - inset * 2;
   if (inner_w <= 0 || inner_h <= 0) return;
-  cogito_draw_rect_lines(x + inset, y + inset, inner_w, inner_h, border, 0, 1);
+  cogito_draw_rect_lines(x + inset, y + inset, inner_w, inner_h, border, 0, 2);
 
   // Corner ticks: extend each inner line to meet the outer rectangle.
   // Without these, the inner rect's sides don't reach the outer corners, so
   // the edges would look like "=" but corners would be two separate L-shapes.
   // With these ticks the corners become "#" as the two sets of lines cross.
-  int tick = inset + 1;
+  int tick = inset;
   int ix = x + inset;          // inner left x
   int iy = y + inset;          // inner top y
   int ir = x + w - inset - 1;  // inner right x
   int ib = y + h - inset - 1;  // inner bottom y
 
   // Top-left: inner top extends left to outer left; inner left extends up to outer top
-  cogito_draw_rect_plain(x,  iy, tick, 1, border);
-  cogito_draw_rect_plain(ix, y,  1, tick, border);
+  cogito_draw_rect_plain(x,  iy, tick, 2, border);
+  cogito_draw_rect_plain(ix, y,  2, tick, border);
   // Top-right: inner top extends right to outer right; inner right extends up to outer top
-  cogito_draw_rect_plain(ir, iy, tick, 1, border);
-  cogito_draw_rect_plain(ir, y,  1, tick, border);
+  cogito_draw_rect_plain(ir, iy, tick, 2, border);
+  cogito_draw_rect_plain(ir, y,  2, tick, border);
   // Bottom-left: inner bottom extends left; inner left extends down to outer bottom
-  cogito_draw_rect_plain(x,  ib, tick, 1, border);
-  cogito_draw_rect_plain(ix, ib, 1, tick, border);
+  cogito_draw_rect_plain(x,  ib, tick, 2, border);
+  cogito_draw_rect_plain(ix, ib, 2, tick, border);
   // Bottom-right: inner bottom extends right; inner right extends down
-  cogito_draw_rect_plain(ir, ib, tick, 1, border);
-  cogito_draw_rect_plain(ir, ib, 1, tick, border);
+  cogito_draw_rect_plain(ir, ib, tick, 2, border);
+  cogito_draw_rect_plain(ir, ib, 2, tick, border);
 }
 
 static void cogito_draw_rect_lines_node(const CogitoNode* n, const CogitoStyle* s,
@@ -480,8 +480,7 @@ static void cogito_draw_rect_lines_node(const CogitoNode* n, const CogitoStyle* 
 
   bool patterned_border = false;
   if (n && n->class_name && n->class_name->data && n->class_name->data[0]) {
-    patterned_border = cogito_class_has_token(n->class_name->data,
-                                              "pattern-border");
+    patterned_border = cogito_class_has_token(n->class_name->data, "pattern-border");
   }
   if (patterned_border && tl == 0 && tr == 0 && br == 0 && bl == 0) {
     cogito_draw_pattern_frame(x, y, w, h, border, thickness);

@@ -48,6 +48,7 @@
 #undef cogito_canvas_circle
 #undef cogito_canvas_fill_circle
 #undef cogito_canvas_fill_rect
+#undef cogito_canvas_draw_bitmap
 #undef cogito_canvas_line
 #undef cogito_canvas_rect
 #undef cogito_canvas_set_color
@@ -1629,6 +1630,17 @@ static void __cogito_canvas_fill_rect(YisVal dav, YisVal xv, YisVal yv,
   cogito_node* da = cogito_node_from_val(dav);
   cogito_canvas_fill_rect(da, (int)yis_as_int(xv), (int)yis_as_int(yv),
                           (int)yis_as_int(wv), (int)yis_as_int(hv));
+}
+static void __cogito_canvas_draw_bitmap(YisVal dav, YisVal xv, YisVal yv,
+                                        YisVal src_wv, YisVal src_hv,
+                                        YisVal dst_wv, YisVal dst_hv,
+                                        YisVal rowsv) {
+  cogito_node* da = cogito_node_from_val(dav);
+  void* rows_ptr = (rowsv.tag == EVT_ARR) ? rowsv.as.p : NULL;
+  cogito_canvas_draw_bitmap(da, (int)yis_as_int(xv), (int)yis_as_int(yv),
+                            (int)yis_as_int(src_wv), (int)yis_as_int(src_hv),
+                            (int)yis_as_int(dst_wv), (int)yis_as_int(dst_hv),
+                            rows_ptr);
 }
 static void __cogito_canvas_fill_linear_gradient(YisVal dav, YisVal xv,
                                                  YisVal yv, YisVal wv,
@@ -5273,6 +5285,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_canvas_line __cogito_canvas_line
 #define cogito_canvas_rect __cogito_canvas_rect
 #define cogito_canvas_fill_rect __cogito_canvas_fill_rect
+#define cogito_canvas_draw_bitmap __cogito_canvas_draw_bitmap
 #define cogito_canvas_fill_linear_gradient __cogito_canvas_fill_linear_gradient
 #define cogito_canvas_fill_linear_gradient_angle __cogito_canvas_fill_linear_gradient_angle
 #define cogito_canvas_fill_radial_gradient __cogito_canvas_fill_radial_gradient

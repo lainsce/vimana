@@ -221,6 +221,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_canvas_fill_radial_gradient cogito_canvas_fill_radial_gradient_yis
 #define cogito_canvas_circle cogito_canvas_circle_yis
 #define cogito_canvas_fill_circle cogito_canvas_fill_circle_yis
+#define cogito_canvas_draw_bitmap cogito_canvas_draw_bitmap_yis
 #define cogito_shape_new cogito_shape_new_yis
 #define cogito_shape_set_preset cogito_shape_set_preset_yis
 #define cogito_shape_get_preset cogito_shape_get_preset_yis
@@ -655,6 +656,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_canvas_fill_radial_gradient
 #undef cogito_canvas_circle
 #undef cogito_canvas_fill_circle
+#undef cogito_canvas_draw_bitmap
 #undef cogito_shape_new
 #undef cogito_shape_set_preset
 #undef cogito_shape_get_preset
@@ -3343,6 +3345,15 @@ void cogito_canvas_fill_circle(cogito_node *area, int cx, int cy, int r) {
   if (!area)
     return;
   cogito_canvas_fill_circle_yis(YV_OBJ(area), YV_INT(cx), YV_INT(cy), YV_INT(r));
+}
+void cogito_canvas_draw_bitmap(cogito_node *area, int x, int y,
+                               int src_w, int src_h, int dst_w, int dst_h,
+                               void *rows_arr) {
+  if (!area) return;
+  YisVal rowsv = rows_arr ? YV_ARR((YisArr*)rows_arr) : YV_NULLV;
+  cogito_canvas_draw_bitmap_yis(YV_OBJ(area), YV_INT(x), YV_INT(y),
+                                YV_INT(src_w), YV_INT(src_h),
+                                YV_INT(dst_w), YV_INT(dst_h), rowsv);
 }
 
 cogito_node *cogito_active_indicator_new(void) {

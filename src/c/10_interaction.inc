@@ -277,6 +277,12 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
     }
     if (cogito_hit_node(ss, x, y)) return ss;
   }
+  if (n->kind == COGITO_WINDOW && n->dialog_open && n->dialog) {
+    CogitoNode* dlg_hit = cogito_find_clickable(n->dialog, x, y);
+    if (dlg_hit) return dlg_hit;
+    // Dialog is modal — capture all pointer events over the window.
+    if (cogito_hit_rect(x, y, 0, 0, n->w, n->h)) return n->dialog;
+  }
   if (n->kind == COGITO_ZSTACK) {
     CogitoNode* sheet = NULL;
     for (size_t i = n->len; i > 0; i--) {

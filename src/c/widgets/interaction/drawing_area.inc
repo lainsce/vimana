@@ -413,3 +413,114 @@ static void cogito_canvas_fill_circle(YisVal ctxv, YisVal cxv, YisVal cyv, YisVa
   }
   cogito_canvas_scissor_end(clipped);
 }
+
+// ---------------------------------------------------------------------------
+// Cached monochrome bitmap drawing
+// Converts a Yis [string] rows array (each string = row of '0'/'1' chars) to
+// a CogitoTexture on first use, caches by array pointer + dst size, then
+// draws it in one draw_texture call using the current canvas color as a tint.
+// ---------------------------------------------------------------------------
+
+#define COGITO_BITMAP_CACHE_MAX 256
+typedef struct {
+  void*           key;    // YisArr* pointer — stable for global const arrays
+  int             dst_w;
+  int             dst_h;
+  CogitoTexture*  tex;
+} CogitoBitmapEntry;
+
+static CogitoBitmapEntry cogito_bitmap_cache[COGITO_BITMAP_CACHE_MAX];
+static int cogito_bitmap_cache_count = 0;
+
+static CogitoTexture* cogito_bitmap_cache_lookup(void* key, int dst_w, int dst_h) {
+  for (int i = 0; i < cogito_bitmap_cache_count; i++) {
+    if (cogito_bitmap_cache[i].key == key &&
+        cogito_bitmap_cache[i].dst_w == dst_w &&
+        cogito_bitmap_cache[i].dst_h == dst_h) {
+      return cogito_bitmap_cache[i].tex;
+    }
+  }
+  return NULL;
+}
+
+static void cogito_bitmap_cache_store(void* key, int dst_w, int dst_h, CogitoTexture* tex) {
+  if (cogito_bitmap_cache_count >= COGITO_BITMAP_CACHE_MAX) return;
+  cogito_bitmap_cache[cogito_bitmap_cache_count++] =
+      (CogitoBitmapEntry){key, dst_w, dst_h, tex};
+}
+
+__attribute__((unused))
+static void cogito_canvas_draw_bitmap(YisVal ctxv, YisVal xv, YisVal yv,
+                                      YisVal src_wv, YisVal src_hv,
+                                      YisVal dst_wv, YisVal dst_hv,
+                                      YisVal rowsv) {
+  CogitoNode* n = cogito_canvas_active_node(ctxv);
+  if (!n || !cogito_backend || !cogito_backend->texture_create ||
+      !cogito_backend->draw_texture) return;
+  if (rowsv.tag != EVT_ARR) return;
+
+  int src_w = cogito_canvas_int(src_wv);
+  int src_h = cogito_canvas_int(src_hv);
+  int dst_w = cogito_canvas_int(dst_wv);
+  int dst_h = cogito_canvas_int(dst_hv);
+  if (src_w <= 0 || src_h <= 0 || dst_w <= 0 || dst_h <= 0) return;
+
+  void* cache_key = rowsv.as.p;
+  CogitoTexture* tex = cogito_bitmap_cache_lookup(cache_key, dst_w, dst_h);
+
+  if (!tex) {
+    uint8_t* pixels = (uint8_t*)calloc((size_t)dst_w * (size_t)dst_h * 4, 1);
+    if (!pixels) return;
+
+    YisArr* rows = (YisArr*)rowsv.as.p;
+    int rise_x = src_w, rise_y = src_h;
+    int run_x = dst_w,  run_y = dst_h;
+
+    int src_y = 0, err_y = 0;
+    for (int dy = 0; dy < dst_h; dy++) {
+      const char* bits = NULL;
+      int bits_len = 0;
+      if (src_y < (int)rows->len) {
+        YisVal rv = rows->items[src_y];
+        if (rv.tag == EVT_STR) {
+          YisStr* s = (YisStr*)rv.as.p;
+          bits = s->data;
+          bits_len = (int)s->len;
+        }
+      }
+
+      int src_x = 0, err_x = 0;
+      for (int dx = 0; dx < dst_w; dx++) {
+        if (bits && src_x < bits_len && bits[src_x] == '1') {
+          int pi = (dy * dst_w + dx) * 4;
+          pixels[pi]     = 255;
+          pixels[pi + 1] = 255;
+          pixels[pi + 2] = 255;
+          pixels[pi + 3] = 255;
+        }
+        err_x += rise_x;
+        while (err_x >= run_x) { err_x -= run_x; src_x++; }
+      }
+
+      err_y += rise_y;
+      while (err_y >= run_y) { err_y -= run_y; src_y++; }
+    }
+
+    tex = cogito_backend->texture_create(dst_w, dst_h, pixels, 4);
+    free(pixels);
+    cogito_bitmap_cache_store(cache_key, dst_w, dst_h, tex);
+  }
+
+  if (!tex) return;
+
+  int ax = n->x + cogito_canvas_int(xv);
+  int ay = n->y + cogito_canvas_int(yv);
+  CogitoColor color = n->kd->drawing_area.canvas_color;
+  CogitoRect src = {0, 0, dst_w, dst_h};
+  CogitoRect dst = {ax, ay, dst_w, dst_h};
+
+  bool clipped = false;
+  cogito_canvas_scissor_begin(n, &clipped);
+  cogito_backend->draw_texture(tex, src, dst, color);
+  cogito_canvas_scissor_end(clipped);
+}
