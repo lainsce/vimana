@@ -1,0 +1,8 @@
+[cogresource]
+prefix = "/io/github/lainsce/World"
+
+[[cogresource.file]]
+src = "io.github.lainsce.World.svg"
+
+[[cogresource.file]]
+src = "io.github.lainsce.World-symbolic.svg"

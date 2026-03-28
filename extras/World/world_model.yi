@@ -1,0 +1,459 @@
+cask world_model
+
+bring stdr
+bring world_presets
+
+def MAP_COLS = 34
+def MAP_ROWS = 23
+def TILE_W = 16
+def TILE_H = 24
+def UI_TILE_W = 12
+def UI_TILE_H = 15
+def GLYPH_COUNT = 57
+def HISTORY_LIMIT = 256
+
+def GLYPH_LAYOUT = "qQwWeErRtTyYuUiIoOpPaAsSdDfFgGhHjJkKlLzZxXcCvVbBnNmM,<.>_"
+
+def ?tilemap_blob = ""
+def ?tilecolor_blob = ""
+def ?glyph_colors = []: [num]
+def ?undo_stack = []: [string]
+def ?redo_stack = []: [string]
+
+: clamp_glyph_idx(idx = num) (( num ))
+    let ?i = idx
+    if i < 0
+        i = 0
+    if i >= GLYPH_COUNT
+        i = GLYPH_COUNT - 1
+    <- i
+;
+
+: clamp_color_idx(idx = num) (( num ))
+    let ?i = idx
+    if i < 1
+        i = 1
+    if i > 3
+        i = 3
+    <- i
+;
+
+: glyph_default_color(idx = num) (( num ))
+    if idx == 3 || idx == 23 || idx == 24 || idx == 28 || idx == 29 || idx == 33 || idx == 50
+        <- 2
+    <- 3
+;
+
+: map_index(col = num, row = num) (( num ))
+    <- row * MAP_COLS + col
+;
+
+: replace_char(text = string, idx = num, ch = string) (( string ))
+    let left = stdr.slice(text, 0, idx)
+    let right = stdr.slice(text, idx + 1, stdr.len(text))
+    <- left + ch + right
+;
+
+: make_blank_map() (( string ))
+    let ?parts = []: [any]
+    let total = MAP_COLS * MAP_ROWS
+    for (let ?i = 0; i < total; i += 1)
+        stdr.push(parts, "_")
+    <- stdr.join(parts)
+;
+
+: make_blank_color_map() (( string ))
+    let ?parts = []: [any]
+    let total = MAP_COLS * MAP_ROWS
+    for (let ?i = 0; i < total; i += 1)
+        stdr.push(parts, "0")
+    <- stdr.join(parts)
+;
+
+: color_char(color_idx = num) (( string ))
+    let ci = clamp_color_idx(color_idx)
+    if ci == 1
+        <- "1"
+    if ci == 2
+        <- "2"
+    <- "3"
+;
+
+: color_idx_from_char(ch = string) (( num ))
+    if ch == "1"
+        <- 1
+    if ch == "2"
+        <- 2
+    if ch == "3"
+        <- 3
+    <- 0
+;
+
+: default_color_char_for_letter(letter = string) (( string ))
+    let idx = glyph_index_in_layout(letter)
+    if idx < 0
+        <- "0"
+    <- color_char(glyph_default_color(idx))
+;
+
+: default_color_map_for_map(map_blob = string) (( string ))
+    let total = MAP_COLS * MAP_ROWS
+    let ?parts = []: [any]
+
+    for (let ?i = 0; i < total; i += 1)
+        let letter = stdr.char_at(map_blob, i)
+        stdr.push(parts, default_color_char_for_letter(letter))
+
+    <- stdr.join(parts)
+;
+
+: pack_state() (( string ))
+    <- tilemap_blob + "|" + tilecolor_blob
+;
+
+: state_sep_idx(state = string) (( num ))
+    let n = stdr.len(state)
+    for (let ?i = 0; i < n; i += 1)
+        if stdr.char_at(state, i) == "|"
+            <- i
+    <- -1
+;
+
+: unpack_state(state = string) (( -- ))
+    let sep = state_sep_idx(state)
+    if sep < 0
+        tilemap_blob = state
+        tilecolor_blob = default_color_map_for_map(tilemap_blob)
+        <-
+
+    tilemap_blob = stdr.slice(state, 0, sep)
+    tilecolor_blob = stdr.slice(state, sep + 1, stdr.len(state))
+
+    let expected = MAP_COLS * MAP_ROWS
+    if stdr.len(tilemap_blob) != expected
+        tilemap_blob = make_blank_map()
+    if stdr.len(tilecolor_blob) != expected
+        tilecolor_blob = default_color_map_for_map(tilemap_blob)
+;
+
+: push_stack(stack = [string], value = string) (( [string] ))
+    let ?out = []: [string]
+    let n = len(stack)
+    let ?start = 0
+    if n >= HISTORY_LIMIT
+        start = n - HISTORY_LIMIT + 1
+
+    for (let ?i = start; i < n; i += 1)
+        out[len(out)] = str(stack[i] ?? "")
+
+    out[len(out)] = value
+    <- out
+;
+
+: glyph_index_in_layout(ch = string) (( num ))
+    let n = stdr.len(GLYPH_LAYOUT)
+    for (let ?i = 0; i < n; i += 1)
+        if stdr.char_at(GLYPH_LAYOUT, i) == ch
+            <- i
+    <- -1
+;
+
+: reset_glyph_colors() (( -- ))
+    glyph_colors = []: [num]
+    for (let ?i = 0; i < GLYPH_COUNT; i += 1)
+        glyph_colors[i] = glyph_default_color(i)
+;
+
+:: reset_world() (( -- ))
+    tilemap_blob = make_blank_map()
+    tilecolor_blob = make_blank_color_map()
+    reset_glyph_colors()
+    undo_stack = []: [string]
+    redo_stack = []: [string]
+;
+
+:: cols() (( num ))
+    <- MAP_COLS
+;
+
+:: rows() (( num ))
+    <- MAP_ROWS
+;
+
+:: tile_width() (( num ))
+    <- TILE_W
+;
+
+:: tile_height() (( num ))
+    <- TILE_H
+;
+
+:: ui_tile_width() (( num ))
+    <- UI_TILE_W
+;
+
+:: ui_tile_height() (( num ))
+    <- UI_TILE_H
+;
+
+:: pixel_width() (( num ))
+    <- MAP_COLS * TILE_W
+;
+
+:: pixel_height() (( num ))
+    <- MAP_ROWS * TILE_H
+;
+
+:: current_map() (( string ))
+    <- pack_state()
+;
+
+:: glyph_count() (( num ))
+    <- GLYPH_COUNT
+;
+
+:: glyph_letter(glyph_idx = num) (( string ))
+    let i = clamp_glyph_idx(glyph_idx)
+    <- stdr.char_at(GLYPH_LAYOUT, i)
+;
+
+:: glyph_label(glyph_idx = num) (( string ))
+    <- glyph_letter(glyph_idx)
+;
+
+:: glyph_index_from_letter(ch = string) (( num ))
+    let idx = glyph_index_in_layout(ch)
+    if idx < 0
+        <- 0
+    <- idx
+;
+
+:: cell_letter(col = num, row = num) (( string ))
+    if col < 0 || col >= MAP_COLS || row < 0 || row >= MAP_ROWS
+        <- "_"
+    let idx = map_index(col, row)
+    <- stdr.char_at(tilemap_blob, idx)
+;
+
+:: cell_glyph_idx(col = num, row = num) (( num ))
+    <- glyph_index_from_letter(cell_letter(col, row))
+;
+
+:: glyph_color(glyph_idx = num) (( num ))
+    let i = clamp_glyph_idx(glyph_idx)
+    let ?color_idx = glyph_colors[i] ?? glyph_default_color(i)
+    color_idx = clamp_color_idx(color_idx)
+    <- color_idx
+;
+
+:: cell_color(col = num, row = num) (( num ))
+    if col < 0 || col >= MAP_COLS || row < 0 || row >= MAP_ROWS
+        <- 1
+
+    let idx = map_index(col, row)
+    let raw = stdr.char_at(tilecolor_blob, idx)
+    let ci = color_idx_from_char(raw)
+    if ci > 0
+        <- ci
+
+    let glyph_idx = cell_glyph_idx(col, row)
+    if glyph_idx <= 0
+        <- 1
+    <- glyph_color(glyph_idx)
+;
+
+:: set_glyph_color(glyph_idx = num, color_idx = num) (( -- ))
+    let i = clamp_glyph_idx(glyph_idx)
+    glyph_colors[i] = clamp_color_idx(color_idx)
+;
+
+:: paint_brush(center_col = num, center_row = num, brush_size = num, glyph_idx = num) (( bool ))
+    let letter = glyph_letter(glyph_idx)
+    let brush_color = glyph_color(glyph_idx)
+    let brush_color_ch = color_char(brush_color)
+
+    let ?size = brush_size
+    if size < 1
+        size = 1
+    if size > 5
+        size = 5
+
+    let half = stdr.floor(size / 2)
+    let start_col = center_col - half
+    let start_row = center_row - half
+
+    let ?next = tilemap_blob
+    let ?next_colors = tilecolor_blob
+    let ?changed = false
+
+    for (let ?dy = 0; dy < size; dy += 1)
+        let row = start_row + dy
+        if row < 0 || row >= MAP_ROWS
+            continue
+        for (let ?dx = 0; dx < size; dx += 1)
+            let col = start_col + dx
+            if col < 0 || col >= MAP_COLS
+                continue
+            let idx = map_index(col, row)
+            let prev = stdr.char_at(next, idx)
+            let prev_color = stdr.char_at(next_colors, idx)
+            if prev != letter || prev_color != brush_color_ch
+                next = replace_char(next, idx, letter)
+                next_colors = replace_char(next_colors, idx, brush_color_ch)
+                changed = true
+
+    if changed
+        tilemap_blob = next
+        tilecolor_blob = next_colors
+
+    <- changed
+;
+
+:: stamp_preset(center_col = num, center_row = num, preset_idx = num, glyph_idx = num, color_idx = num) (( bool ))
+    let pw = world_presets.preset_width(preset_idx)
+    let ph = world_presets.preset_height(preset_idx)
+    if pw <= 0 || ph <= 0
+        <- false
+
+    let start_col = center_col - stdr.floor(pw / 2)
+    let start_row = center_row - stdr.floor(ph / 2)
+    let brush_letter = glyph_letter(glyph_idx)
+
+    let ?next = tilemap_blob
+    let ?next_colors = tilecolor_blob
+    let ?changed = false
+
+    for (let ?py = 0; py < ph; py += 1)
+        for (let ?px = 0; px < pw; px += 1)
+            let col = start_col + px
+            let row = start_row + py
+            if col < 0 || col >= MAP_COLS || row < 0 || row >= MAP_ROWS
+                continue
+
+            let token_primary = world_presets.preset_cell_for_color(preset_idx, px, py, 1)
+            let token_secondary = world_presets.preset_cell_for_color(preset_idx, px, py, 2)
+
+            let ?token = "_"
+            let ?stamp_color = color_idx
+            if token_primary != "_"
+                token = token_primary
+                stamp_color = 2
+            if token_secondary != "_"
+                token = token_secondary
+                stamp_color = 3
+
+            if token == "_"
+                continue
+
+            let ?letter = token
+            if token == "#"
+                letter = brush_letter
+            elif glyph_index_in_layout(token) < 0
+                letter = brush_letter
+
+            let idx = map_index(col, row)
+            let prev = stdr.char_at(next, idx)
+            let stamp_color_ch = color_char(stamp_color)
+            let prev_color = stdr.char_at(next_colors, idx)
+            if prev != letter || prev_color != stamp_color_ch
+                next = replace_char(next, idx, letter)
+                next_colors = replace_char(next_colors, idx, stamp_color_ch)
+                changed = true
+
+    if changed
+        tilemap_blob = next
+        tilecolor_blob = next_colors
+
+    <- changed
+;
+
+:: commit_stroke(before = string) (( bool ))
+    let now = pack_state()
+    if before == now
+        <- false
+
+    undo_stack = push_stack(undo_stack, before)
+    redo_stack = []: [string]
+    <- true
+;
+
+:: can_undo() (( bool ))
+    <- len(undo_stack) > 0
+;
+
+:: can_redo() (( bool ))
+    <- len(redo_stack) > 0
+;
+
+:: undo() (( bool ))
+    let count = len(undo_stack)
+    if count == 0
+        <- false
+
+    let prev = str(undo_stack[count - 1] ?? pack_state())
+
+    let ?next_undo = []: [string]
+    for (let ?i = 0; i < count - 1; i += 1)
+        next_undo[len(next_undo)] = str(undo_stack[i] ?? "")
+
+    undo_stack = next_undo
+    redo_stack = push_stack(redo_stack, pack_state())
+    unpack_state(prev)
+    <- true
+;
+
+:: redo() (( bool ))
+    let count = len(redo_stack)
+    if count == 0
+        <- false
+
+    let next_value = str(redo_stack[count - 1] ?? pack_state())
+
+    let ?next_redo = []: [string]
+    for (let ?i = 0; i < count - 1; i += 1)
+        next_redo[len(next_redo)] = str(redo_stack[i] ?? "")
+
+    redo_stack = next_redo
+    undo_stack = push_stack(undo_stack, pack_state())
+    unpack_state(next_value)
+    <- true
+;
+
+:: export_map_text() (( string ))
+    let ?parts = []: [any]
+
+    for (let ?row = 0; row < MAP_ROWS; row += 1)
+        if row > 0
+            stdr.push(parts, "\n")
+        for (let ?col = 0; col < MAP_COLS; col += 1)
+            let idx = map_index(col, row)
+            stdr.push(parts, stdr.char_at(tilemap_blob, idx))
+
+    <- stdr.join(parts)
+;
+
+:: import_map_text(text = string) (( -- ))
+    let total = MAP_COLS * MAP_ROWS
+    let ?letters = []: [any]
+    let n = stdr.len(text)
+
+    for (let ?i = 0; i < n; i += 1)
+        let ch = stdr.char_at(text, i)
+        let idx = glyph_index_in_layout(ch)
+        if idx >= 0
+            stdr.push(letters, ch)
+        elif ch == " "
+            stdr.push(letters, "_")
+
+    let ?parts = []: [any]
+    for (let ?i = 0; i < total; i += 1)
+        if i < len(letters)
+            stdr.push(parts, str(letters[i] ?? "_"))
+        else
+            stdr.push(parts, "_")
+
+    tilemap_blob = stdr.join(parts)
+    tilecolor_blob = default_color_map_for_map(tilemap_blob)
+    undo_stack = []: [string]
+    redo_stack = []: [string]
+;

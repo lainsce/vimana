@@ -1,0 +1,11 @@
+cask world_style
+
+: sum_for_theme(theme_idx = num) (( string ))
+    let ?i = theme_idx
+    if i < 0
+        i = 0
+    if i > 15
+        i = 15
+
+    <- "themes/world_theme_" + str(i) + ".sum"
+;

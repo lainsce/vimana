@@ -1,0 +1,288 @@
+@diagnostics: warn
+
+@fg: #FFFEAE
+@bg: #000000
+@accent: #AB00E4
+@accent-strong: #7EFF72
+
+
+scroller
+  background: transparent
+
+vstack
+hstack
+grid
+zstack
+  background: @bg
+
+dialog
+  background: @bg
+  color: @fg
+  icon-color: @fg
+  border: 5 solid @accent-strong
+  border-radius: 0
+
+label
+  color: @fg
+  font-family: "MEKMODE Text"
+  font-render: pixel
+
+window_bar
+  background: @bg
+  color: @fg
+  icon-color: @fg
+
+appbar.world-topbar
+  background: @bg
+  color: @fg
+  border-radius: 0
+  min-height: 64
+  max-height: 64
+  font-size: 20
+  font-family: "MEKMODE Text"
+  font-render: pixel
+
+label.title
+label.subtitle
+label.display
+  color: @fg
+  font-family: "MEKMODE Text"
+  font-render: pixel
+
+iconbtn.appbar-leading
+iconbtn.trailing
+iconbtn.appbar-leading:hover
+iconbtn.trailing:hover
+iconbtn.appbar-leading:active
+iconbtn.trailing:active
+  color: @fg
+  icon-color: @fg
+  background: transparent
+  border: 0 solid transparent
+
+vstack.world-home
+vstack.world-editor
+vstack.world-root
+hstack.world-body
+  background: @bg
+
+label.world-home-title
+  color: @fg
+  font-size: 32
+  font-family: "MEKMODE Text"
+  font-render: pixel
+  text-align: center
+
+label.world-home-option
+  color: @fg
+  font-size: 15
+  font-family: "MEKMODE Text"
+  font-render: pixel
+
+button.world-home-dot
+  min-width: 64
+  min-height: 64
+  max-width: 64
+  max-height: 64
+  border-radius: 999
+  border: 0 solid @bg
+  background: @accent
+  color: @accent
+
+button.world-home-dot:hover
+  background: @accent-strong
+  color: @accent-strong
+
+button.world-home-dot:active
+  background: @fg
+  color: @fg
+
+grid.world-tools
+  background: @bg
+
+vstack.world-tool-item
+  background: @bg
+  min-width: 60
+
+drawing_area.world-tool-repr
+  min-width: 60
+  min-height: 100
+  border-radius: 0
+  border: 5 solid @accent
+  background: @bg
+
+label.world-tool-label
+  color: @fg
+  text-align: center
+  font-size: 15
+  font-family: "MEKMODE Text"
+  font-render: pixel
+  min-width: 60
+
+vstack.world-brush-size-panel
+  min-width: 60
+  min-height: 100
+  max-width: 60
+  max-height: 100
+  border-radius: 0
+  border: 5 solid @accent
+  background: @bg
+  padding-top: 0
+  padding-right: 8
+  padding-bottom: 0
+  padding-left: 8
+
+button.world-brush-size-btn
+  min-width: 44
+  max-width: 44
+  min-height: 20
+  max-height: 20
+  text-align: center
+  background: transparent
+  color: @fg
+  border: 0 solid transparent
+  font-size: 15
+  font-family: "MEKMODE Text"
+  font-render: pixel
+  padding: 0
+
+button.world-brush-size-btn:hover
+  border: 0 solid transparent
+  background: transparent
+  color: @fg
+
+button.world-brush-size-btn:active
+  border: 0 solid transparent
+  background: transparent
+  color: @bg
+
+button.world-brush-size-btn-selected
+  border: 0 solid transparent
+  background: transparent
+  color: @accent-strong
+
+vstack.world-map-frame
+  background: @bg
+  border: 5 solid @accent
+  border-radius: 0
+  padding-top: 0
+  padding-right: 0
+  padding-bottom: 0
+  padding-left: 0
+
+vstack.world-map-surface
+  background: @bg
+  border: 0 solid @accent
+  border-radius: 0
+
+drawing_area.world-map-canvas
+  background: @bg
+
+button.world-side-btn
+  min-width: 160
+  min-height: 64
+  max-width: 160
+  max-height: 64
+  border-radius: 0
+  border: 5 solid @accent
+  background: @bg
+  color: @fg
+  text-align: left
+  padding-left: 32
+  font-size: 15
+  font-family: "MEKMODE Text"
+  font-render: pixel
+
+button.world-side-btn:hover
+  border: 5 solid @accent-strong
+  color: @fg
+
+button.world-side-btn:active
+  border: 5 solid @accent-strong
+  background: @accent
+  color: @fg
+
+button.world-side-btn:disabled
+  border: 5 solid @accent
+  background: @bg
+  color: @accent
+
+vstack.world-dialog-card
+  background: @bg
+
+label.world-dialog-title
+  color: @accent
+  font-size: 15
+  font-family: "MEKMODE Text"
+  font-render: pixel
+
+label.world-dialog-hint
+  color: @fg
+  font-size: 15
+  font-family: "MEKMODE Text"
+  font-render: pixel
+  text-align: center
+
+vstack.world-theme-cell
+  background: @bg
+  border: 5 solid @accent
+  border-radius: 0
+
+vstack.world-theme-cell-selected
+  border: 5 solid @accent-strong
+
+vstack.world-color-cell
+  background: @bg
+  border: 5 solid @accent
+  border-radius: 0
+
+drawing_area.world-dialog-swatch
+  background: @bg
+
+button.world-glyph-btn
+  min-width: 48
+  min-height: 42
+  max-height: 42
+  border-radius: 0
+  border: 5 solid @accent
+  background: @bg
+  color: @fg
+  font-size: 15
+  font-family: "MEKMODE Text"
+  font-render: pixel
+  padding: 0
+
+button.world-glyph-btn:hover
+  border: 5 solid @accent-strong
+
+button.world-glyph-btn:active
+  border: 5 solid @accent-strong
+  background: @accent
+
+button.world-glyph-btn-selected
+  border: 5 solid @accent-strong
+  background: @accent
+
+button.world-brush-btn
+  min-width: 44
+  min-height: 44
+  max-height: 44
+  border-radius: 0
+  border: 5 solid @accent
+  background: transparent
+  color: @fg
+  font-size: 15
+  font-family: "MEKMODE Text"
+  font-render: pixel
+  padding: 0
+
+button.world-brush-btn:hover
+  border: 5 solid @accent-strong
+
+button.world-brush-btn:active
+  border: 5 solid @accent-strong
+  background: @accent
+
+button.world-brush-btn-selected
+  border: 5 solid @accent-strong
+  background: @accent

@@ -1,0 +1,155 @@
+cask world_themes
+
+def THEME_TOTAL = 16
+
+-- Order: [FG, CLR1, CLR2, BG]
+def THEME_0 = ["#FFFFFF", "#DDDB9D", "#355D9A", "#221434"]   -- Dithered
+def THEME_1 = ["#FFFFFF", "#FDC700", "#155DFC", "#000000"]   -- Blue Flame
+def THEME_2 = ["#FFFFFF", "#9BBC0F", "#306230", "#000000"]   -- Terminal
+def THEME_3 = ["#FFFFFF", "#FF97AA", "#4B884B", "#0A0E31"]   -- Rosewood
+def THEME_4 = ["#FFFFFF", "#FDC700", "#8282FF", "#155DFC"]   -- Blue Flame Inverted
+def THEME_5 = ["#FFFFFF", "#FFA9C3", "#AC3BAA", "#18005E"]   -- Orchid
+def THEME_6 = ["#FFFEAE", "#7EFF72", "#AB00E4", "#000000"]   -- Neon Green
+def THEME_7 = ["#FFFFFF", "#B0B1C2", "#575866", "#0C0D1E"]   -- Steel
+def THEME_8 = ["#FFFFFF", "#FF7A1A", "#6A1AFF", "#0D0A1A"]   -- Foxfire
+def THEME_9 = ["#FFFFFF", "#AAFF00", "#003FBF", "#000000"]   -- Chlorophyll
+def THEME_10 = ["#FFF5DC", "#E02020", "#1A3A6E", "#1A0A08"]  -- Wax Seal
+def THEME_11 = ["#FFFFFF", "#FF2D8A", "#2A7A3A", "#000000"]  -- Neon Moss
+def THEME_12 = ["#FFFFFF", "#00D4FF", "#C01040", "#7A0028"]  -- Cascade
+def THEME_13 = ["#FFFAEE", "#FFCC00", "#7030B0", "#080808"]  -- Marigold Bruise
+def THEME_14 = ["#E8F4F8", "#50C8B0", "#5060C0", "#080C1C"]  -- Permafrost
+def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
+
+: clamp_theme_idx(idx = num) (( num ))
+    let ?i = idx
+    if i < 0
+        i = 0
+    if i >= THEME_TOTAL
+        i = THEME_TOTAL - 1
+    <- i
+;
+
+: clamp_color_idx(idx = num) (( num ))
+    let ?i = idx
+    if i < 0
+        i = 0
+    if i > 4
+        i = 4
+    <- i
+;
+
+: theme_ref(idx = num) (( [any] ))
+    let i = clamp_theme_idx(idx)
+    if i == 1
+        <- THEME_1
+    elif i == 2
+        <- THEME_2
+    elif i == 3
+        <- THEME_3
+    elif i == 4
+        <- THEME_4
+    elif i == 5
+        <- THEME_5
+    elif i == 6
+        <- THEME_6
+    elif i == 7
+        <- THEME_7
+    elif i == 8
+        <- THEME_8
+    elif i == 9
+        <- THEME_9
+    elif i == 10
+        <- THEME_10
+    elif i == 11
+        <- THEME_11
+    elif i == 12
+        <- THEME_12
+    elif i == 13
+        <- THEME_13
+    elif i == 14
+        <- THEME_14
+    elif i == 15
+        <- THEME_15
+    <- THEME_0
+;
+
+:: theme_count() (( num ))
+    <- THEME_TOTAL
+;
+
+:: theme_color(theme_idx = num, color_idx = num) (( string ))
+    let colors = theme_ref(theme_idx)
+    let ci = clamp_color_idx(color_idx)
+
+    let ?mapped = 3
+    if ci == 1
+        mapped = 0
+    elif ci == 2
+        mapped = 1
+    elif ci == 3
+        mapped = 2
+    elif ci == 4
+        mapped = 2
+
+    <- str(colors[mapped] ?? "#000000")
+;
+
+: hex_to_rgb(hex = string) (( [num] ))
+    let clean = stdr.slice(hex, 1, len(hex))
+    let r = stdr.parse_hex(stdr.slice(clean, 0, 2))
+    let g = stdr.parse_hex(stdr.slice(clean, 2, 4))
+    let b = stdr.parse_hex(stdr.slice(clean, 4, 6))
+    <- [r, g, b]
+;
+
+: clamp_byte(v = num) (( num ))
+    if v < 0
+        <- 0
+    if v > 255
+        <- 255
+    <- v
+;
+
+: hex_digit(n = num) (( string ))
+    if n < 10
+        <- stdr.char_from_code(48 + n)
+    <- stdr.char_from_code(87 + n)
+;
+
+: byte_to_hex(n = num) (( string ))
+    let hi = stdr.floor(n / 16)
+    let lo = n - hi * 16
+    <- hex_digit(hi) + hex_digit(lo)
+;
+
+: rgb_to_hex(r = num, g = num, b = num) (( string ))
+    let cr = clamp_byte(r)
+    let cg = clamp_byte(g)
+    let cb = clamp_byte(b)
+    <- "#" + byte_to_hex(cr) + byte_to_hex(cg) + byte_to_hex(cb)
+;
+
+: adjust_color(hex = string, amount = num) (( string ))
+    let rgb = hex_to_rgb(hex)
+    let r = rgb[0]
+    let g = rgb[1]
+    let b = rgb[2]
+    <- rgb_to_hex(r + amount, g + amount, b + amount)
+;
+
+: is_dark_bg(hex = string) (( bool ))
+    let rgb = hex_to_rgb(hex)
+    let r = rgb[0]
+    let g = rgb[1]
+    let b = rgb[2]
+    let lum = (r * 299 + g * 587 + b * 114) / 1000
+    <- lum < 128
+;
+
+:: theme_window_bar_color(theme_idx = num) (( string ))
+    let bg = theme_color(theme_idx, 0)
+    let adjustment = 20
+    if is_dark_bg(bg)
+        <- adjust_color(bg, adjustment)
+    <- adjust_color(bg, -adjustment)
+;

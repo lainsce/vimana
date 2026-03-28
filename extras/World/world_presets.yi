@@ -1,0 +1,300 @@
+cask world_presets
+
+bring stdr
+
+def PRESET_COUNT = 26
+
+: clamp_preset_idx(idx = num) (( num ))
+    let ?i = idx
+    if i < 0
+        i = 0
+    if i >= PRESET_COUNT
+        i = PRESET_COUNT - 1
+    <- i
+;
+
+: preset_height_internal(idx = num) (( num ))
+    if idx == 0
+        <- 1
+    if idx == 1
+        <- 2
+    if idx == 2
+        <- 2
+    if idx == 3
+        <- 3
+    if idx == 4
+        <- 1
+    if idx == 5
+        <- 2
+    if idx == 6
+        <- 1
+    if idx == 7
+        <- 2
+    if idx == 8
+        <- 3
+    if idx == 9
+        <- 1
+    if idx == 10
+        <- 2
+    if idx == 11
+        <- 1
+    if idx == 12
+        <- 2
+    if idx == 13
+        <- 2
+    if idx == 14
+        <- 2
+    if idx == 15
+        <- 2
+    if idx == 16
+        <- 3
+    if idx == 17
+        <- 2
+    if idx == 18
+        <- 3
+    if idx == 19
+        <- 3
+    if idx == 20
+        <- 3
+    if idx == 21
+        <- 3
+    if idx == 22
+        <- 2
+    if idx == 23
+        <- 2
+    if idx == 24
+        <- 3
+    <- 2
+;
+
+: preset_row_raw(idx = num, row = num) (( string ))
+    if idx == 0
+        if row == 0 <- "uW WU"
+        <- ""
+
+    if idx == 1
+        if row == 0 <- " W w "
+        if row == 1 <- "uW WU"
+        <- ""
+
+    if idx == 2
+        if row == 0 <- "wW wW"
+        if row == 1 <- "WW WW"
+        <- ""
+
+    if idx == 3
+        if row == 0 <- "WwW WWw"
+        if row == 1 <- "wWW wWw"
+        if row == 2 <- "iWi iwp"
+        <- ""
+
+    if idx == 4
+        if row == 0 <- "W W"
+        <- ""
+
+    if idx == 5
+        if row == 0 <- "W W"
+        if row == 1 <- "W W"
+        <- ""
+
+    if idx == 6
+        if row == 0 <- "t T"
+        <- ""
+
+    if idx == 7
+        if row == 0 <- " t t "
+        if row == 1 <- "T t T T"
+        <- ""
+
+    if idx == 8
+        if row == 0 <- "  t t  "
+        if row == 1 <- " t R Y T "
+        if row == 2 <- "ET Y T Te"
+        <- ""
+
+    if idx == 9
+        if row == 0 <- "N N"
+        <- ""
+
+    if idx == 10
+        if row == 0 <- "Nn Tn"
+        if row == 1 <- "nT nN"
+        <- ""
+
+    if idx == 11
+        if row == 0 <- "S d"
+        <- ""
+
+    if idx == 12
+        if row == 0 <- ", ,,"
+        if row == 1 <- "N dN"
+        <- ""
+
+    if idx == 13
+        if row == 0 <- "SS SS"
+        if row == 1 <- "md mm"
+        <- ""
+
+    if idx == 14
+        if row == 0 <- "SS S,"
+        if row == 1 <- "mS dS"
+        <- ""
+
+    if idx == 15
+        if row == 0 <- "SS SS"
+        if row == 1 <- "NN dN"
+        <- ""
+
+    if idx == 16
+        if row == 0 <- "S S"
+        if row == 1 <- "m m"
+        if row == 2 <- "T d"
+        <- ""
+
+    if idx == 17
+        if row == 0 <- " f f "
+        if row == 1 <- "dd dd"
+        <- ""
+
+    if idx == 18
+        if row == 0 <- " f f f f "
+        if row == 1 <- "fdf fdf"
+        if row == 2 <- "ddd ddd"
+        <- ""
+
+    if idx == 19
+        if row == 0 <- " kd dk "
+        if row == 1 <- "dkd dkd"
+        if row == 2 <- "DdD DdD"
+        <- ""
+
+    if idx == 20
+        if row == 0 <- "w W W w W W"
+        if row == 1 <- "W W w W W W"
+        if row == 2 <- "AdA AdA"
+        <- ""
+
+    if idx == 21
+        if row == 0 <- " dA d m  "
+        if row == 1 <- "WAd s mW"
+        if row == 2 <- "WdA Asd"
+        <- ""
+
+    if idx == 22
+        if row == 0 <- " S S "
+        if row == 1 <- ",S d ,"
+        <- ""
+
+    if idx == 23
+        if row == 0 <- ",, ,,"
+        if row == 1 <- "mm dm"
+        <- ""
+
+    if idx == 24
+        if row == 0 <- " f f "
+        if row == 1 <- " s s "
+        if row == 2 <- "WW d W"
+        <- ""
+
+    if row == 0 <- " f i G M a"
+    if row == 1 <- "F I g m A"
+    <- ""
+;
+
+: row_is_inner_marker(line = string, idx = num) (( bool ))
+    let n = stdr.len(line)
+    if idx <= 0 || idx >= n - 1
+        <- false
+
+    if stdr.char_at(line, idx) != " "
+        <- false
+
+    let left = stdr.char_at(line, idx - 1)
+    let right = stdr.char_at(line, idx + 1)
+    <- left != " " && right != " "
+;
+
+: row_compact_width(line = string) (( num ))
+    let n = stdr.len(line)
+    let ?w = 0
+
+    for (let ?i = 0; i < n; i += 1)
+        if row_is_inner_marker(line, i)
+            continue
+        w += 1
+
+    <- w
+;
+
+: row_plane_char_at(line = string, col = num, use_secondary = bool) (( string ))
+    if col < 0
+        <- "_"
+
+    let n = stdr.len(line)
+    let ?x = 0
+    let ?is_secondary = false
+
+    for (let ?i = 0; i < n; i += 1)
+        if row_is_inner_marker(line, i)
+            is_secondary = !is_secondary
+            continue
+
+        if x == col
+            let ch = stdr.char_at(line, i)
+            if ch == "_"
+                ch = " "
+
+            if is_secondary == use_secondary
+                if ch == " "
+                    <- "_"
+                <- ch
+
+            <- "_"
+
+        x += 1
+
+    <- "_"
+;
+
+: preset_row_width(idx = num, row = num) (( num ))
+    let line = preset_row_raw(idx, row)
+    <- row_compact_width(line)
+;
+
+: preset_cell_internal(idx = num, col = num, row = num, use_secondary = bool) (( string ))
+    let line = preset_row_raw(idx, row)
+    <- row_plane_char_at(line, col, use_secondary)
+;
+
+:: preset_count() (( num ))
+    <- PRESET_COUNT
+;
+
+:: preset_height(idx = num) (( num ))
+    <- preset_height_internal(clamp_preset_idx(idx))
+;
+
+:: preset_width(idx = num) (( num ))
+    let i = clamp_preset_idx(idx)
+    let h = preset_height_internal(i)
+    let ?max_w = 0
+    for (let ?row = 0; row < h; row += 1)
+        let w = preset_row_width(i, row)
+        if w > max_w
+            max_w = w
+    <- max_w
+;
+
+:: preset_cell_for_color(idx = num, col = num, row = num, color_idx = num) (( string ))
+    let i = clamp_preset_idx(idx)
+    let h = preset_height_internal(i)
+    if row < 0 || row >= h
+        <- "_"
+
+    let use_secondary = color_idx == 2
+    <- preset_cell_internal(i, col, row, use_secondary)
+;
+
+:: preset_cell(idx = num, col = num, row = num) (( string ))
+    <- preset_cell_for_color(idx, col, row, 1)
+;
