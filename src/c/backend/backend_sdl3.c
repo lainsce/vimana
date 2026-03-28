@@ -1769,21 +1769,22 @@ static void sdl3_draw_rect_radial_gradient(int x, int y, int w, int h,
   sdl3_draw_rect(x, y, w, h, outer);
   sdl3_rect_batch_flush();
 
-  float cx = center_x;
-  float cy = center_y;
-  float x0 = (float)x;
-  float y0 = (float)y;
-  float x1 = (float)(x + w);
-  float y1 = (float)(y + h);
+  int icx = (int)center_x;
+  int icy = (int)center_y;
   if (radius <= 0.0f) {
-    float dx0 = fabsf(cx - x0);
-    float dx1 = fabsf(cx - x1);
-    float dy0 = fabsf(cy - y0);
-    float dy1 = fabsf(cy - y1);
-    float max_dx = dx0 > dx1 ? dx0 : dx1;
-    float max_dy = dy0 > dy1 ? dy0 : dy1;
-    radius = sqrtf(max_dx * max_dx + max_dy * max_dy);
+    int dx0 = abs(icx - x);
+    int dx1 = abs(icx - (x + w));
+    int dy0 = abs(icy - y);
+    int dy1 = abs(icy - (y + h));
+    int max_dx = dx0 > dx1 ? dx0 : dx1;
+    int max_dy = dy0 > dy1 ? dy0 : dy1;
+    int val = max_dx * max_dx + max_dy * max_dy;
+    int s = 1;
+    if (val > 0) { s = val; int t = (s + val / s) / 2; while (t < s) { s = t; t = (s + val / s) / 2; } }
+    radius = (float)s;
   }
+  float cx = (float)icx;
+  float cy = (float)icy;
   if (radius < 1.0f)
     radius = 1.0f;
 
@@ -2199,20 +2200,25 @@ static void sdl3_draw_line(int x1, int y1, int x2, int y2, CogitoColor color,
     return;
   }
 
-  float dx = (float)(x2 - x1);
-  float dy = (float)(y2 - y1);
-  float len = sqrtf(dx * dx + dy * dy);
-  if (len < 0.0001f) {
+  int adx = abs(x2 - x1);
+  int ady = abs(y2 - y1);
+  if (adx == 0 && ady == 0) {
     SDL_RenderPoint(g_current_renderer, (float)x1, (float)y1);
     return;
   }
-  float nx = -dy / len;
-  float ny = dx / len;
-  for (int i = 0; i < thickness; i++) {
-    float off = (float)i - ((float)thickness - 1.0f) * 0.5f;
-    SDL_RenderLine(g_current_renderer, (float)x1 + nx * off,
-                   (float)y1 + ny * off, (float)x2 + nx * off,
-                   (float)y2 + ny * off);
+  int half = thickness / 2;
+  if (adx >= ady) {
+    for (int i = 0; i < thickness; i++) {
+      int off = i - half;
+      SDL_RenderLine(g_current_renderer, (float)x1, (float)(y1 + off),
+                     (float)x2, (float)(y2 + off));
+    }
+  } else {
+    for (int i = 0; i < thickness; i++) {
+      int off = i - half;
+      SDL_RenderLine(g_current_renderer, (float)(x1 + off), (float)y1,
+                     (float)(x2 + off), (float)y2);
+    }
   }
 }
 
@@ -2716,22 +2722,25 @@ static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
   bool cacheable = text_len < COGITO_TEXT_CACHE_MAX_LEN;
   CogitoTextCacheEntry *entry = NULL;
 
-  if (cacheable) {
-    // Look up in cache (direction-aware)
-    entry =
-        cogito_text_cache_lookup(f->ttf_font, text, text_len, raster_size_q64, rtl);
-    if (entry->valid && entry->texture) {
-      // Cache hit - use existing texture
-      SDL_FRect dst = {(float)x,
-                       (float)y,
-                       (float)entry->width / draw_scale,
-                       (float)entry->height / draw_scale};
-      SDL_SetTextureColorMod(entry->texture, color.r, color.g, color.b);
-      SDL_SetTextureAlphaMod(entry->texture, color.a);
-      SDL_RenderTexture(g_current_renderer, entry->texture, NULL, &dst);
-      return;
+    if (cacheable) {
+      // Look up in cache (direction-aware)
+      entry =
+          cogito_text_cache_lookup(f->ttf_font, text, text_len, raster_size_q64, rtl);
+      if (entry->valid && entry->texture) {
+        // Cache hit - use existing texture
+        SDL_FRect dst = {(float)x,
+                         (float)y,
+                         (float)entry->width / draw_scale,
+                         (float)entry->height / draw_scale};
+        SDL_SetTextureScaleMode(entry->texture,
+                                f->pixel ? SDL_SCALEMODE_NEAREST
+                                         : SDL_SCALEMODE_LINEAR);
+        SDL_SetTextureColorMod(entry->texture, color.r, color.g, color.b);
+        SDL_SetTextureAlphaMod(entry->texture, color.a);
+        SDL_RenderTexture(g_current_renderer, entry->texture, NULL, &dst);
+        return;
+      }
     }
-  }
 
   float prev_pt = TTF_GetFontSize(f->ttf_font);
   bool font_size_changed = fabsf(prev_pt - raster_pt) > 0.01f;
@@ -2749,7 +2758,9 @@ static void sdl3_draw_text(CogitoFont *font, const char *text, int x, int y,
   // duplicating cache entries per color.
   SDL_Color sdl_color = {255, 255, 255, 255};
   SDL_Surface *surface =
-      TTF_RenderText_Blended(f->ttf_font, text, 0, sdl_color);
+      f->pixel
+          ? TTF_RenderText_Solid(f->ttf_font, text, 0, sdl_color)
+          : TTF_RenderText_Blended(f->ttf_font, text, 0, sdl_color);
   if (!surface) {
     if (font_size_changed) {
       TTF_SetFontSize(f->ttf_font, prev_pt);
@@ -2923,6 +2934,13 @@ static void sdl3_texture_destroy(CogitoTexture *tex) {
     SDL_ReleaseGPUTexture(global_gpu_device, t->gpu_texture);
   }
   free(t);
+}
+
+static void sdl3_texture_set_nearest(CogitoTexture *tex) {
+  CogitoSDL3Texture *t = (CogitoSDL3Texture *)tex;
+  if (t && t->sdl_texture) {
+    SDL_SetTextureScaleMode(t->sdl_texture, SDL_SCALEMODE_NEAREST);
+  }
 }
 
 static void sdl3_texture_get_size(CogitoTexture *tex, int *w, int *h) {
@@ -3802,6 +3820,7 @@ static CogitoBackend sdl3_backend = {
     .draw_text_dir = sdl3_draw_text_dir,
     .texture_create = sdl3_texture_create,
     .texture_destroy = sdl3_texture_destroy,
+    .texture_set_nearest = sdl3_texture_set_nearest,
     .texture_get_size = sdl3_texture_get_size,
     .draw_texture = sdl3_draw_texture,
     .draw_texture_pro = sdl3_draw_texture_pro,

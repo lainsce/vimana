@@ -359,27 +359,27 @@ static void cogito_canvas_fill_radial_gradient(YisVal ctxv, YisVal xv,
   if (!has_inner) inner = outer;
   if (!has_outer) outer = inner;
 
-  float center_x = (float)n->x + (float)yis_as_float(centerxv);
-  float center_y = (float)n->y + (float)yis_as_float(centeryv);
-  float radius = (float)yis_as_float(radiusv);
-  if (radius <= 0.0f) {
-    float left = (float)x;
-    float right = (float)(x + w);
-    float top = (float)y;
-    float bottom = (float)(y + h);
-    float dx0 = fabsf(center_x - left);
-    float dx1 = fabsf(center_x - right);
-    float dy0 = fabsf(center_y - top);
-    float dy1 = fabsf(center_y - bottom);
-    float max_dx = dx0 > dx1 ? dx0 : dx1;
-    float max_dy = dy0 > dy1 ? dy0 : dy1;
-    radius = sqrtf(max_dx * max_dx + max_dy * max_dy);
+  int icx = n->x + (int)yis_as_int(centerxv);
+  int icy = n->y + (int)yis_as_int(centeryv);
+  int iradius = (int)yis_as_int(radiusv);
+  if (iradius <= 0) {
+    int dx0 = abs(icx - x);
+    int dx1 = abs(icx - (x + w));
+    int dy0 = abs(icy - y);
+    int dy1 = abs(icy - (y + h));
+    int max_dx = dx0 > dx1 ? dx0 : dx1;
+    int max_dy = dy0 > dy1 ? dy0 : dy1;
+    // isqrt: integer square root via Newton's method
+    int val = max_dx * max_dx + max_dy * max_dy;
+    int s = 1;
+    if (val > 0) { s = val; int t = (s + val / s) / 2; while (t < s) { s = t; t = (s + val / s) / 2; } }
+    iradius = s;
   }
 
   bool clipped = false;
   cogito_canvas_scissor_begin(n, &clipped);
   cogito_draw_rect_radial_gradient(x, y, w, h, inner, outer,
-                                   center_x, center_y, radius);
+                                   (float)icx, (float)icy, (float)iradius);
   cogito_canvas_scissor_end(clipped);
 }
 

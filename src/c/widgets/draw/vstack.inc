@@ -22,6 +22,8 @@ case COGITO_VSTACK: {
 				n->border_width_set = false;
 			}
 			if (s.has_radius) n->border_radius = s.radius;
+			bool patterned = n->class_name && n->class_name->data &&
+				cogito_class_has_token(n->class_name->data, "pattern-border");
 			if (n->bg_set || n->border_width > 0) {
 				if (n->shadow_set && n->shadow_level >= 0) {
 					cogito_draw_shadow_node_level(n, &s, n->x, n->y, n->w, n->h, n->border_radius, n->shadow_level);
@@ -29,7 +31,7 @@ case COGITO_VSTACK: {
 				if (n->bg_set) {
 					cogito_draw_rect_node(n, &s, n->x, n->y, n->w, n->h, n->bg, n->border_radius);
 				}
-				if (n->border_width > 0) {
+				if (n->border_width > 0 && !patterned) {
 					cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, n->border_color, n->border_radius, n->border_width);
 				}
 			}
@@ -38,6 +40,10 @@ case COGITO_VSTACK: {
 				if (n->children[i]->kind != COGITO_FAB && n->children[i]->kind != COGITO_FAB_MENU &&
 				    !cogito_rect_visible(n->children[i]->x, n->children[i]->y, n->children[i]->w, n->children[i]->h, n->x, n->y, n->w, n->h)) continue;
 				cogito_draw_node(n->children[i]);
+			}
+			// Draw pattern-border last so children cannot paint over it.
+			if (patterned && n->border_width > 0) {
+				cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, n->border_color, n->border_radius, n->border_width);
 			}
 			break;
 		}

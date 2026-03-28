@@ -431,46 +431,46 @@ static void cogito_draw_rect_node(const CogitoNode* n, const CogitoStyle* s,
 
 static void cogito_draw_pattern_frame(int x, int y, int w, int h,
                                       CogitoColor border, int thickness) {
-  if (w <= 0 || h <= 0) return;
+  if (w <= 0 || h <= 0 || thickness < 3) return;
 
-  int inset = thickness;
-  if (inset < 2) inset = 2;
+  int t = thickness;
   int min_side = w < h ? w : h;
-  int max_inset = (min_side / 2) - 1;
-  if (max_inset < 1) max_inset = 1;
-  if (inset > max_inset) inset = max_inset;
+  if (t >= min_side / 2) t = min_side / 2 - 1;
+  if (t < 3) return;
 
-  // Outer 1px rectangle
-  cogito_draw_rect_lines(x, y, w, h, border, 0, 2);
+  // Two parallel 1px rails on each side, fitting exactly within `t` pixels:
+  //
+  //   edge | cap | outer(1px) | gap | inner(1px) | content
+  //         \___________________________________/
+  //                       = t pixels
+  //
+  // Rails span the full widget extent so they overshoot the perpendicular
+  // outer rail by `cap` pixels, producing bracket corners.
+  int cap = t - 3;          // maximise cap; gap gets the remainder (≥1)
+  if (cap < 1) cap = 1;
 
-  // Inner 1px rectangle inset by `thickness`
-  int inner_w = w - inset * 2;
-  int inner_h = h - inset * 2;
-  if (inner_w <= 0 || inner_h <= 0) return;
-  cogito_draw_rect_lines(x + inset, y + inset, inner_w, inner_h, border, 0, 2);
+  // Rail positions (1px each), measured from widget edge:
+  //   outer = cap,  inner = t - 1
+  int ot = y + cap;                 // outer horizontal top
+  int ob = y + h - 1 - cap;        // outer horizontal bottom
+  int ol = x + cap;                 // outer vertical left
+  int or_ = x + w - 1 - cap;       // outer vertical right
+  int it = y + t - 1;              // inner horizontal top
+  int ib = y + h - t;              // inner horizontal bottom
+  int il = x + t - 1;              // inner vertical left
+  int ir = x + w - t;              // inner vertical right
 
-  // Corner ticks: extend each inner line to meet the outer rectangle.
-  // Without these, the inner rect's sides don't reach the outer corners, so
-  // the edges would look like "=" but corners would be two separate L-shapes.
-  // With these ticks the corners become "#" as the two sets of lines cross.
-  int tick = inset;
-  int ix = x + inset;          // inner left x
-  int iy = y + inset;          // inner top y
-  int ir = x + w - inset - 1;  // inner right x
-  int ib = y + h - inset - 1;  // inner bottom y
+  // Horizontal rails — full widget width, 1px tall (overshoot outer verticals)
+  cogito_draw_rect_plain(x, ot, w, 1, border);
+  cogito_draw_rect_plain(x, ob, w, 1, border);
+  cogito_draw_rect_plain(x, it, w, 1, border);
+  cogito_draw_rect_plain(x, ib, w, 1, border);
 
-  // Top-left: inner top extends left to outer left; inner left extends up to outer top
-  cogito_draw_rect_plain(x,  iy, tick, 2, border);
-  cogito_draw_rect_plain(ix, y,  2, tick, border);
-  // Top-right: inner top extends right to outer right; inner right extends up to outer top
-  cogito_draw_rect_plain(ir, iy, tick, 2, border);
-  cogito_draw_rect_plain(ir, y,  2, tick, border);
-  // Bottom-left: inner bottom extends left; inner left extends down to outer bottom
-  cogito_draw_rect_plain(x,  ib, tick, 2, border);
-  cogito_draw_rect_plain(ix, ib, 2, tick, border);
-  // Bottom-right: inner bottom extends right; inner right extends down
-  cogito_draw_rect_plain(ir, ib, tick, 2, border);
-  cogito_draw_rect_plain(ir, ib, 2, tick, border);
+  // Vertical rails — full widget height, 1px wide (overshoot outer horizontals)
+  cogito_draw_rect_plain(ol,  y, 1, h, border);
+  cogito_draw_rect_plain(or_, y, 1, h, border);
+  cogito_draw_rect_plain(il,  y, 1, h, border);
+  cogito_draw_rect_plain(ir,  y, 1, h, border);
 }
 
 static void cogito_draw_rect_lines_node(const CogitoNode* n, const CogitoStyle* s,

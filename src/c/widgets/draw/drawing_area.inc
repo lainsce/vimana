@@ -24,5 +24,9 @@ case COGITO_DRAWING_AREA: {
         cogito_invoke(n->on_draw, 3, args);
         cogito_canvas_active = prev_canvas;
       }
+      // Draw Cogito border on top of canvas content so it can't be painted over.
+      if (s.has_border_width && s.border_width > 0 && s.has_border) {
+        cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, s.border, radius, s.border_width);
+      }
       break;
     }

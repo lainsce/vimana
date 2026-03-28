@@ -184,6 +184,7 @@ typedef struct CogitoBackend {
   CogitoTexture *(*texture_create)(int w, int h, const uint8_t *data,
                                    int channels);
   void (*texture_destroy)(CogitoTexture *tex);
+  void (*texture_set_nearest)(CogitoTexture *tex);
   void (*texture_get_size)(CogitoTexture *tex, int *w, int *h);
   void (*draw_texture)(CogitoTexture *tex, CogitoRect src, CogitoRect dst,
                        CogitoColor tint);

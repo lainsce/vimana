@@ -14,9 +14,11 @@ case COGITO_DIALOG: {
       if (s.has_border_width) { n->border_width = s.border_width;    n->border_width_set = true;
   }
       int dialog_radius = s.has_radius ? s.radius : n->border_radius;
+      bool patterned = n->class_name && n->class_name->data &&
+        cogito_class_has_token(n->class_name->data, "pattern-border");
       if (compact_fullscreen) {
         dialog_radius = 0;
-      } else if (dialog_radius < 28) {
+      } else if (!patterned && dialog_radius < 28) {
         // Cogito: Dialog uses XL=28dp corner radius as a hard floor.
         dialog_radius = 28;
       }
@@ -77,6 +79,9 @@ case COGITO_DIALOG: {
         cogito_draw_icon_fallback(n,
     "xmark", ix, iy, icon_size, icon_color);
   }
+      // Clip children to dialog bounds so content cannot spill outside the frame.
+      bool dlg_clip = cogito_backend && cogito_backend->begin_scissor && cogito_backend->end_scissor;
+      if (dlg_clip) cogito_backend->begin_scissor(n->x, n->y, n->w, n->h);
       // Optional custom middle content: draw section dividers around it.
       if (n->len >= 3) {
         CogitoColor divider = s.has_border ? s.border : title_color;
@@ -107,6 +112,7 @@ case COGITO_DIALOG: {
         cogito_draw_node(n->children[i
     ]);
   }
+      if (dlg_clip) cogito_backend->end_scissor();
       // Draw border last so content cannot paint over the dialog frame.
       if (n->border_width > 0) {
         cogito_draw_rect_lines_node(n, &s, n->x, n->y, n->w, n->h, n->border_color, dialog_radius, n->border_width);

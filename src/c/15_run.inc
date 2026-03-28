@@ -781,9 +781,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
   }
   // Serif font
   const char* serif_font_path = getenv("COGITO_FONT_SERIF");
-  if (!serif_font_path || !serif_font_path[
-    0
-  ]) {
+  if (!serif_font_path || !serif_font_path[0]) {
+    serif_font_path = cogito_resolve_font_by_name("serif");
+  }
+  if (!serif_font_path || !serif_font_path[0]) {
     serif_font_path = cogito_guess_serif_font_path(font_path);
   }
   if (serif_font_path && serif_font_path[0]) {
@@ -800,9 +801,10 @@ static void cogito_run(YisVal appv, YisVal winv) {
   }
   // Mono font
   const char* mono_font_path = getenv("COGITO_FONT_MONO");
-  if (!mono_font_path || !mono_font_path[
-    0
-  ]) {
+  if (!mono_font_path || !mono_font_path[0]) {
+    mono_font_path = cogito_resolve_font_by_name("monospace");
+  }
+  if (!mono_font_path || !mono_font_path[0]) {
     mono_font_path = cogito_guess_mono_font_path(font_path);
   }
   if (mono_font_path && mono_font_path[0]) {

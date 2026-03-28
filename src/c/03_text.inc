@@ -896,6 +896,9 @@ static void cogito_app_fonts_refresh(void) {
 
   const char* serif_font_path = getenv("COGITO_FONT_SERIF");
   if (!serif_font_path || !serif_font_path[0]) {
+    serif_font_path = cogito_resolve_font_by_name("serif");
+  }
+  if (!serif_font_path || !serif_font_path[0]) {
     serif_font_path = cogito_guess_serif_font_path(font_path);
   }
   if (serif_font_path && serif_font_path[0]) {
@@ -904,6 +907,9 @@ static void cogito_app_fonts_refresh(void) {
   }
 
   const char* mono_font_path = getenv("COGITO_FONT_MONO");
+  if (!mono_font_path || !mono_font_path[0]) {
+    mono_font_path = cogito_resolve_font_by_name("monospace");
+  }
   if (!mono_font_path || !mono_font_path[0]) {
     mono_font_path = cogito_guess_mono_font_path(font_path);
   }
