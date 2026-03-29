@@ -1,9 +1,9 @@
 @diagnostics: warn
 
-@fg: #FFFFFF
-@bg: #000020
-@clr2: #0055AA
-@clr1: #FF8800
+@fg: #FF8800
+@bg: #0055AA
+@clr2: #FFFFFF
+@clr1: #000020
 
 
 scroller

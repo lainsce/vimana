@@ -152,6 +152,7 @@ static void cogito_icon_cache_frame_start(void) {
 #if defined(COGITO_HAS_SDL3_IMAGE)
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_surface.h>
+#include <SDL3/SDL_iostream.h>
 #include <SDL3_image/SDL_image.h>
 #endif
 

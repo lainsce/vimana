@@ -26,6 +26,17 @@ static const unsigned char* cogito_find_embedded_resource(const char* name, size
       return cogito_embedded_resources[i].data;
     }
   }
+  // Try matching by basename (e.g. "examples/assets/image.jpg" -> "image.jpg")
+  const char* slash = strrchr(name, '/');
+  if (slash && slash[1]) {
+    const char* bname = slash + 1;
+    for (size_t i = 0; i < cogito_embedded_count; i++) {
+      if (strcmp(cogito_embedded_resources[i].name, bname) == 0) {
+        if (out_len) *out_len = cogito_embedded_resources[i].len;
+        return cogito_embedded_resources[i].data;
+      }
+    }
+  }
   return NULL;
 }
 
@@ -354,11 +365,10 @@ static bool cogito_image_load_file_texture(const char* path, int target_w, int t
                                            float* out_avg_lum) {
   if (!path || !path[0] || !cogito_backend || !cogito_backend->texture_create) return false;
 
-  // Check for embedded SVG resources before file resolution
+  // Check for embedded resources before file resolution
   size_t embedded_len = 0;
   const unsigned char* embedded_data = cogito_find_embedded_resource(path, &embedded_len);
 
-#if defined(__APPLE__) || defined(COGITO_HAS_RSVG)
   if (embedded_data && embedded_len > 0) {
     int bucket_w = cogito_image_bucket_dim(target_w);
     int bucket_h = cogito_image_bucket_dim(target_h);
@@ -377,40 +387,101 @@ static bool cogito_image_load_file_texture(const char* path, int target_w, int t
       if (out_avg_lum) *out_avg_lum = cached_e->avg_lum;
       return true;
     }
-    extern unsigned char* cogito_svg_render_native_from_data(const unsigned char*, size_t, int, int, int*, int*);
-    int render_w = (bucket_w > 0) ? bucket_w : 256;
-    int render_h = (bucket_h > 0) ? bucket_h : 256;
-    int sw = 0, sh = 0;
-    unsigned char* pixels = cogito_svg_render_native_from_data(embedded_data, embedded_len, render_w, render_h, &sw, &sh);
-    if (pixels && sw > 0 && sh > 0) {
-      float avg_lum = 0.5f;
-      {
-        double total = 0.0; int count = 0;
-        int step = (sw > 64 || sh > 64) ? 8 : 2;
-        for (int sy = 0; sy < sh; sy += step) {
-          for (int sx = 0; sx < sw; sx += step) {
-            const unsigned char* px = pixels + ((size_t)sy * (size_t)sw + (size_t)sx) * 4u;
-            total += 0.299 * px[0] + 0.587 * px[1] + 0.114 * px[2];
-            count++;
+
+    // Try SVG rendering for embedded SVG data
+#if defined(__APPLE__) || defined(COGITO_HAS_RSVG)
+    {
+      extern unsigned char* cogito_svg_render_native_from_data(const unsigned char*, size_t, int, int, int*, int*);
+      int render_w = (bucket_w > 0) ? bucket_w : 256;
+      int render_h = (bucket_h > 0) ? bucket_h : 256;
+      int sw = 0, sh = 0;
+      unsigned char* pixels = cogito_svg_render_native_from_data(embedded_data, embedded_len, render_w, render_h, &sw, &sh);
+      if (pixels && sw > 0 && sh > 0) {
+        float avg_lum = 0.5f;
+        {
+          double total = 0.0; int count = 0;
+          int step = (sw > 64 || sh > 64) ? 8 : 2;
+          for (int sy = 0; sy < sh; sy += step) {
+            for (int sx = 0; sx < sw; sx += step) {
+              const unsigned char* px = pixels + ((size_t)sy * (size_t)sw + (size_t)sx) * 4u;
+              total += 0.299 * px[0] + 0.587 * px[1] + 0.114 * px[2];
+              count++;
+            }
+          }
+          avg_lum = (count > 0) ? (float)(total / (count * 255.0)) : 0.5f;
+        }
+        CogitoTexture* tex = cogito_backend->texture_create(sw, sh, pixels, 4);
+        free(pixels);
+        if (tex) {
+          (void)cogito_image_cache_add(cache_key, tex, sw, sh, avg_lum);
+          if (out) *out = tex;
+          if (out_w) *out_w = sw;
+          if (out_h) *out_h = sh;
+          if (out_avg_lum) *out_avg_lum = avg_lum;
+          return true;
+        }
+      } else {
+        free(pixels);
+      }
+    }
+#endif
+
+    // Try raster image loading from embedded data (JPG, PNG, etc.)
+#if defined(COGITO_HAS_SDL3_IMAGE)
+    {
+      SDL_IOStream* io = SDL_IOFromMem((void*)embedded_data, embedded_len);
+      if (io) {
+        SDL_Surface* src = IMG_Load_IO(io, true);
+        if (src) {
+          SDL_Surface* rgba = SDL_ConvertSurface(src, SDL_PIXELFORMAT_RGBA32);
+          SDL_DestroySurface(src);
+          if (rgba && rgba->w > 0 && rgba->h > 0 && rgba->pixels) {
+            int w = rgba->w, h = rgba->h;
+            float avg_lum = 0.5f;
+            {
+              const uint8_t* px_base = (const uint8_t*)rgba->pixels;
+              int pitch = rgba->pitch;
+              double total = 0.0; int count = 0;
+              int step = (w > 64 || h > 64) ? 8 : 2;
+              for (int sy = 0; sy < h; sy += step) {
+                for (int sx = 0; sx < w; sx += step) {
+                  const uint8_t* px = px_base + (size_t)sy * (size_t)pitch + (size_t)sx * 4u;
+                  total += 0.299 * px[0] + 0.587 * px[1] + 0.114 * px[2];
+                  count++;
+                }
+              }
+              avg_lum = (count > 0) ? (float)(total / (count * 255.0)) : 0.5f;
+            }
+            size_t row = (size_t)w * 4u;
+            CogitoTexture* tex = NULL;
+            if ((size_t)rgba->pitch == row) {
+              tex = cogito_backend->texture_create(w, h, (const unsigned char*)rgba->pixels, 4);
+            } else {
+              unsigned char* buf = (unsigned char*)malloc(row * (size_t)h);
+              if (buf) {
+                for (int y = 0; y < h; y++)
+                  memcpy(buf + y * row, (const uint8_t*)rgba->pixels + y * rgba->pitch, row);
+                tex = cogito_backend->texture_create(w, h, buf, 4);
+                free(buf);
+              }
+            }
+            SDL_DestroySurface(rgba);
+            if (tex) {
+              (void)cogito_image_cache_add(cache_key, tex, w, h, avg_lum);
+              if (out) *out = tex;
+              if (out_w) *out_w = w;
+              if (out_h) *out_h = h;
+              if (out_avg_lum) *out_avg_lum = avg_lum;
+              return true;
+            }
+          } else {
+            if (rgba) SDL_DestroySurface(rgba);
           }
         }
-        avg_lum = (count > 0) ? (float)(total / (count * 255.0)) : 0.5f;
       }
-      CogitoTexture* tex = cogito_backend->texture_create(sw, sh, pixels, 4);
-      free(pixels);
-      if (tex) {
-        (void)cogito_image_cache_add(cache_key, tex, sw, sh, avg_lum);
-        if (out) *out = tex;
-        if (out_w) *out_w = sw;
-        if (out_h) *out_h = sh;
-        if (out_avg_lum) *out_avg_lum = avg_lum;
-        return true;
-      }
-    } else {
-      free(pixels);
     }
-  }
 #endif
+  }
 
   // Resolve the path
   char resolved_path[PATH_MAX];

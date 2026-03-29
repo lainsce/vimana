@@ -986,7 +986,7 @@ def ?shape_instruction_text = "5 - Inhale"
     .set_halign(0)
     .set_valign(2)
     let img1 = cogito.image("")
-    .set_source("cogito/examples/assets/image.jpg")
+    .set_source("examples/assets/image.jpg")
     .set_hexpand(true)
     .set_vexpand(true)
     .set_radius(26)
@@ -1000,7 +1000,7 @@ def ?shape_instruction_text = "5 - Inhale"
     .set_halign(0)
     .set_valign(2)
     let img2 = cogito.image("")
-    .set_source("cogito/examples/assets/image2.jpg")
+    .set_source("examples/assets/image2.jpg")
     .set_hexpand(true)
     .set_vexpand(true)
     .set_radius(26)
@@ -1014,7 +1014,7 @@ def ?shape_instruction_text = "5 - Inhale"
     .set_halign(0)
     .set_valign(2)
     let img3 = cogito.image("")
-    .set_source("cogito/examples/assets/image3.jpg")
+    .set_source("examples/assets/image3.jpg")
     .set_hexpand(true)
     .set_vexpand(true)
     .set_radius(26)
@@ -1430,7 +1430,7 @@ def ?shape_instruction_text = "5 - Inhale"
     let vstack = build_page("Image", "Image displays icons or file-backed assets with configurable size and corner radius.")
 
     let img = cogito.image("")
-    .set_source("cogito/examples/assets/image.jpg")
+    .set_source("examples/assets/image.jpg")
     .set_size(360, 360)
     .set_radius(12)
     vstack.add(img)
@@ -2752,14 +2752,14 @@ def ?shape_instruction_text = "5 - Inhale"
     vstack.add(status)
 
     let anchor_btn = cogito.button("Show Popover")
-    .set_style(0)
+    .set_m()
     anchor_btn.on_click((b = cogito.Button) => {
         let pop = cogito.popover()
         .set_padding(16, 16, 16, 16)
         let pop_content = cogito.vstack().set_gap(8)
         pop_content.add(cogito.label("Popover Title").set_class("content-title"))
         pop_content.add(cogito.label("This content floats above the page, anchored to the button that triggered it.").set_class("body").set_wrap(true))
-        pop_content.add(cogito.button("Got it").set_style(2).on_click((b2 = cogito.Button) => {
+        pop_content.add(cogito.button("Got it").set_xl().on_click((b2 = cogito.Button) => {
             status.set_text("Popover dismissed.")
         }))
         pop.add(pop_content)
@@ -2804,7 +2804,7 @@ def ?shape_instruction_text = "5 - Inhale"
     vstack.add(divider)
 
     let target2 = cogito.button("Button with Menu")
-    .set_style(1)
+    .set_l()
     vstack.add(target2)
 
     let menu2 = cogito.context_menu()
@@ -2817,47 +2817,53 @@ def ?shape_instruction_text = "5 - Inhale"
 ;
 
 : build_flow_page() (( cogito.VStack ))
-    let vstack = build_page("Flow", "Flow arranges children in a wrapping row, like text reflow.")
+    <- build_flow_page_inner()
+;
+
+: build_flow_page_inner() (( cogito.VStack ))
+    let v = cogito.vstack()
+    v.set_vexpand(true)
+    v.set_hexpand(true)
+    v.set_gap(12)
+    v.set_padding(0, 18, 0, 18)
+
+    let title = cogito.label("Flow")
+    title.set_class("heading")
+    v.add(title)
+
+    let desc = cogito.label("Flow arranges children in a wrapping row, like text reflow.")
+    desc.set_class("body")
+    desc.set_wrap(true)
+    v.add(desc)
 
     let status = cogito.label("Items wrap when they run out of horizontal space.")
-    .set_class("body")
-    vstack.add(status)
+    status.set_class("body")
+    v.add(status)
 
     let flow = cogito.flow()
-    .set_gap(8)
-    .set_hexpand(true)
-    .set_padding(8, 8, 8, 8)
-
-    let ?i = 0
-    loop i < 20
-        let tag = "Item $$i$$"
-        flow.add(cogito.chip(tag).on_click((c = cogito.Chip) => {
-            status.set_text("Tapped: $$tag$$")
-        }))
-        i = i + 1
-    ;
-    vstack.add(flow)
-
-    let divider = cogito.divider("", false)
-    vstack.add(divider)
+    flow.set_gap(8)
+    flow.set_hexpand(true)
+    flow.set_padding(8, 8, 8, 8)
+    flow.add(cogito.chip("Item 0").set_class("body"))
+    flow.add(cogito.chip("Item 1").set_class("body"))
+    flow.add(cogito.chip("Item 2").set_class("body"))
+    v.add(flow)
+    v.add(cogito.divider("", false))
 
     let gap_label = cogito.label("Wider gap (16)")
-    .set_class("heading")
-    vstack.add(gap_label)
+    gap_label.set_class("heading")
+    v.add(gap_label)
 
     let gap_flow = cogito.flow()
-    .set_gap(16)
-    .set_hexpand(true)
-    .set_padding(8, 8, 8, 8)
+    gap_flow.set_gap(16)
+    gap_flow.set_hexpand(true)
+    gap_flow.set_padding(8, 8, 8, 8)
+    gap_flow.add(cogito.button("Tag 0").set_l())
+    gap_flow.add(cogito.button("Tag 1").set_l())
+    gap_flow.add(cogito.button("Tag 2").set_l())
+    v.add(gap_flow)
 
-    let ?j = 0
-    loop j < 12
-        gap_flow.add(cogito.button("Tag $$j$$").set_style(1))
-        j = j + 1
-    ;
-    vstack.add(gap_flow)
-
-    <- vstack
+    <- v
 ;
 
 : build_virtual_list_page() (( cogito.VStack ))
@@ -2891,14 +2897,14 @@ def ?shape_instruction_text = "5 - Inhale"
     .set_class("content-title")
     vstack.add(status)
 
-    let bar = cogito.progress()
+    let bar = cogito.progress(0)
     .set_value(0)
     .set_hexpand(true)
     vstack.add(bar)
 
     let row = cogito.hstack().set_gap(8)
 
-    let btn1 = cogito.button("Standard").set_style(0)
+    let btn1 = cogito.button("Standard").set_m()
     btn1.on_click((b = cogito.Button) => {
         cogito.transition(0, 100, 600, cogito.EASE_STANDARD(), (v = num) => {
             let ?iv = stdr.floor(v + 0.5)
@@ -2910,7 +2916,7 @@ def ?shape_instruction_text = "5 - Inhale"
     })
     row.add(btn1)
 
-    let btn2 = cogito.button("Ease In").set_style(1)
+    let btn2 = cogito.button("Ease In").set_l()
     btn2.on_click((b = cogito.Button) => {
         cogito.transition(0, 100, 600, cogito.EASE_IN(), (v = num) => {
             let ?iv = stdr.floor(v + 0.5)
@@ -2920,7 +2926,7 @@ def ?shape_instruction_text = "5 - Inhale"
     })
     row.add(btn2)
 
-    let btn3 = cogito.button("Ease Out").set_style(2)
+    let btn3 = cogito.button("Ease Out").set_xl()
     btn3.on_click((b = cogito.Button) => {
         cogito.transition(0, 100, 600, cogito.EASE_OUT(), (v = num) => {
             let ?iv = stdr.floor(v + 0.5)
@@ -2930,7 +2936,7 @@ def ?shape_instruction_text = "5 - Inhale"
     })
     row.add(btn3)
 
-    let btn4 = cogito.button("Emphasized").set_style(0)
+    let btn4 = cogito.button("Emphasized").set_m()
     btn4.on_click((b = cogito.Button) => {
         cogito.transition(0, 100, 800, cogito.EASE_EMPHASIZED(), (v = num) => {
             let ?iv = stdr.floor(v + 0.5)
@@ -2944,7 +2950,7 @@ def ?shape_instruction_text = "5 - Inhale"
     let divider = cogito.divider("", false)
     vstack.add(divider)
 
-    let btn_slow = cogito.button("Linear (2 s)").set_style(1)
+    let btn_slow = cogito.button("Linear (2 s)").set_l()
     btn_slow.on_click((b = cogito.Button) => {
         cogito.transition(0, 100, 2000, cogito.EASE_LINEAR(), (v = num) => {
             let ?iv = stdr.floor(v + 0.5)
@@ -2972,7 +2978,7 @@ def ?shape_instruction_text = "5 - Inhale"
 
     let row = cogito.hstack().set_gap(8)
 
-    let btn_en = cogito.button("English").set_style(0)
+    let btn_en = cogito.button("English").set_m()
     btn_en.on_click((b = cogito.Button) => {
         cogito.set_locale("en")
         let ?loc = cogito.get_locale()
@@ -2981,7 +2987,7 @@ def ?shape_instruction_text = "5 - Inhale"
     })
     row.add(btn_en)
 
-    let btn_es = cogito.button("Español").set_style(1)
+    let btn_es = cogito.button("Español").set_l()
     btn_es.on_click((b = cogito.Button) => {
         cogito.set_locale("es")
         let ?loc = cogito.get_locale()
@@ -2990,7 +2996,7 @@ def ?shape_instruction_text = "5 - Inhale"
     })
     row.add(btn_es)
 
-    let btn_ja = cogito.button("日本語").set_style(1)
+    let btn_ja = cogito.button("日本語").set_l()
     btn_ja.on_click((b = cogito.Button) => {
         cogito.set_locale("ja")
         let ?loc = cogito.get_locale()
@@ -2999,7 +3005,7 @@ def ?shape_instruction_text = "5 - Inhale"
     })
     row.add(btn_ja)
 
-    let btn_ar = cogito.button("العربية").set_style(1)
+    let btn_ar = cogito.button("العربية").set_l()
     btn_ar.on_click((b = cogito.Button) => {
         cogito.set_locale("ar")
         let ?loc = cogito.get_locale()
@@ -3028,22 +3034,20 @@ def ?shape_instruction_text = "5 - Inhale"
     .set_class("body")
     vstack.add(status)
 
-    let bar = cogito.progress()
+    let bar = cogito.progress(0)
     .set_indeterminate(false)
     .set_hexpand(true)
     vstack.add(bar)
 
-    let run_btn = cogito.button("Run Background Task").set_style(0)
+    let run_btn = cogito.button("Run Background Task").set_m()
     run_btn.on_click((b = cogito.Button) => {
         status.set_text("Working...")
         bar.set_indeterminate(true)
         cogito.async_run(
             () => {
                 let ?sum = 0
-                let ?k = 0
-                loop k < 1000000
+                for (let ?k = 0; k < 1000000; k += 1)
                     sum = sum + k
-                    k = k + 1
                 ;
                 <- sum
             },
@@ -3077,7 +3081,7 @@ def ?shape_instruction_text = "5 - Inhale"
 
     let row1 = cogito.hstack().set_gap(8)
 
-    let copy_btn = cogito.button("Copy Text").set_style(0)
+    let copy_btn = cogito.button("Copy Text").set_m()
     copy_btn.on_click((b = cogito.Button) => {
         let ?ok = app.copy_to_clipboard("Hello from Cogito Gallery!")
         if ok
@@ -3088,7 +3092,7 @@ def ?shape_instruction_text = "5 - Inhale"
     })
     row1.add(copy_btn)
 
-    let paste_btn = cogito.button("Paste Text").set_style(1)
+    let paste_btn = cogito.button("Paste Text").set_l()
     paste_btn.on_click((b = cogito.Button) => {
         let ?text = app.paste_from_clipboard()
         status.set_text("Pasted: $$text$$")
@@ -3105,7 +3109,7 @@ def ?shape_instruction_text = "5 - Inhale"
 
     let row2 = cogito.hstack().set_gap(8)
 
-    let set_btn = cogito.button("Set JSON").set_style(0)
+    let set_btn = cogito.button("Set JSON").set_m()
     set_btn.on_click((b = cogito.Button) => {
         let ?ok = app.clipboard_set_data("application/json", "{\"gallery\": true}")
         if ok
@@ -3116,7 +3120,7 @@ def ?shape_instruction_text = "5 - Inhale"
     })
     row2.add(set_btn)
 
-    let get_btn = cogito.button("Get JSON").set_style(1)
+    let get_btn = cogito.button("Get JSON").set_l()
     get_btn.on_click((b = cogito.Button) => {
         let ?has = app.clipboard_has("application/json")
         if has
@@ -3148,11 +3152,9 @@ def ?shape_instruction_text = "5 - Inhale"
     win.on_file_drop((w = any, paths = any) => {
         let ?count = stdr.len(paths)
         status.set_text("Received $$count$$ file(s):")
-        let ?idx = 0
-        loop idx < count
+        for (let ?idx = 0; idx < count; idx += 1)
             let ?p = paths[idx]
             file_list.add(cogito.label(p).set_class("body"))
-            idx = idx + 1
         ;
     })
 
@@ -3181,7 +3183,7 @@ def ?shape_instruction_text = "5 - Inhale"
     .set_padding(16, 16, 16, 16)
     vstack.add(preview)
 
-    let print_btn = cogito.button("Print").set_style(0)
+    let print_btn = cogito.button("Print").set_m()
     print_btn.on_click((b = cogito.Button) => {
         let ?ok = app.print_text(sample)
         if ok
