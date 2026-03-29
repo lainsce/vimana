@@ -606,7 +606,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
     let font_credit = cogito.label("Font \"MEKMODE Text\" by MEK.TXT")
     .set_align(1)
 
-    let ding_credit = cogito.label("Font \"MEKMODE Dings\" by MEK.TXT")
+    let ding_credit = cogito.label("Font \"MEKMODE Ding\" by MEK.TXT")
     .set_align(1)
 
     let app_design_credit = cogito.label("App Design inspired by MEK.TXT")

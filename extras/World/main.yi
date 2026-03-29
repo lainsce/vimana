@@ -38,8 +38,8 @@ def UI_GRID_W = 16
 def UI_GRID_H = 24
 def MAP_FRAME_TARGET_W = 560
 def MAP_FRAME_TARGET_H = 556
-def MAP_FRAME_MIN_PAD_X = 10
-def MAP_FRAME_MIN_PAD_Y = 8
+def MAP_FRAME_MIN_PAD_X = 12
+def MAP_FRAME_MIN_PAD_Y = 12
 
 : snap_grid(value = num, step = num) (( num ))
     let ?v = stdr.floor(value)
