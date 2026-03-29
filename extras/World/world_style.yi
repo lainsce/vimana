@@ -1,5 +1,24 @@
 cask world_style
 
+def THEME_NAMES = [
+    "dithered",
+    "blue_flame",
+    "terminal",
+    "rosewood",
+    "blue_flame_inverted",
+    "orchid",
+    "neon_green",
+    "steel",
+    "foxfire",
+    "chlorophyll",
+    "wax_seal",
+    "neon_moss",
+    "cascade",
+    "classic",
+    "collapse",
+    "friendly_past"
+]
+
 : sum_for_theme(theme_idx = num) (( string ))
     let ?i = theme_idx
     if i < 0
@@ -7,5 +26,5 @@ cask world_style
     if i > 15
         i = 15
 
-    <- "themes/world_theme_" + str(i) + ".sum"
+    <- "themes/world_" + str(THEME_NAMES[i] ?? "dithered") + ".sum"
 ;

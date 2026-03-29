@@ -11,13 +11,13 @@ def THEME_4 = ["#FFFFFF", "#FDC700", "#8282FF", "#155DFC"]   -- Blue Flame Inver
 def THEME_5 = ["#FFFFFF", "#FFA9C3", "#AC3BAA", "#18005E"]   -- Orchid
 def THEME_6 = ["#FFFEAE", "#7EFF72", "#AB00E4", "#000000"]   -- Neon Green
 def THEME_7 = ["#FFFFFF", "#B0B1C2", "#575866", "#0C0D1E"]   -- Steel
-def THEME_8 = ["#FFFFFF", "#FF7A1A", "#6A1AFF", "#0D0A1A"]   -- Foxfire
+def THEME_8 = ["#EEEEFF", "#FF7A1A", "#6A1AFF", "#0D0A1A"]   -- Foxfire
 def THEME_9 = ["#FFFFFF", "#AAFF00", "#003FBF", "#000000"]   -- Chlorophyll
 def THEME_10 = ["#FFF5DC", "#E02020", "#1A3A6E", "#1A0A08"]  -- Wax Seal
 def THEME_11 = ["#FFFFFF", "#FF2D8A", "#2A7A3A", "#000000"]  -- Neon Moss
 def THEME_12 = ["#FFFFFF", "#00D4FF", "#C01040", "#7A0028"]  -- Cascade
 def THEME_13 = ["#FFFFFF", "#FF0000", "#0000FF", "#000000"]  -- Classic
-def THEME_14 = ["#FFFFFF", "#4A4147", "#CA5F66", "#200000"]  -- Collapse
+def THEME_14 = ["#E5EEFD", "#CA5F66", "#4A4147", "#200000"]  -- Collapse
 def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
 
 : clamp_theme_idx(idx = num) (( num ))

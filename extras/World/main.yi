@@ -334,7 +334,7 @@ def MAP_FRAME_MIN_PAD_Y = 8
     da.set_color(bg)
     da.fill_rect(0, 0, iw, ih)
 
-    let rect_w = 12
+    let rect_w = 16
     let rect_h = 24
     let cluster_w = rect_w * 3
     let cluster_h = rect_h * 3
@@ -369,7 +369,7 @@ def MAP_FRAME_MIN_PAD_Y = 8
     da.set_color(bg)
     da.fill_rect(0, 0, iw, ih)
 
-    let sw_w = 12
+    let sw_w = 16
     let sw_h = 24
     let sw_x = stdr.floor((iw - sw_w) / 2)
     let sw_y = stdr.floor((ih - sw_h) / 2)
@@ -390,8 +390,8 @@ def MAP_FRAME_MIN_PAD_Y = 8
     da.set_color(bg)
     da.fill_rect(0, 0, iw, ih)
 
-    let tile_w = 12
-    let tile_h = 15
+    let tile_w = 16
+    let tile_h = 24
     let gx = stdr.floor((iw - tile_w) / 2)
     let gy = stdr.floor((ih - tile_h) / 2)
     draw_glyph_ui_tile(da, gx, gy, selected_glyph, glyph_color)
@@ -414,8 +414,8 @@ def MAP_FRAME_MIN_PAD_Y = 8
     let ph = world_presets.preset_height(selected_preset)
 
     if pw > 0 && ph > 0
-        let tile_w = 12
-        let tile_h = 15
+        let tile_w = 16
+        let tile_h = 24
         let base_w = pw * tile_w
         let base_h = ph * tile_h
         let tile_scale = 1
@@ -789,7 +789,7 @@ def MAP_FRAME_MIN_PAD_Y = 8
     .set_align(1)
     let preset_preview = cogito.drawing_area()
     .set_class("world-tool-repr pattern-border")
-    .set_size_request(94, 114)
+    .set_size_request(232, 114)
     preset_preview.on_draw((da = cogito.DrawingArea, w = any, h = any) => {
         draw_preset_tool_preview(da, stdr.num(w), stdr.num(h))
     })

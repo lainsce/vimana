@@ -12,7 +12,7 @@ bring world_presets
 def DIAG_GRID_W = 24
 def DIAG_GRID_H = 24
 
-def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQu q   qq   >\n>      u QuPioOpippiUuuQ  q   q   >\n>     QuUPioIioIiOpipiu Qu   J QG >\n>  uquuUPioIi gvvvOpiUuu    J Gq  >\n>      uuUooIi ooviUUuQ  q J GgQ  >\n>  q uQSSS,pioopOvi  u qu    gqqqg>\n>     umSdSPioIiov SSQ     qQqqggG>\n>    q  QuuoPpiUUvQmm     qqgG   q>\n>      q    UUUQ v Td  qqqq J   Qu>\n>     qu Qu uu  Uv,.,qQq,..,q  u Q>\n>q           Q   v qQq     q u QUU>\n>qQ    uWWU      vqq         QUopO>\n> qq WW  qWWq  WWvqQWW  q uQUoopOU>\n>  q WWQqqWWqQqWWvQqWW   QQUoopOpO>\n>  qQ qqqQq   Qq vqQq QuoopOoopopO>\n>   qqq      uWWUvq    Q uUoopOUUU>\n>                v    uQuoopOUopOO>\n<.................................<"
+def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQu q   qq   >\n>      u QuPioOpippiUuuQ  q   q   >\n>     QuUPioIioIiOpipiu Qu   J QG >\n>  uquuUPioIi gvvvOpiUuu    J Gq  >\n>      uuUooIi ooviUUuQ  q J GgQ  >\n>  q uQSSS,pioopOvi  u qu    gqqqg>\n>     umSdSPioIiov SSQ     qQqqggG>\n>  ^ q  QuuoPpiUUvQmm     qqgG   q>\n>^     q    UUUQ v Td  qqqq J   Qu>\n>     qu Qu uu  Uv,.,qQq,..,q  u Q>\n>q ^         Q   v qQq     q u QUU>\n>qQ    uWWU      vqq    4    QUopO>\n> qq WW  qWWq  WWvqQWW  q uQUoopOU>\n> ^q WWQqqWWqQqWWvQqWW   QQUoopOpO>\n>  qQ qqqQq   Qq vqQq QuoopOoopopO>\n> ^ qqq ^    uWWUvq    Q uUoopOUUU>\n>^               v    uQuoopOUopOO>\n<.................................<"
 
 : snap_grid(value = num, step = num) (( num ))
     let ?v = stdr.floor(value)
@@ -139,8 +139,8 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
     .set_gap(24)
     .set_size_request(510, 540)
 
-    let preview_w = 35 * world_glyphs.DINGS_UI_W
-    let preview_h = 19 * world_glyphs.DINGS_UI_H
+    let preview_w = 35 * 12
+    let preview_h = 19 * 15
 
     let preview = cogito.drawing_area()
     .set_size_request(preview_w, preview_h)
@@ -160,17 +160,17 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
             let ch = stdr.char_at(PREVIEW_TEXT, i)
             if ch == "\n"
                 x = 0
-                y += world_glyphs.DINGS_UI_H
+                y += 15
             else
                 let idx = world_model.glyph_index_from_letter(ch)
                 if world_model.glyph_letter(idx) == ch
                     let color_idx = world_model.glyph_color(idx)
                     let color = world_themes.theme_color(theme, color_idx)
                     if use_text
-                        world_text_glyphs.draw_text_glyph_ui(da, x, y, idx, color, 1)
+                        world_text_glyphs.draw_text_glyph_preview(da, x, y, idx, color, 1)
                     else
-                        world_glyphs.draw_glyph_ui(da, x, y, idx, color, 1)
-                x += world_glyphs.DINGS_UI_W
+                        world_glyphs.draw_glyph_preview(da, x, y, idx, color, 1)
+                x += 12
     })
 
     let grid = cogito.grid(8)
@@ -326,7 +326,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
     let is_selected = idx == selected_glyph
 
     let cell = cogito.vstack()
-    .set_size_request(12, 34)
+    .set_size_request(16, 43)
     .set_vexpand(false)
     .set_hexpand(false)
     .set_gap(2)
@@ -335,7 +335,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
 
     let sw = cogito.drawing_area()
     .set_class("world-dialog-swatch")
-    .set_size_request(12, 15)
+    .set_size_request(16, 24)
     .set_hexpand(false)
     .set_vexpand(false)
 
@@ -359,7 +359,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
     if is_selected
         cogito.node_set_text_color(letter, world_themes.theme_color(theme_idx, 2))
     else
-        cogito.node_set_text_color(letter, world_themes.theme_color(theme_idx, 1))
+        cogito.node_set_text_color(letter, world_themes.theme_color(theme_idx, 3))
 
     cell.add(sw)
     cell.add(letter)
@@ -373,12 +373,12 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
     .set_class("world-dialog-card")
     .set_padding(24,24,24,24)
     .set_gap(24)
-    .set_size_request(450, 338)
+    .set_size_request(420, 400)
     .set_vexpand(false)
     .set_hexpand(false)
 
     let grid = cogito.grid(15)
-    .set_gap(15, 15)
+    .set_gap(15, 8)
     .set_hexpand(false)
     .set_vexpand(false)
     .set_align(4)
@@ -397,12 +397,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
             col = 0
             row += 1
 
-    let scroll = cogito.scroller()
-    .set_hexpand(false)
-    .set_vexpand(false)
-
-    scroll.add(grid)
-    box.add(scroll)
+    box.add(grid)
 
     let close_btn = cogito.button("Close")
     .set_class("world-side-btn pattern-border")
@@ -498,21 +493,21 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
     on_pick = any
 ) (( cogito.VStack ))
     let cell = cogito.vstack()
-    .set_size_request(snap_grid_w(72), snap_grid_h(54))
+    .set_size_request(snap_grid_w(80), snap_grid_h(72))
     .set_vexpand(false)
     .set_hexpand(false)
     .set_gap(1)
     .set_align(1)
 
     let sw_box = cogito.vstack()
-    .set_size_request(snap_grid_w(72), snap_grid_h(54))
+    .set_size_request(snap_grid_w(80), snap_grid_h(72))
     .set_vexpand(false)
     .set_hexpand(false)
     .set_align(1)
 
     let sw = cogito.drawing_area()
     .set_class("world-dialog-swatch")
-    .set_size_request(snap_grid_w(72), snap_grid_h(54))
+    .set_size_request(snap_grid_w(80), snap_grid_h(72))
     .set_hexpand(false)
     .set_vexpand(false)
 
@@ -546,7 +541,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
     .set_class("world-dialog-card")
     .set_padding(24,24,24,24)
     .set_gap(24)
-    .set_size_request(432, 480)
+    .set_size_request(480, 480)
     .set_vexpand(false)
     .set_hexpand(false)
 
@@ -571,9 +566,8 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
             row += 1
 
     let scroll = cogito.scroller()
-    .set_size_request(snap_grid_w(410), snap_grid_h(342))
     .set_hexpand(false)
-    .set_vexpand(false)
+    .set_vexpand(true)
 
     scroll.add(grid)
     box.add(scroll)

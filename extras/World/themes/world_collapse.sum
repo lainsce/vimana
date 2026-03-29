@@ -1,10 +1,9 @@
 @diagnostics: warn
 
-@fg: #FFFFFF
-@bg: #0A0E31
-@accent: #4B884B
-@accent-strong: #FF97AA
-
+@fg: #E5EEFD
+@bg: #200000
+@clr2: #4A4147
+@clr1: #CA5F66
 
 scroller
   background: transparent
@@ -19,7 +18,7 @@ dialog
   background: @bg
   color: @fg
   icon-color: @fg
-  border: 5 solid @accent-strong
+  border: 5 solid @clr1
   border-radius: 0
 
 label
@@ -86,12 +85,12 @@ button.world-home-dot
   max-height: 64
   border-radius: 999
   border: 0 solid @bg
-  background: @accent
-  color: @accent
+  background: @clr2
+  color: @clr2
 
 button.world-home-dot:hover
-  background: @accent-strong
-  color: @accent-strong
+  background: @clr1
+  color: @clr1
 
 button.world-home-dot:active
   background: @fg
@@ -108,7 +107,7 @@ drawing_area.world-tool-repr
   min-width: 60
   min-height: 100
   border-radius: 0
-  border: 5 solid @accent
+  border: 5 solid @clr2
   background: @bg
 
 label.world-tool-label
@@ -125,7 +124,7 @@ vstack.world-brush-size-panel
   max-width: 60
   max-height: 100
   border-radius: 0
-  border: 5 solid @accent
+  border: 5 solid @clr2
   background: @bg
   padding-top: 0
   padding-right: 8
@@ -159,11 +158,11 @@ button.world-brush-size-btn:active
 button.world-brush-size-btn-selected
   border: 0 solid transparent
   background: transparent
-  color: @accent-strong
+  color: @clr1
 
 vstack.world-map-frame
   background: @bg
-  border: 5 solid @accent
+  border: 5 solid @clr2
   border-radius: 0
   padding-top: 0
   padding-right: 0
@@ -172,7 +171,7 @@ vstack.world-map-frame
 
 vstack.world-map-surface
   background: @bg
-  border: 0 solid @accent
+  border: 0 solid @clr2
   border-radius: 0
 
 drawing_area.world-map-canvas
@@ -184,7 +183,7 @@ button.world-side-btn
   max-width: 160
   max-height: 64
   border-radius: 0
-  border: 5 solid @accent
+  border: 5 solid @clr2
   background: @bg
   color: @fg
   text-align: left
@@ -194,24 +193,24 @@ button.world-side-btn
   font-render: pixel
 
 button.world-side-btn:hover
-  border: 5 solid @accent-strong
+  border: 5 solid @clr1
   color: @fg
 
 button.world-side-btn:active
-  border: 5 solid @accent-strong
-  background: @accent
+  border: 5 solid @clr1
+  background: @clr2
   color: @fg
 
 button.world-side-btn:disabled
-  border: 5 solid @accent
+  border: 5 solid @clr2
   background: @bg
-  color: @accent
+  color: @clr2
 
 vstack.world-dialog-card
   background: @bg
 
 label.world-dialog-title
-  color: @accent
+  color: @clr2
   font-size: 15
   font-family: "MEKMODE Text"
   font-render: pixel
@@ -225,15 +224,15 @@ label.world-dialog-hint
 
 vstack.world-theme-cell
   background: @bg
-  border: 5 solid @accent
+  border: 5 solid @clr2
   border-radius: 0
 
 vstack.world-theme-cell-selected
-  border: 5 solid @accent-strong
+  border: 5 solid @clr1
 
 vstack.world-color-cell
   background: @bg
-  border: 5 solid @accent
+  border: 5 solid @clr2
   border-radius: 0
 
 drawing_area.world-dialog-swatch
@@ -244,7 +243,7 @@ button.world-glyph-btn
   min-height: 42
   max-height: 42
   border-radius: 0
-  border: 5 solid @accent
+  border: 5 solid @clr2
   background: @bg
   color: @fg
   font-size: 15
@@ -253,22 +252,22 @@ button.world-glyph-btn
   padding: 0
 
 button.world-glyph-btn:hover
-  border: 5 solid @accent-strong
+  border: 5 solid @clr1
 
 button.world-glyph-btn:active
-  border: 5 solid @accent-strong
-  background: @accent
+  border: 5 solid @clr1
+  background: @clr2
 
 button.world-glyph-btn-selected
-  border: 5 solid @accent-strong
-  background: @accent
+  border: 5 solid @clr1
+  background: @clr2
 
 button.world-brush-btn
   min-width: 44
   min-height: 44
   max-height: 44
   border-radius: 0
-  border: 5 solid @accent
+  border: 5 solid @clr2
   background: transparent
   color: @fg
   font-size: 15
@@ -277,12 +276,12 @@ button.world-brush-btn
   padding: 0
 
 button.world-brush-btn:hover
-  border: 5 solid @accent-strong
+  border: 5 solid @clr1
 
 button.world-brush-btn:active
-  border: 5 solid @accent-strong
-  background: @accent
+  border: 5 solid @clr1
+  background: @clr2
 
 button.world-brush-btn-selected
-  border: 5 solid @accent-strong
-  background: @accent
+  border: 5 solid @clr1
+  background: @clr2
