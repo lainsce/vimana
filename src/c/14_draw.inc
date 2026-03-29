@@ -438,39 +438,37 @@ static void cogito_draw_pattern_frame(int x, int y, int w, int h,
   if (t >= min_side / 2) t = min_side / 2 - 1;
   if (t < 3) return;
 
-  // Two parallel 1px rails on each side, fitting exactly within `t` pixels:
+  // Two parallel rails on each side, adapted from frame.png reference tiles
+  // (16x24 tiles with 2px rails, 4px gap, 2px bracket overshoot).
   //
-  //   edge | cap | outer(1px) | gap | inner(1px) | content
-  //         \___________________________________/
-  //                       = t pixels
+  //   edge | cap | outer(rw) | gap | inner(rw) | content
+  //         \__________________________________________/
+  //                          = t pixels
   //
   // Rails span the full widget extent so they overshoot the perpendicular
   // outer rail by `cap` pixels, producing bracket corners.
-  int cap = t - 3;          // maximise cap; gap gets the remainder (≥1)
-  if (cap < 1) cap = 1;
+  int rw = (t >= 7) ? 2 : 1;       // rail width: 2px when border allows
+  int cap = rw;                     // bracket overshoot = rail width
+  int gap = t - cap - 2 * rw;      // remaining space becomes gap
+  if (gap < 1) { gap = 1; cap = t - 2 * rw - 1; }
+  if (cap < 1) { cap = 1; rw = 1; gap = t - cap - 2; if (gap < 1) gap = 1; }
 
-  // Rail positions (1px each), measured from widget edge:
-  //   outer = cap,  inner = t - 1
-  int ot = y + cap;                 // outer horizontal top
-  int ob = y + h - 1 - cap;        // outer horizontal bottom
-  int ol = x + cap;                 // outer vertical left
-  int or_ = x + w - 1 - cap;       // outer vertical right
-  int it = y + t - 1;              // inner horizontal top
-  int ib = y + h - t;              // inner horizontal bottom
-  int il = x + t - 1;              // inner vertical left
-  int ir = x + w - t;              // inner vertical right
+  // Rail positions, measured from widget edge:
+  //   outer = cap,  inner = cap + rw + gap
+  int outer = cap;
+  int inner = cap + rw + gap;
 
-  // Horizontal rails — full widget width, 1px tall (overshoot outer verticals)
-  cogito_draw_rect_plain(x, ot, w, 1, border);
-  cogito_draw_rect_plain(x, ob, w, 1, border);
-  cogito_draw_rect_plain(x, it, w, 1, border);
-  cogito_draw_rect_plain(x, ib, w, 1, border);
+  // Horizontal rails — full widget width, rw px tall (overshoot outer verticals)
+  cogito_draw_rect_plain(x, y + outer,             w, rw, border);  // top outer
+  cogito_draw_rect_plain(x, y + inner,             w, rw, border);  // top inner
+  cogito_draw_rect_plain(x, y + h - outer - rw,    w, rw, border);  // bottom outer
+  cogito_draw_rect_plain(x, y + h - inner - rw,    w, rw, border);  // bottom inner
 
-  // Vertical rails — full widget height, 1px wide (overshoot outer horizontals)
-  cogito_draw_rect_plain(ol,  y, 1, h, border);
-  cogito_draw_rect_plain(or_, y, 1, h, border);
-  cogito_draw_rect_plain(il,  y, 1, h, border);
-  cogito_draw_rect_plain(ir,  y, 1, h, border);
+  // Vertical rails — full widget height, rw px wide (overshoot outer horizontals)
+  cogito_draw_rect_plain(x + outer,            y, rw, h, border);  // left outer
+  cogito_draw_rect_plain(x + inner,            y, rw, h, border);  // left inner
+  cogito_draw_rect_plain(x + w - outer - rw,   y, rw, h, border);  // right outer
+  cogito_draw_rect_plain(x + w - inner - rw,   y, rw, h, border);  // right inner
 }
 
 static void cogito_draw_rect_lines_node(const CogitoNode* n, const CogitoStyle* s,

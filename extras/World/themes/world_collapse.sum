@@ -18,7 +18,7 @@ dialog
   background: @bg
   color: @fg
   icon-color: @fg
-  border: 5 solid @clr1
+  border: 8 solid @clr1
   border-radius: 0
 
 label
@@ -107,7 +107,7 @@ drawing_area.world-tool-repr
   min-width: 60
   min-height: 100
   border-radius: 0
-  border: 5 solid @clr2
+  border: 8 solid @clr2
   background: @bg
 
 label.world-tool-label
@@ -124,7 +124,7 @@ vstack.world-brush-size-panel
   max-width: 60
   max-height: 100
   border-radius: 0
-  border: 5 solid @clr2
+  border: 8 solid @clr2
   background: @bg
   padding-top: 0
   padding-right: 8
@@ -162,7 +162,7 @@ button.world-brush-size-btn-selected
 
 vstack.world-map-frame
   background: @bg
-  border: 5 solid @clr2
+  border: 8 solid @clr2
   border-radius: 0
   padding-top: 0
   padding-right: 0
@@ -183,7 +183,7 @@ button.world-side-btn
   max-width: 160
   max-height: 64
   border-radius: 0
-  border: 5 solid @clr2
+  border: 8 solid @clr2
   background: @bg
   color: @fg
   text-align: left
@@ -193,16 +193,16 @@ button.world-side-btn
   font-render: pixel
 
 button.world-side-btn:hover
-  border: 5 solid @clr1
+  border: 8 solid @clr1
   color: @fg
 
 button.world-side-btn:active
-  border: 5 solid @clr1
+  border: 8 solid @clr1
   background: @clr2
   color: @fg
 
 button.world-side-btn:disabled
-  border: 5 solid @clr2
+  border: 8 solid @clr2
   background: @bg
   color: @clr2
 
