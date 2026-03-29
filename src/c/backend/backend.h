@@ -156,6 +156,7 @@ typedef struct CogitoBackend {
   void (*draw_circle)(int x, int y, float radius, CogitoColor color);
   void (*draw_circle_lines)(int x, int y, float radius, CogitoColor color,
                             int thickness);
+  void (*draw_points)(int count, const int *x, const int *y, CogitoColor color);
 
   // Text
   CogitoFont *(*font_load)(const char *path, int size);

@@ -215,6 +215,83 @@ static inline void sdl3_rect_batch_push(SDL_Renderer *renderer, int x, int y,
       (SDL_FRect){(float)x, (float)y, (float)w, (float)h};
 }
 
+#define SDL3_POINT_BATCH_MAX 1024
+static SDL_FPoint g_point_batch[SDL3_POINT_BATCH_MAX];
+static int g_point_batch_count = 0;
+static SDL_Renderer *g_point_batch_renderer = NULL;
+static CogitoColor g_point_batch_color = {0, 0, 0, 0};
+
+static inline void sdl3_point_batch_flush(void) {
+  if (!g_point_batch_renderer || g_point_batch_count <= 0)
+    return;
+  sdl3_set_draw_color_cached(g_point_batch_color.r, g_point_batch_color.g,
+                             g_point_batch_color.b, g_point_batch_color.a);
+  SDL_RenderPoints(g_point_batch_renderer, g_point_batch, g_point_batch_count);
+  g_point_batch_count = 0;
+}
+
+static inline void sdl3_point_batch_reset(void) {
+  g_point_batch_count = 0;
+  g_point_batch_renderer = NULL;
+}
+
+static inline void sdl3_point_batch_push(SDL_Renderer *renderer, int x, int y,
+                                         CogitoColor color) {
+  if (!renderer || color.a == 0)
+    return;
+  if (g_point_batch_count > 0 &&
+      (g_point_batch_renderer != renderer || g_point_batch_color.r != color.r ||
+       g_point_batch_color.g != color.g || g_point_batch_color.b != color.b ||
+       g_point_batch_color.a != color.a ||
+       g_point_batch_count >= SDL3_POINT_BATCH_MAX)) {
+    sdl3_point_batch_flush();
+  }
+  if (g_point_batch_count == 0) {
+    g_point_batch_renderer = renderer;
+    g_point_batch_color = color;
+  }
+  g_point_batch[g_point_batch_count++] = (SDL_FPoint){(float)x, (float)y};
+}
+
+#define SDL3_LINE_BATCH_MAX 512
+static SDL_FPoint g_line_batch[SDL3_LINE_BATCH_MAX * 2];
+static int g_line_batch_count = 0;
+static SDL_Renderer *g_line_batch_renderer = NULL;
+static CogitoColor g_line_batch_color = {0, 0, 0, 0};
+
+static inline void sdl3_line_batch_flush(void) {
+  if (!g_line_batch_renderer || g_line_batch_count <= 0)
+    return;
+  sdl3_set_draw_color_cached(g_line_batch_color.r, g_line_batch_color.g,
+                             g_line_batch_color.b, g_line_batch_color.a);
+  SDL_RenderLines(g_line_batch_renderer, g_line_batch, g_line_batch_count);
+  g_line_batch_count = 0;
+}
+
+static inline void sdl3_line_batch_reset(void) {
+  g_line_batch_count = 0;
+  g_line_batch_renderer = NULL;
+}
+
+static inline void sdl3_line_batch_push(SDL_Renderer *renderer, int x1, int y1,
+                                       int x2, int y2, CogitoColor color) {
+  if (!renderer || color.a == 0)
+    return;
+  if (g_line_batch_count > 0 &&
+      (g_line_batch_renderer != renderer || g_line_batch_color.r != color.r ||
+       g_line_batch_color.g != color.g || g_line_batch_color.b != color.b ||
+       g_line_batch_color.a != color.a ||
+       g_line_batch_count >= SDL3_LINE_BATCH_MAX)) {
+    sdl3_line_batch_flush();
+  }
+  if (g_line_batch_count == 0) {
+    g_line_batch_renderer = renderer;
+    g_line_batch_color = color;
+  }
+  g_line_batch[g_line_batch_count++] = (SDL_FPoint){(float)x1, (float)y1};
+  g_line_batch[g_line_batch_count++] = (SDL_FPoint){(float)x2, (float)y2};
+}
+
 // Scissor stack for nested clipping support
 #define MAX_SCISSOR_STACK 16
 static int scissor_stack_count = 0;
@@ -1060,6 +1137,8 @@ static void sdl3_present(CogitoWindow *window) {
   if (!win || !win->renderer)
     return;
   sdl3_rect_batch_flush();
+  sdl3_point_batch_flush();
+  sdl3_line_batch_flush();
   // Use autoreleasepool wrapper on macOS to prevent RAM balloon during window
   // drag performWindowDragWithEvent: runs a modal event loop that stops normal
   // autorelease pool drain
@@ -1490,6 +1569,14 @@ static void sdl3_draw_rect(int x, int y, int w, int h, CogitoColor color) {
   sdl3_rect_batch_push(g_current_renderer, x, y, w, h, color);
 }
 
+static void sdl3_draw_points(int count, const int *x, const int *y, CogitoColor color) {
+  if (!g_current_renderer || count <= 0 || !x || !y || color.a == 0)
+    return;
+  for (int i = 0; i < count; i++) {
+    sdl3_point_batch_push(g_current_renderer, x[i], y[i], color);
+  }
+}
+
 static void sdl3_draw_rect_linear_gradient(int x, int y, int w, int h,
                                            CogitoColor start,
                                            CogitoColor end,
@@ -1498,6 +1585,8 @@ static void sdl3_draw_rect_linear_gradient(int x, int y, int w, int h,
     return;
 
   sdl3_rect_batch_flush();
+  sdl3_point_batch_flush();
+  sdl3_line_batch_flush();
 
   float rad = angle_deg * (float)M_PI / 180.0f;
   float dx = cosf(rad);
@@ -1556,7 +1645,6 @@ static void sdl3_draw_point_alpha(int x, int y, CogitoColor color,
                                   float coverage) {
   if (!g_current_renderer || color.a == 0)
     return;
-  sdl3_rect_batch_flush();
   if (coverage <= 0.0f)
     return;
   if (coverage > 1.0f)
@@ -1564,15 +1652,15 @@ static void sdl3_draw_point_alpha(int x, int y, CogitoColor color,
   uint8_t a = (uint8_t)lroundf((float)color.a * coverage);
   if (a == 0)
     return;
-  sdl3_set_draw_color_cached(color.r, color.g, color.b, a);
-  SDL_RenderPoint(g_current_renderer, (float)x, (float)y);
+  CogitoColor adjusted = color;
+  adjusted.a = a;
+  sdl3_point_batch_push(g_current_renderer, x, y, adjusted);
 }
 
 static void sdl3_draw_hspan_aa(int y, float left, float right,
                                CogitoColor color) {
   if (!g_current_renderer || color.a == 0)
     return;
-  sdl3_rect_batch_flush();
   if (right < left)
     return;
   int full_l = (int)ceilf(left);
@@ -1582,9 +1670,7 @@ static void sdl3_draw_hspan_aa(int y, float left, float right,
     return;
   }
 
-  sdl3_set_draw_color_cached(color.r, color.g, color.b, color.a);
-  SDL_RenderLine(g_current_renderer, (float)full_l, (float)y, (float)full_r,
-                 (float)y);
+  sdl3_line_batch_push(g_current_renderer, full_l, y, full_r, y, color);
 }
 
 static float sdl3_aa_coverage_curve(float cov) {
@@ -2210,14 +2296,12 @@ static void sdl3_draw_line(int x1, int y1, int x2, int y2, CogitoColor color,
   if (adx >= ady) {
     for (int i = 0; i < thickness; i++) {
       int off = i - half;
-      SDL_RenderLine(g_current_renderer, (float)x1, (float)(y1 + off),
-                     (float)x2, (float)(y2 + off));
+      sdl3_line_batch_push(g_current_renderer, x1, y1 + off, x2, y2 + off, color);
     }
   } else {
     for (int i = 0; i < thickness; i++) {
       int off = i - half;
-      SDL_RenderLine(g_current_renderer, (float)(x1 + off), (float)y1,
-                     (float)(x2 + off), (float)y2);
+      sdl3_line_batch_push(g_current_renderer, x1 + off, y1, x2 + off, y2, color);
     }
   }
 }
@@ -2232,21 +2316,13 @@ static void sdl3_draw_rect_lines(int x, int y, int w, int h, CogitoColor color,
     return;
   }
 
-  sdl3_set_draw_color_cached(color.r, color.g, color.b, color.a);
-  SDL_FRect top = {(float)x, (float)y, (float)w, (float)thickness};
-  SDL_FRect bottom = {(float)x, (float)(y + h - thickness), (float)w,
-                      (float)thickness};
-  SDL_RenderFillRect(g_current_renderer, &top);
-  SDL_RenderFillRect(g_current_renderer, &bottom);
+  sdl3_rect_batch_push(g_current_renderer, x, y, w, thickness, color);
+  sdl3_rect_batch_push(g_current_renderer, x, y + h - thickness, w, thickness, color);
 
   int inner_h = h - thickness * 2;
   if (inner_h > 0) {
-    SDL_FRect left = {(float)x, (float)(y + thickness), (float)thickness,
-                      (float)inner_h};
-    SDL_FRect right = {(float)(x + w - thickness), (float)(y + thickness),
-                       (float)thickness, (float)inner_h};
-    SDL_RenderFillRect(g_current_renderer, &left);
-    SDL_RenderFillRect(g_current_renderer, &right);
+    sdl3_rect_batch_push(g_current_renderer, x, y + thickness, thickness, inner_h, color);
+    sdl3_rect_batch_push(g_current_renderer, x + w - thickness, y + thickness, thickness, inner_h, color);
   }
 }
 
@@ -3804,6 +3880,7 @@ static CogitoBackend sdl3_backend = {
     .draw_line = sdl3_draw_line,
     .draw_circle = sdl3_draw_circle,
     .draw_circle_lines = sdl3_draw_circle_lines,
+    .draw_points = sdl3_draw_points,
     .font_load = sdl3_font_load,
     .font_load_face = sdl3_font_load_face,
     .font_load_pixel = sdl3_font_load_pixel,

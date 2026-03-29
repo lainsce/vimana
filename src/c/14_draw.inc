@@ -672,24 +672,43 @@ static void cogito_draw_aa_bbox(int min_x, int min_y, int max_x, int max_y,
                                 CogitoColor color,
                                 CogitoAASampleFn sample_fn,
                                 void* user) {
-  if (!cogito_backend || !cogito_backend->draw_rect || color.a == 0) return;
+  if (!cogito_backend || !cogito_backend->draw_points || color.a == 0) return;
   if (!sample_fn) return;
   if (min_x > max_x || min_y > max_y) return;
   const int samples = 16;
+  int max_points = (max_x - min_x + 1) * (max_y - min_y + 1);
+  if (max_points <= 0) return;
+  int *px_arr = (int*)malloc(max_points * sizeof(int));
+  int *py_arr = (int*)malloc(max_points * sizeof(int));
+  uint8_t *pa_arr = (uint8_t*)malloc(max_points * sizeof(uint8_t));
+  if (!px_arr || !py_arr || !pa_arr) {
+    free(px_arr); free(py_arr); free(pa_arr);
+    return;
+  }
+  int count = 0;
   for (int y = min_y; y <= max_y; y++) {
     for (int x = min_x; x <= max_x; x++) {
       int hit = cogito_aa_coverage_4x4(x, y, sample_fn, user);
       if (hit <= 0) continue;
-      CogitoColor c = color;
       int a = (int)lround((double)color.a * ((double)hit / (double)samples));
       if (a < 1) continue;
       if (a > 255) a = 255;
-      c.a = (uint8_t)a;
-      cogito_backend->draw_rect(x, y,
-      1,
-      1, c);
+      px_arr[count] = x;
+      py_arr[count] = y;
+      pa_arr[count] = (uint8_t)a;
+      count++;
     }
   }
+  if (count > 0) {
+    for (int i = 0; i < count; i++) {
+      CogitoColor c = color;
+      c.a = pa_arr[i];
+      cogito_backend->draw_points(1, &px_arr[i], &py_arr[i], c);
+    }
+  }
+  free(px_arr);
+  free(py_arr);
+  free(pa_arr);
 }
 
 typedef struct {
