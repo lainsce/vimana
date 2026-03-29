@@ -903,6 +903,10 @@ typedef struct {
 } CogitoChipData;
 
 typedef struct {
+  bool no_close;
+} CogitoDialogData;
+
+typedef struct {
   bool dragging;
   bool expanded;
   int drag_start_y;
@@ -1080,6 +1084,7 @@ typedef union {
   CogitoProgressData progress;
   CogitoButtonData button;
   CogitoChipData chip;
+  CogitoDialogData dialog;
   CogitoBottomSheetData bottom_sheet;
   CogitoSideSheetData side_sheet;
   CogitoFabData fab;

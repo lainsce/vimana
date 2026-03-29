@@ -118,6 +118,32 @@
                         return true;
                     }
                     if (str_eq_c(fname,
+                    "__cogito_dialog_set_no_close")) {
+                        GenExpr dialog, nc;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            0
+                        ], &dialog, err)) return false;
+                        if (!gen_expr(cg, path, e->as.call.args[
+                            1
+                        ], &nc, err)) { gen_expr_free(&dialog); return false; }
+                        w_line(&cg->w,
+                        "cogito_dialog_set_no_close(%s, %s);", dialog.tmp, nc.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", dialog.tmp);
+                        w_line(&cg->w,
+                        "yis_release_val(%s);", nc.tmp);
+                        gen_expr_release_except(cg, &dialog, dialog.tmp);
+                        gen_expr_release_except(cg, &nc, nc.tmp);
+                        gen_expr_free(&dialog);
+                        gen_expr_free(&nc);
+                        char *t = codegen_new_tmp(cg);
+                        w_line(&cg->w,
+                        "YisVal %s = YV_NULLV;", t);
+                        gen_expr_add(out, t);
+                        out->tmp = t;
+                        return true;
+                    }
+                    if (str_eq_c(fname,
                     "__cogito_image")) {
                         GenExpr icon;
                         if (!gen_expr(cg, path, e->as.call.args[

@@ -131,7 +131,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
 ;
 
 :: show_theme_dialog(win = cogito.Window, selected_theme = num, use_text = bool, on_pick = any) (( -- ))
-    let dlg = cogito.dialog("").set_class("pattern-border")
+    let dlg = cogito.dialog("").set_class("pattern-border").set_no_close(true)
 
     let box = cogito.vstack()
     .set_class("world-dialog-card")
@@ -252,7 +252,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
 ;
 
 :: show_color_dialog(win = cogito.Window, theme_idx = num, selected_color = num, on_pick = any) (( -- ))
-    let dlg = cogito.dialog("").set_class("pattern-border")
+    let dlg = cogito.dialog("").set_class("pattern-border").set_no_close(true)
 
     let box = cogito.vstack()
     .set_class("world-dialog-card")
@@ -367,7 +367,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
 ;
 
 :: show_glyph_dialog(win = cogito.Window, theme_idx = num, selected_glyph = num, use_text = bool, on_pick = any) (( -- ))
-    let dlg = cogito.dialog("").set_class("pattern-border")
+    let dlg = cogito.dialog("").set_class("pattern-border").set_no_close(true)
 
     let box = cogito.vstack()
     .set_class("world-dialog-card")
@@ -540,7 +540,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
     use_text = bool,
     on_pick = any
 ) (( -- ))
-    let dlg = cogito.dialog("").set_class("pattern-border")
+    let dlg = cogito.dialog("").set_class("pattern-border").set_no_close(true)
 
     let box = cogito.vstack()
     .set_class("world-dialog-card")
@@ -591,7 +591,7 @@ def PREVIEW_TEXT = ",.................................,\n> Lovingq uQuuOpipiUuuQ
 ;
 
 :: show_about_dialog(win = cogito.Window) (( -- ))
-    let dlg = cogito.dialog("").set_class("pattern-border")
+    let dlg = cogito.dialog("").set_class("pattern-border").set_no_close(true)
 
     let box = cogito.vstack()
     .set_class("world-dialog-card")

@@ -7,6 +7,13 @@ static CogitoNode* cogito_dialog_new_obj(YisStr* title) {
 #define COGITO_DIALOG_CLOSE_BOX 24
 static void cogito_dialog_close_rect(CogitoNode* n, int* out_x, int* out_y, int* out_w, int* out_h) {
   if (!n || n->kind != COGITO_DIALOG) return;
+  if (n->kd->dialog.no_close) {
+    if (out_x) *out_x = 0;
+    if (out_y) *out_y = 0;
+    if (out_w) *out_w = 0;
+    if (out_h) *out_h = 0;
+    return;
+  }
   int pad_t = COGITO_DIALOG_HEADER_INSET;
   int pad_r = COGITO_DIALOG_HEADER_INSET;
   int title_size = 20;
@@ -27,6 +34,17 @@ static YisVal cogito_dialog_new(YisVal title) {
   YisStr* ts = stdr_to_string(title);
   CogitoNode* dlg = cogito_dialog_new_obj(ts);
   return YV_OBJ(dlg);
+}
+static void cogito_dialog_set_no_close(YisVal dialogv, YisVal nc) {
+  if (dialogv.tag != EVT_OBJ) yis_trap("cogito.dialog_set_no_close expects dialog");
+  CogitoNode* n = (CogitoNode*)dialogv.as.p;
+  n->kd->dialog.no_close = yis_as_bool(nc);
+  cogito_window_relayout(cogito_node_window(n));
+}
+static YisVal cogito_dialog_get_no_close(YisVal dialogv) {
+  if (dialogv.tag != EVT_OBJ) yis_trap("cogito.dialog_get_no_close expects dialog");
+  CogitoNode* n = (CogitoNode*)dialogv.as.p;
+  return YV_BOOL(n->kd->dialog.no_close);
 }
 static YisVal cogito_dialog_slot_new(void) {
   return YV_OBJ(cogito_dialog_slot_new_obj());

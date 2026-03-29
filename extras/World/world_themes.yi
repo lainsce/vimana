@@ -16,8 +16,8 @@ def THEME_9 = ["#FFFFFF", "#AAFF00", "#003FBF", "#000000"]   -- Chlorophyll
 def THEME_10 = ["#FFF5DC", "#E02020", "#1A3A6E", "#1A0A08"]  -- Wax Seal
 def THEME_11 = ["#FFFFFF", "#FF2D8A", "#2A7A3A", "#000000"]  -- Neon Moss
 def THEME_12 = ["#FFFFFF", "#00D4FF", "#C01040", "#7A0028"]  -- Cascade
-def THEME_13 = ["#FFFAEE", "#FFCC00", "#7030B0", "#080808"]  -- Marigold Bruise
-def THEME_14 = ["#E8F4F8", "#50C8B0", "#5060C0", "#080C1C"]  -- Permafrost
+def THEME_13 = ["#FFFFFF", "#FF0000", "#0000FF", "#000000"]  -- Classic
+def THEME_14 = ["#FFFFFF", "#4A4147", "#CA5F66", "#200000"]  -- Collapse
 def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
 
 : clamp_theme_idx(idx = num) (( num ))

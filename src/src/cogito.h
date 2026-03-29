@@ -754,6 +754,8 @@ void cogito_dialog_slot_show(cogito_node *slot, cogito_node *dialog);
 void cogito_dialog_slot_clear(cogito_node *slot);
 void cogito_dialog_close(cogito_node *dialog);
 void cogito_dialog_remove(cogito_node *dialog);
+void cogito_dialog_set_no_close(cogito_node *dialog, bool no_close);
+bool cogito_dialog_get_no_close(cogito_node *dialog);
 void cogito_window_set_dialog(cogito_window *window, cogito_node *dialog);
 void cogito_window_clear_dialog(cogito_window *window);
 void cogito_window_set_side_sheet(cogito_window *window,

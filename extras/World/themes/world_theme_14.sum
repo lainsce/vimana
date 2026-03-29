@@ -1,9 +1,9 @@
 @diagnostics: warn
 
-@fg: #E8F4F8
-@bg: #080C1C
-@accent: #5060C0
-@accent-strong: #50C8B0
+@fg: #FFFFFF
+@bg: #200000
+@accent: #4A4147
+@accent-strong: #CA5F66
 
 
 scroller

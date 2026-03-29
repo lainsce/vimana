@@ -167,6 +167,7 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_dialog_slot_show(slot = DialogSlot, dialog = any) (( -- )) { }
 : __cogito_dialog_slot() (( DialogSlot )) { }
 : __cogito_dialog(title = string) (( Dialog )) { }
+: __cogito_dialog_set_no_close(dialog = Dialog, nc = bool) (( -- )) { }
 : __cogito_divider(orientation = string, is_inset = bool) (( Divider )) { }
 : __cogito_popover() (( Popover )) { }
 : __cogito_popover_show(anchor = any, popover = Popover) (( -- )) { }
@@ -1282,6 +1283,10 @@ pub ,: Dialog : Component
     ;
     :: set_id(this, id = string) (( Dialog ))
         __cogito_node_set_id(this, id)
+        <- this
+    ;
+    :: set_no_close(this, nc = bool) (( Dialog ))
+        __cogito_dialog_set_no_close(this, nc)
         <- this
     ;
 ;

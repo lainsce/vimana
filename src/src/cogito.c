@@ -110,6 +110,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_dialog_close cogito_dialog_close_yis
 #define cogito_dialog_new cogito_dialog_new_yis
 #define cogito_dialog_remove cogito_dialog_remove_yis
+#define cogito_dialog_set_no_close cogito_dialog_set_no_close_yis
+#define cogito_dialog_get_no_close cogito_dialog_get_no_close_yis
 #define cogito_dialog_slot_clear cogito_dialog_slot_clear_yis
 #define cogito_dialog_slot_new cogito_dialog_slot_new_yis
 #define cogito_dialog_slot_show cogito_dialog_slot_show_yis
@@ -541,6 +543,8 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_dialog_close
 #undef cogito_dialog_new
 #undef cogito_dialog_remove
+#undef cogito_dialog_set_no_close
+#undef cogito_dialog_get_no_close
 #undef cogito_dialog_slot_clear
 #undef cogito_dialog_slot_new
 #undef cogito_dialog_slot_show
@@ -6460,6 +6464,19 @@ void cogito_dialog_remove(cogito_node *dialog) {
   if (!dialog)
     return;
   cogito_dialog_remove_yis(YV_OBJ(dialog));
+}
+
+void cogito_dialog_set_no_close(cogito_node *dialog, bool no_close) {
+  if (!dialog)
+    return;
+  cogito_dialog_set_no_close_yis(YV_OBJ(dialog), YV_BOOL(no_close));
+}
+
+bool cogito_dialog_get_no_close(cogito_node *dialog) {
+  if (!dialog)
+    return false;
+  YisVal v = cogito_dialog_get_no_close_yis(YV_OBJ(dialog));
+  return yis_as_bool(v);
 }
 
 cogito_node *cogito_node_parent(cogito_node *node) {

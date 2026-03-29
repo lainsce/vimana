@@ -437,6 +437,7 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
     case COGITO_PROGRESS: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoProgressData)); break;
     case COGITO_BUTTON: case COGITO_FONTBUTTON: case COGITO_ICONBTN: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoButtonData)); break;
     case COGITO_CHIP: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoChipData)); break;
+    case COGITO_DIALOG: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoDialogData)); break;
     case COGITO_BOTTOM_SHEET: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoBottomSheetData)); break;
     case COGITO_FAB: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoFabData)); break;
     case COGITO_FAB_MENU: n->kd = (CogitoKindData*)calloc(1, sizeof(CogitoFabMenuData)); break;

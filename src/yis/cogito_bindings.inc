@@ -46,9 +46,9 @@
 #undef cogito_buttongroup_set_shape
 #undef cogito_buttongroup_set_size
 #undef cogito_canvas_circle
+#undef cogito_canvas_draw_bitmap
 #undef cogito_canvas_fill_circle
 #undef cogito_canvas_fill_rect
-#undef cogito_canvas_draw_bitmap
 #undef cogito_canvas_line
 #undef cogito_canvas_rect
 #undef cogito_canvas_set_color
@@ -85,6 +85,7 @@
 #undef cogito_datepicker_new
 #undef cogito_datepicker_on_change
 #undef cogito_dialog_new
+#undef cogito_dialog_set_no_close
 #undef cogito_dialog_slot_clear
 #undef cogito_dialog_slot_new
 #undef cogito_dialog_slot_show
@@ -94,8 +95,8 @@
 #undef cogito_drawing_area_get_y
 #undef cogito_drawing_area_new
 #undef cogito_drawing_area_on_drag
-#undef cogito_drawing_area_on_move
 #undef cogito_drawing_area_on_draw
+#undef cogito_drawing_area_on_move
 #undef cogito_drawing_area_on_press
 #undef cogito_drawing_area_on_release
 #undef cogito_dropdown_get_selected
@@ -114,9 +115,6 @@
 #undef cogito_find_parent
 #undef cogito_fixed_set_pos
 #undef cogito_grid_clear
-#undef cogito_vstack_clear
-#undef cogito_hstack_clear
-#undef cogito_node_set_bg_color
 #undef cogito_grid_new_with_cols
 #undef cogito_grid_on_activate
 #undef cogito_grid_on_select
@@ -142,6 +140,7 @@
 #undef cogito_gst_set_volume
 #undef cogito_gst_shutdown
 #undef cogito_gst_stop
+#undef cogito_hstack_clear
 #undef cogito_iconbtn_add_menu
 #undef cogito_iconbtn_add_menu_section
 #undef cogito_iconbtn_new
@@ -149,6 +148,7 @@
 #undef cogito_image_new
 #undef cogito_image_set_blur
 #undef cogito_image_set_icon
+#undef cogito_is_mouse_down
 #undef cogito_label_new
 #undef cogito_label_set_align
 #undef cogito_label_set_ellipsis
@@ -177,9 +177,6 @@
 #undef cogito_node_get_w
 #undef cogito_node_get_x
 #undef cogito_node_get_y
-#undef cogito_is_mouse_down
-#undef cogito_pointer_x_pos
-#undef cogito_pointer_y_pos
 #undef cogito_node_new
 #undef cogito_node_on_activate
 #undef cogito_node_on_change
@@ -190,12 +187,14 @@
 #undef cogito_node_set_a11y_label
 #undef cogito_node_set_a11y_role
 #undef cogito_node_set_align
+#undef cogito_node_set_bg_color
 #undef cogito_node_set_border_color
 #undef cogito_node_set_border_radius
 #undef cogito_node_set_border_width
 #undef cogito_node_set_class
 #undef cogito_node_set_context_menu
 #undef cogito_node_set_disabled
+#undef cogito_node_set_dropdown_selected
 #undef cogito_node_set_editable
 #undef cogito_node_set_font_family
 #undef cogito_node_set_font_italic
@@ -203,40 +202,10 @@
 #undef cogito_node_set_font_size
 #undef cogito_node_set_font_weight
 #undef cogito_node_set_halign
+#undef cogito_node_set_iconbtn_checked
 #undef cogito_node_set_id
 #undef cogito_node_set_line_height
 #undef cogito_node_set_margins
-#undef cogito_textview_get_sel_start
-#undef cogito_textview_get_sel_end
-#undef cogito_textview_set_selection
-#undef cogito_textview_apply_bold
-#undef cogito_textview_apply_italic
-#undef cogito_textview_apply_underline
-#undef cogito_textview_apply_strikethrough
-#undef cogito_textview_apply_color
-#undef cogito_textview_apply_size
-#undef cogito_textview_apply_family
-#undef cogito_textview_clear_spans
-#undef cogito_textview_span_count
-#undef cogito_textview_span_start
-#undef cogito_textview_span_end
-#undef cogito_textview_span_bold
-#undef cogito_textview_span_italic
-#undef cogito_textview_span_underline
-#undef cogito_textview_span_strikethrough
-#undef cogito_textview_span_size
-#undef cogito_textview_span_color
-#undef cogito_textview_span_family
-#undef cogito_textview_para_count
-#undef cogito_textview_set_para_align
-#undef cogito_textview_get_para_align
-#undef cogito_textview_set_para_line_height
-#undef cogito_textview_get_para_line_height
-#undef cogito_textview_get_caret
-#undef cogito_textview_on_key
-#undef cogito_node_set_dropdown_selected
-#undef cogito_node_set_iconbtn_checked
-#undef cogito_node_set_textfield_text
 #undef cogito_node_set_opacity
 #undef cogito_node_set_padding
 #undef cogito_node_set_shadow
@@ -244,6 +213,7 @@
 #undef cogito_node_set_text
 #undef cogito_node_set_text_align
 #undef cogito_node_set_text_color
+#undef cogito_node_set_textfield_text
 #undef cogito_node_set_tooltip
 #undef cogito_node_set_underline
 #undef cogito_node_set_valign
@@ -252,6 +222,8 @@
 #undef cogito_open_url
 #undef cogito_pointer_capture
 #undef cogito_pointer_release
+#undef cogito_pointer_x_pos
+#undef cogito_pointer_y_pos
 #undef cogito_popover_close
 #undef cogito_popover_new
 #undef cogito_popover_show
@@ -379,10 +351,38 @@
 #undef cogito_textfield_set_regex
 #undef cogito_textfield_set_suffix
 #undef cogito_textfield_set_text
+#undef cogito_textview_apply_bold
+#undef cogito_textview_apply_color
+#undef cogito_textview_apply_family
+#undef cogito_textview_apply_italic
+#undef cogito_textview_apply_size
+#undef cogito_textview_apply_strikethrough
+#undef cogito_textview_apply_underline
+#undef cogito_textview_clear_spans
+#undef cogito_textview_get_caret
+#undef cogito_textview_get_para_align
+#undef cogito_textview_get_para_line_height
+#undef cogito_textview_get_sel_end
+#undef cogito_textview_get_sel_start
 #undef cogito_textview_get_text
 #undef cogito_textview_new
 #undef cogito_textview_on_change
+#undef cogito_textview_on_key
+#undef cogito_textview_para_count
+#undef cogito_textview_set_para_align
+#undef cogito_textview_set_para_line_height
+#undef cogito_textview_set_selection
 #undef cogito_textview_set_text
+#undef cogito_textview_span_bold
+#undef cogito_textview_span_color
+#undef cogito_textview_span_count
+#undef cogito_textview_span_end
+#undef cogito_textview_span_family
+#undef cogito_textview_span_italic
+#undef cogito_textview_span_size
+#undef cogito_textview_span_start
+#undef cogito_textview_span_strikethrough
+#undef cogito_textview_span_underline
 #undef cogito_timer_clear
 #undef cogito_timer_clear_all
 #undef cogito_timer_clear_for
@@ -417,6 +417,7 @@
 #undef cogito_virtual_list_set_builder
 #undef cogito_virtual_list_set_item_count
 #undef cogito_virtual_list_set_item_height
+#undef cogito_vstack_clear
 #undef cogito_webview_get_open_external_on_click
 #undef cogito_webview_get_url
 #undef cogito_webview_new
@@ -2232,6 +2233,11 @@ static YisVal __cogito_dialog(YisVal titlev) {
   cogito_node* n = cogito_dialog_new(title);
   if (tmp) yis_release_val(YV_STR(tmp));
   return cogito_wrap_node(n, COGITO_HANDLE_NODE);
+}
+
+static void __cogito_dialog_set_no_close(YisVal dialogv, YisVal ncv) {
+  cogito_node* dialog = cogito_node_from_val(dialogv);
+  cogito_dialog_set_no_close(dialog, yis_as_bool(ncv));
 }
 
 static void __cogito_dialog_close(YisVal dialogv) {
@@ -4923,6 +4929,7 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_fab_new __cogito_fab
 #define cogito_label_new __cogito_label
 #define cogito_dialog_new __cogito_dialog
+#define cogito_dialog_set_no_close __cogito_dialog_set_no_close
 #define cogito_dialog_slot_new __cogito_dialog_slot
 #define cogito_image_new __cogito_image
 #define cogito_webview_new __cogito_webview
