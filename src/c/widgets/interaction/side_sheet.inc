@@ -44,7 +44,7 @@ static int cogito_side_sheet_min_width(CogitoNode* n) {
 }
 
 static int cogito_side_sheet_left_inset(int host_x) {
-  return host_x <= 0 ? 0 : 0; // TODO: maybe appbar inset?
+  return host_x <= 0 ? 0 : 0;
 }
 
 static int cogito_side_sheet_settle_width(CogitoNode* n, int host_x, int host_w) {
