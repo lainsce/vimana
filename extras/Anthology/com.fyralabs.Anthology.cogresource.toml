@@ -1,8 +1,0 @@
-[cogresource]
-prefix = "/com/fyralabs/Anthology"
-
-[[cogresource.file]]
-src = "com.fyralabs.Anthology.svg"
-
-[[cogresource.file]]
-src = "com.fyralabs.Anthology-symbolic.svg"
