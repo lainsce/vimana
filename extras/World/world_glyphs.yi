@@ -2440,6 +2440,7 @@ def DING_90 = [
     "0000000000000000"
 ]
 
+-- Glyph 56 is a blank glyph, used as eraser.
 def DING_56 = [
     "0000000000000000",
     "0000000000000000",
