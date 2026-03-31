@@ -296,6 +296,16 @@ void cogito_sum_apply_property(CogitoStyle* style, const char* prop, const char*
     }
     return;
   }
+  if (strcmp(prop, "hit-targets") == 0) {
+    const char* s = *p;
+    char ident[32];
+    if (cogito_css_read_ident(&s, ident, sizeof(ident))) {
+      style->has_hit_targets_natural = true;
+      style->hit_targets_natural = (strcmp(ident, "natural") == 0);
+      *p = s;
+    }
+    return;
+  }
   if (strcmp(prop, "text-overflow") == 0) {
     const char* s = *p;
     char ident[32];

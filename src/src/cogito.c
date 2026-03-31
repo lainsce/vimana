@@ -4226,6 +4226,12 @@ bool cogito_node_get_visible(cogito_node *node) {
   return yis_as_bool(v);
 }
 
+void cogito_node_set_hit_targets_natural(cogito_node *node, bool on) {
+  if (!node)
+    return;
+  cogito_apply_hit_targets_natural(YV_OBJ(node), YV_BOOL(on));
+}
+
 int cogito_node_get_x(cogito_node *node) {
   return node ? ((CogitoNode *)node)->x : 0;
 }

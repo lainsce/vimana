@@ -464,6 +464,7 @@ void cogito_node_set_subtitle(cogito_node *node, const char *text);
 void cogito_node_set_disabled(cogito_node *node, bool on);
 void cogito_node_set_opacity(cogito_node *node, float opacity);
 void cogito_node_set_visible(cogito_node *node, bool on);
+void cogito_node_set_hit_targets_natural(cogito_node *node, bool on);
 void cogito_node_set_font_size(cogito_node *node, int size);
 void cogito_node_set_font_weight(cogito_node *node, int weight);
 void cogito_node_set_font_italic(cogito_node *node, bool italic);

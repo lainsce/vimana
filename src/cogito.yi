@@ -344,6 +344,7 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_node_set_class(node = any, cls = string) (( -- )) { }
 : __cogito_node_set_disabled(node = any, on = bool) (( -- )) { }
 : __cogito_node_set_editable(node = any, on = bool) (( -- )) { }
+: __cogito_node_set_hit_targets_natural(node = any, on = bool) (( -- )) { }
 : __cogito_node_set_opacity(node = any, opacity = num) (( -- )) { }
 : __cogito_node_set_visible(node = any, on = bool) (( -- )) { }
 : __cogito_node_set_bg_color(node = any, color = string) (( -- )) { }
@@ -425,6 +426,9 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 ;
 :: node_set_size_request(node = any, w = num, h = num) (( -- ))
     __cogito_container_set_size_request(node, w, h)
+;
+:: node_set_hit_targets_natural(node = any, on = bool) (( -- ))
+    __cogito_node_set_hit_targets_natural(node, on)
 ;
 :: label_set_line_chars(node = any, line_chars = num) (( -- ))
     __cogito_label_set_line_chars(node, line_chars)

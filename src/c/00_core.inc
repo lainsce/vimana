@@ -444,6 +444,8 @@ typedef struct CogitoStyle {
   bool has_icon_color;
   bool has_transition_ms;
   bool has_transition_ease;
+  bool has_hit_targets_natural;
+  bool hit_targets_natural;
   bool has_appbar_btn_size;
   bool has_appbar_btn_gap;
   bool has_appbar_btn_pad_top;
@@ -1283,6 +1285,7 @@ typedef struct CogitoNode {
   bool box_shadow_set;
   bool track_height_set;
   bool opacity_set;
+  bool hit_targets_natural;
 
   // Style values
   CogitoColor bg;

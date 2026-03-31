@@ -362,13 +362,13 @@ static CogitoNode* cogito_find_clickable(CogitoNode* n, int x, int y) {
       n->kind == COGITO_SETTINGS_WINDOW ||
       n->kind == COGITO_EMPTY_PAGE || n->kind == COGITO_WELCOME_SCREEN ||
       n->kind == COGITO_ABOUT_WINDOW) {
-    if (cogito_hit_node_min48(n, x, y)) return n;
+    if (n->hit_targets_natural ? cogito_hit_node(n, x, y) : cogito_hit_node_min48(n, x, y)) return n;
   }
   // Small interactive widgets: expand hit target to 48×48dp minimum (§11.1 Accessibility).
   // The visual size is unchanged; only the clickable/hover detection area is enlarged.
   if (n->kind == COGITO_CHIP || n->kind == COGITO_STEPPER ||
       n->kind == COGITO_CHECKBOX || n->kind == COGITO_SWITCH) {
-    if (cogito_hit_node_min48(n, x, y)) return n;
+    if (n->hit_targets_natural ? cogito_hit_node(n, x, y) : cogito_hit_node_min48(n, x, y)) return n;
   }
   // Card is only clickable when an on_click handler is registered
   if (n->kind == COGITO_CARD && n->on_click) {

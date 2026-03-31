@@ -202,6 +202,7 @@
 #undef cogito_node_set_font_size
 #undef cogito_node_set_font_weight
 #undef cogito_node_set_halign
+#undef cogito_node_set_hit_targets_natural
 #undef cogito_node_set_iconbtn_checked
 #undef cogito_node_set_id
 #undef cogito_node_set_line_height
@@ -3213,6 +3214,11 @@ static void __cogito_node_set_editable(YisVal nodev, YisVal onv) {
   cogito_node_set_editable(node, onv.tag == EVT_BOOL ? onv.as.b : false);
 }
 
+static void __cogito_node_set_hit_targets_natural(YisVal nodev, YisVal onv) {
+  cogito_node* node = cogito_node_from_val(nodev);
+  cogito_node_set_hit_targets_natural(node, onv.tag == EVT_BOOL ? onv.as.b : false);
+}
+
 static YisVal __cogito_node_get_editable(YisVal nodev) {
   cogito_node* node = cogito_node_from_val(nodev);
   return YV_BOOL(cogito_node_get_editable(node));
@@ -5040,6 +5046,7 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_node_set_bg_color __cogito_node_set_bg_color
 #define cogito_node_set_editable __cogito_node_set_editable
 #define cogito_node_get_editable __cogito_node_get_editable
+#define cogito_node_set_hit_targets_natural __cogito_node_set_hit_targets_natural
 #define cogito_node_get_visible __cogito_node_get_visible
 #define cogito_node_set_id __cogito_node_set_id
 #define cogito_node_set_class __cogito_node_set_class

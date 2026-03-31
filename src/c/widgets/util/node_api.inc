@@ -290,6 +290,12 @@ static void cogito_node_set_editable(YisVal nodev, YisVal onv) {
   cogito_window_relayout(cogito_node_window(n));
 }
 
+static void cogito_apply_hit_targets_natural(YisVal nodev, YisVal onv) {
+  if (nodev.tag != EVT_OBJ) yis_trap("set_hit_targets_natural expects object");
+  CogitoNode* n = (CogitoNode*)nodev.as.p;
+  n->hit_targets_natural = yis_as_bool(onv);
+}
+
 static YisVal cogito_node_get_editable(YisVal nodev) {
   if (nodev.tag != EVT_OBJ) yis_trap("cogito.node_get_editable expects object");
   CogitoNode* n = (CogitoNode*)nodev.as.p;

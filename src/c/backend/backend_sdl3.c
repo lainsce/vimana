@@ -1117,6 +1117,8 @@ static void sdl3_begin_frame(CogitoWindow *window) {
   g_draw_color_valid = false;
   g_draw_color_renderer = win->renderer;
   sdl3_rect_batch_reset();
+  sdl3_point_batch_reset();
+  sdl3_line_batch_reset();
   g_render_state.window_width = w;
   g_render_state.window_height = h;
   SDL_SetRenderClipRect(g_current_renderer, NULL);
@@ -1159,6 +1161,8 @@ static void sdl3_present(CogitoWindow *window) {
 
   g_current_renderer = NULL;
   sdl3_rect_batch_reset();
+  sdl3_point_batch_reset();
+  sdl3_line_batch_reset();
   g_draw_color_valid = false;
   g_draw_color_renderer = NULL;
   if (g_current_window == win) {
