@@ -274,6 +274,12 @@ bool cogito_is_mouse_down(void) {
   return cogito_main_pointer_down;
 }
 
+bool cogito_is_mouse_button_down(int button) {
+  if (!cogito_backend || !cogito_backend->is_mouse_button_down)
+    return false;
+  return cogito_backend->is_mouse_button_down(button);
+}
+
 int cogito_pointer_x_pos(void) {
   return cogito_main_pointer_x;
 }
@@ -1285,6 +1291,7 @@ typedef struct CogitoNode {
   bool box_shadow_set;
   bool track_height_set;
   bool opacity_set;
+  bool hit_targets_natural_set;
   bool hit_targets_natural;
 
   // Style values

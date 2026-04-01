@@ -154,6 +154,7 @@ bool cogito_is_rtl(void);
 // Input state
 bool cogito_is_shift_down(void);
 bool cogito_is_mouse_down(void);
+bool cogito_is_mouse_button_down(int button);
 int cogito_pointer_x_pos(void);
 int cogito_pointer_y_pos(void);
 
@@ -274,6 +275,7 @@ void cogito_window_on_file_drop(cogito_window *window,
                                  cogito_file_drop_fn handler, void *user);
 void cogito_window_set_file_drop_fn(cogito_node *node, void *handler_fn);
 bool cogito_window_is_compact(cogito_window *window);
+void cogito_window_close(cogito_window *window);
 void *cogito_window_get_native_handle(cogito_window *window);
 bool cogito_window_has_native_handle(cogito_window *window);
 void cogito_window_set_hit_test(cogito_window *window,
@@ -658,6 +660,7 @@ void cogito_load_sum_file(const char *path);
 void cogito_load_sum_inline(const char *src);
 void cogito_set_script_dir(const char *dir);
 const char *cogito_get_script_dir(void);
+char* cogito_read_file(const char *path);
 
 // Embedded resources (SVGs baked into binaries as base64)
 void cogito_register_embedded_resource(const char *name, const unsigned char *data, size_t len);

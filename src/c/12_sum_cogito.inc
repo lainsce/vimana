@@ -1358,6 +1358,17 @@ static bool cogito_sum_resolve_user_path(const char* path, char* resolved, size_
   return cogito_file_exists(resolved);
 }
 
+static char* cogito_read_file(const char* path) {
+  if (!path || !path[0]) return NULL;
+  char resolved_path[PATH_MAX];
+  const char* load_path = path;
+  if (cogito_sum_resolve_user_path(path, resolved_path, sizeof(resolved_path))) {
+    load_path = resolved_path;
+  }
+  size_t len = 0;
+  return sum_read_file_raw(load_path, &len);
+}
+
 static void cogito_load_sum_file(const char* path) {
   char resolved_path[PATH_MAX];
   const char* load_path = path;

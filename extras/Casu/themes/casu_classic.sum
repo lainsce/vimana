@@ -1,0 +1,211 @@
+scroller
+  background: transparent
+
+vstack
+hstack
+grid
+zstack
+  background: @bg
+
+dialog
+  background: @bg
+  color: @fg
+  icon-color: @fg
+  border: 1 solid @clr2
+  border-radius: 0
+
+label
+  color: @fg
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+
+button
+  hit-targets: natural
+
+drawing_area
+  hit-targets: natural
+
+window_bar
+  background: @bg
+  color: @fg
+  icon-color: @fg
+
+appbar.casu-topbar
+  background: @bg
+  border-radius: 0
+  min-height: 0
+  max-height: 0
+  min-width: 0
+  max-width: 0
+  border: 0 solid transparent
+
+iconbtn.appbar-leading
+iconbtn.trailing
+iconbtn.appbar-leading:hover
+iconbtn.trailing:hover
+iconbtn.appbar-leading:active
+iconbtn.trailing:active
+  color: @fg
+  icon-color: @fg
+  background: transparent
+  border: 0 solid transparent
+
+vstack.casu-root
+vstack.casu-editor
+  background: @bg
+hstack.casu-body
+  background: transparent
+
+hstack.casu-toolbar
+  background: @bg
+
+hstack.casu-bottom-bar
+  background: @bg
+
+vstack.casu-panel
+  background: transparent
+  border: 0 solid transparent
+  border-radius: 0
+
+label.casu-panel-title
+  color: @fg
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  text-align: left
+
+label.casu-panel-label
+  color: @clr2
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  text-align: center
+
+label.casu-data-left
+  color: @clr1
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  text-align: center
+
+label.casu-data-right
+  color: @clr2
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  text-align: center
+
+label.casu-data-pos
+  color: @fg
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  text-align: center
+
+drawing_area.casu-panel-canvas
+  background: @bg
+  border: 1 solid @fg
+  border-radius: 0
+
+drawing_area.casu-pattern-canvas
+  background: @bg
+  border: 0 solid transparent
+  border-radius: 0
+
+vstack.casu-canvas-frame
+  background: @bg
+  border: 1 solid @fg
+  border-radius: 0
+
+label.casu-canvas-label
+  color: @fg
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  text-align: left
+
+drawing_area.casu-sheet-canvas
+  background: @bg
+
+drawing_area.casu-nmt-canvas
+  background: @bg
+
+drawing_area.casu-color-bar
+  background: @bg
+
+drawing_area.casu-star-btn
+drawing_area.casu-load-btn
+drawing_area.casu-new-btn
+  background: @bg
+  border: 1 solid @clr2
+  border-radius: 0
+
+button.casu-tool-btn
+  min-width: 28
+  min-height: 28
+  max-width: 28
+  max-height: 28
+  border-radius: 0
+  border: 1 solid @clr2
+  background: @bg
+  color: @fg
+  font-size: 8
+  padding: 0
+  text-align: center
+
+button.casu-tool-btn:hover
+  border: 1 solid @clr1
+
+button.casu-tool-btn:active
+  border: 1 solid @clr1
+  background: @clr2
+
+button.casu-tool-btn-active
+  border: 1 solid @clr1
+  background: @clr2
+  color: @fg
+
+button.casu-small-btn
+  min-width: 20
+  min-height: 14
+  border-radius: 0
+  border: 1 solid @clr2
+  background: @bg
+  color: @fg
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  padding: 0
+  text-align: center
+
+button.casu-small-btn:hover
+  border: 1 solid @clr1
+
+button.casu-small-btn:active
+  border: 1 solid @clr1
+  background: @clr2
+
+button.casu-filename-btn
+  background: transparent
+  color: @fg
+  border: 1 solid @clr2
+  border-radius: 0
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  text-align: center
+  padding: 0
+
+label.casu-filename-label
+  background: transparent
+  color: @clr2
+  border: 0 solid @clr2
+  border-radius: 0
+  font-size: 8
+  font-family: "Atari ASCII 8x8"
+  font-render: pixel
+  text-align: left
+
+button.casu-filename-btn:hover
+  border: 1 solid @clr1

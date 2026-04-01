@@ -1,8 +1,0 @@
-[cogresource]
-prefix = "/com/fyralabs/Victrola"
-
-[[cogresource.file]]
-src = "com.fyralabs.Victrola.svg"
-
-[[cogresource.file]]
-src = "com.fyralabs.Victrola-symbolic.svg"

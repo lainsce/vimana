@@ -1,0 +1,1427 @@
+cask main
+
+bring stdr
+bring cogito
+
+bring casu_model
+bring casu_themes
+bring casu_style
+
+: __cogito_is_mouse_button_down(button = num) (( bool )) { }
+: __cogito_window_close(win = any) (( -- )) { }
+
+-- ==================== STATE ====================
+
+def app = cogito.app()
+def ui = cogito.state(0)
+def sheet_da = cogito.drawing_area()
+def nmt_da = cogito.drawing_area()
+
+def main_win = cogito.window()
+def ?theme_idx = 0
+def ?filename = "untitled"
+def ?current_path = ""
+def ?stroke_before = ""
+def ?stroke_active = false
+def ?nmt_stroke_active = false
+def ?nmt_last_x = -1
+def ?nmt_last_y = -1
+def ?lock_start_x = 0
+def ?lock_start_y = 0
+def ?lock_axis = ""
+def ?ui_sel_color = 1
+def ?ui_sel_tool = "cursor"
+def ?is_zoomed = false
+def ?ui_zoom_ox = 0
+def ?ui_zoom_oy = 0
+def ?nmt_sel_x = 0
+def ?nmt_sel_y = 0
+def ?nmt_sel_active = false
+
+-- Color bar positions (0-15 per palette color 0-3)
+def ?bar_r = [0, 15, 0, 15]
+def ?bar_g = [0, 15, 15, 0]
+def ?bar_b = [0, 15, 15, 15]
+def BAR_W = 32
+def BAR_H = 8
+def BAR_GAP = 0
+
+def ZOOM_SC = 12
+def EDGE_PAD = 8
+def FRAME_BORDER = 1
+def FRAME_LABEL_H = 8
+def FRAME_GAP = 2
+def TOOLBAR_GAP = 16
+def CLIP_MIME = "application/x-casu-tile"
+def MOD_CMD = 1
+def MOD_SHIFT = 2
+def MOD_ALT = 4
+def SC_Q = 20
+def SC_R = 21
+def SC_S = 22
+def SC_C = 6
+def SC_V = 25
+def SC_W = 26
+def SC_X = 27
+def SC_E = 8
+def SC_N = 17
+def SC_O = 18
+def SC_1 = 30
+def SC_2 = 31
+def SC_3 = 32
+def SC_4 = 33
+def SC_RETURN = 40
+def SC_ESCAPE = 41
+def SC_BACKSPACE = 42
+def SC_LEFT = 80
+def SC_RIGHT = 79
+def SC_DOWN = 81
+def SC_UP = 82
+def SC_KP_ENTER = 88
+def SC_LALT = 226
+def SC_RALT = 230
+
+-- ==================== HELPERS ====================
+
+: rebuild() (( -- )) ui.set(ui.get()) ;
+
+: default_chr_path() (( string ))
+    if stdr.len(current_path) > 0
+        <- current_path
+    <- filename + ".chr"
+;
+
+: path_with_chr_ext(path = string) (( string ))
+    let ?out = stdr.trim(path)
+    let n = stdr.len(out)
+    if n >= 4 && stdr.slice(out, n - 4, n) == ".chr"
+        <- out
+    <- out + ".chr"
+;
+
+: update_filename_from_path(path = string) (( -- ))
+    current_path = path_with_chr_ext(path)
+    filename = stdr.stem(stdr.basename(current_path))
+;
+
+: display_filename() (( string ))
+    if stdr.len(current_path) > 0
+        <- stdr.basename(current_path)
+    <- filename + ".chr"
+;
+
+: clear_nmt_selection() (( -- ))
+    nmt_sel_active = false
+;
+
+: set_nmt_selection(col = num, row = num) (( -- ))
+    let ?tx = col
+    let ?ty = row
+    if tx < 0 tx = 0
+    if ty < 0 ty = 0
+    if tx >= casu_model.nmt_cols() tx = casu_model.nmt_cols() - 1
+    if ty >= casu_model.nmt_rows() ty = casu_model.nmt_rows() - 1
+    nmt_sel_x = tx
+    nmt_sel_y = ty
+    nmt_sel_active = true
+;
+
+: select_color(idx = num) (( -- ))
+    let ?ci = idx
+    if ci < 0 ci = 0
+    if ci > 3 ci = 3
+    ui_sel_color = ci
+    casu_model.set_selected_color(ci)
+    rebuild()
+;
+
+: select_tool(tool_name = string) (( -- ))
+    ui_sel_tool = tool_name
+    casu_model.set_selected_tool(tool_name)
+    rebuild()
+;
+
+: zoom_to_tile(tidx = num) (( -- ))
+    let ts = casu_model.tile_size()
+    let cols = casu_model.sheet_cols()
+    ui_zoom_ox = (tidx % cols) * ts
+    ui_zoom_oy = stdr.floor(tidx / cols) * ts
+    if ui_zoom_ox < 0 ui_zoom_ox = 0
+    if ui_zoom_oy < 0 ui_zoom_oy = 0
+;
+
+: toggle_zoom() (( -- ))
+    is_zoomed = !is_zoomed
+    if is_zoomed
+        zoom_to_tile(casu_model.selected_tile())
+    else
+        ui_zoom_ox = 0
+        ui_zoom_oy = 0
+    update_sheet_size()
+    rebuild()
+;
+
+: snap(v = num, step = num) (( num ))
+    let ?val = stdr.floor(v)
+    if val < 0 val = 0
+    if step <= 0 <- val
+    let ?q = stdr.floor(val / step)
+    if q * step < val q += 1
+    <- q * step
+;
+
+: apply_theme(idx = num) (( -- ))
+    theme_idx = idx
+    let ?base = cogito.read_file(casu_style.sum_for_theme(theme_idx))
+    let ?body = "scroller\n  background: transparent\n"
+    if !is_null(base)
+        let src = str(base)
+        let start = stdr.index_of(src, "scroller")
+        if start >= 0
+            body = stdr.slice(src, start, stdr.len(src))
+        else
+            body = src
+    app.set_accent_color(casu_themes.fg(), false)
+    cogito.load_sum_inline(
+        "@fg: " + casu_themes.fg() + "\n"
+        + "@bg: " + casu_themes.bg() + "\n"
+        + "@clr1: " + casu_themes.clr1() + "\n"
+        + "@clr2: " + casu_themes.clr2() + "\n\n"
+        + body
+    )
+;
+
+: hex_nibble(n = num) (( string ))
+    let digits = ["0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"]
+    let ?idx = n
+    if idx < 0 idx = 0
+    if idx > 15 idx = 15
+    <- str(digits[idx] ?? "0")
+;
+
+: mirror_status_text() (( string ))
+    let ?first = "8"
+    if casu_model.get_mirror_h() && casu_model.get_mirror_v()
+        first = "b"
+    elif casu_model.get_mirror_h()
+        first = "9"
+    elif casu_model.get_mirror_v()
+        first = "a"
+    <- first + hex_nibble(casu_model.selected_pattern())
+;
+
+: hex_upper(text = string) (( string ))
+    let ?out = ""
+    for (let ?i = 0; i < len(text); i += 1)
+        let ch = stdr.char_at(text, i)
+        if ch == "a" ch = "A"
+        elif ch == "b" ch = "B"
+        elif ch == "c" ch = "C"
+        elif ch == "d" ch = "D"
+        elif ch == "e" ch = "E"
+        elif ch == "f" ch = "F"
+        out = out + ch
+    <- out
+;
+
+-- ==================== 8x8 PIXEL ICONS ====================
+
+def ICON_PEN = [
+    [1,1],[2,1],[3,1],
+    [1,2],[2,2],[4,2],
+    [1,3],[5,3],
+    [2,4],[6,4],
+    [3,5],[7,5],
+    [4,6],[7,6],
+    [5,7],[6,7]
+]
+
+def ICON_CURSOR = [
+    [1,1],
+    [1,2],[2,2],
+    [1,3],[2,3],[3,3],
+    [1,4],[2,4],[3,4],[4,4],
+    [1,5],[2,5],[3,5],[4,5],[5,5],
+    [1,6],[3,6],
+    [4,7]
+]
+
+def ICON_ZOOM = [
+    [2,1],[3,1],
+    [1,2],[4,2],
+    [0,3],[5,3],
+    [0,4],[5,4],
+    [1,5],[4,5],
+    [2,6],[3,6],[5,6],
+    [6,7]
+]
+
+def ICON_STAR = [
+    [4,1],
+    [2,2],[4,2],[6,2],
+    [3,3],[5,3],
+    [1,4],[2,4],[6,4],[7,4],
+    [3,5],[5,5],
+    [2,6],[4,6],[6,6],
+    [4,7]
+]
+
+def ICON_FOLDER = [
+    [1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],
+    [1,2],[3,2],[5,2],[7,2],
+    [1,3],[2,3],[4,3],[6,3],[7,3],
+    [1,4],[3,4],[5,4],[7,4],
+    [1,5],[2,5],[4,5],[6,5],
+    [1,6],[3,6],[5,6],[7,6],
+    [1,7],[2,7],[3,7],[4,7],[6,7],[7,7]
+]
+
+def ICON_CLEAR = [
+    [1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],
+    [1,2],[7,2],
+    [1,3],[7,3],
+    [1,4],[7,4],
+    [1,5],[6,5],
+    [1,6],[5,6],[7,6],
+    [1,7],[2,7],[3,7],[4,7],[6,7]
+]
+
+-- Color circle: filled (selected) vs outlined (unselected)
+def ICON_CIRCLE_FILL = [
+    [2,1],[3,1],[4,1],
+    [1,2],[2,2],[3,2],[4,2],[5,2],
+    [0,3],[1,3],[2,3],[3,3],[4,3],[5,3],[6,3],
+    [0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],
+    [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],
+    [1,6],[2,6],[3,6],[4,6],[5,6],
+    [2,7],[3,7],[4,7]
+]
+
+def ICON_CIRCLE_OUT = [
+    [2,1],[3,1],[4,1],
+    [1,2],[5,2],
+    [0,3],[6,3],
+    [0,4],[6,4],
+    [0,5],[6,5],
+    [1,6],[5,6],
+    [2,7],[3,7],[4,7]
+]
+
+-- Arrow bitmaps (7x7 from Vasu Vala source)
+def ICON_ARROW_H = [
+    [0,3],
+    [1,3],
+    [2,3],
+    [3,0],[3,1],[3,2],[3,3],[3,4],[3,5],[3,6],
+    [4,1],[4,2],[4,3],[4,4],[4,5],
+    [5,2],[5,3],[5,4],
+    [6,3]
+]
+
+def ICON_ARROW_V = [
+    [3,0],
+    [2,1],[3,1],[4,1],
+    [1,2],[2,2],[3,2],[4,2],[5,2],
+    [0,3],[1,3],[2,3],[3,3],[4,3],[5,3],[6,3],
+    [3,4],
+    [3,5],
+    [3,6]
+]
+
+-- ==================== DRAW ICONS ====================
+
+: draw_icon_offset(da = cogito.DrawingArea, pixels = [any], color = string, sc = num, ox = num, oy = num) (( -- ))
+    da.set_color(color)
+    let n = len(pixels)
+    for (let ?i = 0; i < n; i += 1)
+        let px = pixels[i]
+        if !is_null(px)
+            da.fill_rect(ox + px[0] * sc, oy + px[1] * sc, sc, sc)
+;
+
+: draw_icon_btn(da = cogito.DrawingArea, w = num, h = num, pixels = [any], color = string, sc = num) (( -- ))
+    let iw = stdr.floor(w)
+    let ih = stdr.floor(h)
+    da.set_color(casu_themes.bg())
+    da.fill_rect(0, 0, iw, ih)
+    let icon_w = 8 * sc
+    let icon_h = 8 * sc
+    let ox = stdr.floor((iw - icon_w) / 2)
+    let oy = stdr.floor((ih - icon_h) / 2)
+    draw_icon_offset(da, pixels, color, sc, ox, oy)
+;
+
+-- ==================== DRAWING: EDITOR ====================
+
+: draw_editor(da = cogito.DrawingArea, w = num, h = num) (( -- ))
+    if is_zoomed
+        draw_editor_zoomed(da, w, h)
+        <-
+
+    let iw = stdr.floor(w)
+    let ih = stdr.floor(h)
+    if iw <= 0 || ih <= 0 <-
+
+    da.set_color(casu_themes.bg())
+    da.fill_rect(0, 0, iw, ih)
+
+    let cols = casu_model.sheet_cols()
+    let ts = casu_model.tile_size()
+
+    for (let ?tr = 0; tr < casu_model.sheet_rows(); tr += 1)
+        for (let ?tc = 0; tc < cols; tc += 1)
+            let tidx = tr * cols + tc
+            let ox = tc * ts
+            let oy = tr * ts
+            for (let ?py = 0; py < ts; py += 1)
+                for (let ?px = 0; px < ts; px += 1)
+                    let c = casu_model.get_pixel(tidx, px, py)
+                    if c > 0
+                        da.set_color(casu_themes.color_at(c))
+                        da.fill_rect(ox + px, oy + py, 1, 1)
+
+    let sel = casu_model.selected_tile()
+    let sc = sel % cols
+    let sr = stdr.floor(sel / cols)
+    da.set_color(casu_themes.fg())
+    da.fill_rect(sc * ts, sr * ts, ts, 1)
+    da.fill_rect(sc * ts, sr * ts + ts - 1, ts, 1)
+    da.fill_rect(sc * ts, sr * ts, 1, ts)
+    da.fill_rect(sc * ts + ts - 1, sr * ts, 1, ts)
+;
+
+: draw_editor_zoomed(da = cogito.DrawingArea, w = num, h = num) (( -- ))
+    let iw = stdr.floor(w)
+    let ih = stdr.floor(h)
+    if iw <= 0 || ih <= 0 <-
+
+    da.set_color(casu_themes.bg())
+    da.fill_rect(0, 0, iw, ih)
+
+    let ts = casu_model.tile_size()
+    let cols = casu_model.sheet_cols()
+    let rows = casu_model.sheet_rows()
+
+    let vp_w = stdr.floor(iw / ZOOM_SC)
+    let vp_h = stdr.floor(ih / ZOOM_SC)
+
+    for (let ?vy = 0; vy < vp_h; vy += 1)
+        let gy = vy + ui_zoom_oy
+        if gy < 0 || gy >= rows * ts continue
+        let trow = stdr.floor(gy / ts)
+        let ppy = gy % ts
+        for (let ?vx = 0; vx < vp_w; vx += 1)
+            let gx = vx + ui_zoom_ox
+            if gx < 0 || gx >= cols * ts continue
+            let tcol = stdr.floor(gx / ts)
+            let ppx = gx % ts
+            let tidx = trow * cols + tcol
+            let c = casu_model.get_pixel(tidx, ppx, ppy)
+            da.set_color(casu_themes.color_at(c))
+            da.fill_rect(vx * ZOOM_SC, vy * ZOOM_SC, ZOOM_SC, ZOOM_SC)
+
+    let gc = casu_themes.clr2()
+    da.set_color(gc)
+    for (let ?vx = 0; vx <= vp_w; vx += 1)
+        let gx = vx + ui_zoom_ox
+        if gx < 0 || gx > cols * ts continue
+        if gx % ts == 0
+            da.fill_rect(vx * ZOOM_SC, 0, 2, vp_h * ZOOM_SC)
+        else
+            da.fill_rect(vx * ZOOM_SC, 0, 1, vp_h * ZOOM_SC)
+    for (let ?vy = 0; vy <= vp_h; vy += 1)
+        let gy = vy + ui_zoom_oy
+        if gy < 0 || gy > rows * ts continue
+        if gy % ts == 0
+            da.fill_rect(0, vy * ZOOM_SC, vp_w * ZOOM_SC, 2)
+        else
+            da.fill_rect(0, vy * ZOOM_SC, vp_w * ZOOM_SC, 1)
+
+    let grid_w = vp_w * ZOOM_SC
+    let grid_h = vp_h * ZOOM_SC
+    if grid_w > 0 && grid_h > 0
+        da.set_color(casu_themes.clr2())
+        da.fill_rect(0, 0, grid_w, 1)
+        da.fill_rect(0, grid_h - 1, grid_w, 1)
+        da.fill_rect(0, 0, 1, grid_h)
+        da.fill_rect(grid_w - 1, 0, 1, grid_h)
+;
+
+-- ==================== DRAWING: NAMETABLE ====================
+
+: draw_nmt(da = cogito.DrawingArea, w = num, h = num) (( -- ))
+    let iw = stdr.floor(w)
+    let ih = stdr.floor(h)
+    if iw <= 0 || ih <= 0 <-
+
+    da.set_color(casu_themes.bg())
+    da.fill_rect(0, 0, iw, ih)
+
+    let cols = casu_model.nmt_cols()
+    let rows = casu_model.nmt_rows()
+    let ts = casu_model.tile_size()
+
+    for (let ?ty = 0; ty < rows; ty += 1)
+        for (let ?tx = 0; tx < cols; tx += 1)
+            let tidx = casu_model.get_nmt_tile(tx, ty)
+            if tidx < 0 continue
+            let mh = casu_model.get_nmt_mirror_h(tx, ty)
+            let mv = casu_model.get_nmt_mirror_v(tx, ty)
+            let mode = casu_model.get_nmt_pattern(tx, ty)
+            let ox = tx * ts
+            let oy = ty * ts
+            for (let ?py = 0; py < ts; py += 1)
+                for (let ?px = 0; px < ts; px += 1)
+                    let raw = casu_model.get_pixel_mirror(tidx, px, py, mh, mv)
+                    let c = casu_model.apply_color_permutation(raw, mode)
+                    if c > 0
+                        da.set_color(casu_themes.color_at(c))
+                        da.fill_rect(ox + px, oy + py, 1, 1)
+
+    if nmt_sel_active
+        let ox = nmt_sel_x * ts
+        let oy = nmt_sel_y * ts
+        da.set_color(casu_themes.fg())
+        da.fill_rect(ox, oy, ts, 1)
+        da.fill_rect(ox, oy + ts - 1, ts, 1)
+        da.fill_rect(ox, oy, 1, ts)
+        da.fill_rect(ox + ts - 1, oy, 1, ts)
+;
+
+-- ==================== DRAWING: TOOL PANELS ====================
+
+: draw_blend(da = cogito.DrawingArea, w = num, h = num) (( -- ))
+    let iw = stdr.floor(w)
+    let ih = stdr.floor(h)
+    if iw <= 0 || ih <= 0 <-
+
+    da.set_color(casu_themes.bg())
+    da.fill_rect(0, 0, iw, ih)
+
+    let tidx = casu_model.selected_tile()
+    let ts = casu_model.tile_size()
+    let cell = stdr.floor(iw / 4)
+    let ch = stdr.floor(ih / 4)
+
+    for (let ?mode = 0; mode < 16; mode += 1)
+        let col = mode % 4
+        let row = stdr.floor(mode / 4)
+        let cx = col * cell
+        let cy = row * ch
+        let px_sz = stdr.floor(cell / ts)
+        if px_sz < 1 px_sz = 1
+
+        for (let ?py = 0; py < ts; py += 1)
+            for (let ?px = 0; px < ts; px += 1)
+                let orig = casu_model.get_pixel_mirror(tidx, px, py, casu_model.get_mirror_h(), casu_model.get_mirror_v())
+                let mapped = casu_model.apply_color_permutation(orig, mode)
+                if mapped > 0
+                    da.set_color(casu_themes.color_at(mapped))
+                    da.fill_rect(cx + px * px_sz, cy + py * px_sz, px_sz, px_sz)
+        if mode == casu_model.selected_pattern()
+            da.set_color(casu_themes.clr2())
+            da.fill_rect(cx, cy, cell, 1)
+            da.fill_rect(cx, cy + ch - 1, cell, 1)
+            da.fill_rect(cx, cy, 1, ch)
+            da.fill_rect(cx + cell - 1, cy, 1, ch)
+;
+
+: draw_tile_preview(da = cogito.DrawingArea, w = num, h = num) (( -- ))
+    let iw = stdr.floor(w)
+    let ih = stdr.floor(h)
+    if iw <= 0 || ih <= 0 <-
+
+    da.set_color(casu_themes.bg())
+    da.fill_rect(0, 0, iw, ih)
+
+    let tidx = casu_model.selected_tile()
+    let ts = casu_model.tile_size()
+    let sc = 4
+    let ox = stdr.floor((iw - ts * sc) / 2)
+    let oy = stdr.floor((ih - ts * sc) / 2)
+
+    for (let ?py = 0; py < ts; py += 1)
+        for (let ?px = 0; px < ts; px += 1)
+            let v = casu_model.get_pixel(tidx, px, py)
+            da.set_color(casu_themes.color_at(v))
+            da.fill_rect(ox + px * sc, oy + py * sc, sc, sc)
+;
+
+: draw_preview(da = cogito.DrawingArea, w = num, h = num) (( -- ))
+    let iw = stdr.floor(w)
+    let ih = stdr.floor(h)
+    if iw <= 0 || ih <= 0 <-
+
+    for (let ?cy = 0; cy < ih; cy += 1)
+        for (let ?cx = 0; cx < iw; cx += 1)
+            let is_light = (cx + cy) % 2
+            if is_light == 0
+                da.set_color(casu_themes.clr2())
+            else
+                da.set_color(casu_themes.bg())
+            da.fill_rect(cx, cy, 1, 1)
+
+    let tidx = casu_model.selected_tile()
+    let ts = casu_model.tile_size()
+    let sw = casu_model.sprite_width()
+    let sh = casu_model.sprite_height()
+    let cell_w = stdr.floor(iw / 4)
+    let cell_h = stdr.floor(ih / 4)
+    let active_w = sw * cell_w
+    let active_h = sh * cell_h
+
+    da.set_color(casu_themes.bg())
+    da.fill_rect(0, 0, active_w, active_h)
+
+    let scx = stdr.floor(cell_w / ts)
+    let scy = stdr.floor(cell_h / ts)
+    let sc = scx
+    if scy < sc
+        sc = scy
+    if sc < 1
+        sc = 1
+
+    for (let ?r = 0; r < sh; r += 1)
+        for (let ?c = 0; c < sw; c += 1)
+            let cur = tidx + r * sw + c
+            let ox = c * ts * sc
+            let oy = r * ts * sc
+            for (let ?py = 0; py < ts; py += 1)
+                for (let ?px = 0; px < ts; px += 1)
+                    let raw = casu_model.get_pixel_mirror(cur, px, py, casu_model.get_mirror_h(), casu_model.get_mirror_v())
+                    let v = casu_model.apply_color_permutation(raw, casu_model.selected_pattern())
+                    if v > 0
+                        da.set_color(casu_themes.color_at(v))
+                        da.fill_rect(ox + px * sc, oy + py * sc, sc, sc)
+;
+
+-- ==================== DRAWING: COLOR PICKER ====================
+
+: pos_to_hex(pos = num) (( string ))
+    let digits = ["0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"]
+    let ?p = pos
+    if p < 0 p = 0
+    if p > 15 p = 15
+    <- str(digits[p] ?? "0")
+;
+
+: draw_checkerboard(da = cogito.DrawingArea, x = num, y = num, w = num, h = num) (( -- ))
+    for (let ?cy = y; cy < y + h; cy += 1)
+        for (let ?cx = x; cx < x + w; cx += 1)
+            let is_light = ((cx - x) + (cy - y)) % 2
+            if is_light == 0
+                da.set_color(casu_themes.clr2())
+            else
+                da.set_color(casu_themes.bg())
+            da.fill_rect(cx, cy, 1, 1)
+;
+
+: draw_color_bar(da = cogito.DrawingArea, x = num, y = num, position = num) (( -- ))
+    let active_w = stdr.floor((position + 1) * BAR_W / 16)
+    if active_w < 1 active_w = 1
+    if active_w > BAR_W active_w = BAR_W
+    draw_checkerboard(da, x, y, BAR_W, BAR_H)
+    da.set_color(casu_themes.clr2())
+    da.fill_rect(x, y, active_w, BAR_H)
+;
+
+: draw_color_picker(da = cogito.DrawingArea, w = num, h = num) (( -- ))
+    let iw = stdr.floor(w)
+    let ih = stdr.floor(h)
+    if iw <= 0 || ih <= 0 <-
+
+    da.set_color(casu_themes.bg())
+    da.fill_rect(0, 0, iw, ih)
+
+    let ci = ui_sel_color
+    if ci < 0 ci = 0
+    if ci > 3 ci = 3
+    let ci_idx = ci
+
+    -- Three color bars
+    draw_color_bar(da, 0, 0, bar_r[ci_idx] ?? 15)
+    draw_color_bar(da, 0, BAR_H + BAR_GAP, bar_g[ci_idx] ?? 15)
+    draw_color_bar(da, 0, (BAR_H + BAR_GAP) * 2, bar_b[ci_idx] ?? 15)
+;
+
+: on_color_picker_press(da = cogito.DrawingArea) (( -- ))
+    let mx = stdr.floor(stdr.num(da.get_x()))
+    let my = stdr.floor(stdr.num(da.get_y()))
+
+    if mx < 0 || mx >= BAR_W <-
+
+    let new_pos = stdr.floor(mx * 16 / BAR_W)
+    if new_pos < 0 new_pos = 0
+    if new_pos > 15 new_pos = 15
+
+    let ci = ui_sel_color
+    if ci < 0 ci = 0
+    if ci > 3 ci = 3
+    let ci_idx = ci
+
+    let bar_idx = -1
+    if my >= 0 && my < BAR_H
+        bar_idx = 0
+    elif my >= BAR_H + BAR_GAP && my < BAR_H * 2 + BAR_GAP
+        bar_idx = 1
+    elif my >= (BAR_H + BAR_GAP) * 2 && my < BAR_H * 3 + BAR_GAP * 2
+        bar_idx = 2
+
+    if bar_idx == 0
+        bar_r[ci_idx] = new_pos
+    elif bar_idx == 1
+        bar_g[ci_idx] = new_pos
+    elif bar_idx == 2
+        bar_b[ci_idx] = new_pos
+    else
+        <-
+
+    let r = stdr.floor((bar_r[ci_idx] ?? 15) * 255 / 15)
+    let g = stdr.floor((bar_g[ci_idx] ?? 15) * 255 / 15)
+    let b = stdr.floor((bar_b[ci_idx] ?? 15) * 255 / 15)
+    casu_themes.set_color_at(ci, casu_themes.rgb_to_hex(r, g, b))
+    apply_theme(theme_idx)
+    rebuild()
+;
+
+: on_sprite_size_press(da = cogito.DrawingArea) (( -- ))
+    let mx = stdr.floor(stdr.num(da.get_x()))
+    let my = stdr.floor(stdr.num(da.get_y()))
+    let cell_w = stdr.floor(32 / 4)
+    let cell_h = stdr.floor(32 / 4)
+    let sw = stdr.floor(mx / cell_w) + 1
+    let sh = stdr.floor(my / cell_h) + 1
+    if sw < 1 sw = 1
+    if sw > 4 sw = 4
+    if sh < 1 sh = 1
+    if sh > 4 sh = 4
+    casu_model.set_sprite_size(sw, sh)
+    rebuild()
+;
+
+: on_pattern_press(da = cogito.DrawingArea) (( -- ))
+    let mx = stdr.floor(stdr.num(da.get_x()))
+    let my = stdr.floor(stdr.num(da.get_y()))
+    let cell_w = stdr.floor(32 / 4)
+    let cell_h = stdr.floor(32 / 4)
+    let col = stdr.floor(mx / cell_w)
+    let row = stdr.floor(my / cell_h)
+    if col < 0 col = 0
+    if col > 3 col = 3
+    if row < 0 row = 0
+    if row > 3 row = 3
+    casu_model.set_selected_pattern(row * 4 + col)
+    rebuild()
+;
+
+-- ==================== EDITOR EVENTS ====================
+
+: apply_editor_tool(tidx = num, px = num, py = num, erase = bool) (( -- ))
+    if erase
+        casu_model.set_pixel(tidx, px, py, 0)
+        <-
+
+    if ui_sel_tool == "pen"
+        casu_model.set_pixel(tidx, px, py, ui_sel_color)
+    elif ui_sel_tool == "eraser"
+        casu_model.set_pixel(tidx, px, py, 0)
+    elif ui_sel_tool == "zoom"
+        toggle_zoom()
+;
+
+: apply_nmt_tool(tx = num, ty = num, erase = bool, allow_pick = bool) (( -- ))
+    set_nmt_selection(tx, ty)
+    if erase || ui_sel_tool == "eraser"
+        casu_model.place_nmt_tile(tx, ty, -1)
+    elif ui_sel_tool == "pen"
+        casu_model.place_nmt_tile(tx, ty, casu_model.selected_tile())
+    elif allow_pick && ui_sel_tool == "cursor"
+        let picked = casu_model.get_nmt_tile(tx, ty)
+        if picked >= 0
+            casu_model.set_selected_tile(picked)
+            casu_model.set_selected_pattern(casu_model.get_nmt_pattern(tx, ty))
+            casu_model.set_mirror_h(casu_model.get_nmt_mirror_h(tx, ty))
+            casu_model.set_mirror_v(casu_model.get_nmt_mirror_v(tx, ty))
+;
+
+: editor_pixel_at(mx = num, my = num) (( [num] ))
+    let ts = casu_model.tile_size()
+    let cols = casu_model.sheet_cols()
+    let rows = casu_model.sheet_rows()
+
+    if is_zoomed
+        let vx = stdr.floor(mx / ZOOM_SC)
+        let vy = stdr.floor(my / ZOOM_SC)
+        let gx = vx + ui_zoom_ox
+        let gy = vy + ui_zoom_oy
+        let tc = stdr.floor(gx / ts)
+        let tr = stdr.floor(gy / ts)
+        if tc < 0 || tc >= cols || tr < 0 || tr >= rows
+            <- [-1, -1, -1, -1]
+        <- [tc, tr, gx % ts, gy % ts]
+
+    let tc = stdr.floor(mx / ts)
+    let tr = stdr.floor(my / ts)
+    if tc < 0 || tc >= cols || tr < 0 || tr >= rows
+        <- [-1, -1, -1, -1]
+    <- [tc, tr, mx % ts, my % ts]
+;
+
+: on_editor_press(da = cogito.DrawingArea) (( -- ))
+    stroke_before = casu_model.snapshot()
+    stroke_active = true
+
+    let mx = stdr.floor(stdr.num(da.get_x()))
+    let my = stdr.floor(stdr.num(da.get_y()))
+    let pos = editor_pixel_at(mx, my)
+    let tc = pos[0]
+    let px = pos[2]
+    let py = pos[3]
+
+    if tc < 0 <-
+
+    let tidx = pos[1] * casu_model.sheet_cols() + tc
+    let erase = __cogito_is_mouse_button_down(2)
+    if !erase
+        casu_model.set_selected_tile(tidx)
+    lock_start_x = px
+    lock_start_y = py
+    lock_axis = ""
+
+    if !erase && ui_sel_tool == "zoom"
+        zoom_to_tile(tidx)
+    apply_editor_tool(tidx, px, py, erase)
+
+    rebuild()
+;
+
+: on_editor_move(da = cogito.DrawingArea) (( -- ))
+    if !stroke_active <-
+
+    let mx = stdr.floor(stdr.num(da.get_x()))
+    let my = stdr.floor(stdr.num(da.get_y()))
+    let pos = editor_pixel_at(mx, my)
+    let tc = pos[0]
+    let px = pos[2]
+    let py = pos[3]
+
+    if tc < 0 <-
+
+    let tidx = pos[1] * casu_model.sheet_cols() + tc
+    let erase = __cogito_is_mouse_button_down(2)
+
+    if erase || ui_sel_tool == "pen" || ui_sel_tool == "eraser"
+        if lock_axis == ""
+            let dx = px - lock_start_x
+            let dy = py - lock_start_y
+            if dx < 0 dx = -dx
+            if dy < 0 dy = -dy
+            if dx > 0 || dy > 0
+                if dx >= dy
+                    lock_axis = "h"
+                else
+                    lock_axis = "v"
+
+        let draw_x = px
+        let draw_y = py
+        if lock_axis == "h" draw_y = lock_start_y
+        elif lock_axis == "v" draw_x = lock_start_x
+
+        apply_editor_tool(tidx, draw_x, draw_y, erase)
+
+    rebuild()
+;
+
+: on_editor_release(da = cogito.DrawingArea) (( -- ))
+    if !stroke_active <-
+    stroke_active = false
+    lock_axis = ""
+    casu_model.commit_stroke(stroke_before)
+    rebuild()
+;
+
+: on_nmt_press(da = cogito.DrawingArea) (( -- ))
+    stroke_before = casu_model.snapshot()
+    nmt_stroke_active = true
+    nmt_last_x = -1
+    nmt_last_y = -1
+
+    let mx = stdr.floor(stdr.num(da.get_x()))
+    let my = stdr.floor(stdr.num(da.get_y()))
+    let ts = casu_model.tile_size()
+    let tx = stdr.floor(mx / ts)
+    let ty = stdr.floor(my / ts)
+
+    if tx < 0 || tx >= casu_model.nmt_cols() || ty < 0 || ty >= casu_model.nmt_rows()
+        <-
+
+    nmt_last_x = tx
+    nmt_last_y = ty
+    apply_nmt_tool(tx, ty, __cogito_is_mouse_button_down(2), true)
+    rebuild()
+;
+
+: on_nmt_drag(da = cogito.DrawingArea) (( -- ))
+    if !nmt_stroke_active <-
+
+    let mx = stdr.floor(stdr.num(da.get_x()))
+    let my = stdr.floor(stdr.num(da.get_y()))
+    let ts = casu_model.tile_size()
+    let tx = stdr.floor(mx / ts)
+    let ty = stdr.floor(my / ts)
+
+    if tx < 0 || tx >= casu_model.nmt_cols() || ty < 0 || ty >= casu_model.nmt_rows()
+        <-
+    if tx == nmt_last_x && ty == nmt_last_y
+        <-
+
+    nmt_last_x = tx
+    nmt_last_y = ty
+    apply_nmt_tool(tx, ty, __cogito_is_mouse_button_down(2), false)
+    rebuild()
+;
+
+: on_nmt_release(da = cogito.DrawingArea) (( -- ))
+    if !nmt_stroke_active <-
+    nmt_stroke_active = false
+    nmt_last_x = -1
+    nmt_last_y = -1
+    casu_model.commit_stroke(stroke_before)
+    rebuild()
+;
+
+-- ==================== CANVAS SETUP ====================
+
+: update_sheet_size() (( -- ))
+    if is_zoomed
+        let zoom_w = casu_model.tile_size() * ZOOM_SC
+        let zoom_h = casu_model.tile_size() * ZOOM_SC
+        sheet_da.set_size_request(zoom_w, zoom_h)
+    else
+        sheet_da.set_size_request(casu_model.canvas_w(), casu_model.canvas_h())
+    sheet_da.set_hexpand(false)
+    sheet_da.set_vexpand(false)
+;
+
+: setup_canvases() (( -- ))
+    sheet_da.set_class("casu-sheet-canvas")
+    cogito.node_set_hit_targets_natural(sheet_da, true)
+    update_sheet_size()
+
+    sheet_da.on_draw((da = cogito.DrawingArea, w = any, h = any) => { draw_editor(da, stdr.num(w), stdr.num(h)) })
+    sheet_da.on_press((da = cogito.DrawingArea) => { on_editor_press(da) })
+    sheet_da.on_move((da = cogito.DrawingArea) => { on_editor_move(da) })
+    sheet_da.on_drag((da = cogito.DrawingArea) => { on_editor_move(da) })
+    sheet_da.on_release((da = cogito.DrawingArea) => { on_editor_release(da) })
+
+    nmt_da.set_class("casu-nmt-canvas")
+    cogito.node_set_hit_targets_natural(nmt_da, true)
+    nmt_da.set_size_request(casu_model.nmt_w(), casu_model.nmt_h())
+    nmt_da.set_hexpand(false)
+    nmt_da.set_vexpand(false)
+
+    nmt_da.on_draw((da = cogito.DrawingArea, w = any, h = any) => { draw_nmt(da, stdr.num(w), stdr.num(h)) })
+    nmt_da.on_press((da = cogito.DrawingArea) => { on_nmt_press(da) })
+    nmt_da.on_drag((da = cogito.DrawingArea) => { on_nmt_drag(da) })
+    nmt_da.on_release((da = cogito.DrawingArea) => { on_nmt_release(da) })
+;
+
+-- ==================== FILE OPS ====================
+
+: save_to_path(path = string) (( -- ))
+    let target = path_with_chr_ext(path)
+    let ok = stdr.write_text_file(target, casu_model.get_sheet_data())
+    if ok
+        casu_model.mark_saved()
+        update_filename_from_path(target)
+        let nmt_path = stdr.stem(target) + ".nmt"
+        stdr.write_text_file(nmt_path, casu_model.get_nmt_text())
+        rebuild()
+;
+
+: save_chr() (( -- ))
+    if stdr.len(current_path) > 0
+        save_to_path(current_path)
+        <-
+    let picked = stdr.save_file_dialog("Save sprite sheet", display_filename(), "chr")
+    if is_null(picked)
+        <-
+    let path = stdr.trim(str(picked))
+    if stdr.len(path) == 0
+        <-
+    save_to_path(path)
+;
+
+: load_chr(path = string) (( -- ))
+    let target = path_with_chr_ext(path)
+    let data = stdr.read_text_file(target)
+    if is_null(data) <-
+    casu_model.set_sheet_data(str(data))
+    update_filename_from_path(target)
+    casu_model.mark_saved()
+    let nmt_path = stdr.stem(current_path) + ".nmt"
+    let nmt_data = stdr.read_text_file(nmt_path)
+    if !is_null(nmt_data)
+        casu_model.set_nmt_text(str(nmt_data))
+    else
+        casu_model.clear_nmt()
+    clear_nmt_selection()
+    rebuild()
+;
+
+: open_chr() (( -- ))
+    let picked = stdr.open_file_dialog("Open sprite sheet", "chr")
+    if is_null(picked)
+        <-
+    let path = stdr.trim(str(picked))
+    if stdr.len(path) == 0
+        <-
+    load_chr(path)
+;
+
+: new_file() (( -- ))
+    casu_model.reset()
+    filename = "untitled"
+    current_path = ""
+    ui_sel_color = 0
+    ui_sel_tool = "cursor"
+    casu_model.set_selected_color(ui_sel_color)
+    casu_model.set_selected_tool(ui_sel_tool)
+    is_zoomed = false
+    ui_zoom_ox = 0
+    ui_zoom_oy = 0
+    clear_nmt_selection()
+    rebuild()
+;
+
+: tile_blob_ok(blob = string) (( bool ))
+    if is_null(blob)
+        <- false
+    if stdr.len(blob) != 64
+        <- false
+    for (let ?i = 0; i < 64; i += 1)
+        let ch = stdr.char_at(blob, i)
+        if ch != "0" && ch != "1" && ch != "2" && ch != "3"
+            <- false
+    <- true
+;
+
+: copy_tile() (( -- ))
+    let blob = casu_model.get_tile_blob(casu_model.selected_tile())
+    if !tile_blob_ok(blob)
+        <-
+    app.clipboard_set_data(CLIP_MIME, blob)
+    app.copy_to_clipboard(blob)
+;
+
+: paste_tile() (( -- ))
+    let ?blob = app.clipboard_get_data(CLIP_MIME)
+    if !tile_blob_ok(blob)
+        blob = app.paste_from_clipboard()
+    if !tile_blob_ok(blob)
+        <-
+    let snap = casu_model.snapshot()
+    casu_model.set_tile_blob(casu_model.selected_tile(), blob)
+    casu_model.commit_stroke(snap)
+    rebuild()
+;
+
+: rename_current_file() (( -- ))
+    let base_name = filename
+    let dlg = cogito.dialog("Rename")
+    let box = cogito.vstack().set_gap(12).set_padding(16, 16, 16, 16)
+    let tf = cogito.textfield(base_name).set_hexpand(true)
+    let actions = cogito.hstack().set_gap(8).set_align(5)
+    actions.add(cogito.button("Cancel").on_click((b = cogito.Button) => {
+        dlg.close()
+    }))
+    actions.add(cogito.button("Apply").set_class("suggested").on_click((b = cogito.Button) => {
+        let ?next_stem = stdr.trim(tf.text())
+        if stdr.len(next_stem) == 0
+            next_stem = "untitled"
+        let ?new_path = path_with_chr_ext(next_stem)
+        if stdr.len(current_path) > 0
+            new_path = stdr.dirname(current_path) + "/" + path_with_chr_ext(next_stem)
+        if stdr.len(current_path) > 0 && current_path != new_path && stdr.file_exists(current_path)
+            stdr.move_file(current_path, new_path)
+            let old_nmt = stdr.stem(current_path) + ".nmt"
+            let new_nmt = stdr.stem(new_path) + ".nmt"
+            if stdr.file_exists(old_nmt)
+                stdr.move_file(old_nmt, new_nmt)
+        update_filename_from_path(new_path)
+        rebuild()
+        dlg.close()
+    }))
+    box.add(tf)
+    box.add(actions)
+    dlg.add(box)
+    main_win.set_dialog(dlg)
+;
+
+-- ==================== KEYBOARD SHORTCUTS ====================
+
+: move_selection(dx = num, dy = num) (( -- ))
+    let ?tx = nmt_sel_x
+    let ?ty = nmt_sel_y
+    if !nmt_sel_active
+        tx = 0
+        ty = 0
+    tx = tx + dx
+    ty = ty + dy
+    if tx < 0 tx = 0
+    if ty < 0 ty = 0
+    if tx >= casu_model.nmt_cols() tx = casu_model.nmt_cols() - 1
+    if ty >= casu_model.nmt_rows() ty = casu_model.nmt_rows() - 1
+    set_nmt_selection(tx, ty)
+    rebuild()
+;
+
+: insert_selected_tile() (( -- ))
+    if !nmt_sel_active
+        set_nmt_selection(0, 0)
+    let snap = casu_model.snapshot()
+    casu_model.place_nmt_tile(nmt_sel_x, nmt_sel_y, casu_model.selected_tile())
+    casu_model.commit_stroke(snap)
+    rebuild()
+;
+
+: delete_selected_tile() (( -- ))
+    if !nmt_sel_active
+        <-
+    let snap = casu_model.snapshot()
+    casu_model.place_nmt_tile(nmt_sel_x, nmt_sel_y, -1)
+    casu_model.commit_stroke(snap)
+    rebuild()
+;
+
+: register_shortcuts() (( -- ))
+    cogito.unregister_all_shortcuts()
+
+    cogito.register_shortcut(SC_LEFT, 0, () => { move_selection(-1, 0) })
+    cogito.register_shortcut(SC_RIGHT, 0, () => { move_selection(1, 0) })
+    cogito.register_shortcut(SC_UP, 0, () => { move_selection(0, -1) })
+    cogito.register_shortcut(SC_DOWN, 0, () => { move_selection(0, 1) })
+
+    cogito.register_shortcut(SC_LALT, MOD_ALT, () => { toggle_zoom() })
+    cogito.register_shortcut(SC_RALT, MOD_ALT, () => { toggle_zoom() })
+    cogito.register_shortcut(SC_RETURN, 0, () => { insert_selected_tile() })
+    cogito.register_shortcut(SC_KP_ENTER, 0, () => { insert_selected_tile() })
+    cogito.register_shortcut(SC_BACKSPACE, 0, () => { delete_selected_tile() })
+    cogito.register_shortcut(SC_ESCAPE, 0, () => { clear_nmt_selection(); rebuild() })
+
+    cogito.register_shortcut(SC_1, 0, () => { select_color(0) })
+    cogito.register_shortcut(SC_2, 0, () => { select_color(1) })
+    cogito.register_shortcut(SC_3, 0, () => { select_color(2) })
+    cogito.register_shortcut(SC_4, 0, () => { select_color(3) })
+
+    cogito.register_shortcut(SC_Q, 0, () => { select_tool("pen") })
+    cogito.register_shortcut(SC_W, 0, () => { select_tool("cursor") })
+    cogito.register_shortcut(SC_E, 0, () => { select_tool("zoom") })
+
+    cogito.register_shortcut(SC_N, MOD_CMD, () => { new_file() })
+    cogito.register_shortcut(SC_S, MOD_CMD, () => { save_chr() })
+    cogito.register_shortcut(SC_O, MOD_CMD, () => { open_chr() })
+    cogito.register_shortcut(SC_R, MOD_CMD, () => { rename_current_file() })
+    cogito.register_shortcut(SC_C, MOD_CMD, () => { copy_tile() })
+    cogito.register_shortcut(SC_V, MOD_CMD, () => { paste_tile() })
+    cogito.register_shortcut(SC_X, MOD_CMD, () => {
+        __cogito_window_close(main_win)
+    })
+;
+
+-- ==================== UI: ICON BUTTONS ====================
+
+-- Create a drawing-area based button with an 8x8 bitmap icon
+: icon_drawing_area(pixels = [any], color = string, sc = num) (( cogito.DrawingArea ))
+    let da = cogito.drawing_area().set_size_request(8 * sc, 8 * sc)
+    cogito.node_set_hit_targets_natural(da, true)
+    da.on_draw((a = cogito.DrawingArea, w = any, h = any) => {
+        draw_icon_btn(a, stdr.num(w), stdr.num(h), pixels, color, sc)
+    })
+    <- da
+;
+
+-- Color button: circle icon, filled when selected
+: color_btn_drawing_area(color_idx = num, sc = num) (( cogito.DrawingArea ))
+    let color = casu_themes.color_at(color_idx)
+    let pixels = ICON_CIRCLE_OUT
+    if color_idx == ui_sel_color
+        pixels = ICON_CIRCLE_FILL
+    <- icon_drawing_area(pixels, color, sc)
+;
+
+-- Tool button: pen/cursor/zoom icon
+: tool_btn_drawing_area(tool_name = string, sc = num) (( cogito.DrawingArea ))
+    let color = casu_themes.fg()
+    if tool_name == ui_sel_tool
+        color = casu_themes.clr2()
+    let pixels = ICON_PEN
+    if tool_name == "cursor"
+        pixels = ICON_CURSOR
+    elif tool_name == "zoom"
+        pixels = ICON_ZOOM
+    elif tool_name == "eraser"
+        pixels = ICON_CLEAR
+    <- icon_drawing_area(pixels, color, sc)
+;
+
+-- ==================== UI BUILDERS ====================
+
+: sprite_view_panel() (( cogito.VStack ))
+    let p = cogito.vstack().set_class("casu-panel").set_gap(4).set_size_request(32, 40)
+
+    let da = cogito.drawing_area().set_class("casu-panel-canvas").set_size_request(32, 32)
+    da.on_draw((a = cogito.DrawingArea, w = any, h = any) => { draw_tile_preview(a, stdr.num(w), stdr.num(h)) })
+    p.add(da)
+
+    let arrows = cogito.hstack().set_gap(0).set_size_request(16, 8).set_align(0)
+    let flip_h_da = icon_drawing_area(ICON_ARROW_H, casu_themes.fg(), 1)
+    flip_h_da.on_press((a = cogito.DrawingArea) => {
+        let snap = casu_model.snapshot()
+        casu_model.shift_tile_right(casu_model.selected_tile())
+        casu_model.commit_stroke(snap)
+        rebuild()
+    })
+    arrows.add(flip_h_da)
+
+    let flip_v_da = icon_drawing_area(ICON_ARROW_V, casu_themes.fg(), 1)
+    flip_v_da.on_press((a = cogito.DrawingArea) => {
+        let snap = casu_model.snapshot()
+        casu_model.shift_tile_up(casu_model.selected_tile())
+        casu_model.commit_stroke(snap)
+        rebuild()
+    })
+    arrows.add(flip_v_da)
+    let footer = cogito.hstack().set_size_request(32, 8).set_align(0)
+    footer.add(arrows)
+    p.add(footer)
+    <- p
+;
+
+: sprite_size_panel() (( cogito.VStack ))
+    let p = cogito.vstack().set_class("casu-panel").set_gap(4).set_size_request(32, 40)
+
+    let da = cogito.drawing_area().set_size_request(32, 32)
+    cogito.node_set_hit_targets_natural(da, true)
+    da.on_draw((a = cogito.DrawingArea, w = any, h = any) => { draw_preview(a, stdr.num(w), stdr.num(h)) })
+    da.on_press((a = cogito.DrawingArea) => { on_sprite_size_press(a) })
+    p.add(da)
+
+    p.add(cogito.label(str(casu_model.sprite_width()) + str(casu_model.sprite_height())).set_class("casu-panel-label").set_text_align(0).set_size_request(16, 8))
+    <- p
+;
+
+: color_panel() (( cogito.VStack ))
+    let total_h = 32
+    let p = cogito.vstack().set_class("casu-panel").set_gap(4).set_size_request(32, 40)
+
+    let cp_da = cogito.drawing_area().set_size_request(BAR_W, total_h)
+    cogito.node_set_hit_targets_natural(cp_da, true)
+    cp_da.on_draw((a = cogito.DrawingArea, w = any, h = any) => { draw_color_picker(a, stdr.num(w), stdr.num(h)) })
+    cp_da.on_press((a = cogito.DrawingArea) => { on_color_picker_press(a) })
+    cp_da.on_drag((a = cogito.DrawingArea) => { on_color_picker_press(a) })
+    p.add(cp_da)
+
+    let ci = ui_sel_color
+    if ci < 0 ci = 0
+    if ci > 3 ci = 3
+    let ci_idx = ci
+    let hx = pos_to_hex(bar_r[ci_idx] ?? 15) + pos_to_hex(bar_g[ci_idx] ?? 15) + pos_to_hex(bar_b[ci_idx] ?? 15)
+    p.add(cogito.label(hex_upper(hx)).set_class("casu-panel-label").set_text_align(0).set_size_request(24, 8))
+    <- p
+;
+
+: pattern_panel() (( cogito.VStack ))
+    let p = cogito.vstack().set_class("casu-panel").set_gap(4).set_size_request(32, 40)
+
+    let da = cogito.drawing_area().set_class("casu-pattern-canvas").set_size_request(32, 32)
+    cogito.node_set_hit_targets_natural(da, true)
+    da.on_draw((a = cogito.DrawingArea, w = any, h = any) => { draw_blend(a, stdr.num(w), stdr.num(h)) })
+    da.on_press((a = cogito.DrawingArea) => { on_pattern_press(a) })
+    p.add(da)
+
+    let arrows = cogito.hstack().set_gap(0).set_size_request(16, 8).set_align(0)
+    let v_color = casu_themes.clr2()
+    if casu_model.get_mirror_v()
+        v_color = casu_themes.fg()
+    let h_color = casu_themes.clr2()
+    if casu_model.get_mirror_h()
+        h_color = casu_themes.fg()
+    let v_da = icon_drawing_area(ICON_ARROW_V, v_color, 1)
+    v_da.on_press((a = cogito.DrawingArea) => { casu_model.toggle_mirror_v(); rebuild() })
+    arrows.add(v_da)
+
+    let h_da = icon_drawing_area(ICON_ARROW_H, h_color, 1)
+    h_da.on_press((a = cogito.DrawingArea) => { casu_model.toggle_mirror_h(); rebuild() })
+    arrows.add(h_da)
+    let footer = cogito.hstack().set_gap(0).set_size_request(32, 8).set_align(0)
+    footer.add(cogito.label(mirror_status_text()).set_class("casu-panel-label").set_text_align(0).set_size_request(16, 8))
+    footer.add(arrows)
+    p.add(footer)
+    <- p
+;
+
+: data_panel() (( cogito.VStack ))
+    let p = cogito.vstack().set_class("casu-panel").set_gap(4).set_size_request(72, 40)
+
+    let lines = casu_model.tile_data_hex(casu_model.selected_tile())
+    for (let ?r = 0; r < 4; r += 1)
+        let row = cogito.hstack().set_size_request(72, 8).set_gap(8).set_align(0)
+        let left = str(lines[r * 2] ?? "0000")
+        let right = str(lines[r * 2 + 1] ?? "0000")
+        row.add(cogito.label(hex_upper(left)).set_class("casu-data-left").set_text_align(0).set_size_request(32, 8))
+        row.add(cogito.label(hex_upper(right)).set_class("casu-data-right").set_text_align(0).set_size_request(32, 8))
+        p.add(row)
+
+    let pos = casu_model.tile_pos_hex(casu_model.selected_tile())
+    p.add(cogito.label(hex_upper(pos)).set_class("casu-data-pos").set_text_align(0).set_size_request(32, 8))
+
+    <- p
+;
+
+: build_toolbar() (( cogito.HStack ))
+    let bar = cogito.hstack().set_class("casu-toolbar").set_gap(TOOLBAR_GAP).set_padding(0, 8, 0, 8).set_hexpand(true).set_align(0)
+    bar.add(sprite_view_panel())
+    bar.add(sprite_size_panel())
+    bar.add(color_panel())
+    bar.add(pattern_panel())
+    bar.add(data_panel())
+    <- bar
+;
+
+: build_bottom() (( cogito.HStack ))
+    let bar = cogito.hstack().set_class("casu-bottom-bar").set_gap(0).set_padding(2, 0, 0, 0).set_hexpand(true).set_align(3)
+    let color_bar = cogito.hstack().set_class("casu-bottom-bar").set_gap(2).set_padding(0, 4, 0, 0)
+    let tool_bar = cogito.hstack().set_class("casu-bottom-bar").set_gap(2).set_padding(0, 4, 0, 0)
+    let sep_bar = cogito.hstack().set_class("casu-bottom-bar").set_gap(2).set_padding(0, 4, 0, 0)
+
+    -- Color buttons (4 palette circles, 0-based)
+    for (let ?ci = 0; ci <= 3; ci += 1)
+        let color_idx = ci
+        let cda = color_btn_drawing_area(color_idx, 1)
+        cda.on_press((da = cogito.DrawingArea) => {
+            select_color(color_idx)
+        })
+        color_bar.add(cda)
+    bar.add(color_bar)
+
+    -- Tool buttons
+    let pen_da = tool_btn_drawing_area("pen", 1)
+    pen_da.on_press((da = cogito.DrawingArea) => {
+        select_tool("pen")
+    })
+    tool_bar.add(pen_da)
+
+    let cursor_da = tool_btn_drawing_area("cursor", 1)
+    cursor_da.on_press((da = cogito.DrawingArea) => {
+        select_tool("cursor")
+    })
+    tool_bar.add(cursor_da)
+
+    let zoom_da = tool_btn_drawing_area("zoom", 1)
+    zoom_da.on_press((da = cogito.DrawingArea) => {
+        select_tool("zoom")
+    })
+    tool_bar.add(zoom_da)
+
+    bar.add(tool_bar)
+
+    -- Filename
+    bar.add(cogito.label(display_filename()).set_class("casu-filename-label").set_align(0).set_text_align(0).set_hexpand(true))
+
+    let actions = cogito.hstack().set_gap(4).set_align(2)
+
+    -- Clear button
+    let clear_da = icon_drawing_area(ICON_CLEAR, casu_themes.fg(), 1)
+    clear_da.on_press((da = cogito.DrawingArea) => { new_file() })
+    sep_bar.add(clear_da)
+
+    -- Open button
+    let open_da = icon_drawing_area(ICON_FOLDER, casu_themes.fg(), 1)
+    open_da.on_press((da = cogito.DrawingArea) => {
+        open_chr()
+    })
+    sep_bar.add(open_da)
+    actions.add(sep_bar)
+
+    -- Save button (star)
+    let star_color = casu_themes.fg()
+    if casu_model.is_dirty()
+        star_color = casu_themes.clr2()
+    let save_da = icon_drawing_area(ICON_STAR, star_color, 1)
+    save_da.on_press((da = cogito.DrawingArea) => { save_chr() })
+    actions.add(save_da)
+
+    bar.add(actions)
+
+    <- bar
+;
+
+-- ==================== MAIN WINDOW ====================
+
+: build_window(win = cogito.Window) (( -- ))
+    let _ = ui.get()
+    let root = cogito.vstack().set_class("casu-root").set_hexpand(true).set_vexpand(true).set_padding(0, EDGE_PAD, EDGE_PAD, EDGE_PAD)
+
+    win.add(cogito.window_bar().set_class("casu-window-bar"))
+    root.add(cogito.appbar("", "").set_class("small casu-topbar"))
+    root.add(build_toolbar())
+
+    let body = cogito.hstack().set_class("casu-body").set_gap(8).set_padding(16, 0, 0, 0).set_hexpand(true).set_vexpand(true)
+
+    let frame_w = casu_model.canvas_w() + FRAME_BORDER * 2
+    let frame_h = casu_model.canvas_h() + FRAME_BORDER * 2
+    let nmt_frame_w = casu_model.nmt_w() + FRAME_BORDER * 2
+    let nmt_frame_h = casu_model.nmt_h() + FRAME_BORDER * 2
+    let column_h = FRAME_LABEL_H + FRAME_GAP + frame_h
+
+    let sf = cogito.vstack().set_class("casu-canvas-column").set_gap(FRAME_GAP).set_size_request(frame_w, column_h)
+    let sf_box = cogito.vstack().set_class("casu-canvas-frame").set_padding(FRAME_BORDER, FRAME_BORDER, FRAME_BORDER, FRAME_BORDER).set_size_request(frame_w, frame_h)
+    sf_box.add(sheet_da)
+    sf.add(sf_box)
+
+    let nf = cogito.vstack().set_class("casu-canvas-column").set_gap(FRAME_GAP).set_size_request(nmt_frame_w, FRAME_LABEL_H + FRAME_GAP + nmt_frame_h)
+    let nf_box = cogito.vstack().set_class("casu-canvas-frame").set_padding(FRAME_BORDER, FRAME_BORDER, FRAME_BORDER, FRAME_BORDER).set_size_request(nmt_frame_w, nmt_frame_h)
+    nf_box.add(nmt_da)
+    nf.add(nf_box)
+
+    body.add(sf)
+    body.add(nf)
+    root.add(body)
+
+    root.add(build_bottom())
+
+    win.add(root)
+;
+
+-- ==================== ENTRY POINT ====================
+
+-> ()
+    casu_model.reset()
+    casu_model.set_selected_color(ui_sel_color)
+    casu_model.set_selected_tool(ui_sel_tool)
+    setup_canvases()
+
+    app.set_appid("io.github.lainsce.Casu")
+    .set_app_name("Casu")
+    .set_icon("io.github.lainsce.Casu.svg")
+    .set_mono_icon("io.github.lainsce.Casu-symbolic.svg")
+
+    apply_theme(0)
+
+    let frame_w = casu_model.canvas_w() + FRAME_BORDER * 2
+    let nmt_frame_w = casu_model.nmt_w() + FRAME_BORDER * 2
+    let column_h = FRAME_LABEL_H + FRAME_GAP + casu_model.nmt_h() + FRAME_BORDER * 2
+    let ww = snap(frame_w + nmt_frame_w + EDGE_PAD * 2 + 8, 16)
+    let wh = snap(column_h + 120, 16)
+
+    let win = cogito.window_size("Casu", ww, wh)
+    .set_resizable(false)
+    .set_autosize(false)
+    .set_size_request(ww, wh)
+    .build((w = cogito.Window) => { build_window(w) })
+
+    main_win = win
+    register_shortcuts()
+    app.run(win)
+;

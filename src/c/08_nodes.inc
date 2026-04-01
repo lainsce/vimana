@@ -383,6 +383,8 @@ static CogitoNode* cogito_node_new(CogitoKind kind) {
   n->size_request_h_set = false;
   n->size_request_w = 0;
   n->size_request_h = 0;
+  n->hit_targets_natural_set = false;
+  n->hit_targets_natural = false;
   n->label_max_width_chars = 0;
   n->label_max_width_chars_set = false;
   n->grid_col = 0;

@@ -1,0 +1,432 @@
+cask casu_model
+
+bring stdr
+
+-- 16x16 grid of 8x8 tiles = 256 tiles, 128x128 pixels total
+def SHEET_COLS = 16
+def SHEET_ROWS = 16
+def TILE_SIZE = 8
+def TILE_COUNT = 256
+def PIXELS_PER_TILE = 64
+
+-- Nametable: 16x16 grid of placed tiles with transforms
+def NMT_COLS = 16
+def NMT_ROWS = 16
+
+-- Undo
+def HISTORY_LIMIT = 64
+
+-- All pixel data: flat string, 256 tiles * 64 pixels each, color indices '0'-'3'
+def ?sheet = ""
+-- Nametable: list of tile indices (0-255), -1 = empty
+def ?nmt_tiles = []: [num]
+def ?nmt_mirror_h = []: [bool]
+def ?nmt_mirror_v = []: [bool]
+def ?nmt_pattern = []: [num]
+
+def ?undo_stack = []: [string]
+def ?redo_stack = []: [string]
+def ?dirty = false
+
+def ?sel_tile = 0
+def ?sel_color = 1
+def ?sel_tool = "cursor"
+def ?mirror_h = false
+def ?mirror_v = false
+def ?pattern_sel = 1
+def ?sprite_w = 3
+def ?sprite_h = 2
+
+: make_blank_sheet() (( string ))
+    let total = TILE_COUNT * PIXELS_PER_TILE
+    let ?parts = []: [any]
+    for (let ?i = 0; i < total; i += 1)
+        stdr.push(parts, "0")
+    <- stdr.join(parts)
+;
+
+: tile_off(tidx = num) (( num ))
+    <- tidx * PIXELS_PER_TILE
+;
+
+: pix_off(tidx = num, px = num, py = num) (( num ))
+    <- tile_off(tidx) + py * TILE_SIZE + px
+;
+
+: replace_at(text = string, idx = num, ch = string) (( string ))
+    <- stdr.slice(text, 0, idx) + ch + stdr.slice(text, idx + 1, stdr.len(text))
+;
+
+: hex_digit(n = num) (( string ))
+    if n < 10
+        <- stdr.char_from_code(48 + n)
+    <- stdr.char_from_code(87 + n)
+;
+
+: hex_byte(n = num) (( string ))
+    let ?v = n
+    if v < 0
+        v = 0
+    if v > 255
+        v = 255
+    <- hex_digit(stdr.floor(v / 16)) + hex_digit(v - stdr.floor(v / 16) * 16)
+;
+
+: pack_nmt() (( string ))
+    let ?parts = []: [any]
+    let total = NMT_COLS * NMT_ROWS
+    for (let ?i = 0; i < total; i += 1)
+        stdr.push(parts, str(nmt_tiles[i] ?? -1) + ":" + str(nmt_mirror_h[i] ?? false) + ":" + str(nmt_mirror_v[i] ?? false) + ":" + str(nmt_pattern[i] ?? 0) + ",")
+    <- stdr.join(parts)
+;
+
+: unpack_nmt(blob = string) (( -- ))
+    nmt_tiles = []: [num]
+    nmt_mirror_h = []: [bool]
+    nmt_mirror_v = []: [bool]
+    nmt_pattern = []: [num]
+    let n = stdr.len(blob)
+    let ?idx = 0
+    let ?i = 0
+    let max_entries = NMT_COLS * NMT_ROWS
+    for (let ?_iter = 0; _iter < max_entries * 2; _iter += 1)
+        if idx >= n || i >= max_entries
+            break
+        let ?comma = idx
+        for (let ?_j = idx; _j < n; _j += 1)
+            if stdr.char_at(blob, _j) == ","
+                comma = _j
+                break
+        if comma <= idx
+            idx = comma + 1
+            i += 1
+            continue
+        let entry = stdr.slice(blob, idx, comma)
+        let ?parts = []: [string]
+        let ?start = 0
+        for (let ?j = 0; j < stdr.len(entry); j += 1)
+            if stdr.char_at(entry, j) == ":"
+                parts[len(parts)] = stdr.slice(entry, start, j)
+                start = j + 1
+        parts[len(parts)] = stdr.slice(entry, start, stdr.len(entry))
+        let tv = stdr.num(str(parts[0] ?? "-1"))
+        nmt_tiles[i] = tv
+        nmt_mirror_h[i] = str(parts[1] ?? "false") == "true"
+        nmt_mirror_v[i] = str(parts[2] ?? "false") == "true"
+        nmt_pattern[i] = stdr.num(str(parts[3] ?? "0"))
+        idx = comma + 1
+        i += 1
+;
+
+: pack_state() (( string ))
+    <- sheet + "|" + pack_nmt()
+;
+
+: unpack_state(state = string) (( -- ))
+    let n = stdr.len(state)
+    let ?sep = -1
+    for (let ?i = 0; i < n; i += 1)
+        if stdr.char_at(state, i) == "|"
+            sep = i
+            break
+    if sep < 0
+        sheet = state
+        <-
+    sheet = stdr.slice(state, 0, sep)
+    unpack_nmt(stdr.slice(state, sep + 1, n))
+;
+
+: push_stack(stack = [string], value = string) (( [string] ))
+    let ?out = []: [string]
+    let n = len(stack)
+    let ?start = 0
+    if n >= HISTORY_LIMIT
+        start = n - HISTORY_LIMIT + 1
+    for (let ?i = start; i < n; i += 1)
+        out[len(out)] = str(stack[i] ?? "")
+    out[len(out)] = value
+    <- out
+;
+
+:: reset() (( -- ))
+    sheet = make_blank_sheet()
+    nmt_tiles = []: [num]
+    nmt_mirror_h = []: [bool]
+    nmt_mirror_v = []: [bool]
+    nmt_pattern = []: [num]
+    for (let ?i = 0; i < NMT_COLS * NMT_ROWS; i += 1)
+        nmt_tiles[i] = -1
+        nmt_mirror_h[i] = false
+        nmt_mirror_v[i] = false
+        nmt_pattern[i] = 0
+    undo_stack = []: [string]
+    redo_stack = []: [string]
+    dirty = false
+    sel_tile = 0
+    sel_color = 1
+    sel_tool = "cursor"
+    mirror_h = false
+    mirror_v = false
+    pattern_sel = 1
+    sprite_w = 3
+    sprite_h = 2
+;
+
+:: sheet_cols() (( num )) <- SHEET_COLS ;
+:: sheet_rows() (( num )) <- SHEET_ROWS ;
+:: tile_size() (( num )) <- TILE_SIZE ;
+:: nmt_cols() (( num )) <- NMT_COLS ;
+:: nmt_rows() (( num )) <- NMT_ROWS ;
+:: canvas_w() (( num )) <- SHEET_COLS * TILE_SIZE ;
+:: canvas_h() (( num )) <- SHEET_ROWS * TILE_SIZE ;
+:: nmt_w() (( num )) <- NMT_COLS * TILE_SIZE ;
+:: nmt_h() (( num )) <- NMT_ROWS * TILE_SIZE ;
+
+:: selected_tile() (( num )) <- sel_tile ;
+:: set_selected_tile(idx = num) (( -- ))
+    let ?i = idx
+    if i < 0
+        i = 0
+    if i >= TILE_COUNT
+        i = TILE_COUNT - 1
+    sel_tile = i
+;
+
+:: set_selected_color(idx = num) (( -- ))
+    let ?i = idx
+    if i < 0
+        i = 0
+    if i > 3
+        i = 3
+    sel_color = i
+;
+
+:: set_selected_tool(t = string) (( -- ))
+    sel_tool = t
+;
+
+:: is_dirty() (( bool )) <- dirty ;
+:: mark_saved() (( -- )) dirty = false ;
+
+:: get_mirror_h() (( bool )) <- mirror_h ;
+:: get_mirror_v() (( bool )) <- mirror_v ;
+:: set_mirror_h(v = bool) (( -- )) mirror_h = v ;
+:: set_mirror_v(v = bool) (( -- )) mirror_v = v ;
+:: toggle_mirror_h() (( -- )) mirror_h = !mirror_h ;
+:: toggle_mirror_v() (( -- )) mirror_v = !mirror_v ;
+:: selected_pattern() (( num )) <- pattern_sel ;
+:: set_selected_pattern(v = num) (( -- ))
+    let ?idx = v
+    if idx < 0
+        idx = 0
+    if idx > 15
+        idx = 15
+    pattern_sel = idx
+;
+
+:: sprite_width() (( num )) <- sprite_w ;
+:: sprite_height() (( num )) <- sprite_h ;
+:: set_sprite_size(w = num, h = num) (( -- ))
+    sprite_w = w
+    sprite_h = h
+;
+
+:: get_pixel(tidx = num, px = num, py = num) (( num ))
+    if tidx < 0 || tidx >= TILE_COUNT || px < 0 || px >= TILE_SIZE || py < 0 || py >= TILE_SIZE
+        <- 0
+    let idx = pix_off(tidx, px, py)
+    let ch = stdr.char_at(sheet, idx)
+    if ch == "1"
+        <- 1
+    if ch == "2"
+        <- 2
+    if ch == "3"
+        <- 3
+    <- 0
+;
+
+:: set_pixel(tidx = num, px = num, py = num, color = num) (( -- ))
+    if tidx < 0 || tidx >= TILE_COUNT || px < 0 || px >= TILE_SIZE || py < 0 || py >= TILE_SIZE
+        <-
+    let idx = pix_off(tidx, px, py)
+    let ?ch = "0"
+    if color == 1
+        ch = "1"
+    elif color == 2
+        ch = "2"
+    elif color == 3
+        ch = "3"
+    sheet = replace_at(sheet, idx, ch)
+    dirty = true
+;
+
+:: get_pixel_mirror(tidx = num, px = num, py = num, mh = bool, mv = bool) (( num ))
+    let ?fx = px
+    let ?fy = py
+    if mh
+        fx = TILE_SIZE - 1 - px
+    if mv
+        fy = TILE_SIZE - 1 - py
+    <- get_pixel(tidx, fx, fy)
+;
+
+-- Hex data view: 4 rows of 4-digit hex (plane0 pairs, plane1 pairs)
+def POW2 = [1, 2, 4, 8, 16, 32, 64, 128]
+
+: is_odd(n = num) (( bool ))
+    <- n != (stdr.floor(n / 2) * 2)
+;
+
+:: tile_data_hex(tidx = num) (( [string] ))
+    let ?lines = []: [string]
+    let ?low = []: [num]
+    let ?high = []: [num]
+    for (let ?row = 0; row < TILE_SIZE; row += 1)
+        let ?lb = 0
+        let ?hb = 0
+        for (let ?col = 0; col < TILE_SIZE; col += 1)
+            let px = get_pixel(tidx, col, row)
+            let bit_val = POW2[7 - col] ?? 1
+            if is_odd(px)
+                lb = lb + bit_val
+            let px_hi = stdr.floor(px / 2)
+            if is_odd(px_hi)
+                hb = hb + bit_val
+        low[row] = lb
+        high[row] = hb
+    for (let ?i = 0; i < 4; i += 1)
+        let lw = (low[i * 2] ?? 0) * 256 + (low[i * 2 + 1] ?? 0)
+        let hw = (high[i * 2] ?? 0) * 256 + (high[i * 2 + 1] ?? 0)
+        lines[i * 2] = hex_digit(stdr.floor(lw / 4096)) + hex_digit(stdr.floor(lw / 256) % 16) + hex_digit(stdr.floor(lw / 16) % 16) + hex_digit(lw % 16)
+        lines[i * 2 + 1] = hex_digit(stdr.floor(hw / 4096)) + hex_digit(stdr.floor(hw / 256) % 16) + hex_digit(stdr.floor(hw / 16) % 16) + hex_digit(hw % 16)
+    <- lines
+;
+
+:: tile_pos_hex(tidx = num) (( string ))
+    let col = tidx % SHEET_COLS
+    let row = stdr.floor(tidx / SHEET_COLS)
+    <- hex_byte(col) + hex_byte(row)
+;
+
+:: get_tile_blob(tidx = num) (( string ))
+    if tidx < 0 || tidx >= TILE_COUNT
+        <- ""
+    let base = tile_off(tidx)
+    <- stdr.slice(sheet, base, base + PIXELS_PER_TILE)
+;
+
+:: set_tile_blob(tidx = num, blob = string) (( -- ))
+    if tidx < 0 || tidx >= TILE_COUNT
+        <-
+    if stdr.len(blob) < PIXELS_PER_TILE
+        <-
+    let base = tile_off(tidx)
+    sheet = stdr.slice(sheet, 0, base) + stdr.slice(blob, 0, PIXELS_PER_TILE) + stdr.slice(sheet, base + PIXELS_PER_TILE, stdr.len(sheet))
+    dirty = true
+;
+
+-- Undo/redo
+:: snapshot() (( string )) <- pack_state() ;
+
+:: commit_stroke(before = string) (( -- ))
+    let cur = pack_state()
+    if cur == before
+        <-
+    undo_stack = push_stack(undo_stack, before)
+    redo_stack = []: [string]
+    dirty = true
+;
+
+-- Tile operations
+:: shift_tile_up(tidx = num) (( -- ))
+    if tidx < 0 || tidx >= TILE_COUNT
+        <-
+    let ?top = []: [num]
+    for (let ?x = 0; x < TILE_SIZE; x += 1)
+        top[x] = get_pixel(tidx, x, 0)
+    for (let ?y = 1; y < TILE_SIZE; y += 1)
+        for (let ?x = 0; x < TILE_SIZE; x += 1)
+            set_pixel(tidx, x, y - 1, get_pixel(tidx, x, y))
+    for (let ?x = 0; x < TILE_SIZE; x += 1)
+        set_pixel(tidx, x, TILE_SIZE - 1, top[x] ?? 0)
+;
+
+:: shift_tile_right(tidx = num) (( -- ))
+    if tidx < 0 || tidx >= TILE_COUNT
+        <-
+    let ?right = []: [num]
+    for (let ?y = 0; y < TILE_SIZE; y += 1)
+        right[y] = get_pixel(tidx, TILE_SIZE - 1, y)
+    for (let ?x = TILE_SIZE - 2; x >= 0; x -= 1)
+        for (let ?y = 0; y < TILE_SIZE; y += 1)
+            set_pixel(tidx, x + 1, y, get_pixel(tidx, x, y))
+    for (let ?y = 0; y < TILE_SIZE; y += 1)
+        set_pixel(tidx, 0, y, right[y] ?? 0)
+;
+
+-- Nametable operations
+:: get_nmt_tile(col = num, row = num) (( num ))
+    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
+        <- -1
+    <- nmt_tiles[row * NMT_COLS + col] ?? -1
+;
+
+:: get_nmt_mirror_h(col = num, row = num) (( bool ))
+    <- nmt_mirror_h[row * NMT_COLS + col] ?? false
+;
+
+:: get_nmt_mirror_v(col = num, row = num) (( bool ))
+    <- nmt_mirror_v[row * NMT_COLS + col] ?? false
+;
+
+:: get_nmt_pattern(col = num, row = num) (( num ))
+    <- nmt_pattern[row * NMT_COLS + col] ?? 0
+;
+
+:: place_nmt_tile(col = num, row = num, tidx = num) (( -- ))
+    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
+        <-
+    let i = row * NMT_COLS + col
+    if tidx < 0
+        nmt_tiles[i] = -1
+        nmt_mirror_h[i] = false
+        nmt_mirror_v[i] = false
+        nmt_pattern[i] = 0
+        dirty = true
+        <-
+    nmt_tiles[i] = tidx
+    nmt_mirror_h[i] = mirror_h
+    nmt_mirror_v[i] = mirror_v
+    nmt_pattern[i] = pattern_sel
+    dirty = true
+;
+
+:: clear_nmt() (( -- ))
+    for (let ?i = 0; i < NMT_COLS * NMT_ROWS; i += 1)
+        nmt_tiles[i] = -1
+        nmt_mirror_h[i] = false
+        nmt_mirror_v[i] = false
+        nmt_pattern[i] = 0
+;
+
+-- Color permutation for blend/pattern view
+-- 16 modes in a 4x4 grid
+:: apply_color_permutation(color = num, mode = num) (( num ))
+    let ?mappings = [
+        [0, 0, 1, 2], [0, 1, 2, 3], [0, 2, 3, 1], [0, 3, 1, 2],
+        [1, 0, 1, 2], [0, 1, 2, 3], [1, 2, 3, 1], [1, 3, 1, 2],
+        [2, 0, 1, 2], [2, 1, 2, 3], [0, 2, 3, 1], [2, 3, 1, 2],
+        [3, 0, 1, 2], [3, 1, 2, 3], [3, 2, 3, 1], [0, 3, 1, 2]
+    ]
+    let ?row = mappings[mode]
+    if is_null(row)
+        <- color
+    <- row[color] ?? color
+;
+
+-- Data accessors for text-based file I/O
+:: get_sheet_data() (( string )) <- sheet ;
+:: set_sheet_data(data = string) (( -- )) sheet = data ;
+:: get_nmt_text() (( string )) <- pack_nmt() ;
+:: set_nmt_text(data = string) (( -- )) unpack_nmt(data) ;
+;

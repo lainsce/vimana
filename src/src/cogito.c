@@ -249,6 +249,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #define cogito_label_set_line_chars cogito_label_set_line_chars_yis
 #define cogito_load_sum cogito_load_sum_yis
 #define cogito_load_sum_file cogito_load_sum_file_yis
+#define cogito_read_file cogito_read_file_yis
 #define cogito_nav_rail_get_selected cogito_nav_rail_get_selected_yis
 #define cogito_nav_rail_new cogito_nav_rail_new_yis
 #define cogito_nav_rail_on_change cogito_nav_rail_on_change_yis
@@ -686,6 +687,7 @@ static const char *cogito_font_medium_path_active = NULL;
 #undef cogito_label_set_line_chars
 #undef cogito_load_sum
 #undef cogito_load_sum_file
+#undef cogito_read_file
 #undef cogito_nav_rail_get_selected
 #undef cogito_nav_rail_new
 #undef cogito_nav_rail_on_change
@@ -2364,6 +2366,12 @@ void cogito_window_set_size_request(cogito_window *window, int w, int h) {
   if (!window)
     return;
   cogito_window_set_size_request_yis(YV_OBJ(window), YV_INT(w), YV_INT(h));
+}
+
+void cogito_window_close(cogito_window *window) {
+  if (!window)
+    return;
+  window->should_close = true;
 }
 
 void cogito_window_set_a11y_label(cogito_window *window, const char *label) {
@@ -4995,6 +5003,12 @@ void cogito_load_sum_file(const char *path) {
   if (!path)
     return;
   cogito_load_sum_file_yis(path);
+}
+
+char* cogito_read_file(const char *path) {
+  if (!path || !path[0])
+    return NULL;
+  return cogito_read_file_yis(path);
 }
 
 void cogito_load_sum_inline(const char *src) {

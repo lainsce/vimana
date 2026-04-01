@@ -1045,6 +1045,11 @@ static void __cogito_window_set_size_request(YisVal winv, YisVal wv, YisVal hv) 
   cogito_window_set_size_request(win, w, h);
 }
 
+static void __cogito_window_close(YisVal winv) {
+  cogito_window* win = cogito_window_from_val(winv);
+  cogito_window_close(win);
+}
+
 static void __cogito_window_set_a11y_label(YisVal winv, YisVal labelv) {
   cogito_window* win = cogito_window_from_val(winv);
   YisStr* tmp = NULL;
@@ -4487,6 +4492,16 @@ static void __cogito_set_script_dir(YisVal dirv) {
   if (tmp) yis_release_val(YV_STR(tmp));
 }
 
+static YisVal __cogito_read_file(YisVal pathv) {
+  YisStr* tmp = NULL;
+  const char* path = cogito_required_cstr(pathv, &tmp);
+  char* src = cogito_read_file(path);
+  YisVal result = src ? YV_STR(stdr_str_from_slice(src, (int)strlen(src))) : YV_NULLV;
+  if (src) free(src);
+  if (tmp) yis_release_val(YV_STR(tmp));
+  return result;
+}
+
 static void __cogito_set_direction(YisVal dirv) {
   int dir = (int)yis_as_int(dirv);
   cogito_set_direction(dir);
@@ -4522,6 +4537,10 @@ static YisVal __cogito_node_get_y(YisVal nodev) {
 
 static YisVal __cogito_is_mouse_down(void) {
   return YV_BOOL(cogito_is_mouse_down());
+}
+
+static YisVal __cogito_is_mouse_button_down(YisVal buttonv) {
+  return YV_BOOL(cogito_is_mouse_button_down((int)yis_as_int(buttonv)));
 }
 
 static YisVal __cogito_pointer_x(void) {
@@ -4925,6 +4944,7 @@ static void __cogito_node_on_select(YisVal nodev, YisVal handler) {
 #define cogito_window_set_resizable __cogito_window_set_resizable
 #define cogito_window_set_autosize __cogito_window_set_autosize
 #define cogito_window_set_size_request __cogito_window_set_size_request
+#define cogito_window_close __cogito_window_close
 #define cogito_window_set_a11y_label __cogito_window_set_a11y_label
 #define cogito_window_set_builder __cogito_window_set_builder
 #define cogito_window_on_resize __cogito_window_on_resize
@@ -5269,6 +5289,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_load_sum __cogito_load_sum
 #define cogito_load_sum_inline __cogito_load_sum_inline
 #define cogito_set_script_dir __cogito_set_script_dir
+#define cogito_read_file __cogito_read_file
 #define cogito_set_direction __cogito_set_direction
 #define cogito_get_direction __cogito_get_direction
 #define cogito_is_shift_down __cogito_is_shift_down
@@ -5277,6 +5298,7 @@ void __cogito_button_on_click(YisVal btn, YisVal handler);
 #define cogito_node_get_x __cogito_node_get_x
 #define cogito_node_get_y __cogito_node_get_y
 #define cogito_is_mouse_down __cogito_is_mouse_down
+#define cogito_is_mouse_button_down __cogito_is_mouse_button_down
 #define cogito_pointer_x __cogito_pointer_x
 #define cogito_pointer_y __cogito_pointer_y
 #define cogito_active_indicator_new __cogito_active_indicator

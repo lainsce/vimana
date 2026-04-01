@@ -1237,9 +1237,11 @@ static void cogito_apply_style_to_node(CogitoNode* n) {
   }
   else { n->opacity_set = false; n->opacity = 1.0f;
   }
-  if (s.has_hit_targets_natural) { n->hit_targets_natural = s.hit_targets_natural;
-  }
-  else { n->hit_targets_natural = false;
+  if (!n->hit_targets_natural_set) {
+    if (s.has_hit_targets_natural) { n->hit_targets_natural = s.hit_targets_natural;
+    }
+    else { n->hit_targets_natural = false;
+    }
   }
   if (s.has_filter_blur) { n->blur_radius = s.filter_blur;
   }

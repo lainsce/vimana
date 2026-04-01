@@ -619,6 +619,7 @@ pub :: KEY_KP_ENTER   (( num )) <- 88 ;
 : __cogito_node_set_flag(node = any, flag = num) (( -- )) { }
 : __cogito_node_clear_flag(node = any, flag = num) (( -- )) { }
 : __cogito_set_script_dir(dir = string) (( -- )) { }
+: __cogito_read_file(path = string) (( string )) { }
 : __cogito_settings_list(title = string) (( SettingsList )) { }
 : __cogito_settings_page(title = string) (( SettingsPage )) { }
 : __cogito_settings_row(label = string) (( SettingsRow )) { }
@@ -5017,6 +5018,9 @@ pub ,: State
 ;
 :: set_script_dir(dir = string) (( -- ))
     __cogito_set_script_dir(dir)
+;
+:: read_file(path = string) (( string ))
+    <- __cogito_read_file(path)
 ;
 :: set_direction(dir = num) (( -- ))
     __cogito_set_direction(dir)

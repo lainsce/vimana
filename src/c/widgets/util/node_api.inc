@@ -293,6 +293,7 @@ static void cogito_node_set_editable(YisVal nodev, YisVal onv) {
 static void cogito_apply_hit_targets_natural(YisVal nodev, YisVal onv) {
   if (nodev.tag != EVT_OBJ) yis_trap("set_hit_targets_natural expects object");
   CogitoNode* n = (CogitoNode*)nodev.as.p;
+  n->hit_targets_natural_set = true;
   n->hit_targets_natural = yis_as_bool(onv);
 }
 

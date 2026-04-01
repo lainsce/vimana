@@ -1,8 +1,0 @@
-[cogresource]
-prefix = "/com/fyralabs/Solar"
-
-[[cogresource.file]]
-src = "com.fyralabs.Solar.svg"
-
-[[cogresource.file]]
-src = "com.fyralabs.Solar-symbolic.svg"
