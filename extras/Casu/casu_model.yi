@@ -224,6 +224,9 @@ def ?sprite_h = 2
     pattern_sel = idx
 ;
 
+:: get_selected_color() (( num )) <- sel_color ;
+:: set_selected_color(v = num) (( -- )) sel_color = v ;
+
 :: sprite_width() (( num )) <- sprite_w ;
 :: sprite_height() (( num )) <- sprite_h ;
 :: set_sprite_size(w = num, h = num) (( -- ))
@@ -351,6 +354,19 @@ def POW2 = [1, 2, 4, 8, 16, 32, 64, 128]
         set_pixel(tidx, x, TILE_SIZE - 1, top[x] ?? 0)
 ;
 
+:: shift_tile_down(tidx = num) (( -- ))
+    if tidx < 0 || tidx >= TILE_COUNT
+        <-
+    let ?bottom = []: [num]
+    for (let ?x = 0; x < TILE_SIZE; x += 1)
+        bottom[x] = get_pixel(tidx, x, TILE_SIZE - 1)
+    for (let ?y = TILE_SIZE - 2; y >= 0; y -= 1)
+        for (let ?x = 0; x < TILE_SIZE; x += 1)
+            set_pixel(tidx, x, y + 1, get_pixel(tidx, x, y))
+    for (let ?x = 0; x < TILE_SIZE; x += 1)
+        set_pixel(tidx, x, 0, bottom[x] ?? 0)
+;
+
 :: shift_tile_right(tidx = num) (( -- ))
     if tidx < 0 || tidx >= TILE_COUNT
         <-
@@ -362,6 +378,19 @@ def POW2 = [1, 2, 4, 8, 16, 32, 64, 128]
             set_pixel(tidx, x + 1, y, get_pixel(tidx, x, y))
     for (let ?y = 0; y < TILE_SIZE; y += 1)
         set_pixel(tidx, 0, y, right[y] ?? 0)
+;
+
+:: shift_tile_left(tidx = num) (( -- ))
+    if tidx < 0 || tidx >= TILE_COUNT
+        <-
+    let ?left = []: [num]
+    for (let ?y = 0; y < TILE_SIZE; y += 1)
+        left[y] = get_pixel(tidx, 0, y)
+    for (let ?x = 1; x < TILE_SIZE; x += 1)
+        for (let ?y = 0; y < TILE_SIZE; y += 1)
+            set_pixel(tidx, x - 1, y, get_pixel(tidx, x, y))
+    for (let ?y = 0; y < TILE_SIZE; y += 1)
+        set_pixel(tidx, TILE_SIZE - 1, y, left[y] ?? 0)
 ;
 
 -- Nametable operations
@@ -381,6 +410,38 @@ def POW2 = [1, 2, 4, 8, 16, 32, 64, 128]
 
 :: get_nmt_pattern(col = num, row = num) (( num ))
     <- nmt_pattern[row * NMT_COLS + col] ?? 0
+;
+
+:: set_nmt_tile(col = num, row = num, tidx = num) (( -- ))
+    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
+        <-
+    let i = row * NMT_COLS + col
+    nmt_tiles[i] = tidx
+    dirty = true
+;
+
+:: set_nmt_mirror_h(col = num, row = num, v = bool) (( -- ))
+    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
+        <-
+    let i = row * NMT_COLS + col
+    nmt_mirror_h[i] = v
+    dirty = true
+;
+
+:: set_nmt_mirror_v(col = num, row = num, v = bool) (( -- ))
+    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
+        <-
+    let i = row * NMT_COLS + col
+    nmt_mirror_v[i] = v
+    dirty = true
+;
+
+:: set_nmt_pattern(col = num, row = num, v = num) (( -- ))
+    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
+        <-
+    let i = row * NMT_COLS + col
+    nmt_pattern[i] = v
+    dirty = true
 ;
 
 :: place_nmt_tile(col = num, row = num, tidx = num) (( -- ))

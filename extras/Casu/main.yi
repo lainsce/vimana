@@ -38,6 +38,14 @@ def ?nmt_sel_x = 0
 def ?nmt_sel_y = 0
 def ?nmt_sel_active = false
 
+-- Pattern toggle state (like Vala's last_applied_pattern)
+def ?last_applied_pattern = -1
+def ?sprite_original_colors = []: [num]
+
+-- Shift state for sprite view (like Vala's shift_x, shift_y)
+def ?shift_x = 0
+def ?shift_y = 0
+
 -- Color bar positions (0-15 per palette color 0-3)
 def ?bar_r = [0, 15, 0, 15]
 def ?bar_g = [0, 15, 15, 0]
@@ -63,6 +71,7 @@ def SC_C = 6
 def SC_V = 25
 def SC_W = 26
 def SC_X = 27
+def SC_Z = 52
 def SC_E = 8
 def SC_N = 17
 def SC_O = 18
@@ -70,6 +79,9 @@ def SC_1 = 30
 def SC_2 = 31
 def SC_3 = 32
 def SC_4 = 33
+def SC_A = 4
+def SC_I = 12
+def SC_B = 5
 def SC_RETURN = 40
 def SC_ESCAPE = 41
 def SC_BACKSPACE = 42
@@ -97,6 +109,54 @@ def SC_RALT = 230
     if n >= 4 && stdr.slice(out, n - 4, n) == ".chr"
         <- out
     <- out + ".chr"
+;
+
+-- Store original sprite colors before pattern application (like Vala)
+: store_sprite_original_colors() (( -- ))
+    sprite_original_colors = []: [num]
+    let tidx = casu_model.selected_tile()
+    let sw = casu_model.sprite_width()
+    let sh = casu_model.sprite_height()
+    for (let ?r = 0; r < sh; r += 1)
+        for (let ?c = 0; c < sw; c += 1)
+            let cur = tidx + r * sw + c
+            for (let ?py = 0; py < 8; py += 1)
+                for (let ?px = 0; px < 8; px += 1)
+                    let v = casu_model.get_pixel(cur, px, py)
+                    stdr.push(sprite_original_colors, v)
+;
+
+-- Restore original sprite colors (toggle off pattern)
+: restore_sprite_original_colors() (( -- ))
+    if len(sprite_original_colors) < 1
+        <-
+    let tidx = casu_model.selected_tile()
+    let sw = casu_model.sprite_width()
+    let sh = casu_model.sprite_height()
+    let ?idx = 0
+    for (let ?r = 0; r < sh; r += 1)
+        for (let ?c = 0; c < sw; c += 1)
+            let cur = tidx + r * sw + c
+            for (let ?py = 0; py < 8; py += 1)
+                for (let ?px = 0; px < 8; px += 1)
+                    if idx < len(sprite_original_colors)
+                        casu_model.set_pixel(cur, px, py, sprite_original_colors[idx] ?? 0)
+                        idx = idx + 1
+;
+
+-- Apply pattern to sprite area
+: apply_pattern_to_sprite_area(pattern = num) (( -- ))
+    let tidx = casu_model.selected_tile()
+    let sw = casu_model.sprite_width()
+    let sh = casu_model.sprite_height()
+    for (let ?r = 0; r < sh; r += 1)
+        for (let ?c = 0; c < sw; c += 1)
+            let cur = tidx + r * sw + c
+            for (let ?py = 0; py < 8; py += 1)
+                for (let ?px = 0; px < 8; px += 1)
+                    let raw = casu_model.get_pixel(cur, px, py)
+                    let mapped = casu_model.apply_color_permutation(raw, pattern)
+                    casu_model.set_pixel(cur, px, py, mapped)
 ;
 
 : update_filename_from_path(path = string) (( -- ))
@@ -383,11 +443,15 @@ def ICON_ARROW_V = [
     let sel = casu_model.selected_tile()
     let sc = sel % cols
     let sr = stdr.floor(sel / cols)
-    da.set_color(casu_themes.fg())
-    da.fill_rect(sc * ts, sr * ts, ts, 1)
-    da.fill_rect(sc * ts, sr * ts + ts - 1, ts, 1)
-    da.fill_rect(sc * ts, sr * ts, 1, ts)
-    da.fill_rect(sc * ts + ts - 1, sr * ts, 1, ts)
+    -- Draw selected tile with inverted colors (like Vala implementation)
+    let ox = sc * ts
+    let oy = sr * ts
+    for (let ?py = 0; py < ts; py += 1)
+        for (let ?px = 0; px < ts; px += 1)
+            let c = casu_model.get_pixel(sel, px, py)
+            let inv_c = (c + 2) % 4  -- Invert color (rotate palette by 2)
+            da.set_color(casu_themes.color_at(inv_c))
+            da.fill_rect(ox + px, oy + py, 1, 1)
 ;
 
 : draw_editor_zoomed(da = cogito.DrawingArea, w = num, h = num) (( -- ))
@@ -405,6 +469,9 @@ def ICON_ARROW_V = [
     let vp_w = stdr.floor(iw / ZOOM_SC)
     let vp_h = stdr.floor(ih / ZOOM_SC)
 
+    -- Draw zoomed pixels as dots (overlapping rectangles for rounded look, like color buttons)
+    -- Scale from Vala's 8x8 (offsets +1,0 and +0,1, sizes 5x7 and 7x5) to 12x12
+    -- For 12x12: 5-wide centered = offset 3, 7-wide centered = offset 2
     for (let ?vy = 0; vy < vp_h; vy += 1)
         let gy = vy + ui_zoom_oy
         if gy < 0 || gy >= rows * ts continue
@@ -416,35 +483,46 @@ def ICON_ARROW_V = [
             let tcol = stdr.floor(gx / ts)
             let ppx = gx % ts
             let tidx = trow * cols + tcol
-            let c = casu_model.get_pixel(tidx, ppx, ppy)
-            da.set_color(casu_themes.color_at(c))
-            da.fill_rect(vx * ZOOM_SC, vy * ZOOM_SC, ZOOM_SC, ZOOM_SC)
+            -- Apply mirroring if this is the selected tile (like Vala implementation)
+            let sel = casu_model.selected_tile()
+            let sel_row = stdr.floor(sel / cols)
+            let sel_col = sel % cols
+            let mir_px = ppx
+            let mir_py = ppy
+            if tcol == sel_col && trow == sel_row
+                if casu_model.get_mirror_h()
+                    mir_px = ts - 1 - ppx
+                if casu_model.get_mirror_v()
+                    mir_py = ts - 1 - ppy
+            let c = casu_model.get_pixel(tidx, mir_px, mir_py)
+            if c > 0
+                da.set_color(casu_themes.color_at(c))
+                let base_x = vx * ZOOM_SC
+                let base_y = vy * ZOOM_SC
+                -- Draw dot as two overlapping rectangles (5x7 + 7x5) for rounded look
+                da.fill_rect(base_x + 3, base_y + 2, 5, 7)
+                da.fill_rect(base_x + 2, base_y + 3, 7, 5)
 
+    -- Draw dotted grid lines every 8px (tile boundaries), only at visible boundaries
     let gc = casu_themes.clr2()
     da.set_color(gc)
-    for (let ?vx = 0; vx <= vp_w; vx += 1)
-        let gx = vx + ui_zoom_ox
-        if gx < 0 || gx > cols * ts continue
-        if gx % ts == 0
-            da.fill_rect(vx * ZOOM_SC, 0, 2, vp_h * ZOOM_SC)
-        else
-            da.fill_rect(vx * ZOOM_SC, 0, 1, vp_h * ZOOM_SC)
-    for (let ?vy = 0; vy <= vp_h; vy += 1)
-        let gy = vy + ui_zoom_oy
-        if gy < 0 || gy > rows * ts continue
-        if gy % ts == 0
-            da.fill_rect(0, vy * ZOOM_SC, vp_w * ZOOM_SC, 2)
-        else
-            da.fill_rect(0, vy * ZOOM_SC, vp_w * ZOOM_SC, 1)
-
-    let grid_w = vp_w * ZOOM_SC
-    let grid_h = vp_h * ZOOM_SC
-    if grid_w > 0 && grid_h > 0
-        da.set_color(casu_themes.clr2())
-        da.fill_rect(0, 0, grid_w, 1)
-        da.fill_rect(0, grid_h - 1, grid_w, 1)
-        da.fill_rect(0, 0, 1, grid_h)
-        da.fill_rect(grid_w - 1, 0, 1, grid_h)
+    -- Calculate which tile boundaries are visible
+    let start_tile_x = ui_zoom_ox / ts
+    let start_tile_y = ui_zoom_oy / ts
+    -- Vertical dotted lines at tile boundaries
+    for (let ?tx = start_tile_x; tx <= start_tile_x + 2; tx += 1)
+        let gx = tx * ts
+        if gx >= ui_zoom_ox && gx < ui_zoom_ox + vp_w
+            let view_x = (gx - ui_zoom_ox) * ZOOM_SC
+            for (let ?dy = 0; dy < vp_h * ZOOM_SC; dy += 2)
+                da.fill_rect(view_x, dy, 1, 1)
+    -- Horizontal dotted lines at tile boundaries
+    for (let ?ty = start_tile_y; ty <= start_tile_y + 2; ty += 1)
+        let gy = ty * ts
+        if gy >= ui_zoom_oy && gy < ui_zoom_oy + vp_h
+            let view_y = (gy - ui_zoom_oy) * ZOOM_SC
+            for (let ?dx = 0; dx < vp_w * ZOOM_SC; dx += 2)
+                da.fill_rect(dx, view_y, 1, 1)
 ;
 
 -- ==================== DRAWING: NAMETABLE ====================
@@ -481,11 +559,19 @@ def ICON_ARROW_V = [
     if nmt_sel_active
         let ox = nmt_sel_x * ts
         let oy = nmt_sel_y * ts
-        da.set_color(casu_themes.fg())
-        da.fill_rect(ox, oy, ts, 1)
-        da.fill_rect(ox, oy + ts - 1, ts, 1)
-        da.fill_rect(ox, oy, 1, ts)
-        da.fill_rect(ox + ts - 1, oy, 1, ts)
+        let tidx = casu_model.get_nmt_tile(nmt_sel_x, nmt_sel_y)
+        if tidx >= 0
+            -- Draw selected NMT tile with inverted colors (like Vala implementation)
+            let mh = casu_model.get_nmt_mirror_h(nmt_sel_x, nmt_sel_y)
+            let mv = casu_model.get_nmt_mirror_v(nmt_sel_x, nmt_sel_y)
+            let mode = casu_model.get_nmt_pattern(nmt_sel_x, nmt_sel_y)
+            for (let ?py = 0; py < ts; py += 1)
+                for (let ?px = 0; px < ts; px += 1)
+                    let raw = casu_model.get_pixel_mirror(tidx, px, py, mh, mv)
+                    let c = casu_model.apply_color_permutation(raw, mode)
+                    let inv_c = (c + 2) % 4  -- Invert color (rotate palette by 2)
+                    da.set_color(casu_themes.color_at(inv_c))
+                    da.fill_rect(ox + px, oy + py, 1, 1)
 ;
 
 -- ==================== DRAWING: TOOL PANELS ====================
@@ -531,20 +617,26 @@ def ICON_ARROW_V = [
     let ih = stdr.floor(h)
     if iw <= 0 || ih <= 0 <-
 
-    da.set_color(casu_themes.bg())
-    da.fill_rect(0, 0, iw, ih)
+    -- Draw checkerboard background (like Vala's draw_pre_view_area)
+    for (let ?cy = 0; cy < ih; cy += 1)
+        for (let ?cx = 0; cx < iw; cx += 1)
+            let is_light = (cx + cy) % 2
+            if is_light == 0
+                da.set_color(casu_themes.clr2())
+            else
+                da.set_color(casu_themes.bg())
+            da.fill_rect(cx, cy, 1, 1)
 
     let tidx = casu_model.selected_tile()
     let ts = casu_model.tile_size()
     let sc = 4
-    let ox = stdr.floor((iw - ts * sc) / 2)
-    let oy = stdr.floor((ih - ts * sc) / 2)
 
     for (let ?py = 0; py < ts; py += 1)
         for (let ?px = 0; px < ts; px += 1)
             let v = casu_model.get_pixel(tidx, px, py)
-            da.set_color(casu_themes.color_at(v))
-            da.fill_rect(ox + px * sc, oy + py * sc, sc, sc)
+            if v > 0
+                da.set_color(casu_themes.color_at(v))
+                da.fill_rect((px + shift_x) * sc, (py + shift_y) * sc, sc, sc)
 ;
 
 : draw_preview(da = cogito.DrawingArea, w = num, h = num) (( -- ))
@@ -552,6 +644,7 @@ def ICON_ARROW_V = [
     let ih = stdr.floor(h)
     if iw <= 0 || ih <= 0 <-
 
+    -- Draw checkerboard background (like Vala's draw_sprite_area)
     for (let ?cy = 0; cy < ih; cy += 1)
         for (let ?cx = 0; cx < iw; cx += 1)
             let is_light = (cx + cy) % 2
@@ -570,6 +663,7 @@ def ICON_ARROW_V = [
     let active_w = sw * cell_w
     let active_h = sh * cell_h
 
+    -- Fill active area background (like Vala)
     da.set_color(casu_themes.bg())
     da.fill_rect(0, 0, active_w, active_h)
 
@@ -581,6 +675,12 @@ def ICON_ARROW_V = [
     if sc < 1
         sc = 1
 
+    -- Determine if we should apply a pattern (like Vala's apply_pattern)
+    let apply_pattern = (last_applied_pattern != -1)
+    let pattern_mode = casu_model.selected_pattern()
+    if apply_pattern
+        pattern_mode = last_applied_pattern
+
     for (let ?r = 0; r < sh; r += 1)
         for (let ?c = 0; c < sw; c += 1)
             let cur = tidx + r * sw + c
@@ -589,7 +689,7 @@ def ICON_ARROW_V = [
             for (let ?py = 0; py < ts; py += 1)
                 for (let ?px = 0; px < ts; px += 1)
                     let raw = casu_model.get_pixel_mirror(cur, px, py, casu_model.get_mirror_h(), casu_model.get_mirror_v())
-                    let v = casu_model.apply_color_permutation(raw, casu_model.selected_pattern())
+                    let v = casu_model.apply_color_permutation(raw, pattern_mode)
                     if v > 0
                         da.set_color(casu_themes.color_at(v))
                         da.fill_rect(ox + px * sc, oy + py * sc, sc, sc)
@@ -710,7 +810,41 @@ def ICON_ARROW_V = [
     if col > 3 col = 3
     if row < 0 row = 0
     if row > 3 row = 3
-    casu_model.set_selected_pattern(row * 4 + col)
+    let tile_index = row * 4 + col
+    
+    -- Toggle pattern application (like Vala's handle_pattern_click)
+    if last_applied_pattern == tile_index
+        -- Toggle off: restore original colors
+        restore_sprite_original_colors()
+        last_applied_pattern = -1
+    else
+        -- Toggle on: store original colors and apply new pattern
+        store_sprite_original_colors()
+        casu_model.set_selected_pattern(tile_index)
+        last_applied_pattern = tile_index
+    rebuild()
+;
+
+: on_pattern_right_press(da = cogito.DrawingArea) (( -- ))
+    -- Right-click: just update pattern selection without applying (like Vala)
+    let mx = stdr.floor(stdr.num(da.get_x()))
+    let my = stdr.floor(stdr.num(da.get_y()))
+    let cell_w = stdr.floor(32 / 4)
+    let cell_h = stdr.floor(32 / 4)
+    let col = stdr.floor(mx / cell_w)
+    let row = stdr.floor(my / cell_h)
+    if col < 0 col = 0
+    if col > 3 col = 3
+    if row < 0 row = 0
+    if row > 3 row = 3
+    let tile_index = row * 4 + col
+    
+    -- If there's an applied pattern, restore original colors
+    if last_applied_pattern != -1
+        restore_sprite_original_colors()
+        last_applied_pattern = -1
+    
+    casu_model.set_selected_pattern(tile_index)
     rebuild()
 ;
 
@@ -732,9 +866,48 @@ def ICON_ARROW_V = [
 : apply_nmt_tool(tx = num, ty = num, erase = bool, allow_pick = bool) (( -- ))
     set_nmt_selection(tx, ty)
     if erase || ui_sel_tool == "eraser"
-        casu_model.place_nmt_tile(tx, ty, -1)
+        -- Erase sprite-sized area (like Vala)
+        let sw = casu_model.sprite_width()
+        let sh = casu_model.sprite_height()
+        for (let ?sy = 0; sy < sh; sy += 1)
+            for (let ?sx = 0; sx < sw; sx += 1)
+                let px = tx + sx
+                let py = ty + sy
+                if px >= 0 && px < casu_model.nmt_cols() && py >= 0 && py < casu_model.nmt_rows()
+                    casu_model.place_nmt_tile(px, py, -1)
     elif ui_sel_tool == "pen"
-        casu_model.place_nmt_tile(tx, ty, casu_model.selected_tile())
+        -- Place sprite-sized area (like Vala) - check bounds and overlaps first
+        let sw = casu_model.sprite_width()
+        let sh = casu_model.sprite_height()
+        -- Check if sprite fits within nametable bounds
+        if tx + sw > casu_model.nmt_cols() || ty + sh > casu_model.nmt_rows()
+            <-
+        -- Check for overlaps (don't place if any tile already exists)
+        for (let ?sy = 0; sy < sh; sy += 1)
+            for (let ?sx = 0; sx < sw; sx += 1)
+                let px = tx + sx
+                let py = ty + sy
+                if casu_model.get_nmt_tile(px, py) >= 0
+                    <-
+        -- All checks passed, place the sprite
+        let base_sel = casu_model.selected_tile()
+        let base_row = stdr.floor(base_sel / casu_model.sheet_cols())
+        let base_col = base_sel % casu_model.sheet_cols()
+        let pattern = casu_model.selected_pattern()
+        let mh = casu_model.get_mirror_h()
+        let mv = casu_model.get_mirror_v()
+        for (let ?sy = 0; sy < sh; sy += 1)
+            for (let ?sx = 0; sx < sw; sx += 1)
+                let px = tx + sx
+                let py = ty + sy
+                let src_col = base_col + sx
+                let src_row = base_row + sy
+                if src_col < casu_model.sheet_cols() && src_row < casu_model.sheet_rows()
+                    let src_tile = src_row * casu_model.sheet_cols() + src_col
+                    casu_model.set_nmt_tile(px, py, src_tile)
+                    casu_model.set_nmt_mirror_h(px, py, mh)
+                    casu_model.set_nmt_mirror_v(px, py, mv)
+                    casu_model.set_nmt_pattern(px, py, pattern)
     elif allow_pick && ui_sel_tool == "cursor"
         let picked = casu_model.get_nmt_tile(tx, ty)
         if picked >= 0
@@ -979,6 +1152,60 @@ def ICON_ARROW_V = [
     load_chr(path)
 ;
 
+: save_icn() (( -- ))
+    if stdr.len(current_path) > 0
+        let icn_path = stdr.stem(current_path) + ".icn"
+        let blob = casu_model.get_tile_blob(casu_model.selected_tile())
+        if tile_blob_ok(blob)
+            let ok = stdr.write_text_file(icn_path, blob)
+            if ok
+                rebuild()
+        <-
+    let picked = stdr.save_file_dialog("Save icon", filename, "icn")
+    if is_null(picked)
+        <-
+    let path = stdr.trim(str(picked))
+    if stdr.len(path) == 0
+        <-
+    let blob = casu_model.get_tile_blob(casu_model.selected_tile())
+    if tile_blob_ok(blob)
+        let ok = stdr.write_text_file(path, blob)
+        if ok
+            rebuild()
+;
+
+: open_icn() (( -- ))
+    let picked = stdr.open_file_dialog("Open icon", "icn")
+    if is_null(picked)
+        <-
+    let path = stdr.trim(str(picked))
+    if stdr.len(path) == 0
+        <-
+    let data = stdr.read_text_file(path)
+    if is_null(data)
+        <-
+    let blob = str(data)
+    if !tile_blob_ok(blob)
+        <-
+    let snap = casu_model.snapshot()
+    casu_model.set_tile_blob(casu_model.selected_tile(), blob)
+    casu_model.commit_stroke(snap)
+    rebuild()
+;
+
+: show_about() (( -- ))
+    let dlg = cogito.dialog("About Casu")
+    let box = cogito.vstack().set_gap(8).set_padding(16, 16, 16, 16)
+    box.add(cogito.label("Casu").set_class("casu-about-title"))
+    box.add(cogito.label("A tiny character/sprite editor").set_class("casu-about-subtitle"))
+    box.add(cogito.label("Version 1.0").set_class("casu-about-version"))
+    box.add(cogito.label("© 2025").set_class("casu-about-copyright"))
+    let btn = cogito.button("Close").on_click((b = cogito.Button) => { dlg.close() })
+    box.add(btn)
+    dlg.add(box)
+    main_win.set_dialog(dlg)
+;
+
 : new_file() (( -- ))
     casu_model.reset()
     filename = "untitled"
@@ -1022,6 +1249,47 @@ def ICON_ARROW_V = [
         <-
     let snap = casu_model.snapshot()
     casu_model.set_tile_blob(casu_model.selected_tile(), blob)
+    casu_model.commit_stroke(snap)
+    rebuild()
+;
+
+: cut_tile() (( -- ))
+    copy_tile()
+    let snap = casu_model.snapshot()
+    for (let ?py = 0; py < 8; py += 1)
+        for (let ?px = 0; px < 8; px += 1)
+            casu_model.set_pixel(casu_model.selected_tile(), px, py, 0)
+    casu_model.commit_stroke(snap)
+    rebuild()
+;
+
+: erase_tile() (( -- ))
+    let snap = casu_model.snapshot()
+    for (let ?py = 0; py < 8; py += 1)
+        for (let ?px = 0; px < 8; px += 1)
+            casu_model.set_pixel(casu_model.selected_tile(), px, py, 0)
+    casu_model.commit_stroke(snap)
+    rebuild()
+;
+
+: invert_tile() (( -- ))
+    let snap = casu_model.snapshot()
+    for (let ?py = 0; py < 8; py += 1)
+        for (let ?px = 0; px < 8; px += 1)
+            let c = casu_model.get_pixel(casu_model.selected_tile(), px, py)
+            casu_model.set_pixel(casu_model.selected_tile(), px, py, (c + 2) % 4)
+    casu_model.commit_stroke(snap)
+    rebuild()
+;
+
+: colorize_tile() (( -- ))
+    -- Change all non-zero pixels to currently selected color
+    let snap = casu_model.snapshot()
+    for (let ?py = 0; py < 8; py += 1)
+        for (let ?px = 0; px < 8; px += 1)
+            let c = casu_model.get_pixel(casu_model.selected_tile(), px, py)
+            if c > 0
+                casu_model.set_pixel(casu_model.selected_tile(), px, py, ui_sel_color)
     casu_model.commit_stroke(snap)
     rebuild()
 ;
@@ -1094,6 +1362,12 @@ def ICON_ARROW_V = [
     rebuild()
 ;
 
+: select_all_nmt() (( -- ))
+    -- Select entire nametable (set selection to 0,0 and mark active)
+    set_nmt_selection(0, 0)
+    rebuild()
+;
+
 : register_shortcuts() (( -- ))
     cogito.unregister_all_shortcuts()
 
@@ -1101,6 +1375,28 @@ def ICON_ARROW_V = [
     cogito.register_shortcut(SC_RIGHT, 0, () => { move_selection(1, 0) })
     cogito.register_shortcut(SC_UP, 0, () => { move_selection(0, -1) })
     cogito.register_shortcut(SC_DOWN, 0, () => { move_selection(0, 1) })
+
+    -- Arrow keys for zoom crosshair movement (like Vala)
+    cogito.register_shortcut(SC_LEFT, MOD_CMD, () => {
+        if is_zoomed && ui_zoom_ox > 0
+            ui_zoom_ox = ui_zoom_ox - 1
+            rebuild()
+    })
+    cogito.register_shortcut(SC_RIGHT, MOD_CMD, () => {
+        if is_zoomed && ui_zoom_ox < casu_model.sheet_cols() * 8 - 16
+            ui_zoom_ox = ui_zoom_ox + 1
+            rebuild()
+    })
+    cogito.register_shortcut(SC_UP, MOD_CMD, () => {
+        if is_zoomed && ui_zoom_oy > 0
+            ui_zoom_oy = ui_zoom_oy - 1
+            rebuild()
+    })
+    cogito.register_shortcut(SC_DOWN, MOD_CMD, () => {
+        if is_zoomed && ui_zoom_oy < casu_model.sheet_rows() * 8 - 16
+            ui_zoom_oy = ui_zoom_oy + 1
+            rebuild()
+    })
 
     cogito.register_shortcut(SC_LALT, MOD_ALT, () => { toggle_zoom() })
     cogito.register_shortcut(SC_RALT, MOD_ALT, () => { toggle_zoom() })
@@ -1114,9 +1410,36 @@ def ICON_ARROW_V = [
     cogito.register_shortcut(SC_3, 0, () => { select_color(2) })
     cogito.register_shortcut(SC_4, 0, () => { select_color(3) })
 
-    cogito.register_shortcut(SC_Q, 0, () => { select_tool("pen") })
-    cogito.register_shortcut(SC_W, 0, () => { select_tool("cursor") })
-    cogito.register_shortcut(SC_E, 0, () => { select_tool("zoom") })
+    -- Shift operations (like Vala)
+    cogito.register_shortcut(SC_RIGHT, MOD_SHIFT, () => {
+        let snap = casu_model.snapshot()
+        casu_model.shift_tile_right(casu_model.selected_tile())
+        casu_model.commit_stroke(snap)
+        rebuild()
+    })
+    cogito.register_shortcut(SC_LEFT, MOD_SHIFT, () => {
+        let snap = casu_model.snapshot()
+        casu_model.shift_tile_left(casu_model.selected_tile())
+        casu_model.commit_stroke(snap)
+        rebuild()
+    })
+    cogito.register_shortcut(SC_DOWN, MOD_SHIFT, () => {
+        let snap = casu_model.snapshot()
+        casu_model.shift_tile_up(casu_model.selected_tile())
+        casu_model.commit_stroke(snap)
+        rebuild()
+    })
+    cogito.register_shortcut(SC_UP, MOD_SHIFT, () => {
+        let snap = casu_model.snapshot()
+        casu_model.shift_tile_down(casu_model.selected_tile())
+        casu_model.commit_stroke(snap)
+        rebuild()
+    })
+    cogito.register_shortcut(SC_ESCAPE, MOD_SHIFT, () => {
+        shift_x = 0
+        shift_y = 0
+        rebuild()
+    })
 
     cogito.register_shortcut(SC_N, MOD_CMD, () => { new_file() })
     cogito.register_shortcut(SC_S, MOD_CMD, () => { save_chr() })
@@ -1124,7 +1447,14 @@ def ICON_ARROW_V = [
     cogito.register_shortcut(SC_R, MOD_CMD, () => { rename_current_file() })
     cogito.register_shortcut(SC_C, MOD_CMD, () => { copy_tile() })
     cogito.register_shortcut(SC_V, MOD_CMD, () => { paste_tile() })
-    cogito.register_shortcut(SC_X, MOD_CMD, () => {
+    cogito.register_shortcut(SC_X, MOD_CMD, () => { cut_tile() })
+    cogito.register_shortcut(SC_A, MOD_CMD, () => { select_all_nmt() })
+    cogito.register_shortcut(SC_I, 0, () => { invert_tile() })
+    cogito.register_shortcut(SC_C, 0, () => { colorize_tile() })
+    cogito.register_shortcut(SC_BACKSPACE, 0, () => { erase_tile() })
+    cogito.register_shortcut(SC_S, MOD_SHIFT, () => { save_icn() })
+    cogito.register_shortcut(SC_O, MOD_SHIFT, () => { open_icn() })
+    cogito.register_shortcut(SC_Q, MOD_CMD, () => {
         __cogito_window_close(main_win)
     })
 ;
