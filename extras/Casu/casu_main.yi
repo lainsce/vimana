@@ -1,0 +1,417 @@
+cask main
+
+bring stdr
+bring vimana
+bring casu_model
+bring casu_icons
+bring casu_edit
+bring casu_view
+bring casu_file
+
+-- Default palette (casu.tal default theme)
+def PAL_0 = "#000000"   -- black        (transparent / bg)
+def PAL_1 = "#77ddcc"   -- teal         (color 1)
+def PAL_2 = "#9977dd"   -- violet       (color 2)
+def PAL_3 = "#ffffff"   -- white        (color 3)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Hit-test helper
+-- ─────────────────────────────────────────────────────────────────────────────
+: in_rect(sx = num, sy = num,
+          rx = num, ry = num, rw = num, rh = num) (( bool ))
+    <- sx >= rx && sx < rx + rw && sy >= ry && sy < ry + rh
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Panel event handlers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Tileview click/drag: select, brush-paint, or zoom depending on tool and zoom mode
+: on_mouse_tileview(sx = num, sy = num, is_first = bool) (( -- ))
+    let ax = sx - casu_model.TILEVIEW_X
+    let ay = sy - casu_model.TILEVIEW_Y
+    let tx = stdr.floor(ax / 8)
+    let ty = stdr.floor(ay / 8)
+    if casu_model.zoom_on
+        if casu_model.tool == casu_model.TOOL_ZOOM && is_first
+            -- Zoom tool while zoomed: zoom out (single click)
+            casu_model.toggle_zoom()
+        elif casu_model.tool == casu_model.TOOL_BRUSH
+            -- Brush tool while zoomed: paint at zoom-adjusted coordinates
+            let px = casu_model.sel_zx + stdr.floor(ax / 8)
+            let py = casu_model.sel_zy + stdr.floor(ay / 8)
+            if px < 128 && py < 128
+                casu_edit.put_pixel(px, py, casu_model.color)
+        <-
+
+    if casu_model.tool == casu_model.TOOL_BRUSH
+        -- Paint at full 1:1 pixel resolution on the spritesheet
+        casu_edit.put_pixel(ax, ay, casu_model.color)
+    elif casu_model.tool == casu_model.TOOL_SELECTOR
+        if is_first
+            -- First click: set selection start
+            casu_model.set_sel(tx, ty, tx, ty)
+            casu_model.set_focus(tx, ty)
+            casu_model.set_selecting(true)
+        else
+            -- Drag: extend selection to
+            casu_model.set_sel_to(tx, ty)
+    elif casu_model.tool == casu_model.TOOL_ZOOM && is_first
+        -- Set zoom origin and toggle zoom mode (single click)
+        casu_model.set_sel_zx(tx * 8)
+        casu_model.set_sel_zy(ty * 8)
+        casu_model.set_sel(tx, ty, tx, ty)
+        casu_model.set_focus(tx, ty)
+        casu_model.toggle_zoom()
+;
+
+-- Zoomview click/drag: paint pixel in the zoomed focused tile (4× scale)
+-- or trigger shift ops when clicking arrows at the bottom
+: on_mouse_zoomview(sx = num, sy = num, is_left = bool) (( -- ))
+    let dy = sy - casu_model.ZOOM_Y
+    -- Arrow area: below the 32×32 zoom grid (dy >= 32)
+    if dy >= 32
+        let arrow_col = stdr.floor((sx - casu_model.ZOOM_X) / 8)
+        if arrow_col == 0
+            -- Vertical arrow: left=shift up, right=shift down
+            if is_left
+                casu_edit.run_on_selection(2)  -- shift up
+            else
+                casu_edit.run_on_selection(3)  -- shift down
+        elif arrow_col == 1
+            -- Horizontal arrow: left=shift right, right=shift left
+            if is_left
+                casu_edit.run_on_selection(5)  -- shift right
+            else
+                casu_edit.run_on_selection(4)  -- shift left
+        <-
+
+    -- Pixel painting in the 32×32 zoom area (brush tool only)
+    if casu_model.tool == casu_model.TOOL_BRUSH
+        let col = stdr.floor((sx - casu_model.ZOOM_X) / 4)
+        let row = stdr.floor(dy / 4)
+        if col >= 0 && col < 8 && row >= 0 && row < 8
+            let ax = casu_model.sel_x1 * 8 + col
+            let ay = casu_model.sel_y1 * 8 + row
+            casu_edit.put_pixel(ax, ay, casu_model.color)
+;
+
+-- Colorview click: edit palette RGB nibble values via slider interaction
+-- Row 0 = R slider, row 1 = G slider, row 2 = B slider
+-- X position sets the nibble value (0-15) for the active color slot
+: on_mouse_colorview(sx = num, sy = num, scr = vimana.screen) (( -- ))
+    let rx = sx - casu_model.COLOR_X
+    let ry = sy - casu_model.COLOR_Y
+    let channel = stdr.floor(ry / 8)
+    -- Clamp slider position to 0-15
+    let val = stdr.floor(rx / 2)
+    if val < 0
+        val = 0
+    if val > 15
+        val = 15
+    if channel == 0
+        casu_model.set_pal_r(casu_model.color, val)
+    elif channel == 1
+        casu_model.set_pal_g(casu_model.color, val)
+    elif channel == 2
+        casu_model.set_pal_b(casu_model.color, val)
+    -- Apply updated palette to screen
+    casu_file.apply_palette(scr)
+;
+
+-- Preview click: set ratio (sprite size) by clicking the 4×4 tile grid cell
+: on_mouse_preview(sx = num, sy = num) (( -- ))
+    let ?hx = stdr.floor((sx - casu_model.PREVIEW_X) / 8)
+    let ?vy = stdr.floor((sy - casu_model.PREVIEW_Y) / 8)
+    if hx > 3
+        hx = 3
+    if vy > 3
+        vy = 3
+    casu_model.set_ratio((vy + 1) * 16 + (hx + 1))
+;
+
+-- Nametable click: stamp tiles into nametable using current ratio (size)
+: on_mouse_nametable(sx = num, sy = num) (( -- ))
+    let ntx = stdr.floor((sx - casu_model.NTAB_X) / 8)
+    let nty = stdr.floor((sy - casu_model.NTAB_Y) / 8)
+    -- ratio: low nibble = cols, high nibble = rows
+    let cols = casu_model.ratio % 16
+    let rows = stdr.floor(casu_model.ratio / 16)
+    -- focus tile position in the 16×16 sheet grid
+    let focus_idx = stdr.floor(casu_model.focus / casu_model.TILE_BYTES)
+    let ftx = focus_idx % 16
+    let fty = stdr.floor(focus_idx / 16)
+    -- stamp the block
+    for (let ?ry = 0; ry < rows; ry += 1)
+        for (let ?rx = 0; rx < cols; rx += 1)
+            let dx = ntx + rx
+            let dy = nty + ry
+            if dx < 16 && dy < 16
+                let src_tx = (ftx + rx) % 16
+                let src_ty = (fty + ry) % 16
+                let tile_idx = src_ty * 16 + src_tx
+                let base = (dy * 16 + dx) * 3
+                casu_model.ntab[base]     = tile_idx % 256
+                casu_model.ntab[base + 1] = stdr.floor(tile_idx / 256)
+                casu_model.ntab[base + 2] = casu_model.blend
+;
+
+-- Blendview click: select blend mode from 4×4 grid or toggle direction arrows
+: on_mouse_blendview(sx = num, sy = num) (( -- ))
+    let rx = stdr.floor((sx - casu_model.BLEND_X) / 8)
+    let ry = stdr.floor((sy - casu_model.BLEND_Y) / 8)
+    let blend_idx = ry * 4 + rx
+    if blend_idx >= 0 && blend_idx < 16
+        -- Set blend mode: keep upper bits (0xB0 mask), replace lower nibble
+        let new_blend = stdr.floor(casu_model.blend / 176) * 176 + blend_idx
+        casu_model.set_blend(new_blend)
+    elif ry >= 4
+        -- Bottom row: arrow area
+        if rx == 2
+            -- Toggle vertical flip bit (0x20)
+            let cur = casu_model.blend
+            if (cur % 64) >= 32
+                casu_model.set_blend(cur - 32)
+            else
+                casu_model.set_blend(cur + 32)
+        elif rx == 3
+            -- Toggle horizontal flip bit (0x10)
+            let cur = casu_model.blend
+            if (cur % 32) >= 16
+                casu_model.set_blend(cur - 16)
+            else
+                casu_model.set_blend(cur + 16)
+;
+
+-- Toolview click: color circles (0-23), tools (32-47), filepath area (64+),
+-- file ops on the right (make at x2-32, load at x2-24, save at x2-8)
+: on_mouse_toolview(sx = num, sy = num,
+                    fsys = vimana.file) (( -- ))
+    let rx = sx - casu_model.TOOL_X
+    let x2 = casu_model.TOOL_W   -- relative: 264
+    -- Color circles: 0-7 = color 1, 8-15 = color 2, 16-23 = color 3
+    if rx >= 0 && rx < 8
+        casu_model.set_color(1)
+    elif rx >= 8 && rx < 16
+        casu_model.set_color(2)
+    elif rx >= 16 && rx < 24
+        casu_model.set_color(3)
+    -- Tools: brush=32, select=40, zoom=48
+    elif rx >= 32 && rx < 40
+        casu_model.set_tool(casu_model.TOOL_BRUSH)
+    elif rx >= 40 && rx < 48
+        casu_model.set_tool(casu_model.TOOL_SELECTOR)
+    elif rx >= 48 && rx < 56
+        casu_model.set_tool(casu_model.TOOL_ZOOM)
+    -- File ops (right side, relative from TOOL_X)
+    -- make at x2-32=232, load at x2-24=240, save at x2-8=256
+    elif rx >= x2 - 32 && rx < x2 - 24
+        casu_file.file_new()
+        casu_model.set_dirty()
+    elif rx >= x2 - 24 && rx < x2 - 16
+        if casu_file.is_mono(casu_model.filepath)
+            casu_file.file_open_mono(fsys, casu_model.filepath)
+        else
+            casu_file.file_open(fsys, casu_model.filepath)
+        casu_model.set_dirty()
+    elif rx >= x2 - 8 && rx < x2
+        if casu_file.is_mono(casu_model.filepath)
+            casu_file.file_save_mono(fsys, casu_model.filepath)
+        else
+            casu_file.file_save(fsys, casu_model.filepath)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+-> () (( -- ))
+    let sys = vimana.system()
+    let scr = vimana.screen("Casu", casu_model.SCR_W, casu_model.SCR_H, 1)
+    let fsys = sys.file()
+
+    -- Set default palette
+    scr.set_palette(0, PAL_0)
+    scr.set_palette(1, PAL_1)
+    scr.set_palette(2, PAL_2)
+    scr.set_palette(3, PAL_3)
+
+    -- Try to load theme from default location
+    casu_file.load_theme(fsys, ".theme")
+
+    -- Initialize model (allocates sheet/ntab arrays)
+    casu_model.init()
+
+    -- Install font into glyph memory
+    casu_icons.setup_font(scr)
+
+    -- Upload initial (empty) sprite tiles to sprite memory
+    casu_edit.sync_all(scr)
+
+    -- Build first frame
+    casu_view.draw_all(scr)
+    scr.present()
+
+    let dev = sys.device()
+
+    sys.run(scr, () => {
+        dev.poll()
+        let ?needs_redraw = casu_model.dirty
+
+        -- ─── Mouse ────────────────────────────────────────────────────────
+        let is_left  = dev.mouse_down(vimana.mouse_left)
+        let is_right = dev.mouse_down(vimana.mouse_right)
+        let is_first = dev.mouse_pressed(vimana.mouse_left)
+        let sx = dev.pointer_x()
+        let sy = dev.pointer_y()
+
+        -- Continuous areas (brush painting uses mouse_down for drag)
+        if is_left || is_right
+            if in_rect(sx, sy, casu_model.TILEVIEW_X, casu_model.TILEVIEW_Y,
+                       casu_model.TILEVIEW_W, casu_model.TILEVIEW_H)
+                on_mouse_tileview(sx, sy, is_first)
+                needs_redraw = true
+            elif in_rect(sx, sy, casu_model.ZOOM_X, casu_model.ZOOM_Y,
+                         casu_model.ZOOM_W, casu_model.ZOOM_H)
+                on_mouse_zoomview(sx, sy, is_left)
+                needs_redraw = true
+            elif in_rect(sx, sy, casu_model.COLOR_X, casu_model.COLOR_Y,
+                         casu_model.COLOR_W, casu_model.COLOR_H)
+                on_mouse_colorview(sx, sy, scr)
+                needs_redraw = true
+
+        -- Single-click areas (only fire on press, not hold)
+        if is_first
+            if in_rect(sx, sy, casu_model.PREVIEW_X, casu_model.PREVIEW_Y,
+                         casu_model.PREVIEW_W, casu_model.PREVIEW_H)
+                on_mouse_preview(sx, sy)
+                needs_redraw = true
+            elif in_rect(sx, sy, casu_model.TOOL_X, casu_model.TOOL_Y,
+                         casu_model.TOOL_W, casu_model.TOOL_H)
+                on_mouse_toolview(sx, sy, fsys)
+                needs_redraw = true
+            elif in_rect(sx, sy, casu_model.NTAB_X, casu_model.NTAB_Y,
+                         casu_model.NTAB_W, casu_model.NTAB_H)
+                on_mouse_nametable(sx, sy)
+                needs_redraw = true
+            elif in_rect(sx, sy, casu_model.BLEND_X, casu_model.BLEND_Y,
+                         casu_model.BLEND_W, casu_model.BLEND_H)
+                on_mouse_blendview(sx, sy)
+                needs_redraw = true
+
+        -- Release: end drag selection
+        if !is_left && !is_right
+            if casu_model.selecting
+                casu_model.set_selecting(false)
+
+        -- ─── Keyboard: Ctrl+key shortcuts ────────────────────────────────
+        let ctrl = dev.key_down(casu_model.KEY_LCTRL)
+        let shift = dev.key_down(casu_model.KEY_LSHIFT)
+
+        if ctrl
+            if dev.key_pressed(casu_model.KEY_N)
+                casu_file.file_new()
+                casu_model.set_dirty()
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_O)
+                if casu_file.is_mono(casu_model.filepath)
+                    casu_file.file_open_mono(fsys, casu_model.filepath)
+                else
+                    casu_file.file_open(fsys, casu_model.filepath)
+                casu_model.set_dirty()
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_S)
+                if casu_file.is_mono(casu_model.filepath)
+                    casu_file.file_save_mono(fsys, casu_model.filepath)
+                else
+                    casu_file.file_save(fsys, casu_model.filepath)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_P)
+                casu_file.save_theme(fsys, ".theme")
+            elif dev.key_pressed(casu_model.KEY_A)
+                casu_edit.select_all()
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_C)
+                if shift
+                    casu_edit.copy_icn()
+                else
+                    casu_edit.copy_chr()
+            elif dev.key_pressed(casu_model.KEY_V)
+                casu_edit.paste()
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_X)
+                casu_edit.cut()
+                needs_redraw = true
+
+        -- ─── Keyboard: unmodified keys ───────────────────────────────────
+        if !ctrl
+            -- Tool selection
+            if dev.key_pressed(casu_model.KEY_Q)
+                casu_model.set_tool(casu_model.TOOL_BRUSH)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_W)
+                casu_model.set_tool(casu_model.TOOL_SELECTOR)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_E)
+                casu_model.set_tool(casu_model.TOOL_ZOOM)
+                needs_redraw = true
+            -- Color pick
+            elif dev.key_pressed(casu_model.KEY_1)
+                casu_model.set_color(0)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_2)
+                casu_model.set_color(1)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_3)
+                casu_model.set_color(2)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_4)
+                casu_model.set_color(3)
+                needs_redraw = true
+            -- Edit operations
+            elif dev.key_pressed(casu_model.KEY_I)
+                casu_edit.run_on_selection(1)  -- invert
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_D)
+                casu_model.toggle_dir()
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_BACKSPACE)
+                casu_edit.run_on_selection(0)  -- erase
+                needs_redraw = true
+            -- Arrow key navigation
+            elif dev.key_pressed(casu_model.KEY_UP)
+                casu_model.mod_selection(0, -1)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_DOWN)
+                casu_model.mod_selection(0, 1)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_LEFT)
+                casu_model.mod_selection(-1, 0)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_RIGHT)
+                casu_model.mod_selection(1, 0)
+                needs_redraw = true
+
+        -- ─── Shift+Arrow: scale selection ────────────────────────────────
+        if shift && !ctrl
+            if dev.key_pressed(casu_model.KEY_UP)
+                casu_model.scale_selection(0, -1)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_DOWN)
+                casu_model.scale_selection(0, 1)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_LEFT)
+                casu_model.scale_selection(-1, 0)
+                needs_redraw = true
+            elif dev.key_pressed(casu_model.KEY_RIGHT)
+                casu_model.scale_selection(1, 0)
+                needs_redraw = true
+
+        -- ─── Sync and redraw ─────────────────────────────────────────────
+        if needs_redraw
+            if casu_model.dirty
+                casu_edit.sync_all(scr)
+                casu_model.clear_dirty()
+            casu_view.draw_all(scr)
+            scr.present()
+    })
+;

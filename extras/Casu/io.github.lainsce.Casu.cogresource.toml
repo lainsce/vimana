@@ -1,8 +1,0 @@
-[cogresource]
-prefix = "/io/github/lainsce/Casu"
-
-[[cogresource.file]]
-src = "io.github.lainsce.Casu.svg"
-
-[[cogresource.file]]
-src = "io.github.lainsce.Casu-symbolic.svg"

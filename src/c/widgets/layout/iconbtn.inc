@@ -1,2 +1,0 @@
-case COGITO_ICONBTN:
-    

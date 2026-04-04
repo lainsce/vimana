@@ -1,5 +1,0 @@
-cask casu_style
-
-:: sum_for_theme(idx = num) (( string ))
-    <- "themes/casu_classic.sum"
-;

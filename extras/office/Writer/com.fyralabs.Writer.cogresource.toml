@@ -1,8 +1,0 @@
-[cogresource]
-prefix = "/com/fyralabs/Writer"
-
-[[cogresource.file]]
-src = "com.fyralabs.Writer.svg"
-
-[[cogresource.file]]
-src = "com.fyralabs.Writer-symbolic.svg"

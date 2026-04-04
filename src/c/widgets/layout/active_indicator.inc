@@ -1,2 +1,0 @@
-case COGITO_ACTIVE_INDICATOR:
-  break;

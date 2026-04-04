@@ -1,0 +1,5 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="1024" height="1024" fill="black"/>
+<rect x="120" y="120" width="250" height="784" rx="50" fill="#72DEC2"/>
+<rect width="350.017" height="350.017" rx="50" transform="matrix(0.707109 -0.707105 0.707109 0.707105 412 512.497)" fill="#72DEC2"/>
+</svg>

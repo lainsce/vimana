@@ -1,8 +1,0 @@
-[cogresource]
-prefix = "/com/fyralabs/Tabula"
-
-[[cogresource.file]]
-src = "com.fyralabs.Tabula.svg"
-
-[[cogresource.file]]
-src = "com.fyralabs.Tabula-symbolic.svg"

@@ -1,0 +1,509 @@
+cask main
+
+bring stdr
+bring cogito
+bring outline_parser
+bring right_bitmap_text
+bring right_editor_surface
+
+def outline_canvas = cogito.drawing_area()
+def editor_canvas = cogito.drawing_area()
+def ?editor_text = "cask main\n\nbring stdr\nbring cogito\n"
+def ?current_outline = []: [any]
+def ?outline_selected = -1
+def DEBUG_FIXED_RENDER = false
+def DEBUG_EDITOR_LITERAL = "CASK MAIN"
+def DEBUG_OUTLINE_LITERAL = "OUTLINE TEST"
+def DEBUG_TEXT_PROBE = false
+def ?did_text_probe = false
+def DEBUG_DISABLE_TEXT_SYNC = false
+def DEBUG_DIRECT_MODEL_RENDER = false
+def ?did_model_probe = false
+
+def EDITOR_PAD_X = 8
+def EDITOR_PAD_Y = 8
+def EDITOR_ROW_H = 20
+def EDITOR_SCALE = 1
+def EDITOR_MAX_CHARS = 56
+
+def SC_RETURN = 40
+def SC_TAB = 43
+def SC_KP_ENTER = 88
+
+def OUTLINE_PAD_X = 6
+def OUTLINE_PAD_Y = 6
+def OUTLINE_ROW_H = 20
+def OUTLINE_SCALE = 1
+def OUTLINE_MAX_CHARS = 16
+
+: type_tag(kind = string) (( string ))
+    if kind == "pub_fn" <- "pub"
+    if kind == "fn" <- "fn"
+    if kind == "struct" <- "struct"
+    if kind == "cask" <- "cask"
+    if kind == "bring" <- "bring"
+    if kind == "const" <- "const"
+    if kind == "line" <- "line"
+    <- "item"
+;
+
+: line_to_char_pos(code = string, target_line = num) (( num ))
+    if target_line <= 0
+        <- 0
+
+    let total = stdr.len(code)
+    let ?line = 0
+    let ?start = 0
+
+    for (let ?i = 0; i < total; i += 1)
+        if line == target_line
+            <- start
+        if stdr.slice(code, i, i + 1) == "\n"
+            line <- line + 1
+            start = i + 1
+
+    <- start
+;
+
+: kind_color(kind = string) (( string ))
+    if kind == "cask" || kind == "pub_fn"
+        <- "#114339"
+    if kind == "bring" || kind == "const"
+        <- "#15485A"
+    if kind == "struct" || kind == "fn"
+        <- "#25436F"
+    <- "#373737"
+;
+
+: line_preview(text = string) (( string ))
+    let t = stdr.trim(text)
+    let n = stdr.len(t)
+    if n <= 48
+        <- t
+    <- stdr.slice(t, 0, 48) + "..."
+;
+
+: add_outline_item(label = string, line = num) (( -- ))
+    stdr.push(current_outline, { "label": label, "line": line })
+;
+
+: rebuild_outline(txt = string) (( -- ))
+    current_outline = []: [any]
+
+    let total = stdr.len(txt)
+    let ?start = 0
+    let ?line_no = 0
+
+    for (let ?i = 0; i <= total; i += 1)
+        let at_end = i >= total
+        let is_nl = !at_end && stdr.slice(txt, i, i + 1) == "\n"
+        if !at_end && !is_nl
+            continue
+
+        let line = stdr.slice(txt, start, i)
+        let trimmed = stdr.trim(line)
+        let n = stdr.len(trimmed)
+
+        if n > 0
+            if stdr.starts_with(trimmed, "cask ")
+                add_outline_item(line_preview(stdr.slice(trimmed, 5, n)), line_no)
+            elif stdr.starts_with(trimmed, "bring ")
+                add_outline_item(line_preview(stdr.slice(trimmed, 6, n)), line_no)
+            elif stdr.starts_with(trimmed, "pub ,: ")
+                add_outline_item(line_preview(stdr.slice(trimmed, 6, n)), line_no)
+            elif stdr.starts_with(trimmed, ",: ")
+                add_outline_item(line_preview(stdr.slice(trimmed, 3, n)), line_no)
+            elif stdr.starts_with(trimmed, "!: ")
+                add_outline_item(line_preview(stdr.slice(trimmed, 3, n)), line_no)
+            elif stdr.starts_with(trimmed, ": ") && !stdr.starts_with(trimmed, ":: ")
+                add_outline_item(line_preview(stdr.slice(trimmed, 2, n)), line_no)
+            elif stdr.starts_with(trimmed, ":: ")
+                add_outline_item(line_preview(stdr.slice(trimmed, 3, n)), line_no)
+            else
+                add_outline_item(line_preview(trimmed), line_no)
+
+        start = i + 1
+        line_no = line_no + 1
+;
+
+: line_col_from_index(code = string, pos = num) (( [any] ))
+    let total = stdr.len(code)
+    let p = pos
+    if p < 0
+        p = 0
+    if p > total
+        p = total
+
+    let ?line = 0
+    let ?col = 0
+    for (let ?i = 0; i < p; i += 1)
+        if stdr.slice(code, i, i + 1) == "\n"
+            line <- line + 1
+            col = 0
+        else
+            col <- col + 1
+    <- [line, col]
+;
+
+: first_line_of(code = string) (( string ))
+    let total = stdr.len(code)
+    for (let ?i = 0; i < total; i += 1)
+        if stdr.slice(code, i, i + 1) == "\n"
+            <- stdr.slice(code, 0, i)
+    <- code
+;
+
+: debug_dump_model_state() (( -- ))
+    if !did_model_probe
+        did_model_probe = true
+
+        let first_line = first_line_of(editor_text)
+        stdr.write("RIGHT_MODEL:editor_len=$$stdr.len(editor_text)$$ first_line_len=$$stdr.len(first_line)$$\n")
+        stdr.write("RIGHT_MODEL:first_line=<<<$$first_line$$>>>\n")
+
+        let outline_n = stdr.len(current_outline)
+        stdr.write("RIGHT_MODEL:outline_n=$$outline_n$$\n")
+        for (let ?i = 0; i < outline_n && i < 4; i += 1)
+            let item = current_outline[i]
+            let label = str(item["label"] ?? "")
+            stdr.write("RIGHT_MODEL:outline[$$i$$]=len=$$stdr.len(label)$$ <<<$$label$$>>>\n")
+;
+
+: draw_editor_canvas(da = cogito.DrawingArea, w = any, h = any) (( -- ))
+    if DEBUG_FIXED_RENDER
+        let iw = stdr.floor(stdr.num(w))
+        let ih = stdr.floor(stdr.num(h))
+        da.set_color("#FFFFFF")
+        da.fill_rect(0, 0, iw, ih)
+        right_bitmap_text.draw_text(
+            da,
+            8,
+            8,
+            DEBUG_EDITOR_LITERAL,
+            "#1A1A1A",
+            1,
+            32
+        )
+    elif DEBUG_DIRECT_MODEL_RENDER
+        let iw = stdr.floor(stdr.num(w))
+        let ih = stdr.floor(stdr.num(h))
+        da.set_color("#FFFFFF")
+        da.fill_rect(0, 0, iw, ih)
+        let total = stdr.len(editor_text)
+        let ?start = 0
+        let ?line_no = 0
+        for (let ?i = 0; i <= total; i += 1)
+            let at_end = i >= total
+            let is_nl = !at_end && stdr.slice(editor_text, i, i + 1) == "\n"
+            if !at_end && !is_nl
+                continue
+            let y = EDITOR_PAD_Y + line_no * EDITOR_ROW_H
+            if y + EDITOR_ROW_H > ih
+                break
+            let line = stdr.slice(editor_text, start, i)
+            right_bitmap_text.draw_text(
+                da,
+                EDITOR_PAD_X,
+                y,
+                line,
+                "#1A1A1A",
+                EDITOR_SCALE,
+                EDITOR_MAX_CHARS
+            )
+            start = i + 1
+            line_no = line_no + 1
+
+        let lc = line_col_from_index(editor_text, editor_canvas.caret())
+        let caret_line = stdr.floor(stdr.num(lc[0] ?? 0))
+        let caret_col = stdr.floor(stdr.num(lc[1] ?? 0))
+        let cx = EDITOR_PAD_X + caret_col * right_bitmap_text.glyph_advance(EDITOR_SCALE)
+        let cy = EDITOR_PAD_Y + caret_line * EDITOR_ROW_H
+        da.set_color("#0F0F0F")
+        da.fill_rect(cx, cy - 1, 2, EDITOR_ROW_H - 2)
+    else
+        let sel_start = editor_canvas.sel_start()
+        let sel_end = editor_canvas.sel_end()
+        let caret = editor_canvas.caret()
+        right_editor_surface.draw(da, w, h, editor_text, sel_start, sel_end, caret)
+;
+
+: draw_outline_canvas(da = cogito.DrawingArea, w = any, h = any) (( -- ))
+    let iw = stdr.floor(stdr.num(w))
+    let ih = stdr.floor(stdr.num(h))
+
+    da.set_color("#FFFFFF")
+    da.fill_rect(0, 0, iw, ih)
+
+    if DEBUG_FIXED_RENDER
+        right_bitmap_text.draw_text(
+            da,
+            OUTLINE_PAD_X,
+            OUTLINE_PAD_Y,
+            DEBUG_OUTLINE_LITERAL,
+            "#373737",
+            OUTLINE_SCALE,
+            24
+        )
+    elif DEBUG_DIRECT_MODEL_RENDER
+        let ?row_text = "(none)"
+        if stdr.len(current_outline) > 0
+            let item = current_outline[0]
+            row_text = str(item["label"] ?? "")
+        right_bitmap_text.draw_text(
+            da,
+            OUTLINE_PAD_X,
+            OUTLINE_PAD_Y,
+            row_text,
+            "#373737",
+            OUTLINE_SCALE,
+            24
+        )
+    else
+        let n = stdr.len(current_outline)
+        if n <= 0
+            right_bitmap_text.draw_text(
+                da,
+                OUTLINE_PAD_X,
+                OUTLINE_PAD_Y,
+                "(no outline items)",
+                "#373737",
+                OUTLINE_SCALE,
+                OUTLINE_MAX_CHARS
+            )
+        else
+            for (let ?i = 0; i < n; i += 1)
+                let y = OUTLINE_PAD_Y + i * OUTLINE_ROW_H
+                if y + OUTLINE_ROW_H > ih
+                    break
+
+                let item = current_outline[i]
+                let label = str(item["label"] ?? "")
+                let row_text = "$$label$$"
+
+                let ?fg = "#373737"
+                if i == outline_selected
+                    da.set_color("#1F5D57")
+                    da.fill_rect(1, y - 1, iw - 2, OUTLINE_ROW_H - 1)
+                    fg = "#F3FFFC"
+
+                right_bitmap_text.draw_text(
+                    da,
+                    OUTLINE_PAD_X,
+                    y + 2,
+                    row_text,
+                    fg,
+                    OUTLINE_SCALE,
+                    OUTLINE_MAX_CHARS
+                )
+;
+
+: update_outline(txt = string) (( -- ))
+    editor_text = txt
+    current_outline = outline_parser.parse_outline(txt)
+
+    let n = stdr.len(current_outline)
+    if n <= 0
+        outline_selected = -1
+    elif outline_selected >= n
+        outline_selected = n - 1
+
+    editor_canvas.clear()
+    outline_canvas.clear()
+;
+
+: looks_line_fragmented(txt = string) (( bool ))
+    let n = stdr.len(txt)
+    if n < 6
+        <- false
+
+    let ?nl = 0
+    for (let ?i = 0; i < n; i += 1)
+        if stdr.slice(txt, i, i + 1) == "\n"
+            nl <- nl + 1
+
+    <- nl * 2 >= n
+;
+
+: defragment_lines(txt = string) (( string ))
+    if !looks_line_fragmented(txt)
+        <- txt
+
+    let n = stdr.len(txt)
+    let ?out = ""
+
+    for (let ?i = 0; i < n; i += 1)
+        let ch = stdr.slice(txt, i, i + 1)
+        if ch != "\n"
+            out = "$$out$$$$ch$$"
+            continue
+
+        let prev = stdr.slice(txt, i - 1, i)
+        let next = stdr.slice(txt, i + 1, i + 2)
+        let keep = prev == "\n" || next == "\n"
+        if keep
+            out = "$$out$$\n"
+
+    <- out
+;
+
+: normalize_sel_pair(a = num, b = num) (( [any] ))
+    let ?x = stdr.floor(stdr.num(a))
+    let ?y = stdr.floor(stdr.num(b))
+    if x <= y
+        <- [x, y]
+    <- [y, x]
+;
+
+: insert_text_at_selection(tv = cogito.DrawingArea, chunk = string) (( -- ))
+    let txt = editor_text
+    let pair = normalize_sel_pair(
+        tv.sel_start(),
+        tv.sel_end()
+    )
+    let a = stdr.floor(stdr.num(pair[0] ?? 0))
+    let b = stdr.floor(stdr.num(pair[1] ?? 0))
+
+    let prefix = stdr.slice(txt, 0, a)
+    let suffix = stdr.slice(txt, b, stdr.len(txt))
+    let next = "$$prefix$$$$chunk$$$$suffix$$"
+
+    tv.set_text(next)
+    let pos = a + stdr.len(chunk)
+    tv.set_selection(pos, pos)
+    update_outline(next)
+;
+
+: refresh_editor_key(tv = cogito.DrawingArea, scancode = num, shift = bool, cmd = bool) (( bool ))
+    if !cmd && scancode == SC_TAB
+        insert_text_at_selection(tv, "    ")
+        <- true
+
+    if !cmd && (scancode == SC_RETURN || scancode == SC_KP_ENTER)
+        insert_text_at_selection(tv, "\n")
+        <- true
+
+    tv.clear()
+    <- false
+;
+
+: build_window(win = cogito.Window) (( -- ))
+    win.add(cogito.window_bar())
+    let bar = cogito.appbar("", "")
+    .set_class("right-appbar")
+    win.add(bar)
+
+    let root = cogito.hstack()
+    .set_gap(0)
+    .set_padding(0, 0, 0, 0)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_class("right-root")
+
+    let editor_frame = cogito.vstack()
+    .set_gap(8)
+    .set_padding(8, 8, 8, 8)
+    .set_hexpand(true)
+    .set_vexpand(true)
+    .set_class("right-editor-frame")
+
+    editor_canvas.set_hexpand(true)
+    .set_vexpand(true)
+    .set_size_request(-1, 520)
+    .set_class("right-editor-canvas")
+    .set_editable(true)
+    .set_text(editor_text)
+    cogito.node_set_hit_targets_natural(editor_canvas, true)
+
+    if DEBUG_TEXT_PROBE && !did_text_probe
+        did_text_probe = true
+        let roundtrip = editor_canvas.text()
+        stdr.write("RIGHT_PROBE:set_len=$$stdr.len(editor_text)$$ get_len=$$stdr.len(roundtrip)$$\n")
+        stdr.write("RIGHT_PROBE:set=<<<$$editor_text$$>>>\n")
+        stdr.write("RIGHT_PROBE:get=<<<$$roundtrip$$>>>\n")
+
+    editor_canvas.on_draw((da = cogito.DrawingArea, w = any, h = any) => {
+        draw_editor_canvas(da, w, h)
+    })
+
+    editor_frame.add(editor_canvas)
+
+    let sidebar = cogito.vstack()
+    .set_gap(8)
+    .set_padding(8, 8, 8, 8)
+    .set_size_request(300, -1)
+    .set_hexpand(false)
+    .set_vexpand(true)
+    .set_class("right-sidebar")
+
+    outline_canvas.set_hexpand(true)
+    .set_vexpand(true)
+    .set_size_request(280, 520)
+    .set_class("right-outline-canvas")
+    cogito.node_set_hit_targets_natural(outline_canvas, true)
+
+    outline_canvas.on_draw((da = cogito.DrawingArea, w = any, h = any) => {
+        draw_outline_canvas(da, w, h)
+    })
+
+    sidebar.add(outline_canvas)
+
+    if !DEBUG_DISABLE_TEXT_SYNC
+        editor_canvas.on_change((da = cogito.DrawingArea) => {
+            let txt = da.text()
+            if looks_line_fragmented(txt)
+                let sane = defragment_lines(txt)
+                if stdr.len(sane) <= 0
+                    sane = editor_text
+                da.set_text(sane)
+                let end = stdr.len(sane)
+                da.set_selection(end, end)
+                editor_canvas.clear()
+                update_outline(sane)
+            else
+                update_outline(txt)
+        })
+
+    editor_canvas.on_key(refresh_editor_key)
+
+    outline_canvas.on_press((da = cogito.DrawingArea) => {
+        let py = stdr.floor(stdr.num(da.get_y()))
+        let idx = stdr.floor((py - OUTLINE_PAD_Y) / OUTLINE_ROW_H)
+
+        if idx >= 0 && idx < stdr.len(current_outline)
+            outline_selected = idx
+            let item = current_outline[idx]
+            let line_any = item["line"] ?? 0
+            let pos = line_to_char_pos(editor_text, line_any)
+            editor_canvas.set_selection(pos, pos)
+            editor_canvas.clear()
+            outline_canvas.clear()
+    })
+
+    root.add(sidebar)
+    root.add(editor_frame)
+    win.add(root)
+
+    update_outline(editor_text)
+    debug_dump_model_state()
+;
+
+-> ()
+    cogito.load_sum("right.sum")
+
+    let app = cogito.app()
+    .set_appid("io.github.lainsce.Right")
+    .set_app_name("Right")
+    .set_icon("io.github.lainsce.Right.svg")
+    .set_mono_icon("io.github.lainsce.Right-symbolic.svg")
+    .set_accent_color("#7f7f7f", false)
+
+    let win = cogito.window_size("Right", 1024, 720)
+    .set_resizable(true)
+    .set_autosize(false)
+    .set_size_request(1024, 720)
+    .build((w = cogito.Window) => {
+        build_window(w)
+    })
+
+    app.run(win)
+;

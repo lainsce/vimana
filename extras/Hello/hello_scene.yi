@@ -1,0 +1,24 @@
+cask hello_scene
+
+bring vimana
+
+: pad2(v = num) (( string ))
+    if v < 10
+        <- "0" + str(v)
+    <- str(v)
+;
+
+: draw(scr = vimana.screen, dev = vimana.device, dt = vimana.datetime, sys = vimana.system) (( -- ))
+    let now = dt.now()
+    scr.clear(vimana.color_bg)
+    .put_text(32, 32,  "HELLO FROM VIMANA!", vimana.color_2, vimana.color_bg)
+    .put_text(32, 88,  "POINTER X: " + str(dev.pointer_x()) + " Y: " + str(dev.pointer_y()), vimana.color_3, vimana.color_bg)
+    .put_text(32, 104, "TILE    X: " + str(dev.tile_x()) + "  Y: " + str(dev.tile_y()), vimana.color_3, vimana.color_bg)
+    .put_text(32, 120, "DATE: " + str(dt.year_at(now)) + "-" + pad2(dt.month_at(now)) + "-" + pad2(dt.day_at(now)), vimana.color_2, vimana.color_bg)
+    .put_text(32, 136, "TIME: " + pad2(dt.hour_at(now)) + ":" + pad2(dt.minute_at(now)) + ":" + pad2(dt.second_at(now)), vimana.color_2, vimana.color_bg)
+
+    if dev.mouse_down(vimana.mouse_left)
+        scr.put_text(32, 152, "MOUSE LEFT DOWN", vimana.color_1, vimana.color_bg)
+
+    scr.present()
+;

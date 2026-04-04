@@ -2,492 +2,317 @@ cask casu_model
 
 bring stdr
 
--- 16x16 grid of 8x8 tiles = 256 tiles, 128x128 pixels total
-def SHEET_COLS = 16
-def SHEET_ROWS = 16
-def TILE_SIZE = 8
-def TILE_COUNT = 256
-def PIXELS_PER_TILE = 64
+-- Screen dimensions
+def SCR_W = 302
+def SCR_H = 240
 
--- Nametable: 16x16 grid of placed tiles with transforms
-def NMT_COLS = 16
-def NMT_ROWS = 16
+-- View layout constants (matching nasu.tal set-size calls)
+def TILEVIEW_X  = 18       -- frame.x1 - 1
+def TILEVIEW_Y  = 83       -- frame.y1 + 56
+def TILEVIEW_W  = 128      -- 16 tiles × 8px
+def TILEVIEW_H  = 128
+def NTAB_X      = 156      -- frame.x1 + 137
+def NTAB_Y      = 83
+def NTAB_W      = 128
+def NTAB_H      = 128
+def ZOOM_X      = 18
+def ZOOM_Y      = 27
+def ZOOM_W      = 31       -- 8 pixels × 4px/pixel = 32, panel width
+def ZOOM_H      = 47
+def PREVIEW_X   = 66       -- frame.x1 + 0x2f
+def PREVIEW_Y   = 27
+def PREVIEW_W   = 31
+def PREVIEW_H   = 47
+def COLOR_X     = 114      -- frame.x1 + 0x5f
+def COLOR_Y     = 27
+def COLOR_W     = 32       -- 16 steps × 2px
+def COLOR_H     = 47
+def BLEND_X     = 162      -- frame.x1 + 0x8f
+def BLEND_Y     = 27
+def BLEND_W     = 31
+def BLEND_H     = 47
+def DATA_X      = 210      -- frame.x1 + 0xbf
+def DATA_Y      = 27
+def DATA_W      = 72       -- 0x48
+def DATA_H      = 47
+def TOOL_X      = 18
+def TOOL_Y      = 218      -- tileview/y2 + 8
+def TOOL_W      = 264
+def TOOL_H      = 8
 
--- Undo
-def HISTORY_LIMIT = 64
+-- Palette R/G/B nibble values for each color slot (matching nasu default theme)
+-- PAL_1=#77ddcc → r=7, g=d=13, b=c=12
+-- PAL_2=#9977dd → r=9, g=7,    b=d=13
+-- PAL_3=#ffffff → r=f=15, g=f=15, b=f=15
+def PAL_R = [0, 7, 9, 15]
+def PAL_G = [0, 13, 7, 15]
+def PAL_B = [0, 12, 13, 15]
 
--- All pixel data: flat string, 256 tiles * 64 pixels each, color indices '0'-'3'
-def ?sheet = ""
--- Nametable: list of tile indices (0-255), -1 = empty
-def ?nmt_tiles = []: [num]
-def ?nmt_mirror_h = []: [bool]
-def ?nmt_mirror_v = []: [bool]
-def ?nmt_pattern = []: [num]
+-- Sprite data constants
+def SHEET_TILES = 256
+def TILE_BYTES  = 16       -- 16 bytes per 2bpp 8x8 tile (plane0[8] + plane1[8])
+def SHEET_SIZE  = 4096     -- 256 × 16
+def NTAB_SIZE   = 768      -- 256 × 3 bytes (addr_lo, addr_hi, blend)
 
-def ?undo_stack = []: [string]
-def ?redo_stack = []: [string]
-def ?dirty = false
+-- Tools
+def TOOL_BRUSH    = 0
+def TOOL_SELECTOR = 1
+def TOOL_ZOOM     = 2
 
-def ?sel_tile = 0
-def ?sel_color = 1
-def ?sel_tool = "cursor"
-def ?mirror_h = false
-def ?mirror_v = false
-def ?pattern_sel = 1
-def ?sprite_w = 3
-def ?sprite_h = 2
+-- Clipboard
+def CLIP_NONE = 0
+def CLIP_ICN  = 8      -- 1bpp: 8 bytes per tile
+def CLIP_CHR  = 16     -- 2bpp: 16 bytes per tile
 
-: make_blank_sheet() (( string ))
-    let total = TILE_COUNT * PIXELS_PER_TILE
-    let ?parts = []: [any]
-    for (let ?i = 0; i < total; i += 1)
-        stdr.push(parts, "0")
-    <- stdr.join(parts)
-;
+-- SDL scancodes for keyboard shortcuts
+def KEY_A = 4
+def KEY_C = 6
+def KEY_D = 7
+def KEY_E = 8
+def KEY_I = 12
+def KEY_N = 17
+def KEY_O = 18
+def KEY_P = 19
+def KEY_Q = 20
+def KEY_R = 21
+def KEY_S = 22
+def KEY_V = 25
+def KEY_W = 26
+def KEY_X = 27
+def KEY_1 = 30
+def KEY_2 = 31
+def KEY_3 = 32
+def KEY_4 = 33
+def KEY_UP    = 82
+def KEY_DOWN  = 81
+def KEY_LEFT  = 80
+def KEY_RIGHT = 79
+def KEY_LCTRL  = 224
+def KEY_LSHIFT = 225
+def KEY_DELETE = 76
+def KEY_BACKSPACE = 42
 
-: tile_off(tidx = num) (( num ))
-    <- tidx * PIXELS_PER_TILE
-;
-
-: pix_off(tidx = num, px = num, py = num) (( num ))
-    <- tile_off(tidx) + py * TILE_SIZE + px
-;
-
-: replace_at(text = string, idx = num, ch = string) (( string ))
-    <- stdr.slice(text, 0, idx) + ch + stdr.slice(text, idx + 1, stdr.len(text))
-;
-
-: hex_digit(n = num) (( string ))
-    if n < 10
-        <- stdr.char_from_code(48 + n)
-    <- stdr.char_from_code(87 + n)
-;
-
-: hex_byte(n = num) (( string ))
-    let ?v = n
-    if v < 0
-        v = 0
-    if v > 255
-        v = 255
-    <- hex_digit(stdr.floor(v / 16)) + hex_digit(v - stdr.floor(v / 16) * 16)
-;
-
-: pack_nmt() (( string ))
-    let ?parts = []: [any]
-    let total = NMT_COLS * NMT_ROWS
-    for (let ?i = 0; i < total; i += 1)
-        stdr.push(parts, str(nmt_tiles[i] ?? -1) + ":" + str(nmt_mirror_h[i] ?? false) + ":" + str(nmt_mirror_v[i] ?? false) + ":" + str(nmt_pattern[i] ?? 0) + ",")
-    <- stdr.join(parts)
-;
-
-: unpack_nmt(blob = string) (( -- ))
-    nmt_tiles = []: [num]
-    nmt_mirror_h = []: [bool]
-    nmt_mirror_v = []: [bool]
-    nmt_pattern = []: [num]
-    let n = stdr.len(blob)
-    let ?idx = 0
-    let ?i = 0
-    let max_entries = NMT_COLS * NMT_ROWS
-    for (let ?_iter = 0; _iter < max_entries * 2; _iter += 1)
-        if idx >= n || i >= max_entries
-            break
-        let ?comma = idx
-        for (let ?_j = idx; _j < n; _j += 1)
-            if stdr.char_at(blob, _j) == ","
-                comma = _j
-                break
-        if comma <= idx
-            idx = comma + 1
-            i += 1
-            continue
-        let entry = stdr.slice(blob, idx, comma)
-        let ?parts = []: [string]
-        let ?start = 0
-        for (let ?j = 0; j < stdr.len(entry); j += 1)
-            if stdr.char_at(entry, j) == ":"
-                parts[len(parts)] = stdr.slice(entry, start, j)
-                start = j + 1
-        parts[len(parts)] = stdr.slice(entry, start, stdr.len(entry))
-        let tv = stdr.num(str(parts[0] ?? "-1"))
-        nmt_tiles[i] = tv
-        nmt_mirror_h[i] = str(parts[1] ?? "false") == "true"
-        nmt_mirror_v[i] = str(parts[2] ?? "false") == "true"
-        nmt_pattern[i] = stdr.num(str(parts[3] ?? "0"))
-        idx = comma + 1
-        i += 1
-;
-
-: pack_state() (( string ))
-    <- sheet + "|" + pack_nmt()
-;
-
-: unpack_state(state = string) (( -- ))
-    let n = stdr.len(state)
-    let ?sep = -1
-    for (let ?i = 0; i < n; i += 1)
-        if stdr.char_at(state, i) == "|"
-            sep = i
-            break
-    if sep < 0
-        sheet = state
-        <-
-    sheet = stdr.slice(state, 0, sep)
-    unpack_nmt(stdr.slice(state, sep + 1, n))
-;
-
-: push_stack(stack = [string], value = string) (( [string] ))
-    let ?out = []: [string]
-    let n = len(stack)
-    let ?start = 0
-    if n >= HISTORY_LIMIT
-        start = n - HISTORY_LIMIT + 1
-    for (let ?i = start; i < n; i += 1)
-        out[len(out)] = str(stack[i] ?? "")
-    out[len(out)] = value
-    <- out
-;
-
-:: reset() (( -- ))
-    sheet = make_blank_sheet()
-    nmt_tiles = []: [num]
-    nmt_mirror_h = []: [bool]
-    nmt_mirror_v = []: [bool]
-    nmt_pattern = []: [num]
-    for (let ?i = 0; i < NMT_COLS * NMT_ROWS; i += 1)
-        nmt_tiles[i] = -1
-        nmt_mirror_h[i] = false
-        nmt_mirror_v[i] = false
-        nmt_pattern[i] = 0
-    undo_stack = []: [string]
-    redo_stack = []: [string]
-    dirty = false
-    sel_tile = 0
-    sel_color = 1
-    sel_tool = "cursor"
-    mirror_h = false
-    mirror_v = false
-    pattern_sel = 1
-    sprite_w = 3
-    sprite_h = 2
-;
-
-:: sheet_cols() (( num )) <- SHEET_COLS ;
-:: sheet_rows() (( num )) <- SHEET_ROWS ;
-:: tile_size() (( num )) <- TILE_SIZE ;
-:: nmt_cols() (( num )) <- NMT_COLS ;
-:: nmt_rows() (( num )) <- NMT_ROWS ;
-:: canvas_w() (( num )) <- SHEET_COLS * TILE_SIZE ;
-:: canvas_h() (( num )) <- SHEET_ROWS * TILE_SIZE ;
-:: nmt_w() (( num )) <- NMT_COLS * TILE_SIZE ;
-:: nmt_h() (( num )) <- NMT_ROWS * TILE_SIZE ;
-
-:: selected_tile() (( num )) <- sel_tile ;
-:: set_selected_tile(idx = num) (( -- ))
-    let ?i = idx
-    if i < 0
-        i = 0
-    if i >= TILE_COUNT
-        i = TILE_COUNT - 1
-    sel_tile = i
-;
-
-:: set_selected_color(idx = num) (( -- ))
-    let ?i = idx
-    if i < 0
-        i = 0
-    if i > 3
-        i = 3
-    sel_color = i
-;
-
-:: set_selected_tool(t = string) (( -- ))
-    sel_tool = t
-;
-
-:: is_dirty() (( bool )) <- dirty ;
-:: mark_saved() (( -- )) dirty = false ;
-
-:: get_mirror_h() (( bool )) <- mirror_h ;
-:: get_mirror_v() (( bool )) <- mirror_v ;
-:: set_mirror_h(v = bool) (( -- )) mirror_h = v ;
-:: set_mirror_v(v = bool) (( -- )) mirror_v = v ;
-:: toggle_mirror_h() (( -- )) mirror_h = !mirror_h ;
-:: toggle_mirror_v() (( -- )) mirror_v = !mirror_v ;
-:: selected_pattern() (( num )) <- pattern_sel ;
-:: set_selected_pattern(v = num) (( -- ))
-    let ?idx = v
-    if idx < 0
-        idx = 0
-    if idx > 15
-        idx = 15
-    pattern_sel = idx
-;
-
-:: get_selected_color() (( num )) <- sel_color ;
-:: set_selected_color(v = num) (( -- )) sel_color = v ;
-
-:: sprite_width() (( num )) <- sprite_w ;
-:: sprite_height() (( num )) <- sprite_h ;
-:: set_sprite_size(w = num, h = num) (( -- ))
-    sprite_w = w
-    sprite_h = h
-;
-
-:: get_pixel(tidx = num, px = num, py = num) (( num ))
-    if tidx < 0 || tidx >= TILE_COUNT || px < 0 || px >= TILE_SIZE || py < 0 || py >= TILE_SIZE
-        <- 0
-    let idx = pix_off(tidx, px, py)
-    let ch = stdr.char_at(sheet, idx)
-    if ch == "1"
-        <- 1
-    if ch == "2"
-        <- 2
-    if ch == "3"
-        <- 3
-    <- 0
-;
-
-:: set_pixel(tidx = num, px = num, py = num, color = num) (( -- ))
-    if tidx < 0 || tidx >= TILE_COUNT || px < 0 || px >= TILE_SIZE || py < 0 || py >= TILE_SIZE
-        <-
-    let idx = pix_off(tidx, px, py)
-    let ?ch = "0"
-    if color == 1
-        ch = "1"
-    elif color == 2
-        ch = "2"
-    elif color == 3
-        ch = "3"
-    sheet = replace_at(sheet, idx, ch)
-    dirty = true
-;
-
-:: get_pixel_mirror(tidx = num, px = num, py = num, mh = bool, mv = bool) (( num ))
-    let ?fx = px
-    let ?fy = py
-    if mh
-        fx = TILE_SIZE - 1 - px
-    if mv
-        fy = TILE_SIZE - 1 - py
-    <- get_pixel(tidx, fx, fy)
-;
-
--- Hex data view: 4 rows of 4-digit hex (plane0 pairs, plane1 pairs)
+-- Power-of-2 table for bit ops without bitwise operators
 def POW2 = [1, 2, 4, 8, 16, 32, 64, 128]
 
-: is_odd(n = num) (( bool ))
-    <- n != (stdr.floor(n / 2) * 2)
+-- Mutable state
+def ?sheet    = []: [any]
+def ?ntab     = []: [any]
+def ?depth    = 1        -- 1 = 1bpp, 2 = 2bpp
+def ?color    = 1        -- drawing color (0-3)
+def ?blend    = 129    -- blend byte (0x81: 2bpp bg layer blend=1)
+def ?ratio    = 50     -- preview animation ratio (0x32: 3 rows × 2 cols)
+def ?tool     = 1        -- TOOL_SELECTOR
+def ?focus    = 0        -- current tile address (byte offset in sheet)
+def ?zoom_on  = false
+def ?brush    = 0
+def ?dir      = 0
+def ?cursor_x = 0
+def ?cursor_y = 0
+def ?sel_x1   = 0
+def ?sel_y1   = 0
+def ?sel_x2   = 0
+def ?sel_y2   = 0
+def ?sel_zx   = 0        -- zoom origin tile-x (0-7)
+def ?sel_zy   = 0        -- zoom origin tile-y (0-7)
+def ?filepath = "untitled10x10.chr"
+def ?changed  = false
+def ?dirty    = true     -- needs full redraw
+def ?anim_tick = 0
+def ?preview_frame = 0
+def ?clipboard = []: [any]
+def ?clipboard_mode = 0   -- CLIP_NONE / CLIP_ICN / CLIP_CHR
+def ?selecting = false     -- true while drag-selecting
+
+: init() (( -- ))
+    for (let ?i = 0; i < SHEET_SIZE; i += 1)
+        stdr.push(sheet, 0)
+    -- nametable: all zeros (blank), matching nasu.tal default
+    for (let ?i = 0; i < NTAB_SIZE; i += 1)
+        stdr.push(ntab, 0)
 ;
 
-:: tile_data_hex(tidx = num) (( [string] ))
-    let ?lines = []: [string]
-    let ?low = []: [num]
-    let ?high = []: [num]
-    for (let ?row = 0; row < TILE_SIZE; row += 1)
-        let ?lb = 0
-        let ?hb = 0
-        for (let ?col = 0; col < TILE_SIZE; col += 1)
-            let px = get_pixel(tidx, col, row)
-            let bit_val = POW2[7 - col] ?? 1
-            if is_odd(px)
-                lb = lb + bit_val
-            let px_hi = stdr.floor(px / 2)
-            if is_odd(px_hi)
-                hb = hb + bit_val
-        low[row] = lb
-        high[row] = hb
-    for (let ?i = 0; i < 4; i += 1)
-        let lw = (low[i * 2] ?? 0) * 256 + (low[i * 2 + 1] ?? 0)
-        let hw = (high[i * 2] ?? 0) * 256 + (high[i * 2 + 1] ?? 0)
-        lines[i * 2] = hex_digit(stdr.floor(lw / 4096)) + hex_digit(stdr.floor(lw / 256) % 16) + hex_digit(stdr.floor(lw / 16) % 16) + hex_digit(lw % 16)
-        lines[i * 2 + 1] = hex_digit(stdr.floor(hw / 4096)) + hex_digit(stdr.floor(hw / 256) % 16) + hex_digit(stdr.floor(hw / 16) % 16) + hex_digit(hw % 16)
-    <- lines
+-- Byte offset in sheet for tile at (tx, ty) in the 16×16 grid
+: tile_addr(tx = num, ty = num) (( num ))
+    <- (ty * 16 + tx) * TILE_BYTES
 ;
 
-:: tile_pos_hex(tidx = num) (( string ))
-    let col = tidx % SHEET_COLS
-    let row = stdr.floor(tidx / SHEET_COLS)
-    <- hex_byte(col) + hex_byte(row)
+-- Set focus to tile (tx, ty)
+: set_focus(tx = num, ty = num) (( -- ))
+    focus = tile_addr(tx, ty)
 ;
 
-:: get_tile_blob(tidx = num) (( string ))
-    if tidx < 0 || tidx >= TILE_COUNT
-        <- ""
-    let base = tile_off(tidx)
-    <- stdr.slice(sheet, base, base + PIXELS_PER_TILE)
+-- Current focused tile x/y
+: focus_tile_x() (( num ))
+    <- (stdr.floor(focus / TILE_BYTES)) % 16
 ;
 
-:: set_tile_blob(tidx = num, blob = string) (( -- ))
-    if tidx < 0 || tidx >= TILE_COUNT
-        <-
-    if stdr.len(blob) < PIXELS_PER_TILE
-        <-
-    let base = tile_off(tidx)
-    sheet = stdr.slice(sheet, 0, base) + stdr.slice(blob, 0, PIXELS_PER_TILE) + stdr.slice(sheet, base + PIXELS_PER_TILE, stdr.len(sheet))
+: focus_tile_y() (( num ))
+    <- stdr.floor(stdr.floor(focus / TILE_BYTES) / 16)
+;
+
+-- Clamp value to [0, max-1]
+: clamp(v = num, lo = num, hi = num) (( num ))
+    if v < lo
+        <- lo
+    if v > hi
+        <- hi
+    <- v
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- State setters (Yis does not allow cross-module scalar def? assignment)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: mark_dirty() (( -- ))
+    dirty   = true
+    changed = true
+;
+
+: set_dirty() (( -- ))
     dirty = true
 ;
 
--- Undo/redo
-:: snapshot() (( string )) <- pack_state() ;
+: clear_dirty() (( -- ))
+    dirty = false
+;
 
-:: commit_stroke(before = string) (( -- ))
-    let cur = pack_state()
-    if cur == before
-        <-
-    undo_stack = push_stack(undo_stack, before)
-    redo_stack = []: [string]
+: set_changed(c = bool) (( -- ))
+    changed = c
+;
+
+: set_color(c = num) (( -- ))
+    color = c
+;
+
+: set_tool(t = num) (( -- ))
+    tool = t
+;
+
+: set_ratio(r = num) (( -- ))
+    ratio = r
+;
+
+: set_sel(ax1 = num, ay1 = num, ax2 = num, ay2 = num) (( -- ))
+    sel_x1 = ax1
+    sel_y1 = ay1
+    sel_x2 = ax2
+    sel_y2 = ay2
+;
+
+: select_from_focus() (( -- ))
+    let fx = focus_tile_x()
+    let fy = focus_tile_y()
+    sel_x1 = fx
+    sel_y1 = fy
+    sel_x2 = fx
+    sel_y2 = fy
+;
+
+: set_filepath(p = str) (( -- ))
+    filepath = p
+;
+
+: set_blend(b = num) (( -- ))
+    blend = b
+;
+
+: set_dir(d = num) (( -- ))
+    dir = d
+;
+
+: toggle_dir() (( -- ))
+    if dir == 0
+        dir = 1
+    else
+        dir = 0
+;
+
+: toggle_zoom() (( -- ))
+    zoom_on = !zoom_on
+;
+
+: set_zoom(z = bool) (( -- ))
+    zoom_on = z
+;
+
+: set_selecting(s = bool) (( -- ))
+    selecting = s
+;
+
+: set_clipboard(data = [any], mode = num) (( -- ))
+    clipboard = data
+    clipboard_mode = mode
+;
+
+: set_sel_zx(v = num) (( -- ))
+    sel_zx = v
+;
+
+: set_sel_zy(v = num) (( -- ))
+    sel_zy = v
+;
+
+: set_sel_to(ax2 = num, ay2 = num) (( -- ))
+    sel_x2 = ax2
+    sel_y2 = ay2
+    -- clamp and ensure x1<=x2, y1<=y2
+    if sel_x2 > 15
+        sel_x2 = 15
+    if sel_y2 > 15
+        sel_y2 = 15
+;
+
+: set_pal_r(slot = num, val = num) (( -- ))
+    PAL_R[slot] = val
+;
+
+: set_pal_g(slot = num, val = num) (( -- ))
+    PAL_G[slot] = val
+;
+
+: set_pal_b(slot = num, val = num) (( -- ))
+    PAL_B[slot] = val
+;
+
+-- Move selection by (dx, dy), wrapping within 0-15
+: mod_selection(dx = num, dy = num) (( -- ))
+    if zoom_on
+        -- In zoom mode, move the zoom origin
+        sel_zx = (sel_zx + dx) % 128
+        sel_zy = (sel_zy + dy) % 128
+        -- Update selection from zoom origin
+        let fx = stdr.floor(sel_zx / 8)
+        let fy = stdr.floor(sel_zy / 8)
+        sel_x1 = fx
+        sel_y1 = fy
+        sel_x2 = fx
+        sel_y2 = fy
+        focus = tile_addr(fx, fy)
+    else
+        sel_x1 = (sel_x1 + dx) % 16
+        sel_y1 = (sel_y1 + dy) % 16
+        sel_x2 = (sel_x2 + dx) % 16
+        sel_y2 = (sel_y2 + dy) % 16
+        -- Clamp: ensure x1<=x2, y1<=y2
+        if sel_x2 < sel_x1
+            sel_x2 = sel_x1
+        if sel_y2 < sel_y1
+            sel_y2 = sel_y1
+        sel_zx = sel_x1 * 8
+        sel_zy = sel_y1 * 8
+        focus = tile_addr(sel_x1, sel_y1)
     dirty = true
 ;
 
--- Tile operations
-:: shift_tile_up(tidx = num) (( -- ))
-    if tidx < 0 || tidx >= TILE_COUNT
-        <-
-    let ?top = []: [num]
-    for (let ?x = 0; x < TILE_SIZE; x += 1)
-        top[x] = get_pixel(tidx, x, 0)
-    for (let ?y = 1; y < TILE_SIZE; y += 1)
-        for (let ?x = 0; x < TILE_SIZE; x += 1)
-            set_pixel(tidx, x, y - 1, get_pixel(tidx, x, y))
-    for (let ?x = 0; x < TILE_SIZE; x += 1)
-        set_pixel(tidx, x, TILE_SIZE - 1, top[x] ?? 0)
-;
-
-:: shift_tile_down(tidx = num) (( -- ))
-    if tidx < 0 || tidx >= TILE_COUNT
-        <-
-    let ?bottom = []: [num]
-    for (let ?x = 0; x < TILE_SIZE; x += 1)
-        bottom[x] = get_pixel(tidx, x, TILE_SIZE - 1)
-    for (let ?y = TILE_SIZE - 2; y >= 0; y -= 1)
-        for (let ?x = 0; x < TILE_SIZE; x += 1)
-            set_pixel(tidx, x, y + 1, get_pixel(tidx, x, y))
-    for (let ?x = 0; x < TILE_SIZE; x += 1)
-        set_pixel(tidx, x, 0, bottom[x] ?? 0)
-;
-
-:: shift_tile_right(tidx = num) (( -- ))
-    if tidx < 0 || tidx >= TILE_COUNT
-        <-
-    let ?right = []: [num]
-    for (let ?y = 0; y < TILE_SIZE; y += 1)
-        right[y] = get_pixel(tidx, TILE_SIZE - 1, y)
-    for (let ?x = TILE_SIZE - 2; x >= 0; x -= 1)
-        for (let ?y = 0; y < TILE_SIZE; y += 1)
-            set_pixel(tidx, x + 1, y, get_pixel(tidx, x, y))
-    for (let ?y = 0; y < TILE_SIZE; y += 1)
-        set_pixel(tidx, 0, y, right[y] ?? 0)
-;
-
-:: shift_tile_left(tidx = num) (( -- ))
-    if tidx < 0 || tidx >= TILE_COUNT
-        <-
-    let ?left = []: [num]
-    for (let ?y = 0; y < TILE_SIZE; y += 1)
-        left[y] = get_pixel(tidx, 0, y)
-    for (let ?x = 1; x < TILE_SIZE; x += 1)
-        for (let ?y = 0; y < TILE_SIZE; y += 1)
-            set_pixel(tidx, x - 1, y, get_pixel(tidx, x, y))
-    for (let ?y = 0; y < TILE_SIZE; y += 1)
-        set_pixel(tidx, TILE_SIZE - 1, y, left[y] ?? 0)
-;
-
--- Nametable operations
-:: get_nmt_tile(col = num, row = num) (( num ))
-    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
-        <- -1
-    <- nmt_tiles[row * NMT_COLS + col] ?? -1
-;
-
-:: get_nmt_mirror_h(col = num, row = num) (( bool ))
-    <- nmt_mirror_h[row * NMT_COLS + col] ?? false
-;
-
-:: get_nmt_mirror_v(col = num, row = num) (( bool ))
-    <- nmt_mirror_v[row * NMT_COLS + col] ?? false
-;
-
-:: get_nmt_pattern(col = num, row = num) (( num ))
-    <- nmt_pattern[row * NMT_COLS + col] ?? 0
-;
-
-:: set_nmt_tile(col = num, row = num, tidx = num) (( -- ))
-    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
-        <-
-    let i = row * NMT_COLS + col
-    nmt_tiles[i] = tidx
+-- Scale selection (expand/shrink x2/y2)
+: scale_selection(dx = num, dy = num) (( -- ))
+    sel_x2 = (sel_x2 + dx) % 16
+    sel_y2 = (sel_y2 + dy) % 16
+    if sel_x2 < sel_x1
+        sel_x2 = sel_x1
+    if sel_y2 < sel_y1
+        sel_y2 = sel_y1
+    focus = tile_addr(sel_x1, sel_y1)
     dirty = true
-;
-
-:: set_nmt_mirror_h(col = num, row = num, v = bool) (( -- ))
-    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
-        <-
-    let i = row * NMT_COLS + col
-    nmt_mirror_h[i] = v
-    dirty = true
-;
-
-:: set_nmt_mirror_v(col = num, row = num, v = bool) (( -- ))
-    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
-        <-
-    let i = row * NMT_COLS + col
-    nmt_mirror_v[i] = v
-    dirty = true
-;
-
-:: set_nmt_pattern(col = num, row = num, v = num) (( -- ))
-    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
-        <-
-    let i = row * NMT_COLS + col
-    nmt_pattern[i] = v
-    dirty = true
-;
-
-:: place_nmt_tile(col = num, row = num, tidx = num) (( -- ))
-    if col < 0 || col >= NMT_COLS || row < 0 || row >= NMT_ROWS
-        <-
-    let i = row * NMT_COLS + col
-    if tidx < 0
-        nmt_tiles[i] = -1
-        nmt_mirror_h[i] = false
-        nmt_mirror_v[i] = false
-        nmt_pattern[i] = 0
-        dirty = true
-        <-
-    nmt_tiles[i] = tidx
-    nmt_mirror_h[i] = mirror_h
-    nmt_mirror_v[i] = mirror_v
-    nmt_pattern[i] = pattern_sel
-    dirty = true
-;
-
-:: clear_nmt() (( -- ))
-    for (let ?i = 0; i < NMT_COLS * NMT_ROWS; i += 1)
-        nmt_tiles[i] = -1
-        nmt_mirror_h[i] = false
-        nmt_mirror_v[i] = false
-        nmt_pattern[i] = 0
-;
-
--- Color permutation for blend/pattern view
--- 16 modes in a 4x4 grid
-:: apply_color_permutation(color = num, mode = num) (( num ))
-    let ?mappings = [
-        [0, 0, 1, 2], [0, 1, 2, 3], [0, 2, 3, 1], [0, 3, 1, 2],
-        [1, 0, 1, 2], [0, 1, 2, 3], [1, 2, 3, 1], [1, 3, 1, 2],
-        [2, 0, 1, 2], [2, 1, 2, 3], [0, 2, 3, 1], [2, 3, 1, 2],
-        [3, 0, 1, 2], [3, 1, 2, 3], [3, 2, 3, 1], [0, 3, 1, 2]
-    ]
-    let ?row = mappings[mode]
-    if is_null(row)
-        <- color
-    <- row[color] ?? color
-;
-
--- Data accessors for text-based file I/O
-:: get_sheet_data() (( string )) <- sheet ;
-:: set_sheet_data(data = string) (( -- )) sheet = data ;
-:: get_nmt_text() (( string )) <- pack_nmt() ;
-:: set_nmt_text(data = string) (( -- )) unpack_nmt(data) ;
 ;

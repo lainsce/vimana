@@ -1,0 +1,361 @@
+cask casu_edit
+
+bring stdr
+bring vimana
+
+bring casu_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Pixel read/write in the spritesheet (CHR format: plane0[8] + plane1[8])
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Get the color index (0-3) of the pixel at absolute spritesheet coords (ax, ay).
+-- ax/ay are in the range [0, 128) spanning the full 16×16 tile grid.
+: get_pixel(ax = num, ay = num) (( num ))
+    let off = casu_model.tile_addr(stdr.floor(ax / 8), stdr.floor(ay / 8))
+    let row = ay % 8
+    let bit = 7 - (ax % 8)                 -- bit index within byte (MSB = leftmost)
+    let pow = casu_model.POW2[bit]
+    let p0  = stdr.floor(casu_model.sheet[off + row] / pow) % 2
+    let p1  = stdr.floor(casu_model.sheet[off + row + 8] / pow) % 2
+    <- p0 + p1 * 2
+;
+
+-- Set the color index of the pixel at absolute spritesheet coords (ax, ay).
+: put_pixel(ax = num, ay = num, c = num) (( -- ))
+    let off  = casu_model.tile_addr(stdr.floor(ax / 8), stdr.floor(ay / 8))
+    let row  = ay % 8
+    let bit  = 7 - (ax % 8)
+    let pow  = casu_model.POW2[bit]
+
+    -- plane 0: bit = c % 2
+    let ?b0  = casu_model.sheet[off + row]
+    let cur0 = stdr.floor(b0 / pow) % 2
+    let new0 = c % 2
+    if cur0 == 0 && new0 == 1
+        casu_model.sheet[off + row] = b0 + pow
+    elif cur0 == 1 && new0 == 0
+        casu_model.sheet[off + row] = b0 - pow
+
+    -- plane 1: bit = floor(c / 2) % 2
+    let ?b1  = casu_model.sheet[off + row + 8]
+    let cur1 = stdr.floor(b1 / pow) % 2
+    let new1 = stdr.floor(c / 2) % 2
+    if cur1 == 0 && new1 == 1
+        casu_model.sheet[off + row + 8] = b1 + pow
+    elif cur1 == 1 && new1 == 0
+        casu_model.sheet[off + row + 8] = b1 - pow
+
+    casu_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Sync tile data from the spritesheet into Vimana's sprite memory.
+-- Uploads plane0 and plane1 as mode-0 (1bpp raw bytes) to consecutive slots.
+-- ─────────────────────────────────────────────────────────────────────────────
+: sync_tile(scr = vimana.screen, tile_idx = num) (( -- ))
+    let off  = tile_idx * 16
+    let addr = tile_idx * 16
+    let p0 = [casu_model.sheet[off],   casu_model.sheet[off+1],
+              casu_model.sheet[off+2],  casu_model.sheet[off+3],
+              casu_model.sheet[off+4],  casu_model.sheet[off+5],
+              casu_model.sheet[off+6],  casu_model.sheet[off+7]]
+    let p1 = [casu_model.sheet[off+8],  casu_model.sheet[off+9],
+              casu_model.sheet[off+10], casu_model.sheet[off+11],
+              casu_model.sheet[off+12], casu_model.sheet[off+13],
+              casu_model.sheet[off+14], casu_model.sheet[off+15]]
+    scr.set_sprite(addr,     p0, 0)
+    scr.set_sprite(addr + 8, p1, 0)
+;
+
+-- Sync all 256 tiles to sprite memory.
+: sync_all(scr = vimana.screen) (( -- ))
+    for (let ?i = 0; i < casu_model.SHEET_TILES; i += 1)
+        sync_tile(scr, i)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Selection-based filter operations (operate on tiles within sel [x1,y1,x2,y2])
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Colorize: advance each non-transparent pixel's color by 1 (cycles through 1-3)
+: filter_colorize() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            for (let ?row = 0; row < 8; row += 1)
+                for (let ?col = 0; col < 8; col += 1)
+                    let ax = tx * 8 + col
+                    let ay = ty * 8 + row
+                    let c = get_pixel(ax, ay)
+                    if c != 0
+                        put_pixel(ax, ay, (c % 3) + 1)
+;
+
+-- Flip X: mirror each selected tile horizontally
+: filter_flipx() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            for (let ?row = 0; row < 8; row += 1)
+                -- swap columns 0↔7, 1↔6, 2↔5, 3↔4
+                let ?col = 0
+                for (; col < 4; col += 1)
+                    let ax1 = tx * 8 + col
+                    let ax2 = tx * 8 + (7 - col)
+                    let ay  = ty * 8 + row
+                    let ca  = get_pixel(ax1, ay)
+                    let cb  = get_pixel(ax2, ay)
+                    put_pixel(ax1, ay, cb)
+                    put_pixel(ax2, ay, ca)
+;
+
+-- Flip Y: mirror each selected tile vertically
+: filter_flipy() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            for (let ?row = 0; row < 4; row += 1)
+                for (let ?col = 0; col < 8; col += 1)
+                    let ax   = tx * 8 + col
+                    let ay1  = ty * 8 + row
+                    let ay2  = ty * 8 + (7 - row)
+                    let ca   = get_pixel(ax, ay1)
+                    let cb   = get_pixel(ax, ay2)
+                    put_pixel(ax, ay1, cb)
+                    put_pixel(ax, ay2, ca)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Shift operations (byte-level shifts on CHR plane data)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Shift selected tiles up by one pixel row (row 0 is lost, row 7 becomes 0)
+: op_shift_up() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            let off = casu_model.tile_addr(tx, ty)
+            for (let ?r = 0; r < 7; r += 1)
+                casu_model.sheet[off + r]     = casu_model.sheet[off + r + 1]
+                casu_model.sheet[off + r + 8] = casu_model.sheet[off + r + 9]
+            casu_model.sheet[off + 7]  = 0
+            casu_model.sheet[off + 15] = 0
+    casu_model.mark_dirty()
+;
+
+-- Shift selected tiles down by one pixel row
+: op_shift_down() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            let off = casu_model.tile_addr(tx, ty)
+            let ?r = 6
+            for (; r >= 0; r -= 1)
+                casu_model.sheet[off + r + 1] = casu_model.sheet[off + r]
+                casu_model.sheet[off + r + 9] = casu_model.sheet[off + r + 8]
+            casu_model.sheet[off]     = 0
+            casu_model.sheet[off + 8] = 0
+    casu_model.mark_dirty()
+;
+
+-- Shift selected tiles left by one pixel column
+: op_shift_left() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            let off = casu_model.tile_addr(tx, ty)
+            for (let ?r = 0; r < 8; r += 1)
+                -- left shift = multiply row byte by 2 (mod 256: MSB is lost)
+                let b0 = casu_model.sheet[off + r]
+                let b1 = casu_model.sheet[off + r + 8]
+                casu_model.sheet[off + r]     = (b0 * 2) % 256
+                casu_model.sheet[off + r + 8] = (b1 * 2) % 256
+    casu_model.mark_dirty()
+;
+
+-- Shift selected tiles right by one pixel column
+: op_shift_right() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            let off = casu_model.tile_addr(tx, ty)
+            for (let ?r = 0; r < 8; r += 1)
+                -- right shift = floor divide by 2
+                let b0 = casu_model.sheet[off + r]
+                let b1 = casu_model.sheet[off + r + 8]
+                casu_model.sheet[off + r]     = stdr.floor(b0 / 2)
+                casu_model.sheet[off + r + 8] = stdr.floor(b1 / 2)
+    casu_model.mark_dirty()
+;
+
+-- Erase: zero-fill the selected tiles
+: op_erase() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            let off = casu_model.tile_addr(tx, ty)
+            for (let ?b = 0; b < 16; b += 1)
+                casu_model.sheet[off + b] = 0
+    casu_model.mark_dirty()
+;
+
+-- Invert: flip all bits in the selected tiles (XOR with 0xFF = 255 - byte)
+: op_invert() (( -- ))
+    for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            let off = casu_model.tile_addr(tx, ty)
+            for (let ?b = 0; b < 16; b += 1)
+                casu_model.sheet[off + b] = 255 - casu_model.sheet[off + b]
+    casu_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Selection helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Expand selection direction from current focus tile
+: select_from_focus() (( -- ))
+    casu_model.select_from_focus()
+;
+
+-- Select all (16×16 grid)
+: select_all() (( -- ))
+    casu_model.set_sel(0, 0, 15, 15)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Run a tile operation on each tile in the selection, respecting dir (H or V)
+-- op: 0=erase, 1=invert, 2=shift_up, 3=shift_down, 4=shift_left, 5=shift_right
+-- ─────────────────────────────────────────────────────────────────────────────
+: run_on_selection(op = num) (( -- ))
+    if casu_model.dir == 0
+        -- horizontal-first iteration
+        for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+            for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+                run_op_on_tile(op, tx, ty)
+    else
+        -- vertical-first iteration
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+                run_op_on_tile(op, tx, ty)
+    casu_model.mark_dirty()
+;
+
+: run_op_on_tile(op = num, tx = num, ty = num) (( -- ))
+    let off = casu_model.tile_addr(tx, ty)
+    if op == 0
+        -- erase
+        for (let ?b = 0; b < 16; b += 1)
+            casu_model.sheet[off + b] = 0
+    elif op == 1
+        -- invert
+        for (let ?b = 0; b < 16; b += 1)
+            casu_model.sheet[off + b] = 255 - casu_model.sheet[off + b]
+    elif op == 2
+        -- shift up
+        for (let ?r = 0; r < 7; r += 1)
+            casu_model.sheet[off + r]     = casu_model.sheet[off + r + 1]
+            casu_model.sheet[off + r + 8] = casu_model.sheet[off + r + 9]
+        casu_model.sheet[off + 7]  = 0
+        casu_model.sheet[off + 15] = 0
+    elif op == 3
+        -- shift down
+        let ?r = 6
+        for (; r >= 0; r -= 1)
+            casu_model.sheet[off + r + 1] = casu_model.sheet[off + r]
+            casu_model.sheet[off + r + 9] = casu_model.sheet[off + r + 8]
+        casu_model.sheet[off]     = 0
+        casu_model.sheet[off + 8] = 0
+    elif op == 4
+        -- shift left
+        for (let ?r = 0; r < 8; r += 1)
+            let b0 = casu_model.sheet[off + r]
+            let b1 = casu_model.sheet[off + r + 8]
+            casu_model.sheet[off + r]     = (b0 * 2) % 256
+            casu_model.sheet[off + r + 8] = (b1 * 2) % 256
+    elif op == 5
+        -- shift right
+        for (let ?r = 0; r < 8; r += 1)
+            let b0 = casu_model.sheet[off + r]
+            let b1 = casu_model.sheet[off + r + 8]
+            casu_model.sheet[off + r]     = stdr.floor(b0 / 2)
+            casu_model.sheet[off + r + 8] = stdr.floor(b1 / 2)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Clipboard operations
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Copy CHR (2bpp, 16 bytes per tile) from selection into clipboard
+: copy_chr() (( -- ))
+    let ?buf = []: [any]
+    if casu_model.dir == 0
+        for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+            for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+                let off = casu_model.tile_addr(tx, ty)
+                for (let ?b = 0; b < 16; b += 1)
+                    stdr.push(buf, casu_model.sheet[off + b])
+    else
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+                let off = casu_model.tile_addr(tx, ty)
+                for (let ?b = 0; b < 16; b += 1)
+                    stdr.push(buf, casu_model.sheet[off + b])
+    casu_model.set_clipboard(buf, casu_model.CLIP_CHR)
+;
+
+-- Copy ICN (1bpp, 8 bytes per tile — plane 0 only)
+: copy_icn() (( -- ))
+    let ?buf = []: [any]
+    if casu_model.dir == 0
+        for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+            for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+                let off = casu_model.tile_addr(tx, ty)
+                for (let ?b = 0; b < 8; b += 1)
+                    stdr.push(buf, casu_model.sheet[off + b])
+    else
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+                let off = casu_model.tile_addr(tx, ty)
+                for (let ?b = 0; b < 8; b += 1)
+                    stdr.push(buf, casu_model.sheet[off + b])
+    casu_model.set_clipboard(buf, casu_model.CLIP_ICN)
+;
+
+-- Paste clipboard data into selection
+: paste() (( -- ))
+    let clip_len = stdr.len(casu_model.clipboard)
+    if clip_len == 0
+        <-
+    let bytes_per_tile = casu_model.clipboard_mode
+    let ?ci = 0
+    if casu_model.dir == 0
+        for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+            for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+                let off = casu_model.tile_addr(tx, ty)
+                if bytes_per_tile == 16
+                    for (let ?b = 0; b < 16; b += 1)
+                        if ci < clip_len
+                            casu_model.sheet[off + b] = casu_model.clipboard[ci]
+                            ci += 1
+                else
+                    -- ICN paste: write only plane 0
+                    for (let ?b = 0; b < 8; b += 1)
+                        if ci < clip_len
+                            casu_model.sheet[off + b] = casu_model.clipboard[ci]
+                            ci += 1
+    else
+        for (let ?tx = casu_model.sel_x1; tx <= casu_model.sel_x2; tx += 1)
+            for (let ?ty = casu_model.sel_y1; ty <= casu_model.sel_y2; ty += 1)
+                let off = casu_model.tile_addr(tx, ty)
+                if bytes_per_tile == 16
+                    for (let ?b = 0; b < 16; b += 1)
+                        if ci < clip_len
+                            casu_model.sheet[off + b] = casu_model.clipboard[ci]
+                            ci += 1
+                else
+                    for (let ?b = 0; b < 8; b += 1)
+                        if ci < clip_len
+                            casu_model.sheet[off + b] = casu_model.clipboard[ci]
+                            ci += 1
+    casu_model.mark_dirty()
+;
+
+-- Cut: copy CHR then erase
+: cut() (( -- ))
+    copy_chr()
+    run_on_selection(0)
+;

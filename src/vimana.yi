@@ -1,0 +1,317 @@
+cask vimana
+
+def key_escape = 41
+def mouse_left = 1
+def mouse_right = 3
+
+def color_bg = 0
+def color_1 = 1
+def color_2 = 2
+def color_3 = 3
+
+def sprite_1bpp = 0
+def sprite_2bpp = 1
+def layer_bg = 0
+def layer_fg = 0x40
+def flip_x = 0x10
+def flip_y = 0x20
+
+: __vimana_system() (( system )) { }
+: __vimana_system_run(sys = system, scr = screen, frame = any) (( -- )) { }
+: __vimana_system_quit(sys = system) (( -- )) { }
+: __vimana_system_device(sys = system) (( device )) { }
+: __vimana_system_datetime(sys = system) (( datetime )) { }
+: __vimana_system_file(sys = system) (( file )) { }
+: __vimana_system_ticks(sys = system) (( num )) { }
+: __vimana_system_sleep(sys = system, ms = num) (( -- )) { }
+: __vimana_system_clipboard_text(sys = system) (( string )) { }
+: __vimana_system_set_clipboard_text(sys = system, text = string) (( bool )) { }
+: __vimana_system_home_dir(sys = system) (( string )) { }
+: __vimana_system_spawn(sys = system, cmd = string) (( num )) { }
+: __vimana_system_proc_write(sys = system, proc = num, text = string) (( bool )) { }
+: __vimana_system_proc_read_line(sys = system, proc = num) (( string )) { }
+: __vimana_system_proc_running(sys = system, proc = num) (( bool )) { }
+: __vimana_system_proc_kill(sys = system, proc = num) (( -- )) { }
+: __vimana_system_proc_free(sys = system, proc = num) (( -- )) { }
+
+: __vimana_screen(title = string, width = num, height = num, scale = num) (( screen )) { }
+: __vimana_screen_clear(scr = screen, bg = num) (( -- )) { }
+: __vimana_screen_resize(scr = screen, width = num, height = num) (( -- )) { }
+: __vimana_screen_set_palette(scr = screen, slot = num, color = string) (( -- )) { }
+: __vimana_screen_set_font_glyph(scr = screen, code = num, icn = any) (( -- )) { }
+: __vimana_screen_set_font_chr(scr = screen, code = num, chr = any) (( -- )) { }
+: __vimana_screen_set_font_width(scr = screen, code = num, width = num) (( -- )) { }
+: __vimana_screen_set_font_size(scr = screen, size = num) (( -- )) { }
+: __vimana_screen_set_sprite(scr = screen, addr = num, sprite = any, mode = num) (( -- )) { }
+: __vimana_screen_set_x(scr = screen, x = num) (( -- )) { }
+: __vimana_screen_set_y(scr = screen, y = num) (( -- )) { }
+: __vimana_screen_set_addr(scr = screen, addr = num) (( -- )) { }
+: __vimana_screen_set_auto(scr = screen, auto = num) (( -- )) { }
+: __vimana_screen_put(scr = screen, x = num, y = num, glyph = string, fg = num, bg = num) (( -- )) { }
+: __vimana_screen_put_icn(scr = screen, x = num, y = num, icn = any, fg = num, bg = num) (( -- )) { }
+: __vimana_screen_put_text(scr = screen, x = num, y = num, text = string, fg = num, bg = num) (( -- )) { }
+: __vimana_screen_sprite(scr = screen, ctrl = num) (( -- )) { }
+: __vimana_screen_pixel(scr = screen, ctrl = num) (( -- )) { }
+: __vimana_screen_present(scr = screen) (( -- )) { }
+: __vimana_screen_draw_titlebar(scr = screen, bg = num) (( -- )) { }
+: __vimana_screen_set_titlebar_title(scr = screen, title = string) (( -- )) { }
+: __vimana_screen_set_titlebar_button(scr = screen, show = bool) (( -- )) { }
+: __vimana_screen_titlebar_button_pressed(scr = screen) (( bool )) { }
+: __vimana_screen_x(scr = screen) (( num )) { }
+: __vimana_screen_y(scr = screen) (( num )) { }
+: __vimana_screen_addr(scr = screen) (( num )) { }
+: __vimana_screen_auto(scr = screen) (( num )) { }
+: __vimana_screen_width(scr = screen) (( num )) { }
+: __vimana_screen_height(scr = screen) (( num )) { }
+: __vimana_screen_scale(scr = screen) (( num )) { }
+
+: __vimana_device_poll(dev = device) (( -- )) { }
+: __vimana_device_key_down(dev = device, scancode = num) (( bool )) { }
+: __vimana_device_key_pressed(dev = device, scancode = num) (( bool )) { }
+: __vimana_device_mouse_down(dev = device, button = num) (( bool )) { }
+: __vimana_device_mouse_pressed(dev = device, button = num) (( bool )) { }
+: __vimana_device_pointer_x(dev = device) (( num )) { }
+: __vimana_device_pointer_y(dev = device) (( num )) { }
+: __vimana_device_tile_x(dev = device) (( num )) { }
+: __vimana_device_tile_y(dev = device) (( num )) { }
+: __vimana_device_wheel_x(dev = device) (( num )) { }
+: __vimana_device_wheel_y(dev = device) (( num )) { }
+: __vimana_device_text_input(dev = device) (( string )) { }
+
+: __vimana_datetime_now(dt = datetime) (( num )) { }
+: __vimana_datetime_year(dt = datetime) (( num )) { }
+: __vimana_datetime_month(dt = datetime) (( num )) { }
+: __vimana_datetime_day(dt = datetime) (( num )) { }
+: __vimana_datetime_hour(dt = datetime) (( num )) { }
+: __vimana_datetime_minute(dt = datetime) (( num )) { }
+: __vimana_datetime_second(dt = datetime) (( num )) { }
+: __vimana_datetime_weekday(dt = datetime) (( num )) { }
+: __vimana_datetime_year_at(dt = datetime, timestamp = num) (( num )) { }
+: __vimana_datetime_month_at(dt = datetime, timestamp = num) (( num )) { }
+: __vimana_datetime_day_at(dt = datetime, timestamp = num) (( num )) { }
+: __vimana_datetime_hour_at(dt = datetime, timestamp = num) (( num )) { }
+: __vimana_datetime_minute_at(dt = datetime, timestamp = num) (( num )) { }
+: __vimana_datetime_second_at(dt = datetime, timestamp = num) (( num )) { }
+: __vimana_datetime_weekday_at(dt = datetime, timestamp = num) (( num )) { }
+
+: __vimana_file_read_text(f = file, path = string) (( string )) { }
+: __vimana_file_read_bytes(f = file, path = string) (( [any] )) { }
+: __vimana_file_write_text(f = file, path = string, text = string) (( bool )) { }
+: __vimana_file_write_bytes(f = file, path = string, bytes = any) (( bool )) { }
+: __vimana_file_exists(f = file, path = string) (( bool )) { }
+: __vimana_file_remove(f = file, path = string) (( bool )) { }
+: __vimana_file_rename(f = file, path = string, new_path = string) (( bool )) { }
+: __vimana_file_list(f = file, path = string) (( [any] )) { }
+: __vimana_file_is_dir(f = file, path = string) (( bool )) { }
+
+pub ,: system
+    :: run(this, scr = screen, frame = any) (( system ))
+        __vimana_system_run(this, scr, frame)
+        <- this
+    ;
+
+    :: quit(this) (( system ))
+        __vimana_system_quit(this)
+        <- this
+    ;
+
+    :: ticks(this) (( num )) <- __vimana_system_ticks(this) ;
+
+    :: sleep(this, ms = num) (( system ))
+        __vimana_system_sleep(this, ms)
+        <- this
+    ;
+
+    :: clipboard_text(this) (( string )) <- __vimana_system_clipboard_text(this) ;
+    :: set_clipboard_text(this, text = string) (( bool )) <- __vimana_system_set_clipboard_text(this, text) ;
+    :: home_dir(this) (( string )) <- __vimana_system_home_dir(this) ;
+
+    :: spawn(this, cmd = string) (( num )) <- __vimana_system_spawn(this, cmd) ;
+    :: proc_write(this, proc = num, text = string) (( bool )) <- __vimana_system_proc_write(this, proc, text) ;
+    :: proc_read_line(this, proc = num) (( string )) <- __vimana_system_proc_read_line(this, proc) ;
+    :: proc_running(this, proc = num) (( bool )) <- __vimana_system_proc_running(this, proc) ;
+    :: proc_kill(this, proc = num) (( system ))
+        __vimana_system_proc_kill(this, proc)
+        <- this
+    ;
+    :: proc_free(this, proc = num) (( system ))
+        __vimana_system_proc_free(this, proc)
+        <- this
+    ;
+
+    :: device(this) (( device )) <- __vimana_system_device(this) ;
+    :: datetime(this) (( datetime )) <- __vimana_system_datetime(this) ;
+    :: file(this) (( file )) <- __vimana_system_file(this) ;
+;
+
+pub ,: screen
+    :: clear(this, bg = num) (( screen ))
+        __vimana_screen_clear(this, bg)
+        <- this
+    ;
+
+    :: resize(this, width = num, height = num) (( screen ))
+        __vimana_screen_resize(this, width, height)
+        <- this
+    ;
+
+    :: set_palette(this, slot = num, color = string) (( screen ))
+        __vimana_screen_set_palette(this, slot, color)
+        <- this
+    ;
+
+    :: set_font_glyph(this, code = num, icn = any) (( screen ))
+        __vimana_screen_set_font_glyph(this, code, icn)
+        <- this
+    ;
+
+    :: set_font_chr(this, code = num, chr = any) (( screen ))
+        __vimana_screen_set_font_chr(this, code, chr)
+        <- this
+    ;
+
+    :: set_font_width(this, code = num, width = num) (( screen ))
+        __vimana_screen_set_font_width(this, code, width)
+        <- this
+    ;
+
+    :: set_font_size(this, size = num) (( screen ))
+        __vimana_screen_set_font_size(this, size)
+        <- this
+    ;
+
+    :: set_sprite(this, addr = num, sprite = any, mode = num) (( screen ))
+        __vimana_screen_set_sprite(this, addr, sprite, mode)
+        <- this
+    ;
+
+    :: set_x(this, x = num) (( screen ))
+        __vimana_screen_set_x(this, x)
+        <- this
+    ;
+
+    :: set_y(this, y = num) (( screen ))
+        __vimana_screen_set_y(this, y)
+        <- this
+    ;
+
+    :: set_addr(this, addr = num) (( screen ))
+        __vimana_screen_set_addr(this, addr)
+        <- this
+    ;
+
+    :: set_auto(this, auto = num) (( screen ))
+        __vimana_screen_set_auto(this, auto)
+        <- this
+    ;
+
+    :: put(this, x = num, y = num, glyph = string, fg = num, bg = num) (( screen ))
+        __vimana_screen_put(this, x, y, glyph, fg, bg)
+        <- this
+    ;
+
+    :: put_icn(this, x = num, y = num, icn = any, fg = num, bg = num) (( screen ))
+        __vimana_screen_put_icn(this, x, y, icn, fg, bg)
+        <- this
+    ;
+
+    :: put_text(this, x = num, y = num, text = string, fg = num, bg = num) (( screen ))
+        __vimana_screen_put_text(this, x, y, text, fg, bg)
+        <- this
+    ;
+
+    :: sprite(this, ctrl = num) (( screen ))
+        __vimana_screen_sprite(this, ctrl)
+        <- this
+    ;
+
+    :: pixel(this, ctrl = num) (( screen ))
+        __vimana_screen_pixel(this, ctrl)
+        <- this
+    ;
+
+    :: present(this) (( screen ))
+        __vimana_screen_present(this)
+        <- this
+    ;
+
+    :: draw_titlebar(this, bg = num) (( screen ))
+        __vimana_screen_draw_titlebar(this, bg)
+        <- this
+    ;
+
+    :: set_titlebar_title(this, title = string) (( screen ))
+        __vimana_screen_set_titlebar_title(this, title)
+        <- this
+    ;
+
+    :: set_titlebar_button(this, show = bool) (( screen ))
+        __vimana_screen_set_titlebar_button(this, show)
+        <- this
+    ;
+
+    :: titlebar_button_pressed(this) (( bool ))
+        <- __vimana_screen_titlebar_button_pressed(this)
+    ;
+
+    :: x(this) (( num )) <- __vimana_screen_x(this) ;
+    :: y(this) (( num )) <- __vimana_screen_y(this) ;
+    :: addr(this) (( num )) <- __vimana_screen_addr(this) ;
+    :: auto(this) (( num )) <- __vimana_screen_auto(this) ;
+
+    :: width(this) (( num )) <- __vimana_screen_width(this) ;
+    :: height(this) (( num )) <- __vimana_screen_height(this) ;
+    :: scale(this) (( num )) <- __vimana_screen_scale(this) ;
+;
+
+pub ,: device
+    :: poll(this) (( device ))
+        __vimana_device_poll(this)
+        <- this
+    ;
+
+    :: key_down(this, scancode = num) (( bool )) <- __vimana_device_key_down(this, scancode) ;
+    :: key_pressed(this, scancode = num) (( bool )) <- __vimana_device_key_pressed(this, scancode) ;
+    :: mouse_down(this, button = num) (( bool )) <- __vimana_device_mouse_down(this, button) ;
+    :: mouse_pressed(this, button = num) (( bool )) <- __vimana_device_mouse_pressed(this, button) ;
+    :: pointer_x(this) (( num )) <- __vimana_device_pointer_x(this) ;
+    :: pointer_y(this) (( num )) <- __vimana_device_pointer_y(this) ;
+    :: tile_x(this) (( num )) <- __vimana_device_tile_x(this) ;
+    :: tile_y(this) (( num )) <- __vimana_device_tile_y(this) ;
+    :: wheel_x(this) (( num )) <- __vimana_device_wheel_x(this) ;
+    :: wheel_y(this) (( num )) <- __vimana_device_wheel_y(this) ;
+    :: text_input(this) (( string )) <- __vimana_device_text_input(this) ;
+;
+
+pub ,: datetime
+    :: now(this) (( num )) <- __vimana_datetime_now(this) ;
+    :: year(this) (( num )) <- __vimana_datetime_year(this) ;
+    :: month(this) (( num )) <- __vimana_datetime_month(this) ;
+    :: day(this) (( num )) <- __vimana_datetime_day(this) ;
+    :: hour(this) (( num )) <- __vimana_datetime_hour(this) ;
+    :: minute(this) (( num )) <- __vimana_datetime_minute(this) ;
+    :: second(this) (( num )) <- __vimana_datetime_second(this) ;
+    :: weekday(this) (( num )) <- __vimana_datetime_weekday(this) ;
+    :: year_at(this, timestamp = num) (( num )) <- __vimana_datetime_year_at(this, timestamp) ;
+    :: month_at(this, timestamp = num) (( num )) <- __vimana_datetime_month_at(this, timestamp) ;
+    :: day_at(this, timestamp = num) (( num )) <- __vimana_datetime_day_at(this, timestamp) ;
+    :: hour_at(this, timestamp = num) (( num )) <- __vimana_datetime_hour_at(this, timestamp) ;
+    :: minute_at(this, timestamp = num) (( num )) <- __vimana_datetime_minute_at(this, timestamp) ;
+    :: second_at(this, timestamp = num) (( num )) <- __vimana_datetime_second_at(this, timestamp) ;
+    :: weekday_at(this, timestamp = num) (( num )) <- __vimana_datetime_weekday_at(this, timestamp) ;
+;
+
+pub ,: file
+    :: read_text(this, path = string) (( string )) <- __vimana_file_read_text(this, path) ;
+    :: read_bytes(this, path = string) (( [any] )) <- __vimana_file_read_bytes(this, path) ;
+    :: write_text(this, path = string, text = string) (( bool )) <- __vimana_file_write_text(this, path, text) ;
+    :: write_bytes(this, path = string, bytes = any) (( bool )) <- __vimana_file_write_bytes(this, path, bytes) ;
+    :: exists(this, path = string) (( bool )) <- __vimana_file_exists(this, path) ;
+    :: remove(this, path = string) (( bool )) <- __vimana_file_remove(this, path) ;
+    :: rename(this, path = string, new_path = string) (( bool )) <- __vimana_file_rename(this, path, new_path) ;
+    :: list(this, path = string) (( [any] )) <- __vimana_file_list(this, path) ;
+    :: is_dir(this, path = string) (( bool )) <- __vimana_file_is_dir(this, path) ;
+;
+
+pub :: system() (( system )) <- __vimana_system() ;
+pub :: screen(title = string, width = num, height = num, scale = num) (( screen )) <- __vimana_screen(title, width, height, scale) ;

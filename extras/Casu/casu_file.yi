@@ -1,0 +1,167 @@
+cask casu_file
+
+bring stdr
+bring vimana
+bring casu_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File: new
+-- ─────────────────────────────────────────────────────────────────────────────
+: file_new() (( -- ))
+    for (let ?i = 0; i < casu_model.SHEET_SIZE; i += 1)
+        casu_model.sheet[i] = 0
+    for (let ?i = 0; i < casu_model.NTAB_SIZE; i += 1)
+        casu_model.ntab[i] = 0
+    casu_model.set_focus(0, 0)
+    casu_model.set_filepath("untitled.chr")
+    casu_model.clear_dirty()
+    casu_model.set_changed(false)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File: open a .chr file + optional .chr.nmt nametable
+-- ─────────────────────────────────────────────────────────────────────────────
+: file_open(fsys = vimana.file, path = str) (( -- ))
+    let bytes = fsys.read_bytes(path)
+    let n     = stdr.len(bytes)
+    if n >= casu_model.SHEET_SIZE
+        for (let ?i = 0; i < casu_model.SHEET_SIZE; i += 1)
+            casu_model.sheet[i] = bytes[i]
+        casu_model.set_filepath(path)
+        casu_model.set_focus(0, 0)
+        casu_model.set_dirty()
+        casu_model.set_changed(false)
+        -- Try loading the companion nametable
+        let ntab_bytes = fsys.read_bytes(path + ".nmt")
+        if stdr.len(ntab_bytes) >= casu_model.NTAB_SIZE
+            for (let ?j = 0; j < casu_model.NTAB_SIZE; j += 1)
+                casu_model.ntab[j] = ntab_bytes[j]
+        else
+            -- Reset nametable to identity mapping
+            for (let ?t = 0; t < 256; t += 1)
+                casu_model.ntab[t * 3]     = t % 256
+                casu_model.ntab[t * 3 + 1] = stdr.floor(t / 256)
+                casu_model.ntab[t * 3 + 2] = 129
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File: save — writes sheet as raw CHR bytes and nametable as .nmt companion
+-- ─────────────────────────────────────────────────────────────────────────────
+: file_save(fsys = vimana.file, path = str) (( -- ))
+    fsys.write_bytes(path, casu_model.sheet)
+    fsys.write_bytes(path + ".nmt", casu_model.ntab)
+    casu_model.set_filepath(path)
+    casu_model.set_changed(false)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Is mono: check if filepath ends with ".icn"
+-- ─────────────────────────────────────────────────────────────────────────────
+: is_mono(path = str) (( bool ))
+    let n = stdr.len(path)
+    if n < 4
+        <- false
+    let ext = stdr.substring_len(path, n - 4, 4)
+    <- ext == ".icn"
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File: open a .icn mono file (1bpp, 8 bytes per tile, 256 tiles = 2048 bytes)
+-- Each tile in sheet gets plane0 from file; plane1 zeroed.
+-- ─────────────────────────────────────────────────────────────────────────────
+: file_open_mono(fsys = vimana.file, path = str) (( -- ))
+    let bytes = fsys.read_bytes(path)
+    let n = stdr.len(bytes)
+    -- Clear sheet first
+    for (let ?i = 0; i < casu_model.SHEET_SIZE; i += 1)
+        casu_model.sheet[i] = 0
+    -- Read 8 bytes per tile into plane 0 (offsets 0-7), plane 1 (offsets 8-15) stays 0
+    let ?bi = 0
+    for (let ?t = 0; t < 256; t += 1)
+        let off = t * 16
+        for (let ?r = 0; r < 8; r += 1)
+            if bi < n
+                casu_model.sheet[off + r] = bytes[bi]
+                bi += 1
+    casu_model.set_filepath(path)
+    casu_model.set_focus(0, 0)
+    casu_model.set_dirty()
+    casu_model.set_changed(false)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File: save as .icn mono (1bpp, plane 0 only, 8 bytes per tile)
+-- ─────────────────────────────────────────────────────────────────────────────
+: file_save_mono(fsys = vimana.file, path = str) (( -- ))
+    let ?out = []: [any]
+    for (let ?t = 0; t < 256; t += 1)
+        let off = t * 16
+        for (let ?r = 0; r < 8; r += 1)
+            stdr.push(out, casu_model.sheet[off + r])
+    fsys.write_bytes(path, out)
+    casu_model.set_filepath(path)
+    casu_model.set_changed(false)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Theme: save palette RGB nibble values to a 6-byte .theme file
+-- Format: [r0_hi r0_lo, g0_hi g0_lo, b0_hi b0_lo] for 4 slots packed as shorts
+-- Matches nasu's save-theme: writes System/r, System/g, System/b as 3 shorts
+-- ─────────────────────────────────────────────────────────────────────────────
+: save_theme(fsys = vimana.file, path = str) (( -- ))
+    -- Pack palette as nasu does: 3 shorts (r, g, b) with nibble pairs per slot
+    -- r_short = (PAL_R[0] << 12) | (PAL_R[1] << 8) | (PAL_R[2] << 4) | PAL_R[3]
+    let r_short = casu_model.PAL_R[0] * 4096 + casu_model.PAL_R[1] * 256 + casu_model.PAL_R[2] * 16 + casu_model.PAL_R[3]
+    let g_short = casu_model.PAL_G[0] * 4096 + casu_model.PAL_G[1] * 256 + casu_model.PAL_G[2] * 16 + casu_model.PAL_G[3]
+    let b_short = casu_model.PAL_B[0] * 4096 + casu_model.PAL_B[1] * 256 + casu_model.PAL_B[2] * 16 + casu_model.PAL_B[3]
+    let out = [stdr.floor(r_short / 256), r_short % 256,
+               stdr.floor(g_short / 256), g_short % 256,
+               stdr.floor(b_short / 256), b_short % 256]
+    fsys.write_bytes(path, out)
+;
+
+-- Load theme from a 6-byte file and apply to model palette arrays
+: load_theme(fsys = vimana.file, path = str) (( bool ))
+    let bytes = fsys.read_bytes(path)
+    if stdr.len(bytes) < 6
+        <- false
+    let r_short = bytes[0] * 256 + bytes[1]
+    let g_short = bytes[2] * 256 + bytes[3]
+    let b_short = bytes[4] * 256 + bytes[5]
+    casu_model.PAL_R[0] = stdr.floor(r_short / 4096) % 16
+    casu_model.PAL_R[1] = stdr.floor(r_short / 256) % 16
+    casu_model.PAL_R[2] = stdr.floor(r_short / 16) % 16
+    casu_model.PAL_R[3] = r_short % 16
+    casu_model.PAL_G[0] = stdr.floor(g_short / 4096) % 16
+    casu_model.PAL_G[1] = stdr.floor(g_short / 256) % 16
+    casu_model.PAL_G[2] = stdr.floor(g_short / 16) % 16
+    casu_model.PAL_G[3] = g_short % 16
+    casu_model.PAL_B[0] = stdr.floor(b_short / 4096) % 16
+    casu_model.PAL_B[1] = stdr.floor(b_short / 256) % 16
+    casu_model.PAL_B[2] = stdr.floor(b_short / 16) % 16
+    casu_model.PAL_B[3] = b_short % 16
+    <- true
+;
+
+-- Build a "#RRGGBB" hex string from nibble values for scr.set_palette
+: palette_hex(slot = num) (( str ))
+    let r = casu_model.PAL_R[slot]
+    let g = casu_model.PAL_G[slot]
+    let b = casu_model.PAL_B[slot]
+    let HEX = "0123456789abcdef"
+    <- stdr.str_concat("#",
+       stdr.str_concat(stdr.substring_len(HEX, r, 1),
+       stdr.str_concat(stdr.substring_len(HEX, r, 1),
+       stdr.str_concat(stdr.substring_len(HEX, g, 1),
+       stdr.str_concat(stdr.substring_len(HEX, g, 1),
+       stdr.str_concat(stdr.substring_len(HEX, b, 1),
+                        stdr.substring_len(HEX, b, 1)))))))
+;
+
+-- Apply all 4 palette slots to the screen
+: apply_palette(scr = vimana.screen) (( -- ))
+    scr.set_palette(0, palette_hex(0))
+    scr.set_palette(1, palette_hex(1))
+    scr.set_palette(2, palette_hex(2))
+    scr.set_palette(3, palette_hex(3))
+;

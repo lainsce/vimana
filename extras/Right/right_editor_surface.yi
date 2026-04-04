@@ -1,0 +1,165 @@
+cask right_editor_surface
+
+bring stdr
+bring cogito
+bring right_bitmap_text
+
+def PAD_X = 8
+def PAD_Y = 8
+def ROW_H = 20
+def SCALE = 1
+def MAX_CHARS = 56
+
+def SEL_BG = "#BFD8F3"
+def FG = "#1A1A1A"
+def CARET = "#0F0F0F"
+
+: clamp_i(v = num, lo = num, hi = num) (( num ))
+    let ?x = stdr.floor(stdr.num(v))
+    if x < lo
+        x = lo
+    if x > hi
+        x = hi
+    <- x
+;
+
+: char_advance() (( num ))
+    <- right_bitmap_text.glyph_advance(SCALE)
+;
+
+: line_col_to_index(code = string, target_line = num, target_col = num) (( num ))
+    let total = stdr.len(code)
+    let line_goal = clamp_i(target_line, 0, 1000000)
+
+    let ?line = 0
+    let ?start = 0
+    for (let ?i = 0; i < total; i += 1)
+        if line >= line_goal
+            break
+        if stdr.slice(code, i, i + 1) == "\n"
+            line <- line + 1
+            start = i + 1
+
+    if line < line_goal
+        start = total
+
+    let ?end = start
+    for (let ?j = start; j < total; j += 1)
+        if stdr.slice(code, j, j + 1) == "\n"
+            break
+        end = j + 1
+
+    let line_len = end - start
+    let col = clamp_i(target_col, 0, line_len)
+    <- start + col
+;
+
+: index_to_line_col(code = string, pos = num) (( [any] ))
+    let total = stdr.len(code)
+    let p = clamp_i(pos, 0, total)
+
+    let ?line = 0
+    let ?col = 0
+    for (let ?i = 0; i < p; i += 1)
+        let ch = stdr.slice(code, i, i + 1)
+        if ch == "\n"
+            line <- line + 1
+            col = 0
+        else
+            col <- col + 1
+
+    <- [line, col]
+;
+
+:: index_from_point(code = string, px = any, py = any) (( num ))
+    let row_h = ROW_H
+    let step = char_advance()
+
+    let ?line = stdr.floor((stdr.num(py) - PAD_Y) / row_h)
+    if line < 0
+        line = 0
+
+    let ?col = stdr.floor((stdr.num(px) - PAD_X) / step)
+    if col < 0
+        col = 0
+
+    <- line_col_to_index(code, line, col)
+;
+
+:: draw(
+    da = cogito.DrawingArea,
+    w = any,
+    h = any,
+    code = string,
+    sel_start = num,
+    sel_end = num,
+    caret = num
+) (( -- ))
+    let iw = stdr.floor(stdr.num(w))
+    let ih = stdr.floor(stdr.num(h))
+
+    da.set_color("#FFFFFF")
+    da.fill_rect(0, 0, iw, ih)
+
+    let ?a = stdr.floor(stdr.num(sel_start))
+    let ?b = stdr.floor(stdr.num(sel_end))
+    if a > b
+        let t = a
+        a = b
+        b = t
+
+    let total = stdr.len(code)
+    let ?start = 0
+    let ?line_no = 0
+    for (let ?i = 0; i <= total; i += 1)
+        let at_end = i >= total
+        let is_nl = !at_end && stdr.slice(code, i, i + 1) == "\n"
+        if !at_end && !is_nl
+            continue
+
+        let y = PAD_Y + line_no * ROW_H
+        if y + ROW_H > ih
+            break
+
+        let line_start = start
+        let line_end = i
+
+        let ?left = a
+        if left < line_start
+            left = line_start
+        let ?right = b
+        if right > line_end
+            right = line_end
+
+        if right > left
+            let x0 = PAD_X + (left - line_start) * char_advance()
+            let x1 = PAD_X + (right - line_start) * char_advance()
+            da.set_color(SEL_BG)
+            da.fill_rect(x0, y - 1, x1 - x0, ROW_H - 1)
+
+        let line_text = stdr.slice(code, line_start, line_end)
+        right_bitmap_text.draw_text(
+            da,
+            PAD_X,
+            y,
+            line_text,
+            FG,
+            SCALE,
+            MAX_CHARS
+        )
+
+        start = i + 1
+        line_no = line_no + 1
+
+    if a == b
+        let caret_pos = clamp_i(caret, 0, stdr.len(code))
+        let lc = index_to_line_col(code, caret_pos)
+        let caret_line = stdr.floor(stdr.num(lc[0] ?? 0))
+        let caret_col = stdr.floor(stdr.num(lc[1] ?? 0))
+
+        let cy = PAD_Y + caret_line * ROW_H
+        if cy + ROW_H <= ih
+            let cx = PAD_X + caret_col * char_advance()
+            da.set_color(CARET)
+            da.fill_rect(cx, cy - 1, 2, ROW_H - 2)
+;

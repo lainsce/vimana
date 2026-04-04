@@ -1,0 +1,436 @@
+cask casu_view
+
+bring stdr
+bring vimana
+bring casu_model
+bring casu_icons
+bring casu_edit
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Palette color lookup for colorview swatches (slot 0-3).
+-- These must match the set_palette calls in main setup.
+-- ─────────────────────────────────────────────────────────────────────────────
+-- bg border / panel separator color indices (palette slots 0-3)
+def C_BG   = 0   -- background (black)
+def C_FG   = 1   -- foreground / text (teal)
+def C_HL   = 2   -- highlight (purple)
+def C_WH   = 3   -- bright / selected (white)
+
+-- Format a byte (0-255) as a 2-digit lowercase hex string e.g. 50 → "32"
+: to_hex2(n = num) (( str ))
+    let HEX = "0123456789abcdef"
+    let b = n % 256
+    let hi = stdr.floor(b / 16)
+    let lo = b % 16
+    <- stdr.str_concat(stdr.substring_len(HEX, hi, 1), stdr.substring_len(HEX, lo, 1))
+;
+
+-- Format a short (2 bytes) as a 4-digit lowercase hex string e.g. 0x1c30 → "1c30"
+: to_hex4(hi_byte = num, lo_byte = num) (( str ))
+    <- stdr.str_concat(to_hex2(hi_byte), to_hex2(lo_byte))
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Panel borders / clear helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Fill a rect in a solid palette color
+: fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    scr.set_auto(1)
+    for (let ?row = 0; row < h; row += 1)
+        scr.set_y(y + row)
+        scr.set_x(x)
+        for (let ?col = 0; col < w; col += 1)
+            scr.pixel(c)
+    scr.set_auto(0)
+;
+
+-- Draw a 1-pixel border around a rect (color c)
+: border(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    -- top
+    fill(scr, x,         y,         w, 1, c)
+    -- bottom
+    fill(scr, x,         y + h - 1, w, 1, c)
+    -- left
+    fill(scr, x,         y + 1,     1, h - 2, c)
+    -- right
+    fill(scr, x + w - 1, y + 1,     1, h - 2, c)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Tileview: 16×16 grid of 8×8 CHR tiles
+-- Requires sync_all() to have been called first so sprite memory is up to date.
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_tileview(scr = vimana.screen) (( -- ))
+    if casu_model.zoom_on
+        draw_tileview_zoom(scr)
+        <-
+
+    -- Clear tileview area with bg color
+    fill(scr, casu_model.TILEVIEW_X, casu_model.TILEVIEW_Y,
+         casu_model.TILEVIEW_W, casu_model.TILEVIEW_H, C_BG)
+
+    -- Draw all 256 tiles: set_auto(246) then sprite() per row.
+    -- 246 = 0xF6: rML=15 (16 tiles per call), rMY (auto-x by 8 each tile), rMA (addr+16/tile 2bpp)
+    scr.set_auto(246)
+    scr.set_x(casu_model.TILEVIEW_X)
+    scr.set_y(casu_model.TILEVIEW_Y)
+    scr.set_addr(0)
+    for (let ?ty = 0; ty < 16; ty += 1)
+        scr.sprite(129)    -- 2bpp bg layer blend=1
+
+    -- Selection highlight: redraw actual tiles with sprite(0x84)=blend-4, matching nasu
+    let sel_w = casu_model.sel_x2 - casu_model.sel_x1 + 1
+    let sel_h = casu_model.sel_y2 - casu_model.sel_y1 + 1
+    let sel_auto = (sel_w - 1) * 16 + 6
+    let sel_base = (casu_model.sel_y1 * 16 + casu_model.sel_x1) * casu_model.TILE_BYTES
+    let row_stride = 16 * casu_model.TILE_BYTES
+    scr.set_auto(sel_auto)
+    for (let ?r = 0; r < sel_h; r += 1)
+        scr.set_x(casu_model.TILEVIEW_X + casu_model.sel_x1 * 8)
+        scr.set_y(casu_model.TILEVIEW_Y + (casu_model.sel_y1 + r) * 8)
+        scr.set_addr(sel_base + r * row_stride)
+        scr.sprite(132)   -- 0x84: 2bpp bg-layer blend=4 (highlight)
+    scr.set_auto(1)
+
+    -- Selection size label: WxH as 2-digit hex below selection (nasu style)
+    -- Only shown when not at bottom row and selection is at least 2 tiles wide
+    if casu_model.sel_y2 < 15 && sel_w >= 2
+        let label_x = casu_model.TILEVIEW_X + casu_model.sel_x1 * 8
+        let label_y = casu_model.TILEVIEW_Y + (casu_model.sel_y2 + 1) * 8
+        scr.put_text(label_x, label_y, to_hex2(sel_w * 16 + sel_h), C_WH, C_BG)
+        -- Direction icon next to size
+        let ?dir_icn = casu_icons.ICN_DIR0
+        if casu_model.dir == 1
+            dir_icn = casu_icons.ICN_DIR1
+        scr.put_icn(label_x + 16, label_y, dir_icn, C_FG, C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Tileview zoom mode: 16×16 pixel window at 8× magnification
+-- Shows individual pixels of the spritesheet at zoom origin (sel_zx, sel_zy)
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_tileview_zoom(scr = vimana.screen) (( -- ))
+    -- Clear with bg
+    fill(scr, casu_model.TILEVIEW_X, casu_model.TILEVIEW_Y,
+         casu_model.TILEVIEW_W, casu_model.TILEVIEW_H, C_BG)
+
+    -- Draw each pixel at 1:1 cell resolution (each pixel = one 8×8 cell)
+    for (let ?row = 0; row < 16; row += 1)
+        for (let ?col = 0; col < 16; col += 1)
+            let ax = casu_model.sel_zx + col
+            let ay = casu_model.sel_zy + row
+            if ax < 128 && ay < 128
+                let c = casu_edit.get_pixel(ax, ay)
+                let px = casu_model.TILEVIEW_X + col * 8
+                let py = casu_model.TILEVIEW_Y + row * 8
+                scr.put_icn(px, py, casu_icons.ICN_FILL, c, C_BG)
+
+    -- Dashed guide lines at tile boundaries
+    let gy = (8 - (casu_model.sel_zy % 8)) % 8
+    if gy > 0 && gy < 16
+        for (let ?gx = 0; gx < 16; gx += 2)
+            let px = casu_model.TILEVIEW_X + gx * 8
+            let py = casu_model.TILEVIEW_Y + gy * 8 - 1
+            fill(scr, px, py, 8, 1, C_HL)
+    let gy2 = gy + 8
+    if gy2 > 0 && gy2 < 16
+        for (let ?gx = 0; gx < 16; gx += 2)
+            let px = casu_model.TILEVIEW_X + gx * 8
+            let py = casu_model.TILEVIEW_Y + gy2 * 8 - 1
+            fill(scr, px, py, 8, 1, C_HL)
+
+    -- Vertical guides
+    let gvx = (8 - (casu_model.sel_zx % 8)) % 8
+    if gvx > 0 && gvx < 16
+        for (let ?gr = 0; gr < 16; gr += 2)
+            let px = casu_model.TILEVIEW_X + gvx * 8 - 1
+            let py = casu_model.TILEVIEW_Y + gr * 8
+            fill(scr, px, py, 1, 8, C_HL)
+    let gvx2 = gvx + 8
+    if gvx2 > 0 && gvx2 < 16
+        for (let ?gr = 0; gr < 16; gr += 2)
+            let px = casu_model.TILEVIEW_X + gvx2 * 8 - 1
+            let py = casu_model.TILEVIEW_Y + gr * 8
+            fill(scr, px, py, 1, 8, C_HL)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Nametableview: 16×16 grid using nametable tile references
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_nametable(scr = vimana.screen) (( -- ))
+    fill(scr, casu_model.NTAB_X, casu_model.NTAB_Y,
+         casu_model.NTAB_W, casu_model.NTAB_H, C_BG)
+    for (let ?ty = 0; ty < 16; ty += 1)
+        for (let ?tx = 0; tx < 16; tx += 1)
+            let entry_base = (ty * 16 + tx) * 3
+            let tile_lo = casu_model.ntab[entry_base]
+            let tile_hi = casu_model.ntab[entry_base + 1]
+            let blend   = casu_model.ntab[entry_base + 2]
+            -- skip empty entries (all zeros = no tile placed)
+            if blend == 0
+            else
+                let tile_idx = tile_hi * 256 + tile_lo
+                if tile_idx < 256
+                    let px = casu_model.NTAB_X + tx * 8
+                    let py = casu_model.NTAB_Y + ty * 8
+                    scr.set_auto(0)
+                    scr.set_x(px)
+                    scr.set_y(py)
+                    scr.set_addr(tile_idx * 16)
+                    scr.sprite(blend)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Zoomview: focused tile at 4× magnification using bigpixel-icn (nasu style)
+-- 8×8 pixels drawn at 4px pitch = 32×32 display area; arrows + frame below
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_zoomview(scr = vimana.screen) (( -- ))
+    fill(scr, casu_model.ZOOM_X, casu_model.ZOOM_Y,
+         casu_model.ZOOM_W + 1, casu_model.ZOOM_H + 1, C_BG)
+
+    let base_ax = casu_model.sel_x1 * 8
+    let base_ay = casu_model.sel_y1 * 8
+
+    for (let ?row = 0; row < 8; row += 1)
+        for (let ?col = 0; col < 8; col += 1)
+            let c  = casu_edit.get_pixel(base_ax + col, base_ay + row)
+            let px = casu_model.ZOOM_X + col * 4
+            let py = casu_model.ZOOM_Y + row * 4
+            scr.put_icn(px, py, casu_icons.ICN_BIGPIXEL, c, 0)
+
+    -- Frame border around the 32×32 zoom area
+    border(scr, casu_model.ZOOM_X - 1, casu_model.ZOOM_Y - 1, 34, 34, C_HL)
+
+    -- Arrow icons at bottom of zoom panel (y = ZOOM_Y + ZOOM_H - 8 = 66)
+    -- nasu draws one ver-arrow and one hor-arrow (shift tile navigation)
+    let arrow_y = casu_model.ZOOM_Y + casu_model.ZOOM_H - 8
+    scr.put_icn(casu_model.ZOOM_X,     arrow_y, casu_icons.ICN_ARROW_U, C_FG, C_BG)
+    scr.put_icn(casu_model.ZOOM_X + 8, arrow_y, casu_icons.ICN_ARROW_R, C_FG, C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Preview: tiled preview of focused tile (nasu style, 31×47 panel)
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_preview(scr = vimana.screen) (( -- ))
+    fill(scr, casu_model.PREVIEW_X, casu_model.PREVIEW_Y,
+         casu_model.PREVIEW_W + 1, casu_model.PREVIEW_H + 1, C_BG)
+
+    -- ratio lower nibble = x-count (cols), upper nibble = y-count (rows)
+    let ratio_x = casu_model.ratio % 16
+    let ratio_y = stdr.floor(casu_model.ratio / 16)
+    let ?addr   = casu_model.focus
+    let tile_step = casu_model.depth * 8
+
+    scr.set_auto(0)
+    for (let ?row = 0; row < 4; row += 1)
+        for (let ?col = 0; col < 4; col += 1)
+            let px = casu_model.PREVIEW_X + col * 8
+            let py = casu_model.PREVIEW_Y + row * 8
+            if col < ratio_x && row < ratio_y
+                scr.set_x(px)
+                scr.set_y(py)
+                scr.set_addr(addr)
+                scr.sprite(casu_model.blend)
+                addr = addr + tile_step
+            else
+                scr.put_icn(px, py, casu_icons.ICN_HALF, C_FG, C_BG)
+
+    -- Ratio label at bottom
+    let label_y = casu_model.PREVIEW_Y + casu_model.PREVIEW_H - 8
+    scr.put_text(casu_model.PREVIEW_X, label_y, to_hex2(casu_model.ratio), C_WH, C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Colorview: 3 RGB sliders (nasu style), 16 steps × 2px wide per channel
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_colorview(scr = vimana.screen) (( -- ))
+    fill(scr, casu_model.COLOR_X, casu_model.COLOR_Y,
+         casu_model.COLOR_W, casu_model.COLOR_H + 1, C_BG)
+
+    let r_val = casu_model.PAL_R[casu_model.color]
+    let g_val = casu_model.PAL_G[casu_model.color]
+    let b_val = casu_model.PAL_B[casu_model.color]
+
+    -- R slider
+    for (let ?step = 0; step < 16; step += 1)
+        let ?icn = casu_icons.ICN_SLIDER1
+        if step <= r_val
+            icn = casu_icons.ICN_SLIDER0
+        scr.put_icn(casu_model.COLOR_X + step * 2, casu_model.COLOR_Y, icn, C_HL, C_BG)
+
+    -- G slider
+    for (let ?step = 0; step < 16; step += 1)
+        let ?icn = casu_icons.ICN_SLIDER1
+        if step <= g_val
+            icn = casu_icons.ICN_SLIDER0
+        scr.put_icn(casu_model.COLOR_X + step * 2, casu_model.COLOR_Y + 8, icn, C_HL, C_BG)
+
+    -- B slider
+    for (let ?step = 0; step < 16; step += 1)
+        let ?icn = casu_icons.ICN_SLIDER1
+        if step <= b_val
+            icn = casu_icons.ICN_SLIDER0
+        scr.put_icn(casu_model.COLOR_X + step * 2, casu_model.COLOR_Y + 16, icn, C_HL, C_BG)
+
+    -- RGB hex label at bottom of colorview (e.g. "7dc")
+    let HEX = "0123456789abcdef"
+    let label_y = casu_model.COLOR_Y + casu_model.COLOR_H - 8
+    let rgb_str = stdr.str_concat(stdr.str_concat(
+        stdr.substring_len(HEX, r_val, 1),
+        stdr.substring_len(HEX, g_val, 1)),
+        stdr.substring_len(HEX, b_val, 1))
+    scr.put_text(casu_model.COLOR_X, label_y, rgb_str, C_WH, C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Blendview: 4×4 grid of focused tile drawn with 16 blend modes (nasu style)
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_blendview(scr = vimana.screen) (( -- ))
+    fill(scr, casu_model.BLEND_X, casu_model.BLEND_Y,
+         casu_model.BLEND_W + 1, casu_model.BLEND_H + 1, C_BG)
+
+    -- 4×4 grid: 16 blend modes
+    scr.set_auto(0)
+    for (let ?i = 0; i < 16; i += 1)
+        let cx = casu_model.BLEND_X + (i % 4) * 8
+        let cy = casu_model.BLEND_Y + stdr.floor(i / 4) * 8
+        -- background: fill with bg color first
+        fill(scr, cx, cy, 8, 8, C_BG)
+        -- draw the focused tile with blend mode i (upper nibble = 0xb0 mask)
+        scr.set_x(cx)
+        scr.set_y(cy)
+        scr.set_addr(casu_model.focus)
+        scr.sprite((casu_model.blend % 176) + i)
+
+    -- Direction arrows at bottom of blendview
+    let arrow_y = casu_model.BLEND_Y + casu_model.BLEND_H - 8
+    -- vertical blend direction arrow
+    let ?ver_icn = casu_icons.ICN_ARROW_U
+    if (casu_model.blend % 64) >= 32
+        ver_icn = casu_icons.ICN_ARROW_D
+    scr.put_icn(casu_model.BLEND_X + 16, arrow_y, ver_icn, C_HL, C_BG)
+    -- horizontal blend direction arrow
+    let ?hor_icn = casu_icons.ICN_ARROW_L
+    if (casu_model.blend % 32) >= 16
+        hor_icn = casu_icons.ICN_ARROW_R
+    scr.put_icn(casu_model.BLEND_X + 24, arrow_y, hor_icn, C_HL, C_BG)
+    -- Blend byte hex label
+    scr.put_text(casu_model.BLEND_X, arrow_y, to_hex2(casu_model.blend), C_WH, C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Dataview: hex data of focused tile (nasu style: rows of short values)
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_dataview(scr = vimana.screen) (( -- ))
+    fill(scr, casu_model.DATA_X, casu_model.DATA_Y,
+         casu_model.DATA_W, casu_model.DATA_H + 1, C_BG)
+
+    let off = casu_model.focus
+    let label_y = casu_model.DATA_Y + casu_model.DATA_H - 8
+    -- show focused tile index as hex at bottom
+    let tile_idx = stdr.floor(off / casu_model.TILE_BYTES)
+    scr.put_text(casu_model.DATA_X, label_y, to_hex2(tile_idx), C_WH, C_BG)
+
+    -- 4 rows: plane0 short (4 hex chars) + 12px gap + plane1 short (4 hex chars)
+    for (let ?r = 0; r < 4; r += 1)
+        let row_y = casu_model.DATA_Y + r * 8
+        -- plane 0 short (2 bytes as 4 hex chars)
+        scr.put_text(casu_model.DATA_X, row_y,
+            to_hex4(casu_model.sheet[off + r * 2], casu_model.sheet[off + r * 2 + 1]), C_FG, C_BG)
+        -- plane 1 short (12px gap after 32px of plane0 text)
+        scr.put_text(casu_model.DATA_X + 44, row_y,
+            to_hex4(casu_model.sheet[off + 8 + r * 2], casu_model.sheet[off + 8 + r * 2 + 1]), C_HL, C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Toolview: color circles + tool icons + filepath + file ops (nasu style)
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_toolview(scr = vimana.screen) (( -- ))
+    fill(scr, casu_model.TOOL_X, casu_model.TOOL_Y,
+         casu_model.TOOL_W, casu_model.TOOL_H, C_BG)
+
+    let ty = casu_model.TOOL_Y
+    let tx = casu_model.TOOL_X
+    let x2 = tx + casu_model.TOOL_W   -- = 18 + 264 = 282
+
+    -- Color circles: colors 1, 2, 3 (color 0/bg only via key 1)
+    let ?c1_icn = casu_icons.ICN_CIRCLE0
+    if casu_model.color == 1
+        c1_icn = casu_icons.ICN_CIRCLE1
+    scr.put_icn(tx,      ty, c1_icn, C_FG, C_BG)
+
+    let ?c2_icn = casu_icons.ICN_CIRCLE0
+    if casu_model.color == 2
+        c2_icn = casu_icons.ICN_CIRCLE1
+    scr.put_icn(tx + 8,  ty, c2_icn, C_HL, C_BG)
+
+    let ?c3_icn = casu_icons.ICN_CIRCLE0
+    if casu_model.color == 3
+        c3_icn = casu_icons.ICN_CIRCLE1
+    scr.put_icn(tx + 16, ty, c3_icn, C_WH, C_BG)
+
+    -- Tool icons (brush / select / zoom) at x+24
+    let ?brush_hi  = 1
+    let ?select_hi = 1
+    let ?zoom_hi   = 1
+    if casu_model.tool == casu_model.TOOL_BRUSH
+        brush_hi  = 2
+    if casu_model.tool == casu_model.TOOL_SELECTOR
+        select_hi = 2
+    if casu_model.tool == casu_model.TOOL_ZOOM
+        zoom_hi   = 2
+    scr.put_icn(tx + 32, ty, casu_icons.ICN_BRUSH,  brush_hi,  C_BG)
+    scr.put_icn(tx + 40, ty, casu_icons.ICN_SELECT, select_hi, C_BG)
+    let ?zoom_icn = casu_icons.ICN_ZOOM0
+    if casu_model.zoom_on
+        zoom_icn = casu_icons.ICN_ZOOM1
+    scr.put_icn(tx + 48, ty, zoom_icn, zoom_hi, C_BG)
+
+    -- Filepath at x+64
+    scr.put_text(tx + 64, ty + 1, casu_model.filepath, C_FG, C_BG)
+
+    -- File ops on right side: make at x2-32, load at x2-24, save at x2-8
+    scr.put_icn(x2 - 32, ty, casu_icons.ICN_MAKE, C_FG, C_BG)
+    scr.put_icn(x2 - 24, ty, casu_icons.ICN_LOAD, C_FG, C_BG)
+    let ?save_fg = C_FG
+    if casu_model.changed
+        save_fg = C_WH
+    scr.put_icn(x2 - 8,  ty, casu_icons.ICN_SAVE, save_fg, C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Top border bar (shows panel labels above the panels)
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_topbar(scr = vimana.screen) (( -- ))
+    fill(scr, 0, 0, casu_model.SCR_W, casu_model.ZOOM_Y, C_BG)
+    scr.put_text(casu_model.ZOOM_X,    2, "zoom",    C_FG, C_BG)
+    scr.put_text(casu_model.PREVIEW_X, 2, "preview", C_FG, C_BG)
+    scr.put_text(casu_model.COLOR_X,   2, "color",   C_FG, C_BG)
+    scr.put_text(casu_model.BLEND_X,   2, "blend",   C_FG, C_BG)
+    scr.put_text(casu_model.DATA_X,    2, "data",    C_FG, C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Full redraw: clear screen and draw all panels
+-- ─────────────────────────────────────────────────────────────────────────────
+: draw_all(scr = vimana.screen) (( -- ))
+    -- Clear entire layers buffer (both fg AND bg nibbles) so old put_icn fg data
+    -- from previous frames doesn't ghost-accumulate (fill/sprite only clear bg nibble)
+    scr.clear(C_BG)
+
+    -- NOTE: caller must call casu_edit.sync_all(scr) before draw_all when dirty
+    draw_zoomview(scr)
+    draw_preview(scr)
+    draw_colorview(scr)
+    draw_blendview(scr)
+    draw_dataview(scr)
+    draw_tileview(scr)
+    draw_nametable(scr)
+    -- Frames around editor and nametable fields
+    border(scr, casu_model.TILEVIEW_X - 1, casu_model.TILEVIEW_Y - 1,
+           casu_model.TILEVIEW_W + 2, casu_model.TILEVIEW_H + 2, C_FG)
+    border(scr, casu_model.NTAB_X - 1, casu_model.NTAB_Y - 1,
+           casu_model.NTAB_W + 2, casu_model.NTAB_H + 2, C_FG)
+    draw_toolview(scr)
+;
