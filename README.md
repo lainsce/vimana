@@ -1,4 +1,4 @@
-# Cogito
+# Vimana
 
 > Get rational about GUI.
 
@@ -8,61 +8,31 @@
 - Meson
 - Ninja
 - SDL3
-- SDL3_ttf
-- freetype2
-- SDL3_image (optional, used for themed icon file loading)
-- (Optionally) Yis compiler [for extras folder apps]
+- Yis compiler [for extras folder apps]
 
 Example (macOS/Homebrew):
 
 ```sh
-brew install meson ninja sdl3 sdl3_ttf sdl3_image freetype
+brew install meson ninja sdl3
 ```
 
-## SUM Theme Validator
+## Build Vimana
 
-Validate Cogito SUM themes (including `@bring` expansion with source-mapped diagnostics):
+Build the Vimana shared library in its own build directory:
 
 ```sh
-./yis/build/yis sum validate cogito/examples/sum_validator_fixtures/theme.sum
-./yis/build/yis sum validate --mode off cogito/examples/sum_validator_fixtures/theme.sum
-./yis/build/yis sum validate --mode strict cogito/examples/sum_validator_fixtures/theme.sum
-./yis/build/yis sum validate cogito/examples/sum_validator_fixtures
+meson setup vimana/build vimana
+meson compile -C vimana/build
 ```
 
-Fixtures for validator behavior are in:
-
-```txt
-cogito/examples/sum_validator_fixtures/
-```
-
-## Build Cogito
-
-Build the Cogito shared library in its own build directory:
-
-```sh
-meson setup cogito/build cogito
-meson compile -C cogito/build
-```
-
-Then run GUI examples with Yis:
-
-```sh
-./yis/build/yis run cogito/examples/gui_hello.yi
-./yis/build/yis run cogito/examples/gui_gallery.yi
-```
-
-If your program uses Cogito, include:
+If your Yis program uses Vimana, include:
 
 ```yis
-bring cogito
+bring vimana
 ```
 
-Install Cogito library and headers:
+Install Vimana library and headers:
 
 ```sh
-meson install -C cogito/build
+meson install -C vimana/build
 ```
-
-- `YIS_COGITO_CFLAGS`: extra C flags for Cogito
-- `YIS_COGITO_FLAGS`: extra linker flags for Cogito
