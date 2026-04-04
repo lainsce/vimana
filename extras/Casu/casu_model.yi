@@ -41,12 +41,12 @@ def TOOL_W      = 264
 def TOOL_H      = 8
 
 -- Palette R/G/B nibble values for each color slot (matching nasu default theme)
--- PAL_1=#77ddcc → r=7, g=d=13, b=c=12
+-- PAL_3=#77ddcc → r=7, g=d=13, b=c=12
 -- PAL_2=#9977dd → r=9, g=7,    b=d=13
--- PAL_3=#ffffff → r=f=15, g=f=15, b=f=15
-def PAL_R = [0, 7, 9, 15]
-def PAL_G = [0, 13, 7, 15]
-def PAL_B = [0, 12, 13, 15]
+-- PAL_1=#ffffff → r=f=15, g=f=15, b=f=15
+def PAL_R = [0, 15, 9,  7]
+def PAL_G = [0, 15, 7,  13]
+def PAL_B = [0, 15, 13, 12]
 
 -- Sprite data constants
 def SHEET_TILES = 256

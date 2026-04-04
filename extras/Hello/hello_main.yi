@@ -8,7 +8,7 @@ bring hello_scene
     let sys = vimana.system()
     let scr = vimana.screen("Hello", 320, 192, 1)
     scr.set_palette(vimana.color_bg, "#FFFFEE")
-    .set_palette(vimana.color_1, "#000000")
+    .set_palette(vimana.color_fg, "#000000")
     .set_palette(vimana.color_2, "#77DDCC")
     .set_palette(vimana.color_3, "#FFBB22")
     hello_font.install(scr)

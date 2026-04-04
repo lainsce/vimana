@@ -444,13 +444,13 @@ static void __vimana_screen_set_font_chr(YisVal scrv, YisVal codev,
                                          YisVal chrv) {
   vimana_screen *screen = vimana_screen_from_val(
       scrv, "vimana.screen.set_font_chr expects screen");
-  uint8_t bytes[16] = {0};
+  uint8_t bytes[72] = {0}; /* max 24 rows × 3 bytes/row for UF3 */
   if (chrv.tag != EVT_ARR)
     yis_trap("vimana.screen.set_font_chr expects byte array");
   YisArr *arr = (YisArr *)chrv.as.p;
   int len = 0;
   if (arr) {
-    len = (int)(arr->len < 16 ? arr->len : 16);
+    len = (int)(arr->len < 72 ? arr->len : 72);
     for (int i = 0; i < len; i++)
       bytes[i] = vimana_byte_from_val(arr->items[i]);
   }

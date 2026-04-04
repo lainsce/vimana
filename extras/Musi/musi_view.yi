@@ -1,0 +1,188 @@
+cask musi_view
+
+bring stdr
+bring vimana
+
+bring musi_model
+bring musi_assets
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Drawing primitives
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    scr.set_auto(1)
+    for (let ?row = 0; row < h; row += 1)
+        scr.set_y(y + row)
+        scr.set_x(x)
+        for (let ?col = 0; col < w; col += 1)
+            scr.pixel(c)
+    scr.set_auto(0)
+;
+
+-- Truncate text to max_chars, appending "~" if clipped
+: clamp_text(text = string, max_chars = num) (( string ))
+    let n = stdr.len(text)
+    if n <= max_chars
+        <- text
+    <- stdr.slice(text, 0, max_chars - 1) + "~"
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Player panel (title / artist / album / controls / progress)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_player(scr = vimana.screen) (( -- ))
+    let max_chars = 29
+
+    -- ID3 text lines (title scrolls when too long)
+    let tlen = stdr.len(musi_model.title)
+    let ?display_title = musi_model.title
+    if tlen > max_chars
+        let looped    = musi_model.title + "  " + musi_model.title
+        let off       = musi_model.title_scroll
+        display_title = stdr.slice(looped, off, off + max_chars)
+    let tcx = (musi_model.WIN_W - stdr.len(display_title) * 8) / 2
+    scr.put_text(tcx, musi_model.TITLE_Y, display_title, musi_model.C_ALT, musi_model.C_BG)
+    let ca  = clamp_text(musi_model.artist, max_chars)
+    let acx = (musi_model.WIN_W - stdr.len(ca) * 8) / 2
+    scr.put_text(acx, musi_model.ARTIST_Y, ca, musi_model.C_FG, musi_model.C_BG)
+    let cl  = clamp_text(musi_model.album, max_chars)
+    let lcx = (musi_model.WIN_W - stdr.len(cl) * 8) / 2
+    scr.put_text(lcx, musi_model.ALBUM_Y, cl, musi_model.C_FG, musi_model.C_BG)
+
+    -- Controls bar (light background, full width, 48 px high)
+    fill(scr, 0, musi_model.CTRL_BG_Y, musi_model.WIN_W, 48, musi_model.C_FG)
+
+    -- Control icons (button frame wraps play/pause)
+    musi_assets.draw_repeat(scr, musi_model.CTRL_REPEAT_X, musi_model.CTRL_Y, musi_model.repeat,  musi_model.C_ALT, musi_model.C_FG)
+    musi_assets.draw_volume(scr, musi_model.CTRL_VOLDN_X,  musi_model.CTRL_Y, musi_model.volume,  musi_model.C_ALT, musi_model.C_FG)
+    musi_assets.draw_prev(  scr, musi_model.CTRL_PREV_X,   musi_model.CTRL_Y,                     musi_model.C_ALT, musi_model.C_FG)
+    musi_assets.draw_button_frame(scr, musi_model.CTRL_PLAY_X, musi_model.CTRL_BG_Y, musi_model.C_HL, musi_model.C_FG)
+    musi_assets.draw_play(  scr, musi_model.CTRL_PLAY_X + 8, musi_model.CTRL_Y, musi_model.paused, musi_model.C_FG, musi_model.C_HL)
+    musi_assets.draw_next(  scr, musi_model.CTRL_NEXT_X,   musi_model.CTRL_Y,                     musi_model.C_ALT, musi_model.C_FG)
+    musi_assets.draw_volume(scr, musi_model.CTRL_VOLUP_X,  musi_model.CTRL_Y, 6,                  musi_model.C_ALT, musi_model.C_FG)
+    musi_assets.draw_shuffle(scr, musi_model.CTRL_SHUF_X,  musi_model.CTRL_Y, musi_model.shuffle, musi_model.C_ALT, musi_model.C_FG)
+
+    -- Progress bar — shape from m291 progress-chr sprites (16 rows, rounded pill)
+    -- Outer bar extent per row (from plane0), inner fill extent (from plane1):
+    --   rows 0-1, 14-15 : outside pill (skip)
+    --   row  2, 13       : outer inset 6, no inner fill (border-only top/bottom line)
+    --   row  3, 12       : outer inset 4, inner inset 6
+    --   rows 4-5, 10-11  : outer inset 3, inner inset 4
+    --   rows 6-9         : outer inset 2, inner inset 3 (widest)
+    let bar_x0 = musi_model.PROG_X
+    let bar_x1 = musi_model.PROG_X + 240
+    let fp     = musi_model.sec_prog
+    for (let ?r = 0; r < 16; r += 1)
+        let ?outer = 0
+        let ?inner = 0
+        if r == 2 || r == 13
+            outer = 6
+        elif r == 3 || r == 12
+            outer = 4
+            inner = 6
+        elif r == 4 || r == 5 || r == 10 || r == 11
+            outer = 3
+            inner = 4
+        elif r >= 6 && r <= 9
+            outer = 2
+            inner = 3
+        if outer > 0
+            let ry  = musi_model.PROG_Y + r
+            let bx  = bar_x0 + outer
+            let bxr = bar_x1 - outer
+            fill(scr, bx, ry, bxr - bx, 1, musi_model.C_FG)
+            if inner > 0
+                let ix  = bar_x0 + inner
+                let ixr = bar_x1 - inner
+                let ?ep = bar_x0 + fp
+                if ep > ixr
+                    ep = ixr
+                if ep > ix
+                    fill(scr, ix, ry, ep - ix, 1, musi_model.C_HL)
+
+    -- Timestamps
+    let ts_left  = musi_model.fmt_secs(musi_model.sec_from)
+    let ts_right = musi_model.fmt_secs(musi_model.sec_to)
+    scr.put_text(8, musi_model.TS_Y, ts_left,  musi_model.C_FG, musi_model.C_BG)
+    scr.put_text(musi_model.WIN_W - 8 - 5 * 8, musi_model.TS_Y,
+        ts_right, musi_model.C_FG, musi_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Directory list
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_dir(scr = vimana.screen) (( -- ))
+    let dir_y       = musi_model.dir_y()
+    let num_folders = stdr.len(musi_model.folders)
+    let num_tracks  = stdr.len(musi_model.tracks)
+    let total       = num_folders + num_tracks
+    let cur_scroll  = musi_model.scroll
+
+    -- Empty directory message
+    if total == 0
+        scr.put_text(8, dir_y, "(empty)", musi_model.C_FG, musi_model.C_BG)
+        <-
+
+    for (let ?i = 0; i < musi_model.MAX_ROWS; i += 1)
+        let row_idx = cur_scroll + i
+        if row_idx >= total
+            break
+        let row_y = dir_y + i * musi_model.ROW_H
+
+        -- Background colour
+        let ?bg          = musi_model.C_BG
+        let ?is_play_row = false
+        if row_idx == musi_model.sel
+            bg = musi_model.C_HL
+        if musi_model.playing && row_idx == num_folders + musi_model.sel_track
+            bg          = musi_model.C_ALT
+            is_play_row = true
+        fill(scr, 0, row_y, musi_model.WIN_W, musi_model.ROW_H, bg)
+
+        -- Now-playing poke indicator (right-pointing triangle at left edge)
+        if is_play_row
+            musi_assets.draw_poke(scr, row_y, musi_model.C_FG, musi_model.C_ALT)
+
+        -- Label and foreground colour
+        let ?label = ""
+        let ?fg    = musi_model.C_FG
+        if row_idx < num_folders
+            fg = musi_model.C_ALT
+        if bg == musi_model.C_HL || bg == musi_model.C_ALT
+            fg = musi_model.C_BG
+
+        if row_idx < num_folders
+            let raw = stdr.str(musi_model.folders[row_idx] ?? "")
+            -- Strip common prefix when it is more than 3 chars
+            if musi_model.prefix_folders > 3
+                label = "... " + stdr.slice(raw, musi_model.prefix_folders, stdr.len(raw))
+            else
+                label = raw
+            -- Folder gizmo: ">" at the right edge
+            scr.put_text(musi_model.WIN_W - 12, row_y, ">", fg, bg)
+        else
+            let tidx     = row_idx - num_folders
+            let raw_name = musi_model.strip_ext(stdr.str(musi_model.tracks[tidx] ?? ""))
+            if musi_model.prefix_tracks > 3
+                label = "  " + stdr.slice(raw_name, musi_model.prefix_tracks, stdr.len(raw_name))
+            else
+                label = "  " + raw_name
+
+        scr.put_text(4, row_y, clamp_text(label, 29), fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Full-frame redraw
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_all(scr = vimana.screen) (( -- ))
+    scr.clear(musi_model.C_BG)
+    scr.draw_titlebar(musi_model.C_BG)
+    if musi_model.playing
+        draw_player(scr)
+    draw_dir(scr)
+    scr.present()
+;

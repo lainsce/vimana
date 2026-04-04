@@ -1,0 +1,402 @@
+cask musi_assets
+
+bring vimana
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Private: draw 2×2 tiles as a 16×16 icon
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_icn(scr = vimana.screen, x = num, y = num, tl = any, tr = any, bl = any, br = any, fg = num, bg = num) (( -- ))
+    scr.put_icn(x,     y,     tl, fg, bg)
+    scr.put_icn(x + 8, y,     tr, fg, bg)
+    scr.put_icn(x,     y + 8, bl, fg, bg)
+    scr.put_icn(x + 8, y + 8, br, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Repeat icon (off / on)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def RPT_OFF_TL = [0, 0, 0, 15, 31, 24, 16, 0]
+def RPT_OFF_TR = [0, 16, 24, 252, 252, 24, 16, 0]
+def RPT_OFF_BL = [0, 8, 24, 63, 63, 24, 8, 0]
+def RPT_OFF_BR = [0, 8, 24, 248, 240, 0, 0, 0]
+
+def RPT_ON_TL = [0, 0, 0, 15, 31, 24, 24, 24]
+def RPT_ON_TR = [0, 16, 24, 252, 252, 24, 16, 8]
+def RPT_ON_BL = [24, 24, 24, 31, 15, 0, 0, 0]
+def RPT_ON_BR = [24, 24, 24, 248, 240, 0, 0, 0]
+
+:: draw_repeat(scr = vimana.screen, x = num, y = num, on = bool, fg = num, bg = num) (( -- ))
+    if on
+        draw_icn(scr, x, y, RPT_ON_TL, RPT_ON_TR, RPT_ON_BL, RPT_ON_BR, fg, bg)
+    else
+        draw_icn(scr, x, y, RPT_OFF_TL, RPT_OFF_TR, RPT_OFF_BL, RPT_OFF_BR, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Shuffle icon (off / on)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def SHF_OFF_TL = [0, 0, 0, 31, 31, 0, 0, 0]
+def SHF_OFF_TR = [0, 16, 24, 252, 252, 24, 16, 0]
+def SHF_OFF_BL = [0, 0, 0, 31, 31, 0, 0, 0]
+def SHF_OFF_BR = [0, 16, 24, 252, 252, 24, 16, 0]
+
+def SHF_ON_TL = [0, 0, 0, 31, 31, 1, 1, 1]
+def SHF_ON_TR = [0, 16, 24, 124, 188, 152, 144, 128]
+def SHF_ON_BL = [1, 1, 1, 29, 30, 0, 0, 0]
+def SHF_ON_BR = [128, 144, 152, 252, 252, 24, 16, 0]
+
+:: draw_shuffle(scr = vimana.screen, x = num, y = num, on = bool, fg = num, bg = num) (( -- ))
+    if on
+        draw_icn(scr, x, y, SHF_ON_TL, SHF_ON_TR, SHF_ON_BL, SHF_ON_BR, fg, bg)
+    else
+        draw_icn(scr, x, y, SHF_OFF_TL, SHF_OFF_TR, SHF_OFF_BL, SHF_OFF_BR, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Prev / Next skip icons
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def PRV_TL = [0, 0, 0, 24, 24, 24, 24, 25]
+def PRV_TR = [0, 0, 0, 24, 56, 120, 248, 248]
+def PRV_BL = [25, 24, 24, 24, 24, 0, 0, 0]
+def PRV_BR = [248, 248, 120, 56, 24, 0, 0, 0]
+
+:: draw_prev(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, PRV_TL, PRV_TR, PRV_BL, PRV_BR, fg, bg)
+;
+
+def NXT_TL = [0, 0, 0, 24, 28, 30, 31, 31]
+def NXT_TR = [0, 0, 0, 24, 24, 24, 24, 152]
+def NXT_BL = [31, 31, 30, 28, 24, 0, 0, 0]
+def NXT_BR = [152, 24, 24, 24, 24, 0, 0, 0]
+
+:: draw_next(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, NXT_TL, NXT_TR, NXT_BL, NXT_BR, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Play (›) / Pause (‖) icon
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def PLY_TL = [0, 0, 0, 30, 30, 30, 30, 30]
+def PLY_TR = [0, 0, 0, 120, 120, 120, 120, 120]
+def PLY_BL = [30, 30, 30, 30, 30, 0, 0, 0]
+def PLY_BR = [120, 120, 120, 120, 120, 0, 0, 0]
+
+def PAU_TL = [0, 0, 0, 12, 15, 15, 15, 15]
+def PAU_TR = [0, 0, 0, 0, 0, 192, 240, 252]
+def PAU_BL = [15, 15, 15, 15, 12, 0, 0, 0]
+def PAU_BR = [252, 240, 192, 0, 0, 0, 0, 0]
+
+-- Show play arrow when paused, pause bars when playing
+:: draw_play(scr = vimana.screen, x = num, y = num, paused = bool, fg = num, bg = num) (( -- ))
+    if paused
+        draw_icn(scr, x, y, PLY_TL, PLY_TR, PLY_BL, PLY_BR, fg, bg)
+    else
+        draw_icn(scr, x, y, PAU_TL, PAU_TR, PAU_BL, PAU_BR, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Now-playing indicator: right-pointing triangle (poke-icn, 8×16)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def POKE_TOP = [0, 0, 0, 0, 128, 192, 224, 240]
+def POKE_BOT = [224, 192, 128, 0, 0, 0, 0, 0]
+
+:: draw_poke(scr = vimana.screen, y = num, fg = num, bg = num) (( -- ))
+    scr.put_icn(0, y,     POKE_TOP, fg, bg)
+    scr.put_icn(0, y + 8, POKE_BOT, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Volume icon (7 levels 0–6, shared left-side speaker tiles)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def VOL_TL = [0, 0, 0, 0, 1, 3, 31, 31]
+def VOL_BL = [31, 31, 3, 1, 0, 0, 0, 0]
+
+def VOL0_TR = [0, 0, 0, 192, 192, 192, 192, 192]
+def VOL0_BR = [192, 192, 192, 192, 192, 0, 0, 0]
+def VOL1_TR = [0, 0, 0, 192, 192, 192, 192, 208]
+def VOL1_BR = [208, 192, 192, 192, 192, 0, 0, 0]
+def VOL2_TR = [0, 0, 0, 192, 192, 208, 208, 200]
+def VOL2_BR = [200, 208, 208, 192, 192, 0, 0, 0]
+def VOL3_TR = [0, 0, 0, 192, 208, 200, 200, 196]
+def VOL3_BR = [196, 200, 200, 208, 192, 0, 0, 0]
+def VOL4_TR = [0, 0, 0, 192, 200, 196, 196, 210]
+def VOL4_BR = [210, 196, 196, 200, 192, 0, 0, 0]
+def VOL5_TR = [0, 0, 0, 200, 196, 212, 210, 202]
+def VOL5_BR = [202, 210, 212, 196, 200, 0, 0, 0]
+def VOL6_TR = [0, 0, 0, 196, 210, 202, 201, 197]
+def VOL6_BR = [197, 201, 202, 210, 196, 0, 0, 0]
+
+:: draw_volume(scr = vimana.screen, x = num, y = num, level = num, fg = num, bg = num) (( -- ))
+    if level <= 0
+        draw_icn(scr, x, y, VOL_TL, VOL0_TR, VOL_BL, VOL0_BR, fg, bg)
+    elif level == 1
+        draw_icn(scr, x, y, VOL_TL, VOL1_TR, VOL_BL, VOL1_BR, fg, bg)
+    elif level == 2
+        draw_icn(scr, x, y, VOL_TL, VOL2_TR, VOL_BL, VOL2_BR, fg, bg)
+    elif level == 3
+        draw_icn(scr, x, y, VOL_TL, VOL3_TR, VOL_BL, VOL3_BR, fg, bg)
+    elif level == 4
+        draw_icn(scr, x, y, VOL_TL, VOL4_TR, VOL_BL, VOL4_BR, fg, bg)
+    elif level == 5
+        draw_icn(scr, x, y, VOL_TL, VOL5_TR, VOL_BL, VOL5_BR, fg, bg)
+    else
+        draw_icn(scr, x, y, VOL_TL, VOL6_TR, VOL_BL, VOL6_BR, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Button frame (32×32, from @button-icn in m291.tal, column-major order)
+-- Drawn at (x, y); fg=highlight colour, bg=bar background colour.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- col 0 (x+0), rows top→bottom
+def BTN_C0R0 = [0x00, 0x00, 0x03, 0x0c, 0x10, 0x10, 0x20, 0x20]
+def BTN_C0R1 = [0x00, 0x00, 0x00, 0x03, 0x0f, 0x0f, 0x1f, 0x1f]
+def BTN_C0R2 = [0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00]
+def BTN_C0R3 = [0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+-- col 1 (x+8)
+def BTN_C1R0 = [0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00]
+def BTN_C1R1 = [0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+def BTN_C1R2 = [0x00, 0x00, 0xc0, 0x30, 0x08, 0x08, 0x04, 0x04]
+def BTN_C1R3 = [0x00, 0x00, 0x00, 0xc0, 0xf0, 0xf0, 0xf8, 0xf8]
+-- col 2 (x+16)
+def BTN_C2R0 = [0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20]
+def BTN_C2R1 = [0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f]
+def BTN_C2R2 = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+def BTN_C2R3 = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
+-- col 3 (x+24)
+def BTN_C3R0 = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+def BTN_C3R1 = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
+def BTN_C3R2 = [0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04]
+def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
+
+:: draw_button_frame(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    scr.put_icn(x,      y,      BTN_C0R0, fg, bg)
+    scr.put_icn(x,      y + 8,  BTN_C0R1, fg, bg)
+    scr.put_icn(x,      y + 16, BTN_C0R2, fg, bg)
+    scr.put_icn(x,      y + 24, BTN_C0R3, fg, bg)
+    scr.put_icn(x + 8,  y,      BTN_C1R0, fg, bg)
+    scr.put_icn(x + 8,  y + 8,  BTN_C1R1, fg, bg)
+    scr.put_icn(x + 8,  y + 16, BTN_C1R2, fg, bg)
+    scr.put_icn(x + 8,  y + 24, BTN_C1R3, fg, bg)
+    scr.put_icn(x + 16, y,      BTN_C2R0, fg, bg)
+    scr.put_icn(x + 16, y + 8,  BTN_C2R1, fg, bg)
+    scr.put_icn(x + 16, y + 16, BTN_C2R2, fg, bg)
+    scr.put_icn(x + 16, y + 24, BTN_C2R3, fg, bg)
+    scr.put_icn(x + 24, y,      BTN_C3R0, fg, bg)
+    scr.put_icn(x + 24, y + 8,  BTN_C3R1, fg, bg)
+    scr.put_icn(x + 24, y + 16, BTN_C3R2, fg, bg)
+    scr.put_icn(x + 24, y + 24, BTN_C3R3, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Font setup: load the Chicago bitmap font (8×16 glyphs, variable width)
+-- and switch Vimana to 16-pixel font rendering.
+-- Call once after creating the screen.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: setup(scr = vimana.screen) (( -- ))
+    scr.set_font_size(2)
+
+    -- ASCII 0x20–0x7f glyphs (16 bytes each = 8×16 pixels, plane 0)
+    scr.set_font_chr(32,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(33,  [0, 0, 0, 48, 48, 48, 48, 48, 48, 0, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(34,  [0, 0, 0, 40, 40, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(35,  [0, 0, 9, 9, 63, 18, 18, 127, 36, 36, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(36,  [0, 0, 16, 56, 84, 112, 112, 56, 28, 28, 84, 56, 16, 0, 0, 0])
+    scr.set_font_chr(37,  [0, 0, 55, 73, 74, 50, 4, 4, 9, 10, 18, 17, 0, 0, 0, 0])
+    scr.set_font_chr(38,  [0, 0, 0, 60, 102, 102, 48, 103, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(39,  [0, 0, 0, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(40,  [0, 0, 16, 32, 96, 96, 96, 96, 96, 96, 32, 16, 0, 0, 0, 0])
+    scr.set_font_chr(41,  [0, 0, 64, 32, 48, 48, 48, 48, 48, 48, 32, 64, 0, 0, 0, 0])
+    scr.set_font_chr(42,  [0, 0, 0, 16, 84, 56, 84, 16, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(43,  [0, 0, 0, 0, 0, 16, 16, 124, 16, 16, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(44,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 96, 32, 64, 0, 0])
+    scr.set_font_chr(45,  [0, 0, 0, 0, 0, 0, 0, 124, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(46,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(47,  [0, 0, 4, 4, 8, 8, 16, 16, 32, 32, 64, 64, 0, 0, 0, 0])
+    scr.set_font_chr(48,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(49,  [0, 0, 0, 24, 56, 24, 24, 24, 24, 24, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(50,  [0, 0, 0, 60, 70, 6, 6, 12, 24, 48, 96, 126, 0, 0, 0, 0])
+    scr.set_font_chr(51,  [0, 0, 0, 126, 12, 24, 60, 6, 6, 6, 70, 60, 0, 0, 0, 0])
+    scr.set_font_chr(52,  [0, 0, 0, 6, 14, 22, 38, 70, 127, 6, 6, 6, 0, 0, 0, 0])
+    scr.set_font_chr(53,  [0, 0, 0, 126, 96, 96, 124, 6, 6, 6, 70, 60, 0, 0, 0, 0])
+    scr.set_font_chr(54,  [0, 0, 0, 28, 48, 96, 124, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(55,  [0, 0, 0, 126, 6, 6, 6, 12, 24, 24, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(56,  [0, 0, 0, 60, 102, 102, 102, 60, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(57,  [0, 0, 0, 60, 102, 102, 102, 102, 62, 6, 12, 56, 0, 0, 0, 0])
+    scr.set_font_chr(58,  [0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(59,  [0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 96, 96, 32, 64, 0, 0])
+    scr.set_font_chr(60,  [0, 0, 0, 0, 24, 48, 96, 192, 96, 48, 24, 0, 0, 0, 0, 0])
+    scr.set_font_chr(61,  [0, 0, 0, 0, 0, 0, 126, 0, 126, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(62,  [0, 0, 0, 0, 192, 96, 48, 24, 48, 96, 192, 0, 0, 0, 0, 0])
+    scr.set_font_chr(63,  [0, 0, 0, 60, 70, 6, 12, 24, 24, 0, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(64,  [0, 0, 0, 0, 31, 32, 78, 82, 82, 77, 32, 31, 0, 0, 0, 0])
+    scr.set_font_chr(65,  [0, 0, 0, 60, 102, 102, 102, 126, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(66,  [0, 0, 0, 124, 102, 102, 102, 124, 102, 102, 102, 124, 0, 0, 0, 0])
+    scr.set_font_chr(67,  [0, 0, 0, 60, 98, 96, 96, 96, 96, 96, 98, 60, 0, 0, 0, 0])
+    scr.set_font_chr(68,  [0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 102, 124, 0, 0, 0, 0])
+    scr.set_font_chr(69,  [0, 0, 0, 124, 96, 96, 96, 120, 96, 96, 96, 124, 0, 0, 0, 0])
+    scr.set_font_chr(70,  [0, 0, 0, 124, 96, 96, 96, 120, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(71,  [0, 0, 0, 60, 98, 96, 96, 110, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(72,  [0, 0, 0, 102, 102, 102, 102, 126, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(73,  [0, 0, 0, 48, 48, 48, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(74,  [0, 0, 0, 12, 12, 12, 12, 12, 204, 204, 204, 120, 0, 0, 0, 0])
+    scr.set_font_chr(75,  [0, 0, 0, 99, 102, 108, 120, 112, 120, 108, 102, 99, 0, 0, 0, 0])
+    scr.set_font_chr(76,  [0, 0, 0, 96, 96, 96, 96, 96, 96, 96, 96, 124, 0, 0, 0, 0])
+    scr.set_font_chr(77,  [0, 0, 0, 66, 102, 126, 126, 86, 70, 70, 70, 70, 0, 0, 0, 0])
+    scr.set_font_chr(78,  [0, 0, 0, 65, 97, 113, 121, 93, 79, 71, 67, 65, 0, 0, 0, 0])
+    scr.set_font_chr(79,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(80,  [0, 0, 0, 124, 102, 102, 102, 124, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(81,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 6, 0, 0, 0])
+    scr.set_font_chr(82,  [0, 0, 0, 124, 102, 102, 102, 124, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(83,  [0, 0, 0, 56, 100, 96, 112, 56, 28, 12, 76, 56, 0, 0, 0, 0])
+    scr.set_font_chr(84,  [0, 0, 0, 252, 48, 48, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(85,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(86,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 100, 120, 0, 0, 0, 0])
+    scr.set_font_chr(87,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 102, 127, 0, 0, 0, 0])
+    scr.set_font_chr(88,  [0, 0, 0, 102, 102, 102, 102, 60, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(89,  [0, 0, 0, 102, 102, 102, 102, 60, 24, 24, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(90,  [0, 0, 0, 126, 6, 6, 12, 24, 48, 96, 96, 126, 0, 0, 0, 0])
+    scr.set_font_chr(91,  [0, 0, 112, 96, 96, 96, 96, 96, 96, 96, 96, 96, 112, 0, 0, 0])
+    scr.set_font_chr(92,  [0, 0, 64, 64, 32, 32, 16, 16, 8, 8, 4, 4, 0, 0, 0, 0])
+    scr.set_font_chr(93,  [0, 0, 112, 48, 48, 48, 48, 48, 48, 48, 48, 48, 112, 0, 0, 0])
+    scr.set_font_chr(94,  [0, 0, 0, 8, 20, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(95,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0])
+    scr.set_font_chr(96,  [0, 0, 64, 32, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(97,  [0, 0, 0, 0, 0, 60, 70, 62, 102, 102, 102, 62, 0, 0, 0, 0])
+    scr.set_font_chr(98,  [0, 0, 0, 96, 96, 124, 102, 102, 102, 102, 102, 124, 0, 0, 0, 0])
+    scr.set_font_chr(99,  [0, 0, 0, 0, 0, 56, 100, 96, 96, 96, 100, 56, 0, 0, 0, 0])
+    scr.set_font_chr(100, [0, 0, 0, 6, 6, 62, 102, 102, 102, 102, 102, 62, 0, 0, 0, 0])
+    scr.set_font_chr(101, [0, 0, 0, 0, 0, 60, 102, 102, 126, 96, 98, 60, 0, 0, 0, 0])
+    scr.set_font_chr(102, [0, 0, 0, 28, 48, 120, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(103, [0, 0, 0, 0, 0, 62, 102, 102, 102, 102, 102, 62, 6, 70, 60, 0])
+    scr.set_font_chr(104, [0, 0, 0, 96, 96, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(105, [0, 0, 0, 96, 0, 96, 96, 96, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(106, [0, 0, 0, 24, 0, 24, 24, 24, 24, 24, 24, 24, 24, 152, 112, 0])
+    scr.set_font_chr(107, [0, 0, 0, 96, 96, 102, 108, 120, 112, 120, 108, 102, 0, 0, 0, 0])
+    scr.set_font_chr(108, [0, 0, 0, 96, 96, 96, 96, 96, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(109, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(110, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(111, [0, 0, 0, 0, 0, 60, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(112, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 124, 96, 96, 0, 0])
+    scr.set_font_chr(113, [0, 0, 0, 0, 0, 62, 102, 102, 102, 102, 102, 62, 6, 6, 0, 0])
+    scr.set_font_chr(114, [0, 0, 0, 0, 0, 108, 112, 96, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(115, [0, 0, 0, 0, 0, 56, 100, 112, 56, 28, 76, 56, 0, 0, 0, 0])
+    scr.set_font_chr(116, [0, 0, 0, 48, 48, 120, 48, 48, 48, 48, 48, 24, 0, 0, 0, 0])
+    scr.set_font_chr(117, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 62, 0, 0, 0, 0])
+    scr.set_font_chr(118, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 100, 120, 0, 0, 0, 0])
+    scr.set_font_chr(119, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 127, 0, 0, 0, 0])
+    scr.set_font_chr(120, [0, 0, 0, 0, 0, 102, 102, 102, 60, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(121, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 62, 6, 70, 60, 0])
+    scr.set_font_chr(122, [0, 0, 0, 0, 0, 126, 6, 12, 24, 48, 96, 126, 0, 0, 0, 0])
+    scr.set_font_chr(123, [0, 0, 16, 32, 32, 32, 32, 64, 32, 32, 32, 32, 16, 0, 0, 0])
+    scr.set_font_chr(124, [0, 0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 0, 0, 0])
+    scr.set_font_chr(125, [0, 0, 64, 32, 32, 32, 32, 16, 32, 32, 32, 32, 64, 0, 0, 0])
+    scr.set_font_chr(126, [0, 0, 0, 0, 0, 50, 76, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(127, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+    -- Per-character widths (from @chicago/widths in m291.tal)
+    scr.set_font_width(32, 4)
+    scr.set_font_width(33, 6)
+    scr.set_font_width(34, 7)
+    scr.set_font_width(35, 10)
+    scr.set_font_width(36, 7)
+    scr.set_font_width(37, 11)
+    scr.set_font_width(38, 10)
+    scr.set_font_width(39, 3)
+    scr.set_font_width(40, 5)
+    scr.set_font_width(41, 5)
+    scr.set_font_width(42, 7)
+    scr.set_font_width(43, 7)
+    scr.set_font_width(44, 4)
+    scr.set_font_width(45, 7)
+    scr.set_font_width(46, 4)
+    scr.set_font_width(47, 7)
+    scr.set_font_width(48, 8)
+    scr.set_font_width(49, 8)
+    scr.set_font_width(50, 8)
+    scr.set_font_width(51, 8)
+    scr.set_font_width(52, 8)
+    scr.set_font_width(53, 8)
+    scr.set_font_width(54, 8)
+    scr.set_font_width(55, 8)
+    scr.set_font_width(56, 8)
+    scr.set_font_width(57, 8)
+    scr.set_font_width(58, 4)
+    scr.set_font_width(59, 4)
+    scr.set_font_width(60, 6)
+    scr.set_font_width(61, 8)
+    scr.set_font_width(62, 6)
+    scr.set_font_width(63, 8)
+    scr.set_font_width(64, 11)
+    scr.set_font_width(65, 8)
+    scr.set_font_width(66, 8)
+    scr.set_font_width(67, 8)
+    scr.set_font_width(68, 8)
+    scr.set_font_width(69, 7)
+    scr.set_font_width(70, 7)
+    scr.set_font_width(71, 8)
+    scr.set_font_width(72, 8)
+    scr.set_font_width(73, 6)
+    scr.set_font_width(74, 7)
+    scr.set_font_width(75, 9)
+    scr.set_font_width(76, 7)
+    scr.set_font_width(77, 12)
+    scr.set_font_width(78, 9)
+    scr.set_font_width(79, 8)
+    scr.set_font_width(80, 8)
+    scr.set_font_width(81, 8)
+    scr.set_font_width(82, 8)
+    scr.set_font_width(83, 7)
+    scr.set_font_width(84, 6)
+    scr.set_font_width(85, 8)
+    scr.set_font_width(86, 8)
+    scr.set_font_width(87, 12)
+    scr.set_font_width(88, 8)
+    scr.set_font_width(89, 8)
+    scr.set_font_width(90, 8)
+    scr.set_font_width(91, 5)
+    scr.set_font_width(92, 7)
+    scr.set_font_width(93, 5)
+    scr.set_font_width(94, 8)
+    scr.set_font_width(95, 8)
+    scr.set_font_width(96, 6)
+    scr.set_font_width(97, 8)
+    scr.set_font_width(98, 8)
+    scr.set_font_width(99, 7)
+    scr.set_font_width(100, 8)
+    scr.set_font_width(101, 8)
+    scr.set_font_width(102, 6)
+    scr.set_font_width(103, 8)
+    scr.set_font_width(104, 8)
+    scr.set_font_width(105, 4)
+    scr.set_font_width(106, 6)
+    scr.set_font_width(107, 8)
+    scr.set_font_width(108, 4)
+    scr.set_font_width(109, 12)
+    scr.set_font_width(110, 8)
+    scr.set_font_width(111, 8)
+    scr.set_font_width(112, 8)
+    scr.set_font_width(113, 8)
+    scr.set_font_width(114, 6)
+    scr.set_font_width(115, 7)
+    scr.set_font_width(116, 6)
+    scr.set_font_width(117, 8)
+    scr.set_font_width(118, 8)
+    scr.set_font_width(119, 12)
+    scr.set_font_width(120, 8)
+    scr.set_font_width(121, 8)
+    scr.set_font_width(122, 8)
+    scr.set_font_width(123, 5)
+    scr.set_font_width(124, 5)
+    scr.set_font_width(125, 5)
+    scr.set_font_width(126, 8)
+    scr.set_font_width(127, 8)
+;

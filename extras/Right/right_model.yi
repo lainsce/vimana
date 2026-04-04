@@ -1,0 +1,626 @@
+cask right_model
+
+bring stdr
+bring outline_parser
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Layout
+-- ─────────────────────────────────────────────────────────────────────────────
+def WIN_W = 1024
+def WIN_H = 720
+def FONT_W = 16
+def FONT_H = 24
+def SCROLLBAR_W = 12
+def SCROLLBAR_X = 0
+def SIDEBAR_X = 16
+def SIDEBAR_W = 160
+def EDITOR_X = 180
+def EDITOR_W = 780
+def PAD_X = 4
+def ROW_H = 24
+def TITLEBAR_H = 16
+def CONTENT_Y = 40
+def COL_GUIDE = 51
+def MAX_COLS = 48
+def SIDEBAR_CHARS = 9
+def MAX_LINES = 28
+def STATUS_H = 0
+def ?sidebar_visible = true
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Palette
+-- ─────────────────────────────────────────────────────────────────────────────
+def C_BG = 0
+def C_FG = 1
+def C_SEL = 2
+def C_ACCENT = 3
+
+-- Syntax highlight categories (mapped to palette slots)
+def H_KEYWORD = 3
+def H_COMMENT = 2
+def H_STRING = 2
+def H_TYPE = 3
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Keyboard scancodes (SDL)
+-- ─────────────────────────────────────────────────────────────────────────────
+def KEY_UP = 82
+def KEY_DOWN = 81
+def KEY_LEFT = 80
+def KEY_RIGHT = 79
+def KEY_RETURN = 40
+def KEY_TAB = 43
+def KEY_BACKSPACE = 42
+def KEY_DELETE = 76
+def KEY_ESCAPE = 41
+def KEY_A = 4
+def KEY_C = 6
+def KEY_S = 22
+def KEY_V = 25
+def KEY_X = 27
+def KEY_D = 7
+def KEY_N = 17
+def KEY_O = 18
+def KEY_F = 9
+def KEY_G = 10
+def KEY_LGUI = 227
+def KEY_RGUI = 231
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- State
+-- ─────────────────────────────────────────────────────────────────────────────
+def ?editor_text = ""
+def ?caret = 0
+def ?sel_start = 0
+def ?sel_end = 0
+def ?scroll_y = 0
+def ?current_outline = []: [any]
+def ?outline_selected = -1
+def ?outline_scroll = 0
+def ?file_path = ""
+def ?dirty = false
+
+-- Search state
+def ?search_active = false
+def ?search_query = ""
+def ?search_matches = []: [any]
+def ?search_index = -1
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: line_count(code = string) (( num ))
+    let total = stdr.len(code)
+    if total == 0
+        <- 1
+    let ?lines = 1
+    for (let ?i = 0; i < total; i += 1)
+        if stdr.slice(code, i, i + 1) == "\n"
+            lines += 1
+    <- lines
+;
+
+:: line_col_from_index(code = string, pos = num) (( [any] ))
+    let total = stdr.len(code)
+    let ?p = pos
+    if p < 0
+        p = 0
+    if p > total
+        p = total
+    let ?line = 0
+    let ?col = 0
+    for (let ?i = 0; i < p; i += 1)
+        if stdr.slice(code, i, i + 1) == "\n"
+            line += 1
+            col = 0
+        else
+            col += 1
+    <- [line, col]
+;
+
+:: index_from_line_col(code = string, target_line = num, target_col = num) (( num ))
+    let total = stdr.len(code)
+    let ?line = 0
+    let ?start = 0
+    for (let ?i = 0; i < total; i += 1)
+        if line >= target_line
+            break
+        if stdr.slice(code, i, i + 1) == "\n"
+            line += 1
+            start = i + 1
+    if line < target_line
+        start = total
+    let ?end_pos = start
+    for (let ?j = start; j < total; j += 1)
+        if stdr.slice(code, j, j + 1) == "\n"
+            break
+        end_pos = j + 1
+    let line_len = end_pos - start
+    let ?col = target_col
+    if col < 0
+        col = 0
+    if col > line_len
+        col = line_len
+    <- start + col
+;
+
+:: sel_normalized() (( [any] ))
+    if sel_start <= sel_end
+        <- [sel_start, sel_end]
+    <- [sel_end, sel_start]
+;
+
+:: has_selection() (( bool ))
+    <- sel_start != sel_end
+;
+
+:: visible_lines() (( num ))
+    <- MAX_LINES
+;
+
+:: toggle_sidebar() (( -- ))
+    sidebar_visible = !sidebar_visible
+;
+
+:: editor_left() (( num ))
+    if sidebar_visible
+        <- EDITOR_X
+    <- SIDEBAR_X
+;
+
+:: editor_width() (( num ))
+    if sidebar_visible
+        <- EDITOR_W
+    <- WIN_W - SIDEBAR_X
+;
+
+:: editor_cols() (( num ))
+    <- stdr.floor(editor_width() / FONT_W) - 1
+;
+
+:: line_to_char_pos(code = string, target_line = num) (( num ))
+    if target_line <= 0
+        <- 0
+    let total = stdr.len(code)
+    let ?line = 0
+    let ?lstart = 0
+    for (let ?i = 0; i < total; i += 1)
+        if line == target_line
+            <- lstart
+        if stdr.slice(code, i, i + 1) == "\n"
+            line += 1
+            lstart = i + 1
+    <- lstart
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Setters (cross-module mutation)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: set_text(txt = string) (( -- ))
+    editor_text = txt
+;
+
+:: set_caret(pos = num) (( -- ))
+    let total = stdr.len(editor_text)
+    if pos < 0
+        pos = 0
+    if pos > total
+        pos = total
+    caret = pos
+;
+
+:: set_selection(a = num, b = num) (( -- ))
+    sel_start = a
+    sel_end = b
+;
+
+:: set_scroll(y = num) (( -- ))
+    scroll_y = y
+;
+
+:: set_file_path(p = string) (( -- ))
+    file_path = p
+;
+
+:: set_dirty(d = bool) (( -- ))
+    dirty = d
+;
+
+:: set_outline_selected(idx = num) (( -- ))
+    outline_selected = idx
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Navigation
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: ensure_visible() (( -- ))
+    let lc = line_col_from_index(editor_text, caret)
+    let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
+    if cur_line < scroll_y
+        scroll_y = cur_line
+    elif cur_line >= scroll_y + MAX_LINES
+        scroll_y = cur_line - MAX_LINES + 1
+;
+
+:: clamp_scroll() (( -- ))
+    let total = line_count(editor_text)
+    let ?max_scroll = total - MAX_LINES
+    if max_scroll < 0
+        max_scroll = 0
+    if scroll_y < 0
+        scroll_y = 0
+    if scroll_y > max_scroll
+        scroll_y = max_scroll
+;
+
+:: rebuild_outline() (( -- ))
+    current_outline = outline_parser.parse_outline(editor_text)
+    let n = stdr.len(current_outline)
+    if n <= 0
+        outline_selected = -1
+    elif outline_selected >= n
+        outline_selected = n - 1
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Editing
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: insert_at_caret(chunk = string) (( -- ))
+    let pair = sel_normalized()
+    let a = stdr.floor(stdr.num(pair[0] ?? 0))
+    let b = stdr.floor(stdr.num(pair[1] ?? 0))
+    let prefix = stdr.slice(editor_text, 0, a)
+    let suffix = stdr.slice(editor_text, b, stdr.len(editor_text))
+    editor_text = "$$prefix$$$$chunk$$$$suffix$$"
+    let pos = a + stdr.len(chunk)
+    caret = pos
+    sel_start = pos
+    sel_end = pos
+    dirty = true
+    rebuild_outline()
+    ensure_visible()
+;
+
+:: delete_selection() (( -- ))
+    if !has_selection()
+        <-
+    let pair = sel_normalized()
+    let a = stdr.floor(stdr.num(pair[0] ?? 0))
+    let b = stdr.floor(stdr.num(pair[1] ?? 0))
+    let prefix = stdr.slice(editor_text, 0, a)
+    let suffix = stdr.slice(editor_text, b, stdr.len(editor_text))
+    editor_text = "$$prefix$$$$suffix$$"
+    caret = a
+    sel_start = a
+    sel_end = a
+    dirty = true
+    rebuild_outline()
+    ensure_visible()
+;
+
+:: delete_backward() (( -- ))
+    if has_selection()
+        delete_selection()
+        <-
+    if caret <= 0
+        <-
+    let prefix = stdr.slice(editor_text, 0, caret - 1)
+    let suffix = stdr.slice(editor_text, caret, stdr.len(editor_text))
+    editor_text = "$$prefix$$$$suffix$$"
+    caret -= 1
+    sel_start = caret
+    sel_end = caret
+    dirty = true
+    rebuild_outline()
+    ensure_visible()
+;
+
+:: delete_forward() (( -- ))
+    if has_selection()
+        delete_selection()
+        <-
+    let total = stdr.len(editor_text)
+    if caret >= total
+        <-
+    let prefix = stdr.slice(editor_text, 0, caret)
+    let suffix = stdr.slice(editor_text, caret + 1, total)
+    editor_text = "$$prefix$$$$suffix$$"
+    sel_start = caret
+    sel_end = caret
+    dirty = true
+    rebuild_outline()
+    ensure_visible()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Caret movement
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: move_caret_left(shift = bool) (( -- ))
+    if caret > 0
+        caret -= 1
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+:: move_caret_right(shift = bool) (( -- ))
+    let total = stdr.len(editor_text)
+    if caret < total
+        caret += 1
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+:: move_caret_up(shift = bool) (( -- ))
+    let lc = line_col_from_index(editor_text, caret)
+    let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
+    let cur_col = stdr.floor(stdr.num(lc[1] ?? 0))
+    if cur_line > 0
+        caret = index_from_line_col(editor_text, cur_line - 1, cur_col)
+    else
+        caret = 0
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+:: move_caret_down(shift = bool) (( -- ))
+    let lc = line_col_from_index(editor_text, caret)
+    let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
+    let cur_col = stdr.floor(stdr.num(lc[1] ?? 0))
+    let total_lines = line_count(editor_text)
+    if cur_line < total_lines - 1
+        caret = index_from_line_col(editor_text, cur_line + 1, cur_col)
+    else
+        caret = stdr.len(editor_text)
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+:: select_all() (( -- ))
+    sel_start = 0
+    sel_end = stdr.len(editor_text)
+    caret = sel_end
+;
+
+:: selected_text() (( string ))
+    if !has_selection()
+        <- ""
+    let pair = sel_normalized()
+    let a = stdr.floor(stdr.num(pair[0] ?? 0))
+    let b = stdr.floor(stdr.num(pair[1] ?? 0))
+    <- stdr.slice(editor_text, a, b)
+;
+
+:: scroll_by(delta = num) (( -- ))
+    scroll_y -= delta
+    clamp_scroll()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Click handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: caret_from_editor_click(px = num, py = num) (( num ))
+    let ?col = stdr.floor((px - editor_left() - PAD_X) / FONT_W)
+    if col < 0
+        col = 0
+    let ?row = stdr.floor((py - CONTENT_Y) / ROW_H) + scroll_y
+    if row < 0
+        row = 0
+    <- index_from_line_col(editor_text, row, col)
+;
+
+:: outline_index_from_click(py = num) (( num ))
+    let ?row = stdr.floor((py - CONTENT_Y) / ROW_H) + outline_scroll
+    if row < 0
+        <- -1
+    if row >= stdr.len(current_outline)
+        <- -1
+    <- row
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Cmd+arrow movement
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: move_caret_line_start(shift = bool) (( -- ))
+    let lc = line_col_from_index(editor_text, caret)
+    let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
+    caret = line_to_char_pos(editor_text, cur_line)
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+:: move_caret_line_end(shift = bool) (( -- ))
+    let lc = line_col_from_index(editor_text, caret)
+    let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
+    let total = stdr.len(editor_text)
+    let ?pos = line_to_char_pos(editor_text, cur_line)
+    for (let ?i = pos; i < total; i += 1)
+        if stdr.slice(editor_text, i, i + 1) == "\n"
+            break
+        pos = i + 1
+    caret = pos
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+:: move_caret_doc_start(shift = bool) (( -- ))
+    caret = 0
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+:: move_caret_doc_end(shift = bool) (( -- ))
+    caret = stdr.len(editor_text)
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Word selection
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: is_word_char(ch = string) (( bool ))
+    if ch == " " || ch == "\n" || ch == "\t"
+        <- false
+    if ch == "(" || ch == ")" || ch == "[" || ch == "]"
+        <- false
+    if ch == "{" || ch == "}" || ch == "," || ch == ";"
+        <- false
+    if ch == "." || ch == ":" || ch == "\"" || ch == "'"
+        <- false
+    <- true
+;
+
+:: select_word_at(pos = num) (( -- ))
+    let total = stdr.len(editor_text)
+    if total == 0
+        <-
+    let ?p = pos
+    if p >= total
+        p = total - 1
+    if p < 0
+        p = 0
+    let ch = stdr.slice(editor_text, p, p + 1)
+    if !is_word_char(ch)
+        caret = p
+        sel_start = p
+        sel_end = p + 1
+        <-
+    -- Expand left
+    let ?a = p
+    for (let ?i = p - 1; i >= 0; i -= 1)
+        let c = stdr.slice(editor_text, i, i + 1)
+        if !is_word_char(c)
+            break
+        a = i
+    -- Expand right
+    let ?b = p + 1
+    for (let ?j = p + 1; j < total; j += 1)
+        let c = stdr.slice(editor_text, j, j + 1)
+        if !is_word_char(c)
+            break
+        b = j + 1
+    sel_start = a
+    sel_end = b
+    caret = b
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Search
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: open_search() (( -- ))
+    search_active = true
+    search_query = ""
+    search_matches = []: [any]
+    search_index = -1
+    -- Pre-fill with selection
+    if has_selection()
+        search_query = selected_text()
+        run_search()
+;
+
+:: close_search() (( -- ))
+    search_active = false
+    search_query = ""
+    search_matches = []: [any]
+    search_index = -1
+;
+
+:: run_search() (( -- ))
+    search_matches = []: [any]
+    search_index = -1
+    let qlen = stdr.len(search_query)
+    if qlen == 0
+        <-
+    let total = stdr.len(editor_text)
+    for (let ?i = 0; i <= total - qlen; i += 1)
+        let chunk = stdr.slice(editor_text, i, i + qlen)
+        if chunk == search_query
+            search_matches = search_matches + [i]
+    if stdr.len(search_matches) > 0
+        search_index = 0
+        jump_to_match()
+;
+
+:: jump_to_match() (( -- ))
+    let count = stdr.len(search_matches)
+    if count == 0 || search_index < 0
+        <-
+    let pos = stdr.floor(stdr.num(search_matches[search_index] ?? 0))
+    caret = pos + stdr.len(search_query)
+    sel_start = pos
+    sel_end = caret
+    ensure_visible()
+;
+
+:: search_next() (( -- ))
+    let count = stdr.len(search_matches)
+    if count == 0
+        <-
+    search_index = (search_index + 1) % count
+    jump_to_match()
+;
+
+:: search_prev() (( -- ))
+    let count = stdr.len(search_matches)
+    if count == 0
+        <-
+    search_index = (search_index - 1 + count) % count
+    jump_to_match()
+;
+
+:: search_type(ch = string) (( -- ))
+    search_query = search_query + ch
+    run_search()
+;
+
+:: search_backspace() (( -- ))
+    let qlen = stdr.len(search_query)
+    if qlen > 0
+        search_query = stdr.slice(search_query, 0, qlen - 1)
+        run_search()
+;
+
+:: reset_selection() (( -- ))
+    sel_start = caret
+    sel_end = caret
+;

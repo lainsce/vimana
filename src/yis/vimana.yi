@@ -5,7 +5,7 @@ def mouse_left = 1
 def mouse_right = 3
 
 def color_bg = 0
-def color_1 = 1
+def color_fg = 1
 def color_2 = 2
 def color_3 = 3
 

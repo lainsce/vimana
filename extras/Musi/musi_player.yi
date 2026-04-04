@@ -1,0 +1,183 @@
+cask musi_player
+
+bring stdr
+bring vimana
+
+bring musi_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- String utilities
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Return the N-th space-separated word (0-indexed), or "" if not found
+: nth_word(text = string, n = num) (( string ))
+    let tlen = stdr.len(text)
+    let ?word_idx = 0
+    let ?in_word  = false
+    let ?result   = ""
+    let ?collecting = false
+    for (let ?i = 0; i < tlen; i += 1)
+        let ch     = stdr.char_at(text, i)
+        let is_sep = ch == " " || ch == "\t" || ch == "\n" || ch == "\r"
+        if is_sep
+            if in_word
+                in_word = false
+                if collecting
+                    <- result
+                word_idx += 1
+        else
+            if !in_word
+                in_word = true
+                if word_idx == n
+                    collecting = true
+            if collecting
+                result = result + ch
+    if collecting
+        <- result
+    <- ""
+;
+
+-- Parse unsigned integer from the start of a string (stops at first non-digit)
+: parse_int(s = string) (( num ))
+    let n    = stdr.len(s)
+    let c0   = stdr.char_code("0")
+    let c9   = stdr.char_code("9")
+    let ?val = 0
+    for (let ?i = 0; i < n; i += 1)
+        let c = stdr.char_code(stdr.char_at(s, i))
+        if c >= c0 && c <= c9
+            val = val * 10 + (c - c0)
+        else
+            break
+    <- val
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Subprocess management
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: spawn(sys = vimana.system) (( -- ))
+    if musi_model.proc != 0
+        sys.proc_kill(musi_model.proc)
+        sys.proc_free(musi_model.proc)
+        musi_model.set_proc(0)
+    musi_model.set_proc(sys.spawn("mpg123 -R 2>/dev/null"))
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Commands to mpg123
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: send_load(sys = vimana.system, full_path = string) (( -- ))
+    if musi_model.proc == 0
+        <-
+    sys.proc_write(musi_model.proc, "load " + full_path + "\n")
+    musi_model.set_paused(false)
+;
+
+:: toggle_pause(sys = vimana.system) (( -- ))
+    if musi_model.proc == 0 || !musi_model.playing
+        <-
+    sys.proc_write(musi_model.proc, "pause\n")
+;
+
+:: send_jump(sys = vimana.system, seconds = num) (( -- ))
+    if musi_model.proc == 0 || !musi_model.playing
+        <-
+    sys.proc_write(musi_model.proc, "jump " + str(seconds) + "s\n")
+;
+
+:: send_volume(sys = vimana.system) (( -- ))
+    if musi_model.proc == 0
+        <-
+    let pct = musi_model.volume * 20
+    sys.proc_write(musi_model.proc, "VOLUME " + str(pct) + "\n")
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Response handlers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- @F <frame> <remaining_frames> <elapsed_secs> <remaining_secs>
+: handle_frame(line = string) (( -- ))
+    let sf    = parse_int(nth_word(line, 3))
+    let sr    = parse_int(nth_word(line, 4))
+    let total = sf + sr
+    let ?prog = 0
+    if total > 0
+        prog = stdr.floor(sf * musi_model.PROG_W / total)
+    musi_model.set_frame(sf, sr, prog)
+;
+
+-- @I ... ID3 metadata (e.g. "@I ID3v2.title: Some Song")
+: handle_id3(line = string) (( -- ))
+    let n = stdr.len(line)
+    -- Find the "." separating module from field name
+    let ?dot_pos = -1
+    for (let ?i = 3; i < n; i += 1)
+        if stdr.char_at(line, i) == "."
+            dot_pos = i
+            break
+    if dot_pos < 0
+        <-
+    let tag2 = stdr.slice(line, dot_pos + 1, dot_pos + 3)
+    -- Find ":" separator
+    let ?colon = -1
+    for (let ?j = dot_pos + 1; j < n; j += 1)
+        if stdr.char_at(line, j) == ":"
+            colon = j
+            break
+    if colon < 0
+        <-
+    let ?val_start = colon + 1
+    -- Skip leading space (some mpg123 versions add one after the colon)
+    if val_start < n && stdr.char_at(line, val_start) == " "
+        val_start += 1
+    if val_start >= n
+        <-
+    let val = stdr.slice(line, val_start, n)
+    -- Match both lowercase friendly names ("title","artist","album")
+    -- and uppercase ID3v2 frame codes (TIT2 → "TI", TPE1 → "TP", TALB → "TA")
+    if tag2 == "ti" || tag2 == "TI"
+        musi_model.set_title(val)
+    elif tag2 == "ar" || tag2 == "TP"
+        musi_model.set_artist(val)
+    elif tag2 == "al" || tag2 == "TA"
+        musi_model.set_album(val)
+;
+
+-- @P <code>  0=stopped 1=paused 2=playing
+: handle_pause_code(line = string) (( -- ))
+    let code = parse_int(nth_word(line, 1))
+    if code == 0
+        musi_model.set_track_ended(true)
+        musi_model.set_paused(false)
+    elif code == 1
+        musi_model.set_paused(true)
+    else
+        musi_model.set_paused(false)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Poll pending lines from mpg123 (call once per frame)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: poll(sys = vimana.system, max_lines = num) (( -- ))
+    if musi_model.proc == 0
+        <-
+    for (let ?i = 0; i < max_lines; i += 1)
+        let line = sys.proc_read_line(musi_model.proc)
+        if stdr.len(line) == 0
+            break
+        if stdr.len(line) < 2
+            continue
+        let tag = stdr.slice(line, 0, 2)
+        if tag == "@F"
+            handle_frame(line)
+        elif tag == "@I"
+            handle_id3(line)
+        elif tag == "@P"
+            handle_pause_code(line)
+        elif tag == "@S"
+            musi_model.set_playing(true)
+;

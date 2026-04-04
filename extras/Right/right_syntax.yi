@@ -1,0 +1,44 @@
+cask right_syntax
+
+bring stdr
+bring right_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Yis syntax: classify the first token of a line for highlighting.
+-- Returns the palette color index for the line.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: starts(text = string, prefix = string) (( bool ))
+    <- stdr.starts_with(text, prefix)
+;
+
+:: line_color(line = string) (( num ))
+    let t = stdr.trim(line)
+    let n = stdr.len(t)
+    if n == 0
+        <- right_model.C_FG
+
+    -- Comments
+    if starts(t, "-- ")
+        <- right_model.H_COMMENT
+    if t == "--"
+        <- right_model.H_COMMENT
+
+    -- Keywords (shown in accent)
+    if starts(t, "cask ") || starts(t, "bring ")
+        <- right_model.H_KEYWORD
+    if starts(t, "def ") || starts(t, "let ")
+        <- right_model.H_KEYWORD
+    if starts(t, "if ") || starts(t, "elif ") || t == "else" || starts(t, "else ")
+        <- right_model.H_KEYWORD
+    if starts(t, "for ") || starts(t, "while ") || t == "break" || t == "continue"
+        <- right_model.H_KEYWORD
+    if starts(t, "<- ") || t == "<-"
+        <- right_model.H_KEYWORD
+    if starts(t, ":: ") || starts(t, ": ") || starts(t, "!: ") || starts(t, ",: ")
+        <- right_model.H_KEYWORD
+    if starts(t, "-> ")
+        <- right_model.H_KEYWORD
+
+    <- right_model.C_FG
+;

@@ -1,0 +1,320 @@
+cask musi_model
+
+bring stdr
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Window layout
+-- ─────────────────────────────────────────────────────────────────────────────
+def WIN_W     = 256
+def HEADER_H  = 18
+def PLAYER_H  = 136
+def ROW_H     = 16
+def MAX_ROWS  = 24
+
+-- Player panel Y positions (all relative to screen top)
+def TITLE_Y   = 26
+def ARTIST_Y  = 42
+def ALBUM_Y   = 58
+def CTRL_BG_Y = 80
+def CTRL_Y    = 88
+def TS_Y      = 112
+def PROG_Y    = 132
+def PROG_X    = 8
+def PROG_W    = 239
+
+-- Directory list start Y
+def DIR_Y_IDLE = 26
+def DIR_Y_PLAY = 154
+
+-- Control button X positions (matching m291 layout)
+def CTRL_REPEAT_X = 40
+def CTRL_VOLDN_X  = 64
+def CTRL_PREV_X   = 88
+def CTRL_PLAY_X   = 112
+def CTRL_NEXT_X   = 152
+def CTRL_VOLUP_X  = 176
+def CTRL_SHUF_X   = 200
+
+-- Palette slot indices
+def C_BG  = 0
+def C_FG  = 1
+def C_HL  = 2
+def C_ALT = 3
+
+-- Keyboard scancodes (SDL)
+def KEY_UP        = 82
+def KEY_DOWN      = 81
+def KEY_LEFT      = 80
+def KEY_RIGHT     = 79
+def KEY_RETURN    = 40
+def KEY_SPACE     = 44
+def KEY_ESCAPE    = 41
+def KEY_BACKSPACE = 42
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mutable state
+-- ─────────────────────────────────────────────────────────────────────────────
+def ?folders    = []: [any]
+def ?tracks     = []: [any]
+def ?path       = "./"
+def ?sel        = 0
+def ?scroll     = 0
+def ?playing    = false
+def ?paused     = false
+def ?proc       = 0
+def ?sel_track  = 0
+def ?repeat     = false
+def ?shuffle    = false
+def ?volume     = 5
+def ?sec_from   = 0
+def ?sec_to     = 0
+def ?sec_prog   = 0
+def ?title      = ""
+def ?artist     = ""
+def ?album      = ""
+def ?track_ended = false
+def ?prefix_folders = 0
+def ?prefix_tracks  = 0
+def ?frame_count    = 0
+def ?title_scroll   = 0
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Computed helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+:: row_count() (( num ))
+    <- stdr.len(folders) + stdr.len(tracks)
+;
+
+:: dir_y() (( num ))
+    if playing
+        <- DIR_Y_PLAY
+    <- DIR_Y_IDLE
+;
+
+:: fit_height() (( num ))
+    let ?rows = row_count()
+    if rows == 0
+        rows = 1
+    if rows > MAX_ROWS
+        rows = MAX_ROWS
+    let ?h = rows * ROW_H + 32
+    if playing
+        h += PLAYER_H
+    <- h
+;
+
+:: pad2(n = num) (( string ))
+    if n < 10
+        <- "0" + str(n)
+    <- str(n)
+;
+
+:: fmt_secs(s = num) (( string ))
+    let secs = stdr.floor(s)
+    let mm   = secs / 60
+    let ss   = secs - mm * 60
+    <- pad2(mm) + ":" + pad2(ss)
+;
+
+-- Strip .mp3 / .MP3 extension
+:: strip_ext(name = string) (( string ))
+    let n = stdr.len(name)
+    if n >= 4
+        let ext = stdr.slice(name, n - 4, n)
+        if ext == ".mp3" || ext == ".MP3"
+            <- stdr.slice(name, 0, n - 4)
+    <- name
+;
+
+-- Convert uppercase ASCII char code to lowercase
+:: to_lower_code(c = num) (( num ))
+    if c >= 65 && c <= 90
+        <- c + 32
+    <- c
+;
+
+-- Case-insensitive less-than for strings
+: str_lt(a = string, b = string) (( bool ))
+    let na = stdr.len(a)
+    let nb = stdr.len(b)
+    let ?i = 0
+    for (; i < na && i < nb; i += 1)
+        let ca = to_lower_code(stdr.char_code(stdr.char_at(a, i)))
+        let cb = to_lower_code(stdr.char_code(stdr.char_at(b, i)))
+        if ca < cb
+            <- true
+        if ca > cb
+            <- false
+    <- na < nb
+;
+
+-- Insertion sort an [any] string array in place (case-insensitive)
+:: sort_strings(arr = [any]) (( -- ))
+    let n = stdr.len(arr)
+    for (let ?i = 1; i < n; i += 1)
+        let key  = stdr.str(arr[i] ?? "")
+        let ?j   = i - 1
+        for (; j >= 0; j -= 1)
+            if str_lt(key, stdr.str(arr[j] ?? ""))
+                arr[j + 1] = arr[j]
+            else
+                break
+        arr[j + 1] = key
+;
+
+-- Clamp sel within [0, row_count)
+:: clamp_sel() (( -- ))
+    let total = row_count()
+    if sel < 0
+        sel = 0
+    if total > 0 && sel >= total
+        sel = total - 1
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- State setters (Yis does not allow cross-module def? assignment)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: set_proc(p = num) (( -- ))
+    proc = p
+;
+
+: set_playing(b = bool) (( -- ))
+    playing = b
+;
+
+: set_paused(b = bool) (( -- ))
+    paused = b
+;
+
+: set_track_ended(b = bool) (( -- ))
+    track_ended = b
+;
+
+: set_frame(sf = num, sr = num, sp = num) (( -- ))
+    sec_from = sf
+    sec_to   = sr
+    sec_prog = sp
+;
+
+: set_title(s = string) (( -- ))
+    title = s
+;
+
+: set_artist(s = string) (( -- ))
+    artist = s
+;
+
+: set_album(s = string) (( -- ))
+    album = s
+;
+
+: clear_dir() (( -- ))
+    folders = []: [any]
+    tracks  = []: [any]
+    sel     = 0
+    scroll  = 0
+;
+
+: set_path(p = string) (( -- ))
+    path = p
+;
+
+: init_track(idx = num, title_str = string) (( -- ))
+    sel_track    = idx
+    title        = title_str
+    artist       = ""
+    album        = ""
+    sec_from     = 0
+    sec_to       = 0
+    sec_prog     = 0
+    track_ended  = false
+    title_scroll = 0
+    frame_count  = 0
+;
+
+: add_sel(delta = num) (( -- ))
+    sel += delta
+    clamp_sel()
+;
+
+: scroll_for_sel() (( -- ))
+    if sel < scroll
+        scroll = sel
+    elif sel >= scroll + MAX_ROWS
+        scroll = sel - MAX_ROWS + 1
+;
+
+: scroll_by(delta = num) (( -- ))
+    scroll -= delta
+;
+
+: clamp_scroll() (( -- ))
+    let total      = row_count()
+    let max_scroll = total - MAX_ROWS
+    if max_scroll < 0
+        max_scroll = 0
+    if scroll < 0
+        scroll = 0
+    if scroll > max_scroll
+        scroll = max_scroll
+;
+
+: toggle_repeat() (( -- ))
+    repeat = !repeat
+;
+
+: toggle_shuffle() (( -- ))
+    shuffle = !shuffle
+;
+
+: change_volume(delta = num) (( -- ))
+    volume += delta
+    if volume < 0
+        volume = 0
+    if volume > 5
+        volume = 5
+;
+
+-- Common prefix length; 0 if < 3 items or prefix <= 3 chars
+: compute_common_prefix(arr = [any]) (( num ))
+    let n = stdr.len(arr)
+    if n < 3
+        <- 0
+    let first = stdr.str(arr[0] ?? "")
+    let ?plen = stdr.len(first)
+    for (let ?i = 1; i < n && plen > 0; i += 1)
+        let s = stdr.str(arr[i] ?? "")
+        let ?j = 0
+        for (; j < plen && j < stdr.len(s); j += 1)
+            let ca = to_lower_code(stdr.char_code(stdr.char_at(first, j)))
+            let cb = to_lower_code(stdr.char_code(stdr.char_at(s, j)))
+            if ca != cb
+                break
+        plen = j
+    <- plen
+;
+
+:: compute_prefixes() (( -- ))
+    prefix_folders = compute_common_prefix(folders)
+    prefix_tracks  = compute_common_prefix(tracks)
+;
+
+:: tick_title() (( -- ))
+    if !playing
+        frame_count  = 0
+        title_scroll = 0
+        <-
+    let tlen = stdr.len(title)
+    if tlen <= 29
+        frame_count  = 0
+        title_scroll = 0
+        <-
+    frame_count += 1
+    if frame_count < 16
+        <-
+    frame_count   = 0
+    title_scroll += 1
+    if title_scroll >= tlen
+        title_scroll = 0
+;

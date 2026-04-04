@@ -1,0 +1,323 @@
+cask right_view
+
+bring stdr
+bring vimana
+
+bring right_model
+bring right_menu
+bring right_syntax
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Drawing primitives
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    scr.set_auto(1)
+    for (let ?row = 0; row < h; row += 1)
+        scr.set_y(y + row)
+        scr.set_x(x)
+        for (let ?col = 0; col < w; col += 1)
+            scr.pixel(c)
+    scr.set_auto(0)
+;
+
+: clamp_text(text = string, max_chars = num) (( string ))
+    let n = stdr.len(text)
+    if n <= max_chars
+        <- text
+    <- stdr.slice(text, 0, max_chars - 1) + "~"
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Halftone fill (aa55 checker pattern, like Left's scrollbar bg)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: fill_halftone(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    scr.set_auto(0)
+    for (let ?row = 0; row < h; row += 1)
+        for (let ?col = 0; col < w; col += 1)
+            if (row + col) % 2 == 0
+                scr.set_x(x + col)
+                scr.set_y(y + row)
+                scr.pixel(c)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Scrollbar (far left, halftone bg, solid thumb)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_scrollbar(scr = vimana.screen) (( -- ))
+    let bar_x = right_model.SCROLLBAR_X
+    let bar_w = right_model.SCROLLBAR_W
+    let bar_y = right_model.CONTENT_Y
+    let bar_h = right_model.WIN_H - right_model.CONTENT_Y - right_model.STATUS_H
+
+    -- Halftone background
+    fill_halftone(scr, bar_x, bar_y, bar_w, bar_h, right_model.C_FG)
+
+    -- Thumb
+    let total = right_model.line_count(right_model.editor_text)
+    let visible = right_model.MAX_LINES
+    if total <= visible
+        fill(scr, bar_x, bar_y, bar_w, bar_h, right_model.C_FG)
+        <-
+
+    let thumb_h = stdr.floor(bar_h * visible / total)
+    if thumb_h < 8
+        thumb_h = 8
+    let thumb_y = bar_y + stdr.floor((bar_h - thumb_h) * right_model.scroll_y / (total - visible))
+    fill(scr, bar_x, thumb_y, bar_w, thumb_h, right_model.C_FG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Separator between sidebar and editor
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_separator(scr = vimana.screen) (( -- ))
+    if !right_model.sidebar_visible
+        <-
+    let sep_x = right_model.SIDEBAR_X + right_model.SIDEBAR_W
+    fill(scr, sep_x, right_model.CONTENT_Y,
+        1, right_model.WIN_H - right_model.CONTENT_Y - right_model.STATUS_H,
+        right_model.C_FG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Outline panel (sidebar)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: type_prefix(kind = string) (( string ))
+    if kind == "cask"
+        <- "@ "
+    if kind == "bring"
+        <- "> "
+    if kind == "struct"
+        <- ", "
+    if kind == "fn" || kind == "pub_fn"
+        <- ": "
+    if kind == "const"
+        <- "= "
+    <- "  "
+;
+
+: type_color(kind = string) (( num ))
+    if kind == "cask"
+        <- right_model.C_ACCENT
+    if kind == "bring"
+        <- right_model.C_SEL
+    if kind == "fn" || kind == "pub_fn"
+        <- right_model.C_FG
+    if kind == "struct"
+        <- right_model.C_ACCENT
+    if kind == "const"
+        <- right_model.C_SEL
+    <- right_model.C_FG
+;
+
+: draw_outline(scr = vimana.screen) (( -- ))
+    if !right_model.sidebar_visible
+        <-
+
+    let n = stdr.len(right_model.current_outline)
+    let max_rows = right_model.visible_lines()
+    let sx = right_model.SIDEBAR_X + right_model.PAD_X
+
+    if n <= 0
+        scr.put_text(sx, right_model.CONTENT_Y, "(no outline)",
+            right_model.C_SEL, right_model.C_BG)
+        <-
+
+    for (let ?i = 0; i < max_rows; i += 1)
+        let idx = right_model.outline_scroll + i
+        if idx >= n
+            break
+        let y = right_model.CONTENT_Y + i * right_model.ROW_H
+        let item = right_model.current_outline[idx]
+        let kind = str(item["type"] ?? "")
+        let prefix = type_prefix(kind)
+        let label = clamp_text(str(item["label"] ?? ""), right_model.SIDEBAR_CHARS - 2)
+        let display = prefix + label
+
+        if idx == right_model.outline_selected
+            fill(scr, right_model.SIDEBAR_X, y,
+                right_model.SIDEBAR_W - 1, right_model.ROW_H, right_model.C_ACCENT)
+            scr.put_text(sx, y, display, right_model.C_BG, right_model.C_ACCENT)
+        else
+            let fg = type_color(kind)
+            scr.put_text(sx, y, display, fg, right_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Column 80 guide
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_col_guide(scr = vimana.screen) (( -- ))
+    let ex = right_model.editor_left() + right_model.PAD_X
+    let guide_x = ex + right_model.COL_GUIDE * right_model.FONT_W
+    if guide_x >= right_model.WIN_W
+        <-
+    fill_halftone(scr, guide_x, right_model.CONTENT_Y,
+        1, right_model.WIN_H - right_model.CONTENT_Y - right_model.STATUS_H,
+        right_model.C_SEL)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Status bar (titlebar row, right-aligned alongside menu)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_status(scr = vimana.screen) (( -- ))
+    let bytes = stdr.len(right_model.editor_text)
+    let lc = right_model.line_col_from_index(right_model.editor_text, right_model.caret)
+    let cur_line = stdr.floor(stdr.num(lc[0] ?? 0)) + 1
+    let cur_col = stdr.floor(stdr.num(lc[1] ?? 0)) + 1
+    let total = right_model.line_count(right_model.editor_text)
+    let status = str(bytes) + " bytes  Ln " + str(cur_line) + "/" + str(total) + " Col " + str(cur_col)
+    let sw = stdr.len(status) * right_model.FONT_W
+    let sx = right_model.WIN_W - sw - 8
+    scr.put_text(sx, 0, status, right_model.C_SEL, right_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Editor panel
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_editor(scr = vimana.screen) (( -- ))
+    let code = right_model.editor_text
+    let total = stdr.len(code)
+    let max_rows = right_model.visible_lines()
+    let scroll = right_model.scroll_y
+    let ex = right_model.editor_left() + right_model.PAD_X
+    let max_cols = right_model.editor_cols()
+
+    -- Selection range
+    let pair = right_model.sel_normalized()
+    let sa = stdr.floor(stdr.num(pair[0] ?? 0))
+    let sb = stdr.floor(stdr.num(pair[1] ?? 0))
+    let has_sel = sa != sb
+
+    -- Iterate lines
+    let ?start = 0
+    let ?line_no = 0
+    for (let ?i = 0; i <= total; i += 1)
+        let at_end = i >= total
+        let is_nl = !at_end && stdr.slice(code, i, i + 1) == "\n"
+        if !at_end && !is_nl
+            continue
+
+        if line_no >= scroll && line_no < scroll + max_rows
+            let row = line_no - scroll
+            let y = right_model.CONTENT_Y + row * right_model.ROW_H
+            let line_start = start
+            let line_end = i
+            let raw_line = stdr.slice(code, line_start, line_end)
+            let line_text = clamp_text(raw_line, max_cols)
+
+            -- Syntax color for this line
+            let fg = right_syntax.line_color(raw_line)
+
+            -- Draw full line
+            scr.put_text(ex, y, line_text, fg, right_model.C_BG)
+
+            -- Overdraw search matches in this line
+            if right_model.search_active && stdr.len(right_model.search_query) > 0
+                let qlen = stdr.len(right_model.search_query)
+                let match_list = right_model.search_matches
+                let mc = stdr.len(match_list)
+                for (let ?mi = 0; mi < mc; mi += 1)
+                    let mpos = stdr.floor(stdr.num(match_list[mi] ?? 0))
+                    if mpos + qlen > line_start && mpos < line_end
+                        let ?ml = mpos - line_start
+                        let ?mr = ml + qlen
+                        if ml < 0
+                            ml = 0
+                        if mr > max_cols
+                            mr = max_cols
+                        if mr > ml
+                            let mt = stdr.slice(code, line_start + ml, line_start + mr)
+                            let mx_pos = ex + ml * right_model.FONT_W
+                            scr.put_text(mx_pos, y, mt, right_model.C_FG, right_model.C_ACCENT)
+
+            -- Overdraw selection portion
+            if has_sel && sa < line_end + 1 && sb > line_start
+                let ?left = sa
+                if left < line_start
+                    left = line_start
+                let ?right = sb
+                if right > line_end
+                    right = line_end
+                if right > left
+                    let ?local_left = left - line_start
+                    let ?local_right = right - line_start
+                    if local_left < 0
+                        local_left = 0
+                    if local_right > max_cols
+                        local_right = max_cols
+                    if local_right > local_left
+                        let sel_text = stdr.slice(code, left, left + local_right - local_left)
+                        let sx = ex + local_left * right_model.FONT_W
+                        scr.put_text(sx, y, sel_text, right_model.C_BG, right_model.C_SEL)
+
+        start = i + 1
+        line_no += 1
+
+    -- Caret
+    if !has_sel
+        let lc = right_model.line_col_from_index(code, right_model.caret)
+        let caret_line = stdr.floor(stdr.num(lc[0] ?? 0))
+        let caret_col = stdr.floor(stdr.num(lc[1] ?? 0))
+        if caret_line >= scroll && caret_line < scroll + max_rows
+            let cy = right_model.CONTENT_Y + (caret_line - scroll) * right_model.ROW_H
+            let cx = ex + caret_col * right_model.FONT_W
+            fill(scr, cx, cy, 2, right_model.ROW_H, right_model.C_FG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Search overlay
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_search(scr = vimana.screen) (( -- ))
+    if !right_model.search_active
+        <-
+    -- Draw search bar at top of editor area
+    let sx = right_model.editor_left()
+    let sy = right_model.CONTENT_Y
+    let sw = right_model.editor_width()
+    let sh = right_model.ROW_H
+
+    -- Background
+    fill(scr, sx, sy, sw, sh, right_model.C_FG)
+
+    -- Label + query
+    let ?label = "Find: " + right_model.search_query
+    let match_count = stdr.len(right_model.search_matches)
+    if match_count > 0
+        let idx = right_model.search_index + 1
+        label = label + "  [" + str(idx) + "/" + str(match_count) + "]"
+    elif stdr.len(right_model.search_query) > 0
+        label = label + "  [no match]"
+
+    scr.put_text(sx + 8, sy, label, right_model.C_BG, right_model.C_FG)
+
+    -- Blinking cursor for search input
+    let qx = sx + 8 + (6 + stdr.len(right_model.search_query)) * right_model.FONT_W
+    fill(scr, qx, sy + 2, 2, right_model.ROW_H - 4, right_model.C_ACCENT)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Full frame redraw
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_all(scr = vimana.screen) (( -- ))
+    scr.clear(right_model.C_BG)
+    scr.draw_titlebar(right_model.C_BG)
+    draw_scrollbar(scr)
+    draw_separator(scr)
+    draw_outline(scr)
+    draw_col_guide(scr)
+    draw_editor(scr)
+    draw_status(scr)
+    draw_search(scr)
+    right_menu.draw_menubar(scr)
+    right_menu.draw_submenu(scr)
+    scr.present()
+;

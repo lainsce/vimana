@@ -54,21 +54,23 @@ bring stdr
             continue
 
         if stdr.starts_with(trimmed, "cask ")
-            add_item(items, line_preview(stdr.slice(trimmed, 5, n)), ln, "cask")
+            add_item(items, first_word(stdr.slice(trimmed, 5, n)), ln, "cask")
         elif stdr.starts_with(trimmed, "bring ")
-            add_item(items, line_preview(stdr.slice(trimmed, 6, n)), ln, "bring")
+            add_item(items, first_word(stdr.slice(trimmed, 6, n)), ln, "bring")
         elif stdr.starts_with(trimmed, "pub ,: ")
-            add_item(items, line_preview(stdr.slice(trimmed, 6, n)), ln, "struct")
+            add_item(items, first_word(stdr.slice(trimmed, 6, n)), ln, "struct")
         elif stdr.starts_with(trimmed, ",: ")
-            add_item(items, line_preview(stdr.slice(trimmed, 3, n)), ln, "struct")
+            add_item(items, first_word(stdr.slice(trimmed, 3, n)), ln, "struct")
         elif stdr.starts_with(trimmed, "!: ")
-            add_item(items, line_preview(stdr.slice(trimmed, 3, n)), ln, "pub_fn")
-        elif stdr.starts_with(trimmed, ": ") && !stdr.starts_with(trimmed, ":: ")
-            add_item(items, line_preview(stdr.slice(trimmed, 2, n)), ln, "fn")
+            add_item(items, first_word(stdr.slice(trimmed, 3, n)), ln, "pub_fn")
         elif stdr.starts_with(trimmed, ":: ")
-            add_item(items, line_preview(stdr.slice(trimmed, 3, n)), ln, "const")
-        else
-            add_item(items, line_preview(trimmed), ln, "line")
+            add_item(items, first_word(stdr.slice(trimmed, 3, n)), ln, "const")
+        elif stdr.starts_with(trimmed, ": ") && !stdr.starts_with(trimmed, ":: ")
+            add_item(items, first_word(stdr.slice(trimmed, 2, n)), ln, "fn")
+        elif stdr.starts_with(trimmed, "-> ")
+            add_item(items, "main", ln, "fn")
+        elif stdr.starts_with(trimmed, "def ") && !stdr.starts_with(trimmed, "def ?")
+            add_item(items, first_word(stdr.slice(trimmed, 4, n)), ln, "const")
 
         start = i + 1
         ln = ln + 1

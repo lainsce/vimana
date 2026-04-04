@@ -24,6 +24,9 @@
 #define VIMANA_TILE_SIZE 8
 #define VIMANA_GLYPH_HEIGHT 16
 #define VIMANA_UF2_BYTES 32  /* per-glyph: 2 tiles × 16 bytes (2bpp planar) */
+#define VIMANA_FONT_ROW_BYTES 3   /* max 24px wide = 3 bytes per row */
+#define VIMANA_FONT_MAX_HEIGHT 24
+#define VIMANA_FONT_GLYPH_BYTES (VIMANA_FONT_MAX_HEIGHT * VIMANA_FONT_ROW_BYTES) /* 72 */
 #define VIMANA_TEXT_INPUT_CAP 256
 #define VIMANA_SPRITE_1BPP_BYTES VIMANA_TILE_SIZE
 #define VIMANA_SPRITE_2BPP_BYTES (VIMANA_TILE_SIZE * 2)
@@ -77,10 +80,13 @@ struct VimanaScreen {
   int height_mar;  /* height + 16 */
   uint32_t base_colors[4];  /* ARGB palette, slots 0-3 */
   uint32_t palette[16];     /* expanded 16-entry composite */
-  /* UF2 glyphs: 8×16 2bpp planar (32 bytes each) + variable widths */
+  /* Font glyphs: 1bpp row-major bitmap, up to 24×24 px */
+  uint8_t font_bitmap[128][VIMANA_FONT_GLYPH_BYTES];
+  /* Legacy UF2 alias (same memory, only valid for 8×16 glyphs) */
   uint8_t font_ascii[128][VIMANA_UF2_BYTES];
   uint8_t font_widths[128];
-  int font_height;  /* UF1=8, UF2=16 */
+  int font_height;       /* UF1=8, UF2=16, UF3=24 */
+  int font_glyph_width;  /* bitmap pixel width: 8 (UF1/UF2) or 24 (UF3) */
   uint8_t sprite_mem[VIMANA_SPRITE_MEM_CAP];
   int port_x;
   int port_y;
@@ -123,21 +129,23 @@ static void vimana_colorize(vimana_screen *screen) {
 static void vimana_screen_reset_palette(vimana_screen *screen) {
   if (!screen)
     return;
-  screen->base_colors[0] = 0xFF101418u;
-  screen->base_colors[1] = 0xFFF1F3F5u;
-  screen->base_colors[2] = 0xFF2FBF71u;
-  screen->base_colors[3] = 0xFFFFB000u;
+  screen->base_colors[0] = 0xFFFFFFFFu;
+  screen->base_colors[1] = 0xFF000000u;
+  screen->base_colors[2] = 0xFF77DDCCu;
+  screen->base_colors[3] = 0xFFFFBB22u;
   vimana_colorize(screen);
 }
 
 static void vimana_screen_reset_font(vimana_screen *screen) {
   if (!screen)
     return;
+  memset(screen->font_bitmap, 0, sizeof(screen->font_bitmap));
   memset(screen->font_ascii, 0, sizeof(screen->font_ascii));
   memset(screen->font_widths, 0, sizeof(screen->font_widths));
   for (int i = 0; i < 128; i++)
     screen->font_widths[i] = VIMANA_TILE_SIZE;
   screen->font_height = VIMANA_TILE_SIZE; /* UF1 default */
+  screen->font_glyph_width = VIMANA_TILE_SIZE;
   memset(screen->sprite_mem, 0, sizeof(screen->sprite_mem));
 }
 
@@ -622,7 +630,21 @@ void vimana_screen_set_font_glyph(vimana_screen *screen, int code,
     return;
   if (code < 0 || code >= 128)
     return;
+  /* Legacy UF2 storage */
   vimana_rows_to_uf2(rows, screen->font_ascii[code]);
+  /* New 1bpp bitmap: OR both planes together */
+  uint8_t *bmp = screen->font_bitmap[code];
+  memset(bmp, 0, VIMANA_FONT_GLYPH_BYTES);
+  for (int r = 0; r < 16; r++) {
+    uint8_t bits = 0;
+    uint16_t packed = rows[r];
+    for (int col = 0; col < 8; col++) {
+      uint16_t pair = (uint16_t)((packed >> ((7 - col) * 2)) & 0x3u);
+      if (pair != 0)
+        bits = (uint8_t)(bits | (0x80u >> col));
+    }
+    bmp[r * VIMANA_FONT_ROW_BYTES] = bits;
+  }
 }
 
 void vimana_screen_set_font_chr(vimana_screen *screen, int code,
@@ -631,14 +653,29 @@ void vimana_screen_set_font_chr(vimana_screen *screen, int code,
     return;
   if (code < 0 || code >= 128)
     return;
-  uint8_t *uf2 = screen->font_ascii[code];
-  memset(uf2, 0, VIMANA_UF2_BYTES);
-  /* Store raw 1bpp bytes as plane0 of each tile */
-  int rows = len < VIMANA_GLYPH_HEIGHT ? len : VIMANA_GLYPH_HEIGHT;
-  for (int r = 0; r < rows; r++) {
-    int tile = r / VIMANA_TILE_SIZE;
-    int tr = r % VIMANA_TILE_SIZE;
-    uf2[tile * 16 + tr] = chr[r]; /* plane0 */
+  int gw = screen->font_glyph_width;
+  int gh = screen->font_height;
+  int bpr = (gw + 7) / 8; /* bytes per row: 1 for 8px, 3 for 24px */
+  int max_bytes = gh * bpr;
+  int n = len < max_bytes ? len : max_bytes;
+  /* New 1bpp bitmap */
+  uint8_t *bmp = screen->font_bitmap[code];
+  memset(bmp, 0, VIMANA_FONT_GLYPH_BYTES);
+  for (int i = 0; i < n; i++) {
+    int row = i / bpr;
+    int col_byte = i % bpr;
+    bmp[row * VIMANA_FONT_ROW_BYTES + col_byte] = chr[i];
+  }
+  /* Legacy UF2 storage (for 8px-wide glyphs only) */
+  if (gw <= 8) {
+    uint8_t *uf2 = screen->font_ascii[code];
+    memset(uf2, 0, VIMANA_UF2_BYTES);
+    int rows = n < VIMANA_GLYPH_HEIGHT ? n : VIMANA_GLYPH_HEIGHT;
+    for (int r = 0; r < rows; r++) {
+      int tile = r / VIMANA_TILE_SIZE;
+      int tr = r % VIMANA_TILE_SIZE;
+      uf2[tile * 16 + tr] = chr[r]; /* plane0 */
+    }
   }
 }
 
@@ -651,8 +688,20 @@ void vimana_screen_set_font_width(vimana_screen *screen, int code, int width) {
 void vimana_screen_set_font_size(vimana_screen *screen, int size) {
   if (!screen)
     return;
-  /* UF1=1 (8px), UF2=2 (16px) */
-  screen->font_height = (size == 2) ? VIMANA_GLYPH_HEIGHT : VIMANA_TILE_SIZE;
+  int w;
+  if (size == 3) {
+    screen->font_height = VIMANA_FONT_MAX_HEIGHT;   /* 24 */
+    w = VIMANA_FONT_MAX_HEIGHT;                      /* 24 */
+  } else if (size == 2) {
+    screen->font_height = VIMANA_GLYPH_HEIGHT;      /* 16 */
+    w = VIMANA_TILE_SIZE;                            /*  8 */
+  } else {
+    screen->font_height = VIMANA_TILE_SIZE;          /*  8 */
+    w = VIMANA_TILE_SIZE;                            /*  8 */
+  }
+  screen->font_glyph_width = w;
+  for (int i = 0; i < 128; i++)
+    screen->font_widths[i] = (uint8_t)w;
 }
 
 void vimana_screen_set_sprite(vimana_screen *screen, int addr,
@@ -825,31 +874,27 @@ void vimana_screen_put(vimana_screen *screen, int x, int y, const char *glyph,
   unsigned char ch = (unsigned char)((glyph && glyph[0]) ? glyph[0] : ' ');
   if (ch >= 128)
     ch = ' ';
-  const uint8_t *uf2 = screen->font_ascii[(int)ch];
+  const uint8_t *bmp = screen->font_bitmap[(int)ch];
   int bg_slot = bg & 0x3;
   int fg_slot = fg & 0x3;
-  /* UF2 layout: tile0_p0[8] tile0_p1[8] tile1_p0[8] tile1_p1[8] */
   int gh = screen->font_height;
+  int gw = screen->font_glyph_width;
   for (int row = 0; row < gh; row++) {
     int py = y + row;
     if (py < 0 || py >= screen->height)
       continue;
-    int tile = row / VIMANA_TILE_SIZE;
-    int tr = row % VIMANA_TILE_SIZE;
-    const uint8_t plane0 = uf2[tile * 16 + tr];
-    const uint8_t plane1 = uf2[tile * 16 + tr + VIMANA_TILE_SIZE];
+    const uint8_t *row_data = bmp + row * VIMANA_FONT_ROW_BYTES;
     uint8_t *dst =
         screen->layers + (py + 8) * screen->width_mar + (x + 8);
-    for (int col = 0; col < VIMANA_TILE_SIZE; col++) {
+    for (int col = 0; col < gw; col++) {
       int px = x + col;
       if (px < 0 || px >= screen->width) {
         dst++;
         continue;
       }
-      uint8_t mask = (uint8_t)(0x80u >> col);
-      uint8_t cval =
-          (uint8_t)((!!(plane0 & mask)) | ((!!(plane1 & mask)) << 1));
-      uint8_t fg_nibble = (cval != 0) ? (uint8_t)(fg_slot << 2) : 0;
+      uint8_t mask = (uint8_t)(0x80u >> (col & 7));
+      uint8_t hit = (row_data[col >> 3] & mask) ? 1u : 0u;
+      uint8_t fg_nibble = hit ? (uint8_t)(fg_slot << 2) : 0;
       *dst++ = (uint8_t)(fg_nibble | (uint8_t)bg_slot);
     }
   }
@@ -1015,19 +1060,19 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
     int gx = text_x;
     for (int i = 0; i < len; i++) {
       unsigned char c = (unsigned char)title[i];
-      if (c >= 128) { gx += VIMANA_TILE_SIZE; continue; }
+      if (c >= 128) { gx += screen->font_widths[' ']; continue; }
       if (gx >= right_bound)
         break;
-      const uint8_t *uf2 = screen->font_ascii[c];
-      /* Draw UF2 glyph (plane 0 only for 1bpp titlebar) */
+      const uint8_t *bmp = screen->font_bitmap[c];
+      int gw = screen->font_glyph_width;
+      /* Draw 1bpp glyph for titlebar */
       for (int row = 0; row < gh; row++) {
         int py = text_y + row;
         if (py < 0 || py >= VIMANA_TITLEBAR_BAR_HEIGHT) continue;
-        int tile = row / VIMANA_TILE_SIZE;
-        int tr = row % VIMANA_TILE_SIZE;
-        uint8_t plane0 = uf2[tile * 16 + tr];
-        for (int col = 0; col < VIMANA_TILE_SIZE; col++) {
-          if (plane0 & (0x80u >> col)) {
+        const uint8_t *row_data = bmp + row * VIMANA_FONT_ROW_BYTES;
+        for (int col = 0; col < gw; col++) {
+          uint8_t mask = (uint8_t)(0x80u >> (col & 7));
+          if (row_data[col >> 3] & mask) {
             SDL_FRect px = {(float)(gx + col), (float)py, 1.0f, 1.0f};
             SDL_RenderFillRect(rend, &px);
           }
@@ -1451,6 +1496,7 @@ vimana_process *vimana_process_spawn(vimana_system *system, const char *cmd) {
   /* parent */
   close(pipe_in[0]);
   close(pipe_out[1]);
+  signal(SIGPIPE, SIG_IGN); /* prevent crash if child dies before a write */
 
   /* make stdout_fd non-blocking so read_line doesn't stall the UI */
   int flags = fcntl(pipe_out[0], F_GETFL);

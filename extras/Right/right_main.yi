@@ -1,0 +1,359 @@
+cask main
+
+bring stdr
+bring vimana
+bring right_model
+bring right_view
+bring right_assets
+bring right_menu
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Double-click tracking
+def ?last_click_time = 0
+def ?last_click_x = 0
+def ?last_click_y = 0
+def DBLCLICK_MS = 400
+def DBLCLICK_DIST = 8
+
+: in_rect(sx = num, sy = num, rx = num, ry = num, rw = num, rh = num) (( bool ))
+    <- sx >= rx && sx < rx + rw && sy >= ry && sy < ry + rh
+;
+
+: update_title(scr = vimana.screen) (( -- ))
+    let ?title = "Untitled"
+    if stdr.len(right_model.file_path) > 0
+        title = stdr.basename(right_model.file_path)
+    if right_model.dirty
+        title = title + " *"
+    scr.set_titlebar_title(title)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File I/O
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: load_file(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if stdr.len(right_model.file_path) == 0
+        <-
+    if !fsys.exists(right_model.file_path)
+        <-
+    let txt = fsys.read_text(right_model.file_path)
+    right_model.set_text(txt)
+    right_model.set_caret(0)
+    right_model.set_selection(0, 0)
+    right_model.set_scroll(0)
+    right_model.rebuild_outline()
+    right_model.set_dirty(false)
+    update_title(scr)
+;
+
+: save_file(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if stdr.len(right_model.file_path) == 0
+        <-
+    fsys.write_text(right_model.file_path, right_model.editor_text)
+    right_model.set_dirty(false)
+    update_title(scr)
+;
+
+: new_file(scr = vimana.screen) (( -- ))
+    right_model.set_file_path("")
+    right_model.set_text("cask main\n\nbring stdr\n\n-- entry point\n-> ()\n    -- your code here\n;\n")
+    right_model.set_caret(0)
+    right_model.set_selection(0, 0)
+    right_model.set_scroll(0)
+    right_model.rebuild_outline()
+    right_model.set_dirty(false)
+    update_title(scr)
+;
+
+: open_file(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let picked = stdr.open_file_dialog("Open file", "yi")
+    if is_null(picked)
+        <-
+    let path = str(picked)
+    if stdr.len(path) == 0
+        <-
+    right_model.set_file_path(path)
+    load_file(fsys, scr)
+;
+
+: exec_action(action = string, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if action == "new"
+        new_file(scr)
+    elif action == "open"
+        open_file(fsys, scr)
+    elif action == "save"
+        save_file(fsys, scr)
+    elif action == "copy"
+        let sel = right_model.selected_text()
+        if stdr.len(sel) > 0
+            sys.set_clipboard_text(sel)
+    elif action == "paste"
+        let clip = sys.clipboard_text()
+        if stdr.len(clip) > 0
+            right_model.insert_at_caret(clip)
+            update_title(scr)
+    elif action == "cut"
+        let sel = right_model.selected_text()
+        if stdr.len(sel) > 0
+            sys.set_clipboard_text(sel)
+            right_model.delete_selection()
+            update_title(scr)
+    elif action == "select_all"
+        right_model.select_all()
+    elif action == "toggle_sidebar"
+        right_model.toggle_sidebar()
+    elif action == "find"
+        right_model.open_search()
+    elif action == "find_next"
+        right_model.search_next()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_mouse(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    -- Track hover for menu
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+    right_menu.handle_hover(mx, my)
+
+    if !dev.mouse_pressed(vimana.mouse_left)
+        <-
+
+    -- Menu gets first crack at clicks
+    let action = right_menu.handle_click(mx, my)
+    if action != "pass"
+        if stdr.len(action) > 0
+            exec_action(action, sys, fsys, scr)
+        <-
+
+    -- Click in scrollbar zone
+    if mx < right_model.SIDEBAR_X
+        let bar_h = right_model.WIN_H - right_model.CONTENT_Y - right_model.STATUS_H
+        let total = right_model.line_count(right_model.editor_text)
+        let ratio = (my - right_model.CONTENT_Y) / bar_h
+        let target = stdr.floor(ratio * total)
+        right_model.set_scroll(target)
+        right_model.clamp_scroll()
+        <-
+
+    -- Click in editor area
+    let ed_left = right_model.editor_left()
+    if mx >= ed_left
+        -- Double-click detection
+        let now = sys.ticks()
+        let dx = mx - last_click_x
+        let dy = my - last_click_y
+        let dist = dx * dx + dy * dy
+        if (now - last_click_time) < DBLCLICK_MS && dist < DBLCLICK_DIST * DBLCLICK_DIST
+            let pos = right_model.caret_from_editor_click(mx, my)
+            right_model.select_word_at(pos)
+            last_click_time = 0
+            <-
+        last_click_time = now
+        last_click_x = mx
+        last_click_y = my
+        let pos = right_model.caret_from_editor_click(mx, my)
+        right_model.set_caret(pos)
+        right_model.set_selection(pos, pos)
+        <-
+
+    -- Click in outline sidebar
+    if right_model.sidebar_visible && mx >= right_model.SIDEBAR_X && mx < right_model.SIDEBAR_X + right_model.SIDEBAR_W
+        let idx = right_model.outline_index_from_click(my)
+        if idx >= 0
+            right_model.set_outline_selected(idx)
+            let item = right_model.current_outline[idx]
+            let line_any = item["line"] ?? 0
+            let pos = right_model.line_to_char_pos(right_model.editor_text, line_any)
+            right_model.set_caret(pos)
+            right_model.set_selection(pos, pos)
+            right_model.ensure_visible()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Keyboard input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let cmd = dev.key_down(right_model.KEY_LGUI) || dev.key_down(right_model.KEY_RGUI)
+    let shift = dev.key_down(225) || dev.key_down(229)
+
+    -- Search mode keys
+    if right_model.search_active
+        if dev.key_pressed(right_model.KEY_ESCAPE)
+            right_model.close_search()
+            <-
+        if dev.key_pressed(right_model.KEY_RETURN)
+            right_model.search_next()
+            <-
+        if dev.key_pressed(right_model.KEY_BACKSPACE)
+            right_model.search_backspace()
+            <-
+        if cmd && dev.key_pressed(right_model.KEY_F)
+            right_model.close_search()
+            <-
+        <-
+
+    -- Cmd shortcuts
+    if cmd
+        if dev.key_pressed(right_model.KEY_S)
+            save_file(fsys, scr)
+            <-
+        if dev.key_pressed(right_model.KEY_N)
+            new_file(scr)
+            <-
+        if dev.key_pressed(right_model.KEY_O)
+            open_file(fsys, scr)
+            <-
+        if dev.key_pressed(right_model.KEY_F)
+            right_model.open_search()
+            <-
+        if dev.key_pressed(right_model.KEY_G)
+            right_model.search_next()
+            <-
+        if dev.key_pressed(right_model.KEY_A)
+            right_model.select_all()
+            <-
+        if dev.key_pressed(right_model.KEY_C)
+            let sel = right_model.selected_text()
+            if stdr.len(sel) > 0
+                sys.set_clipboard_text(sel)
+            <-
+        if dev.key_pressed(right_model.KEY_X)
+            let sel = right_model.selected_text()
+            if stdr.len(sel) > 0
+                sys.set_clipboard_text(sel)
+                right_model.delete_selection()
+                update_title(scr)
+            <-
+        if dev.key_pressed(right_model.KEY_V)
+            let clip = sys.clipboard_text()
+            if stdr.len(clip) > 0
+                right_model.insert_at_caret(clip)
+                update_title(scr)
+            <-
+        if dev.key_pressed(right_model.KEY_D)
+            right_model.toggle_sidebar()
+            <-
+        -- Cmd+arrows
+        if dev.key_pressed(right_model.KEY_LEFT)
+            right_model.move_caret_line_start(shift)
+            <-
+        if dev.key_pressed(right_model.KEY_RIGHT)
+            right_model.move_caret_line_end(shift)
+            <-
+        if dev.key_pressed(right_model.KEY_UP)
+            right_model.move_caret_doc_start(shift)
+            <-
+        if dev.key_pressed(right_model.KEY_DOWN)
+            right_model.move_caret_doc_end(shift)
+            <-
+        <-
+
+    -- Navigation
+    if dev.key_pressed(right_model.KEY_LEFT)
+        right_model.move_caret_left(shift)
+        <-
+    if dev.key_pressed(right_model.KEY_RIGHT)
+        right_model.move_caret_right(shift)
+        <-
+    if dev.key_pressed(right_model.KEY_UP)
+        right_model.move_caret_up(shift)
+        <-
+    if dev.key_pressed(right_model.KEY_DOWN)
+        right_model.move_caret_down(shift)
+        <-
+
+    -- Editing keys
+    if dev.key_pressed(right_model.KEY_BACKSPACE)
+        right_model.delete_backward()
+        update_title(scr)
+        <-
+    if dev.key_pressed(right_model.KEY_DELETE)
+        right_model.delete_forward()
+        update_title(scr)
+        <-
+    if dev.key_pressed(right_model.KEY_RETURN)
+        right_model.insert_at_caret("\n")
+        update_title(scr)
+        <-
+    if dev.key_pressed(right_model.KEY_TAB)
+        right_model.insert_at_caret("    ")
+        update_title(scr)
+        <-
+    if dev.key_pressed(right_model.KEY_ESCAPE)
+        if right_menu.is_open()
+            right_menu.close()
+            <-
+        if right_model.has_selection()
+            right_model.reset_selection()
+            <-
+        sys.quit()
+        <-
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Text input (typed characters)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_text(dev = vimana.device, scr = vimana.screen) (( -- ))
+    let txt = dev.text_input()
+    if stdr.len(txt) > 0
+        if right_model.search_active
+            right_model.search_type(txt)
+            <-
+        right_model.insert_at_caret(txt)
+        update_title(scr)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Scroll wheel
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_scroll(dev = vimana.device) (( -- ))
+    let dy = dev.wheel_y()
+    if dy == 0
+        <-
+    right_model.scroll_by(dy)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-> ()
+    let sys  = vimana.system()
+    let scr  = vimana.screen("Right", right_model.WIN_W, right_model.WIN_H, 1)
+    right_assets.setup(scr)
+    scr.set_palette(vimana.color_bg, "#ffffee")
+       .set_palette(vimana.color_fg,  "#222222")
+       .set_palette(vimana.color_2,  "#777777")
+       .set_palette(vimana.color_3,  "#008888")
+    let dev  = sys.device()
+    let fsys = sys.file()
+
+    -- Load initial file if provided
+    right_model.set_file_path("")
+    right_model.set_text("cask main\n\nbring stdr\n\n-- entry point\n-> ()\n    -- your code here\n;\n")
+    right_model.rebuild_outline()
+    update_title(scr)
+
+    sys.run(scr, () => {
+        dev.poll()
+
+        -- Input
+        on_mouse(dev, sys, fsys, scr)
+        on_key(dev, sys, fsys, scr)
+        on_text(dev, scr)
+        on_scroll(dev)
+
+        -- Render
+        right_view.draw_all(scr)
+    })
+;

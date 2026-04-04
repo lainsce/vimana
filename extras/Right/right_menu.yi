@@ -1,0 +1,397 @@
+cask right_menu
+
+bring stdr
+bring vimana
+bring right_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Menu state
+-- ─────────────────────────────────────────────────────────────────────────────
+def ?menu_open = -1
+def ?menu_hover = -1
+
+-- Menu bar geometry
+def MENUBAR_Y = 0
+def MENUBAR_H = 24
+def MENU_START_X = 16
+def MENU_GAP = 8
+def SUBMENU_W = 224
+def SUBMENU_ITEM_H = 24
+
+-- Category positions (x start of each label)
+def CAT_FILE_X = 16
+def CAT_FILE_W = 80
+def CAT_EDIT_X = 96
+def CAT_EDIT_W = 80
+def CAT_FIND_X = 176
+def CAT_FIND_W = 80
+def CAT_VIEW_X = 256
+def CAT_VIEW_W = 80
+
+-- Category count
+def CAT_FILE = 0
+def CAT_EDIT = 1
+def CAT_FIND = 2
+def CAT_VIEW = 3
+
+-- Item counts per category
+def FILE_COUNT = 3
+def EDIT_COUNT = 4
+def FIND_COUNT = 2
+def VIEW_COUNT = 1
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    scr.set_auto(1)
+    for (let ?row = 0; row < h; row += 1)
+        scr.set_y(y + row)
+        scr.set_x(x)
+        for (let ?col = 0; col < w; col += 1)
+            scr.pixel(c)
+    scr.set_auto(0)
+;
+
+: item_count(cat = num) (( num ))
+    if cat == CAT_FILE
+        <- FILE_COUNT
+    if cat == CAT_EDIT
+        <- EDIT_COUNT
+    if cat == CAT_FIND
+        <- FIND_COUNT
+    if cat == CAT_VIEW
+        <- VIEW_COUNT
+    <- 0
+;
+
+: cat_x(cat = num) (( num ))
+    if cat == CAT_FILE
+        <- CAT_FILE_X
+    if cat == CAT_EDIT
+        <- CAT_EDIT_X
+    if cat == CAT_FIND
+        <- CAT_FIND_X
+    if cat == CAT_VIEW
+        <- CAT_VIEW_X
+    <- 0
+;
+
+: item_label(cat = num, idx = num) (( string ))
+    if cat == CAT_FILE
+        if idx == 0
+            <- "New"
+        if idx == 1
+            <- "Open"
+        if idx == 2
+            <- "Save"
+    if cat == CAT_EDIT
+        if idx == 0
+            <- "Copy"
+        if idx == 1
+            <- "Paste"
+        if idx == 2
+            <- "Cut"
+        if idx == 3
+            <- "Select All"
+    if cat == CAT_FIND
+        if idx == 0
+            <- "Find"
+        if idx == 1
+            <- "Find Next"
+    if cat == CAT_VIEW
+        if idx == 0
+            <- "Sidebar"
+    <- ""
+;
+
+: item_shortcut(cat = num, idx = num) (( string ))
+    if cat == CAT_FILE
+        if idx == 0
+            <- "Cmd+N"
+        if idx == 1
+            <- "Cmd+O"
+        if idx == 2
+            <- "Cmd+S"
+    if cat == CAT_EDIT
+        if idx == 0
+            <- "Cmd+C"
+        if idx == 1
+            <- "Cmd+V"
+        if idx == 2
+            <- "Cmd+X"
+        if idx == 3
+            <- "Cmd+A"
+    if cat == CAT_FIND
+        if idx == 0
+            <- "Cmd+F"
+        if idx == 1
+            <- "Cmd+G"
+    if cat == CAT_VIEW
+        if idx == 0
+            <- "Cmd+D"
+    <- ""
+;
+
+-- Action IDs returned by handle_click
+:: action_none() (( string ))
+    <- ""
+;
+:: action_save() (( string ))
+    <- "save"
+;
+:: action_copy() (( string ))
+    <- "copy"
+;
+:: action_paste() (( string ))
+    <- "paste"
+;
+:: action_cut() (( string ))
+    <- "cut"
+;
+:: action_select_all() (( string ))
+    <- "select_all"
+;
+:: action_toggle_sidebar() (( string ))
+    <- "toggle_sidebar"
+;
+
+: item_action(cat = num, idx = num) (( string ))
+    if cat == CAT_FILE
+        if idx == 0
+            <- "new"
+        if idx == 1
+            <- "open"
+        if idx == 2
+            <- "save"
+    if cat == CAT_EDIT
+        if idx == 0
+            <- "copy"
+        if idx == 1
+            <- "paste"
+        if idx == 2
+            <- "cut"
+        if idx == 3
+            <- "select_all"
+    if cat == CAT_FIND
+        if idx == 0
+            <- "find"
+        if idx == 1
+            <- "find_next"
+    if cat == CAT_VIEW
+        if idx == 0
+            <- "toggle_sidebar"
+    <- ""
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- State queries and control
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: is_open() (( bool ))
+    <- menu_open >= 0
+;
+
+:: close() (( -- ))
+    menu_open = -1
+    menu_hover = -1
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Drawing
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_menubar(scr = vimana.screen) (( -- ))
+    -- Dotted border line at bottom of menubar area
+    let bx = 0
+    let by = right_model.CONTENT_Y - 1
+    for (let ?col = 0; col < right_model.WIN_W; col += 2)
+        scr.set_x(col)
+        scr.set_y(by)
+        scr.pixel(right_model.C_SEL)
+
+    -- Diamond save indicator (filled = unsaved, outline = saved)
+    let dx = 4
+    let dy = MENUBAR_Y + 8
+    let dc = right_model.C_FG
+    if right_model.dirty
+        -- Filled diamond
+        scr.set_x(dx + 3) scr.set_y(dy + 0) scr.pixel(dc)
+        scr.set_x(dx + 2) scr.set_y(dy + 1) scr.pixel(dc)
+        scr.set_x(dx + 3) scr.set_y(dy + 1) scr.pixel(dc)
+        scr.set_x(dx + 4) scr.set_y(dy + 1) scr.pixel(dc)
+        scr.set_x(dx + 1) scr.set_y(dy + 2) scr.pixel(dc)
+        scr.set_x(dx + 2) scr.set_y(dy + 2) scr.pixel(dc)
+        scr.set_x(dx + 3) scr.set_y(dy + 2) scr.pixel(dc)
+        scr.set_x(dx + 4) scr.set_y(dy + 2) scr.pixel(dc)
+        scr.set_x(dx + 5) scr.set_y(dy + 2) scr.pixel(dc)
+        scr.set_x(dx + 0) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 1) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 2) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 3) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 4) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 5) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 6) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 1) scr.set_y(dy + 4) scr.pixel(dc)
+        scr.set_x(dx + 2) scr.set_y(dy + 4) scr.pixel(dc)
+        scr.set_x(dx + 3) scr.set_y(dy + 4) scr.pixel(dc)
+        scr.set_x(dx + 4) scr.set_y(dy + 4) scr.pixel(dc)
+        scr.set_x(dx + 5) scr.set_y(dy + 4) scr.pixel(dc)
+        scr.set_x(dx + 2) scr.set_y(dy + 5) scr.pixel(dc)
+        scr.set_x(dx + 3) scr.set_y(dy + 5) scr.pixel(dc)
+        scr.set_x(dx + 4) scr.set_y(dy + 5) scr.pixel(dc)
+        scr.set_x(dx + 3) scr.set_y(dy + 6) scr.pixel(dc)
+    else
+        -- Outline diamond
+        scr.set_x(dx + 3) scr.set_y(dy + 0) scr.pixel(dc)
+        scr.set_x(dx + 2) scr.set_y(dy + 1) scr.pixel(dc)
+        scr.set_x(dx + 4) scr.set_y(dy + 1) scr.pixel(dc)
+        scr.set_x(dx + 1) scr.set_y(dy + 2) scr.pixel(dc)
+        scr.set_x(dx + 5) scr.set_y(dy + 2) scr.pixel(dc)
+        scr.set_x(dx + 0) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 6) scr.set_y(dy + 3) scr.pixel(dc)
+        scr.set_x(dx + 1) scr.set_y(dy + 4) scr.pixel(dc)
+        scr.set_x(dx + 5) scr.set_y(dy + 4) scr.pixel(dc)
+        scr.set_x(dx + 2) scr.set_y(dy + 5) scr.pixel(dc)
+        scr.set_x(dx + 4) scr.set_y(dy + 5) scr.pixel(dc)
+        scr.set_x(dx + 3) scr.set_y(dy + 6) scr.pixel(dc)
+
+    -- Category labels
+    let ty = MENUBAR_Y + 2
+    let ?fg = right_model.C_FG
+    if menu_open == CAT_FILE
+        fg = right_model.C_ACCENT
+    scr.put_text(CAT_FILE_X, ty, "File", fg, right_model.C_BG)
+
+    fg = right_model.C_FG
+    if menu_open == CAT_EDIT
+        fg = right_model.C_ACCENT
+    scr.put_text(CAT_EDIT_X, ty, "Edit", fg, right_model.C_BG)
+
+    fg = right_model.C_FG
+    if menu_open == CAT_FIND
+        fg = right_model.C_ACCENT
+    scr.put_text(CAT_FIND_X, ty, "Find", fg, right_model.C_BG)
+
+    fg = right_model.C_FG
+    if menu_open == CAT_VIEW
+        fg = right_model.C_ACCENT
+    scr.put_text(CAT_VIEW_X, ty, "View", fg, right_model.C_BG)
+;
+
+:: draw_submenu(scr = vimana.screen) (( -- ))
+    if menu_open < 0
+        <-
+
+    let cat = menu_open
+    let count = item_count(cat)
+    let sx = cat_x(cat)
+    let sy = right_model.CONTENT_Y
+    let sw = SUBMENU_W
+    let sh = count * SUBMENU_ITEM_H
+    let th = sh + 2
+
+    -- Submenu background (includes border area to fully cover content below)
+    fill(scr, sx, sy, sw + 1, th, right_model.C_BG)
+
+    -- Border (all four edges)
+    fill(scr, sx, sy, sw + 1, 1, right_model.C_FG)
+    fill(scr, sx, sy + th - 1, sw + 1, 1, right_model.C_FG)
+    fill(scr, sx, sy, 1, th, right_model.C_FG)
+    fill(scr, sx + sw, sy, 1, th, right_model.C_FG)
+
+    -- Items (inset by 1px for border)
+    for (let ?i = 0; i < count; i += 1)
+        let iy = sy + 1 + i * SUBMENU_ITEM_H
+        let label = item_label(cat, i)
+        let shortcut = item_shortcut(cat, i)
+
+        if i == menu_hover
+            fill(scr, sx + 1, iy, sw - 2, SUBMENU_ITEM_H, right_model.C_ACCENT)
+            scr.put_text(sx + 8, iy, label, right_model.C_FG, right_model.C_ACCENT)
+            let sc_x = sx + sw - 8 - stdr.len(shortcut) * right_model.FONT_W
+            scr.put_text(sc_x, iy, shortcut, right_model.C_FG, right_model.C_ACCENT)
+        else
+            scr.put_text(sx + 8, iy, label, right_model.C_FG, right_model.C_BG)
+            let sc_x = sx + sw - 8 - stdr.len(shortcut) * right_model.FONT_W
+            scr.put_text(sc_x, iy, shortcut, right_model.C_SEL, right_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Interaction
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: cat_from_x(mx = num) (( num ))
+    if mx >= CAT_FILE_X && mx < CAT_FILE_X + CAT_FILE_W
+        <- CAT_FILE
+    if mx >= CAT_EDIT_X && mx < CAT_EDIT_X + CAT_EDIT_W
+        <- CAT_EDIT
+    if mx >= CAT_FIND_X && mx < CAT_FIND_X + CAT_FIND_W
+        <- CAT_FIND
+    if mx >= CAT_VIEW_X && mx < CAT_VIEW_X + CAT_VIEW_W
+        <- CAT_VIEW
+    <- -1
+;
+
+:: handle_click(mx = num, my = num) (( string ))
+    -- Click in menubar area (between titlebar and content)
+    if my >= MENUBAR_Y && my < right_model.CONTENT_Y
+        let cat = cat_from_x(mx)
+        if cat >= 0
+            if menu_open == cat
+                close()
+            else
+                menu_open = cat
+                menu_hover = -1
+            <- ""
+        close()
+        <- ""
+
+    -- Click in open submenu
+    if menu_open >= 0
+        let cat = menu_open
+        let sx = cat_x(cat)
+        let sy = right_model.CONTENT_Y + 1
+        let sw = SUBMENU_W
+        let count = item_count(cat)
+        let sh = count * SUBMENU_ITEM_H
+
+        if mx >= sx && mx < sx + sw && my >= sy && my < sy + sh
+            let idx = stdr.floor((my - sy) / SUBMENU_ITEM_H)
+            let action = item_action(cat, idx)
+            close()
+            <- action
+
+        -- Clicked outside submenu → close
+        close()
+        <- ""
+
+    <- "pass"
+;
+
+:: handle_hover(mx = num, my = num) (( -- ))
+    if menu_open < 0
+        <-
+
+    -- Hover over category bar → switch category
+    if my >= MENUBAR_Y && my < right_model.CONTENT_Y
+        let cat = cat_from_x(mx)
+        if cat >= 0 && cat != menu_open
+            menu_open = cat
+            menu_hover = -1
+        <-
+
+    -- Hover over submenu items
+    let cat = menu_open
+    let sx = cat_x(cat)
+    let sy = right_model.CONTENT_Y + 1
+    let sw = SUBMENU_W
+    let count = item_count(cat)
+    let sh = count * SUBMENU_ITEM_H
+
+    if mx >= sx && mx < sx + sw && my >= sy && my < sy + sh
+        menu_hover = stdr.floor((my - sy) / SUBMENU_ITEM_H)
+    else
+        menu_hover = -1
+;
