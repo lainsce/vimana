@@ -6,18 +6,18 @@ project(
 
 add_project_arguments('-march=native', language : 'c')
 
-vimana_inc = include_directories('src', 'c/backend')
+vimana_inc = include_directories('c', 'objc')
 
 sdl3_dep = dependency('sdl3', required : false)
 if not sdl3_dep.found()
   sdl3_dep = dependency('SDL3', required : true)
 endif
 
-vimana_src = files('src/vimana.c')
+vimana_src = files('c/vimana.c')
 vimana_link_args = []
 
 if target_machine.system() == 'darwin'
-  vimana_src += files('c/backend/cocoa_autoreleasepool.mm')
+  vimana_src += files('objc/cocoa_autoreleasepool.mm')
   vimana_link_args += ['-framework', 'Foundation']
 endif
 
@@ -30,7 +30,7 @@ libvimana = shared_library(
   install : true,
 )
 
-install_headers('src/vimana.h', subdir : 'vimana')
+install_headers('c/vimana.h', subdir : 'vimana')
 
 libvimana_dep = declare_dependency(
   include_directories : vimana_inc,
@@ -38,7 +38,7 @@ libvimana_dep = declare_dependency(
 )
 
 install_data(
-  'vimana.yi',
+  'yis/vimana.yi',
   install_dir : get_option('datadir') / 'yis' / 'stdlib'
 )
 
