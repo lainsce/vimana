@@ -530,8 +530,8 @@ def DBLCLICK_DIST = 8
     let dev  = sys.device()
     let fsys = sys.file()
     -- Set initial palette
-    scr.set_palette(vimana.color_bg, "#eeeedd")
-        .set_palette(vimana.color_fg,  "#000011")
+    scr.set_palette(vimana.color_bg, "#eeeeee")
+        .set_palette(vimana.color_fg,  "#000000")
         .set_palette(vimana.color_2,  "#887777")
         .set_palette(vimana.color_3,  "#44aa99")
 

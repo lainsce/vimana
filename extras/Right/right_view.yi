@@ -301,14 +301,14 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
                     sx + text_w - right_model.SIDEBAR_X, right_model.ROW_H, right_model.C_ACCENT)
                 scr.put_text(sx, y, sec_label, right_model.C_BG, right_model.C_ACCENT)
                 if truncated
-                    draw_truncation_dither(scr, sx + text_w - right_model.FONT_W, y, right_model.C_BG)
+                    draw_truncation_dither(scr, sx + text_w - right_model.FONT_W, y, right_model.C_ACCENT)
                 scr.put_text(sx + text_w, y, arrow_str, right_model.C_ACCENT, right_model.C_BG)
             else
                 fill(scr, right_model.SIDEBAR_X, y,
                     sx + text_w - right_model.SIDEBAR_X, right_model.ROW_H, right_model.C_FG)
                 scr.put_text(sx, y, sec_label, right_model.C_BG, right_model.C_FG)
                 if truncated
-                    draw_truncation_dither(scr, sx + text_w - right_model.FONT_W, y, right_model.C_BG)
+                    draw_truncation_dither(scr, sx + text_w - right_model.FONT_W, y, right_model.C_FG)
                 scr.put_text(sx + text_w, y, arrow_str, right_model.C_FG, right_model.C_BG)
         else
             let max_lc = right_model.sidebar_chars() - 2
