@@ -1,0 +1,278 @@
+cask main
+
+bring stdr
+bring vimana
+bring pad_model
+bring pad_view
+bring pad_font
+
+--| File paths |--
+
+: pad_file_path(sys = vimana.system, n = num) (( string ))
+    <- sys.home_dir() + "/.notepad_" + str(n)
+;
+
+--| File I/O |--
+
+: load_all(sys = vimana.system, fsys = vimana.file) (( -- ))
+    for (let ?i = 0; i < pad_model.NUM_PAGES; i += 1)
+        let path = pad_file_path(sys, i)
+        if fsys.exists(path)
+            let txt = fsys.read_text(path)
+            pad_model.set_page_text(i, txt)
+;
+
+: save_page(sys = vimana.system, fsys = vimana.file, n = num) (( -- ))
+    let path = pad_file_path(sys, n)
+    fsys.write_text(path, pad_model.get_page_text(n))
+;
+
+: save_current(sys = vimana.system, fsys = vimana.file) (( -- ))
+    save_page(sys, fsys, pad_model.current_page)
+    pad_model.set_dirty(false)
+;
+
+--| Double-click tracking |--
+
+def ?last_click_time = 0
+def ?last_click_x = 0
+def ?last_click_y = 0
+def DBLCLICK_MS = 400
+def DBLCLICK_DIST = 8
+
+--| Mouse dragging |--
+
+def ?dragging = false
+
+--| Title |--
+
+: update_title(scr = vimana.screen) (( -- ))
+    let ?title = "Note Pad"
+    if pad_model.dirty
+        title = "Note Pad *"
+    scr.set_titlebar_title(title)
+;
+
+--| Mouse input |--
+
+
+
+: on_mouse(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+
+    -- Corner hover state
+    if mx < 24 && my >= pad_model.FOOTER_Y
+        let y_rel = my - pad_model.FOOTER_Y
+        if y_rel > mx
+            pad_model.set_corner_state(1)
+        else
+            pad_model.set_corner_state(2)
+    else
+        pad_model.set_corner_state(0)
+
+    -- Corner widget: page navigation
+    if dev.mouse_pressed(vimana.mouse_left)
+        if my >= pad_model.FOOTER_Y && mx < 24
+            if pad_model.dirty
+                save_current(sys, fsys)
+            let y_rel = my - pad_model.FOOTER_Y
+            if y_rel > mx
+                pad_model.next_page()
+            else
+                pad_model.prev_page()
+            update_title(scr)
+            <-
+
+    -- Content area clicks
+    if dev.mouse_pressed(vimana.mouse_left)
+        if my < pad_model.FOOTER_Y
+            let now = sys.ticks()
+            let dx = mx - last_click_x
+            let dy = my - last_click_y
+            let dist = dx * dx + dy * dy
+
+            -- Double-click: select word
+            if (now - last_click_time) < DBLCLICK_MS && dist < DBLCLICK_DIST * DBLCLICK_DIST
+                let pos = pad_model.caret_from_click(mx, my)
+                pad_model.select_word_at(pos)
+                pad_model.toggle_marker_at(pos)
+                dragging = false
+            else
+                -- Single click: place caret
+                let pos = pad_model.caret_from_click(mx, my)
+                let shift = dev.key_down(pad_model.KEY_LSHIFT) || dev.key_down(pad_model.KEY_RSHIFT)
+                if shift
+                    pad_model.set_selection(pad_model.sel_start, pos)
+                    pad_model.set_caret(pos)
+                else
+                    pad_model.set_caret(pos)
+                    pad_model.set_selection(pos, pos)
+                dragging = true
+
+            last_click_time = now
+            last_click_x = mx
+            last_click_y = my
+
+    -- Drag selection
+    if dev.mouse_down(vimana.mouse_left)
+        if dragging && my < pad_model.FOOTER_Y
+            let pos = pad_model.caret_from_click(mx, my)
+            pad_model.set_selection(pad_model.sel_start, pos)
+            pad_model.set_caret(pos)
+    else
+        dragging = false
+;
+
+--| Keyboard input |--
+
+: on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let cmd = dev.key_down(pad_model.KEY_LGUI) || dev.key_down(pad_model.KEY_RGUI)
+    let shift = dev.key_down(pad_model.KEY_LSHIFT) || dev.key_down(pad_model.KEY_RSHIFT)
+    let alt = dev.key_down(pad_model.KEY_LALT) || dev.key_down(pad_model.KEY_RALT)
+
+    -- Cmd shortcuts
+    if cmd
+        if dev.key_pressed(pad_model.KEY_A)
+            pad_model.select_all()
+            <-
+        if dev.key_pressed(pad_model.KEY_C)
+            let sel = pad_model.selected_text()
+            if stdr.len(sel) > 0
+                sys.set_clipboard_text(sel)
+            <-
+        if dev.key_pressed(pad_model.KEY_X)
+            let sel = pad_model.selected_text()
+            if stdr.len(sel) > 0
+                sys.set_clipboard_text(sel)
+                pad_model.delete_selection()
+                update_title(scr)
+            <-
+        if dev.key_pressed(pad_model.KEY_V)
+            let clip = sys.clipboard_text()
+            if stdr.len(clip) > 0
+                pad_model.insert_at_caret(clip)
+                update_title(scr)
+            <-
+        if dev.key_pressed(pad_model.KEY_S)
+            save_current(sys, fsys)
+            update_title(scr)
+            <-
+        -- Cmd+arrows
+        if dev.key_pressed(pad_model.KEY_LEFT)
+            pad_model.move_line_start(shift)
+            <-
+        if dev.key_pressed(pad_model.KEY_RIGHT)
+            pad_model.move_line_end(shift)
+            <-
+        if dev.key_pressed(pad_model.KEY_UP)
+            pad_model.move_doc_start(shift)
+            <-
+        if dev.key_pressed(pad_model.KEY_DOWN)
+            pad_model.move_doc_end(shift)
+            <-
+        -- Page switching: Cmd+[ and Cmd+]
+        if dev.key_pressed(47)
+            if pad_model.dirty
+                save_current(sys, fsys)
+            pad_model.prev_page()
+            update_title(scr)
+            <-
+        if dev.key_pressed(48)
+            if pad_model.dirty
+                save_current(sys, fsys)
+            pad_model.next_page()
+            update_title(scr)
+            <-
+        <-
+
+    -- Alt+arrow: word navigation
+    if alt
+        if dev.key_pressed(pad_model.KEY_LEFT)
+            pad_model.move_word_left(shift)
+            <-
+        if dev.key_pressed(pad_model.KEY_RIGHT)
+            pad_model.move_word_right(shift)
+            <-
+
+    -- Arrow keys
+    if dev.key_pressed(pad_model.KEY_LEFT)
+        pad_model.move_left(shift)
+        <-
+    if dev.key_pressed(pad_model.KEY_RIGHT)
+        pad_model.move_right(shift)
+        <-
+    if dev.key_pressed(pad_model.KEY_UP)
+        pad_model.move_up(shift)
+        <-
+    if dev.key_pressed(pad_model.KEY_DOWN)
+        pad_model.move_down(shift)
+        <-
+
+    -- Editing keys
+    if dev.key_pressed(pad_model.KEY_BACKSPACE)
+        pad_model.delete_backward()
+        update_title(scr)
+        <-
+    if dev.key_pressed(pad_model.KEY_DELETE)
+        pad_model.delete_forward()
+        update_title(scr)
+        <-
+    if dev.key_pressed(pad_model.KEY_RETURN)
+        pad_model.insert_at_caret("\n")
+        update_title(scr)
+        <-
+    if dev.key_pressed(pad_model.KEY_TAB)
+        pad_model.insert_at_caret("    ")
+        update_title(scr)
+        <-
+    if dev.key_pressed(pad_model.KEY_ESCAPE)
+        if pad_model.has_selection()
+            pad_model.reset_selection()
+            <-
+        if pad_model.dirty
+            save_current(sys, fsys)
+        sys.quit()
+        <-
+;
+
+--| Text input |--
+
+: on_text(dev = vimana.device, scr = vimana.screen) (( -- ))
+    let txt = dev.text_input()
+    if stdr.len(txt) > 0
+        pad_model.insert_at_caret(txt)
+        update_title(scr)
+;
+
+--| Entry |--
+
+-> ()
+    let sys = vimana.system()
+    let scr = vimana.screen("Note Pad", 224, 200, 1)
+    pad_font.install(scr)
+    let dev = sys.device()
+    let fsys = sys.file()
+
+    -- Palette matching original Uxn Note Pad
+    scr.set_palette(vimana.color_bg, "#ffffff")
+       .set_palette(vimana.color_fg, "#000000")
+       .set_palette(vimana.color_2,  "#aaeebb")
+       .set_palette(vimana.color_3,  "#88cc99")
+
+    -- Load saved pages
+    load_all(sys, fsys)
+    pad_model.switch_page(0)
+    update_title(scr)
+
+    -- Main loop
+    sys.run(scr, () => {
+        dev.poll()
+
+        on_mouse(dev, sys, fsys, scr)
+        on_key(dev, sys, fsys, scr)
+        on_text(dev, scr)
+
+        pad_view.draw_all(scr)
+    })
+;

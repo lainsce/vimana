@@ -1,0 +1,69 @@
+cask hexal_file
+
+bring stdr
+bring vimana
+bring hexal_model
+
+--| Title |--
+
+: update_title(scr = vimana.screen) (( -- ))
+    let ?title = "Hexal"
+    if stdr.len(hexal_model.file_path) > 0
+        title = stdr.basename(hexal_model.file_path)
+    if hexal_model.changed
+        title = title + "*"
+    scr.set_titlebar_title(title)
+;
+
+--| New |--
+
+: file_new(scr = vimana.screen) (( -- ))
+    hexal_model.new_project()
+    update_title(scr)
+;
+
+--| Open |--
+
+: load_path(fsys = vimana.file, scr = vimana.screen, path = string) (( -- ))
+    let bytes = fsys.read_bytes(path)
+    hexal_model.set_buffer(bytes)
+    hexal_model.set_file_path(path)
+    update_title(scr)
+;
+
+: file_open(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let picked = stdr.open_file_dialog("Open file", "*")
+    if is_null(picked)
+        <-
+    let path = str(picked)
+    if stdr.len(path) == 0
+        <-
+    load_path(fsys, scr, path)
+;
+
+--| Save |--
+
+: file_save(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if stdr.len(hexal_model.file_path) == 0
+        file_save_as(fsys, scr)
+        <-
+    fsys.write_bytes(hexal_model.file_path, hexal_model.buffer)
+    hexal_model.mark_saved()
+    update_title(scr)
+;
+
+: file_save_as(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let ?default_name = "untitled.bin"
+    if stdr.len(hexal_model.file_path) > 0
+        default_name = stdr.basename(hexal_model.file_path)
+    let picked = stdr.save_file_dialog("Save As", default_name, "*")
+    if is_null(picked)
+        <-
+    let path = str(picked)
+    if stdr.len(path) == 0
+        <-
+    hexal_model.set_file_path(path)
+    fsys.write_bytes(path, hexal_model.buffer)
+    hexal_model.mark_saved()
+    update_title(scr)
+;

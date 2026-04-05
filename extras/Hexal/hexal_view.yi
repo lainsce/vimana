@@ -1,0 +1,287 @@
+cask hexal_view
+
+bring stdr
+bring vimana
+bring hexal_model
+bring hexal_browser
+
+--| Drawing |--
+
+: draw_all(scr = vimana.screen) (( -- ))
+    if !hexal_model.dirty
+        <-
+    hexal_model.clear_dirty()
+
+    scr.clear(hexal_model.C_BG)
+
+    draw_separator(scr)
+    draw_labels(scr)
+    draw_lines(scr)
+    draw_icn(scr)
+    draw_hex(scr)
+    draw_ascii(scr)
+    draw_info(scr)
+    draw_vlines(scr)
+
+    if hexal_browser.active
+        draw_browser(scr)
+
+    scr.present()
+;
+
+--| Separator bar |--
+
+: fill_row(scr = vimana.screen, y = num, c = num) (( -- ))
+    scr.set_auto(1)
+    scr.set_y(y)
+    scr.set_x(0)
+    for (let ?x = 0; x < hexal_model.SCR_W; x += 1)
+        scr.pixel(c)
+    scr.set_auto(0)
+;
+
+: draw_separator(scr = vimana.screen) (( -- ))
+    fill_row(scr, hexal_model.SEP_Y, hexal_model.C_FG)
+    fill_row(scr, hexal_model.SEP_Y + 1, hexal_model.C_FG)
+;
+
+--| Column headers (matching dexe: "line", "data", "ascii") |--
+
+: draw_labels(scr = vimana.screen) (( -- ))
+    scr.put_text(hexal_model.OFFSET_X, hexal_model.LABEL_Y,
+        "line", hexal_model.C_DIM, hexal_model.C_BG)
+    scr.put_text(hexal_model.HEX_X, hexal_model.LABEL_Y,
+        "data", hexal_model.C_DIM, hexal_model.C_BG)
+    scr.put_text(hexal_model.ASCII_X, hexal_model.LABEL_Y,
+        "ascii", hexal_model.C_DIM, hexal_model.C_BG)
+;
+
+--| Dashed vertical column separators |--
+
+: dashed_vline(scr = vimana.screen, x = num, y1 = num, y2 = num, c = num) (( -- ))
+    scr.set_auto(0)
+    scr.set_x(x)
+    for (let ?y = y1; y < y2; y += 2)
+        scr.set_y(y)
+        scr.pixel(c)
+;
+
+: draw_vlines(scr = vimana.screen) (( -- ))
+    let bottom = hexal_model.DATA_Y + hexal_model.ROWS * hexal_model.ROW_H
+    -- After offset column (dexe: x=56)
+    dashed_vline(scr, 56, hexal_model.SEP_Y + 2, bottom, hexal_model.C_DIM)
+    -- After ICN column (dexe: x=80)
+    dashed_vline(scr, 80, hexal_model.SEP_Y + 2, bottom, hexal_model.C_DIM)
+    -- After hex data column (dexe: x=472)
+    dashed_vline(scr, 472, hexal_model.SEP_Y + 2, bottom, hexal_model.C_DIM)
+;
+
+--| ICN column (raw byte data as 8x8 1bpp sprites) |--
+
+: icn_byte(addr = num) ((num)) -- safe buffer read
+    if addr < hexal_model.buf_len
+        <- hexal_model.buffer[addr]
+    <- 0
+;
+
+: draw_icn(scr = vimana.screen) (( -- ))
+    let po = hexal_model.page_offset()
+    for (let ?row = 0; row < hexal_model.ROWS; row += 1)
+        let base = po + row * hexal_model.COLS
+        let ty = 3 + row * 2
+        let c = hexal_model.byte_color(base)
+        let ?fg = hexal_model.C_FG
+        let ?bg = hexal_model.C_BG
+        if c == hexal_model.C_ACCENT
+            fg = hexal_model.C_BG
+            bg = hexal_model.C_FG
+        elif c == hexal_model.C_DIM
+            fg = hexal_model.C_DIM
+        -- Left tile (bytes 0-7)
+        scr.put_icn(8, ty,
+            [icn_byte(base), icn_byte(base + 1),
+             icn_byte(base + 2), icn_byte(base + 3),
+             icn_byte(base + 4), icn_byte(base + 5),
+             icn_byte(base + 6), icn_byte(base + 7)], fg, bg)
+        -- Right tile (bytes 8-15)
+        scr.put_icn(9, ty,
+            [icn_byte(base + 8), icn_byte(base + 9),
+             icn_byte(base + 10), icn_byte(base + 11),
+             icn_byte(base + 12), icn_byte(base + 13),
+             icn_byte(base + 14), icn_byte(base + 15)], fg, bg)
+;
+
+--| Line offsets |--
+
+: draw_lines(scr = vimana.screen) (( -- ))
+    let po = hexal_model.page_offset()
+    for (let ?row = 0; row < hexal_model.ROWS; row += 1)
+        let addr = po + row * hexal_model.COLS
+        let y = hexal_model.DATA_Y + row * hexal_model.ROW_H
+        let c = hexal_model.byte_color(addr)
+        if c == hexal_model.C_ACCENT
+            scr.put_text(hexal_model.OFFSET_X, y,
+                hexal_model.short_hex(addr), hexal_model.C_BG, hexal_model.C_FG)
+        else
+            scr.put_text(hexal_model.OFFSET_X, y,
+                hexal_model.short_hex(addr), c, hexal_model.C_BG)
+;
+
+--| Hex data |--
+
+: draw_hex(scr = vimana.screen) (( -- ))
+    let po = hexal_model.page_offset()
+    for (let ?row = 0; row < hexal_model.ROWS; row += 1)
+        let y = hexal_model.DATA_Y + row * hexal_model.ROW_H
+        for (let ?col = 0; col < hexal_model.COLS; col += 1)
+            let addr = po + row * hexal_model.COLS + col
+            let x = hexal_model.hex_byte_x(col)
+            let c = hexal_model.byte_color(addr)
+            if addr < hexal_model.buf_len
+                let txt = hexal_model.byte_hex(hexal_model.buffer[addr])
+                if c == hexal_model.C_ACCENT
+                    scr.put_text(x, y, txt, hexal_model.C_BG, hexal_model.C_FG)
+                elif c == hexal_model.C_DIM
+                    scr.put_text(x, y, txt, hexal_model.C_DIM, hexal_model.C_BG)
+                else
+                    scr.put_text(x, y, txt, hexal_model.C_FG, hexal_model.C_BG)
+            else
+                scr.put_text(x, y, "..", hexal_model.C_DIM, hexal_model.C_BG)
+;
+
+--| ASCII column |--
+
+: draw_ascii(scr = vimana.screen) (( -- ))
+    let po = hexal_model.page_offset()
+    for (let ?row = 0; row < hexal_model.ROWS; row += 1)
+        let y = hexal_model.DATA_Y + row * hexal_model.ROW_H
+        for (let ?col = 0; col < hexal_model.COLS; col += 1)
+            let addr = po + row * hexal_model.COLS + col
+            let x = hexal_model.ASCII_X + col * hexal_model.FONT_W
+            let c = hexal_model.byte_color(addr)
+            if addr < hexal_model.buf_len
+                let byte = hexal_model.buffer[addr]
+                let ?ch = "."
+                if byte >= 32 && byte < 127
+                    ch = stdr.char_from_code(byte)
+                if c == hexal_model.C_ACCENT
+                    scr.put_text(x, y, ch, hexal_model.C_BG, hexal_model.C_FG)
+                elif c == hexal_model.C_DIM
+                    scr.put_text(x, y, ch, hexal_model.C_DIM, hexal_model.C_BG)
+                else
+                    scr.put_text(x, y, ch, hexal_model.C_FG, hexal_model.C_BG)
+            else
+                scr.put_text(x, y, ".", hexal_model.C_DIM, hexal_model.C_BG)
+;
+
+--| Selection info (label row, right-aligned in hex area) |--
+
+: draw_info(scr = vimana.screen) (( -- ))
+    let y = hexal_model.LABEL_Y
+    -- Cursor address (right side)
+    scr.put_text(432, y,
+        hexal_model.short_hex(hexal_model.sel_b),
+        hexal_model.C_FG, hexal_model.C_BG)
+    -- Range info
+    if hexal_model.sel_a != hexal_model.sel_b
+        scr.put_text(392, y,
+            hexal_model.short_hex(hexal_model.sel_a) + "-",
+            hexal_model.C_FG, hexal_model.C_BG)
+        scr.put_text(352, y,
+            hexal_model.short_hex(hexal_model.sel_len()),
+            hexal_model.C_DIM, hexal_model.C_BG)
+;
+
+--| File browser overlay |--
+
+-- Sprite patterns (matching dexe)
+def HALFTONE = [170, 85, 170, 85, 170, 85, 170, 85]
+def FILL = [255, 255, 255, 255, 255, 255, 255, 255]
+def WAVEY = [255, 255, 255, 124, 56, 0, 0, 0]
+def EMPTY = [0, 0, 0, 0, 0, 0, 0, 0]
+def CAP_LEFT_TOP = [7, 15, 15, 15, 15, 15, 15, 15]
+def CAP_LEFT_BOT = [15, 15, 15, 15, 15, 15, 15, 7]
+def CAP_RIGHT_TOP = [128, 192, 224, 240, 248, 252, 254, 255]
+def CAP_RIGHT_BOT = [255, 254, 252, 248, 240, 224, 192, 128]
+
+: fill_rect(scr = vimana.screen, rx = num, ry = num, rw = num, rh = num, c = num) (( -- ))
+    let tw = stdr.floor(rw / 8)
+    let th = stdr.floor(rh / 8)
+    let tx0 = stdr.floor(rx / 8)
+    let ty0 = stdr.floor(ry / 8)
+    for (let ?row = 0; row < th; row += 1)
+        for (let ?col = 0; col < tw; col += 1)
+            scr.put_icn(tx0 + col, ty0 + row, EMPTY, c, c)
+;
+
+: draw_browser_bg(scr = vimana.screen) (( -- ))
+    let tiles_w = stdr.floor(hexal_model.SCR_W / 8)
+    let tile_y0 = stdr.floor(hexal_model.DATA_Y / 8)
+    let tile_rows = stdr.floor((hexal_model.ROWS * hexal_model.ROW_H) / 8)
+
+    -- Top halftone stripe (1 tile row, at toolbar level)
+    for (let ?tx = 0; tx < tiles_w; tx += 1)
+        scr.put_icn(tx, tile_y0 - 1, HALFTONE, hexal_model.C_DIM, hexal_model.C_BG)
+
+    -- Solid fill stripe (1 tile row below halftone) for path
+    for (let ?tx = 0; tx < tiles_w; tx += 1)
+        scr.put_icn(tx, tile_y0, FILL, hexal_model.C_DIM, hexal_model.C_BG)
+
+    -- SEL bg from below toolbar to wavey
+    let wave_y = tile_y0 + tile_rows - 1
+    for (let ?ty = tile_y0 + 1; ty < wave_y; ty += 1)
+        for (let ?tx = 0; tx < tiles_w; tx += 1)
+            scr.put_icn(tx, ty, EMPTY, hexal_model.C_DIM, hexal_model.C_DIM)
+
+    -- Bottom wavy decoration (single)
+    for (let ?tx = 0; tx < tiles_w; tx += 1)
+        scr.put_icn(tx, wave_y, WAVEY, hexal_model.C_DIM, hexal_model.C_BG)
+;
+
+: draw_browser(scr = vimana.screen) (( -- ))
+    let total = stdr.len(hexal_browser.entries)
+    let sx = hexal_model.OFFSET_X
+
+    -- Draw fancy background
+    draw_browser_bg(scr)
+
+    -- Header path on the solid stripe
+    let max_chars = stdr.floor((hexal_model.SCR_W - sx * 2) / hexal_model.FONT_W)
+    let ?header = hexal_browser.path
+    if stdr.len(header) > max_chars
+        header = stdr.slice(header, stdr.len(header) - max_chars, stdr.len(header))
+    scr.put_text(sx, hexal_model.DATA_Y + 8, header, hexal_model.C_FG, hexal_model.C_DIM)
+
+    -- Entry list starts after the two decoration rows (halftone + solid = 16px)
+    let list_y0 = hexal_model.DATA_Y + 24
+    let max_visible = hexal_browser.MAX_ROWS - 2
+
+    if total == 0
+        scr.put_text(sx, list_y0, "(empty)", hexal_model.C_FG, hexal_model.C_DIM)
+        <-
+
+    for (let ?i = 0; i < max_visible; i += 1)
+        let idx = hexal_browser.scroll + i
+        if idx >= total
+            break
+        let y = list_y0 + i * hexal_model.ROW_H
+        let entry = stdr.str(hexal_browser.entries[idx] ?? "")
+        let ?label = entry
+        if stdr.len(label) > max_chars
+            label = stdr.slice(label, 0, max_chars)
+        if idx == hexal_browser.sel
+            -- Selected: rounded caps + solid fill
+            let tx0 = stdr.floor(sx / 8) - 1
+            let ty = stdr.floor(y / 8)
+            scr.put_icn(tx0, ty, CAP_LEFT_TOP, hexal_model.C_FG, hexal_model.C_DIM)
+            scr.put_icn(tx0, ty + 1, CAP_LEFT_BOT, hexal_model.C_FG, hexal_model.C_DIM)
+            let text_tiles = stdr.floor(stdr.len(label) * hexal_model.FONT_W / 8) + 1
+            for (let ?ft = 0; ft < text_tiles; ft += 1)
+                scr.put_icn(tx0 + 1 + ft, ty, FILL, hexal_model.C_FG, hexal_model.C_DIM)
+                scr.put_icn(tx0 + 1 + ft, ty + 1, FILL, hexal_model.C_FG, hexal_model.C_DIM)
+            scr.put_icn(tx0 + 1 + text_tiles, ty, CAP_RIGHT_TOP, hexal_model.C_FG, hexal_model.C_DIM)
+            scr.put_icn(tx0 + 1 + text_tiles, ty + 1, CAP_RIGHT_BOT, hexal_model.C_FG, hexal_model.C_DIM)
+            scr.put_text(sx, y, label, hexal_model.C_ACCENT, hexal_model.C_FG)
+        else
+            scr.put_text(sx, y, label, hexal_model.C_FG, hexal_model.C_DIM)
+;

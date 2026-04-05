@@ -1,0 +1,246 @@
+cask casevo_input
+
+bring stdr
+bring vimana
+
+bring casevo_model
+bring casevo_file
+bring casevo_browser
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Keyboard scancodes
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def KEY_TAB = 43
+def KEY_DELETE = 76
+def KEY_LEFT = 80
+def KEY_RIGHT = 79
+def KEY_S = 22
+def KEY_O = 18
+def KEY_N = 17
+def KEY_C = 6
+def KEY_V = 25
+def KEY_X = 27
+def KEY_Z = 29
+def KEY_SLASH = 56
+def KEY_LCTRL = 224
+def KEY_RCTRL = 228
+def KEY_LGUI = 227
+def KEY_RGUI = 231
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Clipboard (simple single-cell for now)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?clipboard = ""
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?mouse_was_down = false
+def ?drag_active = false
+
+:: on_mouse(dev = vimana.device, scr = vimana.screen, fsys = vimana.file) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+    let down = dev.mouse_down(vimana.mouse_left)
+
+    -- Check titlebar close button
+    if scr.titlebar_button_pressed()
+        casevo_model.set_editing(false)
+        -- Signal quit by some mechanism (handled in main)
+        <-
+
+    -- Browser intercepts clicks when active
+    if casevo_browser.active
+        if down && !mouse_was_down
+            casevo_browser.on_click(mx, my, fsys)
+            let picked = casevo_browser.consume_picked()
+            if stdr.len(picked) > 0
+                casevo_file.load(fsys, picked)
+                scr.set_titlebar_title(stdr.basename(picked))
+        mouse_was_down = down
+        <-
+
+    -- Scroll
+    let wy = dev.wheel_y()
+    if wy != 0
+        casevo_model.scroll_by(wy)
+
+    -- Grid hit test (Nebu layout: cells at x=(col+1)*64, y=(screen_row+1)*16+18)
+    let col = stdr.floor(mx / casevo_model.COL_W) - 1
+    let screen_row = stdr.floor((my - casevo_model.HEADER_H) / casevo_model.ROW_H) - 1
+    let row = screen_row + casevo_model.scroll_y
+
+    if col < 0 || col >= casevo_model.COLS
+        mouse_was_down = down
+        <-
+    if screen_row < 0 || row < 0 || row >= casevo_model.ROWS
+        mouse_was_down = down
+        <-
+
+    if down && !mouse_was_down
+        -- Mouse just pressed: start new selection
+        if casevo_model.editing
+            casevo_model.commit_edit()
+        casevo_model.set_selection(col, row)
+        drag_active = true
+    elif down && drag_active
+        -- Dragging: extend selection
+        casevo_model.extend_selection(col, row)
+    elif !down && mouse_was_down
+        -- Mouse released
+        drag_active = false
+
+    mouse_was_down = down
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Keyboard input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let cmd = dev.key_down(KEY_LGUI) || dev.key_down(KEY_RGUI)
+    let ctrl = dev.key_down(KEY_LCTRL) || dev.key_down(KEY_RCTRL)
+    let mod = cmd || ctrl
+
+    -- Cmd+/ toggles file browser
+    if mod && dev.key_pressed(KEY_SLASH)
+        casevo_browser.open(fsys)
+        <-
+
+    -- Browser intercepts input when active (except Cmd+O toggle)
+    if casevo_browser.active
+        if mod && dev.key_pressed(KEY_O)
+            casevo_browser.close()
+            <-
+        casevo_browser.on_key(dev, fsys)
+        let picked = casevo_browser.consume_picked()
+        if stdr.len(picked) > 0
+            casevo_file.load(fsys, picked)
+            scr.set_titlebar_title(stdr.basename(picked))
+        <-
+
+    -- Escape
+    if dev.key_pressed(KEY_ESCAPE)
+        if casevo_model.editing
+            casevo_model.cancel_edit()
+        else
+            sys.quit()
+        <-
+
+    -- Cmd/Ctrl+S: save
+    if mod && dev.key_pressed(KEY_S)
+        let save_path = casevo_model.file_path
+        if save_path == "untitled.csv"
+            let picked = stdr.save_file_dialog("Save spreadsheet", "untitled.csv", "csv")
+            if !stdr.is_null(picked)
+                save_path = str(picked)
+            else
+                <-
+        casevo_file.save(fsys, save_path)
+        <-
+
+    -- Cmd/Ctrl+O: open
+    if mod && dev.key_pressed(KEY_O)
+        casevo_browser.open(fsys)
+        <-
+
+    -- Cmd/Ctrl+N: new
+    if mod && dev.key_pressed(KEY_N)
+        casevo_file.new_project()
+        <-
+
+    -- Cmd/Ctrl+C: copy
+    if mod && dev.key_pressed(KEY_C)
+        clipboard = casevo_model.active_cell_text()
+        sys.set_clipboard_text(clipboard)
+        <-
+
+    -- Cmd/Ctrl+V: paste
+    if mod && dev.key_pressed(KEY_V)
+        let pasted = sys.clipboard_text()
+        if pasted != ""
+            casevo_model.set_cell(casevo_model.active_col(), casevo_model.active_row(), pasted)
+        <-
+
+    -- Cmd/Ctrl+X: cut
+    if mod && dev.key_pressed(KEY_X)
+        clipboard = casevo_model.active_cell_text()
+        sys.set_clipboard_text(clipboard)
+        casevo_model.clear_cell(casevo_model.active_col(), casevo_model.active_row())
+        <-
+
+    -- Arrow keys
+    if dev.key_pressed(KEY_UP)
+        if casevo_model.editing
+            casevo_model.commit_edit()
+        casevo_model.move_sel(0, -1)
+        <-
+    if dev.key_pressed(KEY_DOWN)
+        if casevo_model.editing
+            casevo_model.commit_edit()
+        casevo_model.move_sel(0, 1)
+        <-
+    if dev.key_pressed(KEY_LEFT)
+        if casevo_model.editing
+            casevo_model.commit_edit()
+        casevo_model.move_sel(-1, 0)
+        <-
+    if dev.key_pressed(KEY_RIGHT)
+        if casevo_model.editing
+            casevo_model.commit_edit()
+        casevo_model.move_sel(1, 0)
+        <-
+
+    -- Return: commit edit and move down, or start editing
+    if dev.key_pressed(KEY_RETURN)
+        if casevo_model.editing
+            casevo_model.commit_edit()
+            casevo_model.move_sel(0, 1)
+        else
+            casevo_model.start_editing()
+        <-
+
+    -- Tab: commit edit and move right
+    if dev.key_pressed(KEY_TAB)
+        if casevo_model.editing
+            casevo_model.commit_edit()
+        casevo_model.move_sel(1, 0)
+        <-
+
+    -- Backspace: erase character or clear cell
+    if dev.key_pressed(KEY_BACKSPACE)
+        if casevo_model.editing
+            casevo_model.erase_char()
+        else
+            casevo_model.delete_selection()
+        <-
+
+    -- Delete: clear cell
+    if dev.key_pressed(KEY_DELETE)
+        casevo_model.delete_selection()
+        <-
+
+    -- Text input: printable characters
+    let typed = dev.text_input()
+    if typed != ""
+        let n = stdr.len(typed)
+        for (let ?i = 0; i < n; i += 1)
+            let ch = stdr.char_at(typed, i)
+            casevo_model.insert_char(ch)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Scroll input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_scroll(dev = vimana.device) (( -- ))
+    let wy = dev.wheel_y()
+    if wy != 0
+        if casevo_browser.active
+            casevo_browser.on_scroll(wy)
+        else
+            casevo_model.scroll_by(wy)
+;

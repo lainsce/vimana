@@ -1,0 +1,235 @@
+cask casevo_calc
+
+bring stdr
+bring casevo_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Formula evaluation engine
+--
+-- Nebu formula syntax:
+--   A cell reference is a letter A-H followed by a decimal row number.
+--   A range reference is two cell refs separated by ':' followed by an operator.
+--   Operators: + (sum), - (subtract), * (multiply), / (divide),
+--              = (equal), ! (not equal), > (greater), < (less), # (count)
+--   Concatenation: if operator is absent or not numeric, concat cell text.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Parse a column letter A-H, returns -1 if invalid
+: parse_col(ch = string) (( num ))
+    if ch == "A"
+        <- 0
+    if ch == "B"
+        <- 1
+    if ch == "C"
+        <- 2
+    if ch == "D"
+        <- 3
+    if ch == "E"
+        <- 4
+    if ch == "F"
+        <- 5
+    if ch == "G"
+        <- 6
+    if ch == "H"
+        <- 7
+    <- -1
+;
+
+: is_digit(ch = string) (( bool ))
+    <- ch == "0" || ch == "1" || ch == "2" || ch == "3" || ch == "4" || ch == "5" || ch == "6" || ch == "7" || ch == "8" || ch == "9"
+;
+
+-- Parse a decimal number from text starting at pos, returns [value, end_pos]
+: parse_num(text = string, pos = num) (( [num] ))
+    let n = stdr.len(text)
+    let ?val = 0
+    let ?i = pos
+    let ?found = false
+    for (; i < n; i += 1)
+        let ch = stdr.char_at(text, i)
+        if !is_digit(ch)
+            break
+        val = val * 10 + num(ch)
+        found = true
+    if !found
+        <- [-1, pos]
+    <- [val, i]
+;
+
+-- Parse a cell reference like "A0" or "B12"
+-- Returns [col, row, end_pos] or [-1, -1, pos] on failure
+: parse_cell_ref(text = string, pos = num) (( [num] ))
+    let n = stdr.len(text)
+    if pos >= n
+        <- [-1, -1, pos]
+    let col_ch = stdr.char_at(text, pos)
+    let col = parse_col(col_ch)
+    if col < 0
+        <- [-1, -1, pos]
+    let nr = parse_num(text, pos + 1)
+    let row = num(nr[0] ?? -1)
+    let end_pos = num(nr[1] ?? pos + 1)
+    if row < 0
+        <- [-1, -1, pos]
+    <- [col, row, end_pos]
+;
+
+-- Check if a cell value looks like a formula (starts with col letter + digit + contains ':')
+:: is_formula(text = string) (( bool ))
+    let n = stdr.len(text)
+    if n < 5
+        <- false
+    let first = stdr.char_at(text, 0)
+    if parse_col(first) < 0
+        <- false
+    -- Must contain ':'
+    for (let ?i = 0; i < n; i += 1)
+        if stdr.char_at(text, i) == ":"
+            <- true
+    <- false
+;
+
+-- Parse a full formula: "A0:B2+" returns [ax, ay, bx, by, operator_char]
+-- Returns empty array on failure
+: parse_formula(text = string) (( [any] ))
+    let ref1 = parse_cell_ref(text, 0)
+    let ax = num(ref1[0] ?? -1)
+    let ay = num(ref1[1] ?? -1)
+    let pos1 = num(ref1[2] ?? 0)
+    if ax < 0
+        <- []
+    let n = stdr.len(text)
+    if pos1 >= n || stdr.char_at(text, pos1) != ":"
+        <- []
+    let ref2 = parse_cell_ref(text, pos1 + 1)
+    let bx = num(ref2[0] ?? -1)
+    let by = num(ref2[1] ?? -1)
+    let pos2 = num(ref2[2] ?? 0)
+    if bx < 0
+        <- []
+    -- Validate range order
+    if ax > bx || ay > by
+        <- []
+    -- Operator character (may be absent = concat)
+    let ?op = ""
+    if pos2 < n
+        op = stdr.char_at(text, pos2)
+    <- [ax, ay, bx, by, op]
+;
+
+-- Get numeric value of a cell (0 if empty or non-numeric)
+: cell_num(col = num, row = num) (( num ))
+    let text = casevo_model.get_cell(col, row)
+    if text == ""
+        <- 0
+    let v = num(text)
+    <- v
+;
+
+-- Evaluate a numeric formula over a range
+: eval_numeric(ax = num, ay = num, bx = num, by = num, op = string) (( num ))
+    let ?result = 0
+    let ?first = true
+    for (let ?r = ay; r <= by; r += 1)
+        for (let ?c = ax; c <= bx; c += 1)
+            let v = cell_num(c, r)
+            if first
+                result = v
+                first = false
+            elif op == "+"
+                result = result + v
+            elif op == "-"
+                result = result - v
+            elif op == "*"
+                result = result * v
+            elif op == "/"
+                if v != 0
+                    result = result / v
+    <- result
+;
+
+-- Count non-empty cells in range
+: eval_count(ax = num, ay = num, bx = num, by = num) (( num ))
+    let ?count = 0
+    for (let ?r = ay; r <= by; r += 1)
+        for (let ?c = ax; c <= bx; c += 1)
+            let text = casevo_model.get_cell(c, r)
+            if text != ""
+                count = count + 1
+    <- count
+;
+
+-- Concatenate all cell text in range
+: eval_concat(ax = num, ay = num, bx = num, by = num) (( string ))
+    let ?parts = []: [any]
+    for (let ?r = ay; r <= by; r += 1)
+        for (let ?c = ax; c <= bx; c += 1)
+            let text = casevo_model.get_cell(c, r)
+            if text != ""
+                stdr.push(parts, text)
+    <- stdr.join(parts)
+;
+
+-- Evaluate comparison formulas (return 1 or 0)
+: eval_compare(ax = num, ay = num, bx = num, by = num, op = string) (( num ))
+    -- Compare first two cells in range
+    let v1 = cell_num(ax, ay)
+    let v2 = cell_num(bx, by)
+    if op == "="
+        if v1 == v2
+            <- 1
+        <- 0
+    if op == "!"
+        if v1 != v2
+            <- 1
+        <- 0
+    if op == ">"
+        if v1 > v2
+            <- 1
+        <- 0
+    if op == "<"
+        if v1 < v2
+            <- 1
+        <- 0
+    <- 0
+;
+
+-- Evaluate a cell's display value. If it's a formula, compute the result.
+:: evaluate(col = num, row = num) (( string ))
+    let text = casevo_model.get_cell(col, row)
+    if text == ""
+        <- ""
+    if !is_formula(text)
+        <- text
+    let parts = parse_formula(text)
+    if len(parts) < 5
+        <- "<ERR>"
+    let ax = num(parts[0] ?? 0)
+    let ay = num(parts[1] ?? 0)
+    let bx = num(parts[2] ?? 0)
+    let by = num(parts[3] ?? 0)
+    let op = str(parts[4] ?? "")
+    -- Prevent self-reference (simple check)
+    if ax == col && ay == row
+        <- "<ERR>"
+    if bx == col && by == row
+        <- "<ERR>"
+    if op == "#"
+        <- str(eval_count(ax, ay, bx, by))
+    if op == "+" || op == "-" || op == "*" || op == "/"
+        <- str(eval_numeric(ax, ay, bx, by, op))
+    if op == "=" || op == "!" || op == ">" || op == "<"
+        <- str(eval_compare(ax, ay, bx, by, op))
+    -- No operator = concat
+    <- eval_concat(ax, ay, bx, by)
+;
+
+-- Format a cell reference string like "A0" from col, row
+:: cell_ref_str(col = num, row = num) (( string ))
+    <- casevo_model.col_label(col) + str(row)
+;
+
+-- Format a range string like "A0:B2"
+:: range_str(ax = num, ay = num, bx = num, by = num) (( string ))
+    <- cell_ref_str(ax, ay) + ":" + cell_ref_str(bx, by)
+;

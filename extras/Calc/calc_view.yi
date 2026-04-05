@@ -1,0 +1,380 @@
+cask calc_view
+
+bring stdr
+bring vimana
+bring calc_model
+bring calc_ops
+bring calc_icons
+
+--| Hex Decode |--
+
+: hex_val(c = any) (( num ))
+    if c == "0" <- 0
+    if c == "1" <- 1
+    if c == "2" <- 2
+    if c == "3" <- 3
+    if c == "4" <- 4
+    if c == "5" <- 5
+    if c == "6" <- 6
+    if c == "7" <- 7
+    if c == "8" <- 8
+    if c == "9" <- 9
+    if c == "a" <- 10
+    if c == "b" <- 11
+    if c == "c" <- 12
+    if c == "d" <- 13
+    if c == "e" <- 14
+    if c == "f" <- 15
+    <- 0
+;
+
+: draw_px(scr = vimana.screen, x = num, y = num, color = num) (( -- ))
+    scr.set_x(x).set_y(y).pixel(color)
+    scr.set_x(x).set_y(y).pixel(64 + color)
+;
+
+--| Sprites |--
+
+: draw_icn_px(scr = vimana.screen, px = num, py = num, data = [any], color = num) (( -- ))
+    for (let ?w = 0; w < 4; w += 1)
+        let word = data[w]
+        let hi = hex_val(stdr.char_at(word, 0)) * 16 + hex_val(stdr.char_at(word, 1))
+        let lo = hex_val(stdr.char_at(word, 2)) * 16 + hex_val(stdr.char_at(word, 3))
+        let y0 = py + w * 2
+        let y1 = y0 + 1
+        let ?b = hi
+        for (let ?col = 0; col < 8; col += 1)
+            if b >= 128
+                draw_px(scr, px + col, y0, color)
+                b = b - 128
+            b = b * 2
+        b = lo
+        for (let ?col = 0; col < 8; col += 1)
+            if b >= 128
+                draw_px(scr, px + col, y1, color)
+                b = b - 128
+            b = b * 2
+;
+
+: draw_icn_px_fill(scr = vimana.screen, px = num, py = num, data = [any], fg = num, bg = num) (( -- ))
+    for (let ?w = 0; w < 4; w += 1)
+        let word = data[w]
+        let hi = hex_val(stdr.char_at(word, 0)) * 16 + hex_val(stdr.char_at(word, 1))
+        let lo = hex_val(stdr.char_at(word, 2)) * 16 + hex_val(stdr.char_at(word, 3))
+        let y0 = py + w * 2
+        let y1 = y0 + 1
+        let ?b = hi
+        for (let ?col = 0; col < 8; col += 1)
+            let ?clr = bg
+            if b >= 128
+                clr = fg
+                b = b - 128
+            draw_px(scr, px + col, y0, clr)
+            b = b * 2
+        b = lo
+        for (let ?col = 0; col < 8; col += 1)
+            let ?clr = bg
+            if b >= 128
+                clr = fg
+                b = b - 128
+            draw_px(scr, px + col, y1, clr)
+            b = b * 2
+;
+
+: draw_icn16_px(scr = vimana.screen, px = num, py = num, data = [any], color = num) (( -- ))
+    draw_icn_px(scr, px, py, [data[0], data[1], data[2], data[3]], color)
+    draw_icn_px(scr, px + 8, py, [data[4], data[5], data[6], data[7]], color)
+    draw_icn_px(scr, px, py + 8, [data[8], data[9], data[10], data[11]], color)
+    draw_icn_px(scr, px + 8, py + 8, [data[12], data[13], data[14], data[15]], color)
+;
+
+: draw_icn16_px_fill(scr = vimana.screen, px = num, py = num, data = [any], fg = num, bg = num) (( -- ))
+    draw_icn_px_fill(scr, px, py, [data[0], data[1], data[2], data[3]], fg, bg)
+    draw_icn_px_fill(scr, px + 8, py, [data[4], data[5], data[6], data[7]], fg, bg)
+    draw_icn_px_fill(scr, px, py + 8, [data[8], data[9], data[10], data[11]], fg, bg)
+    draw_icn_px_fill(scr, px + 8, py + 8, [data[12], data[13], data[14], data[15]], fg, bg)
+;
+
+--| Tiles |--
+
+: draw_digit16(scr = vimana.screen, tx = num, ty = num, data = [any], fg = num, bg = num) (( -- ))
+    scr.put_icn(tx, ty, [data[0], data[1], data[2], data[3]], fg, bg)
+    scr.put_icn(tx + 1, ty, [data[4], data[5], data[6], data[7]], fg, bg)
+    scr.put_icn(tx, ty + 1, [data[8], data[9], data[10], data[11]], fg, bg)
+    scr.put_icn(tx + 1, ty + 1, [data[12], data[13], data[14], data[15]], fg, bg)
+;
+
+--| Num to Arrays |--
+
+: num_to_hex_digits(val = num) (( [any] ))
+    if val <= 0
+        <- [0]
+    let ?digits = []: [any]
+    let ?v = stdr.floor(val)
+    for (let ?count = 0; count < 20 && v > 0; count += 1)
+        stdr.push(digits, stdr.floor(v % 16))
+        v = stdr.floor(v / 16)
+    let ?result = []: [any]
+    for (let ?i = stdr.len(digits) - 1; i >= 0; i -= 1)
+        stdr.push(result, digits[i])
+    <- result
+;
+
+: num_to_dec_digits(val = num) (( [any] ))
+    if val <= 0
+        <- [0]
+    let ?digits = []: [any]
+    let ?v = stdr.floor(val)
+    for (let ?count = 0; count < 20 && v > 0; count += 1)
+        stdr.push(digits, stdr.floor(v % 10))
+        v = stdr.floor(v / 10)
+    let ?result = []: [any]
+    for (let ?i = stdr.len(digits) - 1; i >= 0; i -= 1)
+        stdr.push(result, digits[i])
+    <- result
+;
+
+--| Number Rendering |--
+
+: draw_num(scr = vimana.screen, px = num, py = num, val = num, fg = num) (( num ))
+    let ?digits = []: [any]
+    if calc_model.is_dec()
+        digits = num_to_dec_digits(val)
+    else
+        digits = num_to_hex_digits(val)
+    let ?cx = px
+    for (let ?i = 0; i < stdr.len(digits); i += 1)
+        let d = digits[i]
+        draw_icn16_px(scr, cx, py, calc_icons.digit(d), fg)
+        cx = cx + 13
+    <- cx
+;
+
+: draw_fraction(scr = vimana.screen, px = num, py = num, n = num, d = num, fg = num) (( num ))
+    let ?cx = draw_num(scr, px, py, n, fg)
+    if d != 1
+        draw_icn_px(scr, cx, py, calc_icons.SLASH_T, fg)
+        draw_icn_px(scr, cx, py + 8, calc_icons.SLASH_B, fg)
+        cx = cx + 8
+        cx = draw_num(scr, cx, py, d, fg)
+    <- cx
+;
+
+--| Buttons |--
+
+: draw_chrome(scr = vimana.screen, tx = num, ty = num, tw = num, th = num, pressed = bool, is_opc = bool) (( -- ))
+    let ?base = calc_icons.CHROME_UP
+    if pressed && !is_opc
+        base = calc_icons.CHROME_DN
+    elif !pressed && is_opc
+        base = calc_icons.CHROME_OPC_UP
+    elif pressed && is_opc
+        base = calc_icons.CHROME_OPC_DN
+
+    scr.set_auto(38)
+    -- Top row (TL TC TR)
+    scr.set_addr(base).set_x(tx).set_y(ty).sprite(129)
+    -- Middle rows (ML MC MR)
+    for (let ?r = 1; r < th - 1; r += 1)
+        scr.set_addr(base + 48).set_x(tx).sprite(129)
+    -- Bottom row (BL BC BR)
+    scr.set_addr(base + 96).set_x(tx).sprite(129)
+    scr.set_auto(0)
+;
+
+--| Button Pos |--
+
+def NUMPAD_DIGITS = [7, 8, 9, 15, 4, 5, 6, 14, 1, 2, 3, 13, 0, 10, 11, 12]
+def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
+
+: btn_tx(id = num) (( num ))
+    if id < 4  <- 2
+    if id < 8  <- 5
+    if id < 24
+        <- NUMPAD_TX[id - 8] ?? 8
+    if id < 28 <- 20
+    <- 23
+;
+
+: btn_ty(id = num) (( num ))
+    if id < 3  <- 20 + id * 2
+    if id == 3 <- 26
+    if id < 7  <- 20 + (id - 4) * 2
+    if id == 7 <- 26
+    if id < 24
+        <- 20 + stdr.floor((id - 8) / 4) * 3
+    if id < 28
+        <- 20 + (id - 24) * 3
+    <- 20 + (id - 28) * 3
+;
+
+: btn_th(id = num) (( num ))
+    if id <= 2 <- 2
+    if id == 3 <- 6
+    if id <= 6 <- 2
+    if id == 7 <- 6
+    <- 3
+;
+
+: btn_is_opc(id = num) (( bool ))
+    <- id >= 24
+;
+
+--| Button Icons |--
+
+: btn_icon(id = num) (( [any] ))
+    if id == 0 <- calc_icons.ctl_icon(0)
+    if id == 1 <- calc_icons.wst_icon(2)
+    if id == 2 <- calc_icons.wst_icon(3)
+    if id == 3 <- calc_icons.wst_icon(1)
+    if id == 4 <- calc_icons.ctl_icon(1)
+    if id == 5 <- calc_icons.ctl_icon(2)
+    if id == 6 <- calc_icons.ctl_icon(3)
+    if id == 7 <- calc_icons.wst_icon(0)
+    if id >= 8 && id <= 23
+        <- calc_icons.digit(NUMPAD_DIGITS[id - 8])
+    if id >= 24
+        <- calc_icons.mod_icon(id - 24)
+    <- calc_icons.ctl_icon(0)
+;
+
+: draw_btn_icon(scr = vimana.screen, id = num, pressed = bool, is_opc = bool) (( -- ))
+    let px = btn_tx(id) * 8
+    let py = btn_ty(id) * 8
+    let th = btn_th(id)
+    let ?py_off = 0
+    if pressed
+        py_off = 1
+
+    let icon = btn_icon(id)
+    if id >= 8
+        if is_opc
+            draw_icn16_px(scr, px + 4, py + 4 + py_off, icon, calc_model.C_FG)
+        else
+            draw_icn16_px_fill(scr, px + 4, py + 4 + py_off, icon, calc_model.C_FG, calc_model.C_HL)
+    else
+        let ?iy = py + 4 + py_off
+        if th == 6
+            iy = py + 32 + py_off
+        draw_icn_px_fill(scr, px + 8, iy, icon, calc_model.C_FG, calc_model.C_HL)
+;
+
+--| Full Button Draw |--
+
+: draw_button(scr = vimana.screen, id = num, pressed = bool) (( -- ))
+    let tx = btn_tx(id)
+    let ty = btn_ty(id)
+    let th = btn_th(id)
+    let is_opc = btn_is_opc(id)
+    draw_chrome(scr, tx, ty, 3, th, pressed, is_opc)
+    draw_btn_icon(scr, id, pressed, is_opc)
+;
+
+: draw_buttons(scr = vimana.screen, press_id = num) (( -- ))
+    for (let ?id = 0; id < calc_model.NUM_BUTTONS; id += 1)
+        draw_button(scr, id, id == press_id)
+;
+
+-- Stack display
+
+: draw_stack(scr = vimana.screen) (( -- ))
+    let len = calc_model.stack_len
+    let ?shown = len
+    if shown > calc_model.STACK_ROWS
+        shown = calc_model.STACK_ROWS
+    for (let ?slot = 0; slot < shown; slot += 1)
+        let i = len - slot - 1
+        let py = calc_model.STACK_TY * 8 - slot * calc_model.STACK_ROW_H * 8
+        let p = calc_model.stack_peek(i)
+        let n = p[0] ?? 0
+        let d = p[1] ?? 1
+        draw_fraction(scr, calc_model.STACK_TX * 8, py, n, d, calc_model.C_BG)
+;
+
+--| Display Background |--
+
+: draw_display_bg(scr = vimana.screen) (( -- ))
+    for (let ?ty = 0; ty < 18; ty += 1)
+        for (let ?tx = 0; tx < 29; tx += 1)
+            scr.put_icn(tx, ty, calc_icons.FILL, calc_model.C_FG, calc_model.C_BG)
+;
+
+--| Separator |--
+
+: draw_sep(scr = vimana.screen) (( -- ))
+    let ty = calc_model.SEP_TY
+    for (let ?tx = 0; tx < 28; tx += 1)
+        scr.put_icn(tx, ty, calc_icons.DOTTED, calc_model.C_BG, calc_model.C_FG)
+;
+
+--| Input Display |--
+
+: draw_input(scr = vimana.screen) (( -- ))
+    draw_icn_px(scr, 0, calc_model.IND_PY, calc_icons.ARROW, calc_model.C_BG)
+    draw_num(scr, calc_model.STACK_TX * 8, calc_model.INPUT_TY * 8, calc_model.input_num, calc_model.C_BG)
+;
+
+--| Binary Display (16 bits) |--
+
+: draw_binary(scr = vimana.screen) (( -- ))
+    let val = calc_model.input_num
+    let py = calc_model.IND_PY
+    let ?px = 112
+    for (let ?i = 15; i >= 0; i -= 1)
+        let b = calc_ops.get_bit(val, i)
+        let ?icon = calc_icons.BIN_0
+        if b == 1
+            icon = calc_icons.BIN_1
+        draw_icn_px(scr, px, py, icon, calc_model.C_BG)
+        px = px + 5
+        if (15 - i) % 4 == 3 && i > 0
+            px = px + 5
+;
+
+--| Mode Indicators |--
+
+: draw_modes(scr = vimana.screen) (( -- ))
+    let py = calc_model.IND_PY
+    let ?dec_fg = calc_model.C_ALT
+    if calc_model.is_dec()
+        dec_fg = calc_model.C_BG
+    draw_icn_px(scr, 88, py, calc_icons.MODE_D, dec_fg)
+
+    let ?dot_fg = calc_model.C_ALT
+    if calc_model.is_dot()
+        dot_fg = calc_model.C_BG
+    draw_icn_px(scr, 93, py, calc_icons.MODE_S, dot_fg)
+
+    let ?fac_fg = calc_model.C_ALT
+    if calc_model.is_fac()
+        fac_fg = calc_model.C_BG
+    draw_icn_px(scr, 98, py, calc_icons.MODE_F, fac_fg)
+;
+
+--| Hit Testing |--
+
+:: hit_button(mx = num, my = num) (( num ))
+    for (let ?id = 0; id < calc_model.NUM_BUTTONS; id += 1)
+        let px = btn_tx(id) * 8
+        let py = btn_ty(id) * 8
+        let pw = 24
+        let ph = btn_th(id) * 8
+        if mx >= px && mx < px + pw && my >= py && my < py + ph
+            <- id
+    <- -1
+;
+
+--| Full Frame |--
+
+:: draw_all(scr = vimana.screen, press_id = num) (( -- ))
+    scr.set_titlebar_title(calc_model.mode_name())
+    scr.clear(calc_model.C_BG)
+    draw_display_bg(scr)
+    draw_stack(scr)
+    draw_sep(scr)
+    draw_input(scr)
+    draw_binary(scr)
+    draw_modes(scr)
+    draw_buttons(scr, press_id)
+    scr.present()
+;

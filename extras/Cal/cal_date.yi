@@ -1,0 +1,92 @@
+cask cal_date
+
+bring stdr
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Date utilities
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: is_leap_year(y = num) (( bool ))
+    if y % 400 == 0
+        <- true
+    if y % 100 == 0
+        <- false
+    <- y % 4 == 0
+;
+
+-- Days in a given month (1-12)
+: days_in_month(m = num, y = num) (( num ))
+    if m == 2
+        if is_leap_year(y)
+            <- 29
+        <- 28
+    if m == 4 || m == 6 || m == 9 || m == 11
+        <- 30
+    <- 31
+;
+
+-- Day of week for a given date (0=Sun, 1=Mon, ..., 6=Sat)
+-- Tomohiko Sakamoto algorithm
+: day_of_week(y = num, m = num, d = num) (( num ))
+    let ?yr = y
+    if m < 3
+        yr = yr - 1
+    let lut = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
+    let t = lut[m - 1] ?? 0
+    <- (yr + stdr.floor(yr / 4) - stdr.floor(yr / 100) + stdr.floor(yr / 400) + t + d) % 7
+;
+
+-- Day of year (1-based)
+: day_of_year(y = num, m = num, d = num) (( num ))
+    let ?doty = 0
+    for (let ?i = 1; i < m; i += 1)
+        doty = doty + days_in_month(i, y)
+    <- doty + d
+;
+
+-- Month name (short, 3 chars)
+: month_name(m = num) (( string ))
+    if m == 1  <- "Jan"
+    if m == 2  <- "Feb"
+    if m == 3  <- "Mar"
+    if m == 4  <- "Apr"
+    if m == 5  <- "May"
+    if m == 6  <- "Jun"
+    if m == 7  <- "Jul"
+    if m == 8  <- "Aug"
+    if m == 9  <- "Sep"
+    if m == 10 <- "Oct"
+    if m == 11 <- "Nov"
+    if m == 12 <- "Dec"
+    <- "???"
+;
+
+-- Day-of-week name (short, 3 chars, 0=Sun)
+: dotw_name(d = num) (( string ))
+    if d == 0 <- "Sun"
+    if d == 1 <- "Mon"
+    if d == 2 <- "Tue"
+    if d == 3 <- "Wed"
+    if d == 4 <- "Thu"
+    if d == 5 <- "Fri"
+    if d == 6 <- "Sat"
+    <- "???"
+;
+
+-- Pad a number with leading zero
+: pad2(v = num) (( string ))
+    if v < 10
+        <- "0" + str(v)
+    <- str(v)
+;
+
+-- Arvelie date: converts (year, month, day) to a letter+number code
+-- 26 fortnights A-Z (14 days each) + extra day(s) marked with "+"
+: arvelie(y = num, m = num, d = num) (( string ))
+    let doty = day_of_year(y, m, d) - 1
+    let f = stdr.floor(doty / 14)
+    let r = doty - f * 14
+    let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ+"
+    let letter = stdr.char_at(letters, f)
+    <- letter + str(r)
+;

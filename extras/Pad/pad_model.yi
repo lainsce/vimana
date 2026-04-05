@@ -1,0 +1,623 @@
+cask pad_model
+
+bring stdr
+bring pad_font
+
+--| Layout |--
+def TEXT_X = 8
+def TEXT_Y = 8
+def WRAP_X = 208
+def LINE_H = 16
+def WIN_W = 224
+def WIN_H = 200
+def FOOTER_H = 32
+def FOOTER_Y = 168
+def NUM_PAGES = 8
+def PAGE_SIZE = 192
+
+--| Palette |--
+def C_BG = 0
+def C_FG = 1
+def C_SEL = 2
+def C_ACC = 3
+
+--| Keyboard scancodes |--
+def KEY_UP = 82
+def KEY_DOWN = 81
+def KEY_LEFT = 80
+def KEY_RIGHT = 79
+def KEY_RETURN = 40
+def KEY_TAB = 43
+def KEY_BACKSPACE = 42
+def KEY_DELETE = 76
+def KEY_ESCAPE = 41
+def KEY_A = 4
+def KEY_C = 6
+def KEY_S = 22
+def KEY_V = 25
+def KEY_X = 27
+def KEY_Z = 29
+def KEY_LGUI = 227
+def KEY_RGUI = 231
+def KEY_LALT = 226
+def KEY_RALT = 230
+def KEY_LCTRL = 224
+def KEY_RCTRL = 228
+def KEY_LSHIFT = 225
+def KEY_RSHIFT = 229
+
+--| Pages |--
+def ?page_0 = ""
+def ?page_1 = ""
+def ?page_2 = ""
+def ?page_3 = ""
+def ?page_4 = ""
+def ?page_5 = ""
+def ?page_6 = ""
+def ?page_7 = ""
+def ?current_page = 0
+
+--| Editor state |--
+def ?caret = 0
+def ?sel_start = 0
+def ?sel_end = 0
+def ?dirty = false
+def ?text_rev = 0
+def ?corner_state = 0
+
+--| Page access |--
+
+:: get_page_text(n = num) (( string ))
+    if n == 0 <- page_0
+    if n == 1 <- page_1
+    if n == 2 <- page_2
+    if n == 3 <- page_3
+    if n == 4 <- page_4
+    if n == 5 <- page_5
+    if n == 6 <- page_6
+    if n == 7 <- page_7
+    <- ""
+;
+
+:: set_page_text(n = num, txt = string) (( -- ))
+    if n == 0
+        page_0 = txt
+    elif n == 1
+        page_1 = txt
+    elif n == 2
+        page_2 = txt
+    elif n == 3
+        page_3 = txt
+    elif n == 4
+        page_4 = txt
+    elif n == 5
+        page_5 = txt
+    elif n == 6
+        page_6 = txt
+    elif n == 7
+        page_7 = txt
+;
+
+:: text() (( string ))
+    <- get_page_text(current_page)
+;
+
+:: set_text(txt = string) (( -- ))
+    set_page_text(current_page, txt)
+    text_rev += 1
+;
+
+--| Page switching |--
+
+:: switch_page(n = num) (( -- ))
+    if n < 0
+        n = NUM_PAGES - 1
+    if n >= NUM_PAGES
+        n = 0
+    current_page = n
+    caret = 0
+    sel_start = 0
+    sel_end = 0
+;
+
+:: next_page() (( -- ))
+    switch_page(current_page + 1)
+;
+
+:: prev_page() (( -- ))
+    switch_page(current_page - 1)
+;
+
+--| Setters |--
+
+:: set_dirty(d = bool) (( -- ))
+    dirty = d
+;
+
+:: set_caret(pos = num) (( -- ))
+    let total = stdr.len(text())
+    if pos < 0
+        pos = 0
+    if pos > total
+        pos = total
+    caret = pos
+;
+
+:: set_selection(a = num, b = num) (( -- ))
+    sel_start = a
+    sel_end = b
+;
+
+:: set_corner_state(s = num) (( -- ))
+    corner_state = s
+;
+
+--| Helpers |--
+
+:: has_selection() (( bool ))
+    <- sel_start != sel_end
+;
+
+:: sel_normalized() (( [any] ))
+    if sel_start <= sel_end
+        <- [sel_start, sel_end]
+    <- [sel_end, sel_start]
+;
+
+:: selected_text() (( string ))
+    if !has_selection()
+        <- ""
+    let pair = sel_normalized()
+    let a = stdr.floor(stdr.num(pair[0] ?? 0))
+    let b = stdr.floor(stdr.num(pair[1] ?? 0))
+    <- stdr.slice(text(), a, b)
+;
+
+--| Pixel-based visual line helpers |--
+
+:: vline_col(pos = num) (( [any] ))
+    let code = text()
+    let total = stdr.len(code)
+    let ?p = pos
+    if p < 0
+        p = 0
+    if p > total
+        p = total
+    let ?vl = 0
+    let ?px = TEXT_X
+    for (let ?i = 0; i < p; i += 1)
+        let ch = stdr.char_at(code, i)
+        if ch == "\n"
+            vl += 1
+            px = TEXT_X
+        else
+            let cw = pad_font.get_char_width(stdr.char_code(ch))
+            if px + cw > WRAP_X
+                vl += 1
+                px = TEXT_X
+            px += cw
+    <- [vl, px]
+;
+
+:: vline_count() (( num ))
+    let code = text()
+    let total = stdr.len(code)
+    if total == 0
+        <- 1
+    let ?lines = 1
+    let ?px = TEXT_X
+    for (let ?i = 0; i < total; i += 1)
+        let ch = stdr.char_at(code, i)
+        if ch == "\n"
+            lines += 1
+            px = TEXT_X
+        else
+            let cw = pad_font.get_char_width(stdr.char_code(ch))
+            if px + cw > WRAP_X
+                lines += 1
+                px = TEXT_X
+            px += cw
+    <- lines
+;
+
+:: caret_to_pixel(idx = num) (( [any] ))
+    let code = text()
+    let total = stdr.len(code)
+    let ?p = idx
+    if p < 0
+        p = 0
+    if p > total
+        p = total
+    let ?px = TEXT_X
+    let ?py = TEXT_Y
+    for (let ?i = 0; i < p; i += 1)
+        let ch = stdr.char_at(code, i)
+        if ch == "\n"
+            px = TEXT_X
+            py += LINE_H
+        else
+            let cw = pad_font.get_char_width(stdr.char_code(ch))
+            if px + cw > WRAP_X
+                px = TEXT_X
+                py += LINE_H
+            px += cw
+    <- [px, py]
+;
+
+:: vindex_from(target_row = num, target_px = num) (( num ))
+    let code = text()
+    let total = stdr.len(code)
+    let ?vl = 0
+    let ?px = TEXT_X
+    let ?i = 0
+    -- Advance to target row
+    for (; i < total; i += 1)
+        if vl >= target_row
+            break
+        let ch = stdr.char_at(code, i)
+        if ch == "\n"
+            vl += 1
+            px = TEXT_X
+        else
+            let cw = pad_font.get_char_width(stdr.char_code(ch))
+            if px + cw > WRAP_X
+                vl += 1
+                px = TEXT_X
+                if vl >= target_row
+                    break
+            px += cw
+    if vl < target_row
+        <- total
+    -- Now find closest char in this row by pixel x
+    px = TEXT_X
+    let ?best_i = i
+    let ?best_dist = 9999
+    for (; i < total; i += 1)
+        let ch = stdr.char_at(code, i)
+        if ch == "\n"
+            let d = target_px - px
+            if d < 0
+                d = 0 - d
+            if d < best_dist
+                best_dist = d
+                best_i = i
+            break
+        let cw = pad_font.get_char_width(stdr.char_code(ch))
+        if px + cw > WRAP_X
+            let d = target_px - px
+            if d < 0
+                d = 0 - d
+            if d < best_dist
+                best_dist = d
+                best_i = i
+            break
+        -- Check distance at start of this char
+        let d = target_px - px
+        if d < 0
+            d = 0 - d
+        if d < best_dist
+            best_dist = d
+            best_i = i
+        -- Check distance at end of this char
+        let d2 = target_px - (px + cw)
+        if d2 < 0
+            d2 = 0 - d2
+        if d2 < best_dist
+            best_dist = d2
+            best_i = i + 1
+        px += cw
+    -- Check distance at end of line
+    let d = target_px - px
+    if d < 0
+        d = 0 - d
+    if d < best_dist
+        best_i = i
+    <- best_i
+;
+
+--| Click to caret |--
+
+:: caret_from_click(mx = num, my = num) (( num ))
+    let ?row = stdr.floor((my - TEXT_Y) / LINE_H)
+    if row < 0
+        row = 0
+    <- vindex_from(row, mx)
+;
+
+--| Editing |--
+
+:: insert_at_caret(chunk = string) (( -- ))
+    let code = text()
+    let total = stdr.len(code)
+    let pair = sel_normalized()
+    let a = stdr.floor(stdr.num(pair[0] ?? 0))
+    let b = stdr.floor(stdr.num(pair[1] ?? 0))
+    -- Enforce page size limit
+    let new_len = total - (b - a) + stdr.len(chunk)
+    if new_len > PAGE_SIZE
+        <-
+    let prefix = stdr.slice(code, 0, a)
+    let suffix = stdr.slice(code, b, total)
+    set_text("$$prefix$$$$chunk$$$$suffix$$")
+    let pos = a + stdr.len(chunk)
+    caret = pos
+    sel_start = pos
+    sel_end = pos
+    dirty = true
+;
+
+:: delete_selection() (( -- ))
+    if !has_selection()
+        <-
+    let code = text()
+    let pair = sel_normalized()
+    let a = stdr.floor(stdr.num(pair[0] ?? 0))
+    let b = stdr.floor(stdr.num(pair[1] ?? 0))
+    let prefix = stdr.slice(code, 0, a)
+    let suffix = stdr.slice(code, b, stdr.len(code))
+    set_text("$$prefix$$$$suffix$$")
+    caret = a
+    sel_start = a
+    sel_end = a
+    dirty = true
+;
+
+:: delete_backward() (( -- ))
+    if has_selection()
+        delete_selection()
+        <-
+    if caret <= 0
+        <-
+    let code = text()
+    let prefix = stdr.slice(code, 0, caret - 1)
+    let suffix = stdr.slice(code, caret, stdr.len(code))
+    set_text("$$prefix$$$$suffix$$")
+    caret -= 1
+    sel_start = caret
+    sel_end = caret
+    dirty = true
+;
+
+:: delete_forward() (( -- ))
+    if has_selection()
+        delete_selection()
+        <-
+    let code = text()
+    let total = stdr.len(code)
+    if caret >= total
+        <-
+    let prefix = stdr.slice(code, 0, caret)
+    let suffix = stdr.slice(code, caret + 1, total)
+    set_text("$$prefix$$$$suffix$$")
+    sel_start = caret
+    sel_end = caret
+    dirty = true
+;
+
+--| Caret movement |--
+
+:: move_left(shift = bool) (( -- ))
+    if caret > 0
+        caret -= 1
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+:: move_right(shift = bool) (( -- ))
+    let total = stdr.len(text())
+    if caret < total
+        caret += 1
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+:: move_up(shift = bool) (( -- ))
+    let pos = caret_to_pixel(caret)
+    let cur_px = stdr.floor(stdr.num(pos[0] ?? 0))
+    let cur_py = stdr.floor(stdr.num(pos[1] ?? 0))
+    let cur_line = stdr.floor(cur_py / LINE_H)
+    if cur_line > 0
+        caret = vindex_from(cur_line - 1, cur_px)
+    else
+        caret = 0
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+:: move_down(shift = bool) (( -- ))
+    let pos = caret_to_pixel(caret)
+    let cur_px = stdr.floor(stdr.num(pos[0] ?? 0))
+    let cur_py = stdr.floor(stdr.num(pos[1] ?? 0))
+    let cur_line = stdr.floor(cur_py / LINE_H)
+    let total_lines = vline_count()
+    if cur_line < total_lines - 1
+        caret = vindex_from(cur_line + 1, cur_px)
+    else
+        caret = stdr.len(text())
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+:: select_all() (( -- ))
+    sel_start = 0
+    sel_end = stdr.len(text())
+    caret = sel_end
+;
+
+:: reset_selection() (( -- ))
+    sel_start = caret
+    sel_end = caret
+;
+
+--| Line start/end |--
+
+:: line_start_index() (( num ))
+    let code = text()
+    let ?p = caret
+    for (; p > 0; p -= 1)
+        if stdr.slice(code, p - 1, p) == "\n"
+            break
+    <- p
+;
+
+:: line_end_index() (( num ))
+    let code = text()
+    let total = stdr.len(code)
+    let ?p = caret
+    for (; p < total; p += 1)
+        if stdr.slice(code, p, p + 1) == "\n"
+            break
+    <- p
+;
+
+:: move_line_start(shift = bool) (( -- ))
+    caret = line_start_index()
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+:: move_line_end(shift = bool) (( -- ))
+    caret = line_end_index()
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+:: move_doc_start(shift = bool) (( -- ))
+    caret = 0
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+:: move_doc_end(shift = bool) (( -- ))
+    caret = stdr.len(text())
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+--| Word navigation |--
+
+: is_word_char(ch = string) (( bool ))
+    if ch == " " || ch == "\n" || ch == "\t"
+        <- false
+    <- true
+;
+
+:: move_word_left(shift = bool) (( -- ))
+    let code = text()
+    if caret <= 0
+        if !shift
+            sel_start = 0
+            sel_end = 0
+        <-
+    let ?p = caret - 1
+    for (; p > 0; p -= 1)
+        let c = stdr.slice(code, p, p + 1)
+        if is_word_char(c)
+            break
+    for (; p > 0; p -= 1)
+        let c = stdr.slice(code, p - 1, p)
+        if !is_word_char(c)
+            break
+    caret = p
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+:: move_word_right(shift = bool) (( -- ))
+    let code = text()
+    let total = stdr.len(code)
+    if caret >= total
+        if !shift
+            sel_start = total
+            sel_end = total
+        <-
+    let ?p = caret
+    for (; p < total; p += 1)
+        let c = stdr.slice(code, p, p + 1)
+        if !is_word_char(c)
+            break
+    for (; p < total; p += 1)
+        let c = stdr.slice(code, p, p + 1)
+        if is_word_char(c)
+            break
+    caret = p
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+;
+
+--| Word selection (double-click) |--
+
+:: select_word_at(pos = num) (( -- ))
+    let code = text()
+    let total = stdr.len(code)
+    if total == 0
+        <-
+    let ?a = pos
+    let ?b = pos
+    for (; a > 0; a -= 1)
+        let c = stdr.slice(code, a - 1, a)
+        if !is_word_char(c)
+            break
+    for (; b < total; b += 1)
+        let c = stdr.slice(code, b, b + 1)
+        if !is_word_char(c)
+            break
+    caret = b
+    sel_start = a
+    sel_end = b
+;
+
+--| Todo marker toggle |--
+
+:: toggle_marker_at(pos = num) (( -- ))
+    let code = text()
+    let total = stdr.len(code)
+    let ?ls = pos
+    for (; ls > 0; ls -= 1)
+        if stdr.slice(code, ls - 1, ls) == "\n"
+            break
+    if ls + 1 < total
+        let first2 = stdr.slice(code, ls, ls + 2)
+        if first2 == "- "
+            let prefix = stdr.slice(code, 0, ls)
+            let suffix = stdr.slice(code, ls + 2, total)
+            set_text("$$prefix$$> $$suffix$$")
+            dirty = true
+            <-
+        if first2 == "> "
+            let prefix = stdr.slice(code, 0, ls)
+            let suffix = stdr.slice(code, ls + 2, total)
+            set_text("$$prefix$$- $$suffix$$")
+            dirty = true
+            <-
+;

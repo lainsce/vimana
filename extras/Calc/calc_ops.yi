@@ -1,0 +1,420 @@
+cask calc_ops
+
+bring stdr
+bring calc_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Math helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: gcd(a = num, b = num) (( num ))
+    let ?x = a
+    let ?y = b
+    if x < 0
+        x = -x
+    if y < 0
+        y = -y
+    for (let ?i = 0; i < 1000; i += 1)
+        if y == 0
+            <- x
+        let t = y
+        y = x % t
+        x = t
+    <- x
+;
+
+-- Bitwise AND on 16-bit integers
+:: bit_and(a = num, b = num) (( num ))
+    let ?result = 0
+    let ?pa = stdr.floor(a) % 65536
+    let ?pb = stdr.floor(b) % 65536
+    if pa < 0
+        pa = pa + 65536
+    if pb < 0
+        pb = pb + 65536
+    for (let ?bit = 0; bit < 16; bit += 1)
+        let ba = stdr.floor(pa / 2)
+        let ra = pa - ba * 2
+        let bb = stdr.floor(pb / 2)
+        let rb = pb - bb * 2
+        if ra == 1 && rb == 1
+            let ?pw = 1
+            for (let ?j = 0; j < bit; j += 1)
+                pw = pw * 2
+            result = result + pw
+        pa = ba
+        pb = bb
+    <- result
+;
+
+-- Bitwise OR on 16-bit integers
+:: bit_or(a = num, b = num) (( num ))
+    let ?result = 0
+    let ?pa = stdr.floor(a) % 65536
+    let ?pb = stdr.floor(b) % 65536
+    if pa < 0
+        pa = pa + 65536
+    if pb < 0
+        pb = pb + 65536
+    for (let ?bit = 0; bit < 16; bit += 1)
+        let ba = stdr.floor(pa / 2)
+        let ra = pa - ba * 2
+        let bb = stdr.floor(pb / 2)
+        let rb = pb - bb * 2
+        if ra == 1 || rb == 1
+            let ?pw = 1
+            for (let ?j = 0; j < bit; j += 1)
+                pw = pw * 2
+            result = result + pw
+        pa = ba
+        pb = bb
+    <- result
+;
+
+-- Get bit at position (0=LSB) of a 16-bit value
+:: get_bit(val = num, pos = num) (( num ))
+    let ?v = stdr.floor(val) % 65536
+    if v < 0
+        v = v + 65536
+    for (let ?i = 0; i < pos; i += 1)
+        v = stdr.floor(v / 2)
+    <- v - stdr.floor(v / 2) * 2
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Number formatting
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: hex_digit(n = num) (( string ))
+    if n < 10
+        <- str(n)
+    if n == 10 <- "A"
+    if n == 11 <- "B"
+    if n == 12 <- "C"
+    if n == 13 <- "D"
+    if n == 14 <- "E"
+    <- "F"
+;
+
+:: to_hex(val = num) (( string ))
+    let ?v = stdr.floor(val) % 65536
+    if v < 0
+        v = v + 65536
+    if v == 0
+        <- "0"
+    let ?s = ""
+    let ?started = false
+    -- 4 hex digits for 16-bit
+    let ?d3 = stdr.floor(v / 4096)
+    let r3 = v - d3 * 4096
+    let ?d2 = stdr.floor(r3 / 256)
+    let r2 = r3 - d2 * 256
+    let ?d1 = stdr.floor(r2 / 16)
+    let d0 = r2 - d1 * 16
+    if d3 > 0
+        s = s + hex_digit(d3)
+        started = true
+    if d2 > 0 || started
+        s = s + hex_digit(d2)
+        started = true
+    if d1 > 0 || started
+        s = s + hex_digit(d1)
+    s = s + hex_digit(d0)
+    <- s
+;
+
+:: format_num(val = num) (( string ))
+    if calc_model.is_dec()
+        <- str(stdr.floor(val))
+    <- to_hex(val)
+;
+
+:: format_fraction(n = num, d = num) (( string ))
+    if d == 1
+        <- format_num(n)
+    if calc_model.is_dot()
+        let whole = stdr.floor(n / d)
+        let ?base = 1000
+        if !calc_model.is_dec()
+            base = 4096
+        let frac = stdr.floor(base * (n - whole * d) / d)
+        <- format_num(whole) + "." + str(frac)
+    <- format_num(n) + "/" + format_num(d)
+;
+
+-- Factor display: show prime factors
+:: format_factors(val = num) (( string ))
+    let ?v = stdr.floor(val)
+    if v <= 1
+        <- str(v)
+    let ?s = ""
+    let ?f = 2
+    for (let ?i = 0; i < 100; i += 1)
+        if f * f > v
+            break
+        let ?count = 0
+        for (let ?j = 0; j < 100; j += 1)
+            if v % f != 0
+                break
+            count = count + 1
+            v = stdr.floor(v / f)
+        if count > 0
+            if stdr.len(s) > 0
+                s = s + " "
+            if count > 1
+                s = s + format_num(f) + "^" + str(count)
+            else
+                s = s + format_num(f)
+        f = f + 1
+    if v > 1
+        if stdr.len(s) > 0
+            s = s + " "
+        s = s + format_num(v)
+    <- s
+;
+
+:: format_value(n = num, d = num) (( string ))
+    if calc_model.is_fac() && d == 1 && n > 1
+        <- format_factors(n)
+    <- format_fraction(n, d)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Input operations
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: input_append(val = num) (( -- ))
+    -- Ignore hex digits in dec mode
+    if val > 9 && calc_model.is_dec()
+        <-
+    let ?base = 16
+    if calc_model.is_dec()
+        base = 10
+
+    -- Keep input to 4 digits max; after that, replace the last digit.
+    let max_before_overwrite = base * base * base
+    if calc_model.input_num >= max_before_overwrite
+        let head = stdr.floor(calc_model.input_num / base)
+        calc_model.set_input_num(head * base + val)
+    else
+        calc_model.set_input_num(calc_model.input_num * base + val)
+
+    calc_model.mark_dirty()
+;
+
+:: input_erase() (( -- ))
+    if calc_model.input_num != 0
+        let ?base = 16
+        if calc_model.is_dec()
+            base = 10
+        calc_model.set_input_num(stdr.floor(calc_model.input_num / base))
+        calc_model.mark_dirty()
+        <-
+    -- If input empty, pop stack into input
+    if calc_model.stack_len > 0
+        let p = calc_model.stack_pop()
+        let n = p[0] ?? 0
+        let d = p[1] ?? 1
+        if d == 1
+            calc_model.set_input_num(n)
+        calc_model.mark_dirty()
+;
+
+:: input_eval() (( -- ))
+    if calc_model.input_num == 0 && calc_model.stack_len > 0
+        -- Reduce top of stack
+        reduce()
+        <-
+    calc_model.stack_push(calc_model.input_num, 1)
+    calc_model.set_input_num(0)
+    calc_model.mark_dirty()
+;
+
+:: input_clear() (( -- ))
+    calc_model.stack_clear()
+    calc_model.set_input_num(0)
+    calc_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Stack operations
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: reduce() (( -- ))
+    if calc_model.is_empty()
+        <-
+    let p = calc_model.stack_pop()
+    let n = p[0] ?? 0
+    let d = p[1] ?? 1
+    let g = gcd(n, d)
+    if g > 1
+        calc_model.stack_push(stdr.floor(n / g), stdr.floor(d / g))
+    else
+        calc_model.stack_push(n, d)
+;
+
+:: swap() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_lt2()
+        <-
+    let b = calc_model.stack_pop()
+    let a = calc_model.stack_pop()
+    calc_model.stack_push(b[0] ?? 0, b[1] ?? 1)
+    calc_model.stack_push(a[0] ?? 0, a[1] ?? 1)
+;
+
+:: dup() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_empty()
+        <-
+    let p = calc_model.stack_pop()
+    let n = p[0] ?? 0
+    let d = p[1] ?? 1
+    calc_model.stack_push(n, d)
+    calc_model.stack_push(n, d)
+;
+
+:: inv() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_empty()
+        <-
+    let p = calc_model.stack_pop()
+    let n = p[0] ?? 0
+    let d = p[1] ?? 1
+    if n != 0
+        calc_model.stack_push(d, n)
+;
+
+:: vid() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_empty()
+        <-
+    let p = calc_model.stack_pop()
+    let n = p[0] ?? 0
+    let d = p[1] ?? 1
+    if d == 1
+        <-
+    -- Split into numerator and denominator as separate stack entries
+    calc_model.stack_push(n, 1)
+    calc_model.stack_push(d, 1)
+;
+
+: input_eval_if_input() (( -- ))
+    if calc_model.input_num != 0
+        input_eval()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Arithmetic (fraction operations)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: op_add() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_lt2()
+        <-
+    let b = calc_model.stack_pop()
+    let a = calc_model.stack_pop()
+    let an = a[0] ?? 0
+    let ad = a[1] ?? 1
+    let bn = b[0] ?? 0
+    let bd = b[1] ?? 1
+    -- a/ad + b/bd = (an*bd + bn*ad) / (ad*bd)
+    calc_model.stack_push(an * bd + bn * ad, ad * bd)
+;
+
+:: op_sub() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_lt2()
+        <-
+    let b = calc_model.stack_pop()
+    let a = calc_model.stack_pop()
+    let an = a[0] ?? 0
+    let ad = a[1] ?? 1
+    let bn = b[0] ?? 0
+    let bd = b[1] ?? 1
+    calc_model.stack_push(an * bd - bn * ad, ad * bd)
+;
+
+:: op_mul() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_lt2()
+        <-
+    let b = calc_model.stack_pop()
+    let a = calc_model.stack_pop()
+    let an = a[0] ?? 0
+    let ad = a[1] ?? 1
+    let bn = b[0] ?? 0
+    let bd = b[1] ?? 1
+    calc_model.stack_push(an * bn, ad * bd)
+;
+
+:: op_div() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_lt2()
+        <-
+    let b = calc_model.stack_pop()
+    let a = calc_model.stack_pop()
+    let an = a[0] ?? 0
+    let ad = a[1] ?? 1
+    let bn = b[0] ?? 0
+    let bd = b[1] ?? 1
+    if bn == 0
+        -- Division by zero: push back
+        calc_model.stack_push(an, ad)
+        calc_model.stack_push(bn, bd)
+        <-
+    calc_model.stack_push(an * bd, ad * bn)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Bitwise (operate on integer numerators after common denominator)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: op_and() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_lt2()
+        <-
+    let b = calc_model.stack_pop()
+    let a = calc_model.stack_pop()
+    let an = a[0] ?? 0
+    let ad = a[1] ?? 1
+    let bn = b[0] ?? 0
+    let bd = b[1] ?? 1
+    -- Common denominator then AND the numerators
+    let result_num = bit_and(an * bd, ad * bn)
+    calc_model.stack_push(result_num, ad * bd)
+;
+
+:: op_or() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_lt2()
+        <-
+    let b = calc_model.stack_pop()
+    let a = calc_model.stack_pop()
+    let an = a[0] ?? 0
+    let ad = a[1] ?? 1
+    let bn = b[0] ?? 0
+    let bd = b[1] ?? 1
+    let result_num = bit_or(an * bd, ad * bn)
+    calc_model.stack_push(result_num, ad * bd)
+;
+
+:: op_shl() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_empty()
+        <-
+    let p = calc_model.stack_pop()
+    let n = p[0] ?? 0
+    let d = p[1] ?? 1
+    calc_model.stack_push(n * 2, d)
+;
+
+:: op_shr() (( -- ))
+    input_eval_if_input()
+    if calc_model.is_empty()
+        <-
+    let p = calc_model.stack_pop()
+    let n = p[0] ?? 0
+    let d = p[1] ?? 1
+    calc_model.stack_push(stdr.floor(n / 2), d)
+;

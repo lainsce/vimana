@@ -32,6 +32,8 @@ void vimana_system_sleep(vimana_system *system, int64_t ms);
 bool vimana_system_set_clipboard_text(vimana_system *system, const char *text);
 char *vimana_system_clipboard_text(vimana_system *system);
 char *vimana_system_home_dir(vimana_system *system);
+void vimana_system_play_tone(vimana_system *system, int pitch,
+                             int duration_ms, int volume);
 
 void vimana_system_free(vimana_system *system);
 
@@ -98,8 +100,8 @@ unsigned int vimana_device_pointer_x(vimana_system *system);
 unsigned int vimana_device_pointer_y(vimana_system *system);
 unsigned int vimana_device_tile_x(vimana_system *system);
 unsigned int vimana_device_tile_y(vimana_system *system);
-unsigned int vimana_device_wheel_x(vimana_system *system);
-unsigned int vimana_device_wheel_y(vimana_system *system);
+int vimana_device_wheel_x(vimana_system *system);
+int vimana_device_wheel_y(vimana_system *system);
 const char *vimana_device_text_input(vimana_system *system);
 
 // Datetime

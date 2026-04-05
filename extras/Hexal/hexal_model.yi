@@ -1,0 +1,331 @@
+cask hexal_model
+
+bring stdr
+
+--| Layout |--
+
+def SCR_W = 624
+def SCR_H = 280
+def FONT_W = 8
+def ROW_H = 16
+def COLS = 16
+def ROWS = 16
+def PAGE_SIZE = 256
+
+-- X positions (matching dexe layout)
+def OFFSET_X = 16
+def HEX_X = 88
+def ASCII_X = 480
+
+-- Y positions
+def LABEL_Y = 0
+def SEP_Y = 16
+def DATA_Y = 24
+
+-- Colors
+def C_BG = 0
+def C_FG = 1
+def C_DIM = 2
+def C_ACCENT = 3
+
+--| Keyboard scancodes |--
+
+def KEY_UP = 82
+def KEY_DOWN = 81
+def KEY_LEFT = 80
+def KEY_RIGHT = 79
+def KEY_RETURN = 40
+def KEY_BACKSPACE = 42
+def KEY_ESCAPE = 41
+def KEY_N = 17
+def KEY_O = 18
+def KEY_S = 22
+def KEY_Q = 20
+def KEY_C = 6
+def KEY_V = 25
+def KEY_LGUI = 227
+def KEY_RGUI = 231
+def KEY_LSHIFT = 225
+def KEY_RSHIFT = 229
+def KEY_LCTRL = 224
+def KEY_RCTRL = 228
+def KEY_SLASH = 56
+
+-- Max file size (32KB)
+def MAX_SIZE = 32768
+
+--| State |--
+
+def ?buffer = []: [any]
+def ?buf_len = 0
+def ?sel_a = 0
+def ?sel_b = 0
+def ?scroll_pos = 0
+def ?nibble = 0
+def ?file_path = ""
+def ?changed = false
+def ?dirty = true
+
+-- Internal clipboard
+def ?clip = []: [any]
+
+--| Hex helpers |--
+
+def HEX_CHARS = "0123456789abcdef"
+
+: byte_hex(b = num) (( string ))
+    let hi = stdr.floor(b / 16) % 16
+    let lo = b % 16
+    <- stdr.substring_len(HEX_CHARS, hi, 1) + stdr.substring_len(HEX_CHARS, lo, 1)
+;
+
+: short_hex(v = num) (( string ))
+    <- byte_hex(stdr.floor(v / 256) % 256) + byte_hex(v % 256)
+;
+
+: hex_val(c = string) (( num ))
+    for (let ?i = 0; i < 16; i += 1)
+        if stdr.substring_len(HEX_CHARS, i, 1) == c
+            <- i
+    let upper = "ABCDEF"
+    for (let ?j = 0; j < 6; j += 1)
+        if stdr.substring_len(upper, j, 1) == c
+            <- 10 + j
+    <- -1
+;
+
+--| Page |--
+
+: page_offset() (( num ))
+    <- scroll_pos * COLS
+;
+
+: hex_byte_x(col = num) (( num ))
+    <- HEX_X + col * 24
+;
+
+: byte_color(addr = num) (( num ))
+    if addr >= buf_len
+        <- C_DIM
+    if addr >= sel_a && addr <= sel_b
+        <- C_ACCENT
+    <- C_FG
+;
+
+--| Selection |--
+
+: clamp(addr = num) (( num ))
+    if addr < 0
+        <- 0
+    if buf_len == 0
+        <- 0
+    if addr >= buf_len
+        <- buf_len - 1
+    <- addr
+;
+
+: follow(addr = num) (( -- ))
+    scroll_pos = stdr.floor(addr / PAGE_SIZE) * ROWS
+;
+
+: set_sel_a(addr = num) (( -- ))
+    let a = clamp(addr)
+    sel_a = a
+    sel_b = a
+    nibble = 0
+    follow(a)
+    dirty = true
+;
+
+: set_sel_b(addr = num) (( -- ))
+    let b = clamp(addr)
+    if b < sel_a
+        b = sel_a
+    sel_b = b
+    nibble = 0
+    follow(b)
+    dirty = true
+;
+
+: set_sel(a_addr = num, b_addr = num) (( -- ))
+    let a = clamp(a_addr)
+    let b = clamp(b_addr)
+    if a > b
+        let tmp = a
+        a = b
+        b = tmp
+    sel_a = a
+    sel_b = b
+    nibble = 0
+    dirty = true
+;
+
+: reset_sel() (( -- ))
+    sel_b = sel_a
+    nibble = 0
+    dirty = true
+;
+
+: sel_len() (( num ))
+    <- sel_b - sel_a + 1
+;
+
+--| Navigation |--
+
+: move_up() (( -- ))
+    set_sel_a(sel_b - COLS)
+;
+
+: move_down() (( -- ))
+    set_sel_a(sel_b + COLS)
+;
+
+: move_left() (( -- ))
+    set_sel_a(sel_b - 1)
+;
+
+: move_right() (( -- ))
+    set_sel_a(sel_b + 1)
+;
+
+: jump_up() (( -- ))
+    set_sel_a(sel_b - PAGE_SIZE)
+;
+
+: jump_down() (( -- ))
+    set_sel_a(sel_b + PAGE_SIZE)
+;
+
+: size_up() (( -- ))
+    set_sel_b(sel_b - COLS)
+;
+
+: size_down() (( -- ))
+    set_sel_b(sel_b + COLS)
+;
+
+: size_left() (( -- ))
+    set_sel_b(sel_b - 1)
+;
+
+: size_right() (( -- ))
+    set_sel_b(sel_b + 1)
+;
+
+: scroll_by(delta = num) (( -- ))
+    let ?new_scroll = scroll_pos + delta
+    if new_scroll < 0
+        new_scroll = 0
+    let total_rows = stdr.floor(buf_len / COLS)
+    let ?max_s = 0
+    if total_rows > ROWS
+        max_s = total_rows - ROWS
+    if new_scroll > max_s
+        new_scroll = max_s
+    if new_scroll != scroll_pos
+        scroll_pos = new_scroll
+        dirty = true
+;
+
+--| Editing |--
+
+: insert_hex(c = string) (( -- ))
+    let v = hex_val(c)
+    if v < 0
+        <-
+    for (let ?addr = sel_a; addr <= sel_b; addr += 1)
+        if addr < buf_len
+            let byte = buffer[addr]
+            if nibble == 0
+                buffer[addr] = v * 16 + byte % 16
+            else
+                buffer[addr] = stdr.floor(byte / 16) * 16 + v
+    if nibble == 0
+        nibble = 1
+    else
+        nibble = 0
+    changed = true
+    dirty = true
+;
+
+: erase() (( -- ))
+    for (let ?addr = sel_a; addr <= sel_b; addr += 1)
+        if addr < buf_len
+            buffer[addr] = 0
+    changed = true
+    dirty = true
+;
+
+: copy_sel() (( -- ))
+    clip = []: [any]
+    for (let ?addr = sel_a; addr <= sel_b; addr += 1)
+        if addr < buf_len
+            stdr.push(clip, buffer[addr])
+;
+
+: paste_sel() (( -- ))
+    let n = stdr.len(clip)
+    if n == 0
+        <-
+    for (let ?i = 0; i < n; i += 1)
+        let addr = sel_a + i
+        if addr < buf_len
+            buffer[addr] = clip[i]
+    changed = true
+    dirty = true
+;
+
+--| Project |--
+
+: new_project() (( -- ))
+    buffer = []: [any]
+    for (let ?i = 0; i < 1152; i += 1)
+        stdr.push(buffer, 0)
+    buf_len = 1152
+    sel_a = 0
+    sel_b = 0
+    scroll_pos = 0
+    nibble = 0
+    file_path = ""
+    changed = false
+    dirty = true
+;
+
+: set_buffer(bytes = any) (( -- ))
+    buffer = []: [any]
+    let n = stdr.len(bytes)
+    if n > MAX_SIZE
+        n = MAX_SIZE
+    for (let ?i = 0; i < n; i += 1)
+        stdr.push(buffer, bytes[i])
+    buf_len = n
+    sel_a = 0
+    sel_b = 0
+    scroll_pos = 0
+    nibble = 0
+    changed = false
+    dirty = true
+;
+
+: mark_changed() (( -- ))
+    if !changed
+        changed = true
+        dirty = true
+;
+
+: mark_saved() (( -- ))
+    changed = false
+    dirty = true
+;
+
+: clear_dirty() (( -- ))
+    dirty = false
+;
+
+: set_file_path(path = string) (( -- ))
+    file_path = path
+;
+
+: set_dirty() (( -- ))
+    dirty = true
+;

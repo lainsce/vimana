@@ -1,0 +1,368 @@
+cask casevo_model
+
+bring stdr
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Grid dimensions (matching Nebu: 8 columns A-H, 128 rows)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def COLS = 8
+def ROWS = 128
+def CELL_CHAR_LIMIT = 31
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Layout constants
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def WIN_W = 576
+def WIN_H = 352
+def HEADER_H = 0
+def COL_W = 64
+def ROW_H = 16
+def ROW_HEADER_W = 64
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Palette slots
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def C_BG = 0
+def C_FG = 1
+def C_SEL = 2
+def C_ACCENT = 3
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mutable state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Cell storage: flat array of strings, indexed by row * COLS + col
+def ?cells = []: [any]
+
+-- Selection
+def ?sel_ax = 0
+def ?sel_ay = 0
+def ?sel_bx = 0
+def ?sel_by = 0
+
+-- Scroll
+def ?scroll_y = 0
+
+-- Edit state
+def ?editing = false
+def ?edit_buf = ""
+
+-- File state
+def ?file_path = "untitled.csv"
+def ?file_changed = false
+def ?separator = ","
+
+-- Display
+def ?dirty = true
+def ?viewport_rows = 22
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Dirty flag
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: set_dirty() (( -- ))
+    dirty = true
+;
+
+:: consume_dirty() (( bool ))
+    if dirty
+        dirty = false
+        <- true
+    <- false
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Cell access
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: cell_index(col = num, row = num) (( num ))
+    <- row * COLS + col
+;
+
+:: get_cell(col = num, row = num) (( string ))
+    if col < 0 || col >= COLS || row < 0 || row >= ROWS
+        <- ""
+    let idx = cell_index(col, row)
+    let val = cells[idx] ?? ""
+    <- str(val)
+;
+
+:: set_cell(col = num, row = num, value = string) (( -- ))
+    if col < 0 || col >= COLS || row < 0 || row >= ROWS
+        <-
+    let idx = cell_index(col, row)
+    cells[idx] = value
+    file_changed = true
+    dirty = true
+;
+
+:: clear_cell(col = num, row = num) (( -- ))
+    set_cell(col, row, "")
+;
+
+:: clear_all() (( -- ))
+    cells = []: [any]
+    file_changed = false
+    dirty = true
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Selection
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: sel_start() (( [num] ))
+    let ?ax = sel_ax
+    let ?ay = sel_ay
+    let ?bx = sel_bx
+    let ?by = sel_by
+    if ay > by
+        let tmp = ay
+        ay = by
+        by = tmp
+        let tmp2 = ax
+        ax = bx
+        bx = tmp2
+    elif ay == by && ax > bx
+        let tmp3 = ax
+        ax = bx
+        bx = tmp3
+    <- [ax, ay]
+;
+
+:: sel_end() (( [num] ))
+    let ?ax = sel_ax
+    let ?ay = sel_ay
+    let ?bx = sel_bx
+    let ?by = sel_by
+    if ay > by
+        let tmp = ay
+        ay = by
+        by = tmp
+        let tmp2 = ax
+        ax = bx
+        bx = tmp2
+    elif ay == by && ax > bx
+        let tmp3 = ax
+        ax = bx
+        bx = tmp3
+    <- [bx, by]
+;
+
+:: is_selected(col = num, row = num) (( bool ))
+    let s = sel_start()
+    let e = sel_end()
+    let sx = num(s[0] ?? 0)
+    let sy = num(s[1] ?? 0)
+    let ex = num(e[0] ?? 0)
+    let ey = num(e[1] ?? 0)
+    <- col >= sx && col <= ex && row >= sy && row <= ey
+;
+
+:: set_selection(ax = num, ay = num) (( -- ))
+    sel_ax = ax
+    sel_ay = ay
+    sel_bx = ax
+    sel_by = ay
+    editing = false
+    edit_buf = ""
+    dirty = true
+;
+
+:: extend_selection(bx = num, by = num) (( -- ))
+    if bx < 0
+        bx = 0
+    if bx >= COLS
+        bx = COLS - 1
+    if by < 0
+        by = 0
+    if by >= ROWS
+        by = ROWS - 1
+    if sel_bx != bx || sel_by != by
+        sel_bx = bx
+        sel_by = by
+        dirty = true
+;
+
+:: move_sel(dx = num, dy = num) (( -- ))
+    let nx = sel_bx + dx
+    let ny = sel_by + dy
+    if nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS
+        <-
+    sel_ax = nx
+    sel_ay = ny
+    sel_bx = nx
+    sel_by = ny
+    editing = false
+    edit_buf = ""
+    ensure_visible(ny)
+    dirty = true
+;
+
+:: active_col() (( num ))
+    <- sel_bx
+;
+
+:: active_row() (( num ))
+    <- sel_by
+;
+
+:: active_cell_text() (( string ))
+    <- get_cell(sel_bx, sel_by)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Scroll
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: ensure_visible(row = num) (( -- ))
+    if row < scroll_y
+        scroll_y = row
+        dirty = true
+    elif row >= scroll_y + viewport_rows
+        scroll_y = row - viewport_rows + 1
+        dirty = true
+;
+
+:: scroll_by(delta = num) (( -- ))
+    let ny = scroll_y + delta
+    if ny < 0
+        ny = 0
+    let max_scroll = ROWS - viewport_rows
+    if max_scroll < 0
+        max_scroll = 0
+    if ny > max_scroll
+        ny = max_scroll
+    if ny != scroll_y
+        scroll_y = ny
+        dirty = true
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Edit mode
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: start_editing() (( -- ))
+    editing = true
+    edit_buf = get_cell(sel_bx, sel_by)
+    dirty = true
+;
+
+:: insert_char(ch = string) (( -- ))
+    if stdr.len(edit_buf) >= CELL_CHAR_LIMIT
+        <-
+    if !editing
+        editing = true
+        edit_buf = ""
+    edit_buf = edit_buf + ch
+    dirty = true
+;
+
+:: erase_char() (( -- ))
+    if !editing
+        <-
+    let n = stdr.len(edit_buf)
+    if n > 0
+        edit_buf = stdr.slice(edit_buf, 0, n - 1)
+        dirty = true
+;
+
+:: commit_edit() (( -- ))
+    if editing
+        set_cell(sel_bx, sel_by, edit_buf)
+        editing = false
+        edit_buf = ""
+        dirty = true
+;
+
+:: cancel_edit() (( -- ))
+    editing = false
+    edit_buf = ""
+    dirty = true
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Column / row labels
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: col_label(col = num) (( string ))
+    if col == 0
+        <- "A"
+    if col == 1
+        <- "B"
+    if col == 2
+        <- "C"
+    if col == 3
+        <- "D"
+    if col == 4
+        <- "E"
+    if col == 5
+        <- "F"
+    if col == 6
+        <- "G"
+    <- "H"
+;
+
+:: row_label(row = num) (( string ))
+    <- str(row)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Delete selection contents
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: delete_selection() (( -- ))
+    let s = sel_start()
+    let e = sel_end()
+    let sx = num(s[0] ?? 0)
+    let sy = num(s[1] ?? 0)
+    let ex = num(e[0] ?? 0)
+    let ey = num(e[1] ?? 0)
+    for (let ?r = sy; r <= ey; r += 1)
+        for (let ?c = sx; c <= ex; c += 1)
+            clear_cell(c, r)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File metadata
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: set_separator(s = string) (( -- ))
+    separator = s
+;
+
+:: set_file_path(p = string) (( -- ))
+    file_path = p
+;
+
+:: set_file_changed(v = bool) (( -- ))
+    file_changed = v
+;
+
+:: set_scroll_y(v = num) (( -- ))
+    scroll_y = v
+    dirty = true
+;
+
+:: set_editing(v = bool) (( -- ))
+    editing = v
+    dirty = true
+;
+
+:: set_viewport_rows(v = num) (( -- ))
+    viewport_rows = v
+;
+
+:: mark_saved() (( -- ))
+    file_changed = false
+    dirty = true
+;
+
+:: title_text() (( string ))
+    let base = file_path
+    if file_changed
+        <- base + "*"
+    <- base
+;

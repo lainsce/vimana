@@ -1,0 +1,125 @@
+cask cal_events
+
+bring stdr
+bring vimana
+bring cal_date
+bring cal_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Event storage
+-- Events are stored per-year as plain text files, one event per line:
+--   YYYY-MM-DD<tab>description
+-- Wildcard month (*) matches every month (annual events).
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: events_dir(sys = vimana.system) (( string ))
+    <- sys.home_dir() + "/.calendar"
+;
+
+: events_path(sys = vimana.system, y = num) (( string ))
+    <- events_dir(sys) + "/" + str(y) + ".txt"
+;
+
+-- Load events blob for current view year
+: load_events(sys = vimana.system, fsys = vimana.file) (( -- ))
+    let dir = events_dir(sys)
+    if !fsys.exists(dir)
+        cal_model.set_events_blob("")
+        <-
+    let path = events_path(sys, cal_model.view_year)
+    if fsys.exists(path)
+        cal_model.set_events_blob(fsys.read_text(path))
+    else
+        cal_model.set_events_blob("")
+;
+
+-- Save current events blob
+: save_events(sys = vimana.system, fsys = vimana.file) (( -- ))
+    let dir = events_dir(sys)
+    if !fsys.exists(dir)
+        <-
+    let path = events_path(sys, cal_model.view_year)
+    fsys.write_text(path, cal_model.events_blob)
+;
+
+-- Find event text for a specific day (1-based) in current view month
+: find_event(day = num) (( string ))
+    let target = str(cal_model.view_year) + "-" + cal_date.pad2(cal_model.view_month) + "-" + cal_date.pad2(day)
+    let blob = cal_model.events_blob
+    let n = stdr.len(blob)
+    let ?i = 0
+    for (; i < n;)
+        -- scan for newline or end
+        let ?eol = i
+        for (; eol < n && stdr.char_at(blob, eol) != "\n"; eol += 1)
+            let _nop = 0
+        -- extract line
+        let line = stdr.slice(blob, i, eol)
+        -- advance past newline
+        if eol < n
+            i = eol + 1
+        else
+            i = n
+        -- match date prefix YYYY-MM-DD
+        if stdr.len(line) >= 10
+            let prefix = stdr.slice(line, 0, 10)
+            if prefix == target
+                if stdr.len(line) > 10
+                    <- stdr.slice(line, 10, stdr.len(line))
+                <- ""
+    <- ""
+;
+
+-- Check if day has any event
+: has_event(day = num) (( bool ))
+    <- find_event(day) != ""
+;
+
+-- Build date key for a specific day: "YYYY-MM-DD"
+: date_key(day = num) (( string ))
+    <- str(cal_model.view_year) + "-" + cal_date.pad2(cal_model.view_month) + "-" + cal_date.pad2(day)
+;
+
+-- Remove all lines matching a date key from the blob
+: remove_lines(key = string) (( string ))
+    let blob = cal_model.events_blob
+    let n = stdr.len(blob)
+    let ?result = ""
+    let ?i = 0
+    for (; i < n;)
+        let ?eol = i
+        for (; eol < n && stdr.char_at(blob, eol) != "\n"; eol += 1)
+            let _nop = 0
+        let line = stdr.slice(blob, i, eol)
+        if eol < n
+            i = eol + 1
+        else
+            i = n
+        if stdr.len(line) >= 10
+            let prefix = stdr.slice(line, 0, 10)
+            if prefix == key
+                let _skip = 0
+            else
+                result = result + line + "\n"
+        elif stdr.len(line) > 0
+            result = result + line + "\n"
+    <- result
+;
+
+-- Set event text for selected day (replaces existing, or adds new)
+: set_event(sys = vimana.system, fsys = vimana.file, day = num, text = string) (( -- ))
+    let key = date_key(day)
+    let ?blob = remove_lines(key)
+    if stdr.len(text) > 0
+        blob = blob + key + "\t" + text + "\n"
+    cal_model.set_events_blob(blob)
+    save_events(sys, fsys)
+;
+
+-- Delete event for selected day
+: delete_event(sys = vimana.system, fsys = vimana.file, day = num) (( -- ))
+    let key = date_key(day)
+    let blob = remove_lines(key)
+    cal_model.set_events_blob(blob)
+    save_events(sys, fsys)
+;

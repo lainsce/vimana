@@ -79,6 +79,9 @@ def ?prefix_folders = 0
 def ?prefix_tracks  = 0
 def ?frame_count    = 0
 def ?title_scroll   = 0
+def ?shuffle_order  = []: [any]
+def ?shuffle_pos    = 0
+def ?shuffle_seed   = 1
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Computed helpers
@@ -288,6 +291,43 @@ def ?title_scroll   = 0
 
 : toggle_shuffle() (( -- ))
     shuffle = !shuffle
+;
+
+-- Build a shuffled permutation of 0..n-1 using Fisher-Yates
+: build_shuffle(num_tracks = num, seed = num) (( -- ))
+    shuffle_order = []: [any]
+    shuffle_pos   = 0
+    shuffle_seed  = seed
+    if num_tracks <= 0
+        <-
+    -- Fill with sequential indices
+    for (let ?i = 0; i < num_tracks; i += 1)
+        stdr.push(shuffle_order, i)
+    -- Fisher-Yates shuffle using LCG (Park-Miller)
+    let ?rng = seed
+    if rng <= 0
+        rng = 1
+    for (let ?i = num_tracks - 1; i > 0; i -= 1)
+        rng = stdr.floor((rng * 16807) % 2147483647)
+        let j = stdr.floor(rng % (i + 1))
+        let tmp = shuffle_order[i]
+        shuffle_order[i] = shuffle_order[j]
+        shuffle_order[j] = tmp
+;
+
+: next_shuffle_track() (( num ))
+    let n = stdr.len(shuffle_order)
+    if n == 0
+        <- 0
+    if shuffle_pos >= n
+        <- -1
+    let idx = stdr.floor(shuffle_order[shuffle_pos] ?? 0)
+    shuffle_pos += 1
+    <- idx
+;
+
+: reset_shuffle_pos() (( -- ))
+    shuffle_pos = 0
 ;
 
 : change_volume(delta = num) (( -- ))

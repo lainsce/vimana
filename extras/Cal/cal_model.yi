@@ -1,0 +1,230 @@
+cask cal_model
+
+bring stdr
+bring vimana
+bring cal_date
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Layout constants
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def WIN_W = 576
+def WIN_H = 376
+
+def GRID_X = 8
+def GRID_Y = 48
+def CELL_W = 80
+def CELL_H = 48
+def COLS = 7
+def ROWS = 6
+def WEEKDAY_Y = 26
+
+-- Palette slot indices
+def C_BG = 0
+def C_FG = 1
+def C_ACCENT = 2
+def C_HIGHLIGHT = 3
+
+-- Keyboard scancodes (SDL)
+def KEY_ESCAPE = 41
+def KEY_LEFT = 80
+def KEY_RIGHT = 79
+def KEY_UP = 82
+def KEY_DOWN = 81
+def KEY_RETURN = 40
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mutable state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Currently viewed month/year
+def ?view_year = 2026
+def ?view_month = 4
+
+-- Selected day (1-based day of month)
+def ?sel_day = 5
+
+-- Today snapshot
+def ?today_year = 2026
+def ?today_month = 4
+def ?today_day = 5
+
+-- Dirty flag for redraw
+def ?dirty = true
+
+-- Events text blob for current month file
+def ?events_blob = ""
+
+-- Input mode state
+def ?input_mode = false
+def ?input_buf = ""
+
+-- Corner hover state: 0=default, 1=next(hover above fold), 2=back
+def ?corner_state = 0
+
+def KEY_TAB = 43
+def KEY_BACKSPACE = 42
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Computed helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- First day offset: which column (0=Sun) does day 1 fall on?
+: first_offset() (( num ))
+    <- cal_date.day_of_week(view_year, view_month, 1)
+;
+
+-- Number of days in current view month
+: num_days() (( num ))
+    <- cal_date.days_in_month(view_month, view_year)
+;
+
+
+
+-- Is the currently viewed month the same as "today"?
+: is_current_month() (( bool ))
+    <- view_year == today_year && view_month == today_month
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- State mutations
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: mark_dirty() (( -- ))
+    dirty = true
+;
+
+: set_events_blob(blob = string) (( -- ))
+    events_blob = blob
+;
+
+: consume_dirty() (( bool ))
+    if dirty
+        dirty = false
+        <- true
+    <- false
+;
+
+: snap_today(dt = vimana.datetime) (( -- ))
+    today_year  = dt.year()
+    today_month = dt.month()
+    today_day   = dt.day()
+;
+
+: go_today(dt = vimana.datetime) (( -- ))
+    snap_today(dt)
+    view_year  = today_year
+    view_month = today_month
+    sel_day    = today_day
+    mark_dirty()
+;
+
+: select_day(d = num) (( -- ))
+    let nd = num_days()
+    if d >= 1 && d <= nd
+        sel_day = d
+        mark_dirty()
+;
+
+: prev_day() (( -- ))
+    if sel_day > 1
+        sel_day = sel_day - 1
+        mark_dirty()
+    else
+        prev_month_end()
+;
+
+: next_day() (( -- ))
+    if sel_day < num_days()
+        sel_day = sel_day + 1
+        mark_dirty()
+    else
+        next_month_start()
+;
+
+: prev_week() (( -- ))
+    if sel_day > 7
+        sel_day = sel_day - 7
+        mark_dirty()
+    else
+        prev_month_end()
+;
+
+: next_week() (( -- ))
+    if sel_day + 7 <= num_days()
+        sel_day = sel_day + 7
+        mark_dirty()
+    else
+        next_month_start()
+;
+
+: prev_month() (( -- ))
+    if view_month == 1
+        view_month = 12
+        view_year = view_year - 1
+    else
+        view_month = view_month - 1
+    let nd = num_days()
+    if sel_day > nd
+        sel_day = nd
+    mark_dirty()
+;
+
+: next_month() (( -- ))
+    if view_month == 12
+        view_month = 1
+        view_year = view_year + 1
+    else
+        view_month = view_month + 1
+    let nd = num_days()
+    if sel_day > nd
+        sel_day = nd
+    mark_dirty()
+;
+
+: prev_month_end() (( -- ))
+    prev_month()
+    sel_day = num_days()
+    mark_dirty()
+;
+
+: next_month_start() (( -- ))
+    next_month()
+    sel_day = 1
+    mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Input mode
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: start_input(existing = string) (( -- ))
+    input_mode = true
+    input_buf = existing
+    mark_dirty()
+;
+
+: cancel_input() (( -- ))
+    input_mode = false
+    input_buf = ""
+    mark_dirty()
+;
+
+: set_input_buf(s = string) (( -- ))
+    input_buf = s
+    mark_dirty()
+;
+
+: set_corner_state(s = num) (( -- ))
+    if s == corner_state
+        <-
+    corner_state = s
+    mark_dirty()
+;
+
+: finish_input() (( string ))
+    input_mode = false
+    let result = input_buf
+    input_buf = ""
+    <- result
+;

@@ -145,10 +145,26 @@ bring musi_assets
     let num_tracks = stdr.len(musi_model.tracks)
     if num_tracks == 0
         <-
-    let ?next = musi_model.sel_track + 1
     if musi_model.shuffle
-        next = sys.ticks() % num_tracks
-    elif next >= num_tracks
+        let next = musi_model.next_shuffle_track()
+        if next < 0
+            -- Exhausted the shuffled list
+            if musi_model.repeat
+                -- Re-shuffle and continue
+                musi_model.build_shuffle(num_tracks, sys.ticks())
+                let next2 = musi_model.next_shuffle_track()
+                if next2 >= 0
+                    play_track(sys, scr, next2)
+                <-
+            else
+                -- Stop playback
+                musi_model.set_playing(false)
+                fit_window(scr)
+                <-
+        play_track(sys, scr, next)
+        <-
+    let ?next = musi_model.sel_track + 1
+    if next >= num_tracks
         if musi_model.repeat
             next = 0
         else
@@ -193,6 +209,8 @@ bring musi_assets
         let track_idx = list_idx - num_folders
         if !musi_model.playing
             musi_model.set_playing(true)
+        if musi_model.shuffle
+            musi_model.build_shuffle(stdr.len(musi_model.tracks), sys.ticks())
         play_track(sys, scr, track_idx)
 ;
 
@@ -240,6 +258,8 @@ bring musi_assets
             <-
         if in_rect(mx, my, musi_model.CTRL_SHUF_X * 8, musi_model.CTRL_Y * 8, 24, 16)
             musi_model.toggle_shuffle()
+            if musi_model.shuffle
+                musi_model.build_shuffle(stdr.len(musi_model.tracks), sys.ticks())
             <-
         <-
 

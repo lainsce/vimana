@@ -394,6 +394,15 @@ static YisVal __vimana_system_home_dir(YisVal sysv) {
   return out;
 }
 
+static void __vimana_system_play_tone(YisVal sysv, YisVal pitchv,
+                                      YisVal durationv, YisVal volumev) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.play_tone expects system");
+  vimana_system_play_tone(system, (int)yis_as_int(pitchv),
+                          (int)yis_as_int(durationv),
+                          (int)yis_as_int(volumev));
+}
+
 static YisVal __vimana_screen(YisVal titlev, YisVal widthv, YisVal heightv,
                               YisVal scalev) {
   YisStr *tmp = NULL;

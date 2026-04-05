@@ -1,0 +1,314 @@
+cask cal_view
+
+bring stdr
+bring vimana
+
+bring cal_date
+bring cal_font
+bring cal_model
+bring cal_events
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Drawing primitives
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    scr.set_auto(1)
+    for (let ?row = 0; row < h; row += 1)
+        scr.set_y(y + row)
+        scr.set_x(x)
+        for (let ?col = 0; col < w; col += 1)
+            scr.pixel(c)
+    scr.set_auto(0)
+;
+
+: hline(scr = vimana.screen, x = num, y = num, w = num, c = num) (( -- ))
+    scr.set_auto(1)
+    scr.set_y(y)
+    scr.set_x(x)
+    for (let ?i = 0; i < w; i += 1)
+        scr.pixel(c)
+    scr.set_auto(0)
+;
+
+: vline(scr = vimana.screen, x = num, y = num, h = num, c = num) (( -- ))
+    for (let ?i = 0; i < h; i += 1)
+        scr.set_y(y + i)
+        scr.set_x(x)
+        scr.pixel(c)
+;
+
+-- Bottom decorative bar icon (striped border pattern)
+def BOTTOM_ICN = ["ff00", "ff00", "ff00", "ffff"]
+
+-- Hash pattern for outside-of-month cells (diagonal dots matching hash-icn)
+: draw_hash(scr = vimana.screen, cx = num, cy = num, cw = num, ch = num) (( -- ))
+    for (let ?py = 0; py < ch; py += 2)
+        let xoff = stdr.floor(py / 2) % 2 * 2
+        for (let ?px = xoff; px < cw; px += 4)
+            scr.set_y(cy + py)
+            scr.set_x(cx + px)
+            scr.pixel(cal_model.C_FG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Dog-ear corner (bottom-left, 24×32 px fold for month navigation)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_corner(scr = vimana.screen) (( -- ))
+    let state = cal_model.corner_state
+    let cy = cal_model.WIN_H - 32
+
+    -- Fold crease Y offset depends on state:
+    -- default=3, next=1 (bigger fold), back=5 (smaller fold)
+    let ?crease = 3
+    if state == 1
+        crease = 1
+    elif state == 2
+        crease = 5
+
+    -- Back state: draw extra triangle above the crease (previous page peek)
+    if state == 2
+        let back_start = 11
+        scr.set_auto(1)
+        for (let ?r = 0; r < crease; r += 1)
+            let diag_x = back_start + (crease - 1 - r)
+            for (let ?px = 0; px < diag_x; px += 1)
+                scr.set_y(cy + r)
+                scr.set_x(px)
+                scr.pixel(cal_model.C_ACCENT)
+            scr.set_y(cy + r)
+            scr.set_x(diag_x)
+            scr.pixel(cal_model.C_FG)
+        scr.set_auto(0)
+
+    -- Horizontal fold crease line
+    hline(scr, 0, cy + crease, 22, cal_model.C_FG)
+
+    -- Accent-filled triangle below crease + diagonal line
+    let fold_h = 24 - crease - 1
+    scr.set_auto(1)
+    for (let ?row = 1; row <= fold_h; row += 1)
+        let y = cy + crease + row
+        let fill_start = row + 1
+        if fill_start <= 20
+            scr.set_y(y)
+            scr.set_x(fill_start)
+            for (let ?px = fill_start; px <= 20; px += 1)
+                scr.pixel(cal_model.C_ACCENT)
+    scr.set_auto(0)
+
+    -- Diagonal fold line
+    for (let ?d = 0; d < fold_h; d += 1)
+        scr.set_y(cy + crease + 1 + d)
+        scr.set_x(d + 1)
+        scr.pixel(cal_model.C_FG)
+
+    -- Right vertical border of fold
+    vline(scr, 21, cy + crease + 1, fold_h, cal_model.C_FG)
+
+    -- Bottom connecting pixels
+    hline(scr, 21, cy + 24, 3, cal_model.C_FG)
+
+    -- Bottom border stripes within corner area
+    hline(scr, 0, cy + 26, 24, cal_model.C_FG)
+    hline(scr, 0, cy + 28, 24, cal_model.C_FG)
+    hline(scr, 0, cy + 30, 24, cal_model.C_FG)
+    hline(scr, 0, cy + 31, 24, cal_model.C_FG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Bottom decorative border (striped pattern across window bottom)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_bottom_bar(scr = vimana.screen) (( -- ))
+    let ty = (cal_model.WIN_H - 8) / 8
+    for (let ?tx = 3; tx < cal_model.WIN_W / 8; tx += 1)
+        scr.put_icn(tx, ty, BOTTOM_ICN, cal_model.C_FG, cal_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Bullet sprite: filled circle for today's weekday indicator
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_bullet(scr = vimana.screen, x = num, y = num, color = num) (( -- ))
+    hline(scr, x + 1, y, 3, color)
+    hline(scr, x, y + 1, 5, color)
+    hline(scr, x, y + 2, 5, color)
+    hline(scr, x, y + 3, 5, color)
+    hline(scr, x + 1, y + 4, 3, color)
+;
+
+-- Truncate text to fit in max_chars; add ~ if truncated
+: clamp_text(text = string, max_chars = num) (( string ))
+    let n = stdr.len(text)
+    if n <= max_chars
+        <- text
+    <- stdr.slice(text, 0, max_chars - 1) + "~"
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Header: title centered (matches original)
+-- Current month: "DotW DD Mon YYYY"
+-- Other month: "Mon YYYY"
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_header(scr = vimana.screen) (( -- ))
+    let ?title = ""
+    if cal_model.is_current_month()
+        let dotw = cal_date.day_of_week(cal_model.today_year, cal_model.today_month, cal_model.today_day)
+        title = cal_date.dotw_name(dotw) + " " + str(cal_model.today_day) + " " + cal_date.month_name(cal_model.today_month) + " " + str(cal_model.today_year)
+    else
+        title = cal_date.month_name(cal_model.view_month) + " " + str(cal_model.view_year)
+
+    scr.set_titlebar_title(title)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Day-of-week column headers at y=26
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_weekdays(scr = vimana.screen) (( -- ))
+    for (let ?col = 0; col < 7; col += 1)
+        let name = cal_date.dotw_name(col)
+        let x = cal_model.GRID_X + col * cal_model.CELL_W + 4
+        scr.put_text(x, cal_model.WEEKDAY_Y, name, cal_model.C_FG, cal_model.C_BG)
+
+    -- Bullet dot on today's weekday column
+    if cal_model.is_current_month()
+        let todotw = cal_date.day_of_week(cal_model.today_year, cal_model.today_month, cal_model.today_day)
+        let bx = cal_model.GRID_X + todotw * cal_model.CELL_W + 67
+        draw_bullet(scr, bx, cal_model.WEEKDAY_Y + 5, cal_model.C_HIGHLIGHT)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Grid lines (always 6 rows)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_grid(scr = vimana.screen) (( -- ))
+    let gw = cal_model.COLS * cal_model.CELL_W
+    let gh = cal_model.ROWS * cal_model.CELL_H
+
+    -- Horizontal lines
+    for (let ?r = 0; r <= cal_model.ROWS; r += 1)
+        let y = cal_model.GRID_Y + r * cal_model.CELL_H
+        hline(scr, cal_model.GRID_X, y, gw, cal_model.C_FG)
+
+    -- Vertical lines
+    for (let ?c = 0; c <= cal_model.COLS; c += 1)
+        let x = cal_model.GRID_X + c * cal_model.CELL_W
+        vline(scr, x, cal_model.GRID_Y, gh, cal_model.C_FG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw a single cell by grid index (0-41)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_cell(scr = vimana.screen, idx = num) (( -- ))
+    let col = idx % 7
+    let row = stdr.floor(idx / 7)
+    let cx = cal_model.GRID_X + col * cal_model.CELL_W + 1
+    let cy = cal_model.GRID_Y + row * cal_model.CELL_H + 1
+    let cw = cal_model.CELL_W - 1
+    let ch = cal_model.CELL_H - 1
+
+    let offset = cal_model.first_offset()
+    let nd = cal_model.num_days()
+    let day_num = idx - offset + 1
+
+    -- Outside month: hash pattern
+    if idx < offset || day_num > nd
+        draw_hash(scr, cx, cy, cw, ch)
+        <-
+
+    let is_sel = day_num == cal_model.sel_day
+    let is_today = cal_model.is_current_month() && day_num == cal_model.today_day && !is_sel
+    let ev = cal_events.find_event(day_num)
+    let has_ev = ev != ""
+
+    if is_sel
+        -- Selected: accent bg, arvelie date + event in light color
+        fill(scr, cx, cy, cw, ch, cal_model.C_ACCENT)
+        let arv = cal_date.arvelie(cal_model.view_year, cal_model.view_month, day_num)
+        scr.put_text(cx + 3, cy + 2, str(day_num) + "  " + arv, cal_model.C_BG, cal_model.C_ACCENT)
+        if has_ev
+            let ev_text = clamp_text(ev, 8)
+            scr.put_text(cx + 4, cy + 18, ev_text, cal_model.C_BG, cal_model.C_ACCENT)
+    elif is_today
+        -- Today: dark bg, date in accent, event in highlight
+        fill(scr, cx, cy, cw, ch, cal_model.C_FG)
+        scr.put_text(cx + 3, cy + 2, str(day_num), cal_model.C_ACCENT, cal_model.C_FG)
+        if has_ev
+            let ev_text = clamp_text(ev, 8)
+            scr.put_text(cx + 4, cy + 18, ev_text, cal_model.C_HIGHLIGHT, cal_model.C_FG)
+    elif has_ev
+        -- Event: highlight bg, text in fg
+        fill(scr, cx, cy, cw, ch, cal_model.C_HIGHLIGHT)
+        scr.put_text(cx + 3, cy + 2, str(day_num), cal_model.C_FG, cal_model.C_HIGHLIGHT)
+        let ev_text = clamp_text(ev, 8)
+        scr.put_text(cx + 4, cy + 18, ev_text, cal_model.C_FG, cal_model.C_HIGHLIGHT)
+    else
+        -- Default: just day number
+        scr.put_text(cx + 3, cy + 2, str(day_num), cal_model.C_FG, cal_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Footer: nav arrows + selected day event detail (at bottom)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_footer(scr = vimana.screen) (( -- ))
+    if cal_model.input_mode
+        draw_input_bar(scr)
+        <-
+    -- Event detail for selected day
+    let ev = cal_events.find_event(cal_model.sel_day)
+    if ev != ""
+        let ev_display = clamp_text(ev, 60)
+        scr.put_text(32, cal_model.WIN_H - 30, ev_display, cal_model.C_FG, cal_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Input bar for event editing (shown at footer area when input_mode is active)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_input_bar(scr = vimana.screen) (( -- ))
+    let text_x = 32
+    let text_y = cal_model.WIN_H - 30
+
+    -- Dotted underline across footer area (alternating pixels at bottom of text row)
+    let uy = text_y + 15
+    for (let ?px = text_x; px < cal_model.WIN_W - 8; px += 2)
+        scr.set_y(uy)
+        scr.set_x(px)
+        scr.pixel(cal_model.C_FG)
+
+    -- Typed text in FG color (no date prefix, matching original)
+    let buf = cal_model.input_buf
+    scr.put_text(text_x, text_y, buf, cal_model.C_FG, cal_model.C_BG)
+
+    -- Cursor | in highlight color
+    let tw = cal_font.text_width(buf)
+    scr.put_text(text_x + tw, text_y, "|", cal_model.C_HIGHLIGHT, cal_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Full redraw
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_all(scr = vimana.screen) (( -- ))
+    scr.clear(cal_model.C_BG)
+
+    draw_header(scr)
+    draw_weekdays(scr)
+    draw_grid(scr)
+
+    -- Draw all 42 cells (6 rows x 7 cols)
+    for (let ?i = 0; i < 42; i += 1)
+        draw_cell(scr, i)
+
+    draw_footer(scr)
+    draw_bottom_bar(scr)
+    draw_corner(scr)
+
+    scr.present()
+;

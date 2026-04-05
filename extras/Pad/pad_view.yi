@@ -1,0 +1,129 @@
+cask pad_view
+
+bring stdr
+bring vimana
+bring pad_model
+bring pad_font
+
+--| Frame-skip: snapshot previous state |--
+def ?_ps_text_rev = -1
+def ?_ps_caret = -1
+def ?_ps_sel_s = -1
+def ?_ps_sel_e = -1
+def ?_ps_page = -1
+def ?_ps_dirty = false
+def ?_ps_corner = -1
+
+: frame_changed() (( bool ))
+    if pad_model.text_rev != _ps_text_rev <- true
+    if pad_model.caret != _ps_caret <- true
+    if pad_model.sel_start != _ps_sel_s <- true
+    if pad_model.sel_end != _ps_sel_e <- true
+    if pad_model.current_page != _ps_page <- true
+    if pad_model.dirty != _ps_dirty <- true
+    if pad_model.corner_state != _ps_corner <- true
+    <- false
+;
+
+: save_snapshot() (( -- ))
+    _ps_text_rev = pad_model.text_rev
+    _ps_caret = pad_model.caret
+    _ps_sel_s = pad_model.sel_start
+    _ps_sel_e = pad_model.sel_end
+    _ps_page = pad_model.current_page
+    _ps_dirty = pad_model.dirty
+    _ps_corner = pad_model.corner_state
+;
+
+--| Cursor: 1px vertical line |--
+
+: draw_cursor(scr = vimana.screen, cx = num, cy = num) (( -- ))
+    for (let ?row = 0; row < pad_model.LINE_H; row += 1)
+        scr.set_x(cx)
+        scr.set_y(cy + row)
+        scr.pixel(pad_model.C_FG)
+;
+
+--| Text content with proportional wrapping, selection, and cursor |--
+
+: draw_content(scr = vimana.screen) (( -- ))
+    let code = pad_model.text()
+    let total = stdr.len(code)
+
+    -- Selection bounds
+    let pair = pad_model.sel_normalized()
+    let sel_a = stdr.floor(stdr.num(pair[0] ?? 0))
+    let sel_b = stdr.floor(stdr.num(pair[1] ?? 0))
+    let has_sel = pad_model.has_selection()
+
+    let ?px = pad_model.TEXT_X
+    let ?py = pad_model.TEXT_Y
+
+    for (let ?i = 0; i < total; i += 1)
+        if py >= pad_model.FOOTER_Y
+            break
+
+        let ch = stdr.char_at(code, i)
+
+        -- Draw cursor before this character
+        if i == pad_model.caret
+            draw_cursor(scr, px, py)
+
+        if ch == "\n"
+            px = pad_model.TEXT_X
+            py += pad_model.LINE_H
+        else
+            let cw = pad_font.get_char_width(stdr.char_code(ch))
+            if px + cw > pad_model.WRAP_X
+                px = pad_model.TEXT_X
+                py += pad_model.LINE_H
+
+            if py < pad_model.FOOTER_Y
+                if has_sel && i >= sel_a && i < sel_b
+                    scr.put_text(px, py, ch, pad_model.C_BG, pad_model.C_SEL)
+                else
+                    scr.put_text(px, py, ch, pad_model.C_FG, pad_model.C_BG)
+
+            px += cw
+
+    -- Cursor at end of text
+    if pad_model.caret >= total && py < pad_model.FOOTER_Y
+        draw_cursor(scr, px, py)
+;
+
+--| Corner dog-ear graphic (1bpp tiles) |--
+
+: draw_corner(scr = vimana.screen) (( -- ))
+    let state = pad_model.corner_state
+    let base_ty = stdr.floor(pad_model.FOOTER_Y / 8)
+    for (let ?row = 0; row < 4; row += 1)
+        for (let ?col = 0; col < 3; col += 1)
+            let idx = row * 3 + col
+            scr.put_icn(col, base_ty + row, pad_font.get_fold_tile(state, idx), pad_model.C_FG, pad_model.C_BG)
+;
+
+--| Footer: bottom bar and page number |--
+
+: draw_footer(scr = vimana.screen) (( -- ))
+    -- Bottom bar tiles at y=192 (tile_y=24), after corner (tx>=3)
+    let tile_y = stdr.floor((pad_model.WIN_H - 8) / 8)
+    for (let ?tx = 3; tx < 28; tx += 1)
+        scr.put_icn(tx, tile_y, pad_font.ICN_BOTTOM, pad_model.C_FG, pad_model.C_BG)
+
+    -- Page number centered at top of footer
+    let label = str(pad_model.current_page + 1)
+    scr.put_text(108, pad_model.FOOTER_Y + 2, label, pad_model.C_FG, pad_model.C_BG)
+;
+
+--| Main draw entry |--
+
+:: draw_all(scr = vimana.screen) (( -- ))
+    if !frame_changed()
+        <-
+    scr.clear(pad_model.C_BG)
+    draw_content(scr)
+    draw_corner(scr)
+    draw_footer(scr)
+    scr.present()
+    save_snapshot()
+;

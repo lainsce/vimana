@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <math.h>
 
 #define VIMANA_TITLEBAR_HEIGHT 24
 #define VIMANA_TITLEBAR_BAR_HEIGHT 21
@@ -28,6 +29,8 @@
 #define VIMANA_FONT_MAX_HEIGHT 24
 #define VIMANA_FONT_GLYPH_BYTES (VIMANA_FONT_MAX_HEIGHT * VIMANA_FONT_ROW_BYTES) /* 72 */
 #define VIMANA_TEXT_INPUT_CAP 256
+#define VIMANA_AUDIO_SAMPLE_RATE 44100
+#define VIMANA_AUDIO_CHANNELS 1
 #define VIMANA_SPRITE_1BPP_BYTES VIMANA_TILE_SIZE
 #define VIMANA_SPRITE_2BPP_BYTES (VIMANA_TILE_SIZE * 2)
 #define VIMANA_SPRITE_MEM_CAP 4192
@@ -67,7 +70,97 @@ struct VimanaSystem {
   int16_t tile_x;
   int16_t tile_y;
   char text_input[VIMANA_TEXT_INPUT_CAP];
+  SDL_AudioStream *audio_stream;
+  int audio_sample_rate;
+  float tone_phase;
+  float tone_freq_hz;
+  float tone_amp;
+  int tone_samples_left;
 };
+
+static float vimana_pitch_to_hz(int pitch) {
+  /* Uxn-style pitch domain in semitone steps; 57 ~= A4 (440Hz). */
+  float hz = 440.0f * powf(2.0f, ((float)pitch - 57.0f) / 12.0f);
+  if (hz < 40.0f)
+    hz = 40.0f;
+  if (hz > 4000.0f)
+    hz = 4000.0f;
+  return hz;
+}
+
+static void SDLCALL vimana_audio_stream_cb(void *userdata,
+                                           SDL_AudioStream *stream,
+                                           int additional_amount,
+                                           int total_amount) {
+  (void)total_amount;
+  vimana_system *system = (vimana_system *)userdata;
+  if (!system || !stream)
+    return;
+
+  int wanted = additional_amount;
+  if (wanted <= 0)
+    wanted = (int)(sizeof(float) * 256);
+  int sample_count = wanted / (int)sizeof(float);
+  if (sample_count <= 0)
+    sample_count = 256;
+
+  float *buffer = (float *)calloc((size_t)sample_count, sizeof(float));
+  if (!buffer)
+    return;
+
+  float phase = system->tone_phase;
+  float freq = system->tone_freq_hz;
+  float amp = system->tone_amp;
+  int left = system->tone_samples_left;
+  float step = (system->audio_sample_rate > 0)
+                   ? (freq / (float)system->audio_sample_rate)
+                   : 0.0f;
+  int tail = system->audio_sample_rate / 200; /* ~5ms release ramp */
+  if (tail < 1)
+    tail = 1;
+
+  for (int i = 0; i < sample_count; i++) {
+    float s = 0.0f;
+    if (left > 0 && step > 0.0f && amp > 0.0f) {
+      float env = (left < tail) ? ((float)left / (float)tail) : 1.0f;
+      s = ((phase < 0.5f) ? 1.0f : -1.0f) * amp * env;
+      left -= 1;
+      phase += step;
+      if (phase >= 1.0f)
+        phase -= floorf(phase);
+    }
+    buffer[i] = s;
+  }
+
+  system->tone_phase = phase;
+  system->tone_samples_left = left;
+  (void)SDL_PutAudioStreamData(stream, buffer,
+                               sample_count * (int)sizeof(float));
+  free(buffer);
+}
+
+static void vimana_system_init_audio(vimana_system *system) {
+  if (!system)
+    return;
+  SDL_AudioSpec spec;
+  SDL_zero(spec);
+  spec.freq = VIMANA_AUDIO_SAMPLE_RATE;
+  spec.format = SDL_AUDIO_F32;
+  spec.channels = VIMANA_AUDIO_CHANNELS;
+
+  system->audio_stream = SDL_OpenAudioDeviceStream(
+      SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec,
+      vimana_audio_stream_cb, system);
+  if (!system->audio_stream)
+    return;
+
+  system->audio_sample_rate = VIMANA_AUDIO_SAMPLE_RATE;
+  system->tone_phase = 0.0f;
+  system->tone_freq_hz = 0.0f;
+  system->tone_amp = 0.0f;
+  system->tone_samples_left = 0;
+  (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
+}
 
 static inline bool vimana_bit_get(const uint64_t *bits, int idx) {
   return (bits[idx >> 6] >> (idx & 63)) & 1;
@@ -465,8 +558,13 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
 
 vimana_system *vimana_system_new(void) {
   if (!SDL_WasInit(SDL_INIT_VIDEO)) {
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO))
       return NULL;
+  } else {
+    if (!SDL_WasInit(SDL_INIT_EVENTS))
+      (void)SDL_Init(SDL_INIT_EVENTS);
+    if (!SDL_WasInit(SDL_INIT_AUDIO))
+      (void)SDL_Init(SDL_INIT_AUDIO);
   }
   vimana_system *system = (vimana_system *)calloc(1, sizeof(vimana_system));
   if (!system)
@@ -475,6 +573,7 @@ vimana_system *vimana_system_new(void) {
   system->pointer_y = -1;
   system->tile_x = -1;
   system->tile_y = -1;
+  vimana_system_init_audio(system);
   return system;
 }
 
@@ -528,6 +627,39 @@ char *vimana_system_home_dir(vimana_system *system) {
   if (!home || !home[0])
     home = "/tmp";
   return strdup(home);
+}
+
+void vimana_system_play_tone(vimana_system *system, int pitch,
+                             int duration_ms, int volume) {
+  if (!system || !system->audio_stream)
+    return;
+  if (pitch < 0)
+    return;
+
+  if (duration_ms < 1)
+    duration_ms = 1;
+  else if (duration_ms > 2000)
+    duration_ms = 2000;
+
+  if (volume < 0)
+    volume = 0;
+  else if (volume > 15)
+    volume = 15;
+
+  int total_samples =
+      (int)(((int64_t)system->audio_sample_rate * duration_ms) / 1000);
+  if (total_samples < 1)
+    total_samples = 1;
+
+  float freq = vimana_pitch_to_hz(pitch);
+  float amp = ((float)volume / 15.0f) * 0.25f;
+
+  (void)SDL_LockAudioStream(system->audio_stream);
+  system->tone_freq_hz = freq;
+  system->tone_amp = amp;
+  system->tone_samples_left = total_samples;
+  (void)SDL_UnlockAudioStream(system->audio_stream);
+  (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
 }
 
 void vimana_system_run(vimana_system *system, vimana_screen *screen,
@@ -1326,11 +1458,11 @@ unsigned int vimana_device_tile_y(vimana_system *system) {
   return system ? system->tile_y : 0;
 }
 
-unsigned int vimana_device_wheel_x(vimana_system *system) {
+int vimana_device_wheel_x(vimana_system *system) {
   return system ? system->wheel_x : 0;
 }
 
-unsigned int vimana_device_wheel_y(vimana_system *system) {
+int vimana_device_wheel_y(vimana_system *system) {
   return system ? system->wheel_y : 0;
 }
 
@@ -1727,6 +1859,8 @@ void vimana_process_free(vimana_process *proc) {
 void vimana_system_free(vimana_system *system) {
   if (!system)
     return;
+  if (system->audio_stream)
+    SDL_DestroyAudioStream(system->audio_stream);
   free(system);
 }
 

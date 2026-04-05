@@ -1,0 +1,61 @@
+cask main
+
+bring stdr
+bring vimana
+
+bring casevo_model
+bring casevo_view
+bring casevo_input
+bring casevo_file
+bring casevo_calc
+bring casevo_font
+bring casevo_browser
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-> ()
+    let sys  = vimana.system()
+    let scr  = vimana.screen("Casevo", casevo_model.WIN_W, casevo_model.WIN_H, 1)
+    let dev  = sys.device()
+    let fsys = sys.file()
+
+    -- Set palette (Nebu-faithful)
+    scr.set_palette(casevo_model.C_BG,     "#FFFFFF")
+       .set_palette(casevo_model.C_FG,     "#000000")
+       .set_palette(casevo_model.C_SEL,    "#AAEEBB")
+       .set_palette(casevo_model.C_ACCENT, "#DDFFEE")
+
+    -- Setup Chicago proportional bitmap font
+    casevo_font.setup(scr)
+
+    -- Calculate viewport rows: (height - header) / row_h - 3
+    let usable_h = casevo_model.WIN_H - casevo_model.HEADER_H
+    casevo_model.set_viewport_rows(stdr.floor(usable_h / casevo_model.ROW_H) - 3)
+
+    -- Load file from command line argument if provided
+    let args = stdr.args()
+    if len(args) > 0
+        let path = str(args[0] ?? "")
+        if stdr.len(path) > 0
+            if fsys.exists(path)
+                casevo_file.load(fsys, path)
+
+    sys.run(scr, () => {
+        dev.poll()
+
+        -- Quit on titlebar button
+        if scr.titlebar_button_pressed()
+            sys.quit()
+
+        -- Input
+        casevo_input.on_mouse(dev, scr, fsys)
+        casevo_input.on_key(dev, sys, fsys, scr)
+        casevo_input.on_scroll(dev)
+
+        -- Render only when state changed
+        if casevo_model.consume_dirty()
+            casevo_view.draw_all(scr)
+    })
+;

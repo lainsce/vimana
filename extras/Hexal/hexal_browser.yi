@@ -1,0 +1,188 @@
+cask hexal_browser
+
+bring stdr
+bring vimana
+
+bring hexal_model
+
+--| State |--
+
+def ?active = false
+def ?entries = []: [any]
+def ?sel = 0
+def ?scroll = 0
+def ?path = "./"
+
+def MAX_ROWS = 15
+
+--| Helpers |--
+
+: clamp_sel() (( -- ))
+    let total = stdr.len(entries)
+    if sel < 0
+        sel = 0
+    if total > 0 && sel >= total
+        sel = total - 1
+;
+
+: scroll_for_sel() (( -- ))
+    if sel < scroll
+        scroll = sel
+    elif sel >= scroll + MAX_ROWS - 2
+        scroll = sel - MAX_ROWS + 3
+;
+
+--| Load directory listing |--
+
+: load_dir(fsys = vimana.file) (( -- ))
+    let raw = fsys.list(path)
+    let n = stdr.len(raw)
+    let ?dirs = []: [any]
+    let ?files = []: [any]
+
+    for (let ?i = 0; i < n; i += 1)
+        let name = stdr.str(raw[i] ?? "")
+        if stdr.len(name) == 0
+            continue
+        if stdr.char_at(name, 0) == "."
+            continue
+        if fsys.is_dir(path + name)
+            stdr.push(dirs, name + "/")
+        else
+            stdr.push(files, name)
+
+    -- Build list: ".." + dirs + files
+    let ?list = []: [any]
+    if path != "./"
+        stdr.push(list, "..")
+    for (let ?i = 0; i < stdr.len(dirs); i += 1)
+        stdr.push(list, dirs[i])
+    for (let ?i = 0; i < stdr.len(files); i += 1)
+        stdr.push(list, files[i])
+
+    entries = list
+    sel = 0
+    scroll = 0
+    hexal_model.set_dirty()
+;
+
+: nav_up(fsys = vimana.file) (( -- ))
+    let plen = stdr.len(path)
+    if plen <= 2
+        <-
+    -- Strip trailing slash, then find previous slash
+    let base = stdr.slice(path, 0, plen - 1)
+    let blen = stdr.len(base)
+    let ?i = blen - 1
+    for (; i >= 0; i -= 1)
+        if stdr.char_at(base, i) == "/"
+            break
+    if i < 0
+        path = "./"
+    else
+        path = stdr.slice(path, 0, i + 1)
+    load_dir(fsys)
+;
+
+--| Public API |--
+
+:: open(fsys = vimana.file) (( -- ))
+    if active
+        close()
+        <-
+    active = true
+    -- Start at the directory of the current file, or CWD
+    let ?dir = stdr.dirname(hexal_model.file_path)
+    if stdr.len(dir) == 0
+        dir = stdr.getcwd()
+    if stdr.len(dir) > 0 && stdr.char_at(dir, stdr.len(dir) - 1) != "/"
+        dir = dir + "/"
+    path = dir
+    load_dir(fsys)
+;
+
+:: close() (( -- ))
+    active = false
+    entries = []: [any]
+    sel = 0
+    scroll = 0
+    hexal_model.set_dirty()
+;
+
+:: pick(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let total = stdr.len(entries)
+    if sel < 0 || sel >= total
+        <-
+    let entry = stdr.str(entries[sel] ?? "")
+
+    -- Navigate up
+    if entry == ".."
+        nav_up(fsys)
+        <-
+
+    let elen = stdr.len(entry)
+    -- Navigate into directory
+    if elen > 0 && stdr.char_at(entry, elen - 1) == "/"
+        path = path + entry
+        load_dir(fsys)
+        <-
+
+    -- Open file
+    let full = path + entry
+    let bytes = fsys.read_bytes(full)
+    hexal_model.set_buffer(bytes)
+    hexal_model.set_file_path(full)
+    close()
+    scr.set_titlebar_title(stdr.basename(full))
+;
+
+:: on_key(dev = vimana.device, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if dev.key_pressed(hexal_model.KEY_UP)
+        sel = sel - 1
+        clamp_sel()
+        scroll_for_sel()
+        hexal_model.set_dirty()
+        <-
+    if dev.key_pressed(hexal_model.KEY_DOWN)
+        sel = sel + 1
+        clamp_sel()
+        scroll_for_sel()
+        hexal_model.set_dirty()
+        <-
+    if dev.key_pressed(hexal_model.KEY_RETURN)
+        pick(fsys, scr)
+        <-
+    if dev.key_pressed(hexal_model.KEY_BACKSPACE)
+        nav_up(fsys)
+        <-
+    if dev.key_pressed(hexal_model.KEY_ESCAPE)
+        close()
+        <-
+;
+
+:: on_click(mx = num, my = num, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let start_y = hexal_model.DATA_Y + 24
+    let row_h = hexal_model.ROW_H
+    if my < start_y
+        <-
+    let clicked = stdr.floor((my - start_y) / row_h) + scroll
+    let total = stdr.len(entries)
+    if clicked >= 0 && clicked < total
+        sel = clicked
+        hexal_model.set_dirty()
+        pick(fsys, scr)
+;
+
+:: on_scroll(dy = num) (( -- ))
+    let ?s = scroll + dy
+    if s < 0
+        s = 0
+    let total = stdr.len(entries)
+    let visible = MAX_ROWS - 2
+    if total > visible && s > total - visible
+        s = total - visible
+    if s < 0
+        s = 0
+    scroll = s
+    hexal_model.set_dirty()
+;

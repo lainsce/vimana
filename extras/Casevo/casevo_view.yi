@@ -1,0 +1,325 @@
+cask casevo_view
+
+bring stdr
+bring vimana
+
+bring casevo_model
+bring casevo_calc
+bring casevo_browser
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Icon tiles (8×8 1bpp)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def fill_icn  = [255, 255, 255, 255, 255, 255, 255, 255]
+def diag_icn  = [17, 34, 68, 136, 17, 34, 68, 136]
+def line_icn  = [170, 0, 0, 0, 0, 0, 0, 0]
+def frame_tl  = [255, 128, 128, 128, 128, 128, 128, 128]
+def frame_left = [128, 128, 128, 128, 128, 128, 128, 128]
+def frame_top = [255, 0, 0, 0, 0, 0, 0, 0]
+def frame_rx  = [0, 1, 0, 1, 0, 1, 0, 1]
+def frame_ry  = [85, 0, 0, 0, 0, 0, 0, 0]
+def frame_rxy = [85, 1, 0, 1, 0, 1, 0, 1]
+def arrow_top = [0, 0, 0, 0, 128, 192, 224, 240]
+def arrow_bot = [224, 192, 128, 0, 0, 0, 0, 0]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: fill_cell(scr = vimana.screen, x = num, y = num, color = num) (( -- ))
+    let tx = x / 8
+    let ty = y / 8
+    for (let ?r = 0; r < 2; r += 1)
+        for (let ?c = 0; c < 8; c += 1)
+            scr.put_icn(tx + c, ty + r, fill_icn, color, color)
+;
+
+: draw_framed_cell(scr = vimana.screen, x = num, y = num, bg = num) (( -- ))
+    let tx = x / 8
+    let ty = y / 8
+    -- Top-left corner: 1-bits=FG border, 0-bits=cell bg
+    scr.put_icn(tx, ty, frame_tl, casevo_model.C_FG, bg)
+    -- Top edge: top line + cell bg
+    for (let ?c = 1; c < 8; c += 1)
+        scr.put_icn(tx + c, ty, frame_top, casevo_model.C_FG, bg)
+    -- Bottom-left: left line + cell bg
+    scr.put_icn(tx, ty + 1, frame_left, casevo_model.C_FG, bg)
+    -- Bottom fill: solid cell bg
+    for (let ?c = 1; c < 8; c += 1)
+        scr.put_icn(tx + c, ty + 1, fill_icn, bg, bg)
+;
+
+: clamp_text(text = string, max_chars = num) (( string ))
+    let n = stdr.len(text)
+    if n <= max_chars
+        <- text
+    <- stdr.slice(text, 0, max_chars - 1) + "~"
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Titlebar
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_titlebar(scr = vimana.screen) (( -- ))
+    scr.set_titlebar_title(casevo_model.title_text())
+    scr.set_titlebar_button(false)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Column headers (A..H) — drawn at y=HEADER_H, x=(col+1)*64
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_col_headers(scr = vimana.screen) (( -- ))
+    let hy = casevo_model.HEADER_H
+    let ss = casevo_model.sel_start()
+    let se = casevo_model.sel_end()
+    let sel_ax = num(ss[0] ?? 0)
+    let sel_bx = num(se[0] ?? 0)
+
+    -- Top-left corner (row header × col header intersection)
+    fill_cell(scr, 0, hy, casevo_model.C_ACCENT)
+    -- Right-edge dashed border only (no top border)
+    scr.put_icn(7, hy / 8, frame_rx, casevo_model.C_FG, casevo_model.C_ACCENT)
+    scr.put_icn(7, hy / 8 + 1, frame_rx, casevo_model.C_FG, casevo_model.C_ACCENT)
+    -- Selection range text (e.g. "A0:B5")
+    let range_text = casevo_model.col_label(sel_ax) + str(num(ss[1] ?? 0)) + ":" + casevo_model.col_label(sel_bx) + str(num(se[1] ?? 0))
+    scr.put_text(4, hy + 2, range_text, casevo_model.C_FG, casevo_model.C_ACCENT)
+
+    -- Pass 1: fill all column headers + text
+    for (let ?c = 0; c < casevo_model.COLS; c += 1)
+        let x = (c + 1) * casevo_model.COL_W
+        let ?bg = casevo_model.C_ACCENT
+        if c >= sel_ax && c <= sel_bx
+            bg = casevo_model.C_SEL
+        fill_cell(scr, x, hy, bg)
+        let label = casevo_model.col_label(c)
+        scr.put_text(x + 45, hy + 2, label, casevo_model.C_FG, bg)
+
+    -- Pass 2: draw dashed borders between columns (last tile of each cell)
+    for (let ?c = 0; c < casevo_model.COLS; c += 1)
+        let x = (c + 1) * casevo_model.COL_W
+        let etx = (x / 8) + 7
+        let ?bg = casevo_model.C_ACCENT
+        if c >= sel_ax && c <= sel_bx
+            bg = casevo_model.C_SEL
+        scr.put_icn(etx, hy / 8, frame_rx, casevo_model.C_FG, bg)
+        scr.put_icn(etx, hy / 8 + 1, frame_rx, casevo_model.C_FG, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Row headers — drawn at x=0, y=(screen_row+1)*16+HEADER_H
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_row_headers(scr = vimana.screen) (( -- ))
+    let ss = casevo_model.sel_start()
+    let se = casevo_model.sel_end()
+    let sel_ay = num(ss[1] ?? 0)
+    let sel_by = num(se[1] ?? 0)
+
+    for (let ?i = 0; i < casevo_model.viewport_rows + 1; i += 1)
+        let row = casevo_model.scroll_y + i
+        if row >= casevo_model.ROWS
+            break
+        let y = (i + 1) * casevo_model.ROW_H + casevo_model.HEADER_H
+        -- Selected rows use color 2, others use color 3
+        let ?bg = casevo_model.C_ACCENT
+        if row >= sel_ay && row <= sel_by
+            bg = casevo_model.C_SEL
+        fill_cell(scr, 0, y, bg)
+        let rty = y / 8
+        -- Top-edge horizontal dashed border
+        for (let ?ht = 0; ht < 8; ht += 1)
+            scr.put_icn(ht, rty, frame_ry, casevo_model.C_FG, bg)
+        -- Row number right-aligned at x=60
+        let label = casevo_model.row_label(row)
+        let lw = stdr.len(label) * 8
+        let tx = 60 - lw
+        if tx < 4
+            tx = 4
+        scr.put_text(tx, y + 2, label, casevo_model.C_FG, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Body cells — drawn at x=(col+1)*64, y=(screen_row+1)*16+HEADER_H
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_cell(scr = vimana.screen, col = num, row = num, screen_row = num) (( -- ))
+    let x = (col + 1) * casevo_model.COL_W
+    let y = (screen_row + 1) * casevo_model.ROW_H + casevo_model.HEADER_H
+    let selected = casevo_model.is_selected(col, row)
+    let is_active = col == casevo_model.active_col() && row == casevo_model.active_row()
+
+    -- Fill background + frame border in one pass
+    let ?bg = casevo_model.C_BG
+    if selected
+        bg = casevo_model.C_SEL
+    draw_framed_cell(scr, x, y, bg)
+
+    -- Cell text
+    let ?display = ""
+    if is_active && casevo_model.editing
+        display = casevo_model.edit_buf + "_"
+    else
+        display = casevo_calc.evaluate(col, row)
+    if display != ""
+        let clamped = clamp_text(display, 7)
+        scr.put_text(x + 4, y + 2, clamped, casevo_model.C_FG, bg)
+;
+
+: draw_grid(scr = vimana.screen) (( -- ))
+    for (let ?i = 0; i < casevo_model.viewport_rows + 1; i += 1)
+        let row = casevo_model.scroll_y + i
+        if row >= casevo_model.ROWS
+            break
+        for (let ?c = 0; c < casevo_model.COLS; c += 1)
+            draw_cell(scr, c, row, i)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Command bar — dashed separator + cell content at bottom
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_command_bar(scr = vimana.screen) (( -- ))
+    let bar_y = (casevo_model.viewport_rows + 2) * casevo_model.ROW_H + casevo_model.HEADER_H
+    let bty = bar_y / 8
+
+    -- Dashed top border across full width
+    let ltx = casevo_model.WIN_W / 8
+    for (let ?c = 0; c < ltx; c += 1)
+        scr.put_icn(c, bty, line_icn, casevo_model.C_FG, casevo_model.C_BG)
+
+    -- Arrow icon at left of input area (x tile 7 = pixel 56)
+    scr.put_icn(7, bty, arrow_top, casevo_model.C_FG, casevo_model.C_BG)
+    scr.put_icn(7, bty + 1, arrow_bot, casevo_model.C_FG, casevo_model.C_BG)
+
+    -- Cell content at x=72 (after arrow)
+    let ?raw = ""
+    if casevo_model.editing
+        raw = casevo_model.edit_buf + "_"
+    else
+        raw = casevo_model.active_cell_text()
+    if raw != ""
+        let clamped = clamp_text(raw, 60)
+        scr.put_text(72, bar_y + 2, clamped, casevo_model.C_FG, casevo_model.C_BG)
+
+    -- If formula, show arrow + result
+    let cell_text = casevo_model.active_cell_text()
+    if casevo_calc.is_formula(cell_text)
+        let result = casevo_calc.evaluate(casevo_model.active_col(), casevo_model.active_row())
+        scr.put_text(72, bar_y + 18, "= " + result, casevo_model.C_FG, casevo_model.C_BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File browser overlay
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def HALFTONE = [170, 85, 170, 85, 170, 85, 170, 85]
+def FILL_ICN = [255, 255, 255, 255, 255, 255, 255, 255]
+def WAVEY = [255, 255, 255, 124, 56, 0, 0, 0]
+def EMPTY_ICN = [0, 0, 0, 0, 0, 0, 0, 0]
+def CAP_LEFT_TOP = [7, 15, 15, 15, 15, 15, 15, 15]
+def CAP_LEFT_BOT = [15, 15, 15, 15, 15, 15, 15, 7]
+def CAP_RIGHT_TOP = [128, 192, 224, 240, 248, 252, 254, 255]
+def CAP_RIGHT_BOT = [255, 254, 252, 248, 240, 224, 192, 128]
+
+def FONT_W = 8
+def BROWSER_X = 16
+
+: browser_fill_rect(scr = vimana.screen, rx = num, ry = num, rw = num, rh = num, c = num) (( -- ))
+    let tw = stdr.floor(rw / 8)
+    let th = stdr.floor(rh / 8)
+    let tx0 = stdr.floor(rx / 8)
+    let ty0 = stdr.floor(ry / 8)
+    for (let ?row = 0; row < th; row += 1)
+        for (let ?col = 0; col < tw; col += 1)
+            scr.put_icn(tx0 + col, ty0 + row, EMPTY_ICN, c, c)
+;
+
+: draw_browser_bg(scr = vimana.screen) (( -- ))
+    let tiles_w = stdr.floor(casevo_model.WIN_W / 8)
+    let tile_rows = stdr.floor(casevo_model.WIN_H / 8)
+
+    -- Top halftone stripe (1 tile row, at top)
+    for (let ?tx = 0; tx < tiles_w; tx += 1)
+        scr.put_icn(tx, 0, HALFTONE, casevo_model.C_SEL, casevo_model.C_BG)
+
+    -- Solid fill stripe (1 tile row below halftone) for path
+    for (let ?tx = 0; tx < tiles_w; tx += 1)
+        scr.put_icn(tx, 1, FILL_ICN, casevo_model.C_SEL, casevo_model.C_BG)
+
+    -- SEL bg from below toolbar to wavey
+    let wave_y = tile_rows - 1
+    for (let ?ty = 2; ty < wave_y; ty += 1)
+        for (let ?tx = 0; tx < tiles_w; tx += 1)
+            scr.put_icn(tx, ty, EMPTY_ICN, casevo_model.C_SEL, casevo_model.C_SEL)
+
+    -- Bottom wavy decoration (single)
+    for (let ?tx = 0; tx < tiles_w; tx += 1)
+        scr.put_icn(tx, wave_y, WAVEY, casevo_model.C_SEL, casevo_model.C_BG)
+;
+
+: draw_browser(scr = vimana.screen) (( -- ))
+    let total = stdr.len(casevo_browser.entries)
+    let sx = BROWSER_X
+
+    draw_browser_bg(scr)
+
+    -- Header path on the solid stripe
+    let max_chars = stdr.floor((casevo_model.WIN_W - sx * 2) / FONT_W)
+    let ?header = casevo_browser.path
+    if stdr.len(header) > max_chars
+        header = stdr.slice(header, stdr.len(header) - max_chars, stdr.len(header))
+    scr.put_text(sx, 8, header, casevo_model.C_FG, casevo_model.C_SEL)
+
+    -- Entry list starts after the two decoration rows (halftone + solid = 16px)
+    let list_y0 = 24
+    let max_visible = casevo_browser.MAX_ROWS - 2
+
+    if total == 0
+        scr.put_text(sx, list_y0, "(empty)", casevo_model.C_FG, casevo_model.C_SEL)
+        <-
+
+    for (let ?i = 0; i < max_visible; i += 1)
+        let idx = casevo_browser.scroll + i
+        if idx >= total
+            break
+        let y = list_y0 + i * casevo_model.ROW_H
+        let entry = stdr.str(casevo_browser.entries[idx] ?? "")
+        let ?label = entry
+        if stdr.len(label) > max_chars
+            label = stdr.slice(label, 0, max_chars)
+        if idx == casevo_browser.sel
+            -- Selected: rounded caps + solid fill
+            let tx0 = stdr.floor(sx / 8) - 1
+            let ty = stdr.floor(y / 8)
+            scr.put_icn(tx0, ty, CAP_LEFT_TOP, casevo_model.C_FG, casevo_model.C_SEL)
+            scr.put_icn(tx0, ty + 1, CAP_LEFT_BOT, casevo_model.C_FG, casevo_model.C_SEL)
+            let text_tiles = stdr.floor(stdr.len(label) * FONT_W / 8) + 1
+            for (let ?ft = 0; ft < text_tiles; ft += 1)
+                scr.put_icn(tx0 + 1 + ft, ty, FILL_ICN, casevo_model.C_FG, casevo_model.C_SEL)
+                scr.put_icn(tx0 + 1 + ft, ty + 1, FILL_ICN, casevo_model.C_FG, casevo_model.C_SEL)
+            scr.put_icn(tx0 + 1 + text_tiles, ty, CAP_RIGHT_TOP, casevo_model.C_FG, casevo_model.C_SEL)
+            scr.put_icn(tx0 + 1 + text_tiles, ty + 1, CAP_RIGHT_BOT, casevo_model.C_FG, casevo_model.C_SEL)
+            scr.put_text(sx, y, label, casevo_model.C_ACCENT, casevo_model.C_FG)
+        else
+            scr.put_text(sx, y, label, casevo_model.C_FG, casevo_model.C_SEL)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Full redraw
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_all(scr = vimana.screen) (( -- ))
+    scr.clear(casevo_model.C_BG)
+    draw_titlebar(scr)
+    draw_col_headers(scr)
+    draw_row_headers(scr)
+    draw_grid(scr)
+    draw_command_bar(scr)
+
+    if casevo_browser.active
+        draw_browser(scr)
+
+    scr.present()
+;

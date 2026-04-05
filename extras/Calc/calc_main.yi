@@ -1,0 +1,208 @@
+cask main
+
+bring stdr
+bring vimana
+bring calc_model
+bring calc_ops
+bring calc_icons
+bring calc_view
+bring calc_font
+bring calc_tone
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Hit testing (delegated to calc_view for faithful button layout)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Button action dispatch
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def NUMPAD = [7, 8, 9, 15, 4, 5, 6, 14, 1, 2, 3, 13, 0, 10, 11, 12]
+
+: append_with_tone(sys = vimana.system, val = num) (( -- ))
+    calc_tone.play_digit(sys, val)
+    calc_ops.input_append(val)
+;
+
+: do_button(sys = vimana.system, id = num) (( -- ))
+    -- ctl column
+    if id == 0
+        calc_ops.input_clear()
+    elif id == 1
+        calc_ops.swap()
+    elif id == 2
+        calc_ops.dup()
+    elif id == 3
+        calc_ops.input_erase()
+
+    -- wst column
+    elif id == 4
+        calc_model.toggle_dec()
+    elif id == 5
+        calc_ops.inv()
+    elif id == 6
+        calc_ops.vid()
+    elif id == 7
+        calc_ops.input_eval()
+
+    -- numpad
+    elif id >= 8 && id <= 23
+        append_with_tone(sys, NUMPAD[id - 8])
+
+    -- operators
+    elif id == 24
+        calc_ops.op_mul()
+    elif id == 25
+        calc_ops.op_div()
+    elif id == 26
+        calc_ops.op_add()
+    elif id == 27
+        calc_ops.op_sub()
+
+    -- bitwise
+    elif id == 28
+        calc_ops.op_and()
+    elif id == 29
+        calc_ops.op_or()
+    elif id == 30
+        calc_ops.op_shl()
+    elif id == 31
+        calc_ops.op_shr()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?press_id = -1
+
+: on_mouse(sys = vimana.system, dev = vimana.device) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+
+    if dev.mouse_pressed(vimana.mouse_left)
+        let btn = calc_view.hit_button(mx, my)
+        if btn >= 0
+            press_id = btn
+            do_button(sys, btn)
+            calc_model.mark_dirty()
+
+    if !dev.mouse_down(vimana.mouse_left)
+        if press_id >= 0
+            press_id = -1
+            calc_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Keyboard handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_key(sys = vimana.system, dev = vimana.device) (( -- ))
+    -- Number keys
+    if dev.key_pressed(30)
+        append_with_tone(sys, 1)
+    elif dev.key_pressed(31)
+        append_with_tone(sys, 2)
+    elif dev.key_pressed(32)
+        append_with_tone(sys, 3)
+    elif dev.key_pressed(33)
+        append_with_tone(sys, 4)
+    elif dev.key_pressed(34)
+        append_with_tone(sys, 5)
+    elif dev.key_pressed(35)
+        append_with_tone(sys, 6)
+    elif dev.key_pressed(36)
+        append_with_tone(sys, 7)
+    elif dev.key_pressed(37)
+        append_with_tone(sys, 8)
+    elif dev.key_pressed(38)
+        append_with_tone(sys, 9)
+    elif dev.key_pressed(39)
+        append_with_tone(sys, 0)
+
+    -- Hex digits via text input
+    let txt = dev.text_input()
+    if stdr.len(txt) > 0
+        let ch = stdr.char_at(txt, 0)
+        if ch == "a" || ch == "A"
+            append_with_tone(sys, 10)
+        elif ch == "b" || ch == "B"
+            append_with_tone(sys, 11)
+        elif ch == "c" || ch == "C"
+            append_with_tone(sys, 12)
+        elif ch == "d" || ch == "D"
+            append_with_tone(sys, 13)
+        elif ch == "e" || ch == "E"
+            append_with_tone(sys, 14)
+        elif ch == "f" || ch == "F"
+            append_with_tone(sys, 15)
+        -- Operators
+        elif ch == "+"
+            calc_ops.op_add()
+        elif ch == "-"
+            calc_ops.op_sub()
+        elif ch == "*"
+            calc_ops.op_mul()
+        elif ch == "/"
+            calc_ops.op_div()
+        elif ch == "&"
+            calc_ops.op_and()
+        elif ch == "|"
+            calc_ops.op_or()
+        elif ch == "<"
+            calc_ops.op_shl()
+        elif ch == ">"
+            calc_ops.op_shr()
+        -- Stack ops
+        elif ch == "~"
+            calc_model.toggle_dec()
+        elif ch == "?"
+            calc_ops.inv()
+        elif ch == "%"
+            calc_ops.swap()
+        elif ch == "\""
+            calc_ops.dup()
+
+    -- Enter / Space → eval
+    if dev.key_pressed(40) || dev.key_pressed(44)
+        calc_ops.input_eval()
+    -- Backspace → erase
+    elif dev.key_pressed(42)
+        calc_ops.input_erase()
+    -- Escape → clear
+    elif dev.key_pressed(41)
+        calc_ops.input_clear()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-> ()
+    let sys = vimana.system()
+    let scr = vimana.screen("Calc", calc_model.WIN_W, calc_model.WIN_H, 1)
+    calc_icons.load_sprites(scr)
+    let fsys = sys.file()
+    if !fsys.exists(sys.home_dir() + "/.theme")
+        scr.set_palette(vimana.color_bg, "#ffffff")
+           .set_palette(vimana.color_fg, "#000000")
+           .set_palette(vimana.color_2,  "#aaeebb")
+           .set_palette(vimana.color_3,  "#88cc99")
+
+    let dev = sys.device()
+
+    -- Initial draw
+    calc_model.mark_dirty()
+
+    calc_font.install(scr)
+
+    sys.run(scr, () => {
+        dev.poll()
+        on_mouse(sys, dev)
+        on_key(sys, dev)
+        if calc_model.is_dirty()
+            calc_view.draw_all(scr, press_id)
+    })
+
+    calc_tone.shutdown(sys)
+;

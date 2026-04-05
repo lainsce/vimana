@@ -27,6 +27,7 @@ def flip_y = 0x20
 : __vimana_system_clipboard_text(sys = system) (( string )) { }
 : __vimana_system_set_clipboard_text(sys = system, text = string) (( bool )) { }
 : __vimana_system_home_dir(sys = system) (( string )) { }
+: __vimana_system_play_tone(sys = system, pitch = num, duration_ms = num, volume = num) (( -- )) { }
 : __vimana_system_spawn(sys = system, cmd = string) (( num )) { }
 : __vimana_system_proc_write(sys = system, proc = num, text = string) (( bool )) { }
 : __vimana_system_proc_read_line(sys = system, proc = num) (( string )) { }
@@ -126,6 +127,10 @@ pub ,: system
     :: clipboard_text(this) (( string )) <- __vimana_system_clipboard_text(this) ;
     :: set_clipboard_text(this, text = string) (( bool )) <- __vimana_system_set_clipboard_text(this, text) ;
     :: home_dir(this) (( string )) <- __vimana_system_home_dir(this) ;
+    :: play_tone(this, pitch = num, duration_ms = num, volume = num) (( system ))
+        __vimana_system_play_tone(this, pitch, duration_ms, volume)
+        <- this
+    ;
 
     :: spawn(this, cmd = string) (( num )) <- __vimana_system_spawn(this, cmd) ;
     :: proc_write(this, proc = num, text = string) (( bool )) <- __vimana_system_proc_write(this, proc, text) ;

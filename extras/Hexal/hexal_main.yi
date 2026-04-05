@@ -1,0 +1,224 @@
+cask main
+
+bring stdr
+bring vimana
+bring hexal_model
+bring hexal_view
+bring hexal_file
+bring hexal_font
+bring hexal_browser
+
+--| Mouse input |--
+
+: on_mouse(dev = vimana.device, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+
+    let pressed = dev.mouse_pressed(vimana.mouse_left)
+    if !pressed && !dev.mouse_down(vimana.mouse_left)
+        <-
+
+    -- File browser intercepts all clicks when active
+    if hexal_browser.active
+        if pressed
+            hexal_browser.on_click(mx, my, fsys, scr)
+        <-
+
+    let shift = dev.key_down(hexal_model.KEY_LSHIFT) || dev.key_down(hexal_model.KEY_RSHIFT)
+    let held = dev.mouse_down(vimana.mouse_left)
+
+    -- Check bounds: data area only
+    if my < hexal_model.DATA_Y
+        <-
+    if my >= hexal_model.DATA_Y + hexal_model.ROWS * hexal_model.ROW_H
+        <-
+
+    let row = stdr.floor((my - hexal_model.DATA_Y) / hexal_model.ROW_H)
+    let po = hexal_model.page_offset()
+
+    -- Hex data area (dexe: x=84..468)
+    if mx >= 84 && mx < 468
+        let col = stdr.floor((mx - 84) / 24)
+        if col >= 0 && col < hexal_model.COLS
+            let addr = po + row * hexal_model.COLS + col
+            if pressed
+                if shift
+                    hexal_model.set_sel_b(addr)
+                else
+                    hexal_model.set_sel_a(addr)
+            elif held
+                hexal_model.set_sel_b(addr)
+        <-
+
+    -- ASCII area (dexe: x=476..604)
+    if mx >= 476 && mx < 604
+        let col = stdr.floor((mx - 476) / hexal_model.FONT_W)
+        if col >= 0 && col < hexal_model.COLS
+            let addr = po + row * hexal_model.COLS + col
+            if pressed
+                if shift
+                    hexal_model.set_sel_b(addr)
+                else
+                    hexal_model.set_sel_a(addr)
+            elif held
+                hexal_model.set_sel_b(addr)
+        <-
+
+    -- Offset column (select entire row, dexe: x < 76)
+    if mx < 76
+        let addr_start = po + row * hexal_model.COLS
+        let addr_end = addr_start + hexal_model.COLS - 1
+        hexal_model.set_sel(addr_start, addr_end)
+;
+
+--| Keyboard input |--
+
+: on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let cmd = dev.key_down(hexal_model.KEY_LGUI) || dev.key_down(hexal_model.KEY_RGUI)
+    let shift = dev.key_down(hexal_model.KEY_LSHIFT) || dev.key_down(hexal_model.KEY_RSHIFT)
+    let ctrl = dev.key_down(hexal_model.KEY_LCTRL) || dev.key_down(hexal_model.KEY_RCTRL)
+
+    -- Cmd+/ toggles file browser
+    if cmd && dev.key_pressed(hexal_model.KEY_SLASH)
+        hexal_browser.open(fsys)
+        <-
+
+    -- Browser intercepts all keys when active
+    if hexal_browser.active
+        hexal_browser.on_key(dev, fsys, scr)
+        <-
+
+    -- Cmd shortcuts
+    if cmd
+        if dev.key_pressed(hexal_model.KEY_N)
+            hexal_file.file_new(scr)
+            <-
+        if dev.key_pressed(hexal_model.KEY_O)
+            hexal_file.file_open(fsys, scr)
+            <-
+        if dev.key_pressed(hexal_model.KEY_S)
+            if shift
+                hexal_file.file_save_as(fsys, scr)
+            else
+                hexal_file.file_save(fsys, scr)
+            <-
+        if dev.key_pressed(hexal_model.KEY_Q)
+            sys.quit()
+            <-
+        if dev.key_pressed(hexal_model.KEY_C)
+            hexal_model.copy_sel()
+            <-
+        if dev.key_pressed(hexal_model.KEY_V)
+            hexal_model.paste_sel()
+            hexal_file.update_title(scr)
+            <-
+        <-
+
+    -- Ctrl+arrows = jump page
+    if ctrl
+        if dev.key_pressed(hexal_model.KEY_UP)
+            hexal_model.jump_up()
+            <-
+        if dev.key_pressed(hexal_model.KEY_DOWN)
+            hexal_model.jump_down()
+            <-
+        <-
+
+    -- Shift+arrows = resize selection
+    if shift
+        if dev.key_pressed(hexal_model.KEY_UP)
+            hexal_model.size_up()
+            <-
+        if dev.key_pressed(hexal_model.KEY_DOWN)
+            hexal_model.size_down()
+            <-
+        if dev.key_pressed(hexal_model.KEY_LEFT)
+            hexal_model.size_left()
+            <-
+        if dev.key_pressed(hexal_model.KEY_RIGHT)
+            hexal_model.size_right()
+            <-
+        <-
+
+    -- Arrow keys
+    if dev.key_pressed(hexal_model.KEY_UP)
+        hexal_model.move_up()
+        <-
+    if dev.key_pressed(hexal_model.KEY_DOWN)
+        hexal_model.move_down()
+        <-
+    if dev.key_pressed(hexal_model.KEY_LEFT)
+        hexal_model.move_left()
+        <-
+    if dev.key_pressed(hexal_model.KEY_RIGHT)
+        hexal_model.move_right()
+        <-
+
+    -- Escape: deselect, or quit
+    if dev.key_pressed(hexal_model.KEY_ESCAPE)
+        if hexal_model.sel_a != hexal_model.sel_b
+            hexal_model.reset_sel()
+            <-
+        sys.quit()
+        <-
+
+    -- Backspace: erase selection
+    if dev.key_pressed(hexal_model.KEY_BACKSPACE)
+        hexal_model.erase()
+        hexal_file.update_title(scr)
+        <-
+;
+
+--| Text input (hex character entry) |--
+
+: on_text(dev = vimana.device, scr = vimana.screen) (( -- ))
+    if hexal_browser.active
+        <-
+    let txt = dev.text_input()
+    if stdr.len(txt) == 0
+        <-
+    let c = stdr.char_at(txt, 0)
+    if hexal_model.hex_val(c) >= 0
+        hexal_model.insert_hex(c)
+        hexal_file.update_title(scr)
+;
+
+--| Scroll wheel |--
+
+: on_scroll(dev = vimana.device) (( -- ))
+    let dy = dev.wheel_y()
+    if dy != 0
+        if hexal_browser.active
+            hexal_browser.on_scroll(dy)
+        else
+            hexal_model.scroll_by(dy)
+;
+
+--| Entry |--
+
+-> ()
+    let sys = vimana.system()
+    let scr = vimana.screen("Hexal", hexal_model.SCR_W, hexal_model.SCR_H, 1)
+    let dev = sys.device()
+    let fsys = sys.file()
+
+    scr.set_palette(vimana.color_bg, "#ffffff")
+        .set_palette(vimana.color_fg, "#000000")
+        .set_palette(vimana.color_2, "#aaeebb")
+        .set_palette(vimana.color_3, "#ddffee")
+
+    hexal_font.load_font(scr)
+    hexal_model.new_project()
+    hexal_file.update_title(scr)
+
+    sys.run(scr, () => {
+        dev.poll()
+
+        on_mouse(dev, fsys, scr)
+        on_key(dev, sys, fsys, scr)
+        on_text(dev, scr)
+        on_scroll(dev)
+
+        hexal_view.draw_all(scr)
+    })
+;

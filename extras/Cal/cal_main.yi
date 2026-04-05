@@ -1,0 +1,45 @@
+cask main
+
+bring vimana
+bring cal_font
+bring cal_model
+bring cal_date
+bring cal_events
+bring cal_view
+bring cal_input
+
+-> ()
+    let sys  = vimana.system()
+    let scr  = vimana.screen("Cal", cal_model.WIN_W, cal_model.WIN_H, 1)
+    let fsys = sys.file()
+    let dev  = sys.device()
+    let dt   = sys.datetime()
+
+    -- Theme
+    if !fsys.exists(sys.home_dir() + "/.theme")
+        scr.set_palette(vimana.color_bg, "#FFFFEE")
+           .set_palette(vimana.color_fg, "#444444")
+           .set_palette(vimana.color_2,  "#2266AA")
+           .set_palette(vimana.color_3,  "#DD6633")
+
+    -- Font
+    cal_font.install(scr)
+
+    -- Init date state from system clock
+    cal_model.snap_today(dt)
+    cal_model.go_today(dt)
+
+    -- Load events for initial year
+    cal_events.load_events(sys, fsys)
+
+    sys.run(scr, () => {
+        dev.poll()
+
+        cal_input.on_key(dev, sys, fsys, scr, dt)
+        cal_input.on_text(dev)
+        cal_input.on_mouse(dev, sys, fsys, scr)
+
+        if cal_model.consume_dirty()
+            cal_view.draw_all(scr)
+    })
+;

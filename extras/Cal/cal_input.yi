@@ -1,0 +1,155 @@
+cask cal_input
+
+bring stdr
+bring vimana
+
+bring cal_model
+bring cal_events
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Keyboard handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen, dt = vimana.datetime) (( -- ))
+    if cal_model.input_mode
+        on_key_input(dev, sys, fsys)
+        <-
+
+    if dev.key_pressed(cal_model.KEY_RETURN)
+        -- Enter: start input for selected day
+        let ?existing = cal_events.find_event(cal_model.sel_day)
+        -- Strip leading tab if present
+        if stdr.len(existing) > 0 && stdr.char_at(existing, 0) == "\t"
+            existing = stdr.slice(existing, 1, stdr.len(existing))
+        cal_model.start_input(existing)
+        <-
+
+    if dev.key_pressed(cal_model.KEY_ESCAPE)
+        cal_model.go_today(dt)
+        cal_events.load_events(sys, fsys)
+
+    -- Ctrl + arrows: month navigation
+    if dev.key_down(224)
+        if dev.key_pressed(cal_model.KEY_LEFT)
+            let old_year = cal_model.view_year
+            cal_model.prev_month()
+            if cal_model.view_year != old_year
+                cal_events.load_events(sys, fsys)
+            <-
+
+        if dev.key_pressed(cal_model.KEY_RIGHT)
+            let old_year = cal_model.view_year
+            cal_model.next_month()
+            if cal_model.view_year != old_year
+                cal_events.load_events(sys, fsys)
+            <-
+
+    -- Plain arrows: day/week navigation
+    if dev.key_pressed(cal_model.KEY_LEFT)
+        cal_model.prev_day()
+
+    if dev.key_pressed(cal_model.KEY_RIGHT)
+        cal_model.next_day()
+
+    if dev.key_pressed(cal_model.KEY_UP)
+        cal_model.prev_week()
+
+    if dev.key_pressed(cal_model.KEY_DOWN)
+        cal_model.next_week()
+;
+
+-- Input mode key handling
+-- Finish input: save if text present, cancel if empty (matches original /<done>)
+: done_input(sys = vimana.system, fsys = vimana.file) (( -- ))
+    let text = cal_model.finish_input()
+    if stdr.len(text) > 0
+        cal_events.set_event(sys, fsys, cal_model.sel_day, text)
+;
+
+: on_key_input(dev = vimana.device, sys = vimana.system, fsys = vimana.file) (( -- ))
+    -- ESC or Enter: done (save if non-empty, cancel if empty)
+    if dev.key_pressed(cal_model.KEY_ESCAPE)
+        done_input(sys, fsys)
+        <-
+
+    if dev.key_pressed(cal_model.KEY_RETURN)
+        done_input(sys, fsys)
+        <-
+
+    if dev.key_pressed(cal_model.KEY_TAB)
+        -- Save current, advance day, start new input
+        done_input(sys, fsys)
+        cal_model.next_day()
+        let ?next_ev = cal_events.find_event(cal_model.sel_day)
+        if stdr.len(next_ev) > 0 && stdr.char_at(next_ev, 0) == "\t"
+            next_ev = stdr.slice(next_ev, 1, stdr.len(next_ev))
+        cal_model.start_input(next_ev)
+        <-
+
+    if dev.key_pressed(cal_model.KEY_BACKSPACE)
+        let buf = cal_model.input_buf
+        let n = stdr.len(buf)
+        if n > 0
+            cal_model.set_input_buf(stdr.slice(buf, 0, n - 1))
+;
+
+-- Text input: append typed characters to buffer
+:: on_text(dev = vimana.device) (( -- ))
+    if !cal_model.input_mode
+        <-
+    let txt = dev.text_input()
+    if stdr.len(txt) > 0
+        cal_model.set_input_buf(cal_model.input_buf + txt)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_mouse(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+
+    -- Hover: update corner state based on pointer position
+    let corner_top = cal_model.WIN_H - 32
+    let fold_ref = cal_model.WIN_H - 28
+    if mx < 22 && my >= corner_top
+        let dy = my - fold_ref
+        if dy < 0 || mx < dy
+            cal_model.set_corner_state(1)
+        else
+            cal_model.set_corner_state(0)
+    else
+        cal_model.set_corner_state(0)
+
+    if !dev.mouse_pressed(vimana.mouse_left)
+        <-
+
+    -- Cancel input mode on any click
+    if cal_model.input_mode
+        cal_model.cancel_input()
+
+    -- Check dog-ear corner click (bottom-left fold)
+    if mx < 22 && my >= corner_top
+        let dy = my - fold_ref
+        let old_year = cal_model.view_year
+        if mx > dy
+            cal_model.set_corner_state(1)
+            cal_model.next_month()
+        else
+            cal_model.set_corner_state(2)
+            cal_model.prev_month()
+        if cal_model.view_year != old_year
+            cal_events.load_events(sys, fsys)
+        <-
+
+    -- Check grid click
+    if mx >= cal_model.GRID_X && mx < cal_model.GRID_X + cal_model.COLS * cal_model.CELL_W
+        if my >= cal_model.GRID_Y && my < cal_model.GRID_Y + cal_model.ROWS * cal_model.CELL_H
+            let col = stdr.floor((mx - cal_model.GRID_X) / cal_model.CELL_W)
+            let row = stdr.floor((my - cal_model.GRID_Y) / cal_model.CELL_H)
+            let cell = row * 7 + col
+            let day = cell - cal_model.first_offset() + 1
+            if day >= 1 && day <= cal_model.num_days()
+                cal_model.select_day(day)
+;
