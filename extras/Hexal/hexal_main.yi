@@ -202,11 +202,6 @@ bring hexal_browser
     let dev = sys.device()
     let fsys = sys.file()
 
-    scr.set_palette(vimana.color_bg, "#ffffff")
-        .set_palette(vimana.color_fg, "#000000")
-        .set_palette(vimana.color_2, "#aaeebb")
-        .set_palette(vimana.color_3, "#ddffee")
-
     hexal_font.load_font(scr)
     hexal_model.new_project()
     hexal_file.update_title(scr)

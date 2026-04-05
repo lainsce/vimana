@@ -21,12 +21,6 @@ bring casevo_browser
     let dev  = sys.device()
     let fsys = sys.file()
 
-    -- Set palette (Nebu-faithful)
-    scr.set_palette(casevo_model.C_BG,     "#FFFFFF")
-       .set_palette(casevo_model.C_FG,     "#000000")
-       .set_palette(casevo_model.C_SEL,    "#AAEEBB")
-       .set_palette(casevo_model.C_ACCENT, "#DDFFEE")
-
     -- Setup Chicago proportional bitmap font
     casevo_font.setup(scr)
 

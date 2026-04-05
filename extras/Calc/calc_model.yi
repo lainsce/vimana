@@ -135,15 +135,31 @@ def ?dirty = true
     dirty = true
 ;
 
+:: cycle_dec_hex() (( -- ))
+    -- Cycle order requested:
+    -- Decimal (f) -> Hexadecimal (f) -> Decimal -> Hexadecimal
+    -- Implemented with base bits (dec,dot): 1 -> 0 -> 3 -> 2 -> 1
+    -- and clearing factor-mode bit for this dedicated dec/hex cycle button.
+    let ?base = mode % 4
+    if base == 1
+        mode = 0
+    elif base == 0
+        mode = 3
+    elif base == 3
+        mode = 2
+    else
+        mode = 1
+    dirty = true
+;
+
 :: mode_name() (( string ))
-    let ?name = "Hex"
-    if is_dec()
-        name = "Dec"
     if is_dot()
-        name = name + " Dot"
-    if is_fac()
-        name = name + " Factors"
-    <- name
+        if is_dec()
+            <- "Decimal"
+        <- "Hexadecimal"
+    if is_dec()
+        <- "Decimal (f)"
+    <- "Hexadecimal (f)"
 ;
 
 :: set_input_num(v = num) (( -- ))

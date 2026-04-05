@@ -340,13 +340,13 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
         dec_fg = calc_model.C_BG
     draw_icn_px(scr, 88, py, calc_icons.MODE_D, dec_fg)
 
-    let ?dot_fg = calc_model.C_ALT
-    if calc_model.is_dot()
-        dot_fg = calc_model.C_BG
-    draw_icn_px(scr, 93, py, calc_icons.MODE_S, dot_fg)
+    let ?frac_fg = calc_model.C_ALT
+    if !calc_model.is_dot()
+        frac_fg = calc_model.C_BG
+    draw_icn_px(scr, 93, py, calc_icons.MODE_S, frac_fg)
 
     let ?fac_fg = calc_model.C_ALT
-    if calc_model.is_fac()
+    if !calc_model.is_dot()
         fac_fg = calc_model.C_BG
     draw_icn_px(scr, 98, py, calc_icons.MODE_F, fac_fg)
 ;

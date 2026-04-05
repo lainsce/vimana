@@ -254,12 +254,6 @@ def ?dragging = false
     let dev = sys.device()
     let fsys = sys.file()
 
-    -- Palette matching original Uxn Note Pad
-    scr.set_palette(vimana.color_bg, "#ffffff")
-       .set_palette(vimana.color_fg, "#000000")
-       .set_palette(vimana.color_2,  "#aaeebb")
-       .set_palette(vimana.color_3,  "#88cc99")
-
     -- Load saved pages
     load_all(sys, fsys)
     pad_model.switch_page(0)
