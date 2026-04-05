@@ -44,7 +44,7 @@ bring hexal_model
 --| Save |--
 
 : file_save(fsys = vimana.file, scr = vimana.screen) (( -- ))
-    if stdr.len(hexal_model.file_path) == 0
+    if stdr.len(hexal_model.file_path) == 0 || hexal_model.file_path == hexal_model.NEW_FILE_NAME
         file_save_as(fsys, scr)
         <-
     fsys.write_bytes(hexal_model.file_path, hexal_model.buffer)
@@ -53,7 +53,7 @@ bring hexal_model
 ;
 
 : file_save_as(fsys = vimana.file, scr = vimana.screen) (( -- ))
-    let ?default_name = "untitled.bin"
+    let ?default_name = hexal_model.NEW_FILE_NAME
     if stdr.len(hexal_model.file_path) > 0
         default_name = stdr.basename(hexal_model.file_path)
     let picked = stdr.save_file_dialog("Save As", default_name, "*")

@@ -53,6 +53,7 @@ def KEY_SLASH = 56
 
 -- Max file size (32KB)
 def MAX_SIZE = 32768
+def NEW_FILE_NAME = "untitled.hex"
 
 --| State |--
 
@@ -62,7 +63,7 @@ def ?sel_a = 0
 def ?sel_b = 0
 def ?scroll_pos = 0
 def ?nibble = 0
-def ?file_path = ""
+def ?file_path = NEW_FILE_NAME
 def ?changed = false
 def ?dirty = true
 
@@ -286,7 +287,7 @@ def HEX_CHARS = "0123456789abcdef"
     sel_b = 0
     scroll_pos = 0
     nibble = 0
-    file_path = ""
+    file_path = NEW_FILE_NAME
     changed = false
     dirty = true
 ;

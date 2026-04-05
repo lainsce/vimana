@@ -28,13 +28,19 @@ bring casevo_browser
     let usable_h = casevo_model.WIN_H - casevo_model.HEADER_H
     casevo_model.set_viewport_rows(stdr.floor(usable_h / casevo_model.ROW_H) - 3)
 
-    -- Load file from command line argument if provided
+    -- Start on a temporary untitled sheet by default
+    casevo_file.new_project()
+
+    -- Load first CSV/TSV argument if provided
     let args = stdr.args()
-    if len(args) > 0
-        let path = str(args[0] ?? "")
-        if stdr.len(path) > 0
-            if fsys.exists(path)
+    for (let ?i = 0; i < len(args); i += 1)
+        let path = str(args[i] ?? "")
+        let n = stdr.len(path)
+        if n >= 4
+            let ext = stdr.slice(path, n - 4, n)
+            if (ext == ".csv" || ext == ".tsv") && fsys.exists(path)
                 casevo_file.load(fsys, path)
+                i = len(args)
 
     sys.run(scr, () => {
         dev.poll()
