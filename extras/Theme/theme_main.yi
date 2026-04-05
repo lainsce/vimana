@@ -19,22 +19,22 @@ bring theme_assets
 ;
 
 : handle_slider(mx = num, my = num, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
-    if mx < theme_model.BAR_X || mx >= theme_model.BAR_X + theme_model.BAR_W
+    if mx < theme_model.BAR_X * 8 || mx >= theme_model.BAR_X * 8 + theme_model.BAR_W
         <-
-    let cell = clamp(stdr.floor((mx - theme_model.BAR_X) / 8), 0, 15)
-    if my >= theme_model.BAR_Y_R && my < theme_model.BAR_Y_R + 16
+    let cell = clamp(stdr.floor((mx - theme_model.BAR_X * 8) / 8), 0, 15)
+    if my >= theme_model.BAR_Y_R * 8 && my < theme_model.BAR_Y_R * 8 + 16
         if cell != theme_model.red()
             theme_model.set_red(cell)
             theme_model.save(sys, fsys)
             theme_model.apply_palette(scr)
         <-
-    if my >= theme_model.BAR_Y_G && my < theme_model.BAR_Y_G + 16
+    if my >= theme_model.BAR_Y_G * 8 && my < theme_model.BAR_Y_G * 8 + 16
         if cell != theme_model.green()
             theme_model.set_green(cell)
             theme_model.save(sys, fsys)
             theme_model.apply_palette(scr)
         <-
-    if my >= theme_model.BAR_Y_B && my < theme_model.BAR_Y_B + 16
+    if my >= theme_model.BAR_Y_B * 8 && my < theme_model.BAR_Y_B * 8 + 16
         if cell != theme_model.blue()
             theme_model.set_blue(cell)
             theme_model.save(sys, fsys)
@@ -46,11 +46,11 @@ bring theme_assets
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : handle_radio(mx = num, my = num) (( -- ))
-    if my < theme_model.RADIO_Y || my >= theme_model.RADIO_Y + 16
+    if my < theme_model.RADIO_Y * 8 || my >= theme_model.RADIO_Y * 8 + 16
         <-
     for (let ?i = 0; i < 4; i += 1)
         let rx = theme_model.RADIO_X0 + i * theme_model.RADIO_STEP
-        if mx >= rx && mx < rx + 16
+        if mx >= rx * 8 && mx < rx * 8 + 16
             theme_model.select_slot(i)
             <-
 ;

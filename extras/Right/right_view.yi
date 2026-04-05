@@ -7,6 +7,107 @@ bring right_model
 bring right_menu
 bring right_syntax
 
+--| Frame-skip: snapshot previous visual state |--
+def ?_ps_text_rev = -1
+def ?_ps_caret = -1
+def ?_ps_sel_s = -1
+def ?_ps_sel_e = -1
+def ?_ps_scroll = -1
+def ?_ps_sw = 0
+def ?_ps_sh = 0
+def ?_ps_side_vis = false
+def ?_ps_side_w = 0
+def ?_ps_ol_sel = -1
+def ?_ps_ol_scr = -1
+def ?_ps_hi_on = false
+def ?_ps_le_on = false
+def ?_ps_tab_on = false
+def ?_ps_srch_act = false
+def ?_ps_srch_idx = -1
+def ?_ps_dir_act = false
+def ?_ps_dir_sel = -1
+def ?_ps_dir_scr = -1
+def ?_ps_ac_vis = false
+def ?_ps_dirty = false
+def ?_ps_menu = -1
+def ?_ps_hover = -1
+
+: frame_changed() (( bool ))
+    if right_model.text_rev != _ps_text_rev
+        <- true
+    if right_model.caret != _ps_caret
+        <- true
+    if right_model.sel_start != _ps_sel_s
+        <- true
+    if right_model.sel_end != _ps_sel_e
+        <- true
+    if right_model.scroll_y != _ps_scroll
+        <- true
+    if right_model.screen_w != _ps_sw
+        <- true
+    if right_model.screen_h != _ps_sh
+        <- true
+    if right_model.sidebar_visible != _ps_side_vis
+        <- true
+    if right_model.sidebar_width != _ps_side_w
+        <- true
+    if right_model.outline_selected != _ps_ol_sel
+        <- true
+    if right_model.outline_scroll != _ps_ol_scr
+        <- true
+    if right_model.highlight_on != _ps_hi_on
+        <- true
+    if right_model.show_line_endings != _ps_le_on
+        <- true
+    if right_model.show_tabs != _ps_tab_on
+        <- true
+    if right_model.search_active != _ps_srch_act
+        <- true
+    if right_model.search_index != _ps_srch_idx
+        <- true
+    if right_model.dir_listing_active != _ps_dir_act
+        <- true
+    if right_model.dir_selected != _ps_dir_sel
+        <- true
+    if right_model.dir_scroll != _ps_dir_scr
+        <- true
+    if right_model.autocomplete_visible != _ps_ac_vis
+        <- true
+    if right_model.dirty != _ps_dirty
+        <- true
+    if right_menu.menu_open != _ps_menu
+        <- true
+    if right_menu.menu_hover != _ps_hover
+        <- true
+    <- false
+;
+
+: save_snapshot() (( -- ))
+    _ps_text_rev = right_model.text_rev
+    _ps_caret = right_model.caret
+    _ps_sel_s = right_model.sel_start
+    _ps_sel_e = right_model.sel_end
+    _ps_scroll = right_model.scroll_y
+    _ps_sw = right_model.screen_w
+    _ps_sh = right_model.screen_h
+    _ps_side_vis = right_model.sidebar_visible
+    _ps_side_w = right_model.sidebar_width
+    _ps_ol_sel = right_model.outline_selected
+    _ps_ol_scr = right_model.outline_scroll
+    _ps_hi_on = right_model.highlight_on
+    _ps_le_on = right_model.show_line_endings
+    _ps_tab_on = right_model.show_tabs
+    _ps_srch_act = right_model.search_active
+    _ps_srch_idx = right_model.search_index
+    _ps_dir_act = right_model.dir_listing_active
+    _ps_dir_sel = right_model.dir_selected
+    _ps_dir_scr = right_model.dir_scroll
+    _ps_ac_vis = right_model.autocomplete_visible
+    _ps_dirty = right_model.dirty
+    _ps_menu = right_menu.menu_open
+    _ps_hover = right_menu.menu_hover
+;
+
 --| Drawing primitives |--
 
 : fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
@@ -61,14 +162,14 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
 
 : draw_icn_col(scr = vimana.screen, x = num, y = num, n = num, icn = [any], fg = num, bg = num) (( -- ))
     for (let ?i = 0; i < n; i += 1)
-        scr.put_icn(x, y + i * 8, icn, fg, bg)
+        scr.put_icn(x, y + i, icn, fg, bg)
 ;
 
 --| Scrollbar (far left, halftone bg, solid thumb) |--
 
 : draw_scrollbar(scr = vimana.screen) (( -- ))
-    let bar_x = right_model.SCROLLBAR_X + 4
-    let bar_y = right_model.CONTENT_Y
+    let bar_x = 0
+    let bar_y = right_model.CONTENT_Y / 8
     let bar_h = right_model.screen_h - right_model.CONTENT_Y - right_model.STATUS_H
     let bar_tiles = stdr.floor(bar_h / 8)
 
@@ -76,7 +177,7 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
     draw_icn_col(scr, bar_x, bar_y, bar_tiles, ICN_HALFTONE, right_model.C_FG, right_model.C_BG)
 
     -- Thumb
-    let total = right_model.vline_count(right_model.editor_text)
+    let total = right_model.get_vline_count()
     let visible = right_model.visible_lines()
     if total <= visible
         draw_icn_col(scr, bar_x, bar_y, bar_tiles, ICN_SOLID, right_model.C_FG, right_model.C_BG)
@@ -86,7 +187,7 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
     if thumb_tiles < 1
         thumb_tiles = 1
     let thumb_off = stdr.floor((bar_tiles - thumb_tiles) * right_model.scroll_y / (total - visible))
-    draw_icn_col(scr, bar_x, bar_y + thumb_off * 8, thumb_tiles, ICN_SOLID, right_model.C_FG, right_model.C_BG)
+    draw_icn_col(scr, bar_x, bar_y + thumb_off, thumb_tiles, ICN_SOLID, right_model.C_FG, right_model.C_BG)
 ;
 
 --| Separator between sidebar and editor |--
@@ -246,11 +347,11 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
 --| Status bar (titlebar row, right-aligned alongside menu) |--
 
 : draw_status(scr = vimana.screen) (( -- ))
-    let bytes = stdr.len(right_model.editor_text)
-    let lc = right_model.line_col_from_index(right_model.editor_text, right_model.caret)
+    let bytes = right_model.get_text_len()
+    let lc = right_model.get_status_line_col()
     let cur_line = stdr.floor(stdr.num(lc[0] ?? 0)) + 1
     let cur_col = stdr.floor(stdr.num(lc[1] ?? 0)) + 1
-    let total = right_model.line_count(right_model.editor_text)
+    let total = right_model.get_line_count()
     let free = right_model.ROM_SIZE - bytes
     let status = str(free) + "  Ln " + str(cur_line) + "/" + str(total) + " Col " + str(cur_col)
     let sw = stdr.len(status) * right_model.FONT_W
@@ -267,7 +368,6 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
     let scroll = right_model.scroll_y
     let ex = right_model.editor_left() + right_model.PAD_X
     let max_cols = right_model.editor_cols()
-    let wrap_col = right_model.WRAP_COL
 
     -- Selection range
     let pair = right_model.sel_normalized()
@@ -275,44 +375,28 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
     let sb = stdr.floor(stdr.num(pair[1] ?? 0))
     let has_sel = sa != sb
 
-    -- Bracket matching
-    let match_pos = right_model.find_matching_bracket()
+    -- Bracket matching (cached)
+    let match_pos = right_model.get_matching_bracket()
 
-    -- Iterate with wrapping
-    let ?row_start = 0
-    let ?vis_row = 0
-    let ?col = 0
-    let ?logical_start = 0
+    -- Draw only visible rows using precomputed line map
+    right_model.build_line_map()
+    let num_lines = stdr.len(right_model._line_starts)
 
-    for (let ?i = 0; i <= total; i += 1)
-        let at_end = i >= total
-        let is_nl = !at_end && stdr.slice(code, i, i + 1) == "\n"
+    for (let ?vi = scroll; vi < scroll + max_rows; vi += 1)
+        if vi >= num_lines
+            break
+        let row_start = stdr.floor(stdr.num(right_model._line_starts[vi] ?? 0))
+        let row_end = stdr.floor(stdr.num(right_model._line_ends[vi] ?? 0))
+        let logical_start = stdr.floor(stdr.num(right_model._line_log_starts[vi] ?? 0))
+        let is_nl = stdr.floor(stdr.num(right_model._line_is_nl[vi] ?? 0)) == 1
 
-        -- Wrap at WRAP_COL (non-newline, non-end chars only)
-        if !at_end && !is_nl && col >= wrap_col
-            if vis_row >= scroll && vis_row < scroll + max_rows
-                draw_visual_row(scr, code, total, row_start, i, logical_start,
-                    vis_row, scroll, max_rows, max_cols, ex, false,
-                    has_sel, sa, sb, match_pos)
-            vis_row += 1
-            row_start = i
-            col = 0
-
-        if at_end || is_nl
-            if vis_row >= scroll && vis_row < scroll + max_rows
-                draw_visual_row(scr, code, total, row_start, i, logical_start,
-                    vis_row, scroll, max_rows, max_cols, ex, is_nl,
-                    has_sel, sa, sb, match_pos)
-            vis_row += 1
-            row_start = i + 1
-            col = 0
-            logical_start = i + 1
-        else
-            col += 1
+        draw_visual_row(scr, code, total, row_start, row_end, logical_start,
+            vi, scroll, max_rows, max_cols, ex, is_nl,
+            has_sel, sa, sb, match_pos)
 
     -- Caret
     if !has_sel
-        let lc = right_model.vline_col(code, right_model.caret)
+        let lc = right_model.get_caret_vline_col()
         let caret_line = stdr.floor(stdr.num(lc[0] ?? 0))
         let caret_col = stdr.floor(stdr.num(lc[1] ?? 0))
         if caret_line >= scroll && caret_line < scroll + max_rows
@@ -481,7 +565,7 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
 
     -- Position near caret
     let code = right_model.editor_text
-    let lc = right_model.vline_col(code, right_model.caret)
+    let lc = right_model.get_caret_vline_col()
     let caret_line = stdr.floor(stdr.num(lc[0] ?? 0))
     let caret_col = stdr.floor(stdr.num(lc[1] ?? 0))
     let scroll = right_model.scroll_y
@@ -512,7 +596,7 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
 
     -- Position below caret
     let code = right_model.editor_text
-    let lc = right_model.vline_col(code, right_model.caret)
+    let lc = right_model.get_caret_vline_col()
     let caret_line = stdr.floor(stdr.num(lc[0] ?? 0))
     let caret_col = stdr.floor(stdr.num(lc[1] ?? 0))
     let scroll = right_model.scroll_y
@@ -541,8 +625,11 @@ def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
 --| Full frame redraw |--
 
 :: draw_all(scr = vimana.screen) (( -- ))
+    if !frame_changed()
+        <-
+    save_snapshot()
     scr.clear(right_model.C_BG)
-    scr.draw_titlebar(right_model.C_ACCENT)
+    scr.draw_titlebar(right_model.C_SEL)
     draw_scrollbar(scr)
     draw_separator(scr)
     draw_outline(scr)

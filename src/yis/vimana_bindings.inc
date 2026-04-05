@@ -269,7 +269,7 @@ static void vimana_icn_bytes_from_val(YisVal value, uint8_t rows[8],
   }
 }
 
-static void vimana_sprite_bytes_from_val(YisVal value, int mode,
+static void vimana_sprite_bytes_from_val(YisVal value, unsigned int mode,
                                          uint8_t sprite[16],
                                          const char *what) {
   memset(sprite, 0, 16);
@@ -409,7 +409,7 @@ static YisVal __vimana_screen(YisVal titlev, YisVal widthv, YisVal heightv,
 static void __vimana_screen_clear(YisVal scrv, YisVal bgv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.clear expects screen");
-  vimana_screen_clear(screen, (int)yis_as_int(bgv));
+  vimana_screen_clear(screen, (unsigned int)yis_as_int(bgv));
 }
 
 static void __vimana_screen_resize(YisVal scrv, YisVal widthv, YisVal heightv) {
@@ -424,7 +424,7 @@ static void __vimana_screen_set_palette(YisVal scrv, YisVal slotv,
       vimana_screen_from_val(scrv, "vimana.screen.set_palette expects screen");
   YisStr *tmp = NULL;
   const char *color = vimana_required_cstr(colorv, &tmp);
-  vimana_screen_set_palette(screen, (int)yis_as_int(slotv), color);
+  vimana_screen_set_palette(screen, (unsigned int)yis_as_int(slotv), color);
   if (tmp)
     yis_release_val(YV_STR(tmp));
 }
@@ -437,7 +437,7 @@ static void __vimana_screen_set_font_glyph(YisVal scrv, YisVal codev,
   vimana_uf2_rows_from_val(
       icnv, rows,
       "vimana.screen.set_font_glyph expects 16 hex-short rows (UF2)");
-  vimana_screen_set_font_glyph(screen, (int)yis_as_int(codev), rows);
+  vimana_screen_set_font_glyph(screen, (unsigned int)yis_as_int(codev), rows);
 }
 
 static void __vimana_screen_set_font_chr(YisVal scrv, YisVal codev,
@@ -448,27 +448,27 @@ static void __vimana_screen_set_font_chr(YisVal scrv, YisVal codev,
   if (chrv.tag != EVT_ARR)
     yis_trap("vimana.screen.set_font_chr expects byte array");
   YisArr *arr = (YisArr *)chrv.as.p;
-  int len = 0;
+  unsigned int len = 0;
   if (arr) {
-    len = (int)(arr->len < 72 ? arr->len : 72);
-    for (int i = 0; i < len; i++)
+    len = (unsigned int)(arr->len < 72 ? arr->len : 72);
+    for (unsigned int i = 0; i < len; i++)
       bytes[i] = vimana_byte_from_val(arr->items[i]);
   }
-  vimana_screen_set_font_chr(screen, (int)yis_as_int(codev), bytes, len);
+  vimana_screen_set_font_chr(screen, (unsigned int)yis_as_int(codev), bytes, len);
 }
 
 static void __vimana_screen_set_font_width(YisVal scrv, YisVal codev,
                                             YisVal widthv) {
   vimana_screen *screen = vimana_screen_from_val(
       scrv, "vimana.screen.set_font_width expects screen");
-  vimana_screen_set_font_width(screen, (int)yis_as_int(codev),
-                               (int)yis_as_int(widthv));
+  vimana_screen_set_font_width(screen, (unsigned int)yis_as_int(codev),
+                               (unsigned int)yis_as_int(widthv));
 }
 
 static void __vimana_screen_set_font_size(YisVal scrv, YisVal sizev) {
   vimana_screen *screen = vimana_screen_from_val(
       scrv, "vimana.screen.set_font_size expects screen");
-  vimana_screen_set_font_size(screen, (int)yis_as_int(sizev));
+  vimana_screen_set_font_size(screen, (unsigned int)yis_as_int(sizev));
 }
 
 static void __vimana_screen_set_theme_swap(YisVal scrv, YisVal swapv) {
@@ -481,35 +481,35 @@ static void __vimana_screen_set_sprite(YisVal scrv, YisVal addrv, YisVal spritev
                                        YisVal modev) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.set_sprite expects screen");
-  int mode = (int)yis_as_int(modev);
+  unsigned int mode = (unsigned int)yis_as_int(modev);
   uint8_t sprite[16] = {0};
   vimana_sprite_bytes_from_val(spritev, mode, sprite,
                                "vimana.screen.set_sprite expects 8 byte rows or 8 hex-short 2bpp rows");
-  vimana_screen_set_sprite(screen, (int)yis_as_int(addrv), sprite, mode);
+  vimana_screen_set_sprite(screen, (unsigned int)yis_as_int(addrv), sprite, mode);
 }
 
 static void __vimana_screen_set_x(YisVal scrv, YisVal xv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.set_x expects screen");
-  vimana_screen_set_x(screen, (int)yis_as_int(xv));
+  vimana_screen_set_x(screen, (unsigned int)yis_as_int(xv));
 }
 
 static void __vimana_screen_set_y(YisVal scrv, YisVal yv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.set_y expects screen");
-  vimana_screen_set_y(screen, (int)yis_as_int(yv));
+  vimana_screen_set_y(screen, (unsigned int)yis_as_int(yv));
 }
 
 static void __vimana_screen_set_addr(YisVal scrv, YisVal addrv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.set_addr expects screen");
-  vimana_screen_set_addr(screen, (int)yis_as_int(addrv));
+  vimana_screen_set_addr(screen, (unsigned int)yis_as_int(addrv));
 }
 
 static void __vimana_screen_set_auto(YisVal scrv, YisVal autov) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.set_auto expects screen");
-  vimana_screen_set_auto(screen, (int)yis_as_int(autov));
+  vimana_screen_set_auto(screen, (unsigned int)yis_as_int(autov));
 }
 
 static void __vimana_screen_put(YisVal scrv, YisVal xv, YisVal yv,
@@ -518,8 +518,10 @@ static void __vimana_screen_put(YisVal scrv, YisVal xv, YisVal yv,
       vimana_screen_from_val(scrv, "vimana.screen.put expects screen");
   YisStr *tmp = NULL;
   const char *glyph = vimana_required_cstr(glyphv, &tmp);
-  vimana_screen_put(screen, (int)yis_as_int(xv), (int)yis_as_int(yv), glyph,
-                    (int)yis_as_int(fgv), (int)yis_as_int(bgv));
+  vimana_screen_put(screen, (unsigned int)yis_as_int(xv),
+                    (unsigned int)yis_as_int(yv), glyph,
+                    (unsigned int)yis_as_int(fgv),
+                    (unsigned int)yis_as_int(bgv));
   if (tmp)
     yis_release_val(YV_STR(tmp));
 }
@@ -532,8 +534,10 @@ static void __vimana_screen_put_icn(YisVal scrv, YisVal xv, YisVal yv,
   vimana_icn_bytes_from_val(
       icnv, rows,
     "vimana.screen.put_icn expects 4 hex words or 8 byte rows");
-  vimana_screen_put_icn(screen, (int)yis_as_int(xv), (int)yis_as_int(yv), rows,
-                        (int)yis_as_int(fgv), (int)yis_as_int(bgv));
+  vimana_screen_put_icn(screen, (unsigned int)yis_as_int(xv),
+                        (unsigned int)yis_as_int(yv), rows,
+                        (unsigned int)yis_as_int(fgv),
+                        (unsigned int)yis_as_int(bgv));
 }
 
 static void __vimana_screen_put_text(YisVal scrv, YisVal xv, YisVal yv,
@@ -542,8 +546,10 @@ static void __vimana_screen_put_text(YisVal scrv, YisVal xv, YisVal yv,
       vimana_screen_from_val(scrv, "vimana.screen.put_text expects screen");
   YisStr *tmp = NULL;
   const char *text = vimana_required_cstr(textv, &tmp);
-  vimana_screen_put_text(screen, (int)yis_as_int(xv), (int)yis_as_int(yv),
-                         text, (int)yis_as_int(fgv), (int)yis_as_int(bgv));
+  vimana_screen_put_text(screen, (unsigned int)yis_as_int(xv),
+                         (unsigned int)yis_as_int(yv),
+                         text, (unsigned int)yis_as_int(fgv),
+                         (unsigned int)yis_as_int(bgv));
   if (tmp)
     yis_release_val(YV_STR(tmp));
 }
@@ -551,13 +557,13 @@ static void __vimana_screen_put_text(YisVal scrv, YisVal xv, YisVal yv,
 static void __vimana_screen_sprite(YisVal scrv, YisVal ctrlv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.sprite expects screen");
-  vimana_screen_sprite(screen, (int)yis_as_int(ctrlv));
+  vimana_screen_sprite(screen, (unsigned int)yis_as_int(ctrlv));
 }
 
 static void __vimana_screen_pixel(YisVal scrv, YisVal ctrlv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.pixel expects screen");
-  vimana_screen_pixel(screen, (int)yis_as_int(ctrlv));
+  vimana_screen_pixel(screen, (unsigned int)yis_as_int(ctrlv));
 }
 
 static void __vimana_screen_present(YisVal scrv) {
@@ -569,7 +575,7 @@ static void __vimana_screen_present(YisVal scrv) {
 static void __vimana_screen_draw_titlebar(YisVal scrv, YisVal bgv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.draw_titlebar expects screen");
-  vimana_screen_draw_titlebar(screen, (int)yis_as_int(bgv));
+  vimana_screen_draw_titlebar(screen, (unsigned int)yis_as_int(bgv));
 }
 
 static void __vimana_screen_set_titlebar_title(YisVal scrv, YisVal titlev) {

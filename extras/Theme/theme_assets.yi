@@ -290,7 +290,7 @@ bring vimana
 :: draw_bar(scr = vimana.screen, y = num) (( -- ))
     scr.set_auto(21)
     scr.set_y(y)
-    scr.set_x(8)
+    scr.set_x(1)
     scr.set_addr(0)
     scr.sprite(133)
     for (let ?i = 0; i < 15; i += 1)

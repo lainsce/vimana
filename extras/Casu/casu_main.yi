@@ -28,8 +28,8 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 
 -- Tileview click/drag: select, brush-paint, or zoom depending on tool and zoom mode
 : on_mouse_tileview(sx = num, sy = num, is_first = bool) (( -- ))
-    let ax = sx - casu_model.TILEVIEW_X
-    let ay = sy - casu_model.TILEVIEW_Y
+    let ax = sx - casu_model.TILEVIEW_X * 8
+    let ay = sy - casu_model.TILEVIEW_Y * 8
     let tx = stdr.floor(ax / 8)
     let ty = stdr.floor(ay / 8)
     if casu_model.zoom_on
@@ -68,10 +68,10 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 -- Zoomview click/drag: paint pixel in the zoomed focused tile (4× scale)
 -- or trigger shift ops when clicking arrows at the bottom
 : on_mouse_zoomview(sx = num, sy = num, is_left = bool) (( -- ))
-    let dy = sy - casu_model.ZOOM_Y
+    let dy = sy - casu_model.ZOOM_Y * 8
     -- Arrow area: below the 32×32 zoom grid (dy >= 32)
     if dy >= 32
-        let arrow_col = stdr.floor((sx - casu_model.ZOOM_X) / 8)
+        let arrow_col = stdr.floor((sx - casu_model.ZOOM_X * 8) / 8)
         if arrow_col == 0
             -- Vertical arrow: left=shift up, right=shift down
             if is_left
@@ -88,7 +88,7 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 
     -- Pixel painting in the 32×32 zoom area (brush tool only)
     if casu_model.tool == casu_model.TOOL_BRUSH
-        let col = stdr.floor((sx - casu_model.ZOOM_X) / 4)
+        let col = stdr.floor((sx - casu_model.ZOOM_X * 8) / 4)
         let row = stdr.floor(dy / 4)
         if col >= 0 && col < 8 && row >= 0 && row < 8
             let ax = casu_model.sel_x1 * 8 + col
@@ -100,8 +100,8 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 -- Row 0 = R slider, row 1 = G slider, row 2 = B slider
 -- X position sets the nibble value (0-15) for the active color slot
 : on_mouse_colorview(sx = num, sy = num, scr = vimana.screen) (( -- ))
-    let rx = sx - casu_model.COLOR_X
-    let ry = sy - casu_model.COLOR_Y
+    let rx = sx - casu_model.COLOR_X * 8
+    let ry = sy - casu_model.COLOR_Y * 8
     let channel = stdr.floor(ry / 8)
     -- Clamp slider position to 0-15
     let val = stdr.floor(rx / 2)
@@ -121,8 +121,8 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 
 -- Preview click: set ratio (sprite size) by clicking the 4×4 tile grid cell
 : on_mouse_preview(sx = num, sy = num) (( -- ))
-    let ?hx = stdr.floor((sx - casu_model.PREVIEW_X) / 8)
-    let ?vy = stdr.floor((sy - casu_model.PREVIEW_Y) / 8)
+    let ?hx = stdr.floor((sx - casu_model.PREVIEW_X * 8) / 8)
+    let ?vy = stdr.floor((sy - casu_model.PREVIEW_Y * 8) / 8)
     if hx > 3
         hx = 3
     if vy > 3
@@ -132,8 +132,8 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 
 -- Nametable click: stamp tiles into nametable using current ratio (size)
 : on_mouse_nametable(sx = num, sy = num) (( -- ))
-    let ntx = stdr.floor((sx - casu_model.NTAB_X) / 8)
-    let nty = stdr.floor((sy - casu_model.NTAB_Y) / 8)
+    let ntx = stdr.floor((sx - casu_model.NTAB_X * 8) / 8)
+    let nty = stdr.floor((sy - casu_model.NTAB_Y * 8) / 8)
     -- ratio: low nibble = cols, high nibble = rows
     let cols = casu_model.ratio % 16
     let rows = stdr.floor(casu_model.ratio / 16)
@@ -158,8 +158,8 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 
 -- Blendview click: select blend mode from 4×4 grid or toggle direction arrows
 : on_mouse_blendview(sx = num, sy = num) (( -- ))
-    let rx = stdr.floor((sx - casu_model.BLEND_X) / 8)
-    let ry = stdr.floor((sy - casu_model.BLEND_Y) / 8)
+    let rx = stdr.floor((sx - casu_model.BLEND_X * 8) / 8)
+    let ry = stdr.floor((sy - casu_model.BLEND_Y * 8) / 8)
     let blend_idx = ry * 4 + rx
     if blend_idx >= 0 && blend_idx < 16
         -- Set blend mode: keep upper bits (0xB0 mask), replace lower nibble
@@ -187,7 +187,7 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 -- file ops on the right (make at x2-32, load at x2-24, save at x2-8)
 : on_mouse_toolview(sx = num, sy = num,
                     fsys = vimana.file) (( -- ))
-    let rx = sx - casu_model.TOOL_X
+    let rx = sx - casu_model.TOOL_X * 8
     let x2 = casu_model.TOOL_W   -- relative: 264
     -- Color circles: 0-7 = color 1, 8-15 = color 2, 16-23 = color 3
     if rx >= 0 && rx < 8
@@ -247,6 +247,9 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
     -- Install font into glyph memory
     casu_icons.setup_font(scr)
 
+    -- Upload frame CHR tiles to sprite memory
+    casu_icons.setup_frames(scr)
+
     -- Upload initial (empty) sprite tiles to sprite memory
     casu_edit.sync_all(scr)
 
@@ -269,34 +272,34 @@ def PAL_3 = "#77ddcc"   -- teal         (color 3)
 
         -- Continuous areas (brush painting uses mouse_down for drag)
         if is_left || is_right
-            if in_rect(sx, sy, casu_model.TILEVIEW_X, casu_model.TILEVIEW_Y,
+            if in_rect(sx, sy, casu_model.TILEVIEW_X * 8, casu_model.TILEVIEW_Y * 8,
                        casu_model.TILEVIEW_W, casu_model.TILEVIEW_H)
                 on_mouse_tileview(sx, sy, is_first)
                 needs_redraw = true
-            elif in_rect(sx, sy, casu_model.ZOOM_X, casu_model.ZOOM_Y,
+            elif in_rect(sx, sy, casu_model.ZOOM_X * 8, casu_model.ZOOM_Y * 8,
                          casu_model.ZOOM_W, casu_model.ZOOM_H)
                 on_mouse_zoomview(sx, sy, is_left)
                 needs_redraw = true
-            elif in_rect(sx, sy, casu_model.COLOR_X, casu_model.COLOR_Y,
+            elif in_rect(sx, sy, casu_model.COLOR_X * 8, casu_model.COLOR_Y * 8,
                          casu_model.COLOR_W, casu_model.COLOR_H)
                 on_mouse_colorview(sx, sy, scr)
                 needs_redraw = true
 
         -- Single-click areas (only fire on press, not hold)
         if is_first
-            if in_rect(sx, sy, casu_model.PREVIEW_X, casu_model.PREVIEW_Y,
+            if in_rect(sx, sy, casu_model.PREVIEW_X * 8, casu_model.PREVIEW_Y * 8,
                          casu_model.PREVIEW_W, casu_model.PREVIEW_H)
                 on_mouse_preview(sx, sy)
                 needs_redraw = true
-            elif in_rect(sx, sy, casu_model.TOOL_X, casu_model.TOOL_Y,
+            elif in_rect(sx, sy, casu_model.TOOL_X * 8, casu_model.TOOL_Y * 8,
                          casu_model.TOOL_W, casu_model.TOOL_H)
                 on_mouse_toolview(sx, sy, fsys)
                 needs_redraw = true
-            elif in_rect(sx, sy, casu_model.NTAB_X, casu_model.NTAB_Y,
+            elif in_rect(sx, sy, casu_model.NTAB_X * 8, casu_model.NTAB_Y * 8,
                          casu_model.NTAB_W, casu_model.NTAB_H)
                 on_mouse_nametable(sx, sy)
                 needs_redraw = true
-            elif in_rect(sx, sy, casu_model.BLEND_X, casu_model.BLEND_Y,
+            elif in_rect(sx, sy, casu_model.BLEND_X * 8, casu_model.BLEND_Y * 8,
                          casu_model.BLEND_W, casu_model.BLEND_H)
                 on_mouse_blendview(sx, sy)
                 needs_redraw = true

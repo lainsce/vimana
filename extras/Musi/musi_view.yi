@@ -65,7 +65,7 @@ bring musi_assets
     scr.put_text(lcx, musi_model.ALBUM_Y, cl, musi_model.C_FG, musi_model.C_BG)
 
     -- Controls bar (light background, full width, 48 px high)
-    fill(scr, 0, musi_model.CTRL_BG_Y, musi_model.WIN_W, 48, musi_model.C_BG)
+    fill(scr, 0, musi_model.CTRL_BG_Y * 8, musi_model.WIN_W, 48, musi_model.C_BG)
 
     -- Control icons (button frame wraps play/pause)
     musi_assets.draw_repeat(scr, musi_model.CTRL_REPEAT_X, musi_model.CTRL_Y, musi_model.repeat,  musi_model.C_FG, musi_model.C_BG)
@@ -75,13 +75,13 @@ bring musi_assets
     if musi_model.paused
         btn_bg = musi_model.C_BG
     musi_assets.draw_button_frame(scr, musi_model.CTRL_PLAY_X, musi_model.CTRL_BG_Y, btn_bg, musi_model.C_BG)
-    musi_assets.draw_play(  scr, musi_model.CTRL_PLAY_X + 8, musi_model.CTRL_Y, musi_model.paused, musi_model.C_FG, btn_bg)
+    musi_assets.draw_play(  scr, musi_model.CTRL_PLAY_X + 1, musi_model.CTRL_Y, musi_model.paused, musi_model.C_FG, btn_bg)
     musi_assets.draw_next(  scr, musi_model.CTRL_NEXT_X,   musi_model.CTRL_Y,                     musi_model.C_FG, musi_model.C_BG)
     musi_assets.draw_volume(scr, musi_model.CTRL_VOLUP_X,  musi_model.CTRL_Y, musi_model.volume + 1, musi_model.C_FG, musi_model.C_BG)
     musi_assets.draw_shuffle(scr, musi_model.CTRL_SHUF_X,  musi_model.CTRL_Y, musi_model.shuffle, musi_model.C_FG, musi_model.C_BG)
 
     -- Progress bar (CHR sprites from m291.tal)
-    musi_assets.draw_progress(scr, musi_model.sec_prog)
+    musi_assets.draw_progress(scr, musi_model.sec_prog / 8)
 
     -- Timestamps
     let ts_left  = musi_model.fmt_secs(musi_model.sec_from)
@@ -128,7 +128,7 @@ bring musi_assets
 
         -- Now-playing poke indicator (right-pointing triangle at left edge)
         if is_play_row
-            musi_assets.draw_poke(scr, row_y, musi_model.C_BG, musi_model.C_FG)
+            musi_assets.draw_poke(scr, row_y / 8, musi_model.C_BG, musi_model.C_FG)
 
         -- Label and foreground colour
         let ?label = ""

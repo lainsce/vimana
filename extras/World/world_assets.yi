@@ -5,9 +5,9 @@ bring vimana
 -- 2x2 icon helper (16x16 from four 8x8 tiles)
 :: draw_icn(scr = vimana.screen, x = num, y = num, tl = any, tr = any, bl = any, br = any, fg = num, bg = num) (( -- ))
     scr.put_icn(x,     y,     tl, fg, bg)
-    scr.put_icn(x + 8, y,     tr, fg, bg)
-    scr.put_icn(x,     y + 8, bl, fg, bg)
-    scr.put_icn(x + 8, y + 8, br, fg, bg)
+    scr.put_icn(x + 1, y,     tr, fg, bg)
+    scr.put_icn(x,     y + 1, bl, fg, bg)
+    scr.put_icn(x + 1, y + 1, br, fg, bg)
 ;
 
 -- Undo arrow (left-pointing arrow)
@@ -30,61 +30,61 @@ def REDO_BR = [248, 240, 224, 192, 128, 0, 0, 0]
     draw_icn(scr, x, y, REDO_TL, REDO_TR, REDO_BL, REDO_BR, fg, bg)
 ;
 
--- Grid icon (crosshatch)
-def GRID_TL = [0, 24, 24, 255, 255, 24, 24, 0]
-def GRID_TR = [0, 24, 24, 255, 255, 24, 24, 0]
-def GRID_BL = [0, 24, 24, 255, 255, 24, 24, 0]
-def GRID_BR = [0, 24, 24, 255, 255, 24, 24, 0]
+-- Grid icon (3x3 grid)
+def GRID_TL = [255, 132, 132, 132, 132, 255, 132, 132]
+def GRID_TR = [255, 33, 33, 33, 33, 255, 33, 33]
+def GRID_BL = [132, 132, 255, 132, 132, 132, 132, 255]
+def GRID_BR = [33, 33, 255, 33, 33, 33, 33, 255]
 
 :: draw_grid(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, GRID_TL, GRID_TR, GRID_BL, GRID_BR, fg, bg)
 ;
 
--- Text mode icon ("T")
-def TEXT_TL = [0, 0, 255, 255, 24, 24, 24, 24]
-def TEXT_TR = [0, 0, 255, 255, 24, 24, 24, 24]
-def TEXT_BL = [24, 24, 24, 24, 24, 24, 0, 0]
-def TEXT_BR = [24, 24, 24, 24, 24, 24, 0, 0]
+-- Text mode icon (seriffed "T")
+def TEXT_TL = [0, 127, 127, 1, 1, 1, 1, 1]
+def TEXT_TR = [0, 254, 254, 128, 128, 128, 128, 128]
+def TEXT_BL = [1, 1, 1, 1, 1, 3, 7, 0]
+def TEXT_BR = [128, 128, 128, 128, 128, 192, 224, 0]
 
 :: draw_text(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, TEXT_TL, TEXT_TR, TEXT_BL, TEXT_BR, fg, bg)
 ;
 
--- Ding mode icon (star/decorative)
-def DING_TL = [0, 0, 24, 24, 60, 255, 255, 126]
-def DING_TR = [0, 0, 24, 24, 60, 255, 255, 126]
-def DING_BL = [126, 255, 255, 60, 24, 24, 0, 0]
-def DING_BR = [126, 255, 255, 60, 24, 24, 0, 0]
+-- Ding mode icon (starburst)
+def DING_TL = [0, 1, 33, 17, 9, 5, 3, 127]
+def DING_TR = [0, 128, 132, 136, 144, 160, 192, 254]
+def DING_BL = [127, 3, 5, 9, 17, 33, 1, 0]
+def DING_BR = [254, 192, 160, 144, 136, 132, 128, 0]
 
 :: draw_ding(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, DING_TL, DING_TR, DING_BL, DING_BR, fg, bg)
 ;
 
 -- Clear icon (X)
-def CLR_TL = [0, 193, 99, 54, 28, 28, 54, 99]
-def CLR_TR = [0, 131, 198, 108, 56, 56, 108, 198]
-def CLR_BL = [99, 54, 28, 28, 54, 99, 193, 0]
-def CLR_BR = [198, 108, 56, 56, 108, 198, 131, 0]
+def CLR_TL = [0, 96, 48, 24, 12, 6, 3, 1]
+def CLR_TR = [0, 6, 12, 24, 48, 96, 192, 128]
+def CLR_BL = [1, 3, 6, 12, 24, 48, 96, 0]
+def CLR_BR = [128, 192, 96, 48, 24, 12, 6, 0]
 
 :: draw_clear(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, CLR_TL, CLR_TR, CLR_BL, CLR_BR, fg, bg)
 ;
 
 -- Save icon (floppy disk)
-def SAVE_TL = [0, 127, 97, 97, 97, 97, 96, 96]
-def SAVE_TR = [0, 252, 140, 140, 140, 252, 12, 12]
-def SAVE_BL = [96, 96, 103, 103, 103, 103, 127, 0]
-def SAVE_BR = [12, 12, 252, 252, 252, 252, 252, 0]
+def SAVE_TL = [0, 127, 127, 103, 103, 103, 96, 96]
+def SAVE_TR = [0, 254, 254, 230, 230, 254, 6, 6]
+def SAVE_BL = [96, 96, 111, 111, 111, 111, 127, 0]
+def SAVE_BR = [6, 6, 246, 246, 246, 246, 254, 0]
 
 :: draw_save(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, SAVE_TL, SAVE_TR, SAVE_BL, SAVE_BR, fg, bg)
 ;
 
 -- Load icon (folder)
-def LOAD_TL = [0, 0, 60, 126, 255, 255, 192, 192]
-def LOAD_TR = [0, 0, 0, 0, 255, 255, 3, 3]
-def LOAD_BL = [192, 192, 192, 255, 255, 0, 0, 0]
-def LOAD_BR = [3, 3, 3, 255, 255, 0, 0, 0]
+def LOAD_TL = [0, 124, 124, 127, 127, 96, 96, 96]
+def LOAD_TR = [0, 0, 0, 254, 254, 6, 6, 6]
+def LOAD_BL = [96, 96, 96, 96, 96, 127, 127, 0]
+def LOAD_BR = [6, 6, 6, 6, 6, 254, 254, 0]
 
 :: draw_load(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, LOAD_TL, LOAD_TR, LOAD_BL, LOAD_BR, fg, bg)
@@ -100,11 +100,11 @@ def PAL_BR = [0, 60, 126, 126, 126, 60, 0, 0]
     draw_icn(scr, x, y, PAL_TL, PAL_TR, PAL_BL, PAL_BR, fg, bg)
 ;
 
--- Preset icon (stamp)
-def PRST_TL = [0, 0, 0, 24, 60, 60, 126, 126]
-def PRST_TR = [0, 0, 0, 24, 60, 60, 126, 126]
-def PRST_BL = [255, 255, 0, 0, 255, 255, 0, 0]
-def PRST_BR = [255, 255, 0, 0, 255, 255, 0, 0]
+-- Preset icon (rubber stamp)
+def PRST_TL = [0, 7, 7, 7, 7, 15, 31, 63]
+def PRST_TR = [0, 224, 224, 224, 224, 240, 248, 252]
+def PRST_BL = [127, 127, 0, 0, 102, 102, 0, 0]
+def PRST_BR = [254, 254, 0, 0, 102, 102, 0, 0]
 
 :: draw_preset(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, PRST_TL, PRST_TR, PRST_BL, PRST_BR, fg, bg)
@@ -130,11 +130,11 @@ def BRUSH_5 = [60, 126, 255, 255, 255, 255, 126, 60]
         scr.put_icn(x, y, BRUSH_5, fg, bg)
 ;
 
--- Home icon (house shape)
-def HOME_TL = [0, 0, 0, 24, 60, 126, 255, 195]
-def HOME_TR = [0, 0, 0, 24, 60, 126, 255, 195]
-def HOME_BL = [195, 195, 219, 219, 219, 255, 0, 0]
-def HOME_BR = [195, 195, 219, 219, 219, 255, 0, 0]
+-- Home icon (house outline, 2px stroke)
+def HOME_TL = [3, 6, 12, 24, 48, 96, 255, 255]
+def HOME_TR = [192, 96, 48, 24, 12, 6, 255, 255]
+def HOME_BL = [192, 192, 195, 195, 195, 255, 255, 0]
+def HOME_BR = [3, 3, 195, 195, 195, 255, 255, 0]
 
 :: draw_home(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, HOME_TL, HOME_TR, HOME_BL, HOME_BR, fg, bg)
@@ -150,26 +150,24 @@ def BACK_BR = [0, 0, 0, 0, 0, 0, 0, 0]
     draw_icn(scr, x, y, BACK_TL, BACK_TR, BACK_BL, BACK_BR, fg, bg)
 ;
 
--- Color swatch (filled square with border)
-def SWATCH_TL = [255, 255, 192, 192, 192, 192, 192, 192]
-def SWATCH_TR = [255, 255, 3, 3, 3, 3, 3, 3]
-def SWATCH_BL = [192, 192, 192, 192, 192, 192, 255, 255]
-def SWATCH_BR = [3, 3, 3, 3, 3, 3, 255, 255]
+-- Color swatch (two overlapping outlined squares)
+def SWATCH_TL = [0, 127, 127, 96, 96, 96, 99, 99]
+def SWATCH_TR = [0, 192, 192, 192, 192, 192, 254, 254]
+def SWATCH_BL = [127, 127, 3, 3, 3, 3, 3, 0]
+def SWATCH_BR = [198, 198, 6, 6, 6, 6, 254, 0]
 
 :: draw_swatch(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, SWATCH_TL, SWATCH_TR, SWATCH_BL, SWATCH_BR, fg, bg)
 ;
 
--- Filled square (for color fill preview)
-def FILLED = [255, 255, 255, 255, 255, 255, 255, 255]
 def EMPTY  = [0, 0, 0, 0, 0, 0, 0, 0]
 
 :: draw_filled_rect(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
     let ?cy = 0
-    for (; cy < h; cy += 8)
+    for (; cy < h; cy += 1)
         let ?cx = 0
-        for (; cx < w; cx += 8)
-            scr.put_icn(x + cx, y + cy, FILLED, c, c)
+        for (; cx < w; cx += 1)
+            scr.put_icn(x + cx, y + cy, EMPTY, c, c)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────

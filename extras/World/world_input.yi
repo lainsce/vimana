@@ -178,12 +178,12 @@ bring world_browser
         world_model.set_screen_mode("editor")
         <-
 
-    let start_y = world_view.PICKER_START_Y
+    let start_y = world_view.PICKER_START_Y * 8
     if my < start_y
         <-
 
-    let col = stdr.floor((mx - world_view.PICKER_PAD) / (world_model.TILE_W + 4))
-    let row = stdr.floor((my - start_y + world_model.glyph_picker_scroll) / (world_model.TILE_H + 4))
+    let col = stdr.floor((mx - world_view.PICKER_PAD * 8) / 24)
+    let row = stdr.floor((my - start_y + world_model.glyph_picker_scroll) / 24)
     let idx = row * world_view.PICKER_COLS + col
     if idx >= 0 && idx < world_model.GLYPH_COUNT
         world_model.set_selected_glyph(idx)
@@ -237,14 +237,15 @@ bring world_browser
 
 : on_preset_picker_click(mx = num, my = num) (( -- ))
     if in_rect(mx, my, world_model.WIN_W - 28, world_model.TOOLBAR_Y, 28, 24)
+        world_model.set_preset_mode(true)
         world_model.set_screen_mode("editor")
         <-
 
-    let start_y = 60
+    let start_y = 64
     let cols = 4
     let cell_w = 7 * world_model.TILE_W
     let cell_h = 4 * world_model.TILE_H
-    let gap = 24
+    let gap = 16
     let total_w = cols * cell_w + (cols - 1) * gap
     let start_x = (world_model.WIN_W - total_w) / 2
 
@@ -255,8 +256,6 @@ bring world_browser
         let cy = start_y + row * (cell_h + gap) - world_model.preset_picker_scroll
         if in_rect(mx, my, cx, cy, cell_w, cell_h)
             world_model.set_selected_preset(pi)
-            world_model.set_preset_mode(true)
-            world_model.set_screen_mode("editor")
             <-
 ;
 

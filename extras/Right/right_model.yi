@@ -15,7 +15,7 @@ def SIDEBAR_MIN = 128
 def SIDEBAR_MAX = 480
 def PAD_X = 4
 def ROW_H = 24
-def CONTENT_Y = 28
+def CONTENT_Y = 32
 def COL_GUIDE = 51
 def WRAP_COL = 80
 def STATUS_H = 0
@@ -130,6 +130,120 @@ def ?search_active = false
 def ?search_query = ""
 def ?search_matches = []: [any]
 def ?search_index = -1
+
+--| Cache |--
+def ?text_rev = 0
+
+-- Precomputed visual line map
+def ?_line_starts = []: [any]
+def ?_line_ends = []: [any]
+def ?_line_log_starts = []: [any]
+def ?_line_is_nl = []: [any]
+def ?_lines_rev = -1
+
+-- Cached scalars
+def ?_cv_lc = 1
+def ?_cv_lc_rev = -1
+def ?_cv_brk = -1
+def ?_cv_brk_rev = -1
+def ?_cv_brk_car = -1
+def ?_cv_cvlc = [0, 0]: [any]
+def ?_cv_cvlc_rev = -1
+def ?_cv_cvlc_car = -1
+def ?_cv_slc = [0, 0]: [any]
+def ?_cv_slc_rev = -1
+def ?_cv_slc_car = -1
+def ?_cv_tlen = 0
+def ?_cv_tlen_rev = -1
+
+:: mark_text_changed() (( -- ))
+    text_rev += 1
+;
+
+:: build_line_map() (( -- ))
+    if _lines_rev == text_rev
+        <-
+    _line_starts = []: [any]
+    _line_ends = []: [any]
+    _line_log_starts = []: [any]
+    _line_is_nl = []: [any]
+    let total = stdr.len(editor_text)
+    let ?row_start = 0
+    let ?col = 0
+    let ?logical_start = 0
+    for (let ?i = 0; i <= total; i += 1)
+        let at_end = i >= total
+        let is_nl = !at_end && stdr.slice(editor_text, i, i + 1) == "\n"
+        if !at_end && !is_nl && col >= WRAP_COL
+            stdr.push(_line_starts, row_start)
+            stdr.push(_line_ends, i)
+            stdr.push(_line_log_starts, logical_start)
+            stdr.push(_line_is_nl, 0)
+            row_start = i
+            col = 0
+        if at_end || is_nl
+            stdr.push(_line_starts, row_start)
+            stdr.push(_line_ends, i)
+            stdr.push(_line_log_starts, logical_start)
+            if is_nl
+                stdr.push(_line_is_nl, 1)
+            else
+                stdr.push(_line_is_nl, 0)
+            row_start = i + 1
+            col = 0
+            logical_start = i + 1
+        else
+            col += 1
+    _lines_rev = text_rev
+;
+
+:: get_vline_count() (( num ))
+    build_line_map()
+    <- stdr.len(_line_starts)
+;
+
+:: get_line_count() (( num ))
+    if _cv_lc_rev == text_rev
+        <- _cv_lc
+    _cv_lc = line_count(editor_text)
+    _cv_lc_rev = text_rev
+    <- _cv_lc
+;
+
+:: get_matching_bracket() (( num ))
+    if _cv_brk_rev == text_rev && _cv_brk_car == caret
+        <- _cv_brk
+    _cv_brk = find_matching_bracket()
+    _cv_brk_rev = text_rev
+    _cv_brk_car = caret
+    <- _cv_brk
+;
+
+:: get_caret_vline_col() (( [any] ))
+    if _cv_cvlc_rev == text_rev && _cv_cvlc_car == caret
+        <- _cv_cvlc
+    _cv_cvlc = vline_col(editor_text, caret)
+    _cv_cvlc_rev = text_rev
+    _cv_cvlc_car = caret
+    <- _cv_cvlc
+;
+
+:: get_status_line_col() (( [any] ))
+    if _cv_slc_rev == text_rev && _cv_slc_car == caret
+        <- _cv_slc
+    _cv_slc = line_col_from_index(editor_text, caret)
+    _cv_slc_rev = text_rev
+    _cv_slc_car = caret
+    <- _cv_slc
+;
+
+:: get_text_len() (( num ))
+    if _cv_tlen_rev == text_rev
+        <- _cv_tlen
+    _cv_tlen = stdr.len(editor_text)
+    _cv_tlen_rev = text_rev
+    <- _cv_tlen
+;
 
 --| Helpers |--
 
@@ -359,6 +473,7 @@ def ?search_index = -1
 
 :: set_text(txt = string) (( -- ))
     editor_text = txt
+    mark_text_changed()
 ;
 
 :: set_caret(pos = num) (( -- ))
@@ -394,7 +509,7 @@ def ?search_index = -1
 --| Navigation |--
 
 :: ensure_visible() (( -- ))
-    let lc = vline_col(editor_text, caret)
+    let lc = get_caret_vline_col()
     let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
     if cur_line < scroll_y
         scroll_y = cur_line
@@ -403,7 +518,7 @@ def ?search_index = -1
 ;
 
 :: clamp_scroll() (( -- ))
-    let total = vline_count(editor_text)
+    let total = get_vline_count()
     let ?max_scroll = total - visible_lines()
     if max_scroll < 0
         max_scroll = 0
@@ -431,6 +546,7 @@ def ?search_index = -1
     let prefix = stdr.slice(editor_text, 0, a)
     let suffix = stdr.slice(editor_text, b, stdr.len(editor_text))
     editor_text = "$$prefix$$$$chunk$$$$suffix$$"
+    mark_text_changed()
     let pos = a + stdr.len(chunk)
     caret = pos
     sel_start = pos
@@ -449,6 +565,7 @@ def ?search_index = -1
     let prefix = stdr.slice(editor_text, 0, a)
     let suffix = stdr.slice(editor_text, b, stdr.len(editor_text))
     editor_text = "$$prefix$$$$suffix$$"
+    mark_text_changed()
     caret = a
     sel_start = a
     sel_end = a
@@ -466,6 +583,7 @@ def ?search_index = -1
     let prefix = stdr.slice(editor_text, 0, caret - 1)
     let suffix = stdr.slice(editor_text, caret, stdr.len(editor_text))
     editor_text = "$$prefix$$$$suffix$$"
+    mark_text_changed()
     caret -= 1
     sel_start = caret
     sel_end = caret
@@ -484,6 +602,7 @@ def ?search_index = -1
     let prefix = stdr.slice(editor_text, 0, caret)
     let suffix = stdr.slice(editor_text, caret + 1, total)
     editor_text = "$$prefix$$$$suffix$$"
+    mark_text_changed()
     sel_start = caret
     sel_end = caret
     dirty = true
@@ -517,7 +636,7 @@ def ?search_index = -1
 ;
 
 :: move_caret_up(shift = bool) (( -- ))
-    let lc = vline_col(editor_text, caret)
+    let lc = get_caret_vline_col()
     let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
     let cur_col = stdr.floor(stdr.num(lc[1] ?? 0))
     if cur_line > 0
@@ -533,10 +652,10 @@ def ?search_index = -1
 ;
 
 :: move_caret_down(shift = bool) (( -- ))
-    let lc = vline_col(editor_text, caret)
+    let lc = get_caret_vline_col()
     let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
     let cur_col = stdr.floor(stdr.num(lc[1] ?? 0))
-    let total_lines = vline_count(editor_text)
+    let total_lines = get_vline_count()
     if cur_line < total_lines - 1
         caret = vindex_from_line_col(editor_text, cur_line + 1, cur_col)
     else
@@ -792,7 +911,7 @@ def ?search_index = -1
     for (let ?i = 0; i <= total - qlen; i += 1)
         let chunk = stdr.slice(editor_text, i, i + qlen)
         if chunk == search_query
-            search_matches = search_matches + [i]
+            stdr.push(search_matches, i)
     if stdr.len(search_matches) > 0
         search_index = 0
         jump_to_match()
@@ -1033,7 +1152,7 @@ def ?autocomplete_visible = false
 :: strip_trailing() (( -- ))
     -- Remove trailing whitespace from every line
     let total = stdr.len(editor_text)
-    let ?result = ""
+    let ?parts = []: [any]
     let ?line_start = 0
     for (let ?i = 0; i <= total; i += 1)
         let at_end = i >= total
@@ -1046,11 +1165,12 @@ def ?autocomplete_visible = false
                 if c != " " && c != "\t"
                     break
                 trail = j
-            result = result + stdr.slice(editor_text, line_start, trail)
+            stdr.push(parts, stdr.slice(editor_text, line_start, trail))
             if is_nl
-                result = result + "\n"
+                stdr.push(parts, "\n")
             line_start = i + 1
-    editor_text = result
+    editor_text = stdr.join(parts)
+    mark_text_changed()
     if caret > stdr.len(editor_text)
         caret = stdr.len(editor_text)
     sel_start = caret
@@ -1069,6 +1189,7 @@ def ?autocomplete_visible = false
             break
     if end_pos < total
         editor_text = stdr.slice(editor_text, 0, end_pos) + "\n"
+        mark_text_changed()
         if caret > stdr.len(editor_text)
             caret = stdr.len(editor_text)
         sel_start = caret
@@ -1095,7 +1216,7 @@ def ?autocomplete_visible = false
     if e > s && last_lc[1] == 0 && last_line > first_line
         last_line -= 1
     let total = stdr.len(editor_text)
-    let ?result = ""
+    let ?parts = []: [any]
     let ?cur_line = 0
     let ?line_start = 0
     for (let ?i = 0; i <= total; i += 1)
@@ -1103,13 +1224,14 @@ def ?autocomplete_visible = false
         let is_nl = !at_end && stdr.slice(editor_text, i, i + 1) == "\n"
         if at_end || is_nl
             if cur_line >= first_line && cur_line <= last_line
-                result = result + "    "
-            result = result + stdr.slice(editor_text, line_start, i)
+                stdr.push(parts, "    ")
+            stdr.push(parts, stdr.slice(editor_text, line_start, i))
             if is_nl
-                result = result + "\n"
+                stdr.push(parts, "\n")
             line_start = i + 1
             cur_line += 1
-    editor_text = result
+    editor_text = stdr.join(parts)
+    mark_text_changed()
     caret = caret + 4
     sel_start = sel_start + 4
     sel_end = sel_end + (last_line - first_line + 1) * 4
@@ -1133,7 +1255,7 @@ def ?autocomplete_visible = false
     if e > s && last_lc[1] == 0 && last_line > first_line
         last_line -= 1
     let total = stdr.len(editor_text)
-    let ?result = ""
+    let ?parts = []: [any]
     let ?cur_line = 0
     let ?line_start = 0
     let ?removed = 0
@@ -1151,15 +1273,16 @@ def ?autocomplete_visible = false
                         spaces += 1
                     else
                         break
-                result = result + stdr.slice(line_text, spaces, llen)
+                stdr.push(parts, stdr.slice(line_text, spaces, llen))
                 removed += spaces
             else
-                result = result + line_text
+                stdr.push(parts, line_text)
             if is_nl
-                result = result + "\n"
+                stdr.push(parts, "\n")
             line_start = i + 1
             cur_line += 1
-    editor_text = result
+    editor_text = stdr.join(parts)
+    mark_text_changed()
     caret = caret - removed
     if caret < 0
         caret = 0

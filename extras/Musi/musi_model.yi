@@ -10,29 +10,31 @@ def PLAYER_H  = 136
 def ROW_H     = 16
 def MAX_ROWS  = 24
 
--- Player panel Y positions (all relative to screen top)
+-- Player panel Y positions (pixel-addressed, for put_text)
 def TITLE_Y   = 16
 def ARTIST_Y  = 32
 def ALBUM_Y   = 48
-def CTRL_BG_Y = 70
-def CTRL_Y    = 78
 def TS_Y      = 102
-def PROG_Y    = 122
-def PROG_X    = 8
+
+-- Control bar (tile-addressed; ×8 for pixels)
+def CTRL_BG_Y = 9
+def CTRL_Y    = 10
+def PROG_Y    = 15
+def PROG_X    = 1
 def PROG_W    = 239
 
--- Directory list start Y
+-- Directory list start Y (pixel-addressed)
 def DIR_Y_IDLE = 16
 def DIR_Y_PLAY = 144
 
--- Control button X positions (matching m291 layout)
-def CTRL_REPEAT_X = 40
-def CTRL_VOLDN_X  = 64
-def CTRL_PREV_X   = 88
-def CTRL_PLAY_X   = 112
-def CTRL_NEXT_X   = 152
-def CTRL_VOLUP_X  = 176
-def CTRL_SHUF_X   = 200
+-- Control button X positions (tile-addressed)
+def CTRL_REPEAT_X = 5
+def CTRL_VOLDN_X  = 8
+def CTRL_PREV_X   = 11
+def CTRL_PLAY_X   = 14
+def CTRL_NEXT_X   = 19
+def CTRL_VOLUP_X  = 22
+def CTRL_SHUF_X   = 25
 
 -- Palette slot indices
 def C_BG  = 0

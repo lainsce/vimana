@@ -10,15 +10,15 @@ def TILE_H = 16
 def GLYPH_COUNT = 91
 def HISTORY_LIMIT = 256
 
-def GLYPH_LAYOUT = "qQwWeErRtTyYuUiIoOpPaAsSdDfFgGhHjJkKlLzZxXcCvVbBnNmM,<.>1!2@3#4$5%6^7&8*9(0)-|=+[{]};:'\"/?_"
+def GLYPH_LAYOUT = "qQwWeErRtTyYuUiIoOpPaAsSdDfFgGhHjJkKlLzZxXcCvVbBnNmM,<.>1!2@3#4$5%6^7&8*9(0)-|=+[{]};:'\"/?_ "
 
 -- Layout constants
 def WIN_W = 560
-def WIN_H = 400
+def WIN_H = 408
 def TOOLBAR_H = 24
 def TOOLBAR_Y = 0
 def MAP_X = 8
-def MAP_Y = 24
+def MAP_Y = 32
 
 -- Palette slot indices
 def C_BG = 0

@@ -6,9 +6,9 @@ bring world_assets
 -- 2x2 icon helper (16x16 from four 8x8 tiles)
 :: draw_icn(scr = vimana.screen, x = num, y = num, tl = any, tr = any, bl = any, br = any, fg = num, bg = num) (( -- ))
     scr.put_icn(x,     y,     tl, fg, bg)
-    scr.put_icn(x + 8, y,     tr, fg, bg)
-    scr.put_icn(x,     y + 8, bl, fg, bg)
-    scr.put_icn(x + 8, y + 8, br, fg, bg)
+    scr.put_icn(x + 1, y,     tr, fg, bg)
+    scr.put_icn(x,     y + 1, bl, fg, bg)
+    scr.put_icn(x + 1, y + 1, br, fg, bg)
 ;
 
 : draw_00(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))

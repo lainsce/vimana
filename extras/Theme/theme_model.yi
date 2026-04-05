@@ -9,22 +9,22 @@ bring stdr
 def WIN_W = 152
 def WIN_H = 188
 
-def BAR_X = 8
+-- Tile-addressed (×8 for pixels)
+def BAR_X = 1
+def BAR_Y_R = 5
+def BAR_Y_G = 10
+def BAR_Y_B = 15
+def RADIO_Y = 20
+def RADIO_X0 = 1
+def RADIO_STEP = 4
+
+-- Pixel-addressed
 def BAR_W = 136
-def BAR_Y_R = 44
-def BAR_Y_G = 84
-def BAR_Y_B = 124
-
 def LABEL_X = 8
-def LABEL_Y_R = 28
-def LABEL_Y_G = 68
-def LABEL_Y_B = 108
-
-def SEP_Y = 151
-
-def RADIO_Y = 163
-def RADIO_X0 = 6
-def RADIO_STEP = 36
+def LABEL_Y_R = 24
+def LABEL_Y_G = 64
+def LABEL_Y_B = 104
+def SEP_Y = 147
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- State

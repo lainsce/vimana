@@ -3,42 +3,42 @@ cask casu_model
 bring stdr
 
 -- Screen dimensions
-def SCR_W = 302
+def SCR_W = 304
 def SCR_H = 240
 
--- View layout constants (matching nasu.tal set-size calls)
-def TILEVIEW_X  = 18       -- frame.x1 - 1
-def TILEVIEW_Y  = 80       -- frame.y1 + 56
-def TILEVIEW_W  = 128      -- 16 tiles × 8px
+-- View layout constants — tile-addressed (1 tile = 8px)
+def TILEVIEW_X  = 2        -- tile 2 (was 18px)
+def TILEVIEW_Y  = 10       -- tile 10 (was 80px)
+def TILEVIEW_W  = 128      -- pixel, fill only
 def TILEVIEW_H  = 128
-def NTAB_X      = 156      -- frame.x1 + 137
-def NTAB_Y      = 80
+def NTAB_X      = 20       -- tile 20 (was 156px)
+def NTAB_Y      = 10
 def NTAB_W      = 128
 def NTAB_H      = 128
-def ZOOM_X      = 18
-def ZOOM_Y      = 16
-def ZOOM_W      = 31       -- 8 pixels × 4px/pixel = 32, panel width
-def ZOOM_H      = 47
-def PREVIEW_X   = 66       -- frame.x1 + 0x2f
-def PREVIEW_Y   = 16
-def PREVIEW_W   = 31
-def PREVIEW_H   = 47
-def COLOR_X     = 114      -- frame.x1 + 0x5f
-def COLOR_Y     = 16
-def COLOR_W     = 32       -- 16 steps × 2px
-def COLOR_H     = 47
-def BLEND_X     = 162      -- frame.x1 + 0x8f
-def BLEND_Y     = 16
-def BLEND_W     = 31
-def BLEND_H     = 47
-def DATA_X      = 210      -- frame.x1 + 0xbf
-def DATA_Y      = 16
-def DATA_W      = 72       -- 0x48
-def DATA_H      = 47
-def TOOL_X      = 18
-def TOOL_Y      = 216      -- tileview/y2 + 8
-def TOOL_W      = 264
-def TOOL_H      = 8
+def ZOOM_X      = 2        -- tile 2 (was 18px)
+def ZOOM_Y      = 2        -- tile 2 (was 16px)
+def ZOOM_W      = 32       -- pixel (was 31)
+def ZOOM_H      = 48       -- pixel (was 47)
+def PREVIEW_X   = 8        -- tile 8 (was 66px)
+def PREVIEW_Y   = 2
+def PREVIEW_W   = 32       -- pixel (was 31)
+def PREVIEW_H   = 48       -- pixel (was 47)
+def COLOR_X     = 14       -- tile 14 (was 114px)
+def COLOR_Y     = 2
+def COLOR_W     = 32       -- pixel
+def COLOR_H     = 48       -- pixel (was 47)
+def BLEND_X     = 20       -- tile 20 (was 162px)
+def BLEND_Y     = 2
+def BLEND_W     = 32       -- pixel (was 31)
+def BLEND_H     = 48       -- pixel (was 47)
+def DATA_X      = 27       -- tile 27 (was 210px)
+def DATA_Y      = 2
+def DATA_W      = 72       -- pixel, put_text only
+def DATA_H      = 48       -- pixel (was 47)
+def TOOL_X      = 2        -- tile 2 (was 18px)
+def TOOL_Y      = 27       -- tile 27 (was 216px)
+def TOOL_W      = 272      -- pixel, fill only
+def TOOL_H      = 8        -- pixel
 
 -- Palette R/G/B nibble values for each color slot (matching nasu default theme)
 -- PAL_3=#77ddcc → r=7, g=d=13, b=c=12

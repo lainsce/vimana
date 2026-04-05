@@ -65,15 +65,12 @@ bring world_assets
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : draw_map(scr = vimana.screen) (( -- ))
-    let ox = world_model.MAP_X
-    let oy = world_model.MAP_Y
-
     for (let ?row = 0; row < world_model.MAP_ROWS; row += 1)
         for (let ?col = 0; col < world_model.MAP_COLS; col += 1)
             let glyph_idx = world_model.cell_glyph_idx(col, row)
             let ci = world_model.cell_color(col, row)
-            let px = ox + col * world_model.TILE_W
-            let py = oy + row * world_model.TILE_H
+            let tx = world_model.MAP_X / 8 + col * 2
+            let ty = world_model.MAP_Y / 8 + row * 2
             let fg = color_slot(ci)
             let bg = world_model.C_BG
 
@@ -81,9 +78,9 @@ bring world_assets
                 continue
 
             if world_model.text_mode
-                world_text_glyphs.draw_text_glyph(scr, px, py, glyph_idx, fg, bg)
+                world_text_glyphs.draw_text_glyph(scr, tx, ty, glyph_idx, fg, bg)
             else
-                world_glyphs.draw_glyph(scr, px, py, glyph_idx, fg, bg)
+                world_glyphs.draw_glyph(scr, tx, ty, glyph_idx, fg, bg)
 ;
 
 : draw_grid_overlay(scr = vimana.screen) (( -- ))
@@ -98,12 +95,12 @@ bring world_assets
     -- Vertical lines
     for (let ?col = 0; col <= world_model.MAP_COLS; col += 1)
         let x = ox + col * world_model.TILE_W
-        vline(scr, x, oy, map_h, world_model.C_FG)
+        vline(scr, x, oy, map_h, world_model.C_CLR2)
 
     -- Horizontal lines
     for (let ?row = 0; row <= world_model.MAP_ROWS; row += 1)
         let y = oy + row * world_model.TILE_H
-        hline(scr, ox, y, map_w, world_model.C_FG)
+        hline(scr, ox, y, map_w, world_model.C_CLR2)
 ;
 
 : draw_cursor(scr = vimana.screen) (( -- ))
@@ -155,100 +152,100 @@ def TB_PAD = 4
     let x = tb_btn_x(idx)
     let y = world_model.TOOLBAR_Y + 2
     if selected
-        fill(scr, x, y, TB_BTN_W, TB_BTN_H, world_model.C_CLR1)
+        fill(scr, x, y, TB_BTN_W, TB_BTN_H, world_model.C_BG)
 ;
+
+-- Tile-addressed icon position (for put_icn / draw_icn)
+: tb_icon_tile(idx = num) (( num ))
+    <- idx * 3
+;
+def ICON_TILE_Y = 0
 
 : draw_toolbar(scr = vimana.screen) (( -- ))
     fill(scr, 0, world_model.TOOLBAR_Y, world_model.WIN_W, world_model.TOOLBAR_H, world_model.C_BG)
-    hline(scr, 0, world_model.TOOLBAR_Y, world_model.WIN_W, world_model.C_FG)
-    hline(scr, 0, world_model.TOOLBAR_Y + world_model.TOOLBAR_H - 1, world_model.WIN_W, world_model.C_FG)
 
     let ?i = 0
-    let icon_y = world_model.TOOLBAR_Y + 4
 
     -- Undo (0)
     let ?undo_fg = world_model.C_FG
     if !world_model.can_undo()
         undo_fg = world_model.C_CLR2
-    world_assets.draw_undo(scr, tb_btn_x(i) + 2, icon_y, undo_fg, world_model.C_BG)
+    world_assets.draw_undo(scr, tb_icon_tile(i), ICON_TILE_Y, undo_fg, world_model.C_BG)
     i += 1
 
     -- Redo (1)
     let ?redo_fg = world_model.C_FG
     if !world_model.can_redo()
         redo_fg = world_model.C_CLR2
-    world_assets.draw_redo(scr, tb_btn_x(i) + 2, icon_y, redo_fg, world_model.C_BG)
+    world_assets.draw_redo(scr, tb_icon_tile(i), ICON_TILE_Y, redo_fg, world_model.C_BG)
     i += 1
 
     -- Grid (2)
     draw_toolbar_btn(scr, i, world_model.show_grid)
-    world_assets.draw_grid(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_grid(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
     i += 1
 
     -- Text/Ding toggle (3)
     draw_toolbar_btn(scr, i, world_model.text_mode)
     if world_model.text_mode
-        world_assets.draw_text(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+        world_assets.draw_text(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
     else
-        world_assets.draw_ding(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+        world_assets.draw_ding(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
     i += 1
 
-    -- separator
+    -- spacer
     i += 1
 
     -- Palette pick (5)
-    world_assets.draw_palette(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_palette(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
     i += 1
 
     -- Color pick (6)
     let cs = color_slot(world_model.selected_color)
-    world_assets.draw_swatch(scr, tb_btn_x(i) + 2, icon_y, cs, world_model.C_FG)
+    world_assets.draw_swatch(scr, tb_icon_tile(i), ICON_TILE_Y, cs, world_model.C_BG)
     i += 1
 
     -- Glyph pick (7)
     draw_toolbar_btn(scr, i, !world_model.preset_mode)
-    -- draw miniature of selected glyph centered in button
-    let glyph_x = tb_btn_x(i) + 2
-    let glyph_y = icon_y
     let gi = world_model.selected_glyph
     if gi > 0
         if world_model.text_mode
-            world_text_glyphs.draw_text_glyph(scr, glyph_x, glyph_y - 2, gi, world_model.C_FG, world_model.C_BG)
+            world_text_glyphs.draw_text_glyph(scr, tb_icon_tile(i), ICON_TILE_Y, gi, world_model.C_FG, world_model.C_BG)
         else
-            world_glyphs.draw_glyph(scr, glyph_x, glyph_y - 2, gi, world_model.C_FG, world_model.C_BG)
+            world_glyphs.draw_glyph(scr, tb_icon_tile(i), ICON_TILE_Y, gi, world_model.C_FG, world_model.C_BG)
     i += 1
 
     -- Preset pick (8)
     draw_toolbar_btn(scr, i, world_model.preset_mode)
-    world_assets.draw_preset(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_preset(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
     i += 1
 
-    -- separator
+    -- spacer
     i += 1
 
     -- Brush sizes (10-14)
     for (let ?bs = 1; bs <= 5; bs += 1)
         draw_toolbar_btn(scr, i, world_model.brush_size == bs && !world_model.preset_mode)
-        world_assets.draw_brush(scr, tb_btn_x(i) + 6, icon_y + 6, bs, world_model.C_FG, world_model.C_BG)
+        world_assets.draw_brush(scr, tb_icon_tile(i), ICON_TILE_Y, bs, world_model.C_FG, world_model.C_BG)
         i += 1
 
-    -- separator
+    -- spacer
     i += 1
 
     -- Clear (16)
-    world_assets.draw_clear(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_clear(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
     i += 1
 
     -- Save (17)
-    world_assets.draw_save(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_save(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
     i += 1
 
     -- Load (18)
-    world_assets.draw_load(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_load(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
     i += 1
 
     -- Home (19)
-    world_assets.draw_home(scr, tb_btn_x(i) + 2, icon_y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_home(scr, tb_icon_tile(i), ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -256,31 +253,29 @@ def TB_PAD = 4
 -- ─────────────────────────────────────────────────────────────────────────────
 
 def PICKER_COLS = 13
-def PICKER_START_Y = 50
-def PICKER_PAD = 8
+def PICKER_START_Y = 6
+def PICKER_PAD = 1
 
 : draw_glyph_picker(scr = vimana.screen) (( -- ))
     scr.put_text(8, world_model.TOOLBAR_Y + 6, "Glyph Picker", world_model.C_FG, world_model.C_BG)
     -- Back button
-    world_assets.draw_back(scr, world_model.WIN_W - 24, world_model.TOOLBAR_Y + 4, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
-    let start_y = PICKER_START_Y
-    let ?gx = PICKER_PAD
-    let ?gy = start_y
     let ci = color_slot(world_model.selected_color)
 
     for (let ?i = 0; i < world_model.GLYPH_COUNT; i += 1)
         let col_idx = i % PICKER_COLS
         let row_idx = stdr.floor(i / PICKER_COLS)
-        gx = PICKER_PAD + col_idx * (world_model.TILE_W + 4)
-        gy = start_y + row_idx * (world_model.TILE_H + 4) - world_model.glyph_picker_scroll
+        let gx = PICKER_PAD + col_idx * 3
+        let gy_px = PICKER_START_Y * 8 + row_idx * 24 - world_model.glyph_picker_scroll
+        let gy = gy_px / 8
 
-        if gy + world_model.TILE_H < PICKER_START_Y || gy > world_model.WIN_H
+        if gy_px + world_model.TILE_H < PICKER_START_Y * 8 || gy_px > world_model.WIN_H
             continue
 
         -- Highlight selected
         if i == world_model.selected_glyph
-            fill(scr, gx - 1, gy - 1, world_model.TILE_W + 2, world_model.TILE_H + 2, world_model.C_CLR1)
+            fill(scr, gx * 8 - 1, gy_px - 1, world_model.TILE_W + 2, world_model.TILE_H + 2, world_model.C_CLR1)
 
         if world_model.text_mode
             world_text_glyphs.draw_text_glyph(scr, gx, gy, i, ci, world_model.C_BG)
@@ -294,13 +289,13 @@ def PICKER_PAD = 8
 
 : draw_color_picker(scr = vimana.screen) (( -- ))
     scr.put_text(8, world_model.TOOLBAR_Y + 6, "Color Picker", world_model.C_FG, world_model.C_BG)
-    world_assets.draw_back(scr, world_model.WIN_W - 24, world_model.TOOLBAR_Y + 4, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
-    let start_y = 80
-    let swatch_size = 64
-    let gap = 32
+    let start_y = 10
+    let swatch_size = 8
+    let gap = 4
     let total_w = 3 * swatch_size + 2 * gap
-    let start_x = (world_model.WIN_W - total_w) / 2
+    let start_x = (world_model.WIN_W / 8 - total_w) / 2
 
     for (let ?ci = 1; ci <= 3; ci += 1)
         let sx = start_x + (ci - 1) * (swatch_size + gap)
@@ -310,12 +305,15 @@ def PICKER_PAD = 8
         world_assets.draw_filled_rect(scr, sx, start_y, swatch_size, swatch_size, slot)
 
         -- Selection indicator
+        let sx_px = sx * 8
+        let sy_px = start_y * 8
+        let sw_px = swatch_size * 8
         if ci == world_model.selected_color
             -- Outline box
-            hline(scr, sx - 2, start_y - 2, swatch_size + 4, world_model.C_FG)
-            hline(scr, sx - 2, start_y + swatch_size + 1, swatch_size + 4, world_model.C_FG)
-            vline(scr, sx - 2, start_y - 2, swatch_size + 4, world_model.C_FG)
-            vline(scr, sx + swatch_size + 1, start_y - 2, swatch_size + 4, world_model.C_FG)
+            hline(scr, sx_px - 2, sy_px - 2, sw_px + 4, world_model.C_FG)
+            hline(scr, sx_px - 2, sy_px + sw_px + 1, sw_px + 4, world_model.C_FG)
+            vline(scr, sx_px - 2, sy_px - 2, sw_px + 4, world_model.C_FG)
+            vline(scr, sx_px + sw_px + 1, sy_px - 2, sw_px + 4, world_model.C_FG)
 
         -- Label
         let ?label = "CLR1"
@@ -323,8 +321,8 @@ def PICKER_PAD = 8
             label = "CLR2"
         if ci == 3
             label = "FG"
-        let lx = sx + (swatch_size - stdr.len(label) * 8) / 2
-        scr.put_text(lx, start_y + swatch_size + 8, label, world_model.C_FG, world_model.C_BG)
+        let lx = sx_px + (sw_px - stdr.len(label) * 8) / 2
+        scr.put_text(lx, sy_px + sw_px + 8, label, world_model.C_FG, world_model.C_BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -333,12 +331,12 @@ def PICKER_PAD = 8
 
 : draw_theme_picker(scr = vimana.screen) (( -- ))
     scr.put_text(8, world_model.TOOLBAR_Y + 6, "Theme Picker", world_model.C_FG, world_model.C_BG)
-    world_assets.draw_back(scr, world_model.WIN_W - 24, world_model.TOOLBAR_Y + 4, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
     let start_y = 64
     let row_h = 20
     let cols = 2
-    let col_w = 280
+    let col_w = 240
     let gap = 16
     let total_w = cols * col_w + (cols - 1) * gap
     let start_x = (world_model.WIN_W - total_w) / 2
@@ -362,29 +360,68 @@ def PICKER_PAD = 8
 -- Preset picker screen
 -- ─────────────────────────────────────────────────────────────────────────────
 
+: draw_preset_cell(scr = vimana.screen, pi = num, cx = num, cy = num, cell_w = num, cell_h = num) (( -- ))
+    let gi = world_model.selected_glyph
+    let pw = world_presets.preset_width(pi)
+    let ph = world_presets.preset_height(pi)
+    let ox = cx + (cell_w - pw * world_model.TILE_W) / 2
+    let oy = cy + (cell_h - ph * world_model.TILE_H) / 2
+
+    for (let ?py = 0; py < ph; py += 1)
+        for (let ?px = 0; px < pw; px += 1)
+            let token_pri = world_presets.preset_cell_for_color(pi, px, py, 1)
+            let token_sec = world_presets.preset_cell_for_color(pi, px, py, 2)
+            let ?token = " "
+            let ?slot = world_model.C_CLR1
+            if token_pri != " "
+                token = token_pri
+                slot = world_model.C_CLR1
+            if token_sec != " "
+                token = token_sec
+                slot = world_model.C_CLR2
+            if token == " "
+                continue
+
+            let ?gidx = gi
+            if token != "#"
+                let found = world_model.glyph_index_from_letter(token)
+                if found >= 0
+                    gidx = found
+
+            let tile_x = (ox + px * world_model.TILE_W) / 8
+            let tile_y = (oy + py * world_model.TILE_H) / 8
+            if world_model.text_mode
+                world_text_glyphs.draw_text_glyph(scr, tile_x, tile_y, gidx, slot, world_model.C_BG)
+            else
+                world_glyphs.draw_glyph(scr, tile_x, tile_y, gidx, slot, world_model.C_BG)
+;
+
 : draw_preset_picker(scr = vimana.screen) (( -- ))
     scr.put_text(8, world_model.TOOLBAR_Y + 6, "Preset Picker", world_model.C_FG, world_model.C_BG)
-    world_assets.draw_back(scr, world_model.WIN_W - 24, world_model.TOOLBAR_Y + 4, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
-    let start_y = 60
+    let start_y = 64
     let cols = 4
-    let gap = 24
+    let gap = 16
     let cell_w = 7 * world_model.TILE_W
     let cell_h = 4 * world_model.TILE_H
     let total_w = cols * cell_w + (cols - 1) * gap
     let start_x = (world_model.WIN_W - total_w) / 2
 
-    let gi = world_model.selected_glyph
-    let ci = color_slot(world_model.selected_color)
-
-    for (let ?pi = 0; pi < world_presets.preset_count(); pi += 1)
+    for (let ?pi = 0; pi < 26; pi += 1)
         let col = pi % cols
         let row = stdr.floor(pi / cols)
         let cx = start_x + col * (cell_w + gap)
         let cy = start_y + row * (cell_h + gap) - world_model.preset_picker_scroll
 
-        if cy + cell_h < start_y || cy > world_model.WIN_H
-            continue
+        -- Fill cell background
+        fill(scr, cx, cy, cell_w, cell_h, world_model.C_BG)
+
+        -- Cell outline
+        hline(scr, cx, cy, cell_w, world_model.C_CLR2)
+        hline(scr, cx, cy + cell_h - 1, cell_w, world_model.C_CLR2)
+        vline(scr, cx, cy, cell_h, world_model.C_CLR2)
+        vline(scr, cx + cell_w - 1, cy, cell_h, world_model.C_CLR2)
 
         -- Highlight selected
         if pi == world_model.selected_preset
@@ -394,38 +431,7 @@ def PICKER_PAD = 8
             vline(scr, cx + cell_w, cy - 1, cell_h + 2, world_model.C_FG)
 
         -- Draw preset tiles
-        let pw = world_presets.preset_width(pi)
-        let ph = world_presets.preset_height(pi)
-        let ox = cx + (cell_w - pw * world_model.TILE_W) / 2
-        let oy = cy + (cell_h - ph * world_model.TILE_H) / 2
-
-        for (let ?py = 0; py < ph; py += 1)
-            for (let ?px = 0; px < pw; px += 1)
-                let token_pri = world_presets.preset_cell_for_color(pi, px, py, 1)
-                let token_sec = world_presets.preset_cell_for_color(pi, px, py, 2)
-                let ?token = " "
-                let ?slot = ci
-                if token_pri != " "
-                    token = token_pri
-                    slot = world_model.C_CLR1
-                if token_sec != " "
-                    token = token_sec
-                    slot = world_model.C_CLR2
-                if token == " "
-                    continue
-
-                let ?gidx = gi
-                if token != "#"
-                    let found = world_model.glyph_index_from_letter(token)
-                    if found >= 0
-                        gidx = found
-
-                let tile_x = ox + px * world_model.TILE_W
-                let tile_y = oy + py * world_model.TILE_H
-                if world_model.text_mode
-                    world_text_glyphs.draw_text_glyph(scr, tile_x, tile_y, gidx, slot, world_model.C_BG)
-                else
-                    world_glyphs.draw_glyph(scr, tile_x, tile_y, gidx, slot, world_model.C_BG)
+        draw_preset_cell(scr, pi, cx, cy, cell_w, cell_h)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -444,10 +450,6 @@ def PICKER_PAD = 8
     let load_label = "Load a World"
     let lx = (world_model.WIN_W - stdr.len(load_label) * 8) / 2
     scr.put_text(lx, 320, load_label, world_model.C_CLR1, world_model.C_BG)
-
-    let hint = "[C]reate  [L]oad"
-    let hx = (world_model.WIN_W - stdr.len(hint) * 8) / 2
-    scr.put_text(hx, 400, hint, world_model.C_CLR2, world_model.C_BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -468,19 +470,14 @@ def PICKER_PAD = 8
         draw_grid_overlay(scr)
         draw_cursor(scr)
     elif mode == "glyph_picker"
-        draw_toolbar(scr)
         draw_glyph_picker(scr)
     elif mode == "color_picker"
-        draw_toolbar(scr)
         draw_color_picker(scr)
     elif mode == "theme_picker"
-        draw_toolbar(scr)
         draw_theme_picker(scr)
     elif mode == "preset_picker"
-        draw_toolbar(scr)
         draw_preset_picker(scr)
     elif mode == "browser"
-        draw_toolbar(scr)
         draw_browser(scr)
 
     scr.present()
@@ -499,7 +496,7 @@ def BROWSER_MAX_ROWS = 32
     if world_model.browser_save_mode
         title = "Save File"
     scr.put_text(8, world_model.TOOLBAR_Y + 6, title, world_model.C_FG, world_model.C_BG)
-    world_assets.draw_back(scr, world_model.WIN_W - 24, world_model.TOOLBAR_Y + 4, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
     -- Path indicator
     let path_display = clamp_text(world_model.browser_path, 70)

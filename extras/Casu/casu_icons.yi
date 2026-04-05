@@ -265,3 +265,49 @@ def ICON_SLOT_BASE = 61696
     -- No sprite slot pre-upload needed for 1bpp put_icn calls.
 ;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Frame CHR data (2bpp 8×8 tiles) for panel borders
+-- Each tile = 16 bytes: plane0 (8 bytes) + plane1 (8 bytes)
+-- e = corner/edge, h = horizontal bar, v = vertical bar
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Frame 1: thick rounded frame (tileview, nametable)
+def FRAME1_E_P0 = [0, 0, 0, 0, 7, 15, 15, 15]
+def FRAME1_E_P1 = [0, 0, 0, 7, 8, 16, 16, 16]
+def FRAME1_H_P0 = [0, 0, 0, 0, 255, 255, 255, 255]
+def FRAME1_H_P1 = [0, 0, 0, 255, 0, 0, 0, 0]
+def FRAME1_V_P0 = [240, 240, 240, 240, 240, 240, 240, 240]
+def FRAME1_V_P1 = [8, 8, 8, 8, 8, 8, 8, 8]
+
+-- Frame 2: thin frame (zoomview)
+def FRAME2_E_P0 = [0, 0, 0, 0, 0, 0, 0, 0]
+def FRAME2_E_P1 = [0, 0, 0, 0, 0, 1, 2, 4]
+def FRAME2_H_P0 = [0, 0, 0, 0, 0, 0, 0, 0]
+def FRAME2_H_P1 = [0, 0, 0, 0, 0, 255, 0, 0]
+def FRAME2_V_P0 = [0, 0, 0, 0, 0, 0, 0, 0]
+def FRAME2_V_P1 = [32, 32, 32, 32, 32, 32, 32, 32]
+
+-- Sprite memory addresses for frame tiles (after user spritesheet at 0-4095)
+def FRAME1_ADDR_E = 4096
+def FRAME1_ADDR_H = 4112
+def FRAME1_ADDR_V = 4128
+def FRAME2_ADDR_E = 4144
+def FRAME2_ADDR_H = 4160
+def FRAME2_ADDR_V = 4176
+
+-- Upload frame CHR tiles to sprite memory
+: setup_frames(scr = vimana.screen) (( -- ))
+    scr.set_sprite(FRAME1_ADDR_E,     FRAME1_E_P0, 0)
+    scr.set_sprite(FRAME1_ADDR_E + 8, FRAME1_E_P1, 0)
+    scr.set_sprite(FRAME1_ADDR_H,     FRAME1_H_P0, 0)
+    scr.set_sprite(FRAME1_ADDR_H + 8, FRAME1_H_P1, 0)
+    scr.set_sprite(FRAME1_ADDR_V,     FRAME1_V_P0, 0)
+    scr.set_sprite(FRAME1_ADDR_V + 8, FRAME1_V_P1, 0)
+    scr.set_sprite(FRAME2_ADDR_E,     FRAME2_E_P0, 0)
+    scr.set_sprite(FRAME2_ADDR_E + 8, FRAME2_E_P1, 0)
+    scr.set_sprite(FRAME2_ADDR_H,     FRAME2_H_P0, 0)
+    scr.set_sprite(FRAME2_ADDR_H + 8, FRAME2_H_P1, 0)
+    scr.set_sprite(FRAME2_ADDR_V,     FRAME2_V_P0, 0)
+    scr.set_sprite(FRAME2_ADDR_V + 8, FRAME2_V_P1, 0)
+;
+
