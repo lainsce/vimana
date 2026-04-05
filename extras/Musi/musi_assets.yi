@@ -151,48 +151,51 @@ def VOL6_BR = [197, 201, 202, 210, 196, 0, 0, 0]
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Button frame (32×32, from @button-icn in m291.tal, column-major order)
--- Drawn at (x, y); fg=highlight colour, bg=bar background colour.
+-- Button frame (32×32, 2bpp CHR from @button-icn in m291.tal)
+-- Tiles pre-loaded in setup(): normal at addr 128, active at addr 384.
+-- auto=0x36: 4 tiles per call, x-advance within, addr+16/tile, y+8 after call.
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- col 0 (x+0), rows top→bottom
-def BTN_C0R0 = [0x00, 0x00, 0x03, 0x0c, 0x10, 0x10, 0x20, 0x20]
-def BTN_C0R1 = [0x00, 0x00, 0x00, 0x03, 0x0f, 0x0f, 0x1f, 0x1f]
-def BTN_C0R2 = [0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00]
-def BTN_C0R3 = [0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
--- col 1 (x+8)
-def BTN_C1R0 = [0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00]
-def BTN_C1R1 = [0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
-def BTN_C1R2 = [0x00, 0x00, 0xc0, 0x30, 0x08, 0x08, 0x04, 0x04]
-def BTN_C1R3 = [0x00, 0x00, 0x00, 0xc0, 0xf0, 0xf0, 0xf8, 0xf8]
--- col 2 (x+16)
-def BTN_C2R0 = [0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20]
-def BTN_C2R1 = [0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f]
-def BTN_C2R2 = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-def BTN_C2R3 = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
--- col 3 (x+24)
-def BTN_C3R0 = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-def BTN_C3R1 = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
-def BTN_C3R2 = [0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04]
-def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
+:: draw_button_frame(scr = vimana.screen, x = num, y = num, _fg = num, _bg = num) (( -- ))
+    scr.set_auto(54)
+    scr.set_x(x)
+    scr.set_y(y)
+    if musi_model.paused
+        scr.set_addr(384)
+    else
+        scr.set_addr(128)
+    scr.sprite(129)
+    scr.sprite(129)
+    scr.sprite(129)
+    scr.sprite(129)
+;
 
-:: draw_button_frame(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    scr.put_icn(x,      y,      BTN_C0R0, fg, bg)
-    scr.put_icn(x,      y + 8,  BTN_C0R1, fg, bg)
-    scr.put_icn(x,      y + 16, BTN_C0R2, fg, bg)
-    scr.put_icn(x,      y + 24, BTN_C0R3, fg, bg)
-    scr.put_icn(x + 8,  y,      BTN_C1R0, fg, bg)
-    scr.put_icn(x + 8,  y + 8,  BTN_C1R1, fg, bg)
-    scr.put_icn(x + 8,  y + 16, BTN_C1R2, fg, bg)
-    scr.put_icn(x + 8,  y + 24, BTN_C1R3, fg, bg)
-    scr.put_icn(x + 16, y,      BTN_C2R0, fg, bg)
-    scr.put_icn(x + 16, y + 8,  BTN_C2R1, fg, bg)
-    scr.put_icn(x + 16, y + 16, BTN_C2R2, fg, bg)
-    scr.put_icn(x + 16, y + 24, BTN_C2R3, fg, bg)
-    scr.put_icn(x + 24, y,      BTN_C3R0, fg, bg)
-    scr.put_icn(x + 24, y + 8,  BTN_C3R1, fg, bg)
-    scr.put_icn(x + 24, y + 16, BTN_C3R2, fg, bg)
-    scr.put_icn(x + 24, y + 24, BTN_C3R3, fg, bg)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Progress bar (2bpp CHR + 1bpp fill from m291.tal)
+-- fp = sec_prog (elapsed pixel width, 0..PROG_W).
+-- auto=0x15: 2 tiles per call (stacked 8+8px tall), addr+, x+8 after each call.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_progress(scr = vimana.screen, fp = num) (( -- ))
+    scr.set_auto(21)
+    scr.set_y(musi_model.PROG_Y)
+    scr.set_x(musi_model.PROG_X)
+    -- Background pill: left cap + 28 middle + right cap
+    scr.set_addr(0)
+    scr.sprite(129)
+    let ?mi = 0
+    for (; mi < 28; mi += 1)
+        scr.set_addr(32)
+        scr.sprite(129)
+    scr.set_addr(64)
+    scr.sprite(129)
+    -- Elapsed fill: draw fill-icn at x = fi+PROG_X for fi in 0..fp-2
+    let ?fi = 0
+    for (; fi < fp - 1; fi += 1)
+        scr.set_x(fi + musi_model.PROG_X)
+        scr.set_addr(96)
+        scr.sprite(10)
+        scr.sprite(10)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -205,22 +208,40 @@ def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
     scr.set_font_size(2)
 
     -- ASCII 0x20–0x7f glyphs (16 bytes each = 8×16 pixels, plane 0)
+    -- 32 = Blank
     scr.set_font_chr(32,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    -- 33 = Exclamation mark (!)
     scr.set_font_chr(33,  [0, 0, 0, 48, 48, 48, 48, 48, 48, 0, 48, 48, 0, 0, 0, 0])
+    -- 34 = Quotation mark (")
     scr.set_font_chr(34,  [0, 0, 0, 40, 40, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    -- 35 = Number sign (#)
     scr.set_font_chr(35,  [0, 0, 9, 9, 63, 18, 18, 127, 36, 36, 0, 0, 0, 0, 0, 0])
+    -- 36 = Dollar sign ($)
     scr.set_font_chr(36,  [0, 0, 16, 56, 84, 112, 112, 56, 28, 28, 84, 56, 16, 0, 0, 0])
+    -- 37 = Percent sign (%)
     scr.set_font_chr(37,  [0, 0, 55, 73, 74, 50, 4, 4, 9, 10, 18, 17, 0, 0, 0, 0])
+    -- 38 = Ampersand (&)
     scr.set_font_chr(38,  [0, 0, 0, 60, 102, 102, 48, 103, 102, 102, 102, 60, 0, 0, 0, 0])
+    -- 39 = Apostrophe (')
     scr.set_font_chr(39,  [0, 0, 0, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    -- 40 = Left parenthesis (()
     scr.set_font_chr(40,  [0, 0, 16, 32, 96, 96, 96, 96, 96, 96, 32, 16, 0, 0, 0, 0])
+    -- 41 = Right parenthesis ())
     scr.set_font_chr(41,  [0, 0, 64, 32, 48, 48, 48, 48, 48, 48, 32, 64, 0, 0, 0, 0])
+    -- 42 = Asterisk (*)
     scr.set_font_chr(42,  [0, 0, 0, 16, 84, 56, 84, 16, 0, 0, 0, 0, 0, 0, 0, 0])
+    -- 43 = Plus sign (+)
     scr.set_font_chr(43,  [0, 0, 0, 0, 0, 16, 16, 124, 16, 16, 0, 0, 0, 0, 0, 0])
+    -- 44 = Comma (,)
     scr.set_font_chr(44,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 96, 32, 64, 0, 0])
+    -- 45 = Hyphen (-)
     scr.set_font_chr(45,  [0, 0, 0, 0, 0, 0, 0, 124, 0, 0, 0, 0, 0, 0, 0, 0])
+    -- 46 = Period (.)
     scr.set_font_chr(46,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 0])
+    -- 47 = Slash (/)
     scr.set_font_chr(47,  [0, 0, 4, 4, 8, 8, 16, 16, 32, 32, 64, 64, 0, 0, 0, 0])
+
+    -- 48–57 = Digits 0–9
     scr.set_font_chr(48,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
     scr.set_font_chr(49,  [0, 0, 0, 24, 56, 24, 24, 24, 24, 24, 24, 24, 0, 0, 0, 0])
     scr.set_font_chr(50,  [0, 0, 0, 60, 70, 6, 6, 12, 24, 48, 96, 126, 0, 0, 0, 0])
@@ -231,13 +252,23 @@ def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
     scr.set_font_chr(55,  [0, 0, 0, 126, 6, 6, 6, 12, 24, 24, 24, 24, 0, 0, 0, 0])
     scr.set_font_chr(56,  [0, 0, 0, 60, 102, 102, 102, 60, 102, 102, 102, 60, 0, 0, 0, 0])
     scr.set_font_chr(57,  [0, 0, 0, 60, 102, 102, 102, 102, 62, 6, 12, 56, 0, 0, 0, 0])
+
+    -- 58 = Colon (:)
     scr.set_font_chr(58,  [0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 96, 96, 0, 0, 0, 0])
+    -- 59 = Semicolon (;)
     scr.set_font_chr(59,  [0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 96, 96, 32, 64, 0, 0])
+    -- 60 = Less-than sign (<)
     scr.set_font_chr(60,  [0, 0, 0, 0, 24, 48, 96, 192, 96, 48, 24, 0, 0, 0, 0, 0])
+    -- 61 = Equals sign (=)
     scr.set_font_chr(61,  [0, 0, 0, 0, 0, 0, 126, 0, 126, 0, 0, 0, 0, 0, 0, 0])
+    -- 62 = Greater-than sign (>)
     scr.set_font_chr(62,  [0, 0, 0, 0, 192, 96, 48, 24, 48, 96, 192, 0, 0, 0, 0, 0])
+    -- 63 = Question mark (?)
     scr.set_font_chr(63,  [0, 0, 0, 60, 70, 6, 12, 24, 24, 0, 24, 24, 0, 0, 0, 0])
+    -- 64 = At sign (@)
     scr.set_font_chr(64,  [0, 0, 0, 0, 31, 32, 78, 82, 82, 77, 32, 31, 0, 0, 0, 0])
+
+    -- 65–90 = Uppercase letters A–Z
     scr.set_font_chr(65,  [0, 0, 0, 60, 102, 102, 102, 126, 102, 102, 102, 102, 0, 0, 0, 0])
     scr.set_font_chr(66,  [0, 0, 0, 124, 102, 102, 102, 124, 102, 102, 102, 124, 0, 0, 0, 0])
     scr.set_font_chr(67,  [0, 0, 0, 60, 98, 96, 96, 96, 96, 96, 98, 60, 0, 0, 0, 0])
@@ -250,7 +281,7 @@ def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
     scr.set_font_chr(74,  [0, 0, 0, 12, 12, 12, 12, 12, 204, 204, 204, 120, 0, 0, 0, 0])
     scr.set_font_chr(75,  [0, 0, 0, 99, 102, 108, 120, 112, 120, 108, 102, 99, 0, 0, 0, 0])
     scr.set_font_chr(76,  [0, 0, 0, 96, 96, 96, 96, 96, 96, 96, 96, 124, 0, 0, 0, 0])
-    scr.set_font_chr(77,  [0, 0, 0, 66, 102, 126, 126, 86, 70, 70, 70, 70, 0, 0, 0, 0])
+    scr.set_font_chr(77,  [0, 0, 0, 0, 0, 0, 64, 32, 96, 96, 112, 224, 121, 224, 95, 96, 78, 96, 68, 96, 64, 96, 64, 96, 0, 0, 0, 0, 0, 0, 0, 0])
     scr.set_font_chr(78,  [0, 0, 0, 65, 97, 113, 121, 93, 79, 71, 67, 65, 0, 0, 0, 0])
     scr.set_font_chr(79,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
     scr.set_font_chr(80,  [0, 0, 0, 124, 102, 102, 102, 124, 96, 96, 96, 96, 0, 0, 0, 0])
@@ -260,16 +291,25 @@ def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
     scr.set_font_chr(84,  [0, 0, 0, 252, 48, 48, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
     scr.set_font_chr(85,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
     scr.set_font_chr(86,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 100, 120, 0, 0, 0, 0])
-    scr.set_font_chr(87,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 102, 127, 0, 0, 0, 0])
+    scr.set_font_chr(87,  [0, 0, 0, 0, 0, 0, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 64, 127, 128, 0, 0, 0, 0, 0, 0, 0, 0])
     scr.set_font_chr(88,  [0, 0, 0, 102, 102, 102, 102, 60, 102, 102, 102, 102, 0, 0, 0, 0])
     scr.set_font_chr(89,  [0, 0, 0, 102, 102, 102, 102, 60, 24, 24, 24, 24, 0, 0, 0, 0])
     scr.set_font_chr(90,  [0, 0, 0, 126, 6, 6, 12, 24, 48, 96, 96, 126, 0, 0, 0, 0])
+
+    -- 91 = Left square bracket ([)
     scr.set_font_chr(91,  [0, 0, 112, 96, 96, 96, 96, 96, 96, 96, 96, 96, 112, 0, 0, 0])
+    -- 92 = Backslash (\)
     scr.set_font_chr(92,  [0, 0, 64, 64, 32, 32, 16, 16, 8, 8, 4, 4, 0, 0, 0, 0])
+    -- 93 = Right square bracket (])
     scr.set_font_chr(93,  [0, 0, 112, 48, 48, 48, 48, 48, 48, 48, 48, 48, 112, 0, 0, 0])
+    -- 94 = Caret (^)
     scr.set_font_chr(94,  [0, 0, 0, 8, 20, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    -- 95 = Underscore (_)
     scr.set_font_chr(95,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0])
+    -- 96 = Grave accent (`)
     scr.set_font_chr(96,  [0, 0, 64, 32, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+    -- 97–122 = Lowercase letters a–z
     scr.set_font_chr(97,  [0, 0, 0, 0, 0, 60, 70, 62, 102, 102, 102, 62, 0, 0, 0, 0])
     scr.set_font_chr(98,  [0, 0, 0, 96, 96, 124, 102, 102, 102, 102, 102, 124, 0, 0, 0, 0])
     scr.set_font_chr(99,  [0, 0, 0, 0, 0, 56, 100, 96, 96, 96, 100, 56, 0, 0, 0, 0])
@@ -282,7 +322,7 @@ def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
     scr.set_font_chr(106, [0, 0, 0, 24, 0, 24, 24, 24, 24, 24, 24, 24, 24, 152, 112, 0])
     scr.set_font_chr(107, [0, 0, 0, 96, 96, 102, 108, 120, 112, 120, 108, 102, 0, 0, 0, 0])
     scr.set_font_chr(108, [0, 0, 0, 96, 96, 96, 96, 96, 96, 96, 96, 96, 0, 0, 0, 0])
-    scr.set_font_chr(109, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(109, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, 192, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 0, 0, 0, 0, 0, 0, 0, 0])
     scr.set_font_chr(110, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
     scr.set_font_chr(111, [0, 0, 0, 0, 0, 60, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
     scr.set_font_chr(112, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 124, 96, 96, 0, 0])
@@ -292,14 +332,20 @@ def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
     scr.set_font_chr(116, [0, 0, 0, 48, 48, 120, 48, 48, 48, 48, 48, 24, 0, 0, 0, 0])
     scr.set_font_chr(117, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 62, 0, 0, 0, 0])
     scr.set_font_chr(118, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 100, 120, 0, 0, 0, 0])
-    scr.set_font_chr(119, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 127, 0, 0, 0, 0])
+    scr.set_font_chr(119, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 64, 127, 128, 0, 0, 0, 0, 0, 0, 0, 0])
     scr.set_font_chr(120, [0, 0, 0, 0, 0, 102, 102, 102, 60, 102, 102, 102, 0, 0, 0, 0])
     scr.set_font_chr(121, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 62, 6, 70, 60, 0])
     scr.set_font_chr(122, [0, 0, 0, 0, 0, 126, 6, 12, 24, 48, 96, 126, 0, 0, 0, 0])
+
+    -- 123 = Left curly brace ({)
     scr.set_font_chr(123, [0, 0, 16, 32, 32, 32, 32, 64, 32, 32, 32, 32, 16, 0, 0, 0])
+    -- 124 = Vertical bar (|)
     scr.set_font_chr(124, [0, 0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 0, 0, 0])
+    -- 125 = Right curly brace (})
     scr.set_font_chr(125, [0, 0, 64, 32, 32, 32, 32, 16, 32, 32, 32, 32, 64, 0, 0, 0])
+    -- 126 = Tilde (~)
     scr.set_font_chr(126, [0, 0, 0, 0, 0, 50, 76, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    -- 127 = Blank (used for cursor)
     scr.set_font_chr(127, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     -- Per-character widths (from @chicago/widths in m291.tal)
@@ -399,4 +445,88 @@ def BTN_C3R3 = [0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8]
     scr.set_font_width(125, 5)
     scr.set_font_width(126, 8)
     scr.set_font_width(127, 8)
+    -- Progress CHR tiles (from @progress/{left,middle,right}-chr in m291.tal)
+    scr.set_sprite(0,   [0, 0, 3, 15, 31, 31, 63, 63], 0)
+    scr.set_sprite(8,   [0, 0, 0, 3, 15, 15, 31, 31], 0)
+    scr.set_sprite(16,  [63, 63, 31, 31, 15, 3, 0, 0], 0)
+    scr.set_sprite(24,  [31, 31, 15, 15, 3, 0, 0, 0], 0)
+    scr.set_sprite(32,  [0, 0, 255, 255, 255, 255, 255, 255], 0)
+    scr.set_sprite(40,  [0, 0, 0, 255, 255, 255, 255, 255], 0)
+    scr.set_sprite(48,  [255, 255, 255, 255, 255, 255, 0, 0], 0)
+    scr.set_sprite(56,  [255, 255, 255, 255, 255, 0, 0, 0], 0)
+    scr.set_sprite(64,  [0, 0, 192, 240, 248, 248, 252, 252], 0)
+    scr.set_sprite(72,  [0, 0, 0, 192, 240, 240, 248, 248], 0)
+    scr.set_sprite(80,  [252, 252, 248, 248, 240, 192, 0, 0], 0)
+    scr.set_sprite(88,  [248, 248, 240, 240, 192, 0, 0, 0], 0)
+    -- Fill-icn tiles (from @progress/fill-icn in m291.tal; ICN 1bpp)
+    scr.set_sprite(96,  [0, 0, 0, 3, 15, 15, 31, 31], 0)
+    scr.set_sprite(104, [31, 31, 15, 15, 3, 0, 0, 0], 0)
+    scr.set_sprite(112, [0, 0, 0, 192, 240, 240, 248, 248], 0)
+    scr.set_sprite(120, [248, 248, 240, 240, 192, 0, 0, 0], 0)
+    -- Button-icn normal CHR tiles (from @button-icn in m291.tal, row-major)
+    scr.set_sprite(128, [0, 0, 3, 12, 16, 16, 32, 32], 0)
+    scr.set_sprite(136, [0, 0, 0, 3, 15, 15, 31, 31], 0)
+    scr.set_sprite(144, [0, 0, 255, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(152, [0, 0, 0, 255, 255, 255, 255, 255], 0)
+    scr.set_sprite(160, [0, 0, 255, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(168, [0, 0, 0, 255, 255, 255, 255, 255], 0)
+    scr.set_sprite(176, [0, 0, 192, 48, 8, 8, 4, 4], 0)
+    scr.set_sprite(184, [0, 0, 0, 192, 240, 240, 248, 248], 0)
+    scr.set_sprite(192, [32, 32, 32, 32, 32, 32, 32, 32], 0)
+    scr.set_sprite(200, [31, 31, 31, 31, 31, 31, 31, 31], 0)
+    scr.set_sprite(208, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(216, [255, 255, 255, 255, 255, 255, 255, 255], 0)
+    scr.set_sprite(224, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(232, [255, 255, 255, 255, 255, 255, 255, 255], 0)
+    scr.set_sprite(240, [4, 4, 4, 4, 4, 4, 4, 4], 0)
+    scr.set_sprite(248, [248, 248, 248, 248, 248, 248, 248, 248], 0)
+    scr.set_sprite(256, [32, 32, 32, 32, 32, 32, 32, 32], 0)
+    scr.set_sprite(264, [31, 31, 31, 31, 31, 31, 31, 31], 0)
+    scr.set_sprite(272, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(280, [255, 255, 255, 255, 255, 255, 255, 255], 0)
+    scr.set_sprite(288, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(296, [255, 255, 255, 255, 255, 255, 255, 255], 0)
+    scr.set_sprite(304, [4, 4, 4, 4, 4, 4, 4, 4], 0)
+    scr.set_sprite(312, [248, 248, 248, 248, 248, 248, 248, 248], 0)
+    scr.set_sprite(320, [32, 32, 16, 16, 12, 3, 0, 0], 0)
+    scr.set_sprite(328, [31, 31, 15, 15, 3, 0, 0, 0], 0)
+    scr.set_sprite(336, [0, 0, 0, 0, 0, 255, 0, 0], 0)
+    scr.set_sprite(344, [255, 255, 255, 255, 255, 0, 0, 0], 0)
+    scr.set_sprite(352, [0, 0, 0, 0, 0, 255, 0, 0], 0)
+    scr.set_sprite(360, [255, 255, 255, 255, 255, 0, 0, 0], 0)
+    scr.set_sprite(368, [4, 4, 8, 8, 48, 192, 0, 0], 0)
+    scr.set_sprite(376, [248, 248, 240, 240, 192, 0, 0, 0], 0)
+    -- Button-icn active CHR tiles (from @button-icn/&active in m291.tal)
+    scr.set_sprite(384, [0, 0, 2, 8, 16, 0, 32, 32], 0)
+    scr.set_sprite(392, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(400, [0, 0, 238, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(408, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(416, [0, 0, 238, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(424, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(432, [0, 0, 192, 16, 8, 0, 4, 4], 0)
+    scr.set_sprite(440, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(448, [0, 32, 32, 32, 0, 32, 32, 32], 0)
+    scr.set_sprite(456, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(464, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(472, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(480, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(488, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(496, [0, 4, 4, 4, 0, 4, 4, 4], 0)
+    scr.set_sprite(504, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(512, [0, 32, 32, 32, 0, 32, 32, 32], 0)
+    scr.set_sprite(520, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(528, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(536, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(544, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(552, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(560, [4, 0, 4, 4, 4, 0, 4, 4], 0)
+    scr.set_sprite(568, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(576, [0, 32, 0, 16, 8, 3, 0, 0], 0)
+    scr.set_sprite(584, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(592, [0, 0, 0, 0, 0, 119, 0, 0], 0)
+    scr.set_sprite(600, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(608, [0, 0, 0, 0, 0, 119, 0, 0], 0)
+    scr.set_sprite(616, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(624, [0, 4, 0, 8, 16, 64, 0, 0], 0)
+    scr.set_sprite(632, [0, 0, 0, 0, 0, 0, 0, 0], 0)
 ;

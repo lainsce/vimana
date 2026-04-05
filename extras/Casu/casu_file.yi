@@ -165,3 +165,35 @@ bring casu_model
     scr.set_palette(2, palette_hex(2))
     scr.set_palette(3, palette_hex(3))
 ;
+
+-- Load global ~/.theme (14-byte format) into model palette arrays.
+-- Each byte = nibble*17, so nibble = floor(byte/17).
+-- Swaps slots 0 and 1 to match Casu's reversed fg/bg.
+: load_global_theme(fsys = vimana.file, home = str) (( bool ))
+    let path = stdr.str_concat(home, "/.theme")
+    if !fsys.exists(path)
+        <- false
+    let bytes = fsys.read_bytes(path)
+    if stdr.len(bytes) < 14
+        <- false
+    if bytes[4] != 32
+        <- false
+    if bytes[9] != 32
+        <- false
+    -- Read nibbles for all 4 slots
+    for (let ?i = 0; i < 4; i += 1)
+        casu_model.PAL_R[i] = stdr.floor(bytes[i] / 17)
+        casu_model.PAL_G[i] = stdr.floor(bytes[5 + i] / 17)
+        casu_model.PAL_B[i] = stdr.floor(bytes[10 + i] / 17)
+    -- Swap slots 0 and 1 (Casu uses reversed fg/bg)
+    let tr = casu_model.PAL_R[0]
+    let tg = casu_model.PAL_G[0]
+    let tb = casu_model.PAL_B[0]
+    casu_model.PAL_R[0] = casu_model.PAL_R[1]
+    casu_model.PAL_G[0] = casu_model.PAL_G[1]
+    casu_model.PAL_B[0] = casu_model.PAL_B[1]
+    casu_model.PAL_R[1] = tr
+    casu_model.PAL_G[1] = tg
+    casu_model.PAL_B[1] = tb
+    <- true
+;

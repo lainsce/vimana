@@ -1,0 +1,140 @@
+cask theme_model
+
+bring stdr
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Layout constants
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def WIN_W = 152
+def WIN_H = 188
+
+def BAR_X = 8
+def BAR_W = 136
+def BAR_Y_R = 44
+def BAR_Y_G = 84
+def BAR_Y_B = 124
+
+def LABEL_X = 8
+def LABEL_Y_R = 28
+def LABEL_Y_G = 68
+def LABEL_Y_B = 108
+
+def SEP_Y = 151
+
+def RADIO_Y = 163
+def RADIO_X0 = 6
+def RADIO_STEP = 36
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- State
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ? nib_r = [15,  0,  7, 15]
+def ? nib_g = [15,  0, 13, 11]
+def ? nib_b = [15,  0, 12,  2]
+
+def ? selected = 0
+def ? dirty = true
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: hex_char(n = num) (( string ))
+    if n < 10
+        <- stdr.char_from_code(48 + n)
+    <- stdr.char_from_code(55 + n)
+;
+
+:: slot_color(slot = num) (( string ))
+    let r = hex_char(nib_r[slot])
+    let g = hex_char(nib_g[slot])
+    let b = hex_char(nib_b[slot])
+    <- "#" + r + r + g + g + b + b
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Palette
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: apply_palette(scr = vimana.screen) (( -- ))
+    scr.set_palette(0, slot_color(0))
+    scr.set_palette(1, slot_color(1))
+    scr.set_palette(2, slot_color(2))
+    scr.set_palette(3, slot_color(3))
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File I/O
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: load(sys = vimana.system, fsys = vimana.file) (( -- ))
+    let path = sys.home_dir() + "/.theme"
+    if !fsys.exists(path)
+        <-
+    let bytes = fsys.read_bytes(path)
+    if stdr.len(bytes) < 14
+        <-
+    if bytes[4] != 32 || bytes[9] != 32
+        <-
+    for (let ?i = 0; i < 4; i += 1)
+        nib_r[i] = stdr.floor(bytes[i] / 17)
+        nib_g[i] = stdr.floor(bytes[5 + i] / 17)
+        nib_b[i] = stdr.floor(bytes[10 + i] / 17)
+    dirty = true
+;
+
+:: save(sys = vimana.system, fsys = vimana.file) (( -- ))
+    let path = sys.home_dir() + "/.theme"
+    let bytes = [0, 0, 0, 0, 32, 0, 0, 0, 0, 32, 0, 0, 0, 0]
+    for (let ?i = 0; i < 4; i += 1)
+        bytes[i] = nib_r[i] * 17
+        bytes[5 + i] = nib_g[i] * 17
+        bytes[10 + i] = nib_b[i] * 17
+    fsys.write_bytes(path, bytes)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Setters
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: set_red(val = num) (( -- ))
+    nib_r[selected] = val
+    dirty = true
+;
+
+:: set_green(val = num) (( -- ))
+    nib_g[selected] = val
+    dirty = true
+;
+
+:: set_blue(val = num) (( -- ))
+    nib_b[selected] = val
+    dirty = true
+;
+
+:: select_slot(slot = num) (( -- ))
+    selected = slot
+    dirty = true
+;
+
+:: clear_dirty() (( -- ))
+    dirty = false
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Getters
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: red() (( num ))
+    <- nib_r[selected]
+;
+
+:: green() (( num ))
+    <- nib_g[selected]
+;
+
+:: blue() (( num ))
+    <- nib_b[selected]
+;

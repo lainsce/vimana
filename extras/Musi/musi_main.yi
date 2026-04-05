@@ -42,17 +42,20 @@ bring musi_assets
 : find_any(target = num, scr = vimana.screen) (( -- ))
     let num_folders = stdr.len(musi_model.folders)
     let num_tracks  = stdr.len(musi_model.tracks)
+    let ?dd         = 0
+    if musi_model.has_dotdot()
+        dd = 1
     for (let ?i = 0; i < num_folders; i += 1)
         let f = stdr.str(musi_model.folders[i] ?? "")
         if stdr.len(f) > 0 && lc_code(stdr.char_code(stdr.char_at(f, 0))) == target
-            musi_model.add_sel(i - musi_model.sel)
+            musi_model.add_sel(dd + i - musi_model.sel)
             musi_model.scroll_for_sel()
             fit_window(scr)
             <-
     for (let ?j = 0; j < num_tracks; j += 1)
         let t = musi_model.strip_ext(stdr.str(musi_model.tracks[j] ?? ""))
         if stdr.len(t) > 0 && lc_code(stdr.char_code(stdr.char_at(t, 0))) == target
-            let tidx = num_folders + j
+            let tidx = dd + num_folders + j
             musi_model.add_sel(tidx - musi_model.sel)
             musi_model.scroll_for_sel()
             fit_window(scr)
@@ -86,7 +89,15 @@ bring musi_assets
     musi_model.sort_strings(musi_model.tracks)
     musi_model.compute_prefixes()
     fit_window(scr)
-    scr.set_titlebar_title(musi_model.path)
+    let p    = musi_model.path
+    let pn   = stdr.len(p)
+    let ?si  = pn - 2
+    let ?cut = 0
+    for (; si > 0; si -= 1)
+        if stdr.char_at(p, si) == "/"
+            cut = si + 1
+            break
+    scr.set_titlebar_title(stdr.slice(p, cut, pn))
 ;
 
 -- Strip the trailing path component and reload
@@ -164,14 +175,22 @@ bring musi_assets
 
 : pick_row(sys = vimana.system, fsys = vimana.file, scr = vimana.screen, row_idx = num) (( -- ))
     let num_folders = stdr.len(musi_model.folders)
-    if row_idx < num_folders
+    let ?dd         = 0
+    if musi_model.has_dotdot()
+        dd = 1
+    if row_idx == 0 && dd == 1
+        -- Navigate up
+        nav_up(fsys, scr)
+        <-
+    let list_idx = row_idx - dd
+    if list_idx < num_folders
         -- Navigate into folder
-        let folder_name = stdr.str(musi_model.folders[row_idx] ?? "")
+        let folder_name = stdr.str(musi_model.folders[list_idx] ?? "")
         musi_model.set_path(musi_model.path + folder_name + "/")
         load_dir(fsys, scr)
     else
         -- Play selected track
-        let track_idx = row_idx - num_folders
+        let track_idx = list_idx - num_folders
         if !musi_model.playing
             musi_model.set_playing(true)
         play_track(sys, scr, track_idx)
@@ -224,8 +243,8 @@ bring musi_assets
             <-
         <-
 
-    -- Progress bar seek
-    if musi_model.playing && in_rect(mx, my, musi_model.PROG_X, musi_model.PROG_Y - 4, musi_model.PROG_W, 16)
+    -- Progress bar seek (drag: seek every frame while button held)
+    if musi_model.playing && in_rect(mx, my, musi_model.PROG_X, musi_model.PROG_Y - 4, musi_model.PROG_W, 16) && dev.mouse_down(vimana.mouse_left)
         let offset     = mx - musi_model.PROG_X
         if offset < 0
             offset = 0
@@ -310,13 +329,14 @@ bring musi_assets
 -> ()
     let sys  = vimana.system()
     let scr  = vimana.screen("Musi", musi_model.WIN_W, 200, 1)
-    scr.set_palette(vimana.color_bg, "#ffffff")
-       .set_palette(vimana.color_fg,  "#000000")
-       .set_palette(vimana.color_2,  "#aaeebb")
-       .set_palette(vimana.color_3,  "#77bb88")
-    musi_assets.setup(scr)
     let dev  = sys.device()
     let fsys = sys.file()
+    if !fsys.exists(sys.home_dir() + "/.theme")
+        scr.set_palette(vimana.color_bg, "#ffffff")
+           .set_palette(vimana.color_fg,  "#000000")
+           .set_palette(vimana.color_2,  "#aaeebb")
+           .set_palette(vimana.color_3,  "#77bb88")
+    musi_assets.setup(scr)
 
     -- Start in the user's Music home directory
     musi_model.set_path(sys.home_dir() + "/Music/")

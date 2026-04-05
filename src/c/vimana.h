@@ -45,6 +45,7 @@ void vimana_screen_set_font_chr(vimana_screen *screen, int code,
                                 const uint8_t *chr, int len);
 void vimana_screen_set_font_width(vimana_screen *screen, int code, int width);
 void vimana_screen_set_font_size(vimana_screen *screen, int size);
+void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap);
 void vimana_screen_set_sprite(vimana_screen *screen, int addr,
                               const uint8_t *sprite, int mode);
 void vimana_screen_set_x(vimana_screen *screen, int x);

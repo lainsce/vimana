@@ -61,7 +61,7 @@ bring musi_model
         sys.proc_kill(musi_model.proc)
         sys.proc_free(musi_model.proc)
         musi_model.set_proc(0)
-    musi_model.set_proc(sys.spawn("mpg123 -R 2>/dev/null"))
+    musi_model.set_proc(sys.spawn("PATH=/opt/homebrew/bin:/usr/local/bin:$PATH LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 mpg123 -R 2>/dev/null"))
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -98,10 +98,27 @@ bring musi_model
 -- Response handlers
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- Round a seconds word (e.g. "12.78") to the nearest integer
+: round_secs(word = string) (( num ))
+    let n   = stdr.len(word)
+    let ?i  = 0
+    -- find the decimal point
+    for (; i < n; i += 1)
+        if stdr.char_at(word, i) == "."
+            break
+    let whole = parse_int(word)
+    -- if there is a fractional digit >= 5, round up
+    if i + 1 < n
+        let frac_code = stdr.char_code(stdr.char_at(word, i + 1))
+        if frac_code >= stdr.char_code("5")
+            <- whole + 1
+    <- whole
+;
+
 -- @F <frame> <remaining_frames> <elapsed_secs> <remaining_secs>
 : handle_frame(line = string) (( -- ))
-    let sf    = parse_int(nth_word(line, 3))
-    let sr    = parse_int(nth_word(line, 4))
+    let sf    = round_secs(nth_word(line, 3))
+    let sr    = round_secs(nth_word(line, 4))
     let total = sf + sr
     let ?prog = 0
     if total > 0
@@ -146,10 +163,10 @@ bring musi_model
         musi_model.set_album(val)
 ;
 
--- @P <code>  0=stopped 1=paused 2=playing
+-- @P <code>  0=stopped 1=paused 2=playing 3=end-of-file
 : handle_pause_code(line = string) (( -- ))
     let code = parse_int(nth_word(line, 1))
-    if code == 0
+    if code == 0 || code == 3
         musi_model.set_track_ended(true)
         musi_model.set_paused(false)
     elif code == 1

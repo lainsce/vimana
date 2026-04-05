@@ -98,6 +98,13 @@ struct VimanaScreen {
   char *titlebar_title;          /* NULL = use screen->title */
   bool titlebar_has_button;      /* show optional right button */
   bool titlebar_button_pressed;  /* set for one frame when right button clicked */
+  time_t theme_mtime;            /* last known mtime of ~/.theme */
+  int theme_poll_counter;        /* frame counter for periodic theme check */
+  bool theme_swap_fg_bg;         /* swap base_colors[0] and [1] after loading */
+  int titlebar_height;           /* total titlebar height: font_height + 5 */
+  int titlebar_bar_height;       /* drawn bar height: font_height + 5 */
+  int titlebar_box_size;         /* close/button box size: min(13, bar_height-4) */
+  int titlebar_box_y;            /* y of close/button box within bar */
 };
 
 static uint32_t vimana_parse_hex_color(const char *hex) {
@@ -136,6 +143,74 @@ static void vimana_screen_reset_palette(vimana_screen *screen) {
   vimana_colorize(screen);
 }
 
+static void vimana_screen_load_theme(vimana_screen *screen) {
+  if (!screen)
+    return;
+  const char *home = getenv("HOME");
+  if (!home)
+    return;
+  char path[PATH_MAX];
+  snprintf(path, sizeof(path), "%s/.theme", home);
+  FILE *f = fopen(path, "rb");
+  if (!f)
+    return;
+  uint8_t buf[14];
+  if (fread(buf, 1, 14, f) != 14 || buf[4] != 0x20 || buf[9] != 0x20) {
+    fclose(f);
+    return;
+  }
+  fclose(f);
+  for (int i = 0; i < 4; i++)
+    screen->base_colors[i] =
+        0xFF000000u | ((uint32_t)buf[i] << 16) | ((uint32_t)buf[5 + i] << 8) |
+        (uint32_t)buf[10 + i];
+  if (screen->theme_swap_fg_bg) {
+    uint32_t tmp = screen->base_colors[0];
+    screen->base_colors[0] = screen->base_colors[1];
+    screen->base_colors[1] = tmp;
+  }
+  vimana_colorize(screen);
+  struct stat st;
+  if (stat(path, &st) == 0)
+    screen->theme_mtime = st.st_mtime;
+}
+
+static void vimana_screen_poll_theme(vimana_screen *screen) {
+  if (!screen)
+    return;
+  const char *home = getenv("HOME");
+  if (!home)
+    return;
+  char path[PATH_MAX];
+  snprintf(path, sizeof(path), "%s/.theme", home);
+  struct stat st;
+  if (stat(path, &st) != 0)
+    return;
+  if (st.st_mtime != screen->theme_mtime) {
+    vimana_screen_load_theme(screen);
+    vimana_screen_present(screen);
+  }
+}
+
+void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap) {
+  if (!screen)
+    return;
+  screen->theme_swap_fg_bg = swap;
+  vimana_screen_load_theme(screen);
+}
+
+static void vimana_screen_update_titlebar_sizes(vimana_screen *screen) {
+  if (!screen) return;
+  int fh = screen->font_height;
+  screen->titlebar_bar_height = fh + 5;
+  screen->titlebar_height     = fh + 5;
+  int bsz_max = VIMANA_TB_BOX_SIZE + (screen->titlebar_bar_height > 21 ? 2 : 0);
+  int bsz = bsz_max < screen->titlebar_bar_height - 4
+            ? bsz_max : screen->titlebar_bar_height - 4;
+  screen->titlebar_box_size   = bsz;
+  screen->titlebar_box_y      = (screen->titlebar_bar_height - bsz) / 2;
+}
+
 static void vimana_screen_reset_font(vimana_screen *screen) {
   if (!screen)
     return;
@@ -147,6 +222,7 @@ static void vimana_screen_reset_font(vimana_screen *screen) {
   screen->font_height = VIMANA_TILE_SIZE; /* UF1 default */
   screen->font_glyph_width = VIMANA_TILE_SIZE;
   memset(screen->sprite_mem, 0, sizeof(screen->sprite_mem));
+  vimana_screen_update_titlebar_sizes(screen);
 }
 
 /* Convert 16 packed 2bpp rows into UF2 planar layout (32 bytes).
@@ -236,7 +312,7 @@ static void vimana_update_pointer(vimana_system *system, vimana_screen *screen,
     return;
   int scale = (screen && screen->scale > 0) ? screen->scale : 1;
   system->pointer_x = x / scale;
-  system->pointer_y = (y - VIMANA_TITLEBAR_HEIGHT) / scale;
+  system->pointer_y = (y - screen->titlebar_height) / scale;
   system->tile_x = system->pointer_x / VIMANA_TILE_SIZE;
   system->tile_y = system->pointer_y / VIMANA_TILE_SIZE;
 }
@@ -330,18 +406,18 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
       int button = (int)event.button.button;
       int ex = (int)event.button.x;
       int ey = (int)event.button.y;
-      if (screen && ey < VIMANA_TITLEBAR_HEIGHT) {
+      if (screen && ey < screen->titlebar_height) {
         /* System 7 titlebar button clicks */
         if (button == SDL_BUTTON_LEFT &&
-            ey >= VIMANA_TB_BOX_Y && ey < VIMANA_TB_BOX_Y + VIMANA_TB_BOX_SIZE) {
+            ey >= screen->titlebar_box_y && ey < screen->titlebar_box_y + screen->titlebar_box_size) {
           /* Close box */
-          if (ex >= VIMANA_TB_CLOSE_X && ex < VIMANA_TB_CLOSE_X + VIMANA_TB_BOX_SIZE)
+          if (ex >= VIMANA_TB_CLOSE_X && ex < VIMANA_TB_CLOSE_X + screen->titlebar_box_size)
             system->quit = true;
           /* Optional right button */
           if (screen->titlebar_has_button) {
             int win_w = screen->width * screen->scale;
-            int bx = win_w - VIMANA_TB_CLOSE_X - VIMANA_TB_BOX_SIZE;
-            if (ex >= bx && ex < bx + VIMANA_TB_BOX_SIZE)
+            int bx = win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size;
+            if (ex >= bx && ex < bx + screen->titlebar_box_size)
               screen->titlebar_button_pressed = true;
           }
         }
@@ -453,6 +529,7 @@ void vimana_system_run(vimana_system *system, vimana_screen *screen,
   while (!system->quit) {
     vimana_reset_pressed(system);
     vimana_pump_events(system, screen);
+    vimana_screen_poll_theme(screen);
     if (frame)
       frame(system, screen, user);
     SDL_Delay(1);
@@ -466,19 +543,19 @@ static SDL_HitTestResult vimana_hit_test(SDL_Window *win,
                                         void *data) {
   (void)win;
   vimana_screen *screen = (vimana_screen *)data;
-  if (area->y < VIMANA_TITLEBAR_HEIGHT) {
+  if (area->y < screen->titlebar_height) {
     int x = area->x;
     int y = area->y;
     /* Close box */
-    if (y >= VIMANA_TB_BOX_Y && y < VIMANA_TB_BOX_Y + VIMANA_TB_BOX_SIZE &&
-        x >= VIMANA_TB_CLOSE_X && x < VIMANA_TB_CLOSE_X + VIMANA_TB_BOX_SIZE)
+    if (y >= screen->titlebar_box_y && y < screen->titlebar_box_y + screen->titlebar_box_size &&
+        x >= VIMANA_TB_CLOSE_X && x < VIMANA_TB_CLOSE_X + screen->titlebar_box_size)
       return SDL_HITTEST_NORMAL;
     /* Optional right button */
     if (screen && screen->titlebar_has_button) {
       int win_w = screen->width * screen->scale;
-      int bx = win_w - VIMANA_TB_CLOSE_X - VIMANA_TB_BOX_SIZE;
-      if (y >= VIMANA_TB_BOX_Y && y < VIMANA_TB_BOX_Y + VIMANA_TB_BOX_SIZE &&
-          x >= bx && x < bx + VIMANA_TB_BOX_SIZE)
+      int bx = win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size;
+      if (y >= screen->titlebar_box_y && y < screen->titlebar_box_y + screen->titlebar_box_size &&
+          x >= bx && x < bx + screen->titlebar_box_size)
         return SDL_HITTEST_NORMAL;
     }
     return SDL_HITTEST_DRAGGABLE;
@@ -505,7 +582,9 @@ vimana_screen *vimana_screen_new(const char *title, int width, int height,
   screen->width_mar = width + 16;
   screen->height_mar = height + 16;
   screen->title = strdup(title ? title : "vimana");
+  screen->titlebar_bg_slot = 2; /* default to palette slot 2 (accent color) */
   vimana_screen_reset_palette(screen);
+  vimana_screen_load_theme(screen);
   vimana_screen_reset_font(screen);
   vimana_screen_reset_ports(screen);
 
@@ -524,7 +603,7 @@ vimana_screen *vimana_screen_new(const char *title, int width, int height,
 
   screen->window =
       SDL_CreateWindow(screen->title, width * scale,
-                       height * scale + VIMANA_TITLEBAR_HEIGHT,
+                       height * scale + screen->titlebar_height,
                        SDL_WINDOW_BORDERLESS);
   if (!screen->window) {
     free(screen->layers);
@@ -603,7 +682,7 @@ void vimana_screen_resize(vimana_screen *screen, int width, int height) {
 
   if (screen->window)
     SDL_SetWindowSize(screen->window, width * screen->scale,
-                      height * screen->scale + VIMANA_TITLEBAR_HEIGHT);
+                      height * screen->scale + screen->titlebar_height);
 
   if (screen->texture) {
     SDL_DestroyTexture(screen->texture);
@@ -655,7 +734,10 @@ void vimana_screen_set_font_chr(vimana_screen *screen, int code,
     return;
   int gw = screen->font_glyph_width;
   int gh = screen->font_height;
-  int bpr = (gw + 7) / 8; /* bytes per row: 1 for 8px, 3 for 24px */
+  /* Infer bytes-per-row from data length to support wide glyphs (e.g. 12px) */
+  int bpr = gh > 0 ? (len + gh - 1) / gh : (gw + 7) / 8;
+  if (bpr < 1) bpr = 1;
+  if (bpr > VIMANA_FONT_ROW_BYTES) bpr = VIMANA_FONT_ROW_BYTES;
   int max_bytes = gh * bpr;
   int n = len < max_bytes ? len : max_bytes;
   /* New 1bpp bitmap */
@@ -702,6 +784,11 @@ void vimana_screen_set_font_size(vimana_screen *screen, int size) {
   screen->font_glyph_width = w;
   for (int i = 0; i < 128; i++)
     screen->font_widths[i] = (uint8_t)w;
+  int old_th = screen->titlebar_height;
+  vimana_screen_update_titlebar_sizes(screen);
+  if (screen->window && screen->titlebar_height != old_th)
+    SDL_SetWindowSize(screen->window, screen->width * screen->scale,
+                      screen->height * screen->scale + screen->titlebar_height);
 }
 
 void vimana_screen_set_sprite(vimana_screen *screen, int addr,
@@ -878,7 +965,9 @@ void vimana_screen_put(vimana_screen *screen, int x, int y, const char *glyph,
   int bg_slot = bg & 0x3;
   int fg_slot = fg & 0x3;
   int gh = screen->font_height;
-  int gw = screen->font_glyph_width;
+  /* Use per-character advance width as render width to support wide glyphs */
+  int gw = (int)screen->font_widths[(int)ch];
+  if (gw <= 0) gw = screen->font_glyph_width;
   for (int row = 0; row < gh; row++) {
     int py = y + row;
     if (py < 0 || py >= screen->height)
@@ -894,8 +983,8 @@ void vimana_screen_put(vimana_screen *screen, int x, int y, const char *glyph,
       }
       uint8_t mask = (uint8_t)(0x80u >> (col & 7));
       uint8_t hit = (row_data[col >> 3] & mask) ? 1u : 0u;
-      uint8_t fg_nibble = hit ? (uint8_t)(fg_slot << 2) : 0;
-      *dst++ = (uint8_t)(fg_nibble | (uint8_t)bg_slot);
+      uint8_t slot = hit ? (uint8_t)fg_slot : (uint8_t)bg_slot;
+      *dst++ = (uint8_t)((slot << 2) | slot);
     }
   }
 }
@@ -921,8 +1010,8 @@ void vimana_screen_put_icn(vimana_screen *screen, int x, int y,
       }
       uint8_t mask = (uint8_t)(0x80u >> col);
       uint8_t hit = (plane0 & mask) ? 1u : 0u;
-      uint8_t fg_nibble = hit ? (uint8_t)(fg_slot << 2) : 0;
-      *dst++ = (uint8_t)(fg_nibble | (uint8_t)bg_slot);
+      uint8_t slot = hit ? (uint8_t)fg_slot : (uint8_t)bg_slot;
+      *dst++ = (uint8_t)((slot << 2) | slot);
     }
   }
 }
@@ -954,10 +1043,10 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
   /* Pinstripe background: solid bg fill, then stripes with top/bottom margins */
   SDL_SetRenderDrawColor(rend, (uint8_t)((bg >> 16) & 0xFF),
                          (uint8_t)((bg >> 8) & 0xFF), (uint8_t)(bg & 0xFF), 255);
-  SDL_FRect bar_bg = {0.0f, 0.0f, (float)win_w, (float)VIMANA_TITLEBAR_BAR_HEIGHT};
+  SDL_FRect bar_bg = {0.0f, 0.0f, (float)win_w, (float)screen->titlebar_height};
   SDL_RenderFillRect(rend, &bar_bg);
   int stripe_top = 3;
-  int stripe_bot = VIMANA_TITLEBAR_BAR_HEIGHT - 3;
+  int stripe_bot = screen->titlebar_bar_height - 3;
   SDL_SetRenderDrawColor(rend, (uint8_t)((stripe >> 16) & 0xFF),
                          (uint8_t)((stripe >> 8) & 0xFF), (uint8_t)(stripe & 0xFF), 255);
   for (int row = stripe_top; row < stripe_bot; row++) {
@@ -969,12 +1058,17 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
 
   /* Close box (left side, System 6 style: halo gap around box) */
   {
-    int bx = VIMANA_TB_CLOSE_X, by = VIMANA_TB_BOX_Y, bsz = VIMANA_TB_BOX_SIZE;
-    /* Clear halo around close box (4px padding) */
+    int bx = VIMANA_TB_CLOSE_X, by = screen->titlebar_box_y, bsz = screen->titlebar_box_size;
+    /* Clear halo around close box — clamped so it never bleeds outside bar height
+       and always covers the full stripe zone (stripe_top..stripe_bot). */
+    int halo_y   = (by - 4 < stripe_top) ? by - 4 : stripe_top;
+    if (halo_y < 0) halo_y = 0;
+    int halo_bot = (by + bsz + 4 > stripe_bot) ? by + bsz + 4 : stripe_bot;
+    if (halo_bot > screen->titlebar_bar_height) halo_bot = screen->titlebar_bar_height;
     SDL_SetRenderDrawColor(rend, (uint8_t)((bg >> 16) & 0xFF),
                            (uint8_t)((bg >> 8) & 0xFF), (uint8_t)(bg & 0xFF), 255);
-    SDL_FRect halo = {(float)(bx - 4), (float)(by - 4),
-                      (float)(bsz + 8), (float)(bsz + 8)};
+    SDL_FRect halo = {(float)(bx - 4), (float)halo_y,
+                      (float)(bsz + 8), (float)(halo_bot - halo_y)};
     SDL_RenderFillRect(rend, &halo);
     /* 1px border */
     SDL_SetRenderDrawColor(rend, (uint8_t)((contrast >> 16) & 0xFF),
@@ -992,13 +1086,17 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
 
   /* Optional right button (zoom-box style: halo gap + outer box + inner offset box) */
   if (screen->titlebar_has_button) {
-    int bx = win_w - VIMANA_TB_CLOSE_X - VIMANA_TB_BOX_SIZE;
-    int by = VIMANA_TB_BOX_Y, bsz = VIMANA_TB_BOX_SIZE;
-    /* Clear halo around button (4px padding) */
+    int bx = win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size;
+    int by = screen->titlebar_box_y, bsz = screen->titlebar_box_size;
+    /* Clear halo around button — same clamping as close box */
+    int bhalo_y   = (by - 4 < stripe_top) ? by - 4 : stripe_top;
+    if (bhalo_y < 0) bhalo_y = 0;
+    int bhalo_bot = (by + bsz + 4 > stripe_bot) ? by + bsz + 4 : stripe_bot;
+    if (bhalo_bot > screen->titlebar_bar_height) bhalo_bot = screen->titlebar_bar_height;
     SDL_SetRenderDrawColor(rend, (uint8_t)((bg >> 16) & 0xFF),
                            (uint8_t)((bg >> 8) & 0xFF), (uint8_t)(bg & 0xFF), 255);
-    SDL_FRect halo = {(float)(bx - 4), (float)(by - 4),
-                      (float)(bsz + 8), (float)(bsz + 8)};
+    SDL_FRect halo = {(float)(bx - 4), (float)bhalo_y,
+                      (float)(bsz + 8), (float)(bhalo_bot - bhalo_y)};
     SDL_RenderFillRect(rend, &halo);
     SDL_SetRenderDrawColor(rend, (uint8_t)((contrast >> 16) & 0xFF),
                            (uint8_t)((contrast >> 8) & 0xFF),
@@ -1034,12 +1132,12 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
       unsigned char ch = (unsigned char)title[i];
       text_w += (ch < 128) ? screen->font_widths[ch] : VIMANA_TILE_SIZE;
     }
-    int left_bound  = VIMANA_TB_CLOSE_X + VIMANA_TB_BOX_SIZE + 4;
+    int left_bound  = VIMANA_TB_CLOSE_X + screen->titlebar_box_size + 4;
     int right_bound = screen->titlebar_has_button
-                        ? win_w - VIMANA_TB_CLOSE_X - VIMANA_TB_BOX_SIZE - 4
+                        ? win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size - 4
                         : win_w - 4;
     int gh = screen->font_height;
-    int text_y = (VIMANA_TITLEBAR_BAR_HEIGHT - gh) / 2;
+    int text_y = (screen->titlebar_bar_height - gh + 1) / 2;
     int text_x = left_bound + (right_bound - left_bound - text_w) / 2;
     if (text_x < left_bound)
       text_x = left_bound;
@@ -1051,7 +1149,7 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
       SDL_SetRenderDrawColor(rend, (uint8_t)((bg >> 16) & 0xFF),
                              (uint8_t)((bg >> 8) & 0xFF), (uint8_t)(bg & 0xFF), 255);
       SDL_FRect text_halo = {(float)(text_x - 4), 0.0f,
-                             (float)(clipped_w + 8), (float)VIMANA_TITLEBAR_BAR_HEIGHT};
+                             (float)(clipped_w + 8), (float)screen->titlebar_bar_height};
       SDL_RenderFillRect(rend, &text_halo);
     }
     SDL_SetRenderDrawColor(rend, (uint8_t)((contrast >> 16) & 0xFF),
@@ -1064,11 +1162,12 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
       if (gx >= right_bound)
         break;
       const uint8_t *bmp = screen->font_bitmap[c];
-      int gw = screen->font_glyph_width;
+      int gw = (int)screen->font_widths[c];
+      if (gw < screen->font_glyph_width) gw = screen->font_glyph_width;
       /* Draw 1bpp glyph for titlebar */
       for (int row = 0; row < gh; row++) {
         int py = text_y + row;
-        if (py < 0 || py >= VIMANA_TITLEBAR_BAR_HEIGHT) continue;
+        if (py < 0 || py >= screen->titlebar_bar_height) continue;
         const uint8_t *row_data = bmp + row * VIMANA_FONT_ROW_BYTES;
         for (int col = 0; col < gw; col++) {
           uint8_t mask = (uint8_t)(0x80u >> (col & 7));
@@ -1080,6 +1179,15 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
       }
       gx += screen->font_widths[c];
     }
+  }
+
+  /* Separator line at bottom edge of bar — drawn last so nothing overdaws it */
+  {
+    SDL_SetRenderDrawColor(rend, (uint8_t)((contrast >> 16) & 0xFF),
+                           (uint8_t)((contrast >> 8) & 0xFF),
+                           (uint8_t)(contrast & 0xFF), 255);
+    SDL_FRect sep = {0.0f, (float)(screen->titlebar_height - 1), (float)win_w, 1.0f};
+    SDL_RenderFillRect(rend, &sep);
   }
 }
 
@@ -1106,7 +1214,7 @@ void vimana_screen_present(vimana_screen *screen) {
                          (uint8_t)((bg_rgb >> 8) & 0xFF),
                          (uint8_t)(bg_rgb & 0xFF), 255);
   SDL_RenderClear(screen->renderer);
-  SDL_FRect dst_rect = {0.0f, (float)VIMANA_TITLEBAR_HEIGHT,
+  SDL_FRect dst_rect = {0.0f, (float)screen->titlebar_height,
                         (float)(w * screen->scale), (float)(h * screen->scale)};
   SDL_RenderTexture(screen->renderer, screen->texture, NULL, &dst_rect);
   vimana_draw_titlebar_content(screen);
@@ -1115,7 +1223,7 @@ void vimana_screen_present(vimana_screen *screen) {
   {
     uint32_t stripe = screen->base_colors[1];
     int win_w = w * screen->scale;
-    int win_h = h * screen->scale + VIMANA_TITLEBAR_HEIGHT;
+    int win_h = h * screen->scale + screen->titlebar_height;
     SDL_SetRenderDrawColor(screen->renderer,
                            (uint8_t)((stripe >> 16) & 0xFF),
                            (uint8_t)((stripe >> 8) & 0xFF),

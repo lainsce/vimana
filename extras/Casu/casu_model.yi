@@ -8,35 +8,35 @@ def SCR_H = 240
 
 -- View layout constants (matching nasu.tal set-size calls)
 def TILEVIEW_X  = 18       -- frame.x1 - 1
-def TILEVIEW_Y  = 83       -- frame.y1 + 56
+def TILEVIEW_Y  = 80       -- frame.y1 + 56
 def TILEVIEW_W  = 128      -- 16 tiles × 8px
 def TILEVIEW_H  = 128
 def NTAB_X      = 156      -- frame.x1 + 137
-def NTAB_Y      = 83
+def NTAB_Y      = 80
 def NTAB_W      = 128
 def NTAB_H      = 128
 def ZOOM_X      = 18
-def ZOOM_Y      = 27
+def ZOOM_Y      = 16
 def ZOOM_W      = 31       -- 8 pixels × 4px/pixel = 32, panel width
 def ZOOM_H      = 47
 def PREVIEW_X   = 66       -- frame.x1 + 0x2f
-def PREVIEW_Y   = 27
+def PREVIEW_Y   = 16
 def PREVIEW_W   = 31
 def PREVIEW_H   = 47
 def COLOR_X     = 114      -- frame.x1 + 0x5f
-def COLOR_Y     = 27
+def COLOR_Y     = 16
 def COLOR_W     = 32       -- 16 steps × 2px
 def COLOR_H     = 47
 def BLEND_X     = 162      -- frame.x1 + 0x8f
-def BLEND_Y     = 27
+def BLEND_Y     = 16
 def BLEND_W     = 31
 def BLEND_H     = 47
 def DATA_X      = 210      -- frame.x1 + 0xbf
-def DATA_Y      = 27
+def DATA_Y      = 16
 def DATA_W      = 72       -- 0x48
 def DATA_H      = 47
 def TOOL_X      = 18
-def TOOL_Y      = 218      -- tileview/y2 + 8
+def TOOL_Y      = 216      -- tileview/y2 + 8
 def TOOL_W      = 264
 def TOOL_H      = 8
 

@@ -10,9 +10,9 @@ bring casu_file
 
 -- Default palette (casu.tal default theme)
 def PAL_0 = "#000000"   -- black        (transparent / bg)
-def PAL_1 = "#ffffff"   -- teal         (color 1)
+def PAL_1 = "#ffffff"   -- white        (fg)
 def PAL_2 = "#9977dd"   -- violet       (color 2)
-def PAL_3 = "#77ddcc"   -- white        (color 3)
+def PAL_3 = "#77ddcc"   -- teal         (color 3)
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Hit-test helper
@@ -229,11 +229,14 @@ def PAL_3 = "#77ddcc"   -- white        (color 3)
     let scr = vimana.screen("Casu", casu_model.SCR_W, casu_model.SCR_H, 1)
     let fsys = sys.file()
 
-    -- Set default palette (can be overridden by loaded theme)
+    -- Set default palette
     scr.set_palette(vimana.color_bg, PAL_0)
-       .set_palette(vimana.color_fg,  PAL_1)
-       .set_palette(vimana.color_2,  PAL_2)
-       .set_palette(vimana.color_3,  PAL_3)
+        .set_palette(vimana.color_fg, PAL_1)
+        .set_palette(vimana.color_2,  PAL_2)
+        .set_palette(vimana.color_3,  PAL_3)
+
+    -- Sync model palette arrays from global ~/.theme
+    casu_file.load_global_theme(fsys, sys.home_dir())
 
     -- Try to load theme from default location
     casu_file.load_theme(fsys, ".theme")

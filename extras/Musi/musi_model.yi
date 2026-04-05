@@ -6,25 +6,24 @@ bring stdr
 -- Window layout
 -- ─────────────────────────────────────────────────────────────────────────────
 def WIN_W     = 256
-def HEADER_H  = 18
 def PLAYER_H  = 136
 def ROW_H     = 16
 def MAX_ROWS  = 24
 
 -- Player panel Y positions (all relative to screen top)
-def TITLE_Y   = 26
-def ARTIST_Y  = 42
-def ALBUM_Y   = 58
-def CTRL_BG_Y = 80
-def CTRL_Y    = 88
-def TS_Y      = 112
-def PROG_Y    = 132
+def TITLE_Y   = 16
+def ARTIST_Y  = 32
+def ALBUM_Y   = 48
+def CTRL_BG_Y = 70
+def CTRL_Y    = 78
+def TS_Y      = 102
+def PROG_Y    = 122
 def PROG_X    = 8
 def PROG_W    = 239
 
 -- Directory list start Y
-def DIR_Y_IDLE = 26
-def DIR_Y_PLAY = 154
+def DIR_Y_IDLE = 16
+def DIR_Y_PLAY = 144
 
 -- Control button X positions (matching m291 layout)
 def CTRL_REPEAT_X = 40
@@ -54,8 +53,9 @@ def KEY_BACKSPACE = 42
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Mutable state
 -- ─────────────────────────────────────────────────────────────────────────────
-def ?folders    = []: [any]
-def ?tracks     = []: [any]
+def ?folders      = []: [any]
+def ?tracks       = []: [any]
+def ?track_titles = []: [any]
 def ?path       = "./"
 def ?sel        = 0
 def ?scroll     = 0
@@ -65,7 +65,7 @@ def ?proc       = 0
 def ?sel_track  = 0
 def ?repeat     = false
 def ?shuffle    = false
-def ?volume     = 5
+def ?volume     = 3
 def ?sec_from   = 0
 def ?sec_to     = 0
 def ?sec_prog   = 0
@@ -81,8 +81,15 @@ def ?title_scroll   = 0
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Computed helpers
 -- ─────────────────────────────────────────────────────────────────────────────
+:: has_dotdot() (( bool ))
+    <- path != "./"
+;
+
 :: row_count() (( num ))
-    <- stdr.len(folders) + stdr.len(tracks)
+    let ?dd = 0
+    if has_dotdot()
+        dd = 1
+    <- stdr.len(folders) + stdr.len(tracks) + dd
 ;
 
 :: dir_y() (( num ))
@@ -97,7 +104,7 @@ def ?title_scroll   = 0
         rows = 1
     if rows > MAX_ROWS
         rows = MAX_ROWS
-    let ?h = rows * ROW_H + 32
+    let ?h = rows * ROW_H + 24
     if playing
         h += PLAYER_H
     <- h
@@ -210,10 +217,23 @@ def ?title_scroll   = 0
 ;
 
 : clear_dir() (( -- ))
-    folders = []: [any]
-    tracks  = []: [any]
-    sel     = 0
-    scroll  = 0
+    folders      = []: [any]
+    tracks       = []: [any]
+    track_titles = []: [any]
+    sel          = 0
+    scroll       = 0
+;
+
+:: push_track_title(s = string) (( -- ))
+    stdr.push(track_titles, s)
+;
+
+:: get_track_title(idx = num) (( string ))
+    if idx >= 0 && idx < stdr.len(track_titles)
+        let t = stdr.str(track_titles[idx] ?? "")
+        if stdr.len(t) > 0
+            <- t
+    <- ""
 ;
 
 : set_path(p = string) (( -- ))

@@ -471,6 +471,12 @@ static void __vimana_screen_set_font_size(YisVal scrv, YisVal sizev) {
   vimana_screen_set_font_size(screen, (int)yis_as_int(sizev));
 }
 
+static void __vimana_screen_set_theme_swap(YisVal scrv, YisVal swapv) {
+  vimana_screen *screen = vimana_screen_from_val(
+      scrv, "vimana.screen.set_theme_swap expects screen");
+  vimana_screen_set_theme_swap(screen, yis_as_int(swapv) != 0);
+}
+
 static void __vimana_screen_set_sprite(YisVal scrv, YisVal addrv, YisVal spritev,
                                        YisVal modev) {
   vimana_screen *screen =

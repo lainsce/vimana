@@ -1,0 +1,93 @@
+cask main
+
+bring vimana
+bring stdr
+bring theme_model
+bring theme_view
+bring theme_assets
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Input: slider bars
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: clamp(val = num, lo = num, hi = num) (( num ))
+    if val < lo
+        <- lo
+    if val > hi
+        <- hi
+    <- val
+;
+
+: handle_slider(mx = num, my = num, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if mx < theme_model.BAR_X || mx >= theme_model.BAR_X + theme_model.BAR_W
+        <-
+    let cell = clamp(stdr.floor((mx - theme_model.BAR_X) / 8), 0, 15)
+    if my >= theme_model.BAR_Y_R && my < theme_model.BAR_Y_R + 16
+        if cell != theme_model.red()
+            theme_model.set_red(cell)
+            theme_model.save(sys, fsys)
+            theme_model.apply_palette(scr)
+        <-
+    if my >= theme_model.BAR_Y_G && my < theme_model.BAR_Y_G + 16
+        if cell != theme_model.green()
+            theme_model.set_green(cell)
+            theme_model.save(sys, fsys)
+            theme_model.apply_palette(scr)
+        <-
+    if my >= theme_model.BAR_Y_B && my < theme_model.BAR_Y_B + 16
+        if cell != theme_model.blue()
+            theme_model.set_blue(cell)
+            theme_model.save(sys, fsys)
+            theme_model.apply_palette(scr)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Input: radio buttons
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: handle_radio(mx = num, my = num) (( -- ))
+    if my < theme_model.RADIO_Y || my >= theme_model.RADIO_Y + 16
+        <-
+    for (let ?i = 0; i < 4; i += 1)
+        let rx = theme_model.RADIO_X0 + i * theme_model.RADIO_STEP
+        if mx >= rx && mx < rx + 16
+            theme_model.select_slot(i)
+            <-
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Input dispatch
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_mouse(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+    if dev.mouse_down(vimana.mouse_left)
+        handle_slider(mx, my, sys, fsys, scr)
+    if dev.mouse_pressed(vimana.mouse_left)
+        handle_radio(mx, my)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-> ()
+    let sys = vimana.system()
+    let scr = vimana.screen("Theme", theme_model.WIN_W, theme_model.WIN_H, 1)
+    let dev = sys.device()
+    let fsys = sys.file()
+
+    theme_assets.setup(scr)
+    theme_model.load(sys, fsys)
+    theme_model.apply_palette(scr)
+
+    sys.run(scr, () => {
+        dev.poll()
+        on_mouse(dev, sys, fsys, scr)
+        if theme_model.dirty
+            theme_view.draw(scr)
+            theme_model.clear_dirty()
+        scr.present()
+    })
+;

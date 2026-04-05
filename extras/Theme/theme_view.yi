@@ -1,0 +1,73 @@
+cask theme_view
+
+bring stdr
+bring vimana
+bring theme_model
+bring theme_assets
+
+-- Slot labels for radio buttons
+def SLOT_LABELS = ["A", "B", "C", "D"]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Separator
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_separator(scr = vimana.screen) (( -- ))
+    for (let ?x = theme_model.BAR_X; x < theme_model.BAR_X + theme_model.BAR_W; x += 2)
+        scr.set_x(x)
+        scr.set_y(theme_model.SEP_Y)
+        scr.pixel(1)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Radio buttons row
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_radios(scr = vimana.screen) (( -- ))
+    for (let ?i = 0; i < 4; i += 1)
+        let rx = theme_model.RADIO_X0 + i * theme_model.RADIO_STEP
+        theme_assets.draw_radio(scr, rx, theme_model.RADIO_Y, i == theme_model.selected)
+        scr.put_text(rx + 18, theme_model.RADIO_Y + 2, SLOT_LABELS[i], 1, 0)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Full frame draw
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+
+    let HEX = "0123456789abcdef"
+    let val_x = theme_model.BAR_X + theme_model.BAR_W - 8
+
+    -- Channel labels + values
+    scr.put_text(theme_model.LABEL_X, theme_model.LABEL_Y_R, "Red", 1, 0)
+    scr.put_text(val_x, theme_model.LABEL_Y_R,
+        stdr.substring_len(HEX, theme_model.red(), 1), 1, 0)
+
+    scr.put_text(theme_model.LABEL_X, theme_model.LABEL_Y_G, "Green", 1, 0)
+    scr.put_text(val_x, theme_model.LABEL_Y_G,
+        stdr.substring_len(HEX, theme_model.green(), 1), 1, 0)
+
+    scr.put_text(theme_model.LABEL_X, theme_model.LABEL_Y_B, "Blue", 1, 0)
+    scr.put_text(val_x, theme_model.LABEL_Y_B,
+        stdr.substring_len(HEX, theme_model.blue(), 1), 1, 0)
+
+    -- Bar backgrounds
+    theme_assets.draw_bar(scr, theme_model.BAR_Y_R)
+    theme_assets.draw_bar(scr, theme_model.BAR_Y_G)
+    theme_assets.draw_bar(scr, theme_model.BAR_Y_B)
+
+    -- Selector knobs
+    theme_assets.draw_selector(scr, theme_model.BAR_X + theme_model.red() * 8, theme_model.BAR_Y_R)
+    theme_assets.draw_selector(scr, theme_model.BAR_X + theme_model.green() * 8, theme_model.BAR_Y_G)
+    theme_assets.draw_selector(scr, theme_model.BAR_X + theme_model.blue() * 8, theme_model.BAR_Y_B)
+
+    -- Separator
+    draw_separator(scr)
+
+    -- Radio buttons
+    draw_radios(scr)
+
+    scr.set_auto(0)
+;

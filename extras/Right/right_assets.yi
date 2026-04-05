@@ -2,8 +2,7 @@ cask right_assets
 
 bring vimana
 
--- Left editor serif font, converted to Vimana UF3 (24×24)
--- Call once after creating the screen.
+--| Font |--
 
 :: setup(scr = vimana.screen) (( -- ))
     scr.set_font_size(3)
@@ -202,5 +201,15 @@ bring vimana
     scr.set_font_width(125, 16)
     scr.set_font_width(126, 16)
     scr.set_font_width(127, 16)
+    -- Editor glyphs
+    -- chr 1: tab diamond ( indent glyph — diamond at center)
+    scr.set_font_chr(1, [0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 2,0,0, 5,0,0, 2,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0])
+    scr.set_font_width(1, 16)
+    -- chr 2: linebreak mark (return arrow glyph)
+    scr.set_font_chr(2, [0,0,0, 0,0,0, 0,0,0, 0,32,0, 0,32,0, 0,32,0, 0,32,0, 0,32,0, 0,32,0, 0,32,0, 0,32,0, 0,32,0, 0,32,0, 2,32,0, 4,32,0, 15,224,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0])
+    scr.set_font_width(2, 16)
+    -- chr 3: sidebar arrow end (right-pointing solid triangle, 24 rows)
+    scr.set_font_chr(3, [128,0,0, 192,0,0, 224,0,0, 240,0,0, 248,0,0, 252,0,0, 254,0,0, 255,0,0, 255,128,0, 255,192,0, 255,224,0, 255,240,0, 255,240,0, 255,224,0, 255,192,0, 255,128,0, 255,0,0, 254,0,0, 252,0,0, 248,0,0, 240,0,0, 224,0,0, 192,0,0, 128,0,0])
+    scr.set_font_width(3, 16)
 ;
 

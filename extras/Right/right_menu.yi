@@ -4,9 +4,7 @@ bring stdr
 bring vimana
 bring right_model
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Menu state
--- ─────────────────────────────────────────────────────────────────────────────
+--| Menu state |--
 def ?menu_open = -1
 def ?menu_hover = -1
 
@@ -15,7 +13,7 @@ def MENUBAR_Y = 0
 def MENUBAR_H = 24
 def MENU_START_X = 16
 def MENU_GAP = 8
-def SUBMENU_W = 224
+def SUBMENU_PAD = 16
 def SUBMENU_ITEM_H = 24
 
 -- Category positions (x start of each label)
@@ -23,26 +21,36 @@ def CAT_FILE_X = 16
 def CAT_FILE_W = 80
 def CAT_EDIT_X = 96
 def CAT_EDIT_W = 80
-def CAT_FIND_X = 176
+def CAT_SELECT_X = 176
+def CAT_SELECT_W = 112
+def CAT_FIND_X = 288
 def CAT_FIND_W = 80
-def CAT_VIEW_X = 256
+def CAT_FORMAT_X = 368
+def CAT_FORMAT_W = 112
+def CAT_VIEW_X = 480
 def CAT_VIEW_W = 80
+def CAT_INSERT_X = 560
+def CAT_INSERT_W = 112
 
 -- Category count
 def CAT_FILE = 0
 def CAT_EDIT = 1
-def CAT_FIND = 2
-def CAT_VIEW = 3
+def CAT_SELECT = 2
+def CAT_FIND = 3
+def CAT_FORMAT = 4
+def CAT_VIEW = 5
+def CAT_INSERT = 6
 
 -- Item counts per category
-def FILE_COUNT = 3
+def FILE_COUNT = 5
 def EDIT_COUNT = 4
-def FIND_COUNT = 2
-def VIEW_COUNT = 1
+def SELECT_COUNT = 4
+def FIND_COUNT = 3
+def FORMAT_COUNT = 4
+def VIEW_COUNT = 4
+def INSERT_COUNT = 3
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Helpers
--- ─────────────────────────────────────────────────────────────────────────────
+--| Helpers |--
 
 : fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
     scr.set_auto(1)
@@ -51,6 +59,10 @@ def VIEW_COUNT = 1
         scr.set_x(x)
         for (let ?col = 0; col < w; col += 1)
             scr.pixel(c)
+        scr.set_y(y + row)
+        scr.set_x(x)
+        for (let ?col = 0; col < w; col += 1)
+            scr.pixel(c + 64)
     scr.set_auto(0)
 ;
 
@@ -59,10 +71,16 @@ def VIEW_COUNT = 1
         <- FILE_COUNT
     if cat == CAT_EDIT
         <- EDIT_COUNT
+    if cat == CAT_SELECT
+        <- SELECT_COUNT
     if cat == CAT_FIND
         <- FIND_COUNT
+    if cat == CAT_FORMAT
+        <- FORMAT_COUNT
     if cat == CAT_VIEW
         <- VIEW_COUNT
+    if cat == CAT_INSERT
+        <- INSERT_COUNT
     <- 0
 ;
 
@@ -71,11 +89,56 @@ def VIEW_COUNT = 1
         <- CAT_FILE_X
     if cat == CAT_EDIT
         <- CAT_EDIT_X
+    if cat == CAT_SELECT
+        <- CAT_SELECT_X
     if cat == CAT_FIND
         <- CAT_FIND_X
+    if cat == CAT_FORMAT
+        <- CAT_FORMAT_X
     if cat == CAT_VIEW
         <- CAT_VIEW_X
+    if cat == CAT_INSERT
+        <- CAT_INSERT_X
     <- 0
+;
+
+-- Compute pixel width of a key shortcut string rendered as key caps
+: shortcut_px(shortcut = string) (( num ))
+    let slen = stdr.len(shortcut)
+    if slen == 0
+        <- 0
+    let ?total = 0
+    let ?part_start = 0
+    let ?parts = 0
+    for (let ?k = 0; k <= slen; k += 1)
+        let at_end = k >= slen
+        let is_plus = !at_end && stdr.slice(shortcut, k, k + 1) == "+"
+        if at_end || is_plus
+            let part = stdr.slice(shortcut, part_start, k)
+            let pw = stdr.len(part) * right_model.FONT_W + 6
+            total += pw
+            if parts > 0
+                total += 4
+            parts += 1
+            part_start = k + 1
+    <- total
+;
+
+-- Compute the required submenu width for a category
+: submenu_width(cat = num) (( num ))
+    let count = item_count(cat)
+    let ?max_w = 0
+    for (let ?i = 0; i < count; i += 1)
+        let label = item_label(cat, i)
+        let shortcut = item_shortcut(cat, i)
+        let lw = stdr.len(label) * right_model.FONT_W
+        let sw = shortcut_px(shortcut)
+        let ?row_w = lw + SUBMENU_PAD * 2
+        if sw > 0
+            row_w = lw + sw + SUBMENU_PAD * 3
+        if row_w > max_w
+            max_w = row_w
+    <- max_w
 ;
 
 : item_label(cat = num, idx = num) (( string ))
@@ -86,6 +149,10 @@ def VIEW_COUNT = 1
             <- "Open"
         if idx == 2
             <- "Save"
+        if idx == 3
+            <- "Rename"
+        if idx == 4
+            <- "Exit"
     if cat == CAT_EDIT
         if idx == 0
             <- "Copy"
@@ -94,15 +161,48 @@ def VIEW_COUNT = 1
         if idx == 2
             <- "Cut"
         if idx == 3
-            <- "Select All"
+            <- "Delete"
+    if cat == CAT_SELECT
+        if idx == 0
+            <- "All"
+        if idx == 1
+            <- "Word"
+        if idx == 2
+            <- "Line"
+        if idx == 3
+            <- "Reset"
     if cat == CAT_FIND
         if idx == 0
             <- "Find"
         if idx == 1
             <- "Find Next"
+        if idx == 2
+            <- "Find Prev"
+    if cat == CAT_FORMAT
+        if idx == 0
+            <- "Strip"
+        if idx == 1
+            <- "Trim"
+        if idx == 2
+            <- "Tab"
+        if idx == 3
+            <- "Untab"
     if cat == CAT_VIEW
         if idx == 0
             <- "Sidebar"
+        if idx == 1
+            <- "Highlight"
+        if idx == 2
+            <- "Line Ends"
+        if idx == 3
+            <- "Tabs"
+    if cat == CAT_INSERT
+        if idx == 0
+            <- "Date"
+        if idx == 1
+            <- "Path"
+        if idx == 2
+            <- "Section"
     <- ""
 ;
 
@@ -114,6 +214,10 @@ def VIEW_COUNT = 1
             <- "Cmd+O"
         if idx == 2
             <- "Cmd+S"
+        if idx == 3
+            <- "Cmd+R"
+        if idx == 4
+            <- "Cmd+Q"
     if cat == CAT_EDIT
         if idx == 0
             <- "Cmd+C"
@@ -122,40 +226,52 @@ def VIEW_COUNT = 1
         if idx == 2
             <- "Cmd+X"
         if idx == 3
+            <- "Del"
+    if cat == CAT_SELECT
+        if idx == 0
             <- "Cmd+A"
+        if idx == 1
+            <- "Cmd+W"
+        if idx == 2
+            <- "Cmd+L"
+        if idx == 3
+            <- "Esc"
     if cat == CAT_FIND
         if idx == 0
             <- "Cmd+F"
         if idx == 1
             <- "Cmd+G"
+        if idx == 2
+            <- "Cmd+Shift+G"
+    if cat == CAT_FORMAT
+        if idx == 0
+            <- "Cmd+T"
+        if idx == 1
+            <- "Cmd+I"
+        if idx == 2
+            <- "Tab"
+        if idx == 3
+            <- "Shift+Tab"
     if cat == CAT_VIEW
         if idx == 0
             <- "Cmd+D"
+        if idx == 1
+            <- "Cmd+H"
+        if idx == 2
+            <- ""
+        if idx == 3
+            <- ""
+    if cat == CAT_INSERT
+        if idx == 0
+            <- ""
+        if idx == 1
+            <- ""
+        if idx == 2
+            <- ""
     <- ""
 ;
 
 -- Action IDs returned by handle_click
-:: action_none() (( string ))
-    <- ""
-;
-:: action_save() (( string ))
-    <- "save"
-;
-:: action_copy() (( string ))
-    <- "copy"
-;
-:: action_paste() (( string ))
-    <- "paste"
-;
-:: action_cut() (( string ))
-    <- "cut"
-;
-:: action_select_all() (( string ))
-    <- "select_all"
-;
-:: action_toggle_sidebar() (( string ))
-    <- "toggle_sidebar"
-;
 
 : item_action(cat = num, idx = num) (( string ))
     if cat == CAT_FILE
@@ -165,6 +281,10 @@ def VIEW_COUNT = 1
             <- "open"
         if idx == 2
             <- "save"
+        if idx == 3
+            <- "rename"
+        if idx == 4
+            <- "exit"
     if cat == CAT_EDIT
         if idx == 0
             <- "copy"
@@ -173,21 +293,52 @@ def VIEW_COUNT = 1
         if idx == 2
             <- "cut"
         if idx == 3
+            <- "delete"
+    if cat == CAT_SELECT
+        if idx == 0
             <- "select_all"
+        if idx == 1
+            <- "select_word"
+        if idx == 2
+            <- "select_line"
+        if idx == 3
+            <- "reset_selection"
     if cat == CAT_FIND
         if idx == 0
             <- "find"
         if idx == 1
             <- "find_next"
+        if idx == 2
+            <- "find_prev"
+    if cat == CAT_FORMAT
+        if idx == 0
+            <- "strip"
+        if idx == 1
+            <- "trim"
+        if idx == 2
+            <- "tab"
+        if idx == 3
+            <- "untab"
     if cat == CAT_VIEW
         if idx == 0
             <- "toggle_sidebar"
+        if idx == 1
+            <- "toggle_highlight"
+        if idx == 2
+            <- "toggle_line_endings"
+        if idx == 3
+            <- "toggle_tabs"
+    if cat == CAT_INSERT
+        if idx == 0
+            <- "insert_date"
+        if idx == 1
+            <- "insert_path"
+        if idx == 2
+            <- "insert_section"
     <- ""
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- State queries and control
--- ─────────────────────────────────────────────────────────────────────────────
+--| State queries and control |--
 
 :: is_open() (( bool ))
     <- menu_open >= 0
@@ -198,86 +349,199 @@ def VIEW_COUNT = 1
     menu_hover = -1
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Drawing
--- ─────────────────────────────────────────────────────────────────────────────
+--| Drawing |--
+
+: draw_diamond (scr = vimana.screen, dx = num, dy = num, color = num) (( -- ))
+    let bg = color + 64
+    -- Row 0-1: 1px
+    scr.set_x(dx + 6) scr.set_y(dy + 0) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 0) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 1) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 1) scr.pixel(bg)
+    -- Row 2-3: 3px
+    scr.set_x(dx + 5) scr.set_y(dy + 2) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 2) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 2) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 2) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 2) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 2) scr.pixel(bg)
+    scr.set_x(dx + 5) scr.set_y(dy + 3) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 3) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 3) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 3) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 3) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 3) scr.pixel(bg)
+    -- Row 4-5: 5px
+    scr.set_x(dx + 4) scr.set_y(dy + 4) scr.pixel(color) scr.set_x(dx + 4) scr.set_y(dy + 4) scr.pixel(bg)
+    scr.set_x(dx + 5) scr.set_y(dy + 4) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 4) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 4) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 4) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 4) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 4) scr.pixel(bg)
+    scr.set_x(dx + 8) scr.set_y(dy + 4) scr.pixel(color) scr.set_x(dx + 8) scr.set_y(dy + 4) scr.pixel(bg)
+    scr.set_x(dx + 4) scr.set_y(dy + 5) scr.pixel(color) scr.set_x(dx + 4) scr.set_y(dy + 5) scr.pixel(bg)
+    scr.set_x(dx + 5) scr.set_y(dy + 5) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 5) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 5) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 5) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 5) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 5) scr.pixel(bg)
+    scr.set_x(dx + 8) scr.set_y(dy + 5) scr.pixel(color) scr.set_x(dx + 8) scr.set_y(dy + 5) scr.pixel(bg)
+    -- Row 6-7: 7px (widest)
+    scr.set_x(dx + 3) scr.set_y(dy + 6) scr.pixel(color) scr.set_x(dx + 3) scr.set_y(dy + 6) scr.pixel(bg)
+    scr.set_x(dx + 4) scr.set_y(dy + 6) scr.pixel(color) scr.set_x(dx + 4) scr.set_y(dy + 6) scr.pixel(bg)
+    scr.set_x(dx + 5) scr.set_y(dy + 6) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 6) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 6) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 6) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 6) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 6) scr.pixel(bg)
+    scr.set_x(dx + 8) scr.set_y(dy + 6) scr.pixel(color) scr.set_x(dx + 8) scr.set_y(dy + 6) scr.pixel(bg)
+    scr.set_x(dx + 9) scr.set_y(dy + 6) scr.pixel(color) scr.set_x(dx + 9) scr.set_y(dy + 6) scr.pixel(bg)
+    scr.set_x(dx + 3) scr.set_y(dy + 7) scr.pixel(color) scr.set_x(dx + 3) scr.set_y(dy + 7) scr.pixel(bg)
+    scr.set_x(dx + 4) scr.set_y(dy + 7) scr.pixel(color) scr.set_x(dx + 4) scr.set_y(dy + 7) scr.pixel(bg)
+    scr.set_x(dx + 5) scr.set_y(dy + 7) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 7) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 7) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 7) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 7) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 7) scr.pixel(bg)
+    scr.set_x(dx + 8) scr.set_y(dy + 7) scr.pixel(color) scr.set_x(dx + 8) scr.set_y(dy + 7) scr.pixel(bg)
+    scr.set_x(dx + 9) scr.set_y(dy + 7) scr.pixel(color) scr.set_x(dx + 9) scr.set_y(dy + 7) scr.pixel(bg)
+    -- Row 8-9: 5px
+    scr.set_x(dx + 4) scr.set_y(dy + 8) scr.pixel(color) scr.set_x(dx + 4) scr.set_y(dy + 8) scr.pixel(bg)
+    scr.set_x(dx + 5) scr.set_y(dy + 8) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 8) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 8) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 8) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 8) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 8) scr.pixel(bg)
+    scr.set_x(dx + 8) scr.set_y(dy + 8) scr.pixel(color) scr.set_x(dx + 8) scr.set_y(dy + 8) scr.pixel(bg)
+    scr.set_x(dx + 4) scr.set_y(dy + 9) scr.pixel(color) scr.set_x(dx + 4) scr.set_y(dy + 9) scr.pixel(bg)
+    scr.set_x(dx + 5) scr.set_y(dy + 9) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 9) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 9) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 9) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 9) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 9) scr.pixel(bg)
+    scr.set_x(dx + 8) scr.set_y(dy + 9) scr.pixel(color) scr.set_x(dx + 8) scr.set_y(dy + 9) scr.pixel(bg)
+    -- Row 10-11: 3px
+    scr.set_x(dx + 5) scr.set_y(dy + 10) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 10) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 10) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 10) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 10) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 10) scr.pixel(bg)
+    scr.set_x(dx + 5) scr.set_y(dy + 11) scr.pixel(color) scr.set_x(dx + 5) scr.set_y(dy + 11) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 11) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 11) scr.pixel(bg)
+    scr.set_x(dx + 7) scr.set_y(dy + 11) scr.pixel(color) scr.set_x(dx + 7) scr.set_y(dy + 11) scr.pixel(bg)
+    -- Row 12-13: 1px
+    scr.set_x(dx + 6) scr.set_y(dy + 12) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 12) scr.pixel(bg)
+    scr.set_x(dx + 6) scr.set_y(dy + 13) scr.pixel(color) scr.set_x(dx + 6) scr.set_y(dy + 13) scr.pixel(bg)
+;
 
 :: draw_menubar(scr = vimana.screen) (( -- ))
     -- Dotted border line at bottom of menubar area
     let bx = 0
     let by = right_model.CONTENT_Y - 1
-    for (let ?col = 0; col < right_model.WIN_W; col += 2)
+    for (let ?col = 0; col < right_model.screen_w; col += 2)
         scr.set_x(col)
         scr.set_y(by)
-        scr.pixel(right_model.C_SEL)
+        scr.pixel(right_model.C_FG)
 
-    -- Diamond save indicator (filled = unsaved, outline = saved)
-    let dx = 4
-    let dy = MENUBAR_Y + 8
-    let dc = right_model.C_FG
+    -- Diamond save indicator: saved = C_FG on BG, unsaved = C_BG on accent
+    let dx = 1
+    let dy = MENUBAR_Y + 6
     if right_model.dirty
-        -- Filled diamond
-        scr.set_x(dx + 3) scr.set_y(dy + 0) scr.pixel(dc)
-        scr.set_x(dx + 2) scr.set_y(dy + 1) scr.pixel(dc)
-        scr.set_x(dx + 3) scr.set_y(dy + 1) scr.pixel(dc)
-        scr.set_x(dx + 4) scr.set_y(dy + 1) scr.pixel(dc)
-        scr.set_x(dx + 1) scr.set_y(dy + 2) scr.pixel(dc)
-        scr.set_x(dx + 2) scr.set_y(dy + 2) scr.pixel(dc)
-        scr.set_x(dx + 3) scr.set_y(dy + 2) scr.pixel(dc)
-        scr.set_x(dx + 4) scr.set_y(dy + 2) scr.pixel(dc)
-        scr.set_x(dx + 5) scr.set_y(dy + 2) scr.pixel(dc)
-        scr.set_x(dx + 0) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 1) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 2) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 3) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 4) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 5) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 6) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 1) scr.set_y(dy + 4) scr.pixel(dc)
-        scr.set_x(dx + 2) scr.set_y(dy + 4) scr.pixel(dc)
-        scr.set_x(dx + 3) scr.set_y(dy + 4) scr.pixel(dc)
-        scr.set_x(dx + 4) scr.set_y(dy + 4) scr.pixel(dc)
-        scr.set_x(dx + 5) scr.set_y(dy + 4) scr.pixel(dc)
-        scr.set_x(dx + 2) scr.set_y(dy + 5) scr.pixel(dc)
-        scr.set_x(dx + 3) scr.set_y(dy + 5) scr.pixel(dc)
-        scr.set_x(dx + 4) scr.set_y(dy + 5) scr.pixel(dc)
-        scr.set_x(dx + 3) scr.set_y(dy + 6) scr.pixel(dc)
+        -- Accent background behind diamond area
+        fill(scr, 0, 0, 14, MENUBAR_H + 3, right_model.C_ACCENT)
+        draw_diamond(scr, dx, dy, right_model.C_BG)
     else
-        -- Outline diamond
-        scr.set_x(dx + 3) scr.set_y(dy + 0) scr.pixel(dc)
-        scr.set_x(dx + 2) scr.set_y(dy + 1) scr.pixel(dc)
-        scr.set_x(dx + 4) scr.set_y(dy + 1) scr.pixel(dc)
-        scr.set_x(dx + 1) scr.set_y(dy + 2) scr.pixel(dc)
-        scr.set_x(dx + 5) scr.set_y(dy + 2) scr.pixel(dc)
-        scr.set_x(dx + 0) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 6) scr.set_y(dy + 3) scr.pixel(dc)
-        scr.set_x(dx + 1) scr.set_y(dy + 4) scr.pixel(dc)
-        scr.set_x(dx + 5) scr.set_y(dy + 4) scr.pixel(dc)
-        scr.set_x(dx + 2) scr.set_y(dy + 5) scr.pixel(dc)
-        scr.set_x(dx + 4) scr.set_y(dy + 5) scr.pixel(dc)
-        scr.set_x(dx + 3) scr.set_y(dy + 6) scr.pixel(dc)
+        draw_diamond(scr, dx, dy, right_model.C_FG)
 
     -- Category labels
     let ty = MENUBAR_Y + 2
     let ?fg = right_model.C_FG
+    let ?bg = right_model.C_BG
     if menu_open == CAT_FILE
-        fg = right_model.C_ACCENT
-    scr.put_text(CAT_FILE_X, ty, "File", fg, right_model.C_BG)
+        fg = right_model.C_BG
+        bg = right_model.C_FG
+        fill(scr, CAT_FILE_X, MENUBAR_Y, CAT_FILE_W, MENUBAR_H, bg)
+    scr.put_text(CAT_FILE_X, ty, "File", fg, bg)
 
     fg = right_model.C_FG
+    bg = right_model.C_BG
     if menu_open == CAT_EDIT
-        fg = right_model.C_ACCENT
-    scr.put_text(CAT_EDIT_X, ty, "Edit", fg, right_model.C_BG)
+        fg = right_model.C_BG
+        bg = right_model.C_FG
+        fill(scr, CAT_EDIT_X, MENUBAR_Y, CAT_EDIT_W, MENUBAR_H, bg)
+    scr.put_text(CAT_EDIT_X, ty, "Edit", fg, bg)
 
     fg = right_model.C_FG
+    bg = right_model.C_BG
+    if menu_open == CAT_SELECT
+        fg = right_model.C_BG
+        bg = right_model.C_FG
+        fill(scr, CAT_SELECT_X, MENUBAR_Y, CAT_SELECT_W, MENUBAR_H, bg)
+    scr.put_text(CAT_SELECT_X, ty, "Select", fg, bg)
+
+    fg = right_model.C_FG
+    bg = right_model.C_BG
     if menu_open == CAT_FIND
-        fg = right_model.C_ACCENT
-    scr.put_text(CAT_FIND_X, ty, "Find", fg, right_model.C_BG)
+        fg = right_model.C_BG
+        bg = right_model.C_FG
+        fill(scr, CAT_FIND_X, MENUBAR_Y, CAT_FIND_W, MENUBAR_H, bg)
+    scr.put_text(CAT_FIND_X, ty, "Find", fg, bg)
 
     fg = right_model.C_FG
+    bg = right_model.C_BG
+    if menu_open == CAT_FORMAT
+        fg = right_model.C_BG
+        bg = right_model.C_FG
+        fill(scr, CAT_FORMAT_X, MENUBAR_Y, CAT_FORMAT_W, MENUBAR_H, bg)
+    scr.put_text(CAT_FORMAT_X, ty, "Format", fg, bg)
+
+    fg = right_model.C_FG
+    bg = right_model.C_BG
     if menu_open == CAT_VIEW
-        fg = right_model.C_ACCENT
-    scr.put_text(CAT_VIEW_X, ty, "View", fg, right_model.C_BG)
+        fg = right_model.C_BG
+        bg = right_model.C_FG
+        fill(scr, CAT_VIEW_X, MENUBAR_Y, CAT_VIEW_W, MENUBAR_H, bg)
+    scr.put_text(CAT_VIEW_X, ty, "View", fg, bg)
+
+    fg = right_model.C_FG
+    bg = right_model.C_BG
+    if menu_open == CAT_INSERT
+        fg = right_model.C_BG
+        bg = right_model.C_FG
+        fill(scr, CAT_INSERT_X, MENUBAR_Y, CAT_INSERT_W, MENUBAR_H, bg)
+    scr.put_text(CAT_INSERT_X, ty, "Insert", fg, bg)
+;
+
+-- Draw a key-cap bordered glyph for a single key
+: draw_key_cap(scr = vimana.screen, x = num, y = num, text = string, fg = num, bg = num) (( num ))
+    let tw = stdr.len(text) * right_model.FONT_W
+    let kw = tw + 6
+    let kh = right_model.ROW_H - 4
+    let ky = y + 2
+    -- Border rectangle
+    fill(scr, x, ky, kw, 1, fg)
+    fill(scr, x, ky + kh - 1, kw, 1, fg)
+    fill(scr, x, ky, 1, kh, fg)
+    fill(scr, x + kw - 1, ky, 1, kh, fg)
+    -- Fill inside
+    fill(scr, x + 1, ky + 1, kw - 2, kh - 2, bg)
+    -- Text
+    scr.put_text(x + 3, y, text, fg, bg)
+    <- kw
+;
+
+-- Draw shortcut like "Cmd+S" as bordered key caps, right-aligned ending at rx
+: draw_key_shortcut(scr = vimana.screen, rx = num, y = num, shortcut = string, fg = num, bg = num) (( -- ))
+    -- Split on "+"
+    let slen = stdr.len(shortcut)
+    -- First count total width
+    let ?total_w = 0
+    let ?part_start = 0
+    let ?parts = 0
+    for (let ?k = 0; k <= slen; k += 1)
+        let at_end = k >= slen
+        let is_plus = !at_end && stdr.slice(shortcut, k, k + 1) == "+"
+        if at_end || is_plus
+            let part = stdr.slice(shortcut, part_start, k)
+            let pw = stdr.len(part) * right_model.FONT_W + 6
+            total_w += pw
+            if parts > 0
+                total_w += 4
+            parts += 1
+            part_start = k + 1
+    -- Draw from left
+    let ?cx = rx - total_w
+    part_start = 0
+    let ?drawn = 0
+    for (let ?k = 0; k <= slen; k += 1)
+        let at_end = k >= slen
+        let is_plus = !at_end && stdr.slice(shortcut, k, k + 1) == "+"
+        if at_end || is_plus
+            let part = stdr.slice(shortcut, part_start, k)
+            if drawn > 0
+                cx += 4
+            let w = draw_key_cap(scr, cx, y, part, fg, bg)
+            cx += w
+            drawn += 1
+            part_start = k + 1
 ;
 
 :: draw_submenu(scr = vimana.screen) (( -- ))
@@ -287,50 +551,58 @@ def VIEW_COUNT = 1
     let cat = menu_open
     let count = item_count(cat)
     let sx = cat_x(cat)
-    let sy = right_model.CONTENT_Y
-    let sw = SUBMENU_W
+    let sy = MENUBAR_H
+    let sw = submenu_width(cat)
     let sh = count * SUBMENU_ITEM_H
-    let th = sh + 2
+    let th = sh + 1
 
     -- Submenu background (includes border area to fully cover content below)
-    fill(scr, sx, sy, sw + 1, th, right_model.C_BG)
+    fill(scr, sx, sy, sw + 1, th, right_model.C_FG)
 
-    -- Border (all four edges)
-    fill(scr, sx, sy, sw + 1, 1, right_model.C_FG)
-    fill(scr, sx, sy + th - 1, sw + 1, 1, right_model.C_FG)
-    fill(scr, sx, sy, 1, th, right_model.C_FG)
-    fill(scr, sx + sw, sy, 1, th, right_model.C_FG)
+    -- Border (left, right, bottom — no top, glued to menubar)
+    fill(scr, sx, sy + th - 1, sw + 1, 1, right_model.C_BG)
+    fill(scr, sx, sy, 1, th, right_model.C_BG)
+    fill(scr, sx + sw, sy, 1, th, right_model.C_BG)
 
     -- Items (inset by 1px for border)
     for (let ?i = 0; i < count; i += 1)
-        let iy = sy + 1 + i * SUBMENU_ITEM_H
+        let iy = sy + i * SUBMENU_ITEM_H
         let label = item_label(cat, i)
         let shortcut = item_shortcut(cat, i)
+        let ?bg_c = right_model.C_FG
+        let ?fg_c = right_model.C_BG
+        let ?sc_c = right_model.C_SEL
 
         if i == menu_hover
-            fill(scr, sx + 1, iy, sw - 2, SUBMENU_ITEM_H, right_model.C_ACCENT)
-            scr.put_text(sx + 8, iy, label, right_model.C_FG, right_model.C_ACCENT)
-            let sc_x = sx + sw - 8 - stdr.len(shortcut) * right_model.FONT_W
-            scr.put_text(sc_x, iy, shortcut, right_model.C_FG, right_model.C_ACCENT)
-        else
-            scr.put_text(sx + 8, iy, label, right_model.C_FG, right_model.C_BG)
-            let sc_x = sx + sw - 8 - stdr.len(shortcut) * right_model.FONT_W
-            scr.put_text(sc_x, iy, shortcut, right_model.C_SEL, right_model.C_BG)
+            bg_c = right_model.C_ACCENT
+            fg_c = right_model.C_FG
+            sc_c = right_model.C_FG
+            fill(scr, sx + 1, iy, sw - 2, SUBMENU_ITEM_H, bg_c)
+
+        scr.put_text(sx + 8, iy, label, fg_c, bg_c)
+
+        -- Key glyphs: draw each key part in a bordered cap
+        if stdr.len(shortcut) > 0
+            draw_key_shortcut(scr, sx + sw - 8, iy, shortcut, sc_c, bg_c)
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Interaction
--- ─────────────────────────────────────────────────────────────────────────────
+--| Interaction |--
 
 : cat_from_x(mx = num) (( num ))
     if mx >= CAT_FILE_X && mx < CAT_FILE_X + CAT_FILE_W
         <- CAT_FILE
     if mx >= CAT_EDIT_X && mx < CAT_EDIT_X + CAT_EDIT_W
         <- CAT_EDIT
+    if mx >= CAT_SELECT_X && mx < CAT_SELECT_X + CAT_SELECT_W
+        <- CAT_SELECT
     if mx >= CAT_FIND_X && mx < CAT_FIND_X + CAT_FIND_W
         <- CAT_FIND
+    if mx >= CAT_FORMAT_X && mx < CAT_FORMAT_X + CAT_FORMAT_W
+        <- CAT_FORMAT
     if mx >= CAT_VIEW_X && mx < CAT_VIEW_X + CAT_VIEW_W
         <- CAT_VIEW
+    if mx >= CAT_INSERT_X && mx < CAT_INSERT_X + CAT_INSERT_W
+        <- CAT_INSERT
     <- -1
 ;
 
@@ -352,8 +624,8 @@ def VIEW_COUNT = 1
     if menu_open >= 0
         let cat = menu_open
         let sx = cat_x(cat)
-        let sy = right_model.CONTENT_Y + 1
-        let sw = SUBMENU_W
+        let sy = MENUBAR_H
+        let sw = submenu_width(cat)
         let count = item_count(cat)
         let sh = count * SUBMENU_ITEM_H
 
@@ -385,8 +657,8 @@ def VIEW_COUNT = 1
     -- Hover over submenu items
     let cat = menu_open
     let sx = cat_x(cat)
-    let sy = right_model.CONTENT_Y + 1
-    let sw = SUBMENU_W
+    let sy = MENUBAR_H
+    let sw = submenu_width(cat)
     let count = item_count(cat)
     let sh = count * SUBMENU_ITEM_H
 

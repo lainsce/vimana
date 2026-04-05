@@ -228,7 +228,7 @@ def PRESET_COUNT = 26
 
 : row_plane_char_at(line = string, col = num, use_secondary = bool) (( string ))
     if col < 0
-        <- "_"
+        <- " "
 
     let n = stdr.len(line)
     let ?x = 0
@@ -246,14 +246,14 @@ def PRESET_COUNT = 26
 
             if is_secondary == use_secondary
                 if ch == " "
-                    <- "_"
+                    <- " "
                 <- ch
 
-            <- "_"
+            <- " "
 
         x += 1
 
-    <- "_"
+    <- " "
 ;
 
 : preset_row_width(idx = num, row = num) (( num ))
@@ -289,7 +289,7 @@ def PRESET_COUNT = 26
     let i = clamp_preset_idx(idx)
     let h = preset_height_internal(i)
     if row < 0 || row >= h
-        <- "_"
+        <- " "
 
     let use_secondary = color_idx == 2
     <- preset_cell_internal(i, col, row, use_secondary)

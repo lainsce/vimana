@@ -42,6 +42,7 @@ def flip_y = 0x20
 : __vimana_screen_set_font_chr(scr = screen, code = num, chr = any) (( -- )) { }
 : __vimana_screen_set_font_width(scr = screen, code = num, width = num) (( -- )) { }
 : __vimana_screen_set_font_size(scr = screen, size = num) (( -- )) { }
+: __vimana_screen_set_theme_swap(scr = screen, swap = num) (( -- )) { }
 : __vimana_screen_set_sprite(scr = screen, addr = num, sprite = any, mode = num) (( -- )) { }
 : __vimana_screen_set_x(scr = screen, x = num) (( -- )) { }
 : __vimana_screen_set_y(scr = screen, y = num) (( -- )) { }
@@ -177,6 +178,11 @@ pub ,: screen
 
     :: set_font_size(this, size = num) (( screen ))
         __vimana_screen_set_font_size(this, size)
+        <- this
+    ;
+
+    :: set_theme_swap(this, swap = num) (( screen ))
+        __vimana_screen_set_theme_swap(this, swap)
         <- this
     ;
 

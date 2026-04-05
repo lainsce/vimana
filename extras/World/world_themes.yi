@@ -1,5 +1,8 @@
 cask world_themes
 
+bring stdr
+bring vimana
+
 def THEME_TOTAL = 16
 
 -- Order:      [FG,        CLR1,      CLR2,      BG       ]
@@ -26,15 +29,6 @@ def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
         i = 0
     if i >= THEME_TOTAL
         i = THEME_TOTAL - 1
-    <- i
-;
-
-: clamp_color_idx(idx = num) (( num ))
-    let ?i = idx
-    if i < 0
-        i = 0
-    if i > 4
-        i = 4
     <- i
 ;
 
@@ -79,8 +73,14 @@ def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
 
 :: theme_color(theme_idx = num, color_idx = num) (( string ))
     let colors = theme_ref(theme_idx)
-    let ci = clamp_color_idx(color_idx)
+    let ?ci = color_idx
+    if ci < 0
+        ci = 0
+    if ci > 4
+        ci = 4
 
+    -- color_idx: 0=BG, 1=FG, 2=CLR1, 3=CLR2
+    -- array:     [FG, CLR1, CLR2, BG]
     let ?mapped = 3
     if ci == 1
         mapped = 0
@@ -88,10 +88,18 @@ def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
         mapped = 1
     elif ci == 3
         mapped = 2
-    elif ci == 4
-        mapped = 2
 
     <- str(colors[mapped] ?? "#000000")
+;
+
+-- Apply palette to Vimana screen
+-- Slot 0 = BG, Slot 1 = CLR1, Slot 2 = CLR2, Slot 3 = FG
+:: apply_palette(scr = vimana.screen, theme_idx = num) (( -- ))
+    let colors = theme_ref(theme_idx)
+    scr.set_palette(vimana.color_bg, str(colors[3] ?? "#000000"))
+    scr.set_palette(vimana.color_fg, str(colors[1] ?? "#9BBC0F"))
+    scr.set_palette(vimana.color_2, str(colors[2] ?? "#306230"))
+    scr.set_palette(vimana.color_3, str(colors[0] ?? "#FFFFFF"))
 ;
 
 : hex_to_rgb(hex = string) (( [num] ))
@@ -129,7 +137,7 @@ def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
     <- "#" + byte_to_hex(cr) + byte_to_hex(cg) + byte_to_hex(cb)
 ;
 
-: adjust_color(hex = string, amount = num) (( string ))
+:: adjust_color(hex = string, amount = num) (( string ))
     let rgb = hex_to_rgb(hex)
     let r = rgb[0]
     let g = rgb[1]
@@ -137,7 +145,7 @@ def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
     <- rgb_to_hex(r + amount, g + amount, b + amount)
 ;
 
-: is_dark_bg(hex = string) (( bool ))
+:: is_dark_bg(hex = string) (( bool ))
     let rgb = hex_to_rgb(hex)
     let r = rgb[0]
     let g = rgb[1]
@@ -152,4 +160,41 @@ def THEME_15 = ["#FFFFFF", "#FF8800", "#0055AA", "#000020"]  -- Friendly Past
     if is_dark_bg(bg)
         <- adjust_color(bg, adjustment)
     <- adjust_color(bg, -adjustment)
+;
+
+:: theme_name(idx = num) (( string ))
+    let i = clamp_theme_idx(idx)
+    if i == 0
+        <- "Dithered"
+    elif i == 1
+        <- "Blue Flame"
+    elif i == 2
+        <- "Terminal"
+    elif i == 3
+        <- "Rosewood"
+    elif i == 4
+        <- "Flame Inverted"
+    elif i == 5
+        <- "Orchid"
+    elif i == 6
+        <- "Neon Green"
+    elif i == 7
+        <- "Steel"
+    elif i == 8
+        <- "Foxfire"
+    elif i == 9
+        <- "Chlorophyll"
+    elif i == 10
+        <- "Wax Seal"
+    elif i == 11
+        <- "Neon Moss"
+    elif i == 12
+        <- "Cascade"
+    elif i == 13
+        <- "Classic"
+    elif i == 14
+        <- "Collapse"
+    elif i == 15
+        <- "Friendly Past"
+    <- "Unknown"
 ;

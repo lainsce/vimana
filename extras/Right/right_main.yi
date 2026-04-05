@@ -7,9 +7,7 @@ bring right_view
 bring right_assets
 bring right_menu
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Helpers
--- ─────────────────────────────────────────────────────────────────────────────
+--| Helpers |--
 
 -- Double-click tracking
 def ?last_click_time = 0
@@ -26,14 +24,10 @@ def DBLCLICK_DIST = 8
     let ?title = "Untitled"
     if stdr.len(right_model.file_path) > 0
         title = stdr.basename(right_model.file_path)
-    if right_model.dirty
-        title = title + " *"
     scr.set_titlebar_title(title)
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- File I/O
--- ─────────────────────────────────────────────────────────────────────────────
+--| File I/O |--
 
 : load_file(fsys = vimana.file, scr = vimana.screen) (( -- ))
     if stdr.len(right_model.file_path) == 0
@@ -47,6 +41,8 @@ def DBLCLICK_DIST = 8
     right_model.set_scroll(0)
     right_model.rebuild_outline()
     right_model.set_dirty(false)
+    if right_model.dir_listing_active
+        right_model.close_dir_listing()
     update_title(scr)
 ;
 
@@ -60,7 +56,7 @@ def DBLCLICK_DIST = 8
 
 : new_file(scr = vimana.screen) (( -- ))
     right_model.set_file_path("")
-    right_model.set_text("cask main\n\nbring stdr\n\n-- entry point\n-> ()\n    -- your code here\n;\n")
+    right_model.set_text("cask main\n\nbring stdr\n\n--| Entry |--\n-> ()\n    -- your code here\n;\n")
     right_model.set_caret(0)
     right_model.set_selection(0, 0)
     right_model.set_scroll(0)
@@ -80,6 +76,57 @@ def DBLCLICK_DIST = 8
     load_file(fsys, scr)
 ;
 
+: rename_file(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let ?default_name = "Untitled.yi"
+    if stdr.len(right_model.file_path) > 0
+        default_name = stdr.basename(right_model.file_path)
+    let picked = stdr.save_file_dialog("Rename / Save As", default_name, "yi")
+    if is_null(picked)
+        <-
+    let path = str(picked)
+    if stdr.len(path) == 0
+        <-
+    right_model.set_file_path(path)
+    save_file(fsys, scr)
+;
+
+--| Open from selection |--
+
+: open_from_selection(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let ?name = right_model.selected_text()
+    if stdr.len(name) == 0
+        name = right_model.word_before_caret()
+    if stdr.len(name) == 0
+        <-
+    -- Strip "bring " prefix
+    if stdr.starts_with(name, "bring ")
+        name = stdr.slice(name, 6, stdr.len(name))
+    -- Add .yi extension if missing
+    if !stdr.ends_with(name, ".yi")
+        name = name + ".yi"
+    -- Resolve directory
+    let ?dir = stdr.dirname(right_model.file_path)
+    if stdr.len(dir) == 0
+        dir = stdr.getcwd()
+    let path = dir + "/" + name
+    if fsys.exists(path)
+        right_model.set_file_path(path)
+        load_file(fsys, scr)
+;
+
+--| Directory listing |--
+
+: open_dir_listing(fsys = vimana.file) (( -- ))
+    if right_model.dir_listing_active
+        right_model.close_dir_listing()
+        <-
+    let ?dir = stdr.dirname(right_model.file_path)
+    if stdr.len(dir) == 0
+        dir = stdr.getcwd()
+    let entries = fsys.list(dir)
+    right_model.open_dir_listing(entries)
+;
+
 : exec_action(action = string, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
     if action == "new"
         new_file(scr)
@@ -87,6 +134,10 @@ def DBLCLICK_DIST = 8
         open_file(fsys, scr)
     elif action == "save"
         save_file(fsys, scr)
+    elif action == "rename"
+        rename_file(fsys, scr)
+    elif action == "exit"
+        sys.quit()
     elif action == "copy"
         let sel = right_model.selected_text()
         if stdr.len(sel) > 0
@@ -102,25 +153,80 @@ def DBLCLICK_DIST = 8
             sys.set_clipboard_text(sel)
             right_model.delete_selection()
             update_title(scr)
+    elif action == "delete"
+        right_model.delete_forward()
+        update_title(scr)
     elif action == "select_all"
         right_model.select_all()
+    elif action == "select_word"
+        right_model.select_word()
+    elif action == "select_line"
+        right_model.select_line()
+    elif action == "reset_selection"
+        right_model.reset_selection()
     elif action == "toggle_sidebar"
         right_model.toggle_sidebar()
+    elif action == "toggle_highlight"
+        right_model.toggle_highlight()
+    elif action == "toggle_line_endings"
+        right_model.toggle_line_endings()
+    elif action == "toggle_tabs"
+        right_model.toggle_tabs()
     elif action == "find"
         right_model.open_search()
     elif action == "find_next"
         right_model.search_next()
+    elif action == "find_prev"
+        right_model.search_prev()
+    elif action == "strip"
+        right_model.strip_trailing()
+        update_title(scr)
+    elif action == "trim"
+        right_model.trim_trailing_lines()
+        update_title(scr)
+    elif action == "tab"
+        right_model.tab_indent()
+        update_title(scr)
+    elif action == "untab"
+        right_model.untab_indent()
+        update_title(scr)
+    elif action == "insert_date"
+        let y = stdr.current_year()
+        let m = stdr.current_month()
+        let d = stdr.current_day()
+        let ?ms = str(m)
+        let ?ds = str(d)
+        if m < 10
+            ms = "0" + ms
+        if d < 10
+            ds = "0" + ds
+        right_model.insert_at_caret(str(y) + "-" + ms + "-" + ds)
+        update_title(scr)
+    elif action == "insert_path"
+        if stdr.len(right_model.file_path) > 0
+            right_model.insert_at_caret(right_model.file_path)
+            update_title(scr)
+    elif action == "insert_section"
+        right_model.insert_at_caret("--| Section |--\n")
+        update_title(scr)
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Mouse input
--- ─────────────────────────────────────────────────────────────────────────────
+--| Mouse input |--
 
 : on_mouse(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
     -- Track hover for menu
     let mx = dev.pointer_x()
     let my = dev.pointer_y()
+    let ctrl = dev.key_down(right_model.KEY_LCTRL) || dev.key_down(right_model.KEY_RCTRL)
     right_menu.handle_hover(mx, my)
+
+    -- Sidebar resize drag (runs every frame)
+    if right_model.resizing_sidebar
+        if dev.mouse_down(vimana.mouse_left)
+            right_model.set_sidebar_width(mx - right_model.SIDEBAR_X)
+            <-
+        right_model.stop_resize()
+        <-
 
     if !dev.mouse_pressed(vimana.mouse_left)
         <-
@@ -132,10 +238,17 @@ def DBLCLICK_DIST = 8
             exec_action(action, sys, fsys, scr)
         <-
 
+    -- Start resize if clicking near separator edge
+    if right_model.sidebar_visible && my >= right_model.CONTENT_Y
+        let sep = right_model.sidebar_right()
+        if mx >= sep - right_model.RESIZE_ZONE && mx <= sep + right_model.RESIZE_ZONE
+            right_model.start_resize()
+            <-
+
     -- Click in scrollbar zone
     if mx < right_model.SIDEBAR_X
-        let bar_h = right_model.WIN_H - right_model.CONTENT_Y - right_model.STATUS_H
-        let total = right_model.line_count(right_model.editor_text)
+        let bar_h = right_model.screen_h - right_model.CONTENT_Y - right_model.STATUS_H
+        let total = right_model.vline_count(right_model.editor_text)
         let ratio = (my - right_model.CONTENT_Y) / bar_h
         let target = stdr.floor(ratio * total)
         right_model.set_scroll(target)
@@ -145,6 +258,11 @@ def DBLCLICK_DIST = 8
     -- Click in editor area
     let ed_left = right_model.editor_left()
     if mx >= ed_left
+        -- Ctrl+click: select word
+        if ctrl
+            let pos = right_model.caret_from_editor_click(mx, my)
+            right_model.select_word_at(pos)
+            <-
         -- Double-click detection
         let now = sys.ticks()
         let dx = mx - last_click_x
@@ -163,8 +281,23 @@ def DBLCLICK_DIST = 8
         right_model.set_selection(pos, pos)
         <-
 
-    -- Click in outline sidebar
-    if right_model.sidebar_visible && mx >= right_model.SIDEBAR_X && mx < right_model.SIDEBAR_X + right_model.SIDEBAR_W
+    -- Click in sidebar
+    if right_model.sidebar_visible && mx >= right_model.SIDEBAR_X && mx < right_model.sidebar_right()
+        -- Directory listing click
+        if right_model.dir_listing_active
+            let row = stdr.floor((my - right_model.CONTENT_Y) / right_model.ROW_H) + right_model.dir_scroll
+            if row >= 0 && row < stdr.len(right_model.dir_entries)
+                let entry = str(right_model.dir_entries[row] ?? "")
+                let ?dir = stdr.dirname(right_model.file_path)
+                if stdr.len(dir) == 0
+                    dir = stdr.getcwd()
+                let path = dir + "/" + entry
+                if fsys.exists(path)
+                    right_model.set_file_path(path)
+                    load_file(fsys, scr)
+                    right_model.close_dir_listing()
+            <-
+        -- Outline click
         let idx = right_model.outline_index_from_click(my)
         if idx >= 0
             right_model.set_outline_selected(idx)
@@ -176,13 +309,13 @@ def DBLCLICK_DIST = 8
             right_model.ensure_visible()
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Keyboard input
--- ─────────────────────────────────────────────────────────────────────────────
+--| Keyboard input |--
 
 : on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
     let cmd = dev.key_down(right_model.KEY_LGUI) || dev.key_down(right_model.KEY_RGUI)
     let shift = dev.key_down(225) || dev.key_down(229)
+    let alt = dev.key_down(right_model.KEY_LALT) || dev.key_down(right_model.KEY_RALT)
+    let ctrl = dev.key_down(right_model.KEY_LCTRL) || dev.key_down(right_model.KEY_RCTRL)
 
     -- Search mode keys
     if right_model.search_active
@@ -211,14 +344,37 @@ def DBLCLICK_DIST = 8
         if dev.key_pressed(right_model.KEY_O)
             open_file(fsys, scr)
             <-
+        if dev.key_pressed(right_model.KEY_R)
+            rename_file(fsys, scr)
+            <-
+        if dev.key_pressed(right_model.KEY_Q)
+            sys.quit()
+            <-
         if dev.key_pressed(right_model.KEY_F)
             right_model.open_search()
             <-
         if dev.key_pressed(right_model.KEY_G)
-            right_model.search_next()
+            if shift
+                right_model.search_prev()
+            else
+                right_model.search_next()
             <-
         if dev.key_pressed(right_model.KEY_A)
             right_model.select_all()
+            <-
+        if dev.key_pressed(right_model.KEY_W)
+            right_model.select_word()
+            <-
+        if dev.key_pressed(right_model.KEY_L)
+            right_model.select_line()
+            <-
+        if dev.key_pressed(right_model.KEY_T)
+            right_model.strip_trailing()
+            update_title(scr)
+            <-
+        if dev.key_pressed(right_model.KEY_I)
+            right_model.trim_trailing_lines()
+            update_title(scr)
             <-
         if dev.key_pressed(right_model.KEY_C)
             let sel = right_model.selected_text()
@@ -241,6 +397,9 @@ def DBLCLICK_DIST = 8
         if dev.key_pressed(right_model.KEY_D)
             right_model.toggle_sidebar()
             <-
+        if dev.key_pressed(right_model.KEY_H)
+            right_model.toggle_highlight()
+            <-
         -- Cmd+arrows
         if dev.key_pressed(right_model.KEY_LEFT)
             right_model.move_caret_line_start(shift)
@@ -254,6 +413,23 @@ def DBLCLICK_DIST = 8
         if dev.key_pressed(right_model.KEY_DOWN)
             right_model.move_caret_doc_end(shift)
             <-
+        if dev.key_pressed(right_model.KEY_SLASH)
+            open_dir_listing(fsys)
+            <-
+        <-
+
+    -- Alt+arrow word navigation
+    if alt
+        if dev.key_pressed(right_model.KEY_LEFT)
+            right_model.move_caret_word_left(shift)
+            <-
+        if dev.key_pressed(right_model.KEY_RIGHT)
+            right_model.move_caret_word_right(shift)
+            <-
+
+    -- Ctrl+Enter: open file from selection
+    if ctrl && dev.key_pressed(right_model.KEY_RETURN)
+        open_from_selection(fsys, scr)
         <-
 
     -- Navigation
@@ -273,21 +449,39 @@ def DBLCLICK_DIST = 8
     -- Editing keys
     if dev.key_pressed(right_model.KEY_BACKSPACE)
         right_model.delete_backward()
+        right_model.update_autocomplete()
         update_title(scr)
         <-
     if dev.key_pressed(right_model.KEY_DELETE)
         right_model.delete_forward()
+        right_model.update_autocomplete()
         update_title(scr)
         <-
     if dev.key_pressed(right_model.KEY_RETURN)
+        right_model.dismiss_autocomplete()
         right_model.insert_at_caret("\n")
         update_title(scr)
         <-
     if dev.key_pressed(right_model.KEY_TAB)
+        if shift
+            right_model.untab_indent()
+            update_title(scr)
+            <-
+        if right_model.autocomplete_visible
+            right_model.accept_autocomplete()
+            update_title(scr)
+            <-
+        if right_model.has_selection()
+            right_model.tab_indent()
+            update_title(scr)
+            <-
         right_model.insert_at_caret("    ")
         update_title(scr)
         <-
     if dev.key_pressed(right_model.KEY_ESCAPE)
+        if right_model.autocomplete_visible
+            right_model.dismiss_autocomplete()
+            <-
         if right_menu.is_open()
             right_menu.close()
             <-
@@ -298,9 +492,7 @@ def DBLCLICK_DIST = 8
         <-
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Text input (typed characters)
--- ─────────────────────────────────────────────────────────────────────────────
+--| Text input (typed characters) |--
 
 : on_text(dev = vimana.device, scr = vimana.screen) (( -- ))
     let txt = dev.text_input()
@@ -309,43 +501,49 @@ def DBLCLICK_DIST = 8
             right_model.search_type(txt)
             <-
         right_model.insert_at_caret(txt)
+        right_model.update_autocomplete()
         update_title(scr)
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Scroll wheel
--- ─────────────────────────────────────────────────────────────────────────────
+--| Scroll wheel |--
 
 : on_scroll(dev = vimana.device) (( -- ))
     let dy = dev.wheel_y()
     if dy == 0
         <-
-    right_model.scroll_by(dy)
+    let mx = dev.pointer_x()
+    if right_model.sidebar_visible && mx < right_model.sidebar_right()
+        if right_model.dir_listing_active
+            right_model.dir_scroll_by(dy)
+        else
+            right_model.outline_scroll_by(dy)
+    else
+        right_model.scroll_by(dy)
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Entry point
--- ─────────────────────────────────────────────────────────────────────────────
+--| Entry |--
 
 -> ()
     let sys  = vimana.system()
-    let scr  = vimana.screen("Right", right_model.WIN_W, right_model.WIN_H, 1)
+    let scr  = vimana.screen("Right", right_model.DEFAULT_W, right_model.DEFAULT_H, 1)
     right_assets.setup(scr)
-    scr.set_palette(vimana.color_bg, "#ffffee")
-       .set_palette(vimana.color_fg,  "#222222")
-       .set_palette(vimana.color_2,  "#777777")
-       .set_palette(vimana.color_3,  "#008888")
     let dev  = sys.device()
     let fsys = sys.file()
+    -- Set initial palette
+    scr.set_palette(vimana.color_bg, "#eeeedd")
+        .set_palette(vimana.color_fg,  "#000011")
+        .set_palette(vimana.color_2,  "#887777")
+        .set_palette(vimana.color_3,  "#44aa99")
 
     -- Load initial file if provided
     right_model.set_file_path("")
-    right_model.set_text("cask main\n\nbring stdr\n\n-- entry point\n-> ()\n    -- your code here\n;\n")
+    right_model.set_text("cask main\n\nbring stdr\n\n--| Entry |--\n-> ()\n    -- your code here\n;\n")
     right_model.rebuild_outline()
     update_title(scr)
 
     sys.run(scr, () => {
         dev.poll()
+        right_model.sync_screen_size(scr.width(), scr.height())
 
         -- Input
         on_mouse(dev, sys, fsys, scr)

@@ -1,0 +1,376 @@
+cask world_assets
+
+bring vimana
+
+-- 2x2 icon helper (16x16 from four 8x8 tiles)
+:: draw_icn(scr = vimana.screen, x = num, y = num, tl = any, tr = any, bl = any, br = any, fg = num, bg = num) (( -- ))
+    scr.put_icn(x,     y,     tl, fg, bg)
+    scr.put_icn(x + 8, y,     tr, fg, bg)
+    scr.put_icn(x,     y + 8, bl, fg, bg)
+    scr.put_icn(x + 8, y + 8, br, fg, bg)
+;
+
+-- Undo arrow (left-pointing arrow)
+def UNDO_TL = [0, 0, 1, 3, 7, 15, 31, 63]
+def UNDO_TR = [0, 0, 0, 0, 0, 254, 254, 254]
+def UNDO_BL = [31, 15, 7, 3, 1, 0, 0, 0]
+def UNDO_BR = [254, 254, 0, 0, 0, 0, 0, 0]
+
+:: draw_undo(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, UNDO_TL, UNDO_TR, UNDO_BL, UNDO_BR, fg, bg)
+;
+
+-- Redo arrow (right-pointing arrow)
+def REDO_TL = [0, 0, 0, 0, 0, 127, 127, 127]
+def REDO_TR = [0, 0, 128, 192, 224, 240, 248, 252]
+def REDO_BL = [127, 127, 0, 0, 0, 0, 0, 0]
+def REDO_BR = [248, 240, 224, 192, 128, 0, 0, 0]
+
+:: draw_redo(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, REDO_TL, REDO_TR, REDO_BL, REDO_BR, fg, bg)
+;
+
+-- Grid icon (crosshatch)
+def GRID_TL = [0, 24, 24, 255, 255, 24, 24, 0]
+def GRID_TR = [0, 24, 24, 255, 255, 24, 24, 0]
+def GRID_BL = [0, 24, 24, 255, 255, 24, 24, 0]
+def GRID_BR = [0, 24, 24, 255, 255, 24, 24, 0]
+
+:: draw_grid(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, GRID_TL, GRID_TR, GRID_BL, GRID_BR, fg, bg)
+;
+
+-- Text mode icon ("T")
+def TEXT_TL = [0, 0, 255, 255, 24, 24, 24, 24]
+def TEXT_TR = [0, 0, 255, 255, 24, 24, 24, 24]
+def TEXT_BL = [24, 24, 24, 24, 24, 24, 0, 0]
+def TEXT_BR = [24, 24, 24, 24, 24, 24, 0, 0]
+
+:: draw_text(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, TEXT_TL, TEXT_TR, TEXT_BL, TEXT_BR, fg, bg)
+;
+
+-- Ding mode icon (star/decorative)
+def DING_TL = [0, 0, 24, 24, 60, 255, 255, 126]
+def DING_TR = [0, 0, 24, 24, 60, 255, 255, 126]
+def DING_BL = [126, 255, 255, 60, 24, 24, 0, 0]
+def DING_BR = [126, 255, 255, 60, 24, 24, 0, 0]
+
+:: draw_ding(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, DING_TL, DING_TR, DING_BL, DING_BR, fg, bg)
+;
+
+-- Clear icon (X)
+def CLR_TL = [0, 193, 99, 54, 28, 28, 54, 99]
+def CLR_TR = [0, 131, 198, 108, 56, 56, 108, 198]
+def CLR_BL = [99, 54, 28, 28, 54, 99, 193, 0]
+def CLR_BR = [198, 108, 56, 56, 108, 198, 131, 0]
+
+:: draw_clear(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, CLR_TL, CLR_TR, CLR_BL, CLR_BR, fg, bg)
+;
+
+-- Save icon (floppy disk)
+def SAVE_TL = [0, 127, 97, 97, 97, 97, 96, 96]
+def SAVE_TR = [0, 252, 140, 140, 140, 252, 12, 12]
+def SAVE_BL = [96, 96, 103, 103, 103, 103, 127, 0]
+def SAVE_BR = [12, 12, 252, 252, 252, 252, 252, 0]
+
+:: draw_save(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, SAVE_TL, SAVE_TR, SAVE_BL, SAVE_BR, fg, bg)
+;
+
+-- Load icon (folder)
+def LOAD_TL = [0, 0, 60, 126, 255, 255, 192, 192]
+def LOAD_TR = [0, 0, 0, 0, 255, 255, 3, 3]
+def LOAD_BL = [192, 192, 192, 255, 255, 0, 0, 0]
+def LOAD_BR = [3, 3, 3, 255, 255, 0, 0, 0]
+
+:: draw_load(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, LOAD_TL, LOAD_TR, LOAD_BL, LOAD_BR, fg, bg)
+;
+
+-- Palette icon (4 color dots)
+def PAL_TL = [0, 0, 60, 126, 126, 126, 60, 0]
+def PAL_TR = [0, 0, 60, 126, 126, 126, 60, 0]
+def PAL_BL = [0, 60, 126, 126, 126, 60, 0, 0]
+def PAL_BR = [0, 60, 126, 126, 126, 60, 0, 0]
+
+:: draw_palette(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, PAL_TL, PAL_TR, PAL_BL, PAL_BR, fg, bg)
+;
+
+-- Preset icon (stamp)
+def PRST_TL = [0, 0, 0, 24, 60, 60, 126, 126]
+def PRST_TR = [0, 0, 0, 24, 60, 60, 126, 126]
+def PRST_BL = [255, 255, 0, 0, 255, 255, 0, 0]
+def PRST_BR = [255, 255, 0, 0, 255, 255, 0, 0]
+
+:: draw_preset(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, PRST_TL, PRST_TR, PRST_BL, PRST_BR, fg, bg)
+;
+
+-- Brush size indicators (single 8x8 tiles for 1-5)
+def BRUSH_1 = [0, 0, 0, 24, 24, 0, 0, 0]
+def BRUSH_2 = [0, 0, 24, 60, 60, 24, 0, 0]
+def BRUSH_3 = [0, 24, 60, 126, 126, 60, 24, 0]
+def BRUSH_4 = [24, 60, 126, 255, 255, 126, 60, 24]
+def BRUSH_5 = [60, 126, 255, 255, 255, 255, 126, 60]
+
+:: draw_brush(scr = vimana.screen, x = num, y = num, size = num, fg = num, bg = num) (( -- ))
+    if size == 1
+        scr.put_icn(x, y, BRUSH_1, fg, bg)
+    elif size == 2
+        scr.put_icn(x, y, BRUSH_2, fg, bg)
+    elif size == 3
+        scr.put_icn(x, y, BRUSH_3, fg, bg)
+    elif size == 4
+        scr.put_icn(x, y, BRUSH_4, fg, bg)
+    else
+        scr.put_icn(x, y, BRUSH_5, fg, bg)
+;
+
+-- Home icon (house shape)
+def HOME_TL = [0, 0, 0, 24, 60, 126, 255, 195]
+def HOME_TR = [0, 0, 0, 24, 60, 126, 255, 195]
+def HOME_BL = [195, 195, 219, 219, 219, 255, 0, 0]
+def HOME_BR = [195, 195, 219, 219, 219, 255, 0, 0]
+
+:: draw_home(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, HOME_TL, HOME_TR, HOME_BL, HOME_BR, fg, bg)
+;
+
+-- Back arrow (left arrow)
+def BACK_TL = [0, 0, 24, 60, 126, 255, 24, 24]
+def BACK_TR = [0, 0, 0, 0, 0, 0, 0, 0]
+def BACK_BL = [24, 24, 24, 24, 0, 0, 0, 0]
+def BACK_BR = [0, 0, 0, 0, 0, 0, 0, 0]
+
+:: draw_back(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, BACK_TL, BACK_TR, BACK_BL, BACK_BR, fg, bg)
+;
+
+-- Color swatch (filled square with border)
+def SWATCH_TL = [255, 255, 192, 192, 192, 192, 192, 192]
+def SWATCH_TR = [255, 255, 3, 3, 3, 3, 3, 3]
+def SWATCH_BL = [192, 192, 192, 192, 192, 192, 255, 255]
+def SWATCH_BR = [3, 3, 3, 3, 3, 3, 255, 255]
+
+:: draw_swatch(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    draw_icn(scr, x, y, SWATCH_TL, SWATCH_TR, SWATCH_BL, SWATCH_BR, fg, bg)
+;
+
+-- Filled square (for color fill preview)
+def FILLED = [255, 255, 255, 255, 255, 255, 255, 255]
+def EMPTY  = [0, 0, 0, 0, 0, 0, 0, 0]
+
+:: draw_filled_rect(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    let ?cy = 0
+    for (; cy < h; cy += 8)
+        let ?cx = 0
+        for (; cx < w; cx += 8)
+            scr.put_icn(x + cx, y + cy, FILLED, c, c)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Font setup: load the Chicago bitmap font (8×16 glyphs, variable width)
+-- Call once after creating the screen.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: setup_font(scr = vimana.screen) (( -- ))
+    scr.set_font_size(2)
+
+    scr.set_font_chr(32,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(33,  [0, 0, 0, 48, 48, 48, 48, 48, 48, 0, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(34,  [0, 0, 0, 40, 40, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(35,  [0, 0, 9, 9, 63, 18, 18, 127, 36, 36, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(36,  [0, 0, 16, 56, 84, 112, 112, 56, 28, 28, 84, 56, 16, 0, 0, 0])
+    scr.set_font_chr(37,  [0, 0, 55, 73, 74, 50, 4, 4, 9, 10, 18, 17, 0, 0, 0, 0])
+    scr.set_font_chr(38,  [0, 0, 0, 60, 102, 102, 48, 103, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(39,  [0, 0, 0, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(40,  [0, 0, 16, 32, 96, 96, 96, 96, 96, 96, 32, 16, 0, 0, 0, 0])
+    scr.set_font_chr(41,  [0, 0, 64, 32, 48, 48, 48, 48, 48, 48, 32, 64, 0, 0, 0, 0])
+    scr.set_font_chr(42,  [0, 0, 0, 16, 84, 56, 84, 16, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(43,  [0, 0, 0, 0, 0, 16, 16, 124, 16, 16, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(44,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 96, 32, 64, 0, 0])
+    scr.set_font_chr(45,  [0, 0, 0, 0, 0, 0, 0, 124, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(46,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(47,  [0, 0, 4, 4, 8, 8, 16, 16, 32, 32, 64, 64, 0, 0, 0, 0])
+    scr.set_font_chr(48,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(49,  [0, 0, 0, 24, 56, 24, 24, 24, 24, 24, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(50,  [0, 0, 0, 60, 70, 6, 6, 12, 24, 48, 96, 126, 0, 0, 0, 0])
+    scr.set_font_chr(51,  [0, 0, 0, 126, 12, 24, 60, 6, 6, 6, 70, 60, 0, 0, 0, 0])
+    scr.set_font_chr(52,  [0, 0, 0, 6, 14, 22, 38, 70, 127, 6, 6, 6, 0, 0, 0, 0])
+    scr.set_font_chr(53,  [0, 0, 0, 126, 96, 96, 124, 6, 6, 6, 70, 60, 0, 0, 0, 0])
+    scr.set_font_chr(54,  [0, 0, 0, 28, 48, 96, 124, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(55,  [0, 0, 0, 126, 6, 6, 6, 12, 24, 24, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(56,  [0, 0, 0, 60, 102, 102, 102, 60, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(57,  [0, 0, 0, 60, 102, 102, 102, 102, 62, 6, 12, 56, 0, 0, 0, 0])
+    scr.set_font_chr(58,  [0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(59,  [0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 96, 96, 32, 64, 0, 0])
+    scr.set_font_chr(60,  [0, 0, 0, 0, 24, 48, 96, 192, 96, 48, 24, 0, 0, 0, 0, 0])
+    scr.set_font_chr(61,  [0, 0, 0, 0, 0, 0, 126, 0, 126, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(62,  [0, 0, 0, 0, 192, 96, 48, 24, 48, 96, 192, 0, 0, 0, 0, 0])
+    scr.set_font_chr(63,  [0, 0, 0, 60, 70, 6, 12, 24, 24, 0, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(64,  [0, 0, 0, 0, 31, 32, 78, 82, 82, 77, 32, 31, 0, 0, 0, 0])
+    scr.set_font_chr(65,  [0, 0, 0, 60, 102, 102, 102, 126, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(66,  [0, 0, 0, 124, 102, 102, 102, 124, 102, 102, 102, 124, 0, 0, 0, 0])
+    scr.set_font_chr(67,  [0, 0, 0, 60, 98, 96, 96, 96, 96, 96, 98, 60, 0, 0, 0, 0])
+    scr.set_font_chr(68,  [0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 102, 124, 0, 0, 0, 0])
+    scr.set_font_chr(69,  [0, 0, 0, 124, 96, 96, 96, 120, 96, 96, 96, 124, 0, 0, 0, 0])
+    scr.set_font_chr(70,  [0, 0, 0, 124, 96, 96, 96, 120, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(71,  [0, 0, 0, 60, 98, 96, 96, 110, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(72,  [0, 0, 0, 102, 102, 102, 102, 126, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(73,  [0, 0, 0, 48, 48, 48, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(74,  [0, 0, 0, 12, 12, 12, 12, 12, 204, 204, 204, 120, 0, 0, 0, 0])
+    scr.set_font_chr(75,  [0, 0, 0, 99, 102, 108, 120, 112, 120, 108, 102, 99, 0, 0, 0, 0])
+    scr.set_font_chr(76,  [0, 0, 0, 96, 96, 96, 96, 96, 96, 96, 96, 124, 0, 0, 0, 0])
+    scr.set_font_chr(77,  [0, 0, 0, 0, 0, 0, 64, 32, 96, 96, 112, 224, 121, 224, 95, 96, 78, 96, 68, 96, 64, 96, 64, 96, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(78,  [0, 0, 0, 65, 97, 113, 121, 93, 79, 71, 67, 65, 0, 0, 0, 0])
+    scr.set_font_chr(79,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(80,  [0, 0, 0, 124, 102, 102, 102, 124, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(81,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 6, 0, 0, 0])
+    scr.set_font_chr(82,  [0, 0, 0, 124, 102, 102, 102, 124, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(83,  [0, 0, 0, 56, 100, 96, 112, 56, 28, 12, 76, 56, 0, 0, 0, 0])
+    scr.set_font_chr(84,  [0, 0, 0, 252, 48, 48, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(85,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(86,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 100, 120, 0, 0, 0, 0])
+    scr.set_font_chr(87,  [0, 0, 0, 0, 0, 0, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 64, 127, 128, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(88,  [0, 0, 0, 102, 102, 102, 102, 60, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(89,  [0, 0, 0, 102, 102, 102, 102, 60, 24, 24, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(90,  [0, 0, 0, 126, 6, 6, 12, 24, 48, 96, 96, 126, 0, 0, 0, 0])
+    scr.set_font_chr(91,  [0, 0, 112, 96, 96, 96, 96, 96, 96, 96, 96, 96, 112, 0, 0, 0])
+    scr.set_font_chr(92,  [0, 0, 64, 64, 32, 32, 16, 16, 8, 8, 4, 4, 0, 0, 0, 0])
+    scr.set_font_chr(93,  [0, 0, 112, 48, 48, 48, 48, 48, 48, 48, 48, 48, 112, 0, 0, 0])
+    scr.set_font_chr(94,  [0, 0, 0, 8, 20, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(95,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0])
+    scr.set_font_chr(96,  [0, 0, 64, 32, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(97,  [0, 0, 0, 0, 0, 60, 70, 62, 102, 102, 102, 62, 0, 0, 0, 0])
+    scr.set_font_chr(98,  [0, 0, 0, 96, 96, 124, 102, 102, 102, 102, 102, 124, 0, 0, 0, 0])
+    scr.set_font_chr(99,  [0, 0, 0, 0, 0, 56, 100, 96, 96, 96, 100, 56, 0, 0, 0, 0])
+    scr.set_font_chr(100, [0, 0, 0, 6, 6, 62, 102, 102, 102, 102, 102, 62, 0, 0, 0, 0])
+    scr.set_font_chr(101, [0, 0, 0, 0, 0, 60, 102, 102, 126, 96, 98, 60, 0, 0, 0, 0])
+    scr.set_font_chr(102, [0, 0, 0, 28, 48, 120, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(103, [0, 0, 0, 0, 0, 62, 102, 102, 102, 102, 102, 62, 6, 70, 60, 0])
+    scr.set_font_chr(104, [0, 0, 0, 96, 96, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(105, [0, 0, 0, 96, 0, 96, 96, 96, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(106, [0, 0, 0, 24, 0, 24, 24, 24, 24, 24, 24, 24, 24, 152, 112, 0])
+    scr.set_font_chr(107, [0, 0, 0, 96, 96, 102, 108, 120, 112, 120, 108, 102, 0, 0, 0, 0])
+    scr.set_font_chr(108, [0, 0, 0, 96, 96, 96, 96, 96, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(109, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, 192, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(110, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(111, [0, 0, 0, 0, 0, 60, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(112, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 124, 96, 96, 0, 0])
+    scr.set_font_chr(113, [0, 0, 0, 0, 0, 62, 102, 102, 102, 102, 102, 62, 6, 6, 0, 0])
+    scr.set_font_chr(114, [0, 0, 0, 0, 0, 108, 112, 96, 96, 96, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(115, [0, 0, 0, 0, 0, 56, 100, 112, 56, 28, 76, 56, 0, 0, 0, 0])
+    scr.set_font_chr(116, [0, 0, 0, 48, 48, 120, 48, 48, 48, 48, 48, 24, 0, 0, 0, 0])
+    scr.set_font_chr(117, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 62, 0, 0, 0, 0])
+    scr.set_font_chr(118, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 100, 120, 0, 0, 0, 0])
+    scr.set_font_chr(119, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 64, 127, 128, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(120, [0, 0, 0, 0, 0, 102, 102, 102, 60, 102, 102, 102, 0, 0, 0, 0])
+    scr.set_font_chr(121, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 62, 6, 70, 60, 0])
+    scr.set_font_chr(122, [0, 0, 0, 0, 0, 126, 6, 12, 24, 48, 96, 126, 0, 0, 0, 0])
+    scr.set_font_chr(123, [0, 0, 16, 32, 32, 32, 32, 64, 32, 32, 32, 32, 16, 0, 0, 0])
+    scr.set_font_chr(124, [0, 0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 0, 0, 0])
+    scr.set_font_chr(125, [0, 0, 64, 32, 32, 32, 32, 16, 32, 32, 32, 32, 64, 0, 0, 0])
+    scr.set_font_chr(126, [0, 0, 0, 0, 0, 50, 76, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(127, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+    scr.set_font_width(32, 4)
+    scr.set_font_width(33, 6)
+    scr.set_font_width(34, 7)
+    scr.set_font_width(35, 10)
+    scr.set_font_width(36, 7)
+    scr.set_font_width(37, 11)
+    scr.set_font_width(38, 10)
+    scr.set_font_width(39, 3)
+    scr.set_font_width(40, 5)
+    scr.set_font_width(41, 5)
+    scr.set_font_width(42, 7)
+    scr.set_font_width(43, 7)
+    scr.set_font_width(44, 4)
+    scr.set_font_width(45, 7)
+    scr.set_font_width(46, 4)
+    scr.set_font_width(47, 7)
+    scr.set_font_width(48, 8)
+    scr.set_font_width(49, 8)
+    scr.set_font_width(50, 8)
+    scr.set_font_width(51, 8)
+    scr.set_font_width(52, 8)
+    scr.set_font_width(53, 8)
+    scr.set_font_width(54, 8)
+    scr.set_font_width(55, 8)
+    scr.set_font_width(56, 8)
+    scr.set_font_width(57, 8)
+    scr.set_font_width(58, 4)
+    scr.set_font_width(59, 4)
+    scr.set_font_width(60, 6)
+    scr.set_font_width(61, 8)
+    scr.set_font_width(62, 6)
+    scr.set_font_width(63, 8)
+    scr.set_font_width(64, 11)
+    scr.set_font_width(65, 8)
+    scr.set_font_width(66, 8)
+    scr.set_font_width(67, 8)
+    scr.set_font_width(68, 8)
+    scr.set_font_width(69, 7)
+    scr.set_font_width(70, 7)
+    scr.set_font_width(71, 8)
+    scr.set_font_width(72, 8)
+    scr.set_font_width(73, 6)
+    scr.set_font_width(74, 7)
+    scr.set_font_width(75, 9)
+    scr.set_font_width(76, 7)
+    scr.set_font_width(77, 12)
+    scr.set_font_width(78, 9)
+    scr.set_font_width(79, 8)
+    scr.set_font_width(80, 8)
+    scr.set_font_width(81, 8)
+    scr.set_font_width(82, 8)
+    scr.set_font_width(83, 7)
+    scr.set_font_width(84, 6)
+    scr.set_font_width(85, 8)
+    scr.set_font_width(86, 8)
+    scr.set_font_width(87, 12)
+    scr.set_font_width(88, 8)
+    scr.set_font_width(89, 8)
+    scr.set_font_width(90, 8)
+    scr.set_font_width(91, 5)
+    scr.set_font_width(92, 7)
+    scr.set_font_width(93, 5)
+    scr.set_font_width(94, 8)
+    scr.set_font_width(95, 8)
+    scr.set_font_width(96, 6)
+    scr.set_font_width(97, 8)
+    scr.set_font_width(98, 8)
+    scr.set_font_width(99, 7)
+    scr.set_font_width(100, 8)
+    scr.set_font_width(101, 8)
+    scr.set_font_width(102, 6)
+    scr.set_font_width(103, 8)
+    scr.set_font_width(104, 8)
+    scr.set_font_width(105, 4)
+    scr.set_font_width(106, 6)
+    scr.set_font_width(107, 8)
+    scr.set_font_width(108, 4)
+    scr.set_font_width(109, 12)
+    scr.set_font_width(110, 8)
+    scr.set_font_width(111, 8)
+    scr.set_font_width(112, 8)
+    scr.set_font_width(113, 8)
+    scr.set_font_width(114, 6)
+    scr.set_font_width(115, 7)
+    scr.set_font_width(116, 6)
+    scr.set_font_width(117, 8)
+    scr.set_font_width(118, 8)
+    scr.set_font_width(119, 12)
+    scr.set_font_width(120, 8)
+    scr.set_font_width(121, 8)
+    scr.set_font_width(122, 8)
+    scr.set_font_width(123, 5)
+    scr.set_font_width(124, 5)
+    scr.set_font_width(125, 5)
+    scr.set_font_width(126, 8)
+    scr.set_font_width(127, 8)
+;

@@ -1,8 +1,8 @@
 {
   "name": "yis-syntax",
-  "displayName": "Yis + SUM Language Support",
-  "description": "Syntax highlighting and basic editor support for Yis and SUM.",
-  "version": "0.1.8",
+  "displayName": "Yis Language Support",
+  "description": "Syntax highlighting and basic editor support for Yis.",
+  "version": "0.1.9",
   "publisher": "local",
   "main": "./extension.js",
   "activationEvents": [
@@ -26,17 +26,6 @@
           ".yi"
         ],
         "configuration": "./language-configuration.json"
-      },
-      {
-        "id": "sum",
-        "aliases": [
-          "SUM",
-          "sum"
-        ],
-        "extensions": [
-          ".sum"
-        ],
-        "configuration": "./language-configuration-sum.json"
       }
     ],
     "grammars": [
@@ -44,11 +33,6 @@
         "language": "yis",
         "scopeName": "source.yi",
         "path": "./syntaxes/yis.tmLanguage.json"
-      },
-      {
-        "language": "sum",
-        "scopeName": "source.sum",
-        "path": "./syntaxes/sum.tmLanguage.json"
       }
     ]
   }

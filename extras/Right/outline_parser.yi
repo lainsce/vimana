@@ -9,7 +9,7 @@ bring stdr
 
     for (let ?i = 0; i < n; i += 1)
         let ch = stdr.slice(t, i, i + 1)
-        if ch == " " || ch == "\t" || ch == "(" || ch == ":"
+        if ch == " " || ch == "(" || ch == ":"
             cut = i
             break
 
@@ -53,7 +53,18 @@ bring stdr
             ln = ln + 1
             continue
 
-        if stdr.starts_with(trimmed, "cask ")
+        if stdr.starts_with(trimmed, "--|") && n >= 6
+            -- Section marker: --| label |--
+            let ?se = n
+            for (let ?j = 3; j < n - 1; j += 1)
+                if stdr.slice(trimmed, j, j + 3) == "|--"
+                    se = j
+                    break
+            if se > 3
+                let sec_label = stdr.trim(stdr.slice(trimmed, 3, se))
+                if stdr.len(sec_label) > 0
+                    add_item(items, sec_label, ln, "section")
+        elif stdr.starts_with(trimmed, "cask ")
             add_item(items, first_word(stdr.slice(trimmed, 5, n)), ln, "cask")
         elif stdr.starts_with(trimmed, "bring ")
             add_item(items, first_word(stdr.slice(trimmed, 6, n)), ln, "bring")
@@ -68,7 +79,7 @@ bring stdr
         elif stdr.starts_with(trimmed, ": ") && !stdr.starts_with(trimmed, ":: ")
             add_item(items, first_word(stdr.slice(trimmed, 2, n)), ln, "fn")
         elif stdr.starts_with(trimmed, "-> ")
-            add_item(items, "main", ln, "fn")
+            add_item(items, "entry", ln, "entry")
         elif stdr.starts_with(trimmed, "def ") && !stdr.starts_with(trimmed, "def ?")
             add_item(items, first_word(stdr.slice(trimmed, 4, n)), ln, "const")
 

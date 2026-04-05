@@ -3,42 +3,263 @@ cask right_syntax
 bring stdr
 bring right_model
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Yis syntax: classify the first token of a line for highlighting.
--- Returns the palette color index for the line.
--- ─────────────────────────────────────────────────────────────────────────────
+--| Syntax Hilight |--
 
-: starts(text = string, prefix = string) (( bool ))
-    <- stdr.starts_with(text, prefix)
+def COL_FG = 1
+def COL_KW = 3
+def COL_CM = 2
+def COL_ST = 2
+def COL_NM = 2
+
+--| Helpers |--
+
+: is_alpha(ch = string) (( bool ))
+    let c = stdr.char_code(ch)
+    if c >= 65 && c <= 90
+        <- true
+    if c >= 97 && c <= 122
+        <- true
+    <- ch == "_"
 ;
+
+: is_digit(ch = string) (( bool ))
+    let c = stdr.char_code(ch)
+    <- c >= 48 && c <= 57
+;
+
+: is_alnum(ch = string) (( bool ))
+    <- is_alpha(ch) || is_digit(ch)
+;
+
+: is_keyword(w = string) (( bool ))
+    if w == "if" || w == "elif" || w == "else"
+        <- true
+    if w == "for" || w == "break" || w == "continue"
+        <- true
+    if w == "cask" || w == "bring"
+        <- true
+    if w == "def" || w == "let" || w == "pub"
+        <- true
+    if w == "this" || w == "struct"
+        <- true
+    <- false
+;
+
+: is_type(w = string) (( bool ))
+    <- w == "num" || w == "string" || w == "bool" || w == "any"
+;
+
+: is_constant(w = string) (( bool ))
+    if w == "true" || w == "false" || w == "null"
+        <- true
+    -- ALL_CAPS identifiers
+    let n = stdr.len(w)
+    if n < 2
+        <- false
+    let ?all_upper = true
+    for (let ?i = 0; i < n; i += 1)
+        let c = stdr.slice(w, i, i + 1)
+        let code = stdr.char_code(c)
+        if (code >= 65 && code <= 90) || (code >= 48 && code <= 57) || c == "_"
+            continue
+        all_upper = false
+        break
+    -- Require at least one letter (not just _/digits)
+    if all_upper
+        let first = stdr.char_code(stdr.slice(w, 0, 1))
+        if first >= 65 && first <= 90
+            <- true
+    <- false
+;
+
+: fill_colors(colors = [any], from = num, to = num, c = num) (( -- ))
+    for (let ?i = from; i < to; i += 1)
+        colors[i] = c
+;
+
+--| Tokenizer |--
+
+:: highlight_line(line = string) (( [any] ))
+    let n = stdr.len(line)
+    let ?colors = []: [any]
+    -- Initialize all to FG
+    for (let ?k = 0; k < n; k += 1)
+        stdr.push(colors, COL_FG)
+    if n == 0
+        <- colors
+
+    let ?pos = 0
+    for (; pos < n;)
+        let ch = stdr.slice(line, pos, pos + 1)
+
+        -- Section marker --| ... |-- in accent, regular comment in dim
+        if ch == "-" && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == "-"
+            if pos + 2 < n && stdr.slice(line, pos + 2, pos + 3) == "|"
+                fill_colors(colors, pos, n, COL_KW)
+                <- colors
+            fill_colors(colors, pos, n, COL_CM)
+            <- colors
+
+        -- Strings: "..." with $$interpolation$$
+        if ch == "\""
+            let ?end = pos + 1
+            for (; end < n;)
+                let sc = stdr.slice(line, end, end + 1)
+                if sc == "\\"
+                    end += 2
+                    continue
+                if sc == "\""
+                    end += 1
+                    break
+                end += 1
+            fill_colors(colors, pos, end, COL_ST)
+            -- Highlight $$expr$$ interpolation inside string
+            let ?si = pos + 1
+            for (; si < end - 2;)
+                if stdr.slice(line, si, si + 1) == "$" && stdr.slice(line, si + 1, si + 2) == "$"
+                    let ?ci = si + 2
+                    for (; ci < end - 1;)
+                        if stdr.slice(line, ci, ci + 1) == "$" && ci + 1 < end && stdr.slice(line, ci + 1, ci + 2) == "$"
+                            fill_colors(colors, si, si + 2, COL_KW)
+                            fill_colors(colors, si + 2, ci, COL_FG)
+                            fill_colors(colors, ci, ci + 2, COL_KW)
+                            si = ci + 2
+                            break
+                        ci += 1
+                    if ci >= end - 1
+                        si += 1
+                else
+                    si += 1
+            pos = end
+            continue
+
+        if ch == "@" && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == "\""
+            let ?end = pos + 2
+            for (; end < n;)
+                let sc = stdr.slice(line, end, end + 1)
+                if sc == "\\"
+                    end += 2
+                    continue
+                if sc == "\""
+                    end += 1
+                    break
+                end += 1
+            fill_colors(colors, pos, end, COL_ST)
+            pos = end
+            continue
+
+        -- Numbers
+        if is_digit(ch)
+            let ?end = pos + 1
+            for (; end < n && (is_digit(stdr.slice(line, end, end + 1)) || stdr.slice(line, end, end + 1) == "."); end += 1)
+                --
+            fill_colors(colors, pos, end, COL_NM)
+            pos = end
+            continue
+
+        -- Return arrow <- and entry ->
+        if ch == "<" && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == "-"
+            fill_colors(colors, pos, pos + 2, COL_KW)
+            pos += 2
+            continue
+        if ch == "-" && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == ">"
+            fill_colors(colors, pos, pos + 2, COL_KW)
+            pos += 2
+            continue
+
+        -- Return spec (( ... ))
+        if ch == "(" && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == "("
+            let ?end = pos + 2
+            let ?depth = 1
+            for (; end < n && depth > 0;)
+                let rc = stdr.slice(line, end, end + 1)
+                if rc == ")" && end + 1 < n && stdr.slice(line, end + 1, end + 2) == ")"
+                    depth -= 1
+                    end += 2
+                else
+                    end += 1
+            fill_colors(colors, pos, end, COL_CM)
+            pos = end
+            continue
+
+        -- Identifiers and keywords
+        if is_alpha(ch) || ch == "?"
+            let ?end = pos
+            if ch == "?"
+                end = pos + 1
+            for (; end < n && is_alnum(stdr.slice(line, end, end + 1)); end += 1)
+                --
+            let word = stdr.slice(line, pos, end)
+            -- ?mutable stays FG
+            if ch == "?"
+                pos = end
+                continue
+            if is_keyword(word)
+                fill_colors(colors, pos, end, COL_KW)
+            elif is_type(word)
+                fill_colors(colors, pos, end, COL_KW)
+            elif is_constant(word)
+                fill_colors(colors, pos, end, COL_KW)
+            pos = end
+            continue
+
+        -- Function/struct declaration sigils: :: : !: ,:
+        if ch == ":" && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == ":"
+            fill_colors(colors, pos, pos + 2, COL_KW)
+            pos += 2
+            continue
+        if ch == "!" && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == ":"
+            fill_colors(colors, pos, pos + 2, COL_KW)
+            pos += 2
+            continue
+        if ch == "," && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == ":"
+            fill_colors(colors, pos, pos + 2, COL_KW)
+            pos += 2
+            continue
+        -- Semicolon: function terminator
+        if ch == ";"
+            fill_colors(colors, pos, pos + 1, COL_CM)
+            pos += 1
+            continue
+
+        -- Null coalescing ??
+        if ch == "?" && pos + 1 < n && stdr.slice(line, pos + 1, pos + 2) == "?"
+            fill_colors(colors, pos, pos + 2, COL_KW)
+            pos += 2
+            continue
+
+        -- Everything else: stay FG
+        pos += 1
+
+    <- colors
+;
+
+--| Legacy Single Color |--
 
 :: line_color(line = string) (( num ))
     let t = stdr.trim(line)
     let n = stdr.len(t)
     if n == 0
         <- right_model.C_FG
-
-    -- Comments
-    if starts(t, "-- ")
+    if stdr.starts_with(t, "--| ")
+        <- right_model.H_KEYWORD
+    if stdr.starts_with(t, "-- ")
         <- right_model.H_COMMENT
     if t == "--"
         <- right_model.H_COMMENT
-
-    -- Keywords (shown in accent)
-    if starts(t, "cask ") || starts(t, "bring ")
+    if stdr.starts_with(t, "cask ") || stdr.starts_with(t, "bring ")
         <- right_model.H_KEYWORD
-    if starts(t, "def ") || starts(t, "let ")
+    if stdr.starts_with(t, "def ") || stdr.starts_with(t, "let ")
         <- right_model.H_KEYWORD
-    if starts(t, "if ") || starts(t, "elif ") || t == "else" || starts(t, "else ")
+    if stdr.starts_with(t, "if ") || stdr.starts_with(t, "elif ") || t == "else"
         <- right_model.H_KEYWORD
-    if starts(t, "for ") || starts(t, "while ") || t == "break" || t == "continue"
+    if stdr.starts_with(t, "for ") || t == "break" || t == "continue"
         <- right_model.H_KEYWORD
-    if starts(t, "<- ") || t == "<-"
+    if stdr.starts_with(t, "<- ") || t == "<-"
         <- right_model.H_KEYWORD
-    if starts(t, ":: ") || starts(t, ": ") || starts(t, "!: ") || starts(t, ",: ")
+    if stdr.starts_with(t, ":: ") || stdr.starts_with(t, ": ") || stdr.starts_with(t, "!: ") || stdr.starts_with(t, ",: ")
         <- right_model.H_KEYWORD
-    if starts(t, "-> ")
+    if stdr.starts_with(t, "-> ")
         <- right_model.H_KEYWORD
-
     <- right_model.C_FG
 ;

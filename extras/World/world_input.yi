@@ -1,0 +1,501 @@
+cask world_input
+
+bring stdr
+bring vimana
+
+bring world_model
+bring world_themes
+bring world_presets
+bring world_view
+bring world_browser
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: in_rect(sx = num, sy = num, rx = num, ry = num, rw = num, rh = num) (( bool ))
+    <- sx >= rx && sx < rx + rw && sy >= ry && sy < ry + rh
+;
+
+: pointer_to_tile_col(mx = num) (( num ))
+    <- stdr.floor((mx - world_model.MAP_X) / world_model.TILE_W)
+;
+
+: pointer_to_tile_row(my = num) (( num ))
+    <- stdr.floor((my - world_model.MAP_Y) / world_model.TILE_H)
+;
+
+: update_cursor_from_pointer(mx = num, my = num) (( bool ))
+    let map_x = world_model.MAP_X
+    let map_y = world_model.MAP_Y
+    let map_w = world_model.MAP_COLS * world_model.TILE_W
+    let map_h = world_model.MAP_ROWS * world_model.TILE_H
+
+    if !in_rect(mx, my, map_x, map_y, map_w, map_h)
+        if world_model.cursor_visible
+            world_model.set_cursor(-1, -1, false)
+            <- true
+        <- false
+
+    let tx = pointer_to_tile_col(mx)
+    let ty = pointer_to_tile_row(my)
+    if tx != world_model.cursor_tx || ty != world_model.cursor_ty || !world_model.cursor_visible
+        world_model.set_cursor(tx, ty, true)
+        <- true
+    <- false
+;
+
+: paint_at_cursor() (( bool ))
+    let tx = world_model.cursor_tx
+    let ty = world_model.cursor_ty
+    if tx < 0 || ty < 0
+        <- false
+
+    if world_model.preset_mode
+        <- world_model.stamp_preset(tx, ty, world_model.selected_preset, world_model.selected_glyph, world_model.selected_color)
+    <- world_model.paint_brush(tx, ty, world_model.brush_size, world_model.selected_glyph, world_model.selected_color)
+;
+
+: begin_stroke() (( -- ))
+    world_model.set_stroke_before(world_model.current_map())
+    world_model.set_stroke_active(true)
+;
+
+: end_stroke() (( -- ))
+    if world_model.stroke_active
+        world_model.set_stroke_active(false)
+        world_model.commit_stroke(world_model.stroke_before)
+        world_model.set_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Toolbar button index from pointer
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: toolbar_btn_at(mx = num, my = num) (( num ))
+    if !in_rect(mx, my, 0, world_model.TOOLBAR_Y, world_model.WIN_W, world_model.TOOLBAR_H)
+        <- -1
+    let x = mx - world_view.TB_PAD
+    if x < 0
+        <- -1
+    let stride = world_view.TB_BTN_W + world_view.TB_GAP
+    let btn = stdr.floor(x / stride)
+    let within = x - btn * stride
+    if within > world_view.TB_BTN_W
+        <- -1
+    <- btn
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Editor mouse handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_editor_mouse_press(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen, mx = num, my = num) (( -- ))
+    -- Check toolbar
+    let btn = toolbar_btn_at(mx, my)
+    if btn >= 0
+        -- 0=undo, 1=redo, 2=grid, 3=text/ding, 4=sep, 5=palette, 6=color, 7=glyph, 8=preset
+        -- 9=sep, 10-14=brush 1-5, 15=sep, 16=clear, 17=save, 18=load, 19=home
+        if btn == 0
+            world_model.undo()
+            <-
+        if btn == 1
+            world_model.redo()
+            <-
+        if btn == 2
+            world_model.set_show_grid(!world_model.show_grid)
+            <-
+        if btn == 3
+            world_model.set_text_mode(!world_model.text_mode)
+            <-
+        if btn == 5
+            world_model.set_screen_mode("theme_picker")
+            <-
+        if btn == 6
+            world_model.set_screen_mode("color_picker")
+            <-
+        if btn == 7
+            world_model.set_preset_mode(false)
+            world_model.set_screen_mode("glyph_picker")
+            <-
+        if btn == 8
+            world_model.set_preset_mode(true)
+            world_model.set_screen_mode("preset_picker")
+            <-
+        if btn >= 10 && btn <= 14
+            world_model.set_brush_size(btn - 9)
+            world_model.set_preset_mode(false)
+            <-
+        if btn == 16
+            world_model.reset_world()
+            <-
+        if btn == 17
+            world_browser.open_save(fsys)
+            world_model.set_screen_mode("browser")
+            <-
+        if btn == 18
+            world_browser.open_load(fsys)
+            world_model.set_screen_mode("browser")
+            <-
+        if btn == 19
+            world_model.set_screen_mode("home")
+            <-
+        <-
+
+    -- Map area press → begin painting
+    let map_x = world_model.MAP_X
+    let map_y = world_model.MAP_Y
+    let map_w = world_model.MAP_COLS * world_model.TILE_W
+    let map_h = world_model.MAP_ROWS * world_model.TILE_H
+
+    if in_rect(mx, my, map_x, map_y, map_w, map_h)
+        update_cursor_from_pointer(mx, my)
+        begin_stroke()
+        paint_at_cursor()
+;
+
+: on_editor_mouse_drag(dev = vimana.device, mx = num, my = num) (( -- ))
+    update_cursor_from_pointer(mx, my)
+    if world_model.stroke_active
+        paint_at_cursor()
+;
+
+: on_editor_mouse_release(dev = vimana.device) (( -- ))
+    end_stroke()
+;
+
+: on_editor_mouse_move(dev = vimana.device, mx = num, my = num) (( -- ))
+    update_cursor_from_pointer(mx, my)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Picker mouse handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_glyph_picker_click(mx = num, my = num) (( -- ))
+    -- Back button check (top-right)
+    if in_rect(mx, my, world_model.WIN_W - 28, world_model.TOOLBAR_Y, 28, 24)
+        world_model.set_screen_mode("editor")
+        <-
+
+    let start_y = world_view.PICKER_START_Y
+    if my < start_y
+        <-
+
+    let col = stdr.floor((mx - world_view.PICKER_PAD) / (world_model.TILE_W + 4))
+    let row = stdr.floor((my - start_y + world_model.glyph_picker_scroll) / (world_model.TILE_H + 4))
+    let idx = row * world_view.PICKER_COLS + col
+    if idx >= 0 && idx < world_model.GLYPH_COUNT
+        world_model.set_selected_glyph(idx)
+        world_model.set_preset_mode(false)
+        world_model.set_screen_mode("editor")
+;
+
+: on_color_picker_click(mx = num, my = num) (( -- ))
+    if in_rect(mx, my, world_model.WIN_W - 28, world_model.TOOLBAR_Y, 28, 24)
+        world_model.set_screen_mode("editor")
+        <-
+
+    let start_y = 80
+    let swatch_size = 64
+    let gap = 32
+    let total_w = 3 * swatch_size + 2 * gap
+    let start_x = (world_model.WIN_W - total_w) / 2
+
+    for (let ?ci = 1; ci <= 3; ci += 1)
+        let sx = start_x + (ci - 1) * (swatch_size + gap)
+        if in_rect(mx, my, sx, start_y, swatch_size, swatch_size)
+            world_model.set_selected_color(ci)
+            world_model.set_screen_mode("editor")
+            <-
+;
+
+: on_theme_picker_click(mx = num, my = num, scr = vimana.screen) (( -- ))
+    if in_rect(mx, my, world_model.WIN_W - 28, world_model.TOOLBAR_Y, 28, 24)
+        world_model.set_screen_mode("editor")
+        <-
+
+    let start_y = 64
+    let row_h = 20
+    let cols = 2
+    let col_w = 280
+    let gap = 16
+    let total_w = cols * col_w + (cols - 1) * gap
+    let start_x = (world_model.WIN_W - total_w) / 2
+
+    for (let ?i = 0; i < world_themes.theme_count(); i += 1)
+        let col = i % cols
+        let row = stdr.floor(i / cols)
+        let tx = start_x + col * (col_w + gap)
+        let ty = start_y + row * row_h
+        if in_rect(mx, my, tx, ty, col_w, row_h)
+            world_model.set_theme_idx(i)
+            world_themes.apply_palette(scr, i)
+            world_model.set_screen_mode("editor")
+            <-
+;
+
+: on_preset_picker_click(mx = num, my = num) (( -- ))
+    if in_rect(mx, my, world_model.WIN_W - 28, world_model.TOOLBAR_Y, 28, 24)
+        world_model.set_screen_mode("editor")
+        <-
+
+    let start_y = 60
+    let cols = 4
+    let cell_w = 7 * world_model.TILE_W
+    let cell_h = 4 * world_model.TILE_H
+    let gap = 24
+    let total_w = cols * cell_w + (cols - 1) * gap
+    let start_x = (world_model.WIN_W - total_w) / 2
+
+    for (let ?pi = 0; pi < world_presets.preset_count(); pi += 1)
+        let col = pi % cols
+        let row = stdr.floor(pi / cols)
+        let cx = start_x + col * (cell_w + gap)
+        let cy = start_y + row * (cell_h + gap) - world_model.preset_picker_scroll
+        if in_rect(mx, my, cx, cy, cell_w, cell_h)
+            world_model.set_selected_preset(pi)
+            world_model.set_preset_mode(true)
+            world_model.set_screen_mode("editor")
+            <-
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Main mouse dispatch
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_mouse(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+    let mode = world_model.screen_mode
+
+    if mode == "editor"
+        if dev.mouse_pressed(vimana.mouse_left)
+            on_editor_mouse_press(dev, sys, fsys, scr, mx, my)
+        elif dev.mouse_down(vimana.mouse_left)
+            on_editor_mouse_drag(dev, mx, my)
+        else
+            -- Track cursor when not pressing
+            if world_model.stroke_active
+                on_editor_mouse_release(dev)
+            on_editor_mouse_move(dev, mx, my)
+        <-
+
+    if dev.mouse_pressed(vimana.mouse_left)
+        if mode == "home"
+            -- Create = upper option (y~280), Load = lower option (y~320)
+            if in_rect(mx, my, 0, 260, world_model.WIN_W, 40)
+                world_model.reset_world()
+                world_model.set_screen_mode("editor")
+            elif in_rect(mx, my, 0, 300, world_model.WIN_W, 40)
+                world_browser.open_load(fsys)
+                world_model.set_screen_mode("browser")
+            <-
+
+        if mode == "glyph_picker"
+            on_glyph_picker_click(mx, my)
+            <-
+        if mode == "color_picker"
+            on_color_picker_click(mx, my)
+            <-
+        if mode == "theme_picker"
+            on_theme_picker_click(mx, my, scr)
+            <-
+        if mode == "preset_picker"
+            on_preset_picker_click(mx, my)
+            <-
+        if mode == "browser"
+            world_browser.on_click(mx, my, fsys, scr)
+            <-
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Keyboard input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let mode = world_model.screen_mode
+
+    if dev.key_pressed(world_model.KEY_ESCAPE)
+        if mode == "editor"
+            world_model.set_screen_mode("home")
+            <-
+        if mode == "home"
+            sys.quit()
+            <-
+        -- All pickers/browser → back to editor
+        world_model.set_screen_mode("editor")
+        <-
+
+    if mode == "home"
+        -- C = create, L = load (scancode 6=c, 15=l)
+        if dev.key_pressed(6)
+            world_model.reset_world()
+            world_model.set_screen_mode("editor")
+            <-
+        if dev.key_pressed(15)
+            world_browser.open_load(fsys)
+            world_model.set_screen_mode("browser")
+            <-
+        <-
+
+    if mode == "browser"
+        world_browser.on_key(dev, fsys, scr)
+        <-
+
+    if mode == "glyph_picker"
+        if dev.key_pressed(world_model.KEY_UP)
+            let ?g = world_model.selected_glyph - world_view.PICKER_COLS
+            if g < 0
+                g = 0
+            world_model.set_selected_glyph(g)
+            <-
+        if dev.key_pressed(world_model.KEY_DOWN)
+            let ?g = world_model.selected_glyph + world_view.PICKER_COLS
+            if g >= world_model.GLYPH_COUNT
+                g = world_model.GLYPH_COUNT - 1
+            world_model.set_selected_glyph(g)
+            <-
+        if dev.key_pressed(world_model.KEY_LEFT)
+            if world_model.selected_glyph > 0
+                world_model.set_selected_glyph(world_model.selected_glyph - 1)
+            <-
+        if dev.key_pressed(world_model.KEY_RIGHT)
+            if world_model.selected_glyph < world_model.GLYPH_COUNT - 1
+                world_model.set_selected_glyph(world_model.selected_glyph + 1)
+            <-
+        if dev.key_pressed(world_model.KEY_RETURN)
+            world_model.set_preset_mode(false)
+            world_model.set_screen_mode("editor")
+            <-
+        <-
+
+    if mode == "color_picker"
+        if dev.key_pressed(world_model.KEY_LEFT)
+            if world_model.selected_color > 1
+                world_model.set_selected_color(world_model.selected_color - 1)
+            <-
+        if dev.key_pressed(world_model.KEY_RIGHT)
+            if world_model.selected_color < 3
+                world_model.set_selected_color(world_model.selected_color + 1)
+            <-
+        if dev.key_pressed(world_model.KEY_RETURN)
+            world_model.set_screen_mode("editor")
+            <-
+        <-
+
+    if mode == "theme_picker"
+        if dev.key_pressed(world_model.KEY_LEFT)
+            if world_model.theme_idx > 0
+                world_model.set_theme_idx(world_model.theme_idx - 1)
+                world_themes.apply_palette(scr, world_model.theme_idx)
+            <-
+        if dev.key_pressed(world_model.KEY_RIGHT)
+            if world_model.theme_idx < world_themes.theme_count() - 1
+                world_model.set_theme_idx(world_model.theme_idx + 1)
+                world_themes.apply_palette(scr, world_model.theme_idx)
+            <-
+        if dev.key_pressed(world_model.KEY_RETURN)
+            world_model.set_screen_mode("editor")
+            <-
+        <-
+
+    if mode == "preset_picker"
+        if dev.key_pressed(world_model.KEY_LEFT)
+            if world_model.selected_preset > 0
+                world_model.set_selected_preset(world_model.selected_preset - 1)
+            <-
+        if dev.key_pressed(world_model.KEY_RIGHT)
+            if world_model.selected_preset < world_presets.preset_count() - 1
+                world_model.set_selected_preset(world_model.selected_preset + 1)
+            <-
+        if dev.key_pressed(world_model.KEY_RETURN)
+            world_model.set_preset_mode(true)
+            world_model.set_screen_mode("editor")
+            <-
+        <-
+
+    -- Editor keyboard shortcuts
+    if mode == "editor"
+        if dev.key_pressed(world_model.KEY_Z)
+            world_model.undo()
+            <-
+        if dev.key_pressed(world_model.KEY_Y)
+            world_model.redo()
+            <-
+        if dev.key_pressed(world_model.KEY_G)
+            world_model.set_show_grid(!world_model.show_grid)
+            <-
+        if dev.key_pressed(world_model.KEY_T)
+            world_model.set_text_mode(!world_model.text_mode)
+            <-
+        if dev.key_pressed(world_model.KEY_C)
+            world_model.set_screen_mode("color_picker")
+            <-
+        if dev.key_pressed(world_model.KEY_P)
+            world_model.set_screen_mode("theme_picker")
+            <-
+        if dev.key_pressed(world_model.KEY_TAB)
+            world_model.set_screen_mode("glyph_picker")
+            <-
+        if dev.key_pressed(world_model.KEY_R)
+            world_model.set_screen_mode("preset_picker")
+            <-
+        if dev.key_pressed(world_model.KEY_S)
+            world_browser.open_save(fsys)
+            world_model.set_screen_mode("browser")
+            <-
+        if dev.key_pressed(world_model.KEY_O)
+            world_browser.open_load(fsys)
+            world_model.set_screen_mode("browser")
+            <-
+        if dev.key_pressed(world_model.KEY_X)
+            world_model.reset_world()
+            <-
+        -- Brush sizes 1-5
+        if dev.key_pressed(world_model.KEY_1)
+            world_model.set_brush_size(1)
+            world_model.set_preset_mode(false)
+            <-
+        if dev.key_pressed(world_model.KEY_2)
+            world_model.set_brush_size(2)
+            world_model.set_preset_mode(false)
+            <-
+        if dev.key_pressed(world_model.KEY_3)
+            world_model.set_brush_size(3)
+            world_model.set_preset_mode(false)
+            <-
+        if dev.key_pressed(world_model.KEY_4)
+            world_model.set_brush_size(4)
+            world_model.set_preset_mode(false)
+            <-
+        if dev.key_pressed(world_model.KEY_5)
+            world_model.set_brush_size(5)
+            world_model.set_preset_mode(false)
+            <-
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Scroll wheel
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_scroll(dev = vimana.device) (( -- ))
+    let dy = dev.wheel_y()
+    if dy == 0
+        <-
+    let mode = world_model.screen_mode
+    if mode == "glyph_picker"
+        let ?s = world_model.glyph_picker_scroll + dy * 8
+        if s < 0
+            s = 0
+        world_model.set_glyph_picker_scroll(s)
+        <-
+    if mode == "preset_picker"
+        let ?s = world_model.preset_picker_scroll + dy * 8
+        if s < 0
+            s = 0
+        world_model.set_preset_picker_scroll(s)
+        <-
+    if mode == "browser"
+        world_browser.on_scroll(dy)
+;

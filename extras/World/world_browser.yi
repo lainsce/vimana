@@ -1,0 +1,222 @@
+cask world_browser
+
+bring stdr
+bring vimana
+
+bring world_model
+bring world_view
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: in_rect(sx = num, sy = num, rx = num, ry = num, rw = num, rh = num) (( bool ))
+    <- sx >= rx && sx < rx + rw && sy >= ry && sy < ry + rh
+;
+
+: clamp_sel() (( -- ))
+    let total = stdr.len(world_model.browser_entries)
+    if world_model.browser_sel < 0
+        world_model.set_browser_sel(0)
+    if total > 0 && world_model.browser_sel >= total
+        world_model.set_browser_sel(total - 1)
+;
+
+: scroll_for_sel() (( -- ))
+    let sel = world_model.browser_sel
+    let scroll = world_model.browser_scroll
+    if sel < scroll
+        world_model.set_browser_scroll(sel)
+    elif sel >= scroll + world_view.BROWSER_MAX_ROWS
+        world_model.set_browser_scroll(sel - world_view.BROWSER_MAX_ROWS + 1)
+;
+
+-- Load directory listing into browser entries
+: load_dir(fsys = vimana.file) (( -- ))
+    let path = world_model.browser_path
+    let raw = fsys.list(path)
+    let n = stdr.len(raw)
+    let ?dirs = []: [any]
+    let ?files = []: [any]
+
+    for (let ?i = 0; i < n; i += 1)
+        let name = stdr.str(raw[i] ?? "")
+        if stdr.len(name) == 0
+            continue
+        if stdr.char_at(name, 0) == "."
+            continue
+        if fsys.is_dir(path + name)
+            stdr.push(dirs, name + "/")
+        else
+            -- Show .txt files only when loading, show all when saving
+            if world_model.browser_save_mode
+                stdr.push(files, name)
+            else
+                let nlen = stdr.len(name)
+                if nlen >= 4
+                    let ext = stdr.slice(name, nlen - 4, nlen)
+                    if ext == ".txt"
+                        stdr.push(files, name)
+
+    -- Build final list: ".." + dirs + files
+    let ?entries = []: [any]
+    if path != "./"
+        stdr.push(entries, "..")
+    for (let ?i = 0; i < stdr.len(dirs); i += 1)
+        stdr.push(entries, dirs[i])
+    for (let ?i = 0; i < stdr.len(files); i += 1)
+        stdr.push(entries, files[i])
+
+    world_model.set_browser_entries(entries)
+    world_model.set_browser_sel(0)
+    world_model.set_browser_scroll(0)
+    world_model.set_dirty()
+;
+
+: nav_up(fsys = vimana.file) (( -- ))
+    let p = world_model.browser_path
+    let plen = stdr.len(p)
+    if plen <= 1
+        <-
+    let base = stdr.slice(p, 0, plen - 1)
+    let blen = stdr.len(base)
+    let ?i = blen - 1
+    for (; i >= 0; i -= 1)
+        if stdr.char_at(base, i) == "/"
+            break
+    if i < 0
+        world_model.set_browser_path("./")
+    else
+        world_model.set_browser_path(stdr.slice(p, 0, i + 1))
+    load_dir(fsys)
+;
+
+: pick_entry(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let entries = world_model.browser_entries
+    let sel = world_model.browser_sel
+    let total = stdr.len(entries)
+    if sel < 0 || sel >= total
+        <-
+
+    let entry = stdr.str(entries[sel] ?? "")
+    if entry == ".."
+        nav_up(fsys)
+        <-
+
+    let elen = stdr.len(entry)
+    if elen > 0 && stdr.char_at(entry, elen - 1) == "/"
+        -- Navigate into directory
+        world_model.set_browser_path(world_model.browser_path + entry)
+        load_dir(fsys)
+        <-
+
+    -- It's a file
+    if world_model.browser_save_mode
+        -- Save to this file (overwrite)
+        save_to_file(fsys, entry)
+    else
+        load_from_file(fsys, entry)
+;
+
+: load_from_file(fsys = vimana.file, filename = string) (( -- ))
+    let full = world_model.browser_path + filename
+    let text = fsys.read_text(full)
+    if stdr.len(text) == 0
+        <-
+    world_model.import_map_text(text)
+    world_model.set_current_file(full)
+    -- Derive title from filename (strip .txt extension)
+    let nlen = stdr.len(filename)
+    let ?title = filename
+    if nlen >= 4
+        let ext = stdr.slice(filename, nlen - 4, nlen)
+        if ext == ".txt"
+            title = stdr.slice(filename, 0, nlen - 4)
+    world_model.set_world_title(title)
+    world_model.set_screen_mode("editor")
+;
+
+: save_to_file(fsys = vimana.file, filename = string) (( -- ))
+    let full = world_model.browser_path + filename
+    let text = world_model.export_map_text()
+    fsys.write_text(full, text)
+    world_model.set_current_file(full)
+    world_model.set_screen_mode("editor")
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Public API
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: open_load(fsys = vimana.file) (( -- ))
+    world_model.set_browser_save_mode(false)
+    if world_model.browser_path == "./"
+        world_model.set_browser_path("./")
+    load_dir(fsys)
+;
+
+:: open_save(fsys = vimana.file) (( -- ))
+    world_model.set_browser_save_mode(true)
+    if world_model.browser_path == "./"
+        world_model.set_browser_path("./")
+    load_dir(fsys)
+;
+
+:: save_new(fsys = vimana.file, name = string) (( -- ))
+    let ?filename = name
+    let nlen = stdr.len(filename)
+    if nlen < 4 || stdr.slice(filename, nlen - 4, nlen) != ".txt"
+        filename = filename + ".txt"
+    save_to_file(fsys, filename)
+;
+
+:: on_click(mx = num, my = num, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    -- Back button
+    if in_rect(mx, my, world_model.WIN_W - 28, world_model.TOOLBAR_Y, 28, 24)
+        world_model.set_screen_mode("editor")
+        <-
+
+    -- Entry list click
+    let start_y = world_view.BROWSER_START_Y
+    let row_h = world_view.BROWSER_ROW_H
+    if my >= start_y
+        let clicked = stdr.floor((my - start_y) / row_h) + world_model.browser_scroll
+        let total = stdr.len(world_model.browser_entries)
+        if clicked >= 0 && clicked < total
+            world_model.set_browser_sel(clicked)
+            pick_entry(fsys, scr)
+;
+
+:: on_key(dev = vimana.device, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if dev.key_pressed(world_model.KEY_UP)
+        world_model.set_browser_sel(world_model.browser_sel - 1)
+        clamp_sel()
+        scroll_for_sel()
+        <-
+    if dev.key_pressed(world_model.KEY_DOWN)
+        world_model.set_browser_sel(world_model.browser_sel + 1)
+        clamp_sel()
+        scroll_for_sel()
+        <-
+    if dev.key_pressed(world_model.KEY_RETURN)
+        pick_entry(fsys, scr)
+        <-
+    if dev.key_pressed(world_model.KEY_BACKSPACE)
+        nav_up(fsys)
+        <-
+    -- S key in save mode = save with default name
+    if dev.key_pressed(world_model.KEY_S) && world_model.browser_save_mode
+        save_new(fsys, world_model.world_title)
+        <-
+;
+
+:: on_scroll(dy = num) (( -- ))
+    let ?s = world_model.browser_scroll + dy
+    if s < 0
+        s = 0
+    let total = stdr.len(world_model.browser_entries)
+    if total > world_view.BROWSER_MAX_ROWS && s > total - world_view.BROWSER_MAX_ROWS
+        s = total - world_view.BROWSER_MAX_ROWS
+    world_model.set_browser_scroll(s)
+    world_model.set_dirty()
+;

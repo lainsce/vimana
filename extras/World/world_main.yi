@@ -1,0 +1,38 @@
+cask main
+
+bring stdr
+bring vimana
+
+bring world_model
+bring world_themes
+bring world_view
+bring world_input
+bring world_assets
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-> ()
+    let sys  = vimana.system()
+    let scr  = vimana.screen("World", world_model.WIN_W, world_model.WIN_H, 1)
+    let dev  = sys.device()
+    let fsys = sys.file()
+
+    world_assets.setup_font(scr)
+    world_themes.apply_palette(scr, world_model.theme_idx)
+    world_model.reset_world()
+
+    sys.run(scr, () => {
+        dev.poll()
+
+        -- Input
+        world_input.on_mouse(dev, sys, fsys, scr)
+        world_input.on_key(dev, sys, fsys, scr)
+        world_input.on_scroll(dev)
+
+        -- Render only when state changed
+        if world_model.consume_dirty()
+            world_view.draw_all(scr)
+    })
+;

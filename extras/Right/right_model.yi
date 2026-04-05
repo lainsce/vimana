@@ -3,47 +3,47 @@ cask right_model
 bring stdr
 bring outline_parser
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Layout
--- ─────────────────────────────────────────────────────────────────────────────
-def WIN_W = 1024
-def WIN_H = 720
+--| Layout |--
+def DEFAULT_W = 1360
+def DEFAULT_H = 716
 def FONT_W = 16
 def FONT_H = 24
 def SCROLLBAR_W = 12
 def SCROLLBAR_X = 0
 def SIDEBAR_X = 16
-def SIDEBAR_W = 160
-def EDITOR_X = 180
-def EDITOR_W = 780
+def SIDEBAR_MIN = 128
+def SIDEBAR_MAX = 480
 def PAD_X = 4
 def ROW_H = 24
-def TITLEBAR_H = 16
-def CONTENT_Y = 40
+def CONTENT_Y = 28
 def COL_GUIDE = 51
-def MAX_COLS = 48
-def SIDEBAR_CHARS = 9
-def MAX_LINES = 28
+def WRAP_COL = 80
 def STATUS_H = 0
+def RESIZE_ZONE = 8
+def ?screen_w = 1360
+def ?screen_h = 716
 def ?sidebar_visible = true
+def ?sidebar_width = 376
+def ?resizing_sidebar = false
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Palette
--- ─────────────────────────────────────────────────────────────────────────────
+--| Palette |--
 def C_BG = 0
 def C_FG = 1
 def C_SEL = 2
 def C_ACCENT = 3
 
--- Syntax highlight categories (mapped to palette slots)
+--| Highlight |--
 def H_KEYWORD = 3
 def H_COMMENT = 2
 def H_STRING = 2
 def H_TYPE = 3
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Keyboard scancodes (SDL)
--- ─────────────────────────────────────────────────────────────────────────────
+--| Editor glyphs |--
+def GLYPH_TAB = 1
+def GLYPH_BRK = 2
+def GLYPH_ARROW = 3
+
+--| Keyboard scancodes |--
 def KEY_UP = 82
 def KEY_DOWN = 81
 def KEY_LEFT = 80
@@ -63,12 +63,23 @@ def KEY_N = 17
 def KEY_O = 18
 def KEY_F = 9
 def KEY_G = 10
+def KEY_H = 11
+def KEY_I = 12
+def KEY_L = 15
+def KEY_Q = 20
+def KEY_R = 21
+def KEY_T = 23
+def KEY_W = 26
+def KEY_Z = 29
+def KEY_SLASH = 56
 def KEY_LGUI = 227
 def KEY_RGUI = 231
+def KEY_LALT = 226
+def KEY_RALT = 230
+def KEY_LCTRL = 224
+def KEY_RCTRL = 228
 
--- ─────────────────────────────────────────────────────────────────────────────
--- State
--- ─────────────────────────────────────────────────────────────────────────────
+--| State |--
 def ?editor_text = ""
 def ?caret = 0
 def ?sel_start = 0
@@ -79,16 +90,48 @@ def ?outline_selected = -1
 def ?outline_scroll = 0
 def ?file_path = ""
 def ?dirty = false
+def ?highlight_on = false
+def ?show_line_endings = false
+def ?show_tabs = true
 
--- Search state
+--| Directory listing |--
+def ?dir_listing_active = false
+def ?dir_entries = []: [any]
+def ?dir_selected = -1
+def ?dir_scroll = 0
+
+:: open_dir_listing(entries = [any]) (( -- ))
+    dir_entries = entries
+    dir_listing_active = true
+    dir_selected = -1
+    dir_scroll = 0
+;
+
+:: close_dir_listing() (( -- ))
+    dir_listing_active = false
+    dir_entries = []: [any]
+    dir_selected = -1
+    dir_scroll = 0
+;
+
+:: dir_scroll_by(delta = num) (( -- ))
+    dir_scroll = dir_scroll - stdr.floor(delta)
+    let max_scroll = stdr.len(dir_entries) - visible_lines()
+    if max_scroll < 0
+        max_scroll = 0
+    if dir_scroll < 0
+        dir_scroll = 0
+    if dir_scroll > max_scroll
+        dir_scroll = max_scroll
+;
+
+--| Search state |--
 def ?search_active = false
 def ?search_query = ""
 def ?search_matches = []: [any]
 def ?search_index = -1
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Helpers
--- ─────────────────────────────────────────────────────────────────────────────
+--| Helpers |--
 
 :: line_count(code = string) (( num ))
     let total = stdr.len(code)
@@ -151,32 +194,150 @@ def ?search_index = -1
     <- [sel_end, sel_start]
 ;
 
+--| Wrap-aware visual line helpers |--
+
+:: vline_count(code = string) (( num ))
+    let total = stdr.len(code)
+    if total == 0
+        <- 1
+    let ?lines = 1
+    let ?col = 0
+    for (let ?i = 0; i < total; i += 1)
+        if stdr.slice(code, i, i + 1) == "\n"
+            lines += 1
+            col = 0
+        else
+            col += 1
+            if col >= WRAP_COL
+                lines += 1
+                col = 0
+    <- lines
+;
+
+:: vline_col(code = string, pos = num) (( [any] ))
+    let total = stdr.len(code)
+    let ?p = pos
+    if p < 0
+        p = 0
+    if p > total
+        p = total
+    let ?vl = 0
+    let ?vc = 0
+    for (let ?i = 0; i < p; i += 1)
+        if stdr.slice(code, i, i + 1) == "\n"
+            vl += 1
+            vc = 0
+        else
+            vc += 1
+            if vc >= WRAP_COL
+                vl += 1
+                vc = 0
+    <- [vl, vc]
+;
+
+:: vindex_from_line_col(code = string, target_row = num, target_col = num) (( num ))
+    let total = stdr.len(code)
+    let ?vl = 0
+    let ?vc = 0
+    -- Walk to the start of target_row
+    let ?i = 0
+    for (; i < total; i += 1)
+        if vl >= target_row
+            break
+        if stdr.slice(code, i, i + 1) == "\n"
+            vl += 1
+            vc = 0
+        else
+            vc += 1
+            if vc >= WRAP_COL
+                vl += 1
+                vc = 0
+    if vl < target_row
+        <- total
+    -- Now i is at the start of the visual row. Walk target_col chars within this row.
+    let ?col = 0
+    for (; i < total; i += 1)
+        if col >= target_col
+            <- i
+        let ch = stdr.slice(code, i, i + 1)
+        if ch == "\n"
+            <- i
+        col += 1
+        if col >= WRAP_COL
+            if col > target_col
+                <- i
+            <- i + 1
+    <- i
+;
+
 :: has_selection() (( bool ))
     <- sel_start != sel_end
 ;
 
 :: visible_lines() (( num ))
-    <- MAX_LINES
+    <- stdr.floor((screen_h - CONTENT_Y - STATUS_H) / ROW_H)
+;
+
+:: sync_screen_size(w = num, h = num) (( -- ))
+    screen_w = w
+    screen_h = h
 ;
 
 :: toggle_sidebar() (( -- ))
     sidebar_visible = !sidebar_visible
 ;
 
+:: toggle_highlight() (( -- ))
+    highlight_on = !highlight_on
+;
+
+:: toggle_line_endings() (( -- ))
+    show_line_endings = !show_line_endings
+;
+
+:: toggle_tabs() (( -- ))
+    show_tabs = !show_tabs
+;
+
+:: sidebar_chars() (( num ))
+    <- stdr.floor(sidebar_width / FONT_W) - 1
+;
+
+:: sidebar_right() (( num ))
+    <- SIDEBAR_X + sidebar_width
+;
+
 :: editor_left() (( num ))
     if sidebar_visible
-        <- EDITOR_X
+        <- sidebar_right() + PAD_X
     <- SIDEBAR_X
 ;
 
 :: editor_width() (( num ))
     if sidebar_visible
-        <- EDITOR_W
-    <- WIN_W - SIDEBAR_X
+        <- screen_w - editor_left()
+    <- screen_w - SIDEBAR_X
 ;
 
 :: editor_cols() (( num ))
     <- stdr.floor(editor_width() / FONT_W) - 1
+;
+
+:: set_sidebar_width(w = num) (( -- ))
+    if w < SIDEBAR_MIN
+        sidebar_width = SIDEBAR_MIN
+    elif w > SIDEBAR_MAX
+        sidebar_width = SIDEBAR_MAX
+    else
+        sidebar_width = w
+;
+
+:: start_resize() (( -- ))
+    resizing_sidebar = true
+;
+
+:: stop_resize() (( -- ))
+    resizing_sidebar = false
 ;
 
 :: line_to_char_pos(code = string, target_line = num) (( num ))
@@ -194,9 +355,7 @@ def ?search_index = -1
     <- lstart
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Setters (cross-module mutation)
--- ─────────────────────────────────────────────────────────────────────────────
+--| Setters |--
 
 :: set_text(txt = string) (( -- ))
     editor_text = txt
@@ -232,22 +391,20 @@ def ?search_index = -1
     outline_selected = idx
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Navigation
--- ─────────────────────────────────────────────────────────────────────────────
+--| Navigation |--
 
 :: ensure_visible() (( -- ))
-    let lc = line_col_from_index(editor_text, caret)
+    let lc = vline_col(editor_text, caret)
     let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
     if cur_line < scroll_y
         scroll_y = cur_line
-    elif cur_line >= scroll_y + MAX_LINES
-        scroll_y = cur_line - MAX_LINES + 1
+    elif cur_line >= scroll_y + visible_lines()
+        scroll_y = cur_line - visible_lines() + 1
 ;
 
 :: clamp_scroll() (( -- ))
-    let total = line_count(editor_text)
-    let ?max_scroll = total - MAX_LINES
+    let total = vline_count(editor_text)
+    let ?max_scroll = total - visible_lines()
     if max_scroll < 0
         max_scroll = 0
     if scroll_y < 0
@@ -265,9 +422,7 @@ def ?search_index = -1
         outline_selected = n - 1
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Editing
--- ─────────────────────────────────────────────────────────────────────────────
+--| Editing |--
 
 :: insert_at_caret(chunk = string) (( -- ))
     let pair = sel_normalized()
@@ -336,9 +491,7 @@ def ?search_index = -1
     ensure_visible()
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Caret movement
--- ─────────────────────────────────────────────────────────────────────────────
+--| Caret movement |--
 
 :: move_caret_left(shift = bool) (( -- ))
     if caret > 0
@@ -364,11 +517,11 @@ def ?search_index = -1
 ;
 
 :: move_caret_up(shift = bool) (( -- ))
-    let lc = line_col_from_index(editor_text, caret)
+    let lc = vline_col(editor_text, caret)
     let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
     let cur_col = stdr.floor(stdr.num(lc[1] ?? 0))
     if cur_line > 0
-        caret = index_from_line_col(editor_text, cur_line - 1, cur_col)
+        caret = vindex_from_line_col(editor_text, cur_line - 1, cur_col)
     else
         caret = 0
     if shift
@@ -380,12 +533,12 @@ def ?search_index = -1
 ;
 
 :: move_caret_down(shift = bool) (( -- ))
-    let lc = line_col_from_index(editor_text, caret)
+    let lc = vline_col(editor_text, caret)
     let cur_line = stdr.floor(stdr.num(lc[0] ?? 0))
     let cur_col = stdr.floor(stdr.num(lc[1] ?? 0))
-    let total_lines = line_count(editor_text)
+    let total_lines = vline_count(editor_text)
     if cur_line < total_lines - 1
-        caret = index_from_line_col(editor_text, cur_line + 1, cur_col)
+        caret = vindex_from_line_col(editor_text, cur_line + 1, cur_col)
     else
         caret = stdr.len(editor_text)
     if shift
@@ -416,9 +569,23 @@ def ?search_index = -1
     clamp_scroll()
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Click handling
--- ─────────────────────────────────────────────────────────────────────────────
+:: clamp_outline_scroll() (( -- ))
+    let total = stdr.len(current_outline)
+    let ?max_scroll = total - visible_lines()
+    if max_scroll < 0
+        max_scroll = 0
+    if outline_scroll < 0
+        outline_scroll = 0
+    if outline_scroll > max_scroll
+        outline_scroll = max_scroll
+;
+
+:: outline_scroll_by(delta = num) (( -- ))
+    outline_scroll -= delta
+    clamp_outline_scroll()
+;
+
+--| Click handling |--
 
 :: caret_from_editor_click(px = num, py = num) (( num ))
     let ?col = stdr.floor((px - editor_left() - PAD_X) / FONT_W)
@@ -427,7 +594,7 @@ def ?search_index = -1
     let ?row = stdr.floor((py - CONTENT_Y) / ROW_H) + scroll_y
     if row < 0
         row = 0
-    <- index_from_line_col(editor_text, row, col)
+    <- vindex_from_line_col(editor_text, row, col)
 ;
 
 :: outline_index_from_click(py = num) (( num ))
@@ -439,9 +606,7 @@ def ?search_index = -1
     <- row
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Cmd+arrow movement
--- ─────────────────────────────────────────────────────────────────────────────
+--| Cmd+arrow movement |--
 
 :: move_caret_line_start(shift = bool) (( -- ))
     let lc = line_col_from_index(editor_text, caret)
@@ -493,12 +658,66 @@ def ?search_index = -1
     ensure_visible()
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Word selection
--- ─────────────────────────────────────────────────────────────────────────────
+--| Word navigation |--
+
+:: move_caret_word_left(shift = bool) (( -- ))
+    let total = stdr.len(editor_text)
+    if caret <= 0
+        if !shift
+            sel_start = 0
+            sel_end = 0
+        <-
+    let ?p = caret - 1
+    -- Skip whitespace/punctuation
+    for (; p > 0; p -= 1)
+        let c = stdr.slice(editor_text, p, p + 1)
+        if is_word_char(c)
+            break
+    -- Skip word chars
+    for (; p > 0; p -= 1)
+        let c = stdr.slice(editor_text, p - 1, p)
+        if !is_word_char(c)
+            break
+    caret = p
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+:: move_caret_word_right(shift = bool) (( -- ))
+    let total = stdr.len(editor_text)
+    if caret >= total
+        if !shift
+            sel_start = total
+            sel_end = total
+        <-
+    let ?p = caret
+    -- Skip word chars
+    for (; p < total; p += 1)
+        let c = stdr.slice(editor_text, p, p + 1)
+        if !is_word_char(c)
+            break
+    -- Skip whitespace/punctuation
+    for (; p < total; p += 1)
+        let c = stdr.slice(editor_text, p, p + 1)
+        if is_word_char(c)
+            break
+    caret = p
+    if shift
+        sel_end = caret
+    else
+        sel_start = caret
+        sel_end = caret
+    ensure_visible()
+;
+
+--| Word selection |--
 
 : is_word_char(ch = string) (( bool ))
-    if ch == " " || ch == "\n" || ch == "\t"
+    if ch == " " || ch == "\n"
         <- false
     if ch == "(" || ch == ")" || ch == "[" || ch == "]"
         <- false
@@ -543,9 +762,7 @@ def ?search_index = -1
     caret = b
 ;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Search
--- ─────────────────────────────────────────────────────────────────────────────
+--| Search |--
 
 :: open_search() (( -- ))
     search_active = true
@@ -623,4 +840,334 @@ def ?search_index = -1
 :: reset_selection() (( -- ))
     sel_start = caret
     sel_end = caret
+;
+
+--| ROM space (Vimana 64K) |--
+def ROM_SIZE = 65536
+
+--| Bracket matching |--
+
+: is_open_bracket(ch = string) (( bool ))
+    <- ch == "(" || ch == "[" || ch == "{"
+;
+
+: is_close_bracket(ch = string) (( bool ))
+    <- ch == ")" || ch == "]" || ch == "}"
+;
+
+: matching_bracket(ch = string) (( string ))
+    if ch == "("
+        <- ")"
+    if ch == ")"
+        <- "("
+    if ch == "["
+        <- "]"
+    if ch == "]"
+        <- "["
+    if ch == "{"
+        <- "}"
+    if ch == "}"
+        <- "{"
+    <- ""
+;
+
+:: find_matching_bracket() (( num ))
+    let total = stdr.len(editor_text)
+    if caret < 0 || caret >= total
+        <- -1
+    let ch = stdr.slice(editor_text, caret, caret + 1)
+    let target = matching_bracket(ch)
+    if stdr.len(target) == 0
+        -- Also check character before caret
+        if caret > 0
+            ch = stdr.slice(editor_text, caret - 1, caret)
+            target = matching_bracket(ch)
+            if stdr.len(target) == 0
+                <- -1
+            -- Search from caret-1
+            let pos = caret - 1
+            if is_open_bracket(ch)
+                -- Search forward
+                let ?depth = 1
+                for (let ?i = pos + 1; i < total; i += 1)
+                    let c = stdr.slice(editor_text, i, i + 1)
+                    if c == ch
+                        depth += 1
+                    elif c == target
+                        depth -= 1
+                        if depth == 0
+                            <- i
+                <- -1
+            else
+                -- Search backward
+                let ?depth = 1
+                for (let ?i = pos - 1; i >= 0; i -= 1)
+                    let c = stdr.slice(editor_text, i, i + 1)
+                    if c == ch
+                        depth += 1
+                    elif c == target
+                        depth -= 1
+                        if depth == 0
+                            <- i
+                <- -1
+        <- -1
+    if is_open_bracket(ch)
+        -- Search forward
+        let ?depth = 1
+        for (let ?i = caret + 1; i < total; i += 1)
+            let c = stdr.slice(editor_text, i, i + 1)
+            if c == ch
+                depth += 1
+            elif c == target
+                depth -= 1
+                if depth == 0
+                    <- i
+        <- -1
+    else
+        -- Search backward
+        let ?depth = 1
+        for (let ?i = caret - 1; i >= 0; i -= 1)
+            let c = stdr.slice(editor_text, i, i + 1)
+            if c == ch
+                depth += 1
+            elif c == target
+                depth -= 1
+                if depth == 0
+                    <- i
+        <- -1
+;
+
+--| Autocomplete |--
+def ?autocomplete_word = ""
+def ?autocomplete_visible = false
+
+:: word_before_caret() (( string ))
+    let ?end = caret
+    let ?start = end
+    for (let ?i = end - 1; i >= 0; i -= 1)
+        let c = stdr.slice(editor_text, i, i + 1)
+        if !is_word_char(c)
+            break
+        start = i
+    if start >= end
+        <- ""
+    <- stdr.slice(editor_text, start, end)
+;
+
+:: update_autocomplete() (( -- ))
+    let prefix = word_before_caret()
+    if stdr.len(prefix) < 3
+        autocomplete_word = ""
+        autocomplete_visible = false
+        <-
+    -- Scan document for a word matching the prefix
+    let total = stdr.len(editor_text)
+    let plen = stdr.len(prefix)
+    let ?best = ""
+    let ?i = 0
+    for (; i < total; i += 1)
+        let c = stdr.slice(editor_text, i, i + 1)
+        if !is_word_char(c)
+            continue
+        -- Found start of a word
+        let ?j = i
+        for (; j < total; j += 1)
+            let c2 = stdr.slice(editor_text, j, j + 1)
+            if !is_word_char(c2)
+                break
+        let word = stdr.slice(editor_text, i, j)
+        let wlen = stdr.len(word)
+        if wlen > plen && stdr.starts_with(word, prefix)
+            -- Don't match the word we're currently typing
+            if j != caret && i != caret - plen
+                best = word
+                break
+        i = j
+    if stdr.len(best) > 0
+        autocomplete_word = best
+        autocomplete_visible = true
+    else
+        autocomplete_word = ""
+        autocomplete_visible = false
+;
+
+:: accept_autocomplete() (( -- ))
+    if !autocomplete_visible
+        <-
+    let prefix = word_before_caret()
+    let plen = stdr.len(prefix)
+    let rest = stdr.slice(autocomplete_word, plen, stdr.len(autocomplete_word))
+    insert_at_caret(rest)
+    autocomplete_word = ""
+    autocomplete_visible = false
+;
+
+:: dismiss_autocomplete() (( -- ))
+    autocomplete_word = ""
+    autocomplete_visible = false
+;
+
+--| Select helpers (menu actions) |--
+
+:: select_word() (( -- ))
+    select_word_at(caret)
+;
+
+:: select_line() (( -- ))
+    let lc = line_col_from_index(editor_text, caret)
+    let line = lc[0]
+    let line_start = line_to_char_pos(editor_text, line)
+    let total = stdr.len(editor_text)
+    let ?line_end = total
+    for (let ?i = line_start; i < total; i += 1)
+        if stdr.slice(editor_text, i, i + 1) == "\n"
+            line_end = i + 1
+            break
+    sel_start = line_start
+    sel_end = line_end
+    caret = line_end
+;
+
+--| Format helpers (menu actions) |--
+
+:: strip_trailing() (( -- ))
+    -- Remove trailing whitespace from every line
+    let total = stdr.len(editor_text)
+    let ?result = ""
+    let ?line_start = 0
+    for (let ?i = 0; i <= total; i += 1)
+        let at_end = i >= total
+        let is_nl = !at_end && stdr.slice(editor_text, i, i + 1) == "\n"
+        if at_end || is_nl
+            -- Find last non-space in this line
+            let ?trail = i
+            for (let ?j = i - 1; j >= line_start; j -= 1)
+                let c = stdr.slice(editor_text, j, j + 1)
+                if c != " " && c != "\t"
+                    break
+                trail = j
+            result = result + stdr.slice(editor_text, line_start, trail)
+            if is_nl
+                result = result + "\n"
+            line_start = i + 1
+    editor_text = result
+    if caret > stdr.len(editor_text)
+        caret = stdr.len(editor_text)
+    sel_start = caret
+    sel_end = caret
+    dirty = true
+;
+
+:: trim_trailing_lines() (( -- ))
+    -- Remove trailing blank lines from end of document
+    let total = stdr.len(editor_text)
+    let ?end_pos = total
+    for (let ?i = total - 1; i >= 0; i -= 1)
+        let c = stdr.slice(editor_text, i, i + 1)
+        if c != "\n" && c != " " && c != "\t"
+            end_pos = i + 1
+            break
+    if end_pos < total
+        editor_text = stdr.slice(editor_text, 0, end_pos) + "\n"
+        if caret > stdr.len(editor_text)
+            caret = stdr.len(editor_text)
+        sel_start = caret
+        sel_end = caret
+        dirty = true
+;
+
+:: tab_indent() (( -- ))
+    -- Indent selected lines (or current line) by 4 spaces
+    let norm = sel_normalized()
+    let s = norm[0]
+    let e = norm[1]
+    if s >= e
+        -- No selection: indent current line
+        let lc = line_col_from_index(editor_text, caret)
+        let line = lc[0]
+        s = line_to_char_pos(editor_text, line)
+        e = s
+    -- Find line range
+    let first_lc = line_col_from_index(editor_text, s)
+    let last_lc = line_col_from_index(editor_text, e - 1)
+    let first_line = first_lc[0]
+    let ?last_line = last_lc[0]
+    if e > s && last_lc[1] == 0 && last_line > first_line
+        last_line -= 1
+    let total = stdr.len(editor_text)
+    let ?result = ""
+    let ?cur_line = 0
+    let ?line_start = 0
+    for (let ?i = 0; i <= total; i += 1)
+        let at_end = i >= total
+        let is_nl = !at_end && stdr.slice(editor_text, i, i + 1) == "\n"
+        if at_end || is_nl
+            if cur_line >= first_line && cur_line <= last_line
+                result = result + "    "
+            result = result + stdr.slice(editor_text, line_start, i)
+            if is_nl
+                result = result + "\n"
+            line_start = i + 1
+            cur_line += 1
+    editor_text = result
+    caret = caret + 4
+    sel_start = sel_start + 4
+    sel_end = sel_end + (last_line - first_line + 1) * 4
+    dirty = true
+;
+
+:: untab_indent() (( -- ))
+    -- Remove up to 4 leading spaces from selected lines
+    let norm = sel_normalized()
+    let s = norm[0]
+    let e = norm[1]
+    if s >= e
+        let lc = line_col_from_index(editor_text, caret)
+        let line = lc[0]
+        s = line_to_char_pos(editor_text, line)
+        e = s
+    let first_lc = line_col_from_index(editor_text, s)
+    let last_lc = line_col_from_index(editor_text, e - 1)
+    let first_line = first_lc[0]
+    let ?last_line = last_lc[0]
+    if e > s && last_lc[1] == 0 && last_line > first_line
+        last_line -= 1
+    let total = stdr.len(editor_text)
+    let ?result = ""
+    let ?cur_line = 0
+    let ?line_start = 0
+    let ?removed = 0
+    for (let ?i = 0; i <= total; i += 1)
+        let at_end = i >= total
+        let is_nl = !at_end && stdr.slice(editor_text, i, i + 1) == "\n"
+        if at_end || is_nl
+            let line_text = stdr.slice(editor_text, line_start, i)
+            if cur_line >= first_line && cur_line <= last_line
+                -- Count leading spaces (up to 4)
+                let llen = stdr.len(line_text)
+                let ?spaces = 0
+                for (let ?k = 0; k < llen && k < 4; k += 1)
+                    if stdr.slice(line_text, k, k + 1) == " "
+                        spaces += 1
+                    else
+                        break
+                result = result + stdr.slice(line_text, spaces, llen)
+                removed += spaces
+            else
+                result = result + line_text
+            if is_nl
+                result = result + "\n"
+            line_start = i + 1
+            cur_line += 1
+    editor_text = result
+    caret = caret - removed
+    if caret < 0
+        caret = 0
+    sel_start = sel_start - removed
+    if sel_start < 0
+        sel_start = 0
+    sel_end = sel_end - removed
+    if sel_end < 0
+        sel_end = 0
+    dirty = true
 ;
