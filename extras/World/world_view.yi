@@ -456,7 +456,7 @@ def PICKER_PAD = 8
 
 :: draw_all(scr = vimana.screen) (( -- ))
     scr.clear(world_model.C_BG)
-    scr.draw_titlebar(world_model.C_FG)
+    scr.draw_titlebar(world_model.C_CLR2)
 
     let mode = world_model.screen_mode
 
