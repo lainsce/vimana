@@ -1,0 +1,566 @@
+cask luxor_model
+
+bring stdr
+
+--| Layout |--
+def SCR_W = 528
+def SCR_H = 672
+def SCR_H_UF2 = 672
+def SCR_H_UF3 = 592
+
+def HEADER_H = 18
+
+def COLLECTION_X = 8
+def COLLECTION_COLS = 16
+def COLLECTION_ROWS = 16
+def COLLECTION_COL_W = 32
+def COLLECTION_ROW_H_UF2 = 25
+def COLLECTION_ROW_H_UF3 = 17
+def COLLECTION_MARGIN_UF3 = 166
+def COLLECTION_MARGIN_UF2 = 230
+def COLLECTION_W = 512
+def COLLECTION_H_UF2 = 400
+def COLLECTION_H_UF3 = 272
+
+def EDITOR_X = 8
+def EDITOR_Y = 28
+def EDITOR_SCALE = 8
+def MAX_GLYPH_SIZE = 24
+def EDITOR_W = 193
+def EDITOR_H = 193
+
+def PREVIEW_X = 0
+def PREVIEW_H = 24
+def PREVIEW_BOTTOM_PAD = 8
+def SAMPLE_X = 20
+def SAMPLE_Y = 36
+def SAMPLE_SCALE_UF2 = 2
+def SAMPLE_SCALE_UF3 = 2
+
+def STATUS_Y = 2
+
+--| Colors |--
+def C_BG = 0
+def C_FG = 1
+def C_DIM = 2
+def C_ACCENT = 1
+
+--| Keyboard scancodes |--
+def KEY_UP = 82
+def KEY_DOWN = 81
+def KEY_LEFT = 80
+def KEY_RIGHT = 79
+def KEY_RETURN = 40
+def KEY_BACKSPACE = 42
+def KEY_DELETE = 76
+def KEY_ESCAPE = 41
+def KEY_N = 17
+def KEY_O = 18
+def KEY_S = 22
+def KEY_Q = 20
+def KEY_C = 6
+def KEY_V = 25
+def KEY_X = 27
+def KEY_1 = 30
+def KEY_3 = 32
+def KEY_LGUI = 227
+def KEY_RGUI = 231
+def KEY_LSHIFT = 225
+def KEY_RSHIFT = 229
+def KEY_LALT = 226
+def KEY_RALT = 230
+def KEY_LBRACKET = 47
+def KEY_RBRACKET = 48
+def KEY_MINUS = 45
+def KEY_EQUALS = 46
+
+--| Font format |--
+def GLYPH_COUNT = 256
+
+def UF1_HEIGHT = 8
+def UF1_WIDTH = 8
+def UF1_BPR = 1
+def UF1_STRIDE = 8
+def UF1_TOTAL = 2304
+
+def UF2_HEIGHT = 24
+def UF2_WIDTH = 24
+def UF2_BPR = 3
+def UF2_STRIDE = 72
+def UF2_TOTAL = 18688
+
+def UF3_HEIGHT = 16
+def UF3_WIDTH = 16
+def UF3_BPR = 2
+def UF3_STRIDE = 32
+def UF3_TOTAL = 8448
+
+def POW2 = [1, 2, 4, 8, 16, 32, 64, 128]
+def DEFAULT_PANGRAM = "Sphinx of black quartz, judge my vow."
+
+--| State |--
+def ?uf1 = false
+def ?uf3 = false
+def ?file_path = "untitled.uf2"
+def ?changed = false
+def ?dirty = true
+def ?selected = 97
+def ?guide_row = 18
+
+def ?widths = []: [any]
+def ?glyph_data = []: [any]
+
+def ?clip_data = []: [any]
+def ?clip_width = 8
+def ?clip_uf1 = false
+def ?clip_uf3 = false
+def ?has_clip = false
+
+def ?pangram = DEFAULT_PANGRAM
+def ?status = "Cmd+N new, Cmd+O open, Cmd+S save, [] width, Shift+Arrows shift"
+
+: clamp(v = num, lo = num, hi = num) (( num ))
+    if v < lo
+        <- lo
+    if v > hi
+        <- hi
+    <- v
+;
+
+: desired_screen_h() (( num ))
+    <- preview_y() + PREVIEW_H + PREVIEW_BOTTOM_PAD
+;
+
+: collection_anchor() (( num ))
+    if uf3 || uf1
+        <- COLLECTION_MARGIN_UF3
+    <- COLLECTION_MARGIN_UF2
+;
+
+: collection_row_h() (( num ))
+    if uf3 || uf1
+        <- COLLECTION_ROW_H_UF3
+    <- COLLECTION_ROW_H_UF2
+;
+
+: collection_h() (( num ))
+    if uf3 || uf1
+        <- COLLECTION_H_UF3
+    <- COLLECTION_H_UF2
+;
+
+: collection_y_for_row(row = num) (( num ))
+    <- collection_anchor() + 1 + row * collection_row_h()
+;
+
+: preview_y() (( num ))
+    <- collection_anchor() + collection_h() + 4
+;
+
+: editor_grid_px() (( num ))
+    <- glyph_height() * EDITOR_SCALE
+;
+
+: sample_scale() (( num ))
+    if uf3 || uf1
+        <- SAMPLE_SCALE_UF3
+    <- SAMPLE_SCALE_UF2
+;
+
+: glyph_height() (( num ))
+    if uf1
+        <- UF1_HEIGHT
+    if uf3
+        <- UF3_HEIGHT
+    <- UF2_HEIGHT
+;
+
+: glyph_width_limit() (( num ))
+    if uf1
+        <- UF1_WIDTH
+    if uf3
+        <- UF3_WIDTH
+    <- UF2_WIDTH
+;
+
+: glyph_bytes_per_row() (( num ))
+    if uf1
+        <- UF1_BPR
+    if uf3
+        <- UF3_BPR
+    <- UF2_BPR
+;
+
+: glyph_stride() (( num ))
+    if uf1
+        <- UF1_STRIDE
+    if uf3
+        <- UF3_STRIDE
+    <- UF2_STRIDE
+;
+
+: set_status(msg = string) (( -- ))
+    status = msg
+    dirty = true
+;
+
+: set_dirty() (( -- ))
+    dirty = true
+;
+
+: clear_dirty() (( -- ))
+    dirty = false
+;
+
+: set_saved() (( -- ))
+    changed = false
+    dirty = true
+;
+
+: mark_changed() (( -- ))
+    changed = true
+    dirty = true
+;
+
+: set_file_path(path = string) (( -- ))
+    file_path = path
+    dirty = true
+;
+
+: is_uf3_path(path = string) (( bool ))
+    let n = stdr.len(path)
+    if n < 4
+        <- false
+    <- stdr.substring_len(path, n - 4, 4) == ".uf3"
+;
+
+: default_path() (( string ))
+    if uf1
+        <- "untitled.uf1"
+    if uf3
+        <- "untitled.uf3"
+    <- "untitled.uf2"
+;
+
+: set_guide_default() (( -- ))
+    if uf1
+        guide_row = 5
+    elif uf3
+        guide_row = 11
+    else
+        guide_row = 18
+;
+
+: init_blank_data() (( -- ))
+    widths = []: [any]
+    glyph_data = []: [any]
+
+    let w_lim = glyph_width_limit()
+    for (let ?i = 0; i < GLYPH_COUNT; i += 1)
+        let ?w = 8
+        if i < 32
+            w = 0
+        if w > w_lim
+            w = w_lim
+        stdr.push(widths, w)
+
+    let total = GLYPH_COUNT * glyph_stride()
+    for (let ?j = 0; j < total; j += 1)
+        stdr.push(glyph_data, 0)
+
+    selected = 97
+    if selected >= GLYPH_COUNT
+        selected = 0
+    set_guide_default()
+;
+
+: new_project() (( -- ))
+    init_blank_data()
+    file_path = default_path()
+    changed = false
+    dirty = true
+    status = "New project"
+;
+
+: set_format(use_uf3 = bool) (( -- ))
+    uf1 = false
+    uf3 = use_uf3
+    new_project()
+;
+
+: init() (( -- ))
+    uf1 = false
+    uf3 = false
+    pangram = DEFAULT_PANGRAM
+    new_project()
+;
+
+: set_selected(idx = num) (( -- ))
+    selected = clamp(stdr.floor(idx), 0, GLYPH_COUNT - 1)
+    dirty = true
+;
+
+: move_selected(dx = num, dy = num) (( -- ))
+    let col = selected % COLLECTION_COLS
+    let row = stdr.floor(selected / COLLECTION_COLS)
+    col = clamp(col + dx, 0, COLLECTION_COLS - 1)
+    row = clamp(row + dy, 0, COLLECTION_ROWS - 1)
+    set_selected(row * COLLECTION_COLS + col)
+;
+
+: selected_width() (( num ))
+    let w = stdr.floor(stdr.num(widths[selected] ?? 8))
+    <- clamp(w, 0, glyph_width_limit())
+;
+
+: set_selected_width(w = num) (( -- ))
+    widths[selected] = clamp(stdr.floor(w), 0, glyph_width_limit())
+    mark_changed()
+;
+
+: adjust_width(delta = num) (( -- ))
+    set_selected_width(selected_width() + delta)
+;
+
+: set_guide(v = num) (( -- ))
+    guide_row = clamp(stdr.floor(v), 0, glyph_height() - 1)
+    dirty = true
+;
+
+: adjust_guide(delta = num) (( -- ))
+    set_guide(guide_row + delta)
+;
+
+: glyph_base(glyph = num) (( num ))
+    <- clamp(stdr.floor(glyph), 0, GLYPH_COUNT - 1) * glyph_stride()
+;
+
+: pixel_addr(glyph = num, x = num, y = num) (( num ))
+    let w = glyph_width_limit()
+    let h = glyph_height()
+    if x < 0 || y < 0 || x >= w || y >= h
+        <- -1
+    let byte_col = stdr.floor(x / 8)
+    -- Turye storage order is column-major by 8px lanes:
+    -- UF1: [0], UF2: [0,2,1,3], UF3: [0,3,6,1,4,7,2,5,8]
+    <- glyph_base(glyph) + byte_col * h + y
+;
+
+: pixel_mask(x = num) (( num ))
+    <- POW2[7 - (x % 8)]
+;
+
+: get_pixel(glyph = num, x = num, y = num) (( bool ))
+    let addr = pixel_addr(glyph, x, y)
+    if addr < 0
+        <- false
+    let byte = stdr.floor(stdr.num(glyph_data[addr] ?? 0))
+    let mask = pixel_mask(x)
+    <- (stdr.floor(byte / mask) % 2) == 1
+;
+
+: set_pixel_raw(glyph = num, x = num, y = num, on = bool) (( -- ))
+    let addr = pixel_addr(glyph, x, y)
+    if addr < 0
+        <-
+    let ?byte = stdr.floor(stdr.num(glyph_data[addr] ?? 0))
+    let mask = pixel_mask(x)
+    let bit = stdr.floor(byte / mask) % 2
+    if on && bit == 0
+        glyph_data[addr] = byte + mask
+    elif !on && bit == 1
+        glyph_data[addr] = byte - mask
+;
+
+: set_pixel(glyph = num, x = num, y = num, on = bool) (( -- ))
+    let before = get_pixel(glyph, x, y)
+    if before == on
+        <-
+    set_pixel_raw(glyph, x, y, on)
+    mark_changed()
+;
+
+: set_selected_pixel(x = num, y = num, on = bool) (( -- ))
+    set_pixel(selected, x, y, on)
+;
+
+: clear_selected() (( -- ))
+    let base = glyph_base(selected)
+    let stride = glyph_stride()
+    for (let ?i = 0; i < stride; i += 1)
+        glyph_data[base + i] = 0
+    mark_changed()
+;
+
+: shift_selected_left() (( -- ))
+    let w = glyph_width_limit()
+    let h = glyph_height()
+    for (let ?y = 0; y < h; y += 1)
+        for (let ?x = 0; x < w - 1; x += 1)
+            set_pixel_raw(selected, x, y, get_pixel(selected, x + 1, y))
+        set_pixel_raw(selected, w - 1, y, false)
+    mark_changed()
+;
+
+: shift_selected_right() (( -- ))
+    let w = glyph_width_limit()
+    let h = glyph_height()
+    for (let ?y = 0; y < h; y += 1)
+        let ?x = w - 1
+        for (; x > 0; x -= 1)
+            set_pixel_raw(selected, x, y, get_pixel(selected, x - 1, y))
+        set_pixel_raw(selected, 0, y, false)
+    mark_changed()
+;
+
+: shift_selected_up() (( -- ))
+    let w = glyph_width_limit()
+    let h = glyph_height()
+    for (let ?y = 0; y < h - 1; y += 1)
+        for (let ?x = 0; x < w; x += 1)
+            set_pixel_raw(selected, x, y, get_pixel(selected, x, y + 1))
+    for (let ?cx = 0; cx < w; cx += 1)
+        set_pixel_raw(selected, cx, h - 1, false)
+    mark_changed()
+;
+
+: shift_selected_down() (( -- ))
+    let w = glyph_width_limit()
+    let h = glyph_height()
+    let ?y = h - 1
+    for (; y > 0; y -= 1)
+        for (let ?x = 0; x < w; x += 1)
+            set_pixel_raw(selected, x, y, get_pixel(selected, x, y - 1))
+    for (let ?cx = 0; cx < w; cx += 1)
+        set_pixel_raw(selected, cx, 0, false)
+    mark_changed()
+;
+
+: copy_selected() (( -- ))
+    clip_data = []: [any]
+    let base = glyph_base(selected)
+    let stride = glyph_stride()
+    for (let ?i = 0; i < stride; i += 1)
+        stdr.push(clip_data, stdr.floor(stdr.num(glyph_data[base + i] ?? 0)))
+    clip_width = selected_width()
+    clip_uf1 = uf1
+    clip_uf3 = uf3
+    has_clip = true
+    set_status("Copied glyph " + str(selected))
+;
+
+: paste_selected() (( -- ))
+    if !has_clip
+        set_status("Clipboard is empty")
+        <-
+    if clip_uf1 != uf1 || clip_uf3 != uf3
+        set_status("Clipboard format mismatch")
+        <-
+    let base = glyph_base(selected)
+    let stride = glyph_stride()
+    let n = stdr.len(clip_data)
+    if n < stride
+        stride = n
+    for (let ?i = 0; i < stride; i += 1)
+        glyph_data[base + i] = stdr.floor(stdr.num(clip_data[i] ?? 0))
+    widths[selected] = clamp(clip_width, 0, glyph_width_limit())
+    mark_changed()
+    set_status("Pasted glyph " + str(selected))
+;
+
+: cut_selected() (( -- ))
+    copy_selected()
+    clear_selected()
+    set_status("Cut glyph " + str(selected))
+;
+
+: serialize_bytes() (( [any] ))
+    let ?out = []: [any]
+    let w_lim = glyph_width_limit()
+    for (let ?i = 0; i < GLYPH_COUNT; i += 1)
+        let ?w = stdr.floor(stdr.num(widths[i] ?? 0))
+        if w < 0
+            w = 0
+        if w > w_lim
+            w = w_lim
+        stdr.push(out, w)
+
+    let total = GLYPH_COUNT * glyph_stride()
+    for (let ?j = 0; j < total; j += 1)
+        let ?b = stdr.floor(stdr.num(glyph_data[j] ?? 0))
+        if b < 0
+            b = 0
+        if b > 255
+            b = b % 256
+        stdr.push(out, b)
+
+    <- out
+;
+
+: load_from_bytes(bytes = [any], path = string) (( bool ))
+    let n = stdr.len(bytes)
+    if n == UF1_TOTAL
+        uf1 = true
+        uf3 = false
+    elif n == UF3_TOTAL
+        uf1 = false
+        uf3 = true
+    elif n == UF2_TOTAL
+        uf1 = false
+        uf3 = false
+    else
+        set_status("Unsupported size: " + str(n))
+        <- false
+
+    widths = []: [any]
+    for (let ?i = 0; i < GLYPH_COUNT; i += 1)
+        let ?w = stdr.floor(stdr.num(bytes[i] ?? 0))
+        if w < 0
+            w = 0
+        stdr.push(widths, w)
+
+    glyph_data = []: [any]
+    let stride = glyph_stride()
+    let total = GLYPH_COUNT * stride
+    for (let ?j = 0; j < total; j += 1)
+        stdr.push(glyph_data, stdr.floor(stdr.num(bytes[GLYPH_COUNT + j] ?? 0)))
+
+    file_path = path
+    changed = false
+    dirty = true
+    selected = 97
+    if selected >= GLYPH_COUNT
+        selected = 0
+    set_guide_default()
+    status = "Opened " + stdr.basename(path)
+    <- true
+;
+
+: append_pangram(txt = string) (( -- ))
+    let extra = stdr.len(txt)
+    if extra == 0
+        <-
+    let max_total = 96
+    let cur = stdr.len(pangram)
+    if cur >= max_total
+        <-
+    let free = max_total - cur
+    let ?chunk = txt
+    if extra > free
+        chunk = stdr.slice(txt, 0, free)
+    pangram = pangram + chunk
+    dirty = true
+;
+
+: backspace_pangram() (( -- ))
+    let n = stdr.len(pangram)
+    if n <= 0
+        <-
+    pangram = stdr.slice(pangram, 0, n - 1)
+    dirty = true
+;
+
+: reset_pangram() (( -- ))
+    pangram = DEFAULT_PANGRAM
+    dirty = true
+;

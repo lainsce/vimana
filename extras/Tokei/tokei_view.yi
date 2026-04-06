@@ -1,0 +1,122 @@
+cask tokei_view
+
+bring stdr
+bring vimana
+bring tokei_model
+
+-- 60 angular offsets from Uxn/clock.tal @table, centered around (0,0).
+def TABLE_X = [0, 13, 26, 39, 52, 64, 75, 85, 95, 103, 110, 116, 121, 125, 127, 127, 127, 125, 121, 116, 110, 103, 95, 85, 75, 64, 52, 39, 26, 13, 0, -14, -27, -40, -53, -64, -76, -86, -96, -104, -111, -117, -122, -126, -128, -128, -128, -126, -122, -117, -111, -104, -96, -86, -76, -65, -53, -40, -27, -14]
+def TABLE_Y = [-128, -128, -126, -122, -117, -111, -104, -96, -86, -76, -64, -53, -40, -27, -14, 0, 13, 26, 39, 52, 64, 75, 85, 95, 103, 110, 116, 121, 125, 127, 127, 127, 125, 121, 116, 110, 103, 95, 85, 75, 64, 52, 39, 26, 13, 0, -14, -27, -40, -53, -65, -76, -86, -96, -104, -111, -117, -122, -126, -128]
+
+-- These match clock.tal circle divisors (#0018, #001c, #0020, #0022, #002a, #00a0).
+def WATCH_DOT_R = 24
+def WATCH_MARK_OUTER_R = 28
+def SECOND_R = 32
+def MINUTE_R = 34
+def HOUR_R = 42
+def SECOND_TAIL_R = 160
+
+: put_px(scr = vimana.screen, x = num, y = num, c = num) (( -- ))
+    if x < 0 || y < 0 || x >= tokei_model.WIN_W || y >= tokei_model.WIN_H
+        <-
+    scr.set_x(x)
+    scr.set_y(y)
+    scr.pixel(c)
+;
+
+: abs_num(v = num) (( num ))
+    if v < 0
+        <- -v
+    <- v
+;
+
+: endpoint(cx = num, cy = num, radius_div = num, idx = num) (( [any] ))
+    let ?i = stdr.floor(idx)
+    i = i % 60
+    if i < 0
+        i += 60
+
+    let ox = TABLE_X[i] ?? 0
+    let oy = TABLE_Y[i] ?? 0
+
+    -- Tal's circle() uses ((table_component - 128) * 16) / divisor.
+    let ex = cx + stdr.floor((ox * 16) / radius_div)
+    let ey = cy + stdr.floor((oy * 16) / radius_div)
+    <- [ex, ey]
+;
+
+: draw_line(scr = vimana.screen, x0 = num, y0 = num, x1 = num, y1 = num, color = num) (( -- ))
+    let ?cx = x0
+    let ?cy = y0
+    let dx = abs_num(x1 - x0)
+    let sx = if x0 < x1 { 1 } else { -1 }
+    let dy = -abs_num(y1 - y0)
+    let sy = if y0 < y1 { 1 } else { -1 }
+    let ?err = dx + dy
+
+    for (let ?guard = 0; guard < 800; guard += 1)
+        put_px(scr, cx, cy, color)
+        if cx == x1 && cy == y1
+            break
+
+        let e2 = err * 2
+        if e2 >= dy
+            err += dy
+            cx += sx
+        if e2 <= dx
+            err += dx
+            cy += sy
+;
+
+: draw_watchface(scr = vimana.screen) (( -- ))
+    let cx = tokei_model.CENTER_X
+    let cy = tokei_model.CENTER_Y
+
+    for (let ?i = 0; i < 60; i += 1)
+        let dot = endpoint(cx, cy, WATCH_DOT_R, i)
+        put_px(scr, dot[0], dot[1], 1)
+
+        if i % 5 == 0
+            let out = endpoint(cx, cy, WATCH_MARK_OUTER_R, i)
+            draw_line(scr, dot[0], dot[1], out[0], out[1], 1)
+;
+
+: draw_center(scr = vimana.screen) (( -- ))
+    let cx = tokei_model.CENTER_X
+    let cy = tokei_model.CENTER_Y
+
+    put_px(scr, cx - 1, cy, 1)
+    put_px(scr, cx + 1, cy, 1)
+    put_px(scr, cx, cy - 1, 1)
+    put_px(scr, cx, cy + 1, 1)
+    put_px(scr, cx, cy, 1)
+;
+
+: draw_needles(scr = vimana.screen) (( -- ))
+    let cx = tokei_model.CENTER_X
+    let cy = tokei_model.CENTER_Y
+
+    let hp = endpoint(cx, cy, HOUR_R, tokei_model.hour_idx())
+    let mp = endpoint(cx, cy, MINUTE_R, tokei_model.minute_idx())
+    let sp = endpoint(cx, cy, SECOND_R, tokei_model.second_idx())
+    let zp = endpoint(cx, cy, SECOND_TAIL_R, tokei_model.second_tail_idx())
+
+    draw_line(scr, cx, cy, mp[0], mp[1], 1)
+    draw_line(scr, cx, cy, hp[0], hp[1], 1)
+    draw_line(scr, zp[0], zp[1], sp[0], sp[1], 3)
+
+    draw_center(scr)
+;
+
+: draw_labels(scr = vimana.screen) (( -- ))
+    scr.put_text(tokei_model.DATE_X, tokei_model.DATE_Y, tokei_model.date_text(), 1, 0)
+    scr.put_text(tokei_model.TIME_X, tokei_model.TIME_Y, tokei_model.time_text(), 1, 0)
+;
+
+:: draw(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+    draw_watchface(scr)
+    draw_needles(scr)
+    draw_labels(scr)
+    scr.present()
+;

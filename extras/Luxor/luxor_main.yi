@@ -1,0 +1,241 @@
+cask main
+
+bring stdr
+bring vimana
+bring luxor_model
+bring luxor_view
+bring luxor_file
+bring luxor_font
+
+def ?painting = false
+def ?paint_on = true
+def ?dragging_width = false
+def ?width_anchor_x = 0
+def ?screen_h = 0
+
+: in_rect(mx = num, my = num, x = num, y = num, w = num, h = num) (( bool ))
+    <- mx >= x && mx < x + w && my >= y && my < y + h
+;
+
+: in_editor(mx = num, my = num) (( bool ))
+    let g = luxor_model.editor_grid_px()
+    <- in_rect(mx, my, luxor_model.EDITOR_X, luxor_model.EDITOR_Y, g, g)
+;
+
+: on_collection_click(mx = num, my = num) (( -- ))
+    let top = luxor_model.collection_anchor()
+    let h = luxor_model.collection_h()
+    let row_h = luxor_model.collection_row_h()
+    if !in_rect(mx, my,
+        luxor_model.COLLECTION_X,
+        top,
+        luxor_model.COLLECTION_W,
+        h)
+        <-
+
+    let col = stdr.floor((mx - luxor_model.COLLECTION_X) / luxor_model.COLLECTION_COL_W)
+    let row = stdr.floor((my - top) / row_h)
+    luxor_model.set_selected(row * luxor_model.COLLECTION_COLS + col)
+;
+
+: paint_at_pointer(dev = vimana.device) (( bool ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+    if !in_editor(mx, my)
+        <- false
+
+    let px = stdr.floor((mx - luxor_model.EDITOR_X) / luxor_model.EDITOR_SCALE)
+    let py = stdr.floor((my - luxor_model.EDITOR_Y) / luxor_model.EDITOR_SCALE)
+    let h = luxor_model.glyph_height()
+
+    if px < 0 || py < 0 || px >= h || py >= h
+        <- false
+
+    luxor_model.set_selected_pixel(px, py, paint_on)
+    <- true
+;
+
+: on_mouse(dev = vimana.device) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+    let collection_h = luxor_model.collection_h()
+
+    if dev.mouse_pressed(vimana.mouse_left)
+        if in_rect(mx, my,
+            luxor_model.COLLECTION_X,
+            luxor_model.collection_anchor(),
+            luxor_model.COLLECTION_W,
+            collection_h)
+            on_collection_click(mx, my)
+            <-
+
+        if in_editor(mx, my)
+            let rel_x = mx - luxor_model.EDITOR_X
+            let width_px = luxor_model.selected_width() * luxor_model.EDITOR_SCALE
+            if rel_x > width_px
+                dragging_width = true
+                width_anchor_x = mx
+            else
+                painting = true
+                paint_on = true
+                paint_at_pointer(dev)
+            <-
+
+    if dev.mouse_pressed(vimana.mouse_right)
+        if in_editor(mx, my)
+            painting = true
+            paint_on = false
+            paint_at_pointer(dev)
+            <-
+
+    if dragging_width
+        if !dev.mouse_down(vimana.mouse_left)
+            dragging_width = false
+        else
+            for (;mx <= width_anchor_x - luxor_model.EDITOR_SCALE;)
+                width_anchor_x -= luxor_model.EDITOR_SCALE
+                luxor_model.adjust_width(-1)
+            for (;mx >= width_anchor_x + luxor_model.EDITOR_SCALE;)
+                width_anchor_x += luxor_model.EDITOR_SCALE
+                luxor_model.adjust_width(1)
+
+    if painting
+        if dev.mouse_down(vimana.mouse_left) || dev.mouse_down(vimana.mouse_right)
+            paint_at_pointer(dev)
+        else
+            painting = false
+;
+
+: on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let cmd = dev.key_down(luxor_model.KEY_LGUI) || dev.key_down(luxor_model.KEY_RGUI)
+    let shift = dev.key_down(luxor_model.KEY_LSHIFT) || dev.key_down(luxor_model.KEY_RSHIFT)
+    let alt = dev.key_down(luxor_model.KEY_LALT) || dev.key_down(luxor_model.KEY_RALT)
+
+    if cmd
+        if dev.key_pressed(luxor_model.KEY_N)
+            luxor_file.new_project(scr)
+            <-
+        if dev.key_pressed(luxor_model.KEY_O)
+            luxor_file.open_project(fsys, scr)
+            <-
+        if dev.key_pressed(luxor_model.KEY_S)
+            if shift
+                luxor_file.save_project_as(fsys, scr)
+            else
+                luxor_file.save_project(fsys, scr)
+            <-
+        if dev.key_pressed(luxor_model.KEY_Q)
+            sys.quit()
+            <-
+        if dev.key_pressed(luxor_model.KEY_C)
+            luxor_model.copy_selected()
+            <-
+        if dev.key_pressed(luxor_model.KEY_V)
+            luxor_model.paste_selected()
+            <-
+        if dev.key_pressed(luxor_model.KEY_X)
+            luxor_model.cut_selected()
+            <-
+        <-
+
+    if dev.key_pressed(luxor_model.KEY_ESCAPE)
+        sys.quit()
+        <-
+
+    if dev.key_pressed(luxor_model.KEY_BACKSPACE)
+        luxor_model.backspace_pangram()
+        <-
+
+    if dev.key_pressed(luxor_model.KEY_DELETE)
+        luxor_model.clear_selected()
+        <-
+
+    if shift
+        if dev.key_pressed(luxor_model.KEY_UP)
+            luxor_model.shift_selected_up()
+            <-
+        if dev.key_pressed(luxor_model.KEY_DOWN)
+            luxor_model.shift_selected_down()
+            <-
+        if dev.key_pressed(luxor_model.KEY_LEFT)
+            luxor_model.shift_selected_left()
+            <-
+        if dev.key_pressed(luxor_model.KEY_RIGHT)
+            luxor_model.shift_selected_right()
+            <-
+
+    if alt
+        if dev.key_pressed(luxor_model.KEY_UP)
+            luxor_model.adjust_guide(-1)
+            <-
+        if dev.key_pressed(luxor_model.KEY_DOWN)
+            luxor_model.adjust_guide(1)
+            <-
+        if dev.key_pressed(luxor_model.KEY_LEFT)
+            luxor_model.adjust_width(-1)
+            <-
+        if dev.key_pressed(luxor_model.KEY_RIGHT)
+            luxor_model.adjust_width(1)
+            <-
+
+    if dev.key_pressed(luxor_model.KEY_UP)
+        luxor_model.move_selected(0, -1)
+        <-
+    if dev.key_pressed(luxor_model.KEY_DOWN)
+        luxor_model.move_selected(0, 1)
+        <-
+    if dev.key_pressed(luxor_model.KEY_LEFT)
+        luxor_model.move_selected(-1, 0)
+        <-
+    if dev.key_pressed(luxor_model.KEY_RIGHT)
+        luxor_model.move_selected(1, 0)
+;
+
+: on_text(dev = vimana.device) (( -- ))
+    let txt = dev.text_input()
+    if stdr.len(txt) > 0
+        luxor_model.append_pangram(txt)
+;
+
+: on_scroll(dev = vimana.device) (( -- ))
+    let dy = dev.wheel_y()
+    if dy != 0
+        luxor_model.adjust_guide(0 - dy)
+;
+
+: sync_screen_size(scr = vimana.screen) (( -- ))
+    let wanted_h = luxor_model.desired_screen_h()
+    if wanted_h != screen_h
+        screen_h = wanted_h
+        scr.resize(luxor_model.SCR_W, screen_h)
+        luxor_model.set_dirty()
+;
+
+-> ()
+    luxor_model.init()
+
+    let sys = vimana.system()
+    screen_h = luxor_model.desired_screen_h()
+    let scr = vimana.screen("Luxor", luxor_model.SCR_W, screen_h, 1)
+    let dev = sys.device()
+    let fsys = sys.file()
+
+    luxor_font.install(scr)
+    luxor_file.update_title(scr)
+
+    sys.run(scr, () => {
+        dev.poll()
+
+        if scr.titlebar_button_pressed()
+            sys.quit()
+
+        on_mouse(dev)
+        on_key(dev, sys, fsys, scr)
+        on_text(dev)
+        on_scroll(dev)
+        sync_screen_size(scr)
+
+        luxor_file.update_title(scr)
+        luxor_view.draw_all(scr)
+    })
+;

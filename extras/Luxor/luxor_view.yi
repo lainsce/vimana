@@ -1,0 +1,280 @@
+cask luxor_view
+
+bring stdr
+bring vimana
+bring luxor_model
+
+: put_px(scr = vimana.screen, x = num, y = num, c = num) (( -- ))
+    scr.set_x(x)
+    scr.set_y(y)
+    scr.pixel(c)
+;
+
+: hline(scr = vimana.screen, x = num, y = num, w = num, c = num) (( -- ))
+    for (let ?i = 0; i < w; i += 1)
+        put_px(scr, x + i, y, c)
+;
+
+: vline(scr = vimana.screen, x = num, y = num, h = num, c = num) (( -- ))
+    for (let ?i = 0; i < h; i += 1)
+        put_px(scr, x, y + i, c)
+;
+
+: fill_rect(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    for (let ?ry = 0; ry < h; ry += 1)
+        hline(scr, x, y + ry, w, c)
+;
+
+: draw_box(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    hline(scr, x, y, w, c)
+    hline(scr, x, y + h - 1, w, c)
+    vline(scr, x, y, h, c)
+    vline(scr, x + w - 1, y, h, c)
+;
+
+: dotted_hline(scr = vimana.screen, x = num, y = num, w = num, c = num) (( -- ))
+    for (let ?i = 0; i < w; i += 2)
+        put_px(scr, x + i, y, c)
+;
+
+: dotted_vline(scr = vimana.screen, x = num, y = num, h = num, c = num) (( -- ))
+    for (let ?i = 0; i < h; i += 2)
+        put_px(scr, x, y + i, c)
+;
+
+: dashed_hline(scr = vimana.screen, x = num, y = num, w = num, c = num) (( -- ))
+    for (let ?i = 0; i < w; i += 1)
+        if (i % 4) < 2
+            put_px(scr, x + i, y, c)
+;
+
+: dashed_vline(scr = vimana.screen, x = num, y = num, h = num, c = num) (( -- ))
+    for (let ?i = 0; i < h; i += 1)
+        if (i % 4) < 2
+            put_px(scr, x, y + i, c)
+;
+
+: draw_dot_cell(scr = vimana.screen, x = num, y = num, size = num, c = num) (( -- ))
+    let ?inset = 0
+    if size >= 8
+        inset = 1
+    let ?span = size - inset * 2
+    if span < 1
+        span = 1
+    fill_rect(scr, x + inset, y + inset, span, span, c)
+;
+
+: draw_thumb(scr = vimana.screen, glyph = num, ox = num, oy = num, fg = num) (( -- ))
+    let w = glyph_width_for_idx(glyph)
+    let h = luxor_model.glyph_height()
+
+    for (let ?py = 0; py < h; py += 1)
+        for (let ?px = 0; px < w; px += 1)
+            if luxor_model.get_pixel(glyph, px, py)
+                put_px(scr, ox + px, oy + py, fg)
+;
+
+: draw_header(scr = vimana.screen) (( -- ))
+    fill_rect(scr, 0, 0, luxor_model.SCR_W, luxor_model.HEADER_H, luxor_model.C_BG)
+    hline(scr, 0, 0, luxor_model.SCR_W, luxor_model.C_DIM)
+    hline(scr, 0, luxor_model.HEADER_H - 1, luxor_model.SCR_W, luxor_model.C_DIM)
+;
+
+: glyph_index(code = num) (( num ))
+    if code < 0 || code >= luxor_model.GLYPH_COUNT
+        <- 63
+    <- code
+;
+
+: glyph_width_for_idx(idx = num) (( num ))
+    let ?w = stdr.floor(stdr.num(luxor_model.widths[idx] ?? 8))
+    if w < 1
+        w = 1
+    if w > luxor_model.glyph_width_limit()
+        w = luxor_model.glyph_width_limit()
+    <- w
+;
+
+: glyph_has_ink(idx = num) (( bool ))
+    let w = glyph_width_for_idx(idx)
+    let h = luxor_model.glyph_height()
+    for (let ?py = 0; py < h; py += 1)
+        for (let ?px = 0; px < w; px += 1)
+            if luxor_model.get_pixel(idx, px, py)
+                <- true
+    <- false
+;
+
+: sample_has_ink(text = string) (( bool ))
+    let n = stdr.len(text)
+    for (let ?i = 0; i < n; i += 1)
+        let ch = stdr.char_at(text, i)
+        let code = stdr.char_code(ch)
+        let idx = glyph_index(code)
+        if glyph_has_ink(idx)
+            <- true
+    <- false
+;
+
+: draw_glyph_scaled(scr = vimana.screen, code = num, x = num, y = num, scale = num, fg = num) (( num ))
+    let idx = glyph_index(code)
+    let w = glyph_width_for_idx(idx)
+    let h = luxor_model.glyph_height()
+
+    for (let ?py = 0; py < h; py += 1)
+        for (let ?px = 0; px < w; px += 1)
+            if luxor_model.get_pixel(idx, px, py)
+                draw_dot_cell(scr, x + px * scale, y + py * scale, scale, fg)
+
+    <- w * scale
+;
+
+: draw_top_sample(scr = vimana.screen) (( -- ))
+    let text = luxor_model.pangram
+    if !sample_has_ink(text)
+        scr.put_text(luxor_model.SAMPLE_X, luxor_model.SAMPLE_Y, text, luxor_model.C_FG, luxor_model.C_BG)
+        <-
+    let scale = luxor_model.sample_scale()
+    let ?x = luxor_model.SAMPLE_X
+    let y = luxor_model.SAMPLE_Y
+    let n = stdr.len(text)
+    for (let ?i = 0; i < n; i += 1)
+        if x >= luxor_model.SCR_W - scale
+            <-
+        let ch = stdr.char_at(text, i)
+        let code = stdr.char_code(ch)
+        x += draw_glyph_scaled(scr, code, x, y, scale, luxor_model.C_FG) + scale
+;
+
+: draw_editor(scr = vimana.screen) (( -- ))
+    let gx = luxor_model.EDITOR_X
+    let gy = luxor_model.EDITOR_Y
+    let scale = luxor_model.EDITOR_SCALE
+    let h = luxor_model.glyph_height()
+    let ?w = luxor_model.selected_width()
+    if w < 1
+        w = 1
+
+    -- Showcase run: selected glyph plus N next glyphs, where N = selected width.
+    let ?show_n = w
+    let ?run_x = gx
+    for (let ?i = 0; i <= show_n; i += 1)
+        let gi = (luxor_model.selected + i) % luxor_model.GLYPH_COUNT
+        run_x += draw_glyph_scaled(scr, gi, run_x, gy, scale, luxor_model.C_FG)
+
+    let width_x = gx + w * scale
+    dashed_vline(scr, width_x, gy, h * scale, luxor_model.C_ACCENT)
+
+    let guide_y = gy + 7 + luxor_model.guide_row * scale
+    if guide_y >= gy && guide_y <= gy + h * scale
+        dotted_hline(scr, gx, guide_y, luxor_model.SCR_W - gx - 8, luxor_model.C_ACCENT)
+;
+
+: draw_collection(scr = vimana.screen) (( -- ))
+    let left = luxor_model.COLLECTION_X
+    let top = luxor_model.collection_anchor()
+    let width = luxor_model.COLLECTION_W
+    let height = luxor_model.collection_h()
+    let row_h = luxor_model.collection_row_h()
+    let cell_h = row_h - 1
+    let h = luxor_model.glyph_height()
+
+    for (let ?idx = 0; idx < luxor_model.GLYPH_COUNT; idx += 1)
+        let col = idx % luxor_model.COLLECTION_COLS
+        let row = stdr.floor(idx / luxor_model.COLLECTION_COLS)
+        let cx = left + col * luxor_model.COLLECTION_COL_W
+        let cy = luxor_model.collection_y_for_row(row)
+        let oy = cy + stdr.floor((cell_h - h) / 2)
+
+        if idx == luxor_model.selected
+            fill_rect(scr, cx + 1, cy, luxor_model.COLLECTION_COL_W - 1, cell_h, luxor_model.C_ACCENT)
+
+        let fg = luxor_model.C_FG
+        if idx == luxor_model.selected
+            fg = luxor_model.C_BG
+
+        if glyph_has_ink(idx)
+            draw_thumb(scr, idx, cx + 4, oy, fg)
+        elif idx >= 32 && idx != 127
+            let ch = stdr.char_from_code(idx)
+            let bg = luxor_model.C_BG
+            if idx == luxor_model.selected
+                bg = luxor_model.C_ACCENT
+            scr.put_text(cx + 4, cy, ch, fg, bg)
+
+    -- Draw gridlines after content so fallback text backgrounds never obscure the grid.
+    draw_box(scr, left, top, width + 1, height + 1, luxor_model.C_DIM)
+
+    for (let ?r = 1; r < luxor_model.COLLECTION_ROWS; r += 1)
+        let y = top + r * row_h
+        if r == 8
+            dashed_hline(scr, left, y, width + 1, luxor_model.C_DIM)
+        else
+            dotted_hline(scr, left, y, width + 1, luxor_model.C_DIM)
+
+    for (let ?c = 1; c < luxor_model.COLLECTION_COLS; c += 1)
+        let x = left + c * luxor_model.COLLECTION_COL_W
+        dotted_vline(scr, x, top, height + 1, luxor_model.C_DIM)
+;
+
+: draw_glyph_1x(scr = vimana.screen, code = num, x = num, y = num, fg = num) (( num ))
+    let idx = glyph_index(code)
+    let w = glyph_width_for_idx(idx)
+
+    let h = luxor_model.glyph_height()
+    for (let ?py = 0; py < h; py += 1)
+        for (let ?px = 0; px < w; px += 1)
+            if luxor_model.get_pixel(idx, px, py)
+                put_px(scr, x + px, y + py, fg)
+
+    <- w
+;
+
+: pangram_width(text = string) (( num ))
+    let ?sum = 0
+    let n = stdr.len(text)
+    for (let ?i = 0; i < n; i += 1)
+        let ch = stdr.char_at(text, i)
+        let code = stdr.char_code(ch)
+        let idx = glyph_index(code)
+        let w = glyph_width_for_idx(idx)
+        sum += w + 1
+    <- sum
+;
+
+: draw_pangram(scr = vimana.screen) (( -- ))
+    let py = luxor_model.preview_y()
+    fill_rect(scr, 0, py, luxor_model.SCR_W, luxor_model.PREVIEW_H, luxor_model.C_BG)
+
+    let text = luxor_model.pangram
+    if !sample_has_ink(text)
+        let tx = stdr.floor((luxor_model.SCR_W - stdr.len(text) * 8) / 2)
+        scr.put_text(tx, py + 4, text, luxor_model.C_FG, luxor_model.C_BG)
+        <-
+    let total = pangram_width(text)
+    let ?x = stdr.floor((luxor_model.SCR_W - total) / 2)
+    if x < 8
+        x = 8
+
+    let y = py + stdr.floor((luxor_model.PREVIEW_H - luxor_model.glyph_height()) / 2)
+    let n = stdr.len(text)
+    for (let ?i = 0; i < n; i += 1)
+        let ch = stdr.char_at(text, i)
+        let code = stdr.char_code(ch)
+        x += draw_glyph_1x(scr, code, x, y, luxor_model.C_FG) + 1
+;
+
+: draw_all(scr = vimana.screen) (( -- ))
+    if !luxor_model.dirty
+        <-
+
+    scr.clear(luxor_model.C_BG)
+
+    draw_header(scr)
+    draw_editor(scr)
+    draw_collection(scr)
+    draw_pangram(scr)
+
+    scr.present()
+    luxor_model.clear_dirty()
+;

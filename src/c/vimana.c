@@ -1257,7 +1257,7 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
     SDL_RenderFillRect(rend, &ir);
   }
 
-  /* Title text: centered between close box and right button */
+  /* Title text: centered in the full titlebar width (with safety clamps for boxes). */
   const char *title = screen->titlebar_title ? screen->titlebar_title : screen->title;
   if (title && title[0]) {
     int len = (int)strlen(title);
@@ -1273,7 +1273,12 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
                         : win_w - 4;
     int gh = screen->font_height;
     int text_y = (screen->titlebar_bar_height - gh + 1) / 2;
-    int text_x = left_bound + (right_bound - left_bound - text_w) / 2;
+    int text_x = (win_w - text_w) / 2;
+    text_x -= 1; /* optical nudge toward the close button */
+    if (text_x < left_bound)
+      text_x = left_bound;
+    if (text_x + text_w > right_bound)
+      text_x = right_bound - text_w;
     if (text_x < left_bound)
       text_x = left_bound;
     /* Clear halo behind title text (4px padding) */

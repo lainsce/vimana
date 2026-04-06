@@ -1,0 +1,99 @@
+cask luxor_file
+
+bring stdr
+bring vimana
+bring luxor_model
+
+: update_title(scr = vimana.screen) (( -- ))
+    let ?name = stdr.basename(luxor_model.file_path)
+    if stdr.len(name) == 0
+        name = luxor_model.default_path()
+    let title = "./" + name
+
+    scr.set_titlebar_title(title)
+;
+
+: ensure_font_extension(path = string) (( string ))
+    let n = stdr.len(path)
+    let ?base = path
+    if n >= 4
+        let ext = stdr.substring_len(path, n - 4, 4)
+        if ext == ".uf1" || ext == ".uf2" || ext == ".uf3"
+            base = stdr.slice(path, 0, n - 4)
+    if luxor_model.uf1
+        <- base + ".uf1"
+    if luxor_model.uf3
+        <- base + ".uf3"
+    <- base + ".uf2"
+;
+
+: new_project(scr = vimana.screen) (( -- ))
+    luxor_model.new_project()
+    update_title(scr)
+;
+
+: new_project_uf2(scr = vimana.screen) (( -- ))
+    luxor_model.set_format(false)
+    luxor_model.set_status("New UF2 project")
+    update_title(scr)
+;
+
+: new_project_uf3(scr = vimana.screen) (( -- ))
+    luxor_model.set_format(true)
+    luxor_model.set_status("New UF3 project")
+    update_title(scr)
+;
+
+: open_project(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let picked = stdr.open_file_dialog("Open Font", "*.uf1;*.uf2;*.uf3")
+    if is_null(picked)
+        <-
+
+    let path = str(picked)
+    if stdr.len(path) == 0
+        <-
+
+    let bytes = fsys.read_bytes(path)
+    if stdr.len(bytes) == 0
+        luxor_model.set_status("Unable to read file")
+        <-
+
+    if !luxor_model.load_from_bytes(bytes, path)
+        <-
+
+    update_title(scr)
+;
+
+: save_project(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let p = luxor_model.file_path
+    if stdr.len(p) == 0
+        save_project_as(fsys, scr)
+        <-
+
+    if stdr.len(p) >= 8 && stdr.substring_len(p, 0, 8) == "untitled"
+        save_project_as(fsys, scr)
+        <-
+
+    fsys.write_bytes(p, luxor_model.serialize_bytes())
+    luxor_model.set_saved()
+    luxor_model.set_status("Saved " + stdr.basename(p))
+    update_title(scr)
+;
+
+: save_project_as(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let picked = stdr.save_file_dialog("Save Font", luxor_model.default_path(), "*.uf1;*.uf2;*.uf3")
+    if is_null(picked)
+        <-
+
+    let ?path = str(picked)
+    if stdr.len(path) == 0
+        <-
+
+    path = ensure_font_extension(path)
+    luxor_model.set_file_path(path)
+
+    fsys.write_bytes(path, luxor_model.serialize_bytes())
+    luxor_model.set_saved()
+    luxor_model.set_status("Saved " + stdr.basename(path))
+    update_title(scr)
+;

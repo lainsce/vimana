@@ -1,0 +1,144 @@
+cask tokei_model
+
+bring stdr
+bring vimana
+
+def WIN_W = 208
+def WIN_H = 288
+def CENTER_X = 104
+def CENTER_Y = 144
+
+def DATE_X = CENTER_X - 40
+def DATE_Y = CENTER_Y - 120
+def TIME_X = CENTER_X - 32
+def TIME_Y = CENTER_Y + 108
+
+def ?last_second = -1
+def ?last_day = -1
+def ?hour_v = 0
+def ?minute_v = 0
+def ?second_v = 0
+def ?weekday_v = 0
+def ?month_v = 1
+def ?day_v = 1
+def ?time_text_v = "00:00:00"
+def ?date_text_v = "Sun Jan 01"
+def ?dirty = true
+
+: pad2(v = num) (( string ))
+    if v < 10
+        <- "0" + str(v)
+    <- str(v)
+;
+
+: weekday_name(v = num) (( string ))
+    if v == 0 <- "Sun"
+    if v == 1 <- "Mon"
+    if v == 2 <- "Tue"
+    if v == 3 <- "Wed"
+    if v == 4 <- "Thu"
+    if v == 5 <- "Fri"
+    if v == 6 <- "Sat"
+    <- "???"
+;
+
+: month_name(v = num) (( string ))
+    if v == 1 <- "Jan"
+    if v == 2 <- "Feb"
+    if v == 3 <- "Mar"
+    if v == 4 <- "Apr"
+    if v == 5 <- "May"
+    if v == 6 <- "Jun"
+    if v == 7 <- "Jul"
+    if v == 8 <- "Aug"
+    if v == 9 <- "Sep"
+    if v == 10 <- "Oct"
+    if v == 11 <- "Nov"
+    if v == 12 <- "Dec"
+    <- "???"
+;
+
+: refresh_labels(dt = vimana.datetime) (( -- ))
+    hour_v = dt.hour()
+    minute_v = dt.minute()
+    second_v = dt.second()
+    weekday_v = dt.weekday()
+    month_v = dt.month()
+    day_v = dt.day()
+
+    time_text_v = pad2(hour_v) + ":" + pad2(minute_v) + ":" + pad2(second_v)
+    date_text_v = weekday_name(weekday_v) + " " + month_name(month_v) + " " + pad2(day_v)
+;
+
+:: load_palette(scr = vimana.screen) (( -- ))
+    -- Soft paper + ink + cool gray + red second hand.
+    scr.set_palette(0, "#29353f")
+    scr.set_palette(1, "#f2f4ee")
+    scr.set_palette(2, "#29353f")
+    scr.set_palette(3, "#c84e3a")
+;
+
+:: init(dt = vimana.datetime) (( -- ))
+    refresh_labels(dt)
+    last_second = second_v
+    last_day = day_v
+    dirty = true
+;
+
+:: step(dt = vimana.datetime) (( bool ))
+    let sec = dt.second()
+    let day = dt.day()
+    if sec != last_second || day != last_day
+        refresh_labels(dt)
+        last_second = sec
+        last_day = day
+        dirty = true
+
+    let ?out = dirty
+    dirty = false
+    <- out
+;
+
+:: time_text() (( string ))
+    <- time_text_v
+;
+
+:: date_text() (( string ))
+    <- date_text_v
+;
+
+:: hour_idx() (( num ))
+    let ?h12 = hour_v % 12
+    if h12 < 0
+        h12 += 12
+
+    let ?m_part = stdr.floor(minute_v / 12)
+    if m_part < 0
+        m_part = 0
+    if m_part > 4
+        m_part = 4
+
+    let out = h12 * 5 + m_part
+    <- out
+;
+
+:: minute_idx() (( num ))
+    let ?out = minute_v % 60
+    if out < 0
+        out += 60
+    <- out
+;
+
+:: second_idx() (( num ))
+    let ?out = second_v % 60
+    if out < 0
+        out += 60
+    <- out
+;
+
+:: second_tail_idx() (( num ))
+    let ?out = (second_v + 30) % 60
+    if out < 0
+        out += 60
+    <- out
+;
