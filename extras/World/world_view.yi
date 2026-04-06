@@ -49,6 +49,81 @@ bring world_assets
     <- stdr.slice(text, 0, max_chars - 1) + "~"
 ;
 
+: sha_contains(px = num, py = num, stem_w = num, gap_w = num, h = num, foot_h = num) (( bool ))
+    let w = stem_w * 3 + gap_w * 2
+    if px < 0 || py < 0 || px >= w || py >= h
+        <- false
+
+    let stem_h = h - foot_h
+    if py >= stem_h
+        <- true
+
+    if px < stem_w
+        <- true
+    if px >= stem_w + gap_w && px < stem_w * 2 + gap_w
+        <- true
+    if px >= stem_w * 2 + gap_w * 2 && px < stem_w * 3 + gap_w * 2
+        <- true
+    <- false
+;
+
+: draw_sha_symbol(scr = vimana.screen, x = num, y = num,
+    stem_w = num, gap_w = num, h = num, foot_h = num) (( -- ))
+
+    let w = stem_w * 3 + gap_w * 2
+    scr.set_auto(0)
+    for (let ?py = 0; py < h; py += 1)
+        for (let ?px = 0; px < w; px += 1)
+            if !sha_contains(px, py, stem_w, gap_w, h, foot_h)
+                continue
+
+            -- Directional shading:
+            -- highlight on edges facing top-right, shadow on opposite edges.
+            let ?c = world_model.C_CLR1
+            if !sha_contains(px + 1, py - 1, stem_w, gap_w, h, foot_h)
+                c = world_model.C_FG
+            elif !sha_contains(px - 1, py + 1, stem_w, gap_w, h, foot_h)
+                c = world_model.C_CLR2
+
+            scr.set_x(x + px)
+            scr.set_y(y + py)
+            scr.pixel(c)
+;
+
+: overlay_dots(scr = vimana.screen, x = num, y = num, w = num, h = num, spacing = num, c = num) (( -- ))
+    if spacing <= 0
+        <-
+    scr.set_auto(0)
+    for (let ?py = 0; py < h; py += spacing)
+        let odd_row = (stdr.floor(py / spacing) % 2) == 1
+        let row_off = 0
+        if odd_row
+            row_off = stdr.floor(spacing / 2)
+        for (let ?px = row_off; px < w; px += spacing)
+            scr.set_x(x + px)
+            scr.set_y(y + py)
+            scr.pixel(c)
+;
+
+: draw_home_emblem(scr = vimana.screen) (( -- ))
+    let tile_w = world_model.TILE_W
+    let tile_h = world_model.TILE_H
+
+    -- Keep the symbol locked to map-grid units.
+    let stem_w = 2 * tile_w
+    let gap_w = 1 * tile_w
+    let emblem_h = 8 * tile_h
+    let foot_h = 2 * tile_h
+    let emblem_w = stem_w * 3 + gap_w * 2
+    let ex = stdr.floor((world_model.WIN_W - emblem_w) / 2)
+    let ey = world_model.TOOLBAR_H + 2 * tile_h
+
+    draw_sha_symbol(scr, ex, ey, stem_w, gap_w, emblem_h, foot_h)
+
+    -- Keep the black micro-dither seen in the reference symbol.
+    overlay_dots(scr, ex, ey, emblem_w, emblem_h, stdr.floor(tile_w / 4), world_model.C_BG)
+;
+
 -- Map a world color index (0=BG, 1=FG, 2=CLR1, 3=CLR2) to palette slot
 : color_slot(color_idx = num) (( num ))
     if color_idx == 1
@@ -439,6 +514,8 @@ def PICKER_PAD = 1
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : draw_home(scr = vimana.screen) (( -- ))
+    draw_home_emblem(scr)
+
     let title = "World"
     let tx = (world_model.WIN_W - stdr.len(title) * 8) / 2
     scr.put_text(tx, 200, title, world_model.C_FG, world_model.C_BG)
