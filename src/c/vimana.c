@@ -17,51 +17,6 @@
 #include <objc/message.h>
 #endif
 
-#define VIMANA_TITLEBAR_HEIGHT 24
-#define VIMANA_TITLEBAR_BAR_HEIGHT 21
-#define VIMANA_TB_BOX_SIZE 13  /* System 7 close/button box size (pixels) */
-#define VIMANA_TB_BOX_Y    4   /* y offset of box within bar: (21-13)/2 */
-#define VIMANA_TB_CLOSE_X  4   /* close box left edge x */
-
-#define VIMANA_KEY_CAP 512
-#define VIMANA_MOUSE_CAP 8
-#define VIMANA_TILE_SIZE 8
-#define VIMANA_GLYPH_HEIGHT 16
-#define VIMANA_UF2_BYTES 32  /* per-glyph: 2 tiles × 16 bytes (2bpp planar) */
-#define VIMANA_FONT_ROW_BYTES 3   /* max 24px wide = 3 bytes per row */
-#define VIMANA_FONT_MAX_HEIGHT 24
-#define VIMANA_FONT_GLYPH_BYTES (VIMANA_FONT_MAX_HEIGHT * VIMANA_FONT_ROW_BYTES) /* 72 */
-#define VIMANA_TEXT_INPUT_CAP 256
-#define VIMANA_AUDIO_SAMPLE_RATE 44100
-#define VIMANA_AUDIO_CHANNELS 1
-#define VIMANA_SPRITE_1BPP_BYTES VIMANA_TILE_SIZE
-#define VIMANA_SPRITE_2BPP_BYTES (VIMANA_TILE_SIZE * 2)
-#define VIMANA_KEY_WORDS (VIMANA_KEY_CAP / 64)  /* 8 uint64_t = 512 bits */
-
-/* ── ROM layout ─────────────────────────────────────────────────────────
-   Fixed-address sections: Font → Sprite bank window → General GFX data.
-   Data written here is persistent (no eviction).                        */
-#define VIMANA_FONT_SIZE 0x10000  /* 64 KB font section (always allocated) */
-#define VIMANA_GFX_SIZE 0x60000   /* 384 KB general graphical data (lazy) */
-
-/* Sprite banks: 16 × 64 KB, bank-switched (NES CHR-ROM style). */
-#define VIMANA_SPRITE_BANK_COUNT 16
-#define VIMANA_SPRITE_BANK_SIZE 0x10000  /* 65 536 bytes per bank */
-
-/* Font section supports full Latin Extended (U+0000–U+024F = 592 glyphs).
-   Internal layout within the 64 KB font section:
-     0x0000  16 B      Header (magic, format, height, glyph_width, count)
-     0x0010  592 B     Width table  (1 byte per glyph)
-     0x0260  42624 B   1bpp bitmap  (592 × 72 bytes)
-     0xA8E0  18944 B   UF2 tileset  (592 × 32 bytes)
-     0xF860  ~1952 B   Reserved                                         */
-#define VIMANA_GLYPH_COUNT 592
-#define VIMANA_FONT_HDR_OFF 0x0000
-#define VIMANA_FONT_HDR_SIZE 16
-#define VIMANA_FONT_WIDTH_OFF 0x0010
-#define VIMANA_FONT_BMP_OFF 0x0260
-#define VIMANA_FONT_UF2_OFF 0xA8E0
-
 /* uxn2 blend look-up table: blend_lut[mode][layer(0=bg,1=fg)][color] */
 static const uint8_t blend_lut[16][2][4] = {
     {{0, 0, 1, 2}, {0, 0, 4, 8}},

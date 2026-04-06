@@ -1,0 +1,708 @@
+( minesweeper )
+
+|00 @System &vector $2 &wst $1 &rst $1 &eaddr $2 &ecode $1 &pad $1 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|80 @Controller &vector $2 &button $1 &key $1 &func $1
+|90 @Mouse &vector $2 &x $2 &y $2 &state $1 &pad $3 &scrollx $2 &scrolly $2
+|c0 @DateTime &year $2 &month $1 &day $1 &hour $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1
+|a0 @File &vector $2 &success $2 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+
+|0000
+
+	@game &started $1 &timer $2 &dead $1
+	@pointer &x $2 &y $2
+	@grid &x $2 &y $2 &x2 $2 &y2 $2
+
+( program )
+
+|0100 ( -> )
+
+	( theme )
+	#cf80 .System/r DEO2
+	#cf80 .System/g DEO2
+	#cf80 .System/b DEO2
+
+	( DOS resolution )
+	#00a0 .Screen/width DEO2
+	#00d0 .Screen/height DEO2
+
+	prng-init
+	load-theme
+
+	( place grid )
+	#0010 DUP2 .grid/x STZ2 #007f ADD2 .grid/x2 STZ2
+	#0040 DUP2 .grid/y STZ2 #007f ADD2 .grid/y2 STZ2
+
+	( draw frames )
+	#0008 DUP2 #1004 draw-frame
+	#0008 #0038 #1010 draw-frame
+
+	draw-grid
+	draw-progress
+	draw-status
+	draw-timer
+
+	( vectors )
+	;on-mouse .Mouse/vector DEO2
+	;on-frame .Screen/vector DEO2
+	;on-button .Controller/vector DEO2
+
+BRK
+
+@on-frame ( -> )
+
+	.game/started LDZ #00 NEQ [ JMP BRK ]
+
+	[ LIT &f $1 ] #3c NEQ ,&no-second JCN
+		#00 ,&f STR
+		.game/timer LDZ2k INC2 ROT STZ2
+		draw-timer
+		&no-second
+
+	,&f LDR INC ,&f STR
+
+BRK
+
+@on-button ( -> )
+
+	.game/dead LDZ #00 EQU ,&alive JCN
+		reset
+		&alive
+
+BRK
+
+@on-mouse ( -> )
+
+	( clear last cursor )
+	.pointer/x LDZ2 .Screen/x DEO2
+	.pointer/y LDZ2 .Screen/y DEO2
+	#40 .Screen/sprite DEO
+
+	;pointer-icn .Screen/addr DEO2
+
+	( draw new cursor )
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2
+	#43 .Mouse/state DEI #00 NEQ DUP ADD SUB .Screen/sprite DEO
+
+	.Mouse/state DEI #00 NEQ [ JMP BRK ]
+
+	.Mouse/x DEI2 .Mouse/y DEI2
+		OVR2 OVR2 .grid within-rect ;touch-grid JCN2
+	POP2 POP2
+
+	.game/dead LDZ #00 EQU ,&alive JCN
+		reset
+		&alive
+
+	#00 .Mouse/state DEO
+
+BRK
+
+@touch-grid ( x* y* -> )
+
+	.grid/y LDZ2 SUB2 #04 SFT2 NIP STH
+	.grid/x LDZ2 SUB2 #04 SFT2 NIP STHr
+
+	( skip on death )
+	.game/dead LDZ ,&skip JCN
+
+	.Mouse/state DEI #01 GTH ,touch-grid-flag JCN
+
+	DUP2 reveal
+
+	&skip
+	POP2
+	#00 .Mouse/state DEO
+
+BRK
+
+@touch-grid-flag ( x y -> )
+
+	( unset )
+	DUP2 #30 SFT ADD #00 SWP ;world/flags ADD2 LDA #00 EQU ,&add-flag JCN
+		#00 ,&set-flag JSR BRK
+		&add-flag
+	( add flag if have flags left )
+	count-flags ,&has-flags JCN
+		POP2 BRK
+		&has-flags
+	( can set )
+	#01 ,&set-flag JSR
+	( test victory )
+	count-left ,&no-victory JCN
+		victory
+		&no-victory
+
+BRK
+	&set-flag ( x y value -- )
+		STH
+		#30 SFT ADD #00 SWP ;world/flags ADD2 STHr ROT ROT STA
+		draw-progress
+		draw-grid
+		#00 .Mouse/state DEO
+	JMP2r
+
+(
+@|core )
+
+@reset ( -- )
+
+	#0000 .game/timer STZ2
+	#00 .game/started STZ
+	#00 .game/dead STZ
+
+	;world #0100 mclr
+
+	draw-status
+	draw-progress
+	draw-timer
+	draw-grid
+
+JMP2r
+
+@explode ( -- )
+
+	#01 .game/dead STZ
+	#00 .game/started STZ
+	draw-status
+	draw-grid
+
+JMP2r
+
+@victory ( -- )
+
+	#02 .game/dead STZ
+	#00 .game/started STZ
+	draw-status
+	draw-grid
+
+JMP2r
+
+@start ( x y -- )
+
+	#01 .game/started STZ
+	prng-init
+	#1000
+	&while
+		#01 prng #003f AND2 ;world ADD2 STA
+		INC GTHk ,&while JCN
+	POP2
+	( remove mine on first click )
+	#00 ROT ROT #30 SFT ADD #00 SWP ;world/mines ADD2 STA
+	update-values
+
+JMP2r
+
+@reveal ( x y -- )
+
+	( start on idle )
+	.game/started LDZ ,&started JCN
+		DUP2 start
+		&started
+	( ignore already revealed )
+	DUP2 get-revealed #00 EQU ,&unrevealed JCN
+		POP2 JMP2r
+		&unrevealed
+	( ignore flagged )
+	DUP2 #30 SFT ADD #00 SWP ;world/flags ADD2 LDA #00 EQU ,&unflagged JCN
+		POP2 JMP2r
+		&unflagged
+	( test if killing )
+	DUP2 get-mine #00 EQU ,&survive JCN
+		POP2 explode JMP2r
+		&survive
+	open
+	draw-grid
+	draw-progress
+
+JMP2r
+
+@open ( x y -- )
+
+	DUP2 set-revealed
+
+	STH2
+	#0800
+	&loop
+		#00 OVRk ADD2 ;neighbors ADD2 LDA2
+		STH2kr ROT ADD ROT ROT ADD SWP
+		DUP2 get-revealed ,&continue JCN
+		DUP2 get-value ,&continue JCN
+			DUP2 open-zone
+			&continue
+		POP2
+		INC GTHk ,&loop JCN
+	POP2
+	POP2r
+
+JMP2r
+
+@open-zone ( x y -- )
+
+	STH2
+	#0800
+	&loop
+		#00 OVRk ADD2 ;neighbors ADD2 LDA2
+		STH2kr ROT ADD ROT ROT ADD SWP
+		set-revealed
+		INC GTHk ,&loop JCN
+	POP2
+	STH2r open
+
+JMP2r
+
+@get-value ( x y -- value )
+
+	OVR #08 LTH ,&in-x JCN POP2 #ff JMP2r &in-x
+	DUP #08 LTH ,&in-y JCN POP2 #ff JMP2r &in-y
+	#30 SFT ADD #00 SWP
+	DUP2 ;world/mines ADD2 LDA #00 EQU ,&no-mine JCN
+		POP2 #ff JMP2r
+		&no-mine
+	;world/values ADD2 LDA
+
+JMP2r
+
+@get-revealed ( x y -- value )
+
+	OVR #08 LTH ,&in-x JCN POP2 #ff JMP2r &in-x
+	DUP #08 LTH ,&in-y JCN POP2 #ff JMP2r &in-y
+	#30 SFT ADD #00 SWP ;world/revealed ADD2 LDA
+
+JMP2r
+
+@set-revealed ( x y -- )
+
+	OVR #08 LTH ,&in-x JCN POP2 JMP2r &in-x
+	DUP #08 LTH ,&in-y JCN POP2 JMP2r &in-y
+	#30 SFT ADD #00 SWP ;world/revealed ADD2 #01 ROT ROT STA
+
+JMP2r
+
+@update-values ( -- )
+
+	#0800
+	&ver
+		STHk
+		#0800
+		&hor
+			DUP STHkr ,count-mines-neighbors JSR
+			OVR STHkr #30 SFT ADD #00 SWP ;world/values ADD2 STA
+			INC GTHk ,&hor JCN
+		POP2
+		POPr
+		#0010 .Screen/x DEO2
+		.Screen/y DEI2k #0010 ADD2 ROT DEO2
+		INC GTHk ,&ver JCN
+	POP2
+
+JMP2r
+
+@count-mines-neighbors ( x y -- count )
+
+	,&origin STR2
+	LITr 00
+	#0800
+	&loop
+		( load neighbor ) #00 OVRk ADD2 ;neighbors ADD2 LDA2
+		( add positions ) [ LIT2 &origin $2 ] ROT ADD ROT ROT ADD SWP
+			( incr counter ) ,get-mine JSR STH ADDr
+		INC GTHk ,&loop JCN
+	POP2
+	STHr
+
+JMP2r
+
+@get-mine ( x y -- flag )
+
+	OVR #08 LTH ,&in-x JCN POP2 #00 JMP2r &in-x
+	DUP #08 LTH ,&in-y JCN POP2 #00 JMP2r &in-y
+	#30 SFT ADD #00 SWP ;world/mines ADD2 LDA
+
+JMP2r
+
+@count-flags ( -- flags )
+
+	LITr 00
+	#4000
+	&loop
+		#00 OVR ;world/mines ADD2 LDA STH ADDr
+		#00 OVR ;world/flags ADD2 LDA STH SUBr
+		INC GTHk ,&loop JCN
+	POP2
+	STHr
+
+JMP2r
+
+@count-left ( -- mines )
+
+	LITr 00
+	#4000
+	&loop
+		#00 OVR ;world/mines ADD2 LDA STH
+		#00 OVR ;world/flags ADD2 LDA STH LIT2r 0100 EQU2r ADDr
+		INC GTHk ,&loop JCN
+	POP2
+	STHr
+
+JMP2r
+
+( drawing )
+
+@draw-frame ( x* y* w h -- )
+
+	DUP ,&h2 STR ,&h1 STR
+	DUP ,&w2 STR ,&w1 STR
+	DUP2 .Screen/y DEO2
+	OVR2 .Screen/x DEO2
+	#01 .Screen/auto DEO
+	;frame-chrs/tl .Screen/addr DEO2
+	#81 .Screen/sprite DEO
+	;frame-chrs/tc .Screen/addr DEO2
+	[ LIT &w1 $1 ] ,&repeat JSR
+	#02 .Screen/auto DEO
+	;frame-chrs/tr .Screen/addr DEO2
+	#81 .Screen/sprite DEO
+	;frame-chrs/mr .Screen/addr DEO2
+	[ LIT &h1 $1 ] ,&repeat JSR
+	( left )
+	#0008 ADD2 .Screen/y DEO2
+	.Screen/x DEO2
+	;frame-chrs/ml .Screen/addr DEO2
+	[ LIT &h2 $1 ] ,&repeat JSR
+	#01 .Screen/auto DEO
+	;frame-chrs/bl .Screen/addr DEO2
+	#81 .Screen/sprite DEO
+	;frame-chrs/bc .Screen/addr DEO2
+	[ LIT &w2 $1 ] ,&repeat JSR
+	;frame-chrs/br .Screen/addr DEO2
+	#81 .Screen/sprite DEO
+
+JMP2r
+	&repeat
+		#00 &repeat-loop #81 .Screen/sprite DEO INC GTHk ,&repeat-loop JCN POP2
+	JMP2r
+
+@draw-grid ( -- )
+
+	#05 .Screen/auto DEO
+	#0010 .Screen/x DEO2
+	#0040 .Screen/y DEO2
+
+	#0800
+	&ver
+		STHk
+		#0800
+		&hor
+			#00 OVR STHkr #30 SFT ADD ,get-tile JSR #81 draw-tile
+			INC GTHk ,&hor JCN
+		POP2
+		POPr
+		#0010 .Screen/x DEO2
+		.Screen/y DEI2k #0010 ADD2 ROT DEO2
+		INC GTHk ,&ver JCN
+	POP2
+	#00 .Screen/auto DEO
+
+JMP2r
+
+@get-tile ( id* -- sprite* )
+
+	( mine )
+	.game/dead LDZ #00 EQU ,&alive JCN
+		DUP2 ;world ADD2 LDA #00 EQU ,&no-mine JCN
+			POP2 ;tile-chrs/mine JMP2r
+			&no-mine
+		&alive
+	( flag )
+	DUP2 ;world/flags ADD2 LDA #00 EQU ,&no-flag JCN
+		POP2 ;tile-chrs/flagged JMP2r
+		&no-flag
+	( revealed )
+	DUP2 ;world/revealed ADD2 LDA ,&no-seen JCN
+		POP2 ;tile-chrs/untouched JMP2r
+		&no-seen
+	( digits )
+	;world/values ADD2 LDA #00 SWP #60 SFT2 ;tile-chrs/digits ADD2
+
+JMP2r
+
+@draw-tile ( addr* color -- )
+
+	STH
+	.Screen/addr DEO2
+	STHkr .Screen/sprite DEOk DEO
+	.Screen/x DEI2k #0010 SUB2 ROT DEO2
+	.Screen/y DEI2k #0008 ADD2 ROT DEO2
+	STHr .Screen/sprite DEOk DEO
+	.Screen/y DEI2k #0008 SUB2 ROT DEO2
+
+JMP2r
+
+@draw-status ( -- )
+
+	#05 .Screen/auto DEO
+	#0048 .Screen/x DEO2
+	#0018 .Screen/y DEO2
+	;status-chrs/alive #00 .game/dead LDZ #60 SFT2 ADD2 #81 ,draw-tile JSR
+	#00 .Screen/auto DEO
+
+JMP2r
+
+@draw-progress ( -- )
+
+	#0018 .Screen/x DEO2
+	#0018 .Screen/y DEO2
+	#00 count-flags ,draw-display JSR
+
+JMP2r
+
+@draw-timer ( -- )
+
+	#0058 .Screen/x DEO2
+	#0018 .Screen/y DEO2
+	.game/timer LDZ2 ,draw-display JSR
+
+JMP2r
+
+@draw-display ( value* -- )
+
+	#05 .Screen/auto DEO
+	DUP2 #0064 DIV2 NIP ,draw-display-char JSR
+	DUP2 #000a DIV2 NIP ,draw-display-char JSR
+	NIP
+
+@draw-display-char ( addr* color -- )
+
+	#0a ( MOD ) DIVk MUL SUB #00 SWP #60 SFT2 ;digits-chrs ADD2 #85 draw-tile
+
+JMP2r
+
+( stdlib )
+
+@mclr ( addr* len* -- )
+
+	OVR2 ADD2 SWP2
+	&loop
+		STH2k #00 STH2r STA
+		INC2 GTH2k ,&loop JCN
+	POP2 POP2
+
+JMP2r
+
+@prng-init ( -- )
+
+	( seed )
+	#00 .DateTime/second DEI
+	#00 .DateTime/minute DEI #60 SFT2 EOR2
+	#00 .DateTime/hour DEI #c0 SFT2 EOR2 ,prng/x STR2
+	#00 .DateTime/hour DEI #04 SFT2
+	#00 .DateTime/day DEI DUP2 ADD2 EOR2
+	#00 .DateTime/month DEI #60 SFT2 EOR2
+		.DateTime/year DEI2 #a0 SFT2 EOR2 ,prng/y STR2
+
+JMP2r
+
+@prng ( -- number* )
+
+	LIT2 &x $2
+	DUP2 #50 SFT2 EOR2
+	DUP2 #03 SFT2 EOR2
+	LIT2 &y $2 DUP2 ,&x STR2
+	DUP2 #01 SFT2 EOR2 EOR2
+	,&y STR2k POP
+
+JMP2r
+
+@within-rect ( x* y* rect -- flag )
+
+	STH
+	( y < rect.y1 ) DUP2 STHkr INC INC LDZ2 LTH2 ,&skip JCN
+	( y > rect.y2 ) DUP2 STHkr #06 ADD LDZ2 GTH2 ,&skip JCN
+	SWP2
+	( x < rect.x1 ) DUP2 STHkr LDZ2 LTH2 ,&skip JCN
+	( x > rect.x2 ) DUP2 STHkr #04 ADD LDZ2 GTH2 ,&skip JCN
+	POP2 POP2 POPr
+	#01
+JMP2r
+	&skip
+	POP2 POP2 POPr
+	#00
+
+JMP2r
+
+( theme )
+
+@load-theme ( -- )
+
+	;&path .File/name DEO2
+	#0002 .File/length DEO2
+	;&r .File/read DEO2
+	;&g .File/read DEO2
+	;&b .File/read DEO2
+	.File/success DEI2 ORA #01 JCN JMP2r
+	LIT2 &r $2 .System/r DEO2
+	LIT2 &g $2 .System/g DEO2
+	LIT2 &b $2 .System/b DEO2
+
+JMP2r
+	&path ".theme $1
+
+(
+@|assets )
+
+@neighbors
+	ffff 00ff 01ff
+	ff00 0100
+	ff01 0001 0101
+
+@pointer-icn
+	80c0 e0f0 f8e0 1000
+
+@tile-chrs
+	&untouched
+	ffff c0c0 c0c0 c0c0 0000 0000 0000 0000
+	fefc 0000 0000 0000 0001 0303 0303 0303
+	c0c0 c0c0 c0c0 8000 0000 0000 0000 3f7f
+	0000 0000 0000 0000 0303 0303 0303 ffff
+	&mine
+	0001 0117 0f1f 1f7f 0001 0117 0b15 1b7f
+	0000 00d0 e0f0 f0fc 0100 01d0 e1f0 f1fc
+	1f1f 0f17 0101 0000 1f1f 0f17 0101 00aa
+	f0f0 e0d0 0000 0000 f1f0 e1d0 0100 01ab
+	&flagged
+	ffff c0c0 c1c1 c1c1 0000 0000 0103 0703
+	fefc 0000 0000 0000 0001 0303 0303 0303
+	c1c0 c7cf c0c0 8000 0101 070f 0000 3f7f
+	0000 c0e0 0000 0000 0303 c3e3 0303 ffff
+	&digits
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0100 0100 0100 0100
+	0000 0000 0000 0000 0000 0000 0000 00aa
+	0000 0000 0000 0000 0100 0100 0100 01ab
+	( 1 )
+	0000 0003 0301 0101 0000 0003 0301 0101
+	0000 0080 8080 8080 0100 0180 8180 8180
+	0101 0101 0100 0000 0101 0101 0100 00aa
+	8080 8080 8000 0000 8180 8180 8100 01ab
+	( 2 )
+	0000 001f 1f00 000f 0000 001f 1f00 000f
+	0000 00f0 f818 18f8 0100 01f0 f918 19f8
+	1f18 181f 1f00 0000 1f18 181f 1f00 00aa
+	f000 00f8 f800 0000 f100 01f8 f900 01ab
+	( 3 )
+	0000 001f 1f00 001f 0000 001f 1f00 001f
+	0000 00f0 f818 18f0 0100 01f0 f918 19f0
+	1f00 001f 1f00 0000 1f00 001f 1f00 00aa
+	f018 18f8 f000 0000 f118 19f8 f100 01ab
+	( 4 )
+	0000 0018 1818 181f 0000 0018 1818 181f
+	0000 0018 1818 18f8 0100 0118 1918 19f8
+	0f00 0000 0000 0000 0f00 0000 0000 00aa
+	f818 1818 1800 0000 f918 1918 1900 01ab
+	( 5 )
+	0000 001f 1f18 181f 0000 001f 1f18 181f
+	0000 00f8 f800 00f0 0100 01f8 f900 01f0
+	0f00 001f 1f00 0000 0f00 001f 1f00 00aa
+	f818 18f8 f000 0000 f918 19f8 f100 01ab
+	( 6 )
+	0000 000f 1f18 181f 0000 000f 1f18 181f
+	0000 00f8 f800 00f0 0100 01f8 f900 01f0
+	1f18 181f 0f00 0000 1f18 181f 0f00 00aa
+	f818 18f8 f000 0000 f918 19f8 f100 01ab
+	( 7 )
+	0000 001f 1f00 0000 0000 001f 1f00 0000
+	0000 00f0 f818 1838 0100 01f0 f918 1938
+	0000 0000 0000 0000 0000 0000 0000 00aa
+	3818 1818 1800 0000 3918 1918 1900 01ab
+	( 8 )
+	0000 000f 1f18 180f 0000 000f 1f18 180f
+	0000 00f0 f818 18f0 0100 01f0 f918 19f0
+	0f18 181f 0f00 0000 0f18 181f 0f00 00aa
+	f018 18f8 f000 0000 f118 19f8 f100 01ab
+
+@frame-chrs
+	&tl 0000 0000 0000 0000 0000 0000 0000 0303
+	&tc 0000 0000 0000 0000 0000 0000 0000 ffff
+	&tr 0000 0000 0000 0040 0000 0000 0000 8000
+	&ml 0000 0000 0000 0000 0303 0303 0303 0303
+	&mr c0c0 c0c0 c0c0 c0c0 0000 0000 0000 0000
+	&bl 0001 0000 0000 0000 0200 0000 0000 0000
+	&bc ffff 0000 0000 0000 0000 0000 0000 0000
+	&br c0c0 0000 0000 0000 0000 0000 0000 0000
+
+@status-chrs
+	&alive
+	0007 1f3f 3f7f 7f7f 0007 1820 2040 4044
+	00e0 f8fc fcfe fefe 00e0 1804 0402 0222
+	7f7f 7f3f 3f1f 0700 4048 4720 2018 0700
+	fefe fefc fcf8 e000 0212 e204 0418 e000
+	&dead
+	0007 1f3f 3f7f 7f7f 0007 1820 2040 4a44
+	00e0 f8fc fcfe fefe 00e0 1804 0402 5222
+	7f7f 7f3f 3f1f 0700 4a40 4728 2018 0700
+	fefe fefc fcf8 e000 5202 e214 0418 e000
+	&victory
+	0007 1f3f 3f7f 7f7f 0007 1820 2040 444a
+	00e0 f8fc fcfe fefe 00e0 1804 0402 2252
+	7f7f 7f3f 3f1f 0700 4040 4221 2018 0700
+	fefe fefc fcf8 e000 0202 4284 0418 e000
+
+@digits-chrs
+	( 0 )
+	ffff ffff ffff ffe0 ffc0 a09f 9f9f 9fbf
+	ffff ffff ffff ff07 ff03 05f9 f9f9 f9fd
+	f0ff ffff ffff ffff 9f9f 9f9f 9fa0 c0ff
+	0fff ffff ffff ffff f9f9 f9f9 f905 03ff
+	( 1 )
+	ffc0 a09f 9f9f 9fa0 ffff ffff ffff ffff
+	ff03 07ff ffff ff07 ffff fdf9 f9f9 f9fd
+	909f 9f9f 9fa0 c0ff ffff ffff ffff ffff
+	0fff ffff ff07 03ff f9f9 f9f9 f9fd ffff
+	( 2 )
+	ffff bf9f 9f9f 9fbf ffc0 e0ff ffff ffe0
+	ffff ffff ffff ffff ff03 05f9 f9f9 f905
+	ffff ffff ffff ffff 909f 9f9f 9fa0 c0ff
+	f9f9 f9f9 f9fd ffff 0fff ffff ff07 03ff
+	( 3 )
+	ffff bf9f 9f9f 9fbf ffc0 e0ff ffff ffe0
+	ffff ffff ffff ffff ff03 05f9 f9f9 f905
+	9f9f 9f9f 9fbf ffff f0ff ffff ffe0 c0ff
+	ffff ffff ffff ffff 09f9 f9f9 f905 03ff
+	( 4 )
+	ffc0 e0ff ffff ffff ffff bf9f 9f9f 9fa0
+	ff03 07ff ffff ffff ffff fdf9 f9f9 f905
+	9f9f 9f9f 9fa0 c0ff f0ff ffff ffff ffff
+	ffff ffff ff07 03ff 09f9 f9f9 f9fd ffff
+	( 5 )
+	ffff ffff ffff ffff ffc0 a09f 9f9f 9fa0
+	ffff fdf9 f9f9 f9fd ff03 07ff ffff ff07
+	9f9f 9f9f 9fbf ffff f0ff ffff ffe0 c0ff
+	ffff ffff ffff ffff 09f9 f9f9 f905 03ff
+	( 6 )
+	ffc0 e0ff ffff ffff ffff bf9f 9f9f 9fa0
+	ff03 05f9 f9f9 f9fd ffff ffff ffff ff07
+	ffff ffff ffff ffff 909f 9f9f 9fa0 c0ff
+	ffff ffff ffff ffff 09f9 f9f9 f905 03ff
+	( 7 )
+	ffff bf9f 9f9f 9fa0 ffc0 e0ff ffff ffff
+	ffff ffff ffff ff07 ff03 05f9 f9f9 f9fd
+	909f 9f9f 9fa0 c0ff ffff ffff ffff ffff
+	0fff ffff ff07 03ff f9f9 f9f9 f9fd ffff
+	( 8 )
+	ffff ffff ffff ffff ffc0 a09f 9f9f 9fa0
+	ffff ffff ffff ffff ff03 05f9 f9f9 f905
+	ffff ffff ffff ffff 909f 9f9f 9fa0 c0ff
+	ffff ffff ffff ffff 09f9 f9f9 f905 03ff
+	( 9 )
+	ffff ffff ffff ffff ffc0 a09f 9f9f 9fa0
+	ffff ffff ffff ffff ff03 05f9 f9f9 f905
+	9f9f 9f9f 9fa0 c0ff f0ff ffff ffff ffff
+	ffff ffff ff07 03ff 09f9 f9f9 f9fd ffff
+
+@world
+	&mines $40
+	&revealed $40
+	&values $40
+	&flags $40
