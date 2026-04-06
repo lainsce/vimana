@@ -13,6 +13,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <math.h>
+#ifdef __APPLE__
+#include <objc/message.h>
+#endif
 
 #define VIMANA_TITLEBAR_HEIGHT 24
 #define VIMANA_TITLEBAR_BAR_HEIGHT 21
@@ -33,9 +36,31 @@
 #define VIMANA_AUDIO_CHANNELS 1
 #define VIMANA_SPRITE_1BPP_BYTES VIMANA_TILE_SIZE
 #define VIMANA_SPRITE_2BPP_BYTES (VIMANA_TILE_SIZE * 2)
-#define VIMANA_SPRITE_MEM_CAP 4192
-#define VIMANA_RAM_CAP 0x20000  /* 131 072 bytes (128 KB) hard limit */
 #define VIMANA_KEY_WORDS (VIMANA_KEY_CAP / 64)  /* 8 uint64_t = 512 bits */
+
+/* ── ROM layout ─────────────────────────────────────────────────────────
+   Fixed-address sections: Font → Sprite bank window → General GFX data.
+   Data written here is persistent (no eviction).                        */
+#define VIMANA_FONT_SIZE 0x10000  /* 64 KB font section (always allocated) */
+#define VIMANA_GFX_SIZE 0x60000   /* 384 KB general graphical data (lazy) */
+
+/* Sprite banks: 16 × 64 KB, bank-switched (NES CHR-ROM style). */
+#define VIMANA_SPRITE_BANK_COUNT 16
+#define VIMANA_SPRITE_BANK_SIZE 0x10000  /* 65 536 bytes per bank */
+
+/* Font section supports full Latin Extended (U+0000–U+024F = 592 glyphs).
+   Internal layout within the 64 KB font section:
+     0x0000  16 B      Header (magic, format, height, glyph_width, count)
+     0x0010  592 B     Width table  (1 byte per glyph)
+     0x0260  42624 B   1bpp bitmap  (592 × 72 bytes)
+     0xA8E0  18944 B   UF2 tileset  (592 × 32 bytes)
+     0xF860  ~1952 B   Reserved                                         */
+#define VIMANA_GLYPH_COUNT 592
+#define VIMANA_FONT_HDR_OFF 0x0000
+#define VIMANA_FONT_HDR_SIZE 16
+#define VIMANA_FONT_WIDTH_OFF 0x0010
+#define VIMANA_FONT_BMP_OFF 0x0260
+#define VIMANA_FONT_UF2_OFF 0xA8E0
 
 /* uxn2 blend look-up table: blend_lut[mode][layer(0=bg,1=fg)][color] */
 static const uint8_t blend_lut[16][2][4] = {
@@ -172,23 +197,35 @@ static inline void vimana_bit_clr(uint64_t *bits, int idx) {
   bits[idx >> 6] &= ~((uint64_t)1 << (idx & 63));
 }
 
+/* ── ROM section accessor helpers ───────────────────────────────────────── */
+/* (Implementations below VimanaScreen definition; forward-declared here.) */
+
+static inline uint8_t *vimana_rom_font_widths(vimana_screen *s);
+static inline uint8_t *vimana_rom_font_bitmap(vimana_screen *s, unsigned int code);
+static inline uint8_t *vimana_rom_font_uf2(vimana_screen *s, unsigned int code);
+static inline uint8_t *vimana_ensure_gfx_rom(vimana_screen *s);
+static inline uint8_t *vimana_ensure_sprite_bank(vimana_screen *s, unsigned int bank);
+static inline uint8_t *vimana_active_sprite_bank(vimana_screen *s);
+
 struct VimanaScreen {
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Texture *texture;
   char *title;
-  unsigned int width;
-  unsigned int height;
-  unsigned int scale;
-  unsigned int width_mar;   /* width + 16 (8px margin each side) */
-  unsigned int height_mar;  /* height + 16 */
+  uint16_t width;
+  uint16_t height;
+  uint8_t scale;
+  uint16_t width_mar;   /* width + 16 (8px margin each side) */
+  uint16_t height_mar;  /* height + 16 */
   uint32_t base_colors[4];  /* ARGB palette, slots 0-3 */
   uint32_t palette[16];     /* expanded 16-entry composite */
-  /* ROM-class data: font glyphs, sprite sheet (loaded once) */
-  uint8_t font_bitmap[128][VIMANA_FONT_GLYPH_BYTES];
-  uint8_t font_ascii[128][VIMANA_UF2_BYTES];
-  uint8_t font_widths[128];
-  uint8_t sprite_mem[VIMANA_SPRITE_MEM_CAP];
+  /* Font ROM: always allocated (64 KB). */
+  uint8_t *font_rom;                             /* VIMANA_FONT_SIZE bytes */
+  /* GFX ROM: lazy-allocated on first set_gfx (384 KB). */
+  uint8_t *gfx_rom;                              /* VIMANA_GFX_SIZE bytes, or NULL */
+  /* Sprite banks: 16 × 64 KB, bank-switched.  Lazy-allocated (NULL until first use). */
+  uint8_t *sprite_banks[VIMANA_SPRITE_BANK_COUNT];
+  uint8_t active_sprite_bank;                    /* 0–15 */
   /* RAM-class state */
   uint16_t port_x;
   uint16_t port_y;
@@ -209,6 +246,35 @@ struct VimanaScreen {
   bool theme_swap_fg_bg;         /* swap base_colors[0] and [1] after loading */
   int16_t theme_poll_counter;    /* frame counter for periodic theme check */
 };
+
+/* ── ROM accessor implementations (need complete struct definition) ───── */
+
+static inline uint8_t *vimana_rom_font_widths(vimana_screen *s) {
+  return s->font_rom + VIMANA_FONT_WIDTH_OFF;
+}
+static inline uint8_t *vimana_rom_font_bitmap(vimana_screen *s, unsigned int code) {
+  return s->font_rom + VIMANA_FONT_BMP_OFF
+         + code * VIMANA_FONT_GLYPH_BYTES;
+}
+static inline uint8_t *vimana_rom_font_uf2(vimana_screen *s, unsigned int code) {
+  return s->font_rom + VIMANA_FONT_UF2_OFF
+         + code * VIMANA_UF2_BYTES;
+}
+static inline uint8_t *vimana_ensure_gfx_rom(vimana_screen *s) {
+  if (!s->gfx_rom)
+    s->gfx_rom = (uint8_t *)calloc(VIMANA_GFX_SIZE, 1);
+  return s->gfx_rom;
+}
+static inline uint8_t *vimana_ensure_sprite_bank(vimana_screen *s, unsigned int bank) {
+  if (bank >= VIMANA_SPRITE_BANK_COUNT)
+    return NULL;
+  if (!s->sprite_banks[bank])
+    s->sprite_banks[bank] = (uint8_t *)calloc(VIMANA_SPRITE_BANK_SIZE, 1);
+  return s->sprite_banks[bank];
+}
+static inline uint8_t *vimana_active_sprite_bank(vimana_screen *s) {
+  return vimana_ensure_sprite_bank(s, s->active_sprite_bank);
+}
 
 static uint32_t vimana_parse_hex_color(const char *hex) {
   unsigned int r = 0, g = 0, b = 0;
@@ -315,16 +381,16 @@ static void vimana_screen_update_titlebar_sizes(vimana_screen *screen) {
 }
 
 static void vimana_screen_reset_font(vimana_screen *screen) {
-  if (!screen)
+  if (!screen || !screen->font_rom)
     return;
-  memset(screen->font_bitmap, 0, sizeof(screen->font_bitmap));
-  memset(screen->font_ascii, 0, sizeof(screen->font_ascii));
-  memset(screen->font_widths, 0, sizeof(screen->font_widths));
-  for (int i = 0; i < 128; i++)
-    screen->font_widths[i] = VIMANA_TILE_SIZE;
+  /* Clear font region */
+  memset(screen->font_rom, 0, VIMANA_FONT_SIZE);
+  /* Initialize width table: default glyph width for all entries */
+  uint8_t *widths = vimana_rom_font_widths(screen);
+  for (unsigned int i = 0; i < VIMANA_GLYPH_COUNT; i++)
+    widths[i] = VIMANA_TILE_SIZE;
   screen->font_height = VIMANA_TILE_SIZE; /* UF1 default */
   screen->font_glyph_width = VIMANA_TILE_SIZE;
-  memset(screen->sprite_mem, 0, sizeof(screen->sprite_mem));
   vimana_screen_update_titlebar_sizes(screen);
 }
 
@@ -367,8 +433,8 @@ static unsigned int vimana_sprite_stride(unsigned int mode) {
 static unsigned int vimana_screen_addr_clamp(vimana_screen *screen,
                                               unsigned int addr) {
   (void)screen;
-  if (addr >= VIMANA_SPRITE_MEM_CAP)
-    return VIMANA_SPRITE_MEM_CAP - 1;
+  if (addr >= VIMANA_SPRITE_BANK_SIZE)
+    return VIMANA_SPRITE_BANK_SIZE - 1;
   return addr;
 }
 
@@ -378,10 +444,13 @@ static void vimana_screen_store_sprite_bytes(vimana_screen *screen,
                                              unsigned int mode) {
   if (!screen || !sprite)
     return;
-  unsigned int stride = vimana_sprite_stride(mode);
-  if (addr + stride > VIMANA_SPRITE_MEM_CAP)
+  uint8_t *bank = vimana_active_sprite_bank(screen);
+  if (!bank)
     return;
-  memcpy(screen->sprite_mem + addr, sprite, (size_t)stride);
+  unsigned int stride = vimana_sprite_stride(mode);
+  if (addr + stride > VIMANA_SPRITE_BANK_SIZE)
+    return;
+  memcpy(bank + addr, sprite, (size_t)stride);
 }
 
 static int vimana_screen_auto_repeat(vimana_screen *screen) {
@@ -720,6 +789,15 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
   if (!screen)
     return NULL;
 
+  /* Allocate font ROM (always needed). GFX ROM is lazy-allocated on first use. */
+  screen->font_rom = (uint8_t *)calloc(VIMANA_FONT_SIZE, 1);
+  if (!screen->font_rom) {
+    free(screen);
+    return NULL;
+  }
+  /* Sprite banks are lazy-allocated on first use (calloc'd in vimana_ensure_sprite_bank). */
+  /* GFX ROM is lazy-allocated on first set_gfx call (calloc'd in vimana_ensure_gfx_rom). */
+
   screen->width = width;
   screen->height = height;
   screen->scale = scale;
@@ -736,6 +814,7 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
       (uint8_t *)calloc((size_t)screen->width_mar * (size_t)screen->height_mar,
                         sizeof(uint8_t));
   if (!screen->layers) {
+    free(screen->font_rom);
     free(screen->title);
     free(screen);
     return NULL;
@@ -747,19 +826,37 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
                        SDL_WINDOW_BORDERLESS);
   if (!screen->window) {
     free(screen->layers);
+    free(screen->font_rom);
     free(screen->title);
     free(screen);
     return NULL;
   }
 
+  /* Reduce Metal memory footprint: prefer integrated GPU, enable vsync */
+  SDL_SetHint(SDL_HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE, "1");
+  SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
+
   screen->renderer = SDL_CreateRenderer(screen->window, NULL);
   if (!screen->renderer) {
     SDL_DestroyWindow(screen->window);
     free(screen->layers);
+    free(screen->font_rom);
     free(screen->title);
     free(screen);
     return NULL;
   }
+
+#ifdef __APPLE__
+  /* Reduce Metal drawable pool from 3 to 2 to save one full back buffer. */
+  {
+    void *layer = SDL_GetRenderMetalLayer(screen->renderer);
+    if (layer) {
+      typedef void (*send_uint_t)(void *, SEL, unsigned long);
+      SEL sel = sel_registerName("setMaximumDrawableCount:");
+      ((send_uint_t)objc_msgSend)(layer, sel, 2);
+    }
+  }
+#endif
 
   screen->texture =
       SDL_CreateTexture(screen->renderer, SDL_PIXELFORMAT_ARGB8888,
@@ -768,6 +865,7 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
     free(screen->layers);
+    free(screen->font_rom);
     free(screen->title);
     free(screen);
     return NULL;
@@ -837,14 +935,14 @@ void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
 
 void vimana_screen_set_font_glyph(vimana_screen *screen, unsigned int code,
                                   const uint16_t rows[16]) {
-  if (!screen || !rows)
+  if (!screen || !rows || !screen->font_rom)
     return;
-  if (code >= 128)
+  if (code >= VIMANA_GLYPH_COUNT)
     return;
   /* UF2 tileset storage */
-  vimana_rows_to_uf2(rows, screen->font_ascii[code]);
+  vimana_rows_to_uf2(rows, vimana_rom_font_uf2(screen, code));
   /* 1bpp bitmap: OR both planes together */
-  uint8_t *bmp = screen->font_bitmap[code];
+  uint8_t *bmp = vimana_rom_font_bitmap(screen, code);
   memset(bmp, 0, VIMANA_FONT_GLYPH_BYTES);
   for (int r = 0; r < 16; r++) {
     uint8_t bits = 0;
@@ -860,9 +958,9 @@ void vimana_screen_set_font_glyph(vimana_screen *screen, unsigned int code,
 
 void vimana_screen_set_font_chr(vimana_screen *screen, unsigned int code,
                                 const uint8_t *chr, unsigned int len) {
-  if (!screen || !chr)
+  if (!screen || !chr || !screen->font_rom)
     return;
-  if (code >= 128)
+  if (code >= VIMANA_GLYPH_COUNT)
     return;
   unsigned int gw = screen->font_glyph_width;
   unsigned int gh = screen->font_height;
@@ -873,7 +971,7 @@ void vimana_screen_set_font_chr(vimana_screen *screen, unsigned int code,
   unsigned int max_bytes = gh * bpr;
   unsigned int n = len < max_bytes ? len : max_bytes;
   /* 1bpp bitmap */
-  uint8_t *bmp = screen->font_bitmap[code];
+  uint8_t *bmp = vimana_rom_font_bitmap(screen, code);
   memset(bmp, 0, VIMANA_FONT_GLYPH_BYTES);
   for (unsigned int i = 0; i < n; i++) {
     unsigned int row = i / bpr;
@@ -882,7 +980,7 @@ void vimana_screen_set_font_chr(vimana_screen *screen, unsigned int code,
   }
   /* UF2 tileset storage (for 8px-wide glyphs only) */
   if (gw <= 8) {
-    uint8_t *uf2 = screen->font_ascii[code];
+    uint8_t *uf2 = vimana_rom_font_uf2(screen, code);
     memset(uf2, 0, VIMANA_UF2_BYTES);
     unsigned int rows = n < VIMANA_GLYPH_HEIGHT ? n : VIMANA_GLYPH_HEIGHT;
     for (unsigned int r = 0; r < rows; r++) {
@@ -895,9 +993,10 @@ void vimana_screen_set_font_chr(vimana_screen *screen, unsigned int code,
 
 void vimana_screen_set_font_width(vimana_screen *screen, unsigned int code,
                                   unsigned int width) {
-  if (!screen || code >= 128)
+  if (!screen || !screen->font_rom || code >= VIMANA_GLYPH_COUNT)
     return;
-  screen->font_widths[code] = (uint8_t)(width > 0 && width <= 255 ? width : VIMANA_TILE_SIZE);
+  vimana_rom_font_widths(screen)[code] =
+      (uint8_t)(width > 0 && width <= 255 ? width : VIMANA_TILE_SIZE);
 }
 
 void vimana_screen_set_font_size(vimana_screen *screen, unsigned int size) {
@@ -915,8 +1014,9 @@ void vimana_screen_set_font_size(vimana_screen *screen, unsigned int size) {
     w = VIMANA_TILE_SIZE;                            /*  8 */
   }
   screen->font_glyph_width = w;
-  for (unsigned int i = 0; i < 128; i++)
-    screen->font_widths[i] = (uint8_t)w;
+  uint8_t *widths = vimana_rom_font_widths(screen);
+  for (unsigned int i = 0; i < VIMANA_GLYPH_COUNT; i++)
+    widths[i] = (uint8_t)w;
   int old_th = screen->titlebar_height;
   vimana_screen_update_titlebar_sizes(screen);
   if (screen->window && screen->titlebar_height != old_th)
@@ -972,8 +1072,39 @@ unsigned int vimana_screen_auto(vimana_screen *screen) {
   return screen ? screen->port_auto : 0;
 }
 
+void vimana_screen_set_sprite_bank(vimana_screen *screen, unsigned int bank) {
+  if (!screen)
+    return;
+  screen->active_sprite_bank = (uint8_t)(bank % VIMANA_SPRITE_BANK_COUNT);
+}
+
+unsigned int vimana_screen_sprite_bank(vimana_screen *screen) {
+  return screen ? screen->active_sprite_bank : 0;
+}
+
+void vimana_screen_set_gfx(vimana_screen *screen, unsigned int addr,
+                            const uint8_t *data, unsigned int len) {
+  if (!screen || !data)
+    return;
+  if (addr + len > VIMANA_GFX_SIZE)
+    return;
+  uint8_t *gfx = vimana_ensure_gfx_rom(screen);
+  if (!gfx)
+    return;
+  memcpy(gfx + addr, data, (size_t)len);
+}
+
+const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr) {
+  if (!screen || !screen->gfx_rom || addr >= VIMANA_GFX_SIZE)
+    return NULL;
+  return screen->gfx_rom + addr;
+}
+
 void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
   if (!screen || !screen->layers)
+    return;
+  const uint8_t *bank = vimana_active_sprite_bank(screen);
+  if (!bank)
     return;
   const unsigned int rMX = screen->port_auto & 0x1;
   const unsigned int rMY = screen->port_auto & 0x2;
@@ -1012,10 +1143,10 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
       const unsigned int a1 = rA + sr;
       const unsigned int a2 = rA + sr + 8;
       const uint8_t ch1 =
-          (a1 < VIMANA_SPRITE_MEM_CAP) ? screen->sprite_mem[a1] : 0;
+          (a1 < VIMANA_SPRITE_BANK_SIZE) ? bank[a1] : 0;
       const uint8_t ch2 =
-          (is_2bpp && a2 < VIMANA_SPRITE_MEM_CAP)
-              ? screen->sprite_mem[a2]
+          (is_2bpp && a2 < VIMANA_SPRITE_BANK_SIZE)
+              ? bank[a2]
               : 0;
       uint8_t *d = dst_row;
       for (unsigned int k = 0, row = row_start; k < 8;
@@ -1088,16 +1219,17 @@ void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl) {
 
 void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
                        const char *glyph, unsigned int fg, unsigned int bg) {
-  if (!screen || !screen->layers)
+  if (!screen || !screen->layers || !screen->font_rom)
     return;
-  unsigned char ch = (unsigned char)((glyph && glyph[0]) ? glyph[0] : ' ');
-  if (ch >= 128)
+  unsigned int ch = (unsigned char)((glyph && glyph[0]) ? glyph[0] : ' ');
+  if (ch >= VIMANA_GLYPH_COUNT)
     ch = ' ';
-  const uint8_t *bmp = screen->font_bitmap[ch];
+  const uint8_t *bmp = vimana_rom_font_bitmap(screen, ch);
+  const uint8_t *widths = vimana_rom_font_widths(screen);
   unsigned int bg_slot = bg & 0x3;
   unsigned int fg_slot = fg & 0x3;
   unsigned int gh = screen->font_height;
-  unsigned int gw = screen->font_widths[ch];
+  unsigned int gw = widths[ch];
   if (gw == 0) gw = screen->font_glyph_width;
   for (unsigned int row = 0; row < gh; row++) {
     unsigned int py = y + row;
@@ -1153,14 +1285,15 @@ void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
 void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
                             unsigned int y, const char *text,
                             unsigned int fg, unsigned int bg) {
-  if (!screen || !text)
+  if (!screen || !text || !screen->font_rom)
     return;
+  const uint8_t *widths = vimana_rom_font_widths(screen);
   unsigned int cx = x;
   for (int i = 0; text[i] != 0; i++) {
-    unsigned char ch = (unsigned char)text[i];
-    if (ch >= 128) ch = ' ';
+    unsigned int ch = (unsigned char)text[i];
+    if (ch >= VIMANA_GLYPH_COUNT) ch = ' ';
     vimana_screen_put(screen, cx, y, &text[i], fg, bg);
-    cx += screen->font_widths[ch];
+    cx += widths[ch];
   }
 }
 
@@ -1261,11 +1394,12 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
   const char *title = screen->titlebar_title ? screen->titlebar_title : screen->title;
   if (title && title[0]) {
     int len = (int)strlen(title);
-    /* Compute total text width using font_widths */
+    const uint8_t *widths = vimana_rom_font_widths(screen);
+    /* Compute total text width using font widths in ROM */
     int text_w = 0;
     for (int i = 0; i < len; i++) {
-      unsigned char ch = (unsigned char)title[i];
-      text_w += (ch < 128) ? screen->font_widths[ch] : VIMANA_TILE_SIZE;
+      unsigned int ch = (unsigned char)title[i];
+      text_w += (ch < VIMANA_GLYPH_COUNT) ? widths[ch] : VIMANA_TILE_SIZE;
     }
     int left_bound  = VIMANA_TB_CLOSE_X + screen->titlebar_box_size + 4;
     int right_bound = screen->titlebar_has_button
@@ -1297,12 +1431,12 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
                            (uint8_t)(contrast & 0xFF), 255);
     int gx = text_x;
     for (int i = 0; i < len; i++) {
-      unsigned char c = (unsigned char)title[i];
-      if (c >= 128) { gx += screen->font_widths[' ']; continue; }
+      unsigned int c = (unsigned char)title[i];
+      if (c >= VIMANA_GLYPH_COUNT) { gx += widths[' ']; continue; }
       if (gx >= right_bound)
         break;
-      const uint8_t *bmp = screen->font_bitmap[c];
-      int gw = (int)screen->font_widths[c];
+      const uint8_t *bmp = vimana_rom_font_bitmap(screen, c);
+      int gw = (int)widths[c];
       if (gw < screen->font_glyph_width) gw = screen->font_glyph_width;
       /* Draw 1bpp glyph for titlebar */
       for (int row = 0; row < gh; row++) {
@@ -1317,7 +1451,7 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
           }
         }
       }
-      gx += screen->font_widths[c];
+      gx += widths[c];
     }
   }
 
@@ -1878,6 +2012,10 @@ void vimana_screen_free(vimana_screen *screen) {
     SDL_DestroyRenderer(screen->renderer);
   if (screen->window)
     SDL_DestroyWindow(screen->window);
+  for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
+    free(screen->sprite_banks[i]);
+  free(screen->font_rom);
+  free(screen->gfx_rom);
   free(screen->layers);
   free(screen->title);
   free(screen->titlebar_title);
@@ -1895,10 +2033,17 @@ size_t vimana_system_ram_usage(vimana_system *system) {
 size_t vimana_screen_ram_usage(vimana_screen *screen) {
   if (!screen)
     return 0;
-  /* RAM-class: mutable user-addressable state only.
-     Excludes ROM-class font/sprite arrays and VRAM (layers framebuffer). */
   size_t total = 0;
-  total += VIMANA_SPRITE_MEM_CAP;  /* sprite_mem: user-writable tile sheet */
+  /* Font ROM (always allocated) */
+  total += VIMANA_FONT_SIZE;
+  /* GFX ROM (only if allocated) */
+  if (screen->gfx_rom)
+    total += VIMANA_GFX_SIZE;
+  /* Sprite banks (only count allocated ones) */
+  for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
+    if (screen->sprite_banks[i])
+      total += VIMANA_SPRITE_BANK_SIZE;
+  /* Port registers + palette */
   total += sizeof(screen->port_x) + sizeof(screen->port_y)
          + sizeof(screen->port_addr) + sizeof(screen->port_auto);
   total += sizeof(screen->base_colors) + sizeof(screen->palette);

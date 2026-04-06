@@ -16,6 +16,9 @@ def layer_fg = 0x40
 def flip_x = 0x10
 def flip_y = 0x20
 
+def sprite_bank_count = 16
+def gfx_size = 0x60000
+
 : __vimana_system() (( system )) { }
 : __vimana_system_run(sys = system, scr = screen, frame = any) (( -- )) { }
 : __vimana_system_quit(sys = system) (( -- )) { }
@@ -49,6 +52,10 @@ def flip_y = 0x20
 : __vimana_screen_set_y(scr = screen, y = num) (( -- )) { }
 : __vimana_screen_set_addr(scr = screen, addr = num) (( -- )) { }
 : __vimana_screen_set_auto(scr = screen, auto = num) (( -- )) { }
+: __vimana_screen_set_sprite_bank(scr = screen, bank = num) (( -- )) { }
+: __vimana_screen_sprite_bank(scr = screen) (( num )) { }
+: __vimana_screen_set_gfx(scr = screen, addr = num, data = any) (( -- )) { }
+: __vimana_screen_gfx(scr = screen, addr = num) (( num )) { }
 : __vimana_screen_put(scr = screen, x = num, y = num, glyph = string, fg = num, bg = num) (( -- )) { }
 : __vimana_screen_put_icn(scr = screen, x = num, y = num, icn = any, fg = num, bg = num) (( -- )) { }
 : __vimana_screen_put_text(scr = screen, x = num, y = num, text = string, fg = num, bg = num) (( -- )) { }
@@ -215,6 +222,20 @@ pub ,: screen
         __vimana_screen_set_auto(this, auto)
         <- this
     ;
+
+    :: set_sprite_bank(this, bank = num) (( screen ))
+        __vimana_screen_set_sprite_bank(this, bank)
+        <- this
+    ;
+
+    :: sprite_bank(this) (( num )) <- __vimana_screen_sprite_bank(this) ;
+
+    :: set_gfx(this, addr = num, data = any) (( screen ))
+        __vimana_screen_set_gfx(this, addr, data)
+        <- this
+    ;
+
+    :: gfx(this, addr = num) (( num )) <- __vimana_screen_gfx(this, addr) ;
 
     :: put(this, x = num, y = num, glyph = string, fg = num, bg = num) (( screen ))
         __vimana_screen_put(this, x, y, glyph, fg, bg)

@@ -13,7 +13,14 @@ extern "C" {
 #define VIMANA_TB_BOX_SIZE 13
 #define VIMANA_TB_BOX_Y    4
 #define VIMANA_TB_CLOSE_X  4
-#define VIMANA_RAM_CAP 0x20000  /* 131 072 bytes (128 KB) hard limit */
+
+/* ── ROM layout constants ─────────────────────────────────────────────── */
+#define VIMANA_FONT_SIZE         0x10000  /* 64 KB font (always allocated) */
+#define VIMANA_GLYPH_COUNT       0x250    /* U+0000–U+024F (Full Latin Ext)*/
+#define VIMANA_SPRITE_BANK_COUNT 0x10     /* 16 sprite banks               */
+#define VIMANA_SPRITE_BANK_SIZE  0x10000  /* 64 KB per sprite bank         */
+#define VIMANA_GFX_SIZE          0x60000  /* 384 KB general graphical data */
+/* -────────────────────────────────────────────────────────────────────── */
 
 typedef struct VimanaSystem vimana_system;
 typedef struct VimanaScreen vimana_screen;
@@ -64,6 +71,13 @@ unsigned int vimana_screen_x(vimana_screen *screen);
 unsigned int vimana_screen_y(vimana_screen *screen);
 unsigned int vimana_screen_addr(vimana_screen *screen);
 unsigned int vimana_screen_auto(vimana_screen *screen);
+// Sprite bank switching (16 × 64 KB banks, NES CHR-ROM style)
+void vimana_screen_set_sprite_bank(vimana_screen *screen, unsigned int bank);
+unsigned int vimana_screen_sprite_bank(vimana_screen *screen);
+// General graphical data section (384 KB persistent ROM region)
+void vimana_screen_set_gfx(vimana_screen *screen, unsigned int addr,
+                            const uint8_t *data, unsigned int len);
+const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr);
 // Tile-addressed: sprite x/y = port × 8, auto-increments ±1 tile
 void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl);
 // Pixel-addressed: x/y = port value, auto-increments ±1 pixel

@@ -633,6 +633,46 @@ static YisVal __vimana_screen_auto(YisVal scrv) {
   return YV_INT(vimana_screen_auto(screen));
 }
 
+static void __vimana_screen_set_sprite_bank(YisVal scrv, YisVal bankv) {
+  vimana_screen *screen = vimana_screen_from_val(
+      scrv, "vimana.screen.set_sprite_bank expects screen");
+  vimana_screen_set_sprite_bank(screen, (unsigned int)yis_as_int(bankv));
+}
+
+static YisVal __vimana_screen_sprite_bank(YisVal scrv) {
+  vimana_screen *screen = vimana_screen_from_val(
+      scrv, "vimana.screen.sprite_bank expects screen");
+  return YV_INT(vimana_screen_sprite_bank(screen));
+}
+
+static void __vimana_screen_set_gfx(YisVal scrv, YisVal addrv,
+                                     YisVal datav) {
+  vimana_screen *screen = vimana_screen_from_val(
+      scrv, "vimana.screen.set_gfx expects screen");
+  if (datav.tag != EVT_ARR)
+    yis_trap("vimana.screen.set_gfx expects byte array");
+  YisArr *arr = (YisArr *)datav.as.p;
+  size_t len = arr ? arr->len : 0;
+  uint8_t *bytes = len > 0 ? (uint8_t *)malloc(len) : NULL;
+  if (len > 0 && !bytes)
+    return;
+  for (size_t i = 0; i < len; i++)
+    bytes[i] = vimana_byte_from_val(arr->items[i]);
+  vimana_screen_set_gfx(screen, (unsigned int)yis_as_int(addrv), bytes,
+                         (unsigned int)len);
+  free(bytes);
+}
+
+static YisVal __vimana_screen_gfx(YisVal scrv, YisVal addrv) {
+  vimana_screen *screen = vimana_screen_from_val(
+      scrv, "vimana.screen.gfx expects screen");
+  const uint8_t *ptr =
+      vimana_screen_gfx(screen, (unsigned int)yis_as_int(addrv));
+  if (!ptr)
+    return YV_INT(0);
+  return YV_INT(*ptr);
+}
+
 static YisVal __vimana_screen_width(YisVal scrv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.width expects screen");
