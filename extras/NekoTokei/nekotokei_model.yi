@@ -1,0 +1,37 @@
+cask nekotokei_model
+
+bring stdr
+bring vimana
+
+def WIN_W = 96
+def WIN_H = 192
+def CENTER_X = 48
+def CENTER_Y = 120
+
+def ?tick = 0
+def ?frame_count = 0
+def ?last_second = -1
+def ?dirty = true
+
+:: step(dt = vimana.datetime) (( bool ))
+    let now = dt.now()
+    let sec = dt.second_at(now)
+    if sec != last_second
+        last_second = sec
+        tick = 0
+        frame_count = 0
+        dirty = true
+
+    frame_count += 1
+    let new_tick = stdr.floor(frame_count * 16 / 60)
+    if new_tick > 15
+        new_tick = 15
+    if new_tick != tick
+        tick = new_tick
+        dirty = true
+
+    if dirty
+        dirty = false
+        <- true
+    <- false
+;

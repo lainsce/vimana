@@ -11,17 +11,17 @@ bring casevo_browser
 -- Icon tiles (8×8 1bpp)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def fill_icn  = [255, 255, 255, 255, 255, 255, 255, 255]
-def diag_icn  = [17, 34, 68, 136, 17, 34, 68, 136]
-def line_icn  = [170, 0, 0, 0, 0, 0, 0, 0]
-def frame_tl  = [255, 128, 128, 128, 128, 128, 128, 128]
-def frame_left = [128, 128, 128, 128, 128, 128, 128, 128]
-def frame_top = [255, 0, 0, 0, 0, 0, 0, 0]
-def frame_rx  = [0, 1, 0, 1, 0, 1, 0, 1]
-def frame_ry  = [85, 0, 0, 0, 0, 0, 0, 0]
-def frame_rxy = [85, 1, 0, 1, 0, 1, 0, 1]
-def arrow_top = [0, 0, 0, 0, 128, 192, 224, 240]
-def arrow_bot = [224, 192, 128, 0, 0, 0, 0, 0]
+def fill_icn  = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+def diag_icn  = [0x11, 0x22, 0x44, 0x88, 0x11, 0x22, 0x44, 0x88]
+def line_icn  = [0xAA, 0, 0, 0, 0, 0, 0, 0]
+def frame_tl  = [0xFF, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]
+def frame_left = [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]
+def frame_top = [0xFF, 0, 0, 0, 0, 0, 0, 0]
+def frame_rx  = [0, 0x01, 0, 0x01, 0, 0x01, 0, 0x01]
+def frame_ry  = [0x55, 0, 0, 0, 0, 0, 0, 0]
+def frame_rxy = [0x55, 0x01, 0, 0x01, 0, 0x01, 0, 0x01]
+def arrow_top = [0, 0, 0, 0, 0x80, 0xC0, 0xE0, 0xF0]
+def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Helpers
@@ -214,14 +214,14 @@ def arrow_bot = [224, 192, 128, 0, 0, 0, 0, 0]
 -- File browser overlay
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def HALFTONE = [170, 85, 170, 85, 170, 85, 170, 85]
-def FILL_ICN = [255, 255, 255, 255, 255, 255, 255, 255]
-def WAVEY = [255, 255, 255, 124, 56, 0, 0, 0]
+def HALFTONE = [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]
+def FILL_ICN = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+def WAVEY = [0xFF, 0xFF, 0xFF, 0x7C, 0x38, 0, 0, 0]
 def EMPTY_ICN = [0, 0, 0, 0, 0, 0, 0, 0]
-def CAP_LEFT_TOP = [7, 15, 15, 15, 15, 15, 15, 15]
-def CAP_LEFT_BOT = [15, 15, 15, 15, 15, 15, 15, 7]
-def CAP_RIGHT_TOP = [128, 192, 224, 240, 248, 252, 254, 255]
-def CAP_RIGHT_BOT = [255, 254, 252, 248, 240, 224, 192, 128]
+def CAP_LEFT_TOP = [0x07, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F]
+def CAP_LEFT_BOT = [0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x07]
+def CAP_RIGHT_TOP = [0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF]
+def CAP_RIGHT_BOT = [0xFF, 0xFE, 0xFC, 0xF8, 0xF0, 0xE0, 0xC0, 0x80]
 
 def FONT_W = 8
 def BROWSER_X = 16

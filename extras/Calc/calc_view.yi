@@ -6,27 +6,7 @@ bring calc_model
 bring calc_ops
 bring calc_icons
 
---| Hex Decode |--
-
-: hex_val(c = any) (( num ))
-    if c == "0" <- 0
-    if c == "1" <- 1
-    if c == "2" <- 2
-    if c == "3" <- 3
-    if c == "4" <- 4
-    if c == "5" <- 5
-    if c == "6" <- 6
-    if c == "7" <- 7
-    if c == "8" <- 8
-    if c == "9" <- 9
-    if c == "a" <- 10
-    if c == "b" <- 11
-    if c == "c" <- 12
-    if c == "d" <- 13
-    if c == "e" <- 14
-    if c == "f" <- 15
-    <- 0
-;
+--| Pixel Drawing |--
 
 : draw_px(scr = vimana.screen, x = num, y = num, color = num) (( -- ))
     scr.set_x(x).set_y(y).pixel(color)
@@ -38,8 +18,8 @@ bring calc_icons
 : draw_icn_px(scr = vimana.screen, px = num, py = num, data = [any], color = num) (( -- ))
     for (let ?w = 0; w < 4; w += 1)
         let word = data[w]
-        let hi = hex_val(stdr.char_at(word, 0)) * 16 + hex_val(stdr.char_at(word, 1))
-        let lo = hex_val(stdr.char_at(word, 2)) * 16 + hex_val(stdr.char_at(word, 3))
+        let hi = stdr.floor(word / 0x100)
+        let lo = word % 0x100
         let y0 = py + w * 2
         let y1 = y0 + 1
         let ?b = hi
@@ -59,8 +39,8 @@ bring calc_icons
 : draw_icn_px_fill(scr = vimana.screen, px = num, py = num, data = [any], fg = num, bg = num) (( -- ))
     for (let ?w = 0; w < 4; w += 1)
         let word = data[w]
-        let hi = hex_val(stdr.char_at(word, 0)) * 16 + hex_val(stdr.char_at(word, 1))
-        let lo = hex_val(stdr.char_at(word, 2)) * 16 + hex_val(stdr.char_at(word, 3))
+        let hi = stdr.floor(word / 0x100)
+        let lo = word % 0x100
         let y0 = py + w * 2
         let y1 = y0 + 1
         let ?b = hi
@@ -171,14 +151,14 @@ bring calc_icons
     elif pressed && is_opc
         base = calc_icons.CHROME_OPC_DN
 
-    scr.set_auto(38)
+    scr.set_auto(0x26)
     -- Top row (TL TC TR)
-    scr.set_addr(base).set_x(tx).set_y(ty).sprite(129)
+    scr.set_addr(base).set_x(tx).set_y(ty).sprite(0x81)
     -- Middle rows (ML MC MR)
     for (let ?r = 1; r < th - 1; r += 1)
-        scr.set_addr(base + 48).set_x(tx).sprite(129)
+        scr.set_addr(base + 0x30).set_x(tx).sprite(0x81)
     -- Bottom row (BL BC BR)
-    scr.set_addr(base + 96).set_x(tx).sprite(129)
+    scr.set_addr(base + 0x60).set_x(tx).sprite(0x81)
     scr.set_auto(0)
 ;
 

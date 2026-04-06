@@ -8,10 +8,10 @@ bring vimana
 -- ─────────────────────────────────────────────────────────────────────────────
 
 def CHROME_UP = 0
-def CHROME_DN = 144
-def CHROME_OPC_UP = 288
-def CHROME_OPC_DN = 432
-def DPAD_ADDR = 576
+def CHROME_DN = 0x90
+def CHROME_OPC_UP = 0x120
+def CHROME_OPC_DN = 0x1B0
+def DPAD_ADDR = 0x240
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Button chrome tiles (2bpp packed, 8 rows × 16-bit per tile)
@@ -19,51 +19,51 @@ def DPAD_ADDR = 576
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- UP state
-def UP_TL = [0, 341, 1706, 6826, 6826, 6826, 6826, 6826]
-def UP_TC = [0, 21845, 43690, 43690, 43690, 43690, 43690, 43690]
-def UP_TR = [0, 21824, 43664, 43684, 43684, 43684, 43684, 43684]
-def UP_ML = [6826, 6826, 6826, 6826, 6826, 6826, 6826, 6826]
-def UP_MC = [43690, 43690, 43690, 43690, 43690, 43690, 43690, 43690]
-def UP_MR = [43684, 43684, 43684, 43684, 43684, 43684, 43684, 43684]
-def UP_BL = [6826, 6826, 6826, 6826, 4778, 1024, 341, 0]
-def UP_BC = [43690, 43690, 43690, 43690, 43690, 0, 21845, 0]
-def UP_BR = [43684, 43684, 43684, 43684, 43652, 16, 21824, 0]
+def UP_TL = [0x0000, 0x0155, 0x06AA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA]
+def UP_TC = [0x0000, 0x5555, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA]
+def UP_TR = [0x0000, 0x5540, 0xAA90, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4]
+def UP_ML = [0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA]
+def UP_MC = [0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA]
+def UP_MR = [0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4]
+def UP_BL = [0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x12AA, 0x0400, 0x0155, 0x0000]
+def UP_BC = [0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0x0000, 0x5555, 0x0000]
+def UP_BR = [0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAA84, 0x10, 0x5540, 0x0000]
 
 -- DN state (pressed)
-def DN_TL = [0, 0, 341, 1024, 4778, 6826, 6826, 6826]
-def DN_TC = [0, 0, 21845, 0, 43690, 43690, 43690, 43690]
-def DN_TR = [0, 0, 21824, 16, 43652, 43684, 43684, 43684]
-def DN_ML = [6826, 6826, 6826, 6826, 6826, 6826, 6826, 6826]
-def DN_MC = [43690, 43690, 43690, 43690, 43690, 43690, 43690, 43690]
-def DN_MR = [43684, 43684, 43684, 43684, 43684, 43684, 43684, 43684]
-def DN_BL = [6826, 6826, 6826, 6826, 6826, 1706, 341, 0]
-def DN_BC = [43690, 43690, 43690, 43690, 43690, 43690, 21845, 0]
-def DN_BR = [43684, 43684, 43684, 43684, 43684, 43664, 21824, 0]
+def DN_TL = [0x0000, 0x0000, 0x0155, 0x0400, 0x12AA, 0x1AAA, 0x1AAA, 0x1AAA]
+def DN_TC = [0x0000, 0x0000, 0x5555, 0x0000, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA]
+def DN_TR = [0x0000, 0x0000, 0x5540, 0x10, 0xAA84, 0xAAA4, 0xAAA4, 0xAAA4]
+def DN_ML = [0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA]
+def DN_MC = [0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA]
+def DN_MR = [0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4]
+def DN_BL = [0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x1AAA, 0x06AA, 0x0155, 0x0000]
+def DN_BC = [0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0x5555, 0x0000]
+def DN_BR = [0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAAA4, 0xAA90, 0x5540, 0x0000]
 
 -- OPC_UP state (opcode button normal)
-def OPC_UP_TL = [0, 341, 2047, 8191, 8191, 8191, 8191, 8191]
-def OPC_UP_TC = [0, 21845, 65535, 65535, 65535, 65535, 65535, 65535]
-def OPC_UP_TR = [0, 21824, 65488, 65524, 65524, 65524, 65524, 65524]
-def OPC_UP_ML = [8191, 8191, 8191, 8191, 8191, 8191, 8191, 8191]
-def OPC_UP_MC = [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535]
-def OPC_UP_MR = [65524, 65524, 65524, 65524, 65524, 65524, 65524, 65524]
-def OPC_UP_BL = [8191, 8191, 8191, 8191, 5119, 1024, 341, 0]
-def OPC_UP_BC = [65535, 65535, 65535, 65535, 65535, 0, 21845, 0]
-def OPC_UP_BR = [65524, 65524, 65524, 65524, 65476, 16, 21824, 0]
+def OPC_UP_TL = [0x0000, 0x0155, 0x07FF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF]
+def OPC_UP_TC = [0x0000, 0x5555, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]
+def OPC_UP_TR = [0x0000, 0x5540, 0xFFD0, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4]
+def OPC_UP_ML = [0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF]
+def OPC_UP_MC = [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]
+def OPC_UP_MR = [0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4]
+def OPC_UP_BL = [0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x13FF, 0x0400, 0x0155, 0x0000]
+def OPC_UP_BC = [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x5555, 0x0000]
+def OPC_UP_BR = [0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFC4, 0x10, 0x5540, 0x0000]
 
 -- OPC_DN state (opcode button pressed)
-def OPC_DN_TL = [0, 0, 341, 2047, 8191, 8191, 8191, 8191]
-def OPC_DN_TC = [0, 0, 21845, 65535, 65535, 65535, 65535, 65535]
-def OPC_DN_TR = [0, 0, 21824, 65488, 65524, 65524, 65524, 65524]
-def OPC_DN_ML = [8191, 8191, 8191, 8191, 8191, 8191, 8191, 8191]
-def OPC_DN_MC = [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535]
-def OPC_DN_MR = [65524, 65524, 65524, 65524, 65524, 65524, 65524, 65524]
-def OPC_DN_BL = [8191, 8191, 8191, 8191, 5119, 1024, 341, 0]
-def OPC_DN_BC = [65535, 65535, 65535, 65535, 65535, 0, 21845, 0]
-def OPC_DN_BR = [65524, 65524, 65524, 65524, 65476, 16, 21824, 0]
+def OPC_DN_TL = [0x0000, 0x0000, 0x0155, 0x07FF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF]
+def OPC_DN_TC = [0x0000, 0x0000, 0x5555, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]
+def OPC_DN_TR = [0x0000, 0x0000, 0x5540, 0xFFD0, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4]
+def OPC_DN_ML = [0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF]
+def OPC_DN_MC = [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]
+def OPC_DN_MR = [0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4]
+def OPC_DN_BL = [0x1FFF, 0x1FFF, 0x1FFF, 0x1FFF, 0x13FF, 0x0400, 0x0155, 0x0000]
+def OPC_DN_BC = [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x5555, 0x0000]
+def OPC_DN_BR = [0xFFF4, 0xFFF4, 0xFFF4, 0xFFF4, 0xFFC4, 0x10, 0x5540, 0x0000]
 
 -- Selection cursor (2bpp packed)
-def DPAD = [0, 0, 21845, 27305, 27305, 6820, 1680, 320]
+def DPAD = [0x0000, 0x0000, 0x5555, 0x6AA9, 0x6AA9, 0x1AA4, 0x0690, 0x0140]
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Load all 2bpp sprites into sprite memory
@@ -72,44 +72,44 @@ def DPAD = [0, 0, 21845, 27305, 27305, 6820, 1680, 320]
 :: load_sprites(scr = vimana.screen) (( -- ))
     -- UP chrome
     scr.set_sprite(CHROME_UP, UP_TL, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_UP + 16, UP_TC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_UP + 32, UP_TR, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_UP + 48, UP_ML, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_UP + 64, UP_MC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_UP + 80, UP_MR, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_UP + 96, UP_BL, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_UP + 112, UP_BC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_UP + 128, UP_BR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_UP + 0x10, UP_TC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_UP + 0x20, UP_TR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_UP + 0x30, UP_ML, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_UP + 0x40, UP_MC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_UP + 0x50, UP_MR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_UP + 0x60, UP_BL, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_UP + 0x70, UP_BC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_UP + 0x80, UP_BR, vimana.sprite_2bpp)
     -- DN chrome
     scr.set_sprite(CHROME_DN, DN_TL, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN + 16, DN_TC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN + 32, DN_TR, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN + 48, DN_ML, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN + 64, DN_MC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN + 80, DN_MR, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN + 96, DN_BL, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN + 112, DN_BC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN + 128, DN_BR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN + 0x10, DN_TC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN + 0x20, DN_TR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN + 0x30, DN_ML, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN + 0x40, DN_MC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN + 0x50, DN_MR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN + 0x60, DN_BL, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN + 0x70, DN_BC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN + 0x80, DN_BR, vimana.sprite_2bpp)
     -- OPC_UP chrome
     scr.set_sprite(CHROME_OPC_UP, OPC_UP_TL, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP + 16, OPC_UP_TC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP + 32, OPC_UP_TR, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP + 48, OPC_UP_ML, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP + 64, OPC_UP_MC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP + 80, OPC_UP_MR, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP + 96, OPC_UP_BL, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP + 112, OPC_UP_BC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP + 128, OPC_UP_BR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP + 0x10, OPC_UP_TC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP + 0x20, OPC_UP_TR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP + 0x30, OPC_UP_ML, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP + 0x40, OPC_UP_MC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP + 0x50, OPC_UP_MR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP + 0x60, OPC_UP_BL, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP + 0x70, OPC_UP_BC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP + 0x80, OPC_UP_BR, vimana.sprite_2bpp)
     -- OPC_DN chrome
     scr.set_sprite(CHROME_OPC_DN, OPC_DN_TL, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN + 16, OPC_DN_TC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN + 32, OPC_DN_TR, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN + 48, OPC_DN_ML, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN + 64, OPC_DN_MC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN + 80, OPC_DN_MR, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN + 96, OPC_DN_BL, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN + 112, OPC_DN_BC, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN + 128, OPC_DN_BR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN + 0x10, OPC_DN_TC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN + 0x20, OPC_DN_TR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN + 0x30, OPC_DN_ML, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN + 0x40, OPC_DN_MC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN + 0x50, OPC_DN_MR, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN + 0x60, OPC_DN_BL, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN + 0x70, OPC_DN_BC, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN + 0x80, OPC_DN_BR, vimana.sprite_2bpp)
     -- Cursor
     scr.set_sprite(DPAD_ADDR, DPAD, vimana.sprite_2bpp)
 ;
@@ -118,22 +118,22 @@ def DPAD = [0, 0, 21845, 27305, 27305, 6820, 1680, 320]
 -- Misc 1bpp icons (8x8, used for pixel-level drawing)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def FILL    = ["ffff", "ffff", "ffff", "ffff"]
-def EMPTY   = ["0000", "0000", "0000", "0000"]
-def ARROW   = ["80c0", "e0f0", "f0e0", "c080"]
-def DOTTED  = ["0000", "0055", "0000", "0000"]
-def BIN_0   = ["6090", "9090", "9090", "9060"]
-def BIN_1   = ["60f0", "f0f0", "f0f0", "f060"]
-def CARET   = ["0000", "0018", "3c66", "4200"]
-def MODE_D  = ["e090", "9090", "9090", "90e0"]
-def MODE_S  = ["1010", "2020", "4040", "8080"]
-def MODE_F  = ["7080", "8080", "e080", "8080"]
+def FILL    = [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]
+def EMPTY   = [0x0000, 0x0000, 0x0000, 0x0000]
+def ARROW   = [0x80C0, 0xE0F0, 0xF0E0, 0xC080]
+def DOTTED  = [0x0000, 0x0055, 0x0000, 0x0000]
+def BIN_0   = [0x6090, 0x9090, 0x9090, 0x9060]
+def BIN_1   = [0x60F0, 0xF0F0, 0xF0F0, 0xF060]
+def CARET   = [0x0000, 0x0018, 0x3C66, 0x4200]
+def MODE_D  = [0xE090, 0x9090, 0x9090, 0x90E0]
+def MODE_S  = [0x1010, 0x2020, 0x4040, 0x8080]
+def MODE_F  = [0x7080, 0x8080, 0xE080, 0x8080]
 
-def SLASH_T = ["0000", "0006", "060c", "0c18"]
-def SLASH_B = ["1830", "3060", "6000", "0000"]
+def SLASH_T = [0x0000, 0x0006, 0x060C, 0x0C18]
+def SLASH_B = [0x1830, 0x3060, 0x6000, 0x0000]
 
-def DOT_T   = ["0000", "0000", "0000", "0000"]
-def DOT_B   = ["0000", "0018", "1800", "0000"]
+def DOT_T   = [0x0000, 0x0000, 0x0000, 0x0000]
+def DOT_B   = [0x0000, 0x0018, 0x1800, 0x0000]
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Digit font (16x16 = 4 tiles per digit)
@@ -142,38 +142,38 @@ def DOT_B   = ["0000", "0018", "1800", "0000"]
 
 :: digit(n = num) (( [any] ))
     if n == 0
-        <- ["0000","000f","1f18","1818","0000","00f0","f818","1818","1818","181f","0f00","0000","1818","18f8","f000","0000"]
+        <- [0x0000, 0x000F, 0x1F18, 0x1818, 0x0000, 0x00F0, 0xF818, 0x1818, 0x1818, 0x181F, 0x0F00, 0x0000, 0x1818, 0x18F8, 0xF000, 0x0000]
     if n == 1
-        <- ["0000","0003","0307","0701","0000","0080","8080","8080","0101","0101","0100","0000","8080","8080","8000","0000"]
+        <- [0x0000, 0x0003, 0x0307, 0x0701, 0x0000, 0x0080, 0x8080, 0x8080, 0x0101, 0x0101, 0x0100, 0x0000, 0x8080, 0x8080, 0x8000, 0x0000]
     if n == 2
-        <- ["0000","001f","1f00","000f","0000","00f0","f818","18f8","1f18","181f","1f00","0000","f000","00f8","f800","0000"]
+        <- [0x0000, 0x001F, 0x1F00, 0x000F, 0x0000, 0x00F0, 0xF818, 0x18F8, 0x1F18, 0x181F, 0x1F00, 0x0000, 0xF000, 0x00F8, 0xF800, 0x0000]
     if n == 3
-        <- ["0000","001f","1f00","001f","0000","00f0","f818","18f0","1f00","001f","1f00","0000","f018","18f8","f000","0000"]
+        <- [0x0000, 0x001F, 0x1F00, 0x001F, 0x0000, 0x00F0, 0xF818, 0x18F0, 0x1F00, 0x001F, 0x1F00, 0x0000, 0xF018, 0x18F8, 0xF000, 0x0000]
     if n == 4
-        <- ["0000","0018","1818","181f","0000","0018","1818","18f8","0f00","0000","0000","0000","f818","1818","1800","0000"]
+        <- [0x0000, 0x0018, 0x1818, 0x181F, 0x0000, 0x0018, 0x1818, 0x18F8, 0x0F00, 0x0000, 0x0000, 0x0000, 0xF818, 0x1818, 0x1800, 0x0000]
     if n == 5
-        <- ["0000","001f","1f18","181f","0000","00f8","f800","00f0","0f00","001f","1f00","0000","f818","18f8","f000","0000"]
+        <- [0x0000, 0x001F, 0x1F18, 0x181F, 0x0000, 0x00F8, 0xF800, 0x00F0, 0x0F00, 0x001F, 0x1F00, 0x0000, 0xF818, 0x18F8, 0xF000, 0x0000]
     if n == 6
-        <- ["0000","0018","1818","181f","0000","0000","0000","00f0","1f18","181f","0f00","0000","f818","18f8","f000","0000"]
+        <- [0x0000, 0x0018, 0x1818, 0x181F, 0x0000, 0x0000, 0x0000, 0x00F0, 0x1F18, 0x181F, 0x0F00, 0x0000, 0xF818, 0x18F8, 0xF000, 0x0000]
     if n == 7
-        <- ["0000","001f","1f00","0000","0000","00f8","f818","1830","0000","0000","0000","0000","3060","60c0","c000","0000"]
+        <- [0x0000, 0x001F, 0x1F00, 0x0000, 0x0000, 0x00F8, 0xF818, 0x1830, 0x0000, 0x0000, 0x0000, 0x0000, 0x3060, 0x60C0, 0xC000, 0x0000]
     if n == 8
-        <- ["0000","000f","1f18","180f","0000","00f0","f818","18f0","0f18","181f","0f00","0000","f018","18f8","f000","0000"]
+        <- [0x0000, 0x000F, 0x1F18, 0x180F, 0x0000, 0x00F0, 0xF818, 0x18F0, 0x0F18, 0x181F, 0x0F00, 0x0000, 0xF018, 0x18F8, 0xF000, 0x0000]
     if n == 9
-        <- ["0000","000f","1f18","181f","0000","00f0","f818","18f8","0f00","0000","0000","0000","f818","1818","1800","0000"]
+        <- [0x0000, 0x000F, 0x1F18, 0x181F, 0x0000, 0x00F0, 0xF818, 0x18F8, 0x0F00, 0x0000, 0x0000, 0x0000, 0xF818, 0x1818, 0x1800, 0x0000]
     if n == 10
-        <- ["0000","000f","1f18","181f","0000","00f0","f818","18f8","1f18","1818","1800","0000","f818","1818","1800","0000"]
+        <- [0x0000, 0x000F, 0x1F18, 0x181F, 0x0000, 0x00F0, 0xF818, 0x18F8, 0x1F18, 0x1818, 0x1800, 0x0000, 0xF818, 0x1818, 0x1800, 0x0000]
     if n == 11
-        <- ["0000","001f","1f18","181f","0000","00f0","f818","18f0","1f18","181f","1f00","0000","f018","18f8","f000","0000"]
+        <- [0x0000, 0x001F, 0x1F18, 0x181F, 0x0000, 0x00F0, 0xF818, 0x18F0, 0x1F18, 0x181F, 0x1F00, 0x0000, 0xF018, 0x18F8, 0xF000, 0x0000]
     if n == 12
-        <- ["0000","000f","1f18","1818","0000","00f8","f800","0000","1818","181f","0f00","0000","0000","00f8","f800","0000"]
+        <- [0x0000, 0x000F, 0x1F18, 0x1818, 0x0000, 0x00F8, 0xF800, 0x0000, 0x1818, 0x181F, 0x0F00, 0x0000, 0x0000, 0x00F8, 0xF800, 0x0000]
     if n == 13
-        <- ["0000","001f","1f18","1818","0000","00f0","f818","1818","1818","181f","1f00","0000","1818","18f8","f000","0000"]
+        <- [0x0000, 0x001F, 0x1F18, 0x1818, 0x0000, 0x00F0, 0xF818, 0x1818, 0x1818, 0x181F, 0x1F00, 0x0000, 0x1818, 0x18F8, 0xF000, 0x0000]
     if n == 14
-        <- ["0000","001f","1f18","181f","0000","00f8","f800","00f8","1f18","181f","1f00","0000","f800","00f8","f800","0000"]
+        <- [0x0000, 0x001F, 0x1F18, 0x181F, 0x0000, 0x00F8, 0xF800, 0x00F8, 0x1F18, 0x181F, 0x1F00, 0x0000, 0xF800, 0x00F8, 0xF800, 0x0000]
     if n == 15
-        <- ["0000","000f","1f18","181f","0000","00f8","f800","0080","1f18","1818","1800","0000","8000","0000","0000","0000"]
-    <- ["0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000"]
+        <- [0x0000, 0x000F, 0x1F18, 0x181F, 0x0000, 0x00F8, 0xF800, 0x0080, 0x1F18, 0x1818, 0x1800, 0x0000, 0x8000, 0x0000, 0x0000, 0x0000]
+    <- [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -183,22 +183,22 @@ def DOT_B   = ["0000", "0018", "1800", "0000"]
 
 :: mod_icon(n = num) (( [any] ))
     if n == 0
-        <- ["0000","0018","1806","0601","0000","0018","1860","6080","0106","0618","1800","0000","8060","6018","1800","0000"]
+        <- [0x0000, 0x0018, 0x1806, 0x0601, 0x0000, 0x0018, 0x1860, 0x6080, 0x0106, 0x0618, 0x1800, 0x0000, 0x8060, 0x6018, 0x1800, 0x0000]
     if n == 1
-        <- ["0000","0001","0100","001f","0000","0080","8000","00f8","1f00","0001","0100","0000","f800","0080","8000","0000"]
+        <- [0x0000, 0x0001, 0x0100, 0x001F, 0x0000, 0x0080, 0x8000, 0x00F8, 0x1F00, 0x0001, 0x0100, 0x0000, 0xF800, 0x0080, 0x8000, 0x0000]
     if n == 2
-        <- ["0000","0001","0101","011f","0000","0080","8080","80f8","1f01","0101","0100","0000","f880","8080","8000","0000"]
+        <- [0x0000, 0x0001, 0x0101, 0x011F, 0x0000, 0x0080, 0x8080, 0x80F8, 0x1F01, 0x0101, 0x0100, 0x0000, 0xF880, 0x8080, 0x8000, 0x0000]
     if n == 3
-        <- ["0000","0000","0000","001f","0000","0000","0000","00f8","1f00","0000","0000","0000","f800","0000","0000","0000"]
+        <- [0x0000, 0x0000, 0x0000, 0x001F, 0x0000, 0x0000, 0x0000, 0x00F8, 0x1F00, 0x0000, 0x0000, 0x0000, 0xF800, 0x0000, 0x0000, 0x0000]
     if n == 4
-        <- ["0000","000f","1f18","180f","0000","00e0","e000","00f8","0f18","181f","0f00","0000","f860","60e0","e000","0000"]
+        <- [0x0000, 0x000F, 0x1F18, 0x180F, 0x0000, 0x00E0, 0xE000, 0x00F8, 0x0F18, 0x181F, 0x0F00, 0x0000, 0xF860, 0x60E0, 0xE000, 0x0000]
     if n == 5
-        <- ["0000","0001","0101","0101","0000","0080","8080","8080","0101","0101","0100","0000","8080","8080","8000","0000"]
+        <- [0x0000, 0x0001, 0x0101, 0x0101, 0x0000, 0x0080, 0x8080, 0x8080, 0x0101, 0x0101, 0x0100, 0x0000, 0x8080, 0x8080, 0x8000, 0x0000]
     if n == 6
-        <- ["0000","0006","060c","0c19","0000","0060","60c0","c080","190c","0c06","0600","0000","80c0","c060","6000","0000"]
+        <- [0x0000, 0x0006, 0x060C, 0x0C19, 0x0000, 0x0060, 0x60C0, 0xC080, 0x190C, 0x0C06, 0x0600, 0x0000, 0x80C0, 0xC060, 0x6000, 0x0000]
     if n == 7
-        <- ["0000","0006","0603","0301","0000","0060","6030","3098","0103","0306","0600","0000","9830","3060","6000","0000"]
-    <- ["0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000","0000"]
+        <- [0x0000, 0x0006, 0x0603, 0x0301, 0x0000, 0x0060, 0x6030, 0x3098, 0x0103, 0x0306, 0x0600, 0x0000, 0x9830, 0x3060, 0x6000, 0x0000]
+    <- [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -208,14 +208,14 @@ def DOT_B   = ["0000", "0018", "1800", "0000"]
 
 :: ctl_icon(n = num) (( [any] ))
     if n == 0
-        <- ["0000", "183c", "3c18", "0000"]
+        <- [0x0000, 0x183C, 0x3C18, 0x0000]
     if n == 1
-        <- ["0000", "007f", "fe00", "0000"]
+        <- [0x0000, 0x007F, 0xFE00, 0x0000]
     if n == 2
-        <- ["006c", "6666", "6666", "3600"]
+        <- [0x006C, 0x6666, 0x6666, 0x3600]
     if n == 3
-        <- ["0033", "6666", "6666", "cc00"]
-    <- ["0000", "0000", "0000", "0000"]
+        <- [0x0033, 0x6666, 0x6666, 0xCC00]
+    <- [0x0000, 0x0000, 0x0000, 0x0000]
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -225,12 +225,12 @@ def DOT_B   = ["0000", "0018", "1800", "0000"]
 
 :: wst_icon(n = num) (( [any] ))
     if n == 0
-        <- ["0018", "3c7e", "1818", "1800"]
+        <- [0x0018, 0x3C7E, 0x1818, 0x1800]
     if n == 1
-        <- ["0018", "1818", "7e3c", "1800"]
+        <- [0x0018, 0x1818, 0x7E3C, 0x1800]
     if n == 2
-        <- ["007c", "7e02", "407e", "3e00"]
+        <- [0x007C, 0x7E02, 0x407E, 0x3E00]
     if n == 3
-        <- ["003c", "6666", "6666", "6c00"]
-    <- ["0000", "0000", "0000", "0000"]
+        <- [0x003C, 0x6666, 0x6666, 0x6C00]
+    <- [0x0000, 0x0000, 0x0000, 0x0000]
 ;

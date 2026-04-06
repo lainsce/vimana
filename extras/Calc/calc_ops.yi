@@ -26,12 +26,12 @@ bring calc_model
 -- Bitwise AND on 16-bit integers
 :: bit_and(a = num, b = num) (( num ))
     let ?result = 0
-    let ?pa = stdr.floor(a) % 65536
-    let ?pb = stdr.floor(b) % 65536
+    let ?pa = stdr.floor(a) % 0x10000
+    let ?pb = stdr.floor(b) % 0x10000
     if pa < 0
-        pa = pa + 65536
+        pa = pa + 0x10000
     if pb < 0
-        pb = pb + 65536
+        pb = pb + 0x10000
     for (let ?bit = 0; bit < 16; bit += 1)
         let ba = stdr.floor(pa / 2)
         let ra = pa - ba * 2
@@ -50,12 +50,12 @@ bring calc_model
 -- Bitwise OR on 16-bit integers
 :: bit_or(a = num, b = num) (( num ))
     let ?result = 0
-    let ?pa = stdr.floor(a) % 65536
-    let ?pb = stdr.floor(b) % 65536
+    let ?pa = stdr.floor(a) % 0x10000
+    let ?pb = stdr.floor(b) % 0x10000
     if pa < 0
-        pa = pa + 65536
+        pa = pa + 0x10000
     if pb < 0
-        pb = pb + 65536
+        pb = pb + 0x10000
     for (let ?bit = 0; bit < 16; bit += 1)
         let ba = stdr.floor(pa / 2)
         let ra = pa - ba * 2
@@ -73,9 +73,9 @@ bring calc_model
 
 -- Get bit at position (0=LSB) of a 16-bit value
 :: get_bit(val = num, pos = num) (( num ))
-    let ?v = stdr.floor(val) % 65536
+    let ?v = stdr.floor(val) % 0x10000
     if v < 0
-        v = v + 65536
+        v = v + 0x10000
     for (let ?i = 0; i < pos; i += 1)
         v = stdr.floor(v / 2)
     <- v - stdr.floor(v / 2) * 2
@@ -97,18 +97,18 @@ bring calc_model
 ;
 
 :: to_hex(val = num) (( string ))
-    let ?v = stdr.floor(val) % 65536
+    let ?v = stdr.floor(val) % 0x10000
     if v < 0
-        v = v + 65536
+        v = v + 0x10000
     if v == 0
         <- "0"
     let ?s = ""
     let ?started = false
     -- 4 hex digits for 16-bit
-    let ?d3 = stdr.floor(v / 4096)
-    let r3 = v - d3 * 4096
-    let ?d2 = stdr.floor(r3 / 256)
-    let r2 = r3 - d2 * 256
+    let ?d3 = stdr.floor(v / 0x1000)
+    let r3 = v - d3 * 0x1000
+    let ?d2 = stdr.floor(r3 / 0x100)
+    let r2 = r3 - d2 * 0x100
     let ?d1 = stdr.floor(r2 / 16)
     let d0 = r2 - d1 * 16
     if d3 > 0
@@ -136,7 +136,7 @@ bring calc_model
         let whole = stdr.floor(n / d)
         let ?base = 1000
         if !calc_model.is_dec()
-            base = 4096
+            base = 0x1000
         let frac = stdr.floor(base * (n - whole * d) / d)
         <- format_num(whole) + "." + str(frac)
     <- format_num(n) + "/" + format_num(d)

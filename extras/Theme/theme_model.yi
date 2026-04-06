@@ -30,9 +30,9 @@ def SEP_Y = 147
 -- State
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def ? nib_r = [15,  0,  7, 15]
-def ? nib_g = [15,  0, 13, 11]
-def ? nib_b = [15,  0, 12,  2]
+def ? nib_r = [0x0F,  0,  0x07, 0x0F]
+def ? nib_g = [0x0F,  0, 0x0D, 0x0B]
+def ? nib_b = [0x0F,  0, 0x0C,  0x02]
 
 def ? selected = 0
 def ? dirty = true

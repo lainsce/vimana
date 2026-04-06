@@ -12,227 +12,227 @@ bring world_assets
 ;
 
 : draw_00(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 60, 60, 60], [0, 0, 0, 0, 252, 60, 60, 60], [60, 60, 63, 15, 0, 0, 0, 0], [60, 252, 252, 60, 60, 60, 60, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0xFC, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0xFC, 0xFC, 0x3C, 0x3C, 0x3C, 0x3C, 0], fg, bg)
 ;
 
 : draw_01(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 60, 60, 60], [0, 240, 252, 60, 60, 60, 60, 60], [60, 60, 63, 15, 0, 0, 0, 0], [252, 48, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0xFC, 0x30, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_02(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 60, 60, 60, 60], [0, 0, 0, 0, 60, 60, 60, 60], [60, 60, 63, 15, 0, 0, 0, 0], [204, 204, 252, 48, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0xCC, 0xCC, 0xFC, 0x30, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_03(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 60, 63, 51], [0, 60, 60, 60, 60, 60, 60, 60], [51, 60, 60, 60, 0, 0, 0, 0], [60, 252, 252, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3F, 0x33], [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0x33, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0xFC, 0xFC, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_04(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 60, 63, 63], [0, 0, 0, 0, 240, 60, 252, 252], [60, 60, 63, 15, 0, 0, 0, 0], [0, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x3C, 0x3F, 0x3F], [0, 0, 0, 0, 0xF0, 0x3C, 0xFC, 0xFC], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_05(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 60, 60, 60, 63, 63], [0, 252, 252, 0, 0, 0, 240, 240], [60, 60, 63, 63, 0, 0, 0, 0], [0, 0, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0xFC, 0xFC, 0, 0, 0, 0xF0, 0xF0], [0x3C, 0x3C, 0x3F, 0x3F, 0, 0, 0, 0], [0, 0, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_06(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 60, 63, 63, 60], [0, 0, 0, 0, 240, 60, 60, 0], [60, 60, 60, 60, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3C, 0x3F, 0x3F, 0x3C], [0, 0, 0, 0, 0xF0, 0x3C, 0x3C, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_07(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 60, 60, 60, 63, 63], [0, 240, 252, 60, 60, 60, 252, 240], [60, 60, 60, 60, 0, 0, 0, 0], [60, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0x3C, 0xFC, 0xF0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_08(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 63, 63, 60], [0, 0, 0, 0, 0, 240, 240, 0], [60, 60, 63, 15, 0, 0, 0, 0], [0, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F, 0x3C], [0, 0, 0, 0, 0, 0xF0, 0xF0, 0], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_09(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 3, 3, 3, 3, 3], [0, 252, 252, 192, 192, 192, 192, 192], [3, 3, 3, 3, 0, 0, 0, 0], [192, 192, 192, 192, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x03, 0x03, 0x03, 0x03, 0x03], [0, 0xFC, 0xFC, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0], [0x03, 0x03, 0x03, 0x03, 0, 0, 0, 0], [0xC0, 0xC0, 0xC0, 0xC0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_10(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 60, 60, 60, 60], [0, 0, 0, 0, 60, 60, 60, 60], [60, 60, 63, 15, 0, 15, 15, 0], [60, 60, 252, 252, 60, 240, 240, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0x0F, 0x0F, 0], [0x3C, 0x3C, 0xFC, 0xFC, 0x3C, 0xF0, 0xF0, 0], fg, bg)
 ;
 
 : draw_11(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 15, 15, 3], [0, 60, 60, 60, 60, 240, 240, 192], [3, 3, 3, 3, 0, 0, 0, 0], [192, 192, 192, 192, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x0F, 0x0F, 0x03], [0, 0x3C, 0x3C, 0x3C, 0x3C, 0xF0, 0xF0, 0xC0], [0x03, 0x03, 0x03, 0x03, 0, 0, 0, 0], [0xC0, 0xC0, 0xC0, 0xC0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_12(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 60, 60, 60, 60], [0, 0, 0, 0, 60, 60, 60, 60], [60, 60, 63, 15, 0, 0, 0, 0], [60, 60, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_13(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 60, 60, 60], [0, 60, 60, 60, 60, 60, 60, 60], [60, 60, 63, 15, 0, 0, 0, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_14(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 3, 3, 0, 15, 3, 3, 3], [0, 192, 192, 0, 240, 192, 192, 192], [3, 3, 15, 15, 0, 0, 0, 0], [192, 192, 240, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x03, 0x03, 0, 0x0F, 0x03, 0x03, 0x03], [0, 0xC0, 0xC0, 0, 0xF0, 0xC0, 0xC0, 0xC0], [0x03, 0x03, 0x0F, 0x0F, 0, 0, 0, 0], [0xC0, 0xC0, 0xF0, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_15(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 3, 3, 3, 3, 3], [0, 252, 252, 192, 192, 192, 192, 192], [3, 3, 63, 63, 0, 0, 0, 0], [192, 192, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x03, 0x03, 0x03, 0x03, 0x03], [0, 0xFC, 0xFC, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0], [0x03, 0x03, 0x3F, 0x3F, 0, 0, 0, 0], [0xC0, 0xC0, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_16(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 60, 60, 60], [0, 0, 0, 0, 240, 60, 60, 60], [60, 60, 63, 15, 0, 0, 0, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0xF0, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_17(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 60, 60, 60], [0, 240, 252, 60, 60, 60, 60, 60], [60, 60, 63, 15, 0, 0, 0, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_18(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 63, 60, 60, 60], [0, 0, 0, 0, 240, 60, 60, 60], [60, 63, 63, 60, 60, 60, 60, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3F, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0xF0, 0x3C, 0x3C, 0x3C], [0x3C, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3C, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_19(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 60, 60, 60, 63, 63], [0, 240, 252, 60, 60, 60, 252, 240], [60, 60, 60, 60, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0x3C, 0xFC, 0xF0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_20(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 60, 60, 60], [0, 0, 0, 0, 60, 252, 252, 60], [60, 60, 63, 15, 0, 0, 0, 0], [60, 60, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0x3C, 0xFC, 0xFC, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_21(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 60, 63, 63], [0, 240, 252, 60, 60, 60, 252, 252], [60, 60, 60, 60, 0, 0, 0, 0], [60, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0x3C, 0xFC, 0xFC], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_22(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 60, 63, 63], [0, 0, 0, 0, 240, 60, 252, 192], [3, 60, 63, 15, 0, 0, 0, 0], [252, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x3C, 0x3F, 0x3F], [0, 0, 0, 0, 0xF0, 0x3C, 0xFC, 0xC0], [0x03, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0xFC, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_23(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 60, 63, 15], [0, 240, 252, 60, 0, 0, 240, 240], [0, 60, 63, 15, 0, 0, 0, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x0F], [0, 0xF0, 0xFC, 0x3C, 0, 0, 0xF0, 0xF0], [0, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_24(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 60, 60, 60], [0, 60, 60, 60, 60, 252, 252, 60], [60, 60, 63, 15, 0, 0, 0, 0], [60, 60, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x3C, 0x3C, 0x3C], [0, 0x3C, 0x3C, 0x3C, 0x3C, 0xFC, 0xFC, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_25(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 60, 60, 60, 60, 60], [0, 240, 252, 60, 60, 60, 60, 60], [60, 60, 63, 63, 0, 0, 0, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x3F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_26(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 3, 15, 15, 15, 15, 15, 15], [0, 240, 252, 60, 0, 0, 240, 240], [15, 15, 63, 63, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x03, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F], [0, 0xF0, 0xFC, 0x3C, 0, 0, 0xF0, 0xF0], [0x0F, 0x0F, 0x3F, 0x3F, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_27(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 60, 60, 60, 63, 63], [0, 252, 252, 0, 0, 0, 240, 240], [60, 60, 60, 60, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0xFC, 0xFC, 0, 0, 0, 0xF0, 0xF0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_28(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 60, 60, 60], [0, 0, 0, 0, 60, 252, 252, 60], [60, 60, 63, 15, 0, 15, 15, 0], [60, 60, 252, 252, 60, 240, 240, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0x3C, 0xFC, 0xFC, 0x3C], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0x0F, 0x0F, 0], [0x3C, 0x3C, 0xFC, 0xFC, 0x3C, 0xF0, 0xF0, 0], fg, bg)
 ;
 
 : draw_29(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 60, 60, 60], [0, 240, 252, 60, 0, 0, 252, 252], [60, 60, 63, 15, 0, 0, 0, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0xF0, 0xFC, 0x3C, 0, 0, 0xFC, 0xFC], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_30(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 63, 63, 60], [0, 0, 0, 0, 240, 60, 60, 60], [60, 60, 60, 60, 0, 0, 0, 0], [60, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F, 0x3C], [0, 0, 0, 0, 0xF0, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_31(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 60, 63, 63], [0, 60, 60, 60, 60, 60, 252, 252], [60, 60, 60, 60, 0, 0, 0, 0], [60, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0xFC, 0xFC], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_32(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 0, 0, 0], [0, 240, 240, 0, 252, 240, 240, 240], [0, 0, 0, 0, 60, 15, 15, 0], [240, 240, 240, 240, 240, 192, 192, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0, 0, 0], [0, 0xF0, 0xF0, 0, 0xFC, 0xF0, 0xF0, 0xF0], [0, 0, 0, 0, 0x3C, 0x0F, 0x0F, 0], [0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xC0, 0xC0, 0], fg, bg)
 ;
 
 : draw_33(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 0, 0, 0, 0, 0], [0, 252, 252, 240, 240, 240, 240, 240], [0, 60, 63, 15, 0, 0, 0, 0], [240, 240, 240, 192, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0, 0, 0, 0, 0], [0, 0xFC, 0xFC, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0], [0, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0xF0, 0xF0, 0xF0, 0xC0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_34(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 15, 15, 15, 15, 15], [0, 0, 0, 0, 60, 240, 240, 192], [15, 15, 15, 15, 0, 0, 0, 0], [48, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F], [0, 0, 0, 0, 0x3C, 0xF0, 0xF0, 0xC0], [0x0F, 0x0F, 0x0F, 0x0F, 0, 0, 0, 0], [0x30, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_35(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 60, 63, 63], [0, 60, 60, 60, 240, 192, 192, 192], [60, 60, 60, 60, 0, 0, 0, 0], [240, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0x3C, 0x3C, 0x3C, 0xF0, 0xC0, 0xC0, 0xC0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0xF0, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_36(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 15, 15, 15, 15, 15], [0, 0, 0, 0, 0, 0, 0, 0], [15, 15, 15, 3, 0, 0, 0, 0], [0, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F], [0, 0, 0, 0, 0, 0, 0, 0], [0x0F, 0x0F, 0x0F, 0x03, 0, 0, 0, 0], [0, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_37(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 60, 60, 60], [0, 0, 0, 0, 0, 0, 0, 0], [60, 60, 63, 63, 0, 0, 0, 0], [0, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0, 0, 0, 0], [0x3C, 0x3C, 0x3F, 0x3F, 0, 0, 0, 0], [0, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_38(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 63, 48, 51, 3], [0, 0, 0, 0, 252, 60, 252, 240], [15, 60, 63, 63, 0, 0, 0, 0], [192, 12, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3F, 0x30, 0x33, 0x03], [0, 0, 0, 0, 0xFC, 0x3C, 0xFC, 0xF0], [0x0F, 0x3C, 0x3F, 0x3F, 0, 0, 0, 0], [0xC0, 0x0C, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_39(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 48, 0, 3, 15, 15], [0, 252, 252, 60, 252, 240, 240, 192], [63, 60, 63, 63, 0, 0, 0, 0], [0, 12, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x30, 0, 0x03, 0x0F, 0x0F], [0, 0xFC, 0xFC, 0x3C, 0xFC, 0xF0, 0xF0, 0xC0], [0x3F, 0x3C, 0x3F, 0x3F, 0, 0, 0, 0], [0, 0x0C, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_40(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 60, 60, 63, 15], [0, 0, 0, 0, 60, 60, 252, 192], [3, 60, 60, 60, 0, 0, 0, 0], [240, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3C, 0x3C, 0x3F, 0x0F], [0, 0, 0, 0, 0x3C, 0x3C, 0xFC, 0xC0], [0x03, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0xF0, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_41(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 15, 15, 3], [0, 60, 60, 60, 60, 48, 240, 192], [12, 60, 60, 60, 0, 0, 0, 0], [240, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x0F, 0x0F, 0x03], [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x30, 0xF0, 0xC0], [0x0C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0xF0, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_42(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 60, 60, 60], [0, 0, 0, 0, 240, 60, 60, 0], [60, 60, 63, 15, 0, 0, 0, 0], [0, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0xF0, 0x3C, 0x3C, 0], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_43(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 60, 60, 60], [0, 240, 252, 60, 0, 0, 0, 0], [60, 60, 63, 15, 0, 0, 0, 0], [0, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0xF0, 0xFC, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3F, 0x0F, 0, 0, 0, 0], [0, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_44(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 60, 60, 60, 60], [0, 0, 0, 0, 60, 60, 60, 60], [60, 15, 15, 3, 0, 0, 0, 0], [60, 240, 240, 192, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0, 0, 0, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x0F, 0x0F, 0x03, 0, 0, 0, 0], [0x3C, 0xF0, 0xF0, 0xC0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_45(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 60, 60, 60], [0, 60, 60, 60, 60, 60, 60, 60], [60, 15, 15, 3, 0, 0, 0, 0], [60, 240, 240, 192, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C, 0x3C], [0x3C, 0x0F, 0x0F, 0x03, 0, 0, 0, 0], [0x3C, 0xF0, 0xF0, 0xC0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_46(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 60, 63, 63, 60], [0, 0, 0, 0, 240, 60, 60, 60], [60, 60, 63, 63, 0, 0, 0, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F, 0x3C], [0, 0, 0, 0, 0xF0, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3F, 0x3F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_47(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 60, 60, 60, 63, 63], [0, 240, 252, 60, 60, 60, 252, 240], [60, 60, 63, 63, 0, 0, 0, 0], [60, 60, 252, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0x3C, 0xFC, 0xF0], [0x3C, 0x3C, 0x3F, 0x3F, 0, 0, 0, 0], [0x3C, 0x3C, 0xFC, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_48(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 60, 63, 63, 60], [0, 0, 0, 0, 240, 60, 60, 60], [60, 60, 60, 60, 0, 0, 0, 0], [60, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3C, 0x3F, 0x3F, 0x3C], [0, 0, 0, 0, 0xF0, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_49(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 63, 63, 63, 60, 60, 60], [0, 60, 60, 60, 60, 252, 252, 60], [60, 60, 60, 60, 0, 0, 0, 0], [60, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3F, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C], [0, 0x3C, 0x3C, 0x3C, 0x3C, 0xFC, 0xFC, 0x3C], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_50(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 60, 51, 51, 51], [0, 0, 0, 0, 240, 60, 60, 60], [60, 60, 60, 60, 0, 0, 0, 0], [60, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x3C, 0x33, 0x33, 0x33], [0, 0, 0, 0, 0xF0, 0x3C, 0x3C, 0x3C], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_51(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 63, 63, 60, 60, 60, 60], [0, 60, 60, 60, 204, 204, 252, 60], [60, 60, 60, 60, 0, 0, 0, 0], [60, 60, 60, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3C], [0, 0x3C, 0x3C, 0x3C, 0xCC, 0xCC, 0xFC, 0x3C], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_52(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 3, 3, 3, 0, 0, 0, 0], [0, 192, 192, 192, 192, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0x03, 0x03, 0x03, 0, 0, 0, 0], [0, 0xC0, 0xC0, 0xC0, 0xC0, 0, 0, 0], fg, bg)
 ;
 
 : draw_53(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 3, 15, 15, 15], [0, 60, 252, 240, 192, 0, 0, 0], [3, 0, 0, 0, 0, 0, 0, 0], [192, 240, 252, 60, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x03, 0x0F, 0x0F, 0x0F], [0, 0x3C, 0xFC, 0xF0, 0xC0, 0, 0, 0], [0x03, 0, 0, 0, 0, 0, 0, 0], [0xC0, 0xF0, 0xFC, 0x3C, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_54(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 3, 3, 3, 0, 0, 0, 0], [0, 192, 192, 192, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0x03, 0x03, 0x03, 0, 0, 0, 0], [0, 0xC0, 0xC0, 0xC0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_55(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 63, 15, 3, 0, 0, 0], [0, 0, 0, 0, 192, 240, 240, 240], [3, 15, 63, 60, 0, 0, 0, 0], [192, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3F, 0x0F, 0x03, 0, 0, 0], [0, 0, 0, 0, 0xC0, 0xF0, 0xF0, 0xF0], [0x03, 0x0F, 0x3F, 0x3C, 0, 0, 0, 0], [0xC0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_56(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
@@ -240,139 +240,139 @@ bring world_assets
 ;
 
 : draw_57(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 3, 15, 15, 3, 3, 3, 3], [0, 192, 192, 192, 192, 192, 192, 192], [3, 3, 63, 63, 0, 0, 0, 0], [192, 192, 252, 252, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x03, 0x0F, 0x0F, 0x03, 0x03, 0x03, 0x03], [0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0], [0x03, 0x03, 0x3F, 0x3F, 0, 0, 0, 0], [0xC0, 0xC0, 0xFC, 0xFC, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_58(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 15, 15, 15, 15, 15, 15], [0, 0, 0, 0, 0, 0, 0, 0], [0, 15, 15, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_59(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 0, 0, 3, 3], [0, 240, 252, 60, 60, 240, 240, 192], [15, 63, 63, 0, 0, 0, 0, 0], [0, 252, 252, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0, 0, 0x03, 0x03], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0xF0, 0xF0, 0xC0], [0x0F, 0x3F, 0x3F, 0, 0, 0, 0, 0], [0, 0xFC, 0xFC, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_60(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 51, 51, 51, 51], [0, 240, 252, 60, 252, 60, 252, 240], [60, 15, 15, 0, 0, 0, 0, 0], [0, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x33, 0x33, 0x33, 0x33], [0, 0xF0, 0xFC, 0x3C, 0xFC, 0x3C, 0xFC, 0xF0], [0x3C, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_61(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 0, 3, 3, 0], [0, 240, 252, 60, 60, 240, 252, 60], [60, 15, 15, 0, 0, 0, 0, 0], [60, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0, 0x03, 0x03, 0], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0xF0, 0xFC, 0x3C], [0x3C, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0x3C, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_62(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 60, 60, 60, 255, 255, 60], [0, 0, 240, 240, 240, 240, 240, 240], [255, 60, 60, 60, 0, 0, 0, 0], [240, 240, 240, 240, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0x3C, 0x3C, 0x3C, 0xFF, 0xFF, 0x3C], [0, 0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0], [0xFF, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0xF0, 0xF0, 0xF0, 0xF0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_63(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 3, 15, 63, 63], [0, 60, 252, 252, 60, 60, 252, 252], [0, 0, 0, 0, 0, 0, 0, 0], [60, 60, 60, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x03, 0x0F, 0x3F, 0x3F], [0, 0x3C, 0xFC, 0xFC, 0x3C, 0x3C, 0xFC, 0xFC], [0, 0, 0, 0, 0, 0, 0, 0], [0x3C, 0x3C, 0x3C, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_64(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 3, 15, 15, 60, 15, 15, 0], [0, 192, 252, 252, 0, 240, 252, 60], [63, 3, 3, 0, 0, 0, 0, 0], [240, 192, 192, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x03, 0x0F, 0x0F, 0x3C, 0x0F, 0x0F, 0], [0, 0xC0, 0xFC, 0xFC, 0, 0xF0, 0xFC, 0x3C], [0x3F, 0x03, 0x03, 0, 0, 0, 0, 0], [0xF0, 0xC0, 0xC0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_65(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 60, 63, 0, 0, 0], [0, 252, 252, 0, 240, 60, 60, 60], [60, 15, 15, 0, 0, 0, 0, 0], [60, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0x3C, 0x3F, 0, 0, 0], [0, 0xFC, 0xFC, 0, 0xF0, 0x3C, 0x3C, 0x3C], [0x3C, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0x3C, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_66(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 3, 3, 15, 15], [0, 60, 252, 240, 192, 192, 252, 60], [60, 0, 0, 0, 0, 0, 0, 0], [60, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0x03, 0x03, 0x0F, 0x0F], [0, 0x3C, 0xFC, 0xF0, 0xC0, 0xC0, 0xFC, 0x3C], [0x3C, 0, 0, 0, 0, 0, 0, 0], [0x3C, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_67(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 63, 60, 60, 60], [0, 240, 240, 0, 240, 60, 60, 60], [60, 15, 15, 0, 0, 0, 0, 0], [60, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3F, 0x3C, 0x3C, 0x3C], [0, 0xF0, 0xF0, 0, 0xF0, 0x3C, 0x3C, 0x3C], [0x3C, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0x3C, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_68(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 3, 3, 15, 60, 60, 0], [0, 0, 192, 192, 240, 60, 60, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0x03, 0x03, 0x0F, 0x3C, 0x3C, 0], [0, 0, 0xC0, 0xC0, 0xF0, 0x3C, 0x3C, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_69(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 63, 63, 0, 0, 3, 3, 3], [0, 252, 252, 60, 240, 192, 192, 192], [15, 15, 15, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3F, 0x3F, 0, 0, 0x03, 0x03, 0x03], [0, 0xFC, 0xFC, 0x3C, 0xF0, 0xC0, 0xC0, 0xC0], [0x0F, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_70(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 15, 63, 60], [0, 240, 252, 60, 240, 192, 252, 252], [60, 15, 15, 0, 0, 0, 0, 0], [60, 204, 204, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x0F, 0x3F, 0x3C], [0, 0xF0, 0xFC, 0x3C, 0xF0, 0xC0, 0xFC, 0xFC], [0x3C, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0x3C, 0xCC, 0xCC, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_71(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 15, 63, 60], [0, 240, 252, 60, 60, 240, 252, 60], [60, 15, 15, 0, 0, 0, 0, 0], [60, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x0F, 0x3F, 0x3C], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0xF0, 0xFC, 0x3C], [0x3C, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0x3C, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_72(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 48, 15, 63, 63], [0, 0, 0, 0, 192, 0, 192, 192], [15, 48, 48, 0, 0, 0, 0, 0], [0, 192, 192, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x30, 0x0F, 0x3F, 0x3F], [0, 0, 0, 0, 0xC0, 0, 0xC0, 0xC0], [0x0F, 0x30, 0x30, 0, 0, 0, 0, 0], [0, 0xC0, 0xC0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_73(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 60, 63, 15], [0, 240, 252, 60, 60, 60, 252, 252], [0, 15, 15, 0, 0, 0, 0, 0], [60, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x0F], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0x3C, 0xFC, 0xFC], [0, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0x3C, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_74(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 3, 3, 15, 15, 15, 15], [0, 240, 240, 192, 0, 0, 0, 0], [3, 0, 0, 0, 0, 0, 0, 0], [192, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0x03, 0x03, 0x0F, 0x0F, 0x0F, 0x0F], [0, 0xF0, 0xF0, 0xC0, 0, 0, 0, 0], [0x03, 0, 0, 0, 0, 0, 0, 0], [0xC0, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_75(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 60, 60, 63, 63], [0, 240, 252, 60, 60, 252, 252, 60], [60, 15, 15, 0, 0, 0, 0, 0], [60, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0x3C, 0x3C, 0x3F, 0x3F], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0xFC, 0xFC, 0x3C], [0x3C, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0x3C, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_76(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 15, 3, 0, 0, 0, 0], [0, 0, 192, 192, 240, 240, 240, 240], [3, 15, 15, 0, 0, 0, 0, 0], [192, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x0F, 0x03, 0, 0, 0, 0], [0, 0, 0xC0, 0xC0, 0xF0, 0xF0, 0xF0, 0xF0], [0x03, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0xC0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_77(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 0, 63, 63], [0, 0, 0, 0, 0, 0, 252, 252], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 0, 0x3F, 0x3F], [0, 0, 0, 0, 0, 0, 0xFC, 0xFC], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_78(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 3, 3, 3, 3, 3, 3, 3], [0, 192, 192, 192, 192, 192, 192, 192], [3, 3, 3, 3, 0, 0, 0, 0], [192, 192, 192, 192, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03], [0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0], [0x03, 0x03, 0x03, 0x03, 0, 0, 0, 0], [0xC0, 0xC0, 0xC0, 0xC0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_79(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 63, 63, 0], [0, 0, 0, 0, 0, 252, 252, 0], [63, 0, 0, 0, 0, 0, 0, 0], [252, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 0x3F, 0x3F, 0], [0, 0, 0, 0, 0, 0xFC, 0xFC, 0], [0x3F, 0, 0, 0, 0, 0, 0, 0], [0xFC, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_80(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 3, 3, 63, 63], [0, 0, 0, 0, 192, 192, 252, 252], [3, 3, 3, 0, 0, 0, 0, 0], [192, 192, 192, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x03, 0x03, 0x3F, 0x3F], [0, 0, 0, 0, 0xC0, 0xC0, 0xFC, 0xFC], [0x03, 0x03, 0x03, 0, 0, 0, 0, 0], [0xC0, 0xC0, 0xC0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_81(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 15, 15, 15, 15, 15, 15], [0, 240, 240, 0, 0, 0, 0, 0], [15, 15, 15, 0, 0, 0, 0, 0], [0, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F], [0, 0xF0, 0xF0, 0, 0, 0, 0, 0], [0x0F, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_82(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 3, 15, 15, 15, 60, 63, 15], [0, 240, 240, 0, 0, 0, 0, 0], [15, 3, 3, 0, 0, 0, 0, 0], [0, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x03, 0x0F, 0x0F, 0x0F, 0x3C, 0x3F, 0x0F], [0, 0xF0, 0xF0, 0, 0, 0, 0, 0], [0x0F, 0x03, 0x03, 0, 0, 0, 0, 0], [0, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_83(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 15, 0, 0, 0, 0, 0], [0, 240, 240, 240, 240, 240, 240, 240], [0, 15, 15, 0, 0, 0, 0, 0], [240, 240, 240, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0], [0, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0xF0, 0xF0, 0xF0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_84(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 15, 0, 0, 0, 0, 0], [0, 192, 240, 240, 240, 60, 252, 240], [0, 15, 15, 0, 0, 0, 0, 0], [240, 192, 192, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0, 0xC0, 0xF0, 0xF0, 0xF0, 0x3C, 0xFC, 0xF0], [0, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0xF0, 0xC0, 0xC0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_85(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 15, 15, 0], [0, 0, 0, 0, 0, 0, 0, 0], [15, 15, 63, 60, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x0F, 0x0F, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0x0F, 0x0F, 0x3F, 0x3C, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_86(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 15, 15, 15, 0], [0, 0, 0, 0, 0, 0, 0, 0], [15, 15, 15, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0x0F, 0x0F, 0x0F, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0x0F, 0x0F, 0x0F, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_87(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 15, 15, 60, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x0F, 0x0F, 0x3C, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_88(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 60, 60, 60, 0, 0, 0, 0], [0, 240, 240, 240, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x3C, 0x3C, 0x3C, 0, 0, 0, 0], [0, 0xF0, 0xF0, 0xF0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_89(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 3, 15, 15], [0, 60, 60, 60, 240, 192, 192, 0], [60, 60, 60, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0, 0, 0, 0, 0x03, 0x0F, 0x0F], [0, 0x3C, 0x3C, 0x3C, 0xF0, 0xC0, 0xC0, 0], [0x3C, 0x3C, 0x3C, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 : draw_90(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
-    draw_icn(scr, x, y, [0, 15, 63, 60, 0, 0, 3, 3], [0, 240, 252, 60, 60, 240, 240, 192], [0, 3, 3, 0, 0, 0, 0, 0], [0, 192, 192, 0, 0, 0, 0, 0], fg, bg)
+    draw_icn(scr, x, y, [0, 0x0F, 0x3F, 0x3C, 0, 0, 0x03, 0x03], [0, 0xF0, 0xFC, 0x3C, 0x3C, 0xF0, 0xF0, 0xC0], [0, 0x03, 0x03, 0, 0, 0, 0, 0], [0, 0xC0, 0xC0, 0, 0, 0, 0, 0], fg, bg)
 ;
 
 :: draw_text_glyph(scr = vimana.screen, x = num, y = num, idx = num, fg = num, bg = num) (( -- ))

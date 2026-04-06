@@ -17,15 +17,15 @@ bring vimana
 -- Repeat icon (off / on)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def RPT_OFF_TL = [0, 0, 0, 15, 31, 24, 16, 0]
-def RPT_OFF_TR = [0, 16, 24, 252, 252, 24, 16, 0]
-def RPT_OFF_BL = [0, 8, 24, 63, 63, 24, 8, 0]
-def RPT_OFF_BR = [0, 8, 24, 248, 240, 0, 0, 0]
+def RPT_OFF_TL = [0, 0, 0, 0x0F, 0x1F, 0x18, 0x10, 0]
+def RPT_OFF_TR = [0, 0x10, 0x18, 0xFC, 0xFC, 0x18, 0x10, 0]
+def RPT_OFF_BL = [0, 0x08, 0x18, 0x3F, 0x3F, 0x18, 0x08, 0]
+def RPT_OFF_BR = [0, 0x08, 0x18, 0xF8, 0xF0, 0, 0, 0]
 
-def RPT_ON_TL = [0, 0, 0, 15, 31, 24, 24, 24]
-def RPT_ON_TR = [0, 16, 24, 252, 252, 24, 16, 8]
-def RPT_ON_BL = [24, 24, 24, 31, 15, 0, 0, 0]
-def RPT_ON_BR = [24, 24, 24, 248, 240, 0, 0, 0]
+def RPT_ON_TL = [0, 0, 0, 0x0F, 0x1F, 0x18, 0x18, 0x18]
+def RPT_ON_TR = [0, 0x10, 0x18, 0xFC, 0xFC, 0x18, 0x10, 0x08]
+def RPT_ON_BL = [0x18, 0x18, 0x18, 0x1F, 0x0F, 0, 0, 0]
+def RPT_ON_BR = [0x18, 0x18, 0x18, 0xF8, 0xF0, 0, 0, 0]
 
 :: draw_repeat(scr = vimana.screen, x = num, y = num, on = bool, fg = num, bg = num) (( -- ))
     if on
@@ -38,15 +38,15 @@ def RPT_ON_BR = [24, 24, 24, 248, 240, 0, 0, 0]
 -- Shuffle icon (off / on)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def SHF_OFF_TL = [0, 0, 0, 31, 31, 0, 0, 0]
-def SHF_OFF_TR = [0, 16, 24, 252, 252, 24, 16, 0]
-def SHF_OFF_BL = [0, 0, 0, 31, 31, 0, 0, 0]
-def SHF_OFF_BR = [0, 16, 24, 252, 252, 24, 16, 0]
+def SHF_OFF_TL = [0, 0, 0, 0x1F, 0x1F, 0, 0, 0]
+def SHF_OFF_TR = [0, 0x10, 0x18, 0xFC, 0xFC, 0x18, 0x10, 0]
+def SHF_OFF_BL = [0, 0, 0, 0x1F, 0x1F, 0, 0, 0]
+def SHF_OFF_BR = [0, 0x10, 0x18, 0xFC, 0xFC, 0x18, 0x10, 0]
 
-def SHF_ON_TL = [0, 0, 0, 31, 31, 1, 1, 1]
-def SHF_ON_TR = [0, 16, 24, 124, 188, 152, 144, 128]
-def SHF_ON_BL = [1, 1, 1, 29, 30, 0, 0, 0]
-def SHF_ON_BR = [128, 144, 152, 252, 252, 24, 16, 0]
+def SHF_ON_TL = [0, 0, 0, 0x1F, 0x1F, 0x01, 0x01, 0x01]
+def SHF_ON_TR = [0, 0x10, 0x18, 0x7C, 0xBC, 0x98, 0x90, 0x80]
+def SHF_ON_BL = [0x01, 0x01, 0x01, 0x1D, 0x1E, 0, 0, 0]
+def SHF_ON_BR = [0x80, 0x90, 0x98, 0xFC, 0xFC, 0x18, 0x10, 0]
 
 :: draw_shuffle(scr = vimana.screen, x = num, y = num, on = bool, fg = num, bg = num) (( -- ))
     if on
@@ -59,19 +59,19 @@ def SHF_ON_BR = [128, 144, 152, 252, 252, 24, 16, 0]
 -- Prev / Next skip icons
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def PRV_TL = [0, 0, 0, 24, 24, 24, 24, 25]
-def PRV_TR = [0, 0, 0, 24, 56, 120, 248, 248]
-def PRV_BL = [25, 24, 24, 24, 24, 0, 0, 0]
-def PRV_BR = [248, 248, 120, 56, 24, 0, 0, 0]
+def PRV_TL = [0, 0, 0, 0x18, 0x18, 0x18, 0x18, 0x19]
+def PRV_TR = [0, 0, 0, 0x18, 0x38, 0x78, 0xF8, 0xF8]
+def PRV_BL = [0x19, 0x18, 0x18, 0x18, 0x18, 0, 0, 0]
+def PRV_BR = [0xF8, 0xF8, 0x78, 0x38, 0x18, 0, 0, 0]
 
 :: draw_prev(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, PRV_TL, PRV_TR, PRV_BL, PRV_BR, fg, bg)
 ;
 
-def NXT_TL = [0, 0, 0, 24, 28, 30, 31, 31]
-def NXT_TR = [0, 0, 0, 24, 24, 24, 24, 152]
-def NXT_BL = [31, 31, 30, 28, 24, 0, 0, 0]
-def NXT_BR = [152, 24, 24, 24, 24, 0, 0, 0]
+def NXT_TL = [0, 0, 0, 0x18, 0x1C, 0x1E, 0x1F, 0x1F]
+def NXT_TR = [0, 0, 0, 0x18, 0x18, 0x18, 0x18, 0x98]
+def NXT_BL = [0x1F, 0x1F, 0x1E, 0x1C, 0x18, 0, 0, 0]
+def NXT_BR = [0x98, 0x18, 0x18, 0x18, 0x18, 0, 0, 0]
 
 :: draw_next(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
     draw_icn(scr, x, y, NXT_TL, NXT_TR, NXT_BL, NXT_BR, fg, bg)
@@ -81,15 +81,15 @@ def NXT_BR = [152, 24, 24, 24, 24, 0, 0, 0]
 -- Play (›) / Pause (‖) icon
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def PLY_TL = [0, 0, 0, 30, 30, 30, 30, 30]
-def PLY_TR = [0, 0, 0, 120, 120, 120, 120, 120]
-def PLY_BL = [30, 30, 30, 30, 30, 0, 0, 0]
-def PLY_BR = [120, 120, 120, 120, 120, 0, 0, 0]
+def PLY_TL = [0, 0, 0, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E]
+def PLY_TR = [0, 0, 0, 0x78, 0x78, 0x78, 0x78, 0x78]
+def PLY_BL = [0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0, 0, 0]
+def PLY_BR = [0x78, 0x78, 0x78, 0x78, 0x78, 0, 0, 0]
 
-def PAU_TL = [0, 0, 0, 12, 15, 15, 15, 15]
-def PAU_TR = [0, 0, 0, 0, 0, 192, 240, 252]
-def PAU_BL = [15, 15, 15, 15, 12, 0, 0, 0]
-def PAU_BR = [252, 240, 192, 0, 0, 0, 0, 0]
+def PAU_TL = [0, 0, 0, 0x0C, 0x0F, 0x0F, 0x0F, 0x0F]
+def PAU_TR = [0, 0, 0, 0, 0, 0xC0, 0xF0, 0xFC]
+def PAU_BL = [0x0F, 0x0F, 0x0F, 0x0F, 0x0C, 0, 0, 0]
+def PAU_BR = [0xFC, 0xF0, 0xC0, 0, 0, 0, 0, 0]
 
 -- Show play arrow when paused, pause bars when playing
 :: draw_play(scr = vimana.screen, x = num, y = num, paused = bool, fg = num, bg = num) (( -- ))
@@ -103,8 +103,8 @@ def PAU_BR = [252, 240, 192, 0, 0, 0, 0, 0]
 -- Now-playing indicator: right-pointing triangle (poke-icn, 8×16)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def POKE_TOP = [0, 0, 0, 0, 128, 192, 224, 240]
-def POKE_BOT = [224, 192, 128, 0, 0, 0, 0, 0]
+def POKE_TOP = [0, 0, 0, 0, 0x80, 0xC0, 0xE0, 0xF0]
+def POKE_BOT = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
 
 :: draw_poke(scr = vimana.screen, y = num, fg = num, bg = num) (( -- ))
     scr.put_icn(0, y,     POKE_TOP, fg, bg)
@@ -115,23 +115,23 @@ def POKE_BOT = [224, 192, 128, 0, 0, 0, 0, 0]
 -- Volume icon (7 levels 0–6, shared left-side speaker tiles)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def VOL_TL = [0, 0, 0, 0, 1, 3, 31, 31]
-def VOL_BL = [31, 31, 3, 1, 0, 0, 0, 0]
+def VOL_TL = [0, 0, 0, 0, 0x01, 0x03, 0x1F, 0x1F]
+def VOL_BL = [0x1F, 0x1F, 0x03, 0x01, 0, 0, 0, 0]
 
-def VOL0_TR = [0, 0, 0, 192, 192, 192, 192, 192]
-def VOL0_BR = [192, 192, 192, 192, 192, 0, 0, 0]
-def VOL1_TR = [0, 0, 0, 192, 192, 192, 192, 208]
-def VOL1_BR = [208, 192, 192, 192, 192, 0, 0, 0]
-def VOL2_TR = [0, 0, 0, 192, 192, 208, 208, 200]
-def VOL2_BR = [200, 208, 208, 192, 192, 0, 0, 0]
-def VOL3_TR = [0, 0, 0, 192, 208, 200, 200, 196]
-def VOL3_BR = [196, 200, 200, 208, 192, 0, 0, 0]
-def VOL4_TR = [0, 0, 0, 192, 200, 196, 196, 210]
-def VOL4_BR = [210, 196, 196, 200, 192, 0, 0, 0]
-def VOL5_TR = [0, 0, 0, 200, 196, 212, 210, 202]
-def VOL5_BR = [202, 210, 212, 196, 200, 0, 0, 0]
-def VOL6_TR = [0, 0, 0, 196, 210, 202, 201, 197]
-def VOL6_BR = [197, 201, 202, 210, 196, 0, 0, 0]
+def VOL0_TR = [0, 0, 0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0]
+def VOL0_BR = [0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0, 0, 0]
+def VOL1_TR = [0, 0, 0, 0xC0, 0xC0, 0xC0, 0xC0, 0xD0]
+def VOL1_BR = [0xD0, 0xC0, 0xC0, 0xC0, 0xC0, 0, 0, 0]
+def VOL2_TR = [0, 0, 0, 0xC0, 0xC0, 0xD0, 0xD0, 0xC8]
+def VOL2_BR = [0xC8, 0xD0, 0xD0, 0xC0, 0xC0, 0, 0, 0]
+def VOL3_TR = [0, 0, 0, 0xC0, 0xD0, 0xC8, 0xC8, 0xC4]
+def VOL3_BR = [0xC4, 0xC8, 0xC8, 0xD0, 0xC0, 0, 0, 0]
+def VOL4_TR = [0, 0, 0, 0xC0, 0xC8, 0xC4, 0xC4, 0xD2]
+def VOL4_BR = [0xD2, 0xC4, 0xC4, 0xC8, 0xC0, 0, 0, 0]
+def VOL5_TR = [0, 0, 0, 0xC8, 0xC4, 0xD4, 0xD2, 0xCA]
+def VOL5_BR = [0xCA, 0xD2, 0xD4, 0xC4, 0xC8, 0, 0, 0]
+def VOL6_TR = [0, 0, 0, 0xC4, 0xD2, 0xCA, 0xC9, 0xC5]
+def VOL6_BR = [0xC5, 0xC9, 0xCA, 0xD2, 0xC4, 0, 0, 0]
 
 :: draw_volume(scr = vimana.screen, x = num, y = num, level = num, fg = num, bg = num) (( -- ))
     if level <= 0
@@ -157,17 +157,17 @@ def VOL6_BR = [197, 201, 202, 210, 196, 0, 0, 0]
 -- ─────────────────────────────────────────────────────────────────────────────
 
 :: draw_button_frame(scr = vimana.screen, x = num, y = num, _fg = num, _bg = num) (( -- ))
-    scr.set_auto(54)
+    scr.set_auto(0x36)
     scr.set_x(x)
     scr.set_y(y)
     if musi_model.paused
-        scr.set_addr(384)
+        scr.set_addr(0x180)
     else
-        scr.set_addr(128)
-    scr.sprite(129)
-    scr.sprite(129)
-    scr.sprite(129)
-    scr.sprite(129)
+        scr.set_addr(0x80)
+    scr.sprite(0x81)
+    scr.sprite(0x81)
+    scr.sprite(0x81)
+    scr.sprite(0x81)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -177,25 +177,25 @@ def VOL6_BR = [197, 201, 202, 210, 196, 0, 0, 0]
 -- ─────────────────────────────────────────────────────────────────────────────
 
 :: draw_progress(scr = vimana.screen, fp = num) (( -- ))
-    scr.set_auto(21)
+    scr.set_auto(0x15)
     scr.set_y(musi_model.PROG_Y)
     scr.set_x(musi_model.PROG_X)
     -- Background pill: left cap + 28 middle + right cap
     scr.set_addr(0)
-    scr.sprite(129)
+    scr.sprite(0x81)
     let ?mi = 0
     for (; mi < 28; mi += 1)
-        scr.set_addr(32)
-        scr.sprite(129)
-    scr.set_addr(64)
-    scr.sprite(129)
+        scr.set_addr(0x20)
+        scr.sprite(0x81)
+    scr.set_addr(0x40)
+    scr.sprite(0x81)
     -- Elapsed fill: draw fill-icn at x = fi+PROG_X for fi in 0..fp-2
     let ?fi = 0
     for (; fi < fp - 1; fi += 1)
         scr.set_x(fi + musi_model.PROG_X)
-        scr.set_addr(96)
-        scr.sprite(10)
-        scr.sprite(10)
+        scr.set_addr(0x60)
+        scr.sprite(0x0A)
+        scr.sprite(0x0A)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -209,144 +209,144 @@ def VOL6_BR = [197, 201, 202, 210, 196, 0, 0, 0]
 
     -- ASCII 0x20–0x7f glyphs (16 bytes each = 8×16 pixels, plane 0)
     -- 32 = Blank
-    scr.set_font_chr(32,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x20,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     -- 33 = Exclamation mark (!)
-    scr.set_font_chr(33,  [0, 0, 0, 48, 48, 48, 48, 48, 48, 0, 48, 48, 0, 0, 0, 0])
+    scr.set_font_chr(0x21,  [0, 0, 0, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0, 0x30, 0x30, 0, 0, 0, 0])
     -- 34 = Quotation mark (")
-    scr.set_font_chr(34,  [0, 0, 0, 40, 40, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x22,  [0, 0, 0, 0x28, 0x28, 0x28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     -- 35 = Number sign (#)
-    scr.set_font_chr(35,  [0, 0, 9, 9, 63, 18, 18, 127, 36, 36, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x23,  [0, 0, 0x09, 0x09, 0x3F, 0x12, 0x12, 0x7F, 0x24, 0x24, 0, 0, 0, 0, 0, 0])
     -- 36 = Dollar sign ($)
-    scr.set_font_chr(36,  [0, 0, 16, 56, 84, 112, 112, 56, 28, 28, 84, 56, 16, 0, 0, 0])
+    scr.set_font_chr(0x24,  [0, 0, 0x10, 0x38, 0x54, 0x70, 0x70, 0x38, 0x1C, 0x1C, 0x54, 0x38, 0x10, 0, 0, 0])
     -- 37 = Percent sign (%)
-    scr.set_font_chr(37,  [0, 0, 55, 73, 74, 50, 4, 4, 9, 10, 18, 17, 0, 0, 0, 0])
+    scr.set_font_chr(0x25,  [0, 0, 0x37, 0x49, 0x4A, 0x32, 0x04, 0x04, 0x09, 0x0A, 0x12, 0x11, 0, 0, 0, 0])
     -- 38 = Ampersand (&)
-    scr.set_font_chr(38,  [0, 0, 0, 60, 102, 102, 48, 103, 102, 102, 102, 60, 0, 0, 0, 0])
+    scr.set_font_chr(0x26,  [0, 0, 0, 0x3C, 0x66, 0x66, 0x30, 0x67, 0x66, 0x66, 0x66, 0x3C, 0, 0, 0, 0])
     -- 39 = Apostrophe (')
-    scr.set_font_chr(39,  [0, 0, 0, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x27,  [0, 0, 0, 0x40, 0x40, 0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     -- 40 = Left parenthesis (()
-    scr.set_font_chr(40,  [0, 0, 16, 32, 96, 96, 96, 96, 96, 96, 32, 16, 0, 0, 0, 0])
+    scr.set_font_chr(0x28,  [0, 0, 0x10, 0x20, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x20, 0x10, 0, 0, 0, 0])
     -- 41 = Right parenthesis ())
-    scr.set_font_chr(41,  [0, 0, 64, 32, 48, 48, 48, 48, 48, 48, 32, 64, 0, 0, 0, 0])
+    scr.set_font_chr(0x29,  [0, 0, 0x40, 0x20, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x20, 0x40, 0, 0, 0, 0])
     -- 42 = Asterisk (*)
-    scr.set_font_chr(42,  [0, 0, 0, 16, 84, 56, 84, 16, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x2A,  [0, 0, 0, 0x10, 0x54, 0x38, 0x54, 0x10, 0, 0, 0, 0, 0, 0, 0, 0])
     -- 43 = Plus sign (+)
-    scr.set_font_chr(43,  [0, 0, 0, 0, 0, 16, 16, 124, 16, 16, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x2B,  [0, 0, 0, 0, 0, 0x10, 0x10, 0x7C, 0x10, 0x10, 0, 0, 0, 0, 0, 0])
     -- 44 = Comma (,)
-    scr.set_font_chr(44,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 96, 32, 64, 0, 0])
+    scr.set_font_chr(0x2C,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x60, 0x60, 0x20, 0x40, 0, 0])
     -- 45 = Hyphen (-)
-    scr.set_font_chr(45,  [0, 0, 0, 0, 0, 0, 0, 124, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x2D,  [0, 0, 0, 0, 0, 0, 0, 0x7C, 0, 0, 0, 0, 0, 0, 0, 0])
     -- 46 = Period (.)
-    scr.set_font_chr(46,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(0x2E,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x60, 0x60, 0, 0, 0, 0])
     -- 47 = Slash (/)
-    scr.set_font_chr(47,  [0, 0, 4, 4, 8, 8, 16, 16, 32, 32, 64, 64, 0, 0, 0, 0])
+    scr.set_font_chr(0x2F,  [0, 0, 0x04, 0x04, 0x08, 0x08, 0x10, 0x10, 0x20, 0x20, 0x40, 0x40, 0, 0, 0, 0])
 
     -- 48–57 = Digits 0–9
-    scr.set_font_chr(48,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
-    scr.set_font_chr(49,  [0, 0, 0, 24, 56, 24, 24, 24, 24, 24, 24, 24, 0, 0, 0, 0])
-    scr.set_font_chr(50,  [0, 0, 0, 60, 70, 6, 6, 12, 24, 48, 96, 126, 0, 0, 0, 0])
-    scr.set_font_chr(51,  [0, 0, 0, 126, 12, 24, 60, 6, 6, 6, 70, 60, 0, 0, 0, 0])
-    scr.set_font_chr(52,  [0, 0, 0, 6, 14, 22, 38, 70, 127, 6, 6, 6, 0, 0, 0, 0])
-    scr.set_font_chr(53,  [0, 0, 0, 126, 96, 96, 124, 6, 6, 6, 70, 60, 0, 0, 0, 0])
-    scr.set_font_chr(54,  [0, 0, 0, 28, 48, 96, 124, 102, 102, 102, 102, 60, 0, 0, 0, 0])
-    scr.set_font_chr(55,  [0, 0, 0, 126, 6, 6, 6, 12, 24, 24, 24, 24, 0, 0, 0, 0])
-    scr.set_font_chr(56,  [0, 0, 0, 60, 102, 102, 102, 60, 102, 102, 102, 60, 0, 0, 0, 0])
-    scr.set_font_chr(57,  [0, 0, 0, 60, 102, 102, 102, 102, 62, 6, 12, 56, 0, 0, 0, 0])
+    scr.set_font_chr(0x30,  [0, 0, 0, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x31,  [0, 0, 0, 0x18, 0x38, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0, 0, 0, 0])
+    scr.set_font_chr(0x32,  [0, 0, 0, 0x3C, 0x46, 0x06, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x7E, 0, 0, 0, 0])
+    scr.set_font_chr(0x33,  [0, 0, 0, 0x7E, 0x0C, 0x18, 0x3C, 0x06, 0x06, 0x06, 0x46, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x34,  [0, 0, 0, 0x06, 0x0E, 0x16, 0x26, 0x46, 0x7F, 0x06, 0x06, 0x06, 0, 0, 0, 0])
+    scr.set_font_chr(0x35,  [0, 0, 0, 0x7E, 0x60, 0x60, 0x7C, 0x06, 0x06, 0x06, 0x46, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x36,  [0, 0, 0, 0x1C, 0x30, 0x60, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x37,  [0, 0, 0, 0x7E, 0x06, 0x06, 0x06, 0x0C, 0x18, 0x18, 0x18, 0x18, 0, 0, 0, 0])
+    scr.set_font_chr(0x38,  [0, 0, 0, 0x3C, 0x66, 0x66, 0x66, 0x3C, 0x66, 0x66, 0x66, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x39,  [0, 0, 0, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x0C, 0x38, 0, 0, 0, 0])
 
     -- 58 = Colon (:)
-    scr.set_font_chr(58,  [0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 96, 96, 0, 0, 0, 0])
+    scr.set_font_chr(0x3A,  [0, 0, 0, 0, 0, 0x60, 0x60, 0, 0, 0, 0x60, 0x60, 0, 0, 0, 0])
     -- 59 = Semicolon (;)
-    scr.set_font_chr(59,  [0, 0, 0, 0, 0, 96, 96, 0, 0, 0, 96, 96, 32, 64, 0, 0])
+    scr.set_font_chr(0x3B,  [0, 0, 0, 0, 0, 0x60, 0x60, 0, 0, 0, 0x60, 0x60, 0x20, 0x40, 0, 0])
     -- 60 = Less-than sign (<)
-    scr.set_font_chr(60,  [0, 0, 0, 0, 24, 48, 96, 192, 96, 48, 24, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x3C,  [0, 0, 0, 0, 0x18, 0x30, 0x60, 0xC0, 0x60, 0x30, 0x18, 0, 0, 0, 0, 0])
     -- 61 = Equals sign (=)
-    scr.set_font_chr(61,  [0, 0, 0, 0, 0, 0, 126, 0, 126, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x3D,  [0, 0, 0, 0, 0, 0, 0x7E, 0, 0x7E, 0, 0, 0, 0, 0, 0, 0])
     -- 62 = Greater-than sign (>)
-    scr.set_font_chr(62,  [0, 0, 0, 0, 192, 96, 48, 24, 48, 96, 192, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x3E,  [0, 0, 0, 0, 0xC0, 0x60, 0x30, 0x18, 0x30, 0x60, 0xC0, 0, 0, 0, 0, 0])
     -- 63 = Question mark (?)
-    scr.set_font_chr(63,  [0, 0, 0, 60, 70, 6, 12, 24, 24, 0, 24, 24, 0, 0, 0, 0])
+    scr.set_font_chr(0x3F,  [0, 0, 0, 0x3C, 0x46, 0x06, 0x0C, 0x18, 0x18, 0, 0x18, 0x18, 0, 0, 0, 0])
     -- 64 = At sign (@)
-    scr.set_font_chr(64,  [0, 0, 0, 0, 31, 32, 78, 82, 82, 77, 32, 31, 0, 0, 0, 0])
+    scr.set_font_chr(0x40,  [0, 0, 0, 0, 0x1F, 0x20, 0x4E, 0x52, 0x52, 0x4D, 0x20, 0x1F, 0, 0, 0, 0])
 
     -- 65–90 = Uppercase letters A–Z
-    scr.set_font_chr(65,  [0, 0, 0, 60, 102, 102, 102, 126, 102, 102, 102, 102, 0, 0, 0, 0])
-    scr.set_font_chr(66,  [0, 0, 0, 124, 102, 102, 102, 124, 102, 102, 102, 124, 0, 0, 0, 0])
-    scr.set_font_chr(67,  [0, 0, 0, 60, 98, 96, 96, 96, 96, 96, 98, 60, 0, 0, 0, 0])
-    scr.set_font_chr(68,  [0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 102, 124, 0, 0, 0, 0])
-    scr.set_font_chr(69,  [0, 0, 0, 124, 96, 96, 96, 120, 96, 96, 96, 124, 0, 0, 0, 0])
-    scr.set_font_chr(70,  [0, 0, 0, 124, 96, 96, 96, 120, 96, 96, 96, 96, 0, 0, 0, 0])
-    scr.set_font_chr(71,  [0, 0, 0, 60, 98, 96, 96, 110, 102, 102, 102, 60, 0, 0, 0, 0])
-    scr.set_font_chr(72,  [0, 0, 0, 102, 102, 102, 102, 126, 102, 102, 102, 102, 0, 0, 0, 0])
-    scr.set_font_chr(73,  [0, 0, 0, 48, 48, 48, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
-    scr.set_font_chr(74,  [0, 0, 0, 12, 12, 12, 12, 12, 204, 204, 204, 120, 0, 0, 0, 0])
-    scr.set_font_chr(75,  [0, 0, 0, 99, 102, 108, 120, 112, 120, 108, 102, 99, 0, 0, 0, 0])
-    scr.set_font_chr(76,  [0, 0, 0, 96, 96, 96, 96, 96, 96, 96, 96, 124, 0, 0, 0, 0])
-    scr.set_font_chr(77,  [0, 0, 0, 0, 0, 0, 64, 32, 96, 96, 112, 224, 121, 224, 95, 96, 78, 96, 68, 96, 64, 96, 64, 96, 0, 0, 0, 0, 0, 0, 0, 0])
-    scr.set_font_chr(78,  [0, 0, 0, 65, 97, 113, 121, 93, 79, 71, 67, 65, 0, 0, 0, 0])
-    scr.set_font_chr(79,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
-    scr.set_font_chr(80,  [0, 0, 0, 124, 102, 102, 102, 124, 96, 96, 96, 96, 0, 0, 0, 0])
-    scr.set_font_chr(81,  [0, 0, 0, 60, 102, 102, 102, 102, 102, 102, 102, 60, 6, 0, 0, 0])
-    scr.set_font_chr(82,  [0, 0, 0, 124, 102, 102, 102, 124, 102, 102, 102, 102, 0, 0, 0, 0])
-    scr.set_font_chr(83,  [0, 0, 0, 56, 100, 96, 112, 56, 28, 12, 76, 56, 0, 0, 0, 0])
-    scr.set_font_chr(84,  [0, 0, 0, 252, 48, 48, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
-    scr.set_font_chr(85,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
-    scr.set_font_chr(86,  [0, 0, 0, 102, 102, 102, 102, 102, 102, 102, 100, 120, 0, 0, 0, 0])
-    scr.set_font_chr(87,  [0, 0, 0, 0, 0, 0, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 64, 127, 128, 0, 0, 0, 0, 0, 0, 0, 0])
-    scr.set_font_chr(88,  [0, 0, 0, 102, 102, 102, 102, 60, 102, 102, 102, 102, 0, 0, 0, 0])
-    scr.set_font_chr(89,  [0, 0, 0, 102, 102, 102, 102, 60, 24, 24, 24, 24, 0, 0, 0, 0])
-    scr.set_font_chr(90,  [0, 0, 0, 126, 6, 6, 12, 24, 48, 96, 96, 126, 0, 0, 0, 0])
+    scr.set_font_chr(0x41,  [0, 0, 0, 0x3C, 0x66, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x66, 0x66, 0, 0, 0, 0])
+    scr.set_font_chr(0x42,  [0, 0, 0, 0x7C, 0x66, 0x66, 0x66, 0x7C, 0x66, 0x66, 0x66, 0x7C, 0, 0, 0, 0])
+    scr.set_font_chr(0x43,  [0, 0, 0, 0x3C, 0x62, 0x60, 0x60, 0x60, 0x60, 0x60, 0x62, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x44,  [0, 0, 0, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x7C, 0, 0, 0, 0])
+    scr.set_font_chr(0x45,  [0, 0, 0, 0x7C, 0x60, 0x60, 0x60, 0x78, 0x60, 0x60, 0x60, 0x7C, 0, 0, 0, 0])
+    scr.set_font_chr(0x46,  [0, 0, 0, 0x7C, 0x60, 0x60, 0x60, 0x78, 0x60, 0x60, 0x60, 0x60, 0, 0, 0, 0])
+    scr.set_font_chr(0x47,  [0, 0, 0, 0x3C, 0x62, 0x60, 0x60, 0x6E, 0x66, 0x66, 0x66, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x48,  [0, 0, 0, 0x66, 0x66, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x66, 0x66, 0, 0, 0, 0])
+    scr.set_font_chr(0x49,  [0, 0, 0, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0, 0, 0, 0])
+    scr.set_font_chr(0x4A,  [0, 0, 0, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0xCC, 0xCC, 0xCC, 0x78, 0, 0, 0, 0])
+    scr.set_font_chr(0x4B,  [0, 0, 0, 0x63, 0x66, 0x6C, 0x78, 0x70, 0x78, 0x6C, 0x66, 0x63, 0, 0, 0, 0])
+    scr.set_font_chr(0x4C,  [0, 0, 0, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x7C, 0, 0, 0, 0])
+    scr.set_font_chr(0x4D,  [0, 0, 0, 0, 0, 0, 0x40, 0x20, 0x60, 0x60, 0x70, 0xE0, 0x79, 0xE0, 0x5F, 0x60, 0x4E, 0x60, 0x44, 0x60, 0x40, 0x60, 0x40, 0x60, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x4E,  [0, 0, 0, 0x41, 0x61, 0x71, 0x79, 0x5D, 0x4F, 0x47, 0x43, 0x41, 0, 0, 0, 0])
+    scr.set_font_chr(0x4F,  [0, 0, 0, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x50,  [0, 0, 0, 0x7C, 0x66, 0x66, 0x66, 0x7C, 0x60, 0x60, 0x60, 0x60, 0, 0, 0, 0])
+    scr.set_font_chr(0x51,  [0, 0, 0, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x06, 0, 0, 0])
+    scr.set_font_chr(0x52,  [0, 0, 0, 0x7C, 0x66, 0x66, 0x66, 0x7C, 0x66, 0x66, 0x66, 0x66, 0, 0, 0, 0])
+    scr.set_font_chr(0x53,  [0, 0, 0, 0x38, 0x64, 0x60, 0x70, 0x38, 0x1C, 0x0C, 0x4C, 0x38, 0, 0, 0, 0])
+    scr.set_font_chr(0x54,  [0, 0, 0, 0xFC, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0, 0, 0, 0])
+    scr.set_font_chr(0x55,  [0, 0, 0, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x56,  [0, 0, 0, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x64, 0x78, 0, 0, 0, 0])
+    scr.set_font_chr(0x57,  [0, 0, 0, 0, 0, 0, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x40, 0x7F, 0x80, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x58,  [0, 0, 0, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x66, 0x66, 0x66, 0x66, 0, 0, 0, 0])
+    scr.set_font_chr(0x59,  [0, 0, 0, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x18, 0x18, 0x18, 0x18, 0, 0, 0, 0])
+    scr.set_font_chr(0x5A,  [0, 0, 0, 0x7E, 0x06, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x60, 0x7E, 0, 0, 0, 0])
 
     -- 91 = Left square bracket ([)
-    scr.set_font_chr(91,  [0, 0, 112, 96, 96, 96, 96, 96, 96, 96, 96, 96, 112, 0, 0, 0])
+    scr.set_font_chr(0x5B,  [0, 0, 0x70, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x70, 0, 0, 0])
     -- 92 = Backslash (\)
-    scr.set_font_chr(92,  [0, 0, 64, 64, 32, 32, 16, 16, 8, 8, 4, 4, 0, 0, 0, 0])
+    scr.set_font_chr(0x5C,  [0, 0, 0x40, 0x40, 0x20, 0x20, 0x10, 0x10, 0x08, 0x08, 0x04, 0x04, 0, 0, 0, 0])
     -- 93 = Right square bracket (])
-    scr.set_font_chr(93,  [0, 0, 112, 48, 48, 48, 48, 48, 48, 48, 48, 48, 112, 0, 0, 0])
+    scr.set_font_chr(0x5D,  [0, 0, 0x70, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x70, 0, 0, 0])
     -- 94 = Caret (^)
-    scr.set_font_chr(94,  [0, 0, 0, 8, 20, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x5E,  [0, 0, 0, 0x08, 0x14, 0x22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     -- 95 = Underscore (_)
-    scr.set_font_chr(95,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0])
+    scr.set_font_chr(0x5F,  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0, 0, 0, 0])
     -- 96 = Grave accent (`)
-    scr.set_font_chr(96,  [0, 0, 64, 32, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x60,  [0, 0, 0x40, 0x20, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     -- 97–122 = Lowercase letters a–z
-    scr.set_font_chr(97,  [0, 0, 0, 0, 0, 60, 70, 62, 102, 102, 102, 62, 0, 0, 0, 0])
-    scr.set_font_chr(98,  [0, 0, 0, 96, 96, 124, 102, 102, 102, 102, 102, 124, 0, 0, 0, 0])
-    scr.set_font_chr(99,  [0, 0, 0, 0, 0, 56, 100, 96, 96, 96, 100, 56, 0, 0, 0, 0])
-    scr.set_font_chr(100, [0, 0, 0, 6, 6, 62, 102, 102, 102, 102, 102, 62, 0, 0, 0, 0])
-    scr.set_font_chr(101, [0, 0, 0, 0, 0, 60, 102, 102, 126, 96, 98, 60, 0, 0, 0, 0])
-    scr.set_font_chr(102, [0, 0, 0, 28, 48, 120, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0])
-    scr.set_font_chr(103, [0, 0, 0, 0, 0, 62, 102, 102, 102, 102, 102, 62, 6, 70, 60, 0])
-    scr.set_font_chr(104, [0, 0, 0, 96, 96, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
-    scr.set_font_chr(105, [0, 0, 0, 96, 0, 96, 96, 96, 96, 96, 96, 96, 0, 0, 0, 0])
-    scr.set_font_chr(106, [0, 0, 0, 24, 0, 24, 24, 24, 24, 24, 24, 24, 24, 152, 112, 0])
-    scr.set_font_chr(107, [0, 0, 0, 96, 96, 102, 108, 120, 112, 120, 108, 102, 0, 0, 0, 0])
-    scr.set_font_chr(108, [0, 0, 0, 96, 96, 96, 96, 96, 96, 96, 96, 96, 0, 0, 0, 0])
-    scr.set_font_chr(109, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, 192, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 0, 0, 0, 0, 0, 0, 0, 0])
-    scr.set_font_chr(110, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 102, 0, 0, 0, 0])
-    scr.set_font_chr(111, [0, 0, 0, 0, 0, 60, 102, 102, 102, 102, 102, 60, 0, 0, 0, 0])
-    scr.set_font_chr(112, [0, 0, 0, 0, 0, 124, 102, 102, 102, 102, 102, 124, 96, 96, 0, 0])
-    scr.set_font_chr(113, [0, 0, 0, 0, 0, 62, 102, 102, 102, 102, 102, 62, 6, 6, 0, 0])
-    scr.set_font_chr(114, [0, 0, 0, 0, 0, 108, 112, 96, 96, 96, 96, 96, 0, 0, 0, 0])
-    scr.set_font_chr(115, [0, 0, 0, 0, 0, 56, 100, 112, 56, 28, 76, 56, 0, 0, 0, 0])
-    scr.set_font_chr(116, [0, 0, 0, 48, 48, 120, 48, 48, 48, 48, 48, 24, 0, 0, 0, 0])
-    scr.set_font_chr(117, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 62, 0, 0, 0, 0])
-    scr.set_font_chr(118, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 100, 120, 0, 0, 0, 0])
-    scr.set_font_chr(119, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102, 96, 102, 96, 102, 96, 102, 96, 102, 96, 102, 64, 127, 128, 0, 0, 0, 0, 0, 0, 0, 0])
-    scr.set_font_chr(120, [0, 0, 0, 0, 0, 102, 102, 102, 60, 102, 102, 102, 0, 0, 0, 0])
-    scr.set_font_chr(121, [0, 0, 0, 0, 0, 102, 102, 102, 102, 102, 102, 62, 6, 70, 60, 0])
-    scr.set_font_chr(122, [0, 0, 0, 0, 0, 126, 6, 12, 24, 48, 96, 126, 0, 0, 0, 0])
+    scr.set_font_chr(0x61,  [0, 0, 0, 0, 0, 0x3C, 0x46, 0x3E, 0x66, 0x66, 0x66, 0x3E, 0, 0, 0, 0])
+    scr.set_font_chr(0x62,  [0, 0, 0, 0x60, 0x60, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x7C, 0, 0, 0, 0])
+    scr.set_font_chr(0x63,  [0, 0, 0, 0, 0, 0x38, 0x64, 0x60, 0x60, 0x60, 0x64, 0x38, 0, 0, 0, 0])
+    scr.set_font_chr(0x64, [0, 0, 0, 0x06, 0x06, 0x3E, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3E, 0, 0, 0, 0])
+    scr.set_font_chr(0x65, [0, 0, 0, 0, 0, 0x3C, 0x66, 0x66, 0x7E, 0x60, 0x62, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x66, [0, 0, 0, 0x1C, 0x30, 0x78, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0, 0, 0, 0])
+    scr.set_font_chr(0x67, [0, 0, 0, 0, 0, 0x3E, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x46, 0x3C, 0])
+    scr.set_font_chr(0x68, [0, 0, 0, 0x60, 0x60, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0, 0, 0, 0])
+    scr.set_font_chr(0x69, [0, 0, 0, 0x60, 0, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0, 0, 0, 0])
+    scr.set_font_chr(0x6A, [0, 0, 0, 0x18, 0, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x98, 0x70, 0])
+    scr.set_font_chr(0x6B, [0, 0, 0, 0x60, 0x60, 0x66, 0x6C, 0x78, 0x70, 0x78, 0x6C, 0x66, 0, 0, 0, 0])
+    scr.set_font_chr(0x6C, [0, 0, 0, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0, 0, 0, 0])
+    scr.set_font_chr(0x6D, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7F, 0xC0, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x6E, [0, 0, 0, 0, 0, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0, 0, 0, 0])
+    scr.set_font_chr(0x6F, [0, 0, 0, 0, 0, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0, 0, 0, 0])
+    scr.set_font_chr(0x70, [0, 0, 0, 0, 0, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x7C, 0x60, 0x60, 0, 0])
+    scr.set_font_chr(0x71, [0, 0, 0, 0, 0, 0x3E, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x06, 0, 0])
+    scr.set_font_chr(0x72, [0, 0, 0, 0, 0, 0x6C, 0x70, 0x60, 0x60, 0x60, 0x60, 0x60, 0, 0, 0, 0])
+    scr.set_font_chr(0x73, [0, 0, 0, 0, 0, 0x38, 0x64, 0x70, 0x38, 0x1C, 0x4C, 0x38, 0, 0, 0, 0])
+    scr.set_font_chr(0x74, [0, 0, 0, 0x30, 0x30, 0x78, 0x30, 0x30, 0x30, 0x30, 0x30, 0x18, 0, 0, 0, 0])
+    scr.set_font_chr(0x75, [0, 0, 0, 0, 0, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3E, 0, 0, 0, 0])
+    scr.set_font_chr(0x76, [0, 0, 0, 0, 0, 0x66, 0x66, 0x66, 0x66, 0x66, 0x64, 0x78, 0, 0, 0, 0])
+    scr.set_font_chr(0x77, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x60, 0x66, 0x40, 0x7F, 0x80, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x78, [0, 0, 0, 0, 0, 0x66, 0x66, 0x66, 0x3C, 0x66, 0x66, 0x66, 0, 0, 0, 0])
+    scr.set_font_chr(0x79, [0, 0, 0, 0, 0, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x46, 0x3C, 0])
+    scr.set_font_chr(0x7A, [0, 0, 0, 0, 0, 0x7E, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x7E, 0, 0, 0, 0])
 
     -- 123 = Left curly brace ({)
-    scr.set_font_chr(123, [0, 0, 16, 32, 32, 32, 32, 64, 32, 32, 32, 32, 16, 0, 0, 0])
+    scr.set_font_chr(0x7B, [0, 0, 0x10, 0x20, 0x20, 0x20, 0x20, 0x40, 0x20, 0x20, 0x20, 0x20, 0x10, 0, 0, 0])
     -- 124 = Vertical bar (|)
-    scr.set_font_chr(124, [0, 0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 0, 0, 0])
+    scr.set_font_chr(0x7C, [0, 0, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0, 0, 0])
     -- 125 = Right curly brace (})
-    scr.set_font_chr(125, [0, 0, 64, 32, 32, 32, 32, 16, 32, 32, 32, 32, 64, 0, 0, 0])
+    scr.set_font_chr(0x7D, [0, 0, 0x40, 0x20, 0x20, 0x20, 0x20, 0x10, 0x20, 0x20, 0x20, 0x20, 0x40, 0, 0, 0])
     -- 126 = Tilde (~)
-    scr.set_font_chr(126, [0, 0, 0, 0, 0, 50, 76, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x7E, [0, 0, 0, 0, 0, 0x32, 0x4C, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     -- 127 = Blank (used for cursor)
-    scr.set_font_chr(127, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x7F, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     -- Per-character widths (from @chicago/widths in m291.tal)
     scr.set_font_width(32, 4)
@@ -446,87 +446,87 @@ def VOL6_BR = [197, 201, 202, 210, 196, 0, 0, 0]
     scr.set_font_width(126, 8)
     scr.set_font_width(127, 8)
     -- Progress CHR tiles (from @progress/{left,middle,right}-chr in m291.tal)
-    scr.set_sprite(0,   [0, 0, 3, 15, 31, 31, 63, 63], 0)
-    scr.set_sprite(8,   [0, 0, 0, 3, 15, 15, 31, 31], 0)
-    scr.set_sprite(16,  [63, 63, 31, 31, 15, 3, 0, 0], 0)
-    scr.set_sprite(24,  [31, 31, 15, 15, 3, 0, 0, 0], 0)
-    scr.set_sprite(32,  [0, 0, 255, 255, 255, 255, 255, 255], 0)
-    scr.set_sprite(40,  [0, 0, 0, 255, 255, 255, 255, 255], 0)
-    scr.set_sprite(48,  [255, 255, 255, 255, 255, 255, 0, 0], 0)
-    scr.set_sprite(56,  [255, 255, 255, 255, 255, 0, 0, 0], 0)
-    scr.set_sprite(64,  [0, 0, 192, 240, 248, 248, 252, 252], 0)
-    scr.set_sprite(72,  [0, 0, 0, 192, 240, 240, 248, 248], 0)
-    scr.set_sprite(80,  [252, 252, 248, 248, 240, 192, 0, 0], 0)
-    scr.set_sprite(88,  [248, 248, 240, 240, 192, 0, 0, 0], 0)
+    scr.set_sprite(0,   [0, 0, 0x03, 0x0F, 0x1F, 0x1F, 0x3F, 0x3F], 0)
+    scr.set_sprite(0x08,   [0, 0, 0, 0x03, 0x0F, 0x0F, 0x1F, 0x1F], 0)
+    scr.set_sprite(0x10,  [0x3F, 0x3F, 0x1F, 0x1F, 0x0F, 0x03, 0, 0], 0)
+    scr.set_sprite(0x18,  [0x1F, 0x1F, 0x0F, 0x0F, 0x03, 0, 0, 0], 0)
+    scr.set_sprite(0x20,  [0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], 0)
+    scr.set_sprite(0x28,  [0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], 0)
+    scr.set_sprite(0x30,  [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0], 0)
+    scr.set_sprite(0x38,  [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0], 0)
+    scr.set_sprite(0x40,  [0, 0, 0xC0, 0xF0, 0xF8, 0xF8, 0xFC, 0xFC], 0)
+    scr.set_sprite(0x48,  [0, 0, 0, 0xC0, 0xF0, 0xF0, 0xF8, 0xF8], 0)
+    scr.set_sprite(0x50,  [0xFC, 0xFC, 0xF8, 0xF8, 0xF0, 0xC0, 0, 0], 0)
+    scr.set_sprite(0x58,  [0xF8, 0xF8, 0xF0, 0xF0, 0xC0, 0, 0, 0], 0)
     -- Fill-icn tiles (from @progress/fill-icn in m291.tal; ICN 1bpp)
-    scr.set_sprite(96,  [0, 0, 0, 3, 15, 15, 31, 31], 0)
-    scr.set_sprite(104, [31, 31, 15, 15, 3, 0, 0, 0], 0)
-    scr.set_sprite(112, [0, 0, 0, 192, 240, 240, 248, 248], 0)
-    scr.set_sprite(120, [248, 248, 240, 240, 192, 0, 0, 0], 0)
+    scr.set_sprite(0x60,  [0, 0, 0, 0x03, 0x0F, 0x0F, 0x1F, 0x1F], 0)
+    scr.set_sprite(0x68, [0x1F, 0x1F, 0x0F, 0x0F, 0x03, 0, 0, 0], 0)
+    scr.set_sprite(0x70, [0, 0, 0, 0xC0, 0xF0, 0xF0, 0xF8, 0xF8], 0)
+    scr.set_sprite(0x78, [0xF8, 0xF8, 0xF0, 0xF0, 0xC0, 0, 0, 0], 0)
     -- Button-icn normal CHR tiles (from @button-icn in m291.tal, row-major)
-    scr.set_sprite(128, [0, 0, 3, 12, 16, 16, 32, 32], 0)
-    scr.set_sprite(136, [0, 0, 0, 3, 15, 15, 31, 31], 0)
-    scr.set_sprite(144, [0, 0, 255, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(152, [0, 0, 0, 255, 255, 255, 255, 255], 0)
-    scr.set_sprite(160, [0, 0, 255, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(168, [0, 0, 0, 255, 255, 255, 255, 255], 0)
-    scr.set_sprite(176, [0, 0, 192, 48, 8, 8, 4, 4], 0)
-    scr.set_sprite(184, [0, 0, 0, 192, 240, 240, 248, 248], 0)
-    scr.set_sprite(192, [32, 32, 32, 32, 32, 32, 32, 32], 0)
-    scr.set_sprite(200, [31, 31, 31, 31, 31, 31, 31, 31], 0)
-    scr.set_sprite(208, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(216, [255, 255, 255, 255, 255, 255, 255, 255], 0)
-    scr.set_sprite(224, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(232, [255, 255, 255, 255, 255, 255, 255, 255], 0)
-    scr.set_sprite(240, [4, 4, 4, 4, 4, 4, 4, 4], 0)
-    scr.set_sprite(248, [248, 248, 248, 248, 248, 248, 248, 248], 0)
-    scr.set_sprite(256, [32, 32, 32, 32, 32, 32, 32, 32], 0)
-    scr.set_sprite(264, [31, 31, 31, 31, 31, 31, 31, 31], 0)
-    scr.set_sprite(272, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(280, [255, 255, 255, 255, 255, 255, 255, 255], 0)
-    scr.set_sprite(288, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(296, [255, 255, 255, 255, 255, 255, 255, 255], 0)
-    scr.set_sprite(304, [4, 4, 4, 4, 4, 4, 4, 4], 0)
-    scr.set_sprite(312, [248, 248, 248, 248, 248, 248, 248, 248], 0)
-    scr.set_sprite(320, [32, 32, 16, 16, 12, 3, 0, 0], 0)
-    scr.set_sprite(328, [31, 31, 15, 15, 3, 0, 0, 0], 0)
-    scr.set_sprite(336, [0, 0, 0, 0, 0, 255, 0, 0], 0)
-    scr.set_sprite(344, [255, 255, 255, 255, 255, 0, 0, 0], 0)
-    scr.set_sprite(352, [0, 0, 0, 0, 0, 255, 0, 0], 0)
-    scr.set_sprite(360, [255, 255, 255, 255, 255, 0, 0, 0], 0)
-    scr.set_sprite(368, [4, 4, 8, 8, 48, 192, 0, 0], 0)
-    scr.set_sprite(376, [248, 248, 240, 240, 192, 0, 0, 0], 0)
+    scr.set_sprite(0x80, [0, 0, 0x03, 0x0C, 0x10, 0x10, 0x20, 0x20], 0)
+    scr.set_sprite(0x88, [0, 0, 0, 0x03, 0x0F, 0x0F, 0x1F, 0x1F], 0)
+    scr.set_sprite(0x90, [0, 0, 0xFF, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x98, [0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], 0)
+    scr.set_sprite(0xA0, [0, 0, 0xFF, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0xA8, [0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], 0)
+    scr.set_sprite(0xB0, [0, 0, 0xC0, 0x30, 0x08, 0x08, 0x04, 0x04], 0)
+    scr.set_sprite(0xB8, [0, 0, 0, 0xC0, 0xF0, 0xF0, 0xF8, 0xF8], 0)
+    scr.set_sprite(0xC0, [0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20], 0)
+    scr.set_sprite(0xC8, [0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F], 0)
+    scr.set_sprite(0xD0, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0xD8, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], 0)
+    scr.set_sprite(0xE0, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0xE8, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], 0)
+    scr.set_sprite(0xF0, [0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04], 0)
+    scr.set_sprite(0xF8, [0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8], 0)
+    scr.set_sprite(0x0100, [0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20], 0)
+    scr.set_sprite(0x0108, [0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F], 0)
+    scr.set_sprite(0x0110, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0118, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], 0)
+    scr.set_sprite(0x0120, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0128, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], 0)
+    scr.set_sprite(0x0130, [0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04], 0)
+    scr.set_sprite(0x0138, [0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8], 0)
+    scr.set_sprite(0x0140, [0x20, 0x20, 0x10, 0x10, 0x0C, 0x03, 0, 0], 0)
+    scr.set_sprite(0x0148, [0x1F, 0x1F, 0x0F, 0x0F, 0x03, 0, 0, 0], 0)
+    scr.set_sprite(0x0150, [0, 0, 0, 0, 0, 0xFF, 0, 0], 0)
+    scr.set_sprite(0x0158, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0], 0)
+    scr.set_sprite(0x0160, [0, 0, 0, 0, 0, 0xFF, 0, 0], 0)
+    scr.set_sprite(0x0168, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0], 0)
+    scr.set_sprite(0x0170, [0x04, 0x04, 0x08, 0x08, 0x30, 0xC0, 0, 0], 0)
+    scr.set_sprite(0x0178, [0xF8, 0xF8, 0xF0, 0xF0, 0xC0, 0, 0, 0], 0)
     -- Button-icn active CHR tiles (from @button-icn/&active in m291.tal)
-    scr.set_sprite(384, [0, 0, 2, 8, 16, 0, 32, 32], 0)
-    scr.set_sprite(392, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(400, [0, 0, 238, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(408, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(416, [0, 0, 238, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(424, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(432, [0, 0, 192, 16, 8, 0, 4, 4], 0)
-    scr.set_sprite(440, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(448, [0, 32, 32, 32, 0, 32, 32, 32], 0)
-    scr.set_sprite(456, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(464, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(472, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(480, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(488, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(496, [0, 4, 4, 4, 0, 4, 4, 4], 0)
-    scr.set_sprite(504, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(512, [0, 32, 32, 32, 0, 32, 32, 32], 0)
-    scr.set_sprite(520, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(528, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(536, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(544, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(552, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(560, [4, 0, 4, 4, 4, 0, 4, 4], 0)
-    scr.set_sprite(568, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(576, [0, 32, 0, 16, 8, 3, 0, 0], 0)
-    scr.set_sprite(584, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(592, [0, 0, 0, 0, 0, 119, 0, 0], 0)
-    scr.set_sprite(600, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(608, [0, 0, 0, 0, 0, 119, 0, 0], 0)
-    scr.set_sprite(616, [0, 0, 0, 0, 0, 0, 0, 0], 0)
-    scr.set_sprite(624, [0, 4, 0, 8, 16, 64, 0, 0], 0)
-    scr.set_sprite(632, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0180, [0, 0, 0x02, 0x08, 0x10, 0, 0x20, 0x20], 0)
+    scr.set_sprite(0x0188, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0190, [0, 0, 0xEE, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0198, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01A0, [0, 0, 0xEE, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01A8, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01B0, [0, 0, 0xC0, 0x10, 0x08, 0, 0x04, 0x04], 0)
+    scr.set_sprite(0x01B8, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01C0, [0, 0x20, 0x20, 0x20, 0, 0x20, 0x20, 0x20], 0)
+    scr.set_sprite(0x01C8, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01D0, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01D8, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01E0, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01E8, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x01F0, [0, 0x04, 0x04, 0x04, 0, 0x04, 0x04, 0x04], 0)
+    scr.set_sprite(0x01F8, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0200, [0, 0x20, 0x20, 0x20, 0, 0x20, 0x20, 0x20], 0)
+    scr.set_sprite(0x0208, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0210, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0218, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0220, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0228, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0230, [0x04, 0, 0x04, 0x04, 0x04, 0, 0x04, 0x04], 0)
+    scr.set_sprite(0x0238, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0240, [0, 0x20, 0, 0x10, 0x08, 0x03, 0, 0], 0)
+    scr.set_sprite(0x0248, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0250, [0, 0, 0, 0, 0, 0x77, 0, 0], 0)
+    scr.set_sprite(0x0258, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0260, [0, 0, 0, 0, 0, 0x77, 0, 0], 0)
+    scr.set_sprite(0x0268, [0, 0, 0, 0, 0, 0, 0, 0], 0)
+    scr.set_sprite(0x0270, [0, 0x04, 0, 0x08, 0x10, 0x40, 0, 0], 0)
+    scr.set_sprite(0x0278, [0, 0, 0, 0, 0, 0, 0, 0], 0)
 ;

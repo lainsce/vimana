@@ -52,7 +52,7 @@ def KEY_RCTRL = 228
 def KEY_SLASH = 56
 
 -- Max file size (32KB)
-def MAX_SIZE = 32768
+def MAX_SIZE = 0x8000
 def NEW_FILE_NAME = "untitled.hex"
 
 --| State |--

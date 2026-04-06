@@ -1,0 +1,157 @@
+cask nekotokei_view
+
+bring stdr
+bring vimana
+bring nekotokei_data
+bring nekotokei_model
+
+def CAT_COLOR = 1
+
+def HEAD_TX = 2
+def HEAD_TY = 5
+
+def BODY_TX = 2
+def BODY_TY = 13
+
+def EYES_TX = 3
+def EYES_TY = 9
+
+def FILL_TX = 4
+def FILL_TY = 13
+
+def TAIL_TY = 18
+def TAIL_L_TX = 4
+def TAIL_R_TX = 7
+
+: abs_num(x = num) (( num ))
+    if x < 0
+        <- -x
+    <- x
+;
+
+: draw_static_cat(scr = vimana.screen) (( -- ))
+    for (let ?row = 0; row < 8; row += 1)
+        for (let ?col = 0; col < 8; col += 1)
+            let idx = row * 8 + col
+            scr.put_icn(HEAD_TX + col, HEAD_TY + row, nekotokei_data.head(idx), CAT_COLOR, 0)
+
+    for (let ?row = 0; row < 5; row += 1)
+        for (let ?col = 0; col < 8; col += 1)
+            let idx = row * 8 + col
+            scr.put_icn(BODY_TX + col, BODY_TY + row, nekotokei_data.body(idx), CAT_COLOR, 0)
+;
+
+: draw_eyes(scr = vimana.screen, tick = num) (( -- ))
+    let frame = nekotokei_data.eye_frame(tick)
+    let base = frame * 12
+    for (let ?row = 0; row < 2; row += 1)
+        for (let ?col = 0; col < 6; col += 1)
+            let idx = base + row * 6 + col
+            scr.put_icn(EYES_TX + col, EYES_TY + row, nekotokei_data.eyes(idx), 0, CAT_COLOR)
+;
+
+: draw_tail(scr = vimana.screen, tick = num) (( -- ))
+    let frame = nekotokei_data.tail_frame(tick)
+    let base = frame * 12
+    let is_right = nekotokei_data.tail_is_right(tick)
+    for (let ?row = 0; row < 3; row += 1)
+        for (let ?col = 0; col < 4; col += 1)
+            let idx = base + row * 4 + col
+            let tile = "0000000000000000"
+            if is_right
+                tile = nekotokei_data.tail_r(idx)
+            else
+                tile = nekotokei_data.tail_l(idx)
+            scr.put_icn(TAIL_L_TX + col, TAIL_TY + row, tile, CAT_COLOR, 0)
+;
+
+: draw_fill_clock(scr = vimana.screen) (( -- ))
+    for (let ?row = 0; row < 4; row += 1)
+        for (let ?col = 0; col < 4; col += 1)
+            let body_idx = row * 8 + (col + 2)
+            scr.put_icn(FILL_TX + col, FILL_TY + row, nekotokei_data.body(body_idx), CAT_COLOR, 0)
+;
+
+: draw_line(scr = vimana.screen, x0 = num, y0 = num, x1 = num, y1 = num, color = num) (( -- ))
+    let dx = abs_num(x1 - x0)
+    let dy = 0 - abs_num(y1 - y0)
+    let sx = -1
+    if x0 < x1
+        sx = 1
+    let sy = -1
+    if y0 < y1
+        sy = 1
+    let err = dx + dy
+    let cx = x0
+    let cy = y0
+    for (let ?guard = 0; guard < 512; guard += 1)
+        scr.set_x(cx)
+        scr.set_y(cy)
+        scr.pixel(color)
+        if cx == x1 && cy == y1
+            break
+        let e2 = 2 * err
+        if e2 >= dy
+            err += dy
+            cx += sx
+        if e2 <= dx
+            err += dx
+            cy += sy
+;
+
+: draw_middle(scr = vimana.screen, color = num) (( -- ))
+    let cx = nekotokei_model.CENTER_X
+    let cy = nekotokei_model.CENTER_Y
+    scr.set_x(cx)
+    scr.set_y(cy - 1)
+    scr.pixel(color)
+    scr.set_x(cx - 1)
+    scr.set_y(cy)
+    scr.pixel(color)
+    scr.set_x(cx)
+    scr.set_y(cy)
+    scr.pixel(color)
+    scr.set_x(cx + 1)
+    scr.set_y(cy)
+    scr.pixel(color)
+    scr.set_x(cx)
+    scr.set_y(cy + 1)
+    scr.pixel(color)
+;
+
+: draw_needles(scr = vimana.screen, dt = vimana.datetime) (( -- ))
+    draw_fill_clock(scr)
+
+    let now = dt.now()
+    let h = dt.hour_at(now)
+    let m = dt.minute_at(now)
+    let s = dt.second_at(now)
+
+    let cx = nekotokei_model.CENTER_X
+    let cy = nekotokei_model.CENTER_Y
+
+    let h_idx = ((h % 12) * 5 + stdr.floor(m / 12)) % 60
+    let hx = cx + nekotokei_data.needle_h_x(h_idx)
+    let hy = cy + nekotokei_data.needle_h_y(h_idx)
+    draw_line(scr, cx, cy, hx, hy, CAT_COLOR)
+    draw_line(scr, cx + 1, cy, hx + 1, hy, CAT_COLOR)
+
+    let mx = cx + nekotokei_data.needle_m_x(m)
+    let my = cy + nekotokei_data.needle_m_y(m)
+    draw_line(scr, cx, cy, mx, my, CAT_COLOR)
+
+    let sec_x = cx + nekotokei_data.needle_m_x(s)
+    let sec_y = cy + nekotokei_data.needle_m_y(s)
+    draw_line(scr, cx, cy, sec_x, sec_y, 3)
+
+    draw_middle(scr, CAT_COLOR)
+;
+
+:: draw(scr = vimana.screen, dt = vimana.datetime, tick = num) (( -- ))
+    scr.clear(0)
+    draw_static_cat(scr)
+    draw_eyes(scr, tick)
+    draw_tail(scr, tick)
+    draw_needles(scr, dt)
+    scr.present()
+;

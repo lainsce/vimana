@@ -39,9 +39,9 @@ bring casu_model
         else
             -- Reset nametable to identity mapping
             for (let ?t = 0; t < 256; t += 1)
-                casu_model.ntab[t * 3]     = t % 256
-                casu_model.ntab[t * 3 + 1] = stdr.floor(t / 256)
-                casu_model.ntab[t * 3 + 2] = 129
+                casu_model.ntab[t * 3]     = t % 0x100
+                casu_model.ntab[t * 3 + 1] = stdr.floor(t / 0x100)
+                casu_model.ntab[t * 3 + 2] = 0x81
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ bring casu_model
     -- Read 8 bytes per tile into plane 0 (offsets 0-7), plane 1 (offsets 8-15) stays 0
     let ?bi = 0
     for (let ?t = 0; t < 256; t += 1)
-        let off = t * 16
+        let off = t * 0x10
         for (let ?r = 0; r < 8; r += 1)
             if bi < n
                 casu_model.sheet[off + r] = bytes[bi]
@@ -95,7 +95,7 @@ bring casu_model
 : file_save_mono(fsys = vimana.file, path = str) (( -- ))
     let ?out = []: [any]
     for (let ?t = 0; t < 256; t += 1)
-        let off = t * 16
+        let off = t * 0x10
         for (let ?r = 0; r < 8; r += 1)
             stdr.push(out, casu_model.sheet[off + r])
     fsys.write_bytes(path, out)
@@ -111,12 +111,12 @@ bring casu_model
 : save_theme(fsys = vimana.file, path = str) (( -- ))
     -- Pack palette as nasu does: 3 shorts (r, g, b) with nibble pairs per slot
     -- r_short = (PAL_R[0] << 12) | (PAL_R[1] << 8) | (PAL_R[2] << 4) | PAL_R[3]
-    let r_short = casu_model.PAL_R[0] * 4096 + casu_model.PAL_R[1] * 256 + casu_model.PAL_R[2] * 16 + casu_model.PAL_R[3]
-    let g_short = casu_model.PAL_G[0] * 4096 + casu_model.PAL_G[1] * 256 + casu_model.PAL_G[2] * 16 + casu_model.PAL_G[3]
-    let b_short = casu_model.PAL_B[0] * 4096 + casu_model.PAL_B[1] * 256 + casu_model.PAL_B[2] * 16 + casu_model.PAL_B[3]
-    let out = [stdr.floor(r_short / 256), r_short % 256,
-               stdr.floor(g_short / 256), g_short % 256,
-               stdr.floor(b_short / 256), b_short % 256]
+    let r_short = casu_model.PAL_R[0] * 0x1000 + casu_model.PAL_R[1] * 0x100 + casu_model.PAL_R[2] * 16 + casu_model.PAL_R[3]
+    let g_short = casu_model.PAL_G[0] * 0x1000 + casu_model.PAL_G[1] * 0x100 + casu_model.PAL_G[2] * 16 + casu_model.PAL_G[3]
+    let b_short = casu_model.PAL_B[0] * 0x1000 + casu_model.PAL_B[1] * 0x100 + casu_model.PAL_B[2] * 16 + casu_model.PAL_B[3]
+    let out = [stdr.floor(r_short / 0x100), r_short % 0x100,
+               stdr.floor(g_short / 0x100), g_short % 0x100,
+               stdr.floor(b_short / 0x100), b_short % 0x100]
     fsys.write_bytes(path, out)
 ;
 
@@ -125,19 +125,19 @@ bring casu_model
     let bytes = fsys.read_bytes(path)
     if stdr.len(bytes) < 6
         <- false
-    let r_short = bytes[0] * 256 + bytes[1]
-    let g_short = bytes[2] * 256 + bytes[3]
-    let b_short = bytes[4] * 256 + bytes[5]
-    casu_model.PAL_R[0] = stdr.floor(r_short / 4096) % 16
-    casu_model.PAL_R[1] = stdr.floor(r_short / 256) % 16
+    let r_short = bytes[0] * 0x100 + bytes[1]
+    let g_short = bytes[2] * 0x100 + bytes[3]
+    let b_short = bytes[4] * 0x100 + bytes[5]
+    casu_model.PAL_R[0] = stdr.floor(r_short / 0x1000) % 16
+    casu_model.PAL_R[1] = stdr.floor(r_short / 0x100) % 16
     casu_model.PAL_R[2] = stdr.floor(r_short / 16) % 16
     casu_model.PAL_R[3] = r_short % 16
-    casu_model.PAL_G[0] = stdr.floor(g_short / 4096) % 16
-    casu_model.PAL_G[1] = stdr.floor(g_short / 256) % 16
+    casu_model.PAL_G[0] = stdr.floor(g_short / 0x1000) % 16
+    casu_model.PAL_G[1] = stdr.floor(g_short / 0x100) % 16
     casu_model.PAL_G[2] = stdr.floor(g_short / 16) % 16
     casu_model.PAL_G[3] = g_short % 16
-    casu_model.PAL_B[0] = stdr.floor(b_short / 4096) % 16
-    casu_model.PAL_B[1] = stdr.floor(b_short / 256) % 16
+    casu_model.PAL_B[0] = stdr.floor(b_short / 0x1000) % 16
+    casu_model.PAL_B[1] = stdr.floor(b_short / 0x100) % 16
     casu_model.PAL_B[2] = stdr.floor(b_short / 16) % 16
     casu_model.PAL_B[3] = b_short % 16
     <- true

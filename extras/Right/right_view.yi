@@ -144,9 +144,9 @@ def ?_ps_hover = -1
 
 --| ICN tile data |--
 
-def ICN_HALFTONE = [170, 85, 170, 85, 170, 85, 170, 85]
-def ICN_SOLID    = [255, 255, 255, 255, 255, 255, 255, 255]
-def ICN_CARET    = [192, 192, 192, 192, 192, 192, 192, 192]
+def ICN_HALFTONE = [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]
+def ICN_SOLID    = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+def ICN_CARET    = [0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0]
 
 --| Halftone fill (pixel-level, for thin elements) |--
 

@@ -14,10 +14,10 @@ def CHAR_WIDTHS = [4, 4, 5, 8, 7, 9, 10, 3, 5, 5, 6, 6, 3, 6, 3, 7,
 
 --| Special 8x8 icons (1bpp byte arrays) |--
 
-def ICN_FILL = [255, 255, 255, 255, 255, 255, 255, 255]
-def ICN_ERROR = [170, 85, 170, 85, 170, 85, 170, 85]
-def ICN_BLINK = [128, 128, 128, 128, 128, 128, 128, 128]
-def ICN_BOTTOM = [255, 0, 255, 0, 255, 0, 255, 255]
+def ICN_FILL = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+def ICN_ERROR = [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]
+def ICN_BLINK = [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]
+def ICN_BOTTOM = [0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0xFF]
 
 :: get_char_width(code = num) (( num ))
     if code >= 32 && code < 128
@@ -25,91 +25,58 @@ def ICN_BOTTOM = [255, 0, 255, 0, 255, 0, 255, 255]
     <- 8
 ;
 
---| Corner dog-ear tiles (1bpp, 3 cols × 4 rows per state) |--
+--| Corner dog-ear tiles (2bpp, 3 cols × 4 rows per state) |--
+
+def FOLD_D_ADDR = 0x0000
+def FOLD_N_ADDR = 0x00C0
+def FOLD_B_ADDR = 0x0180
 
 -- Default state
-def FOLD_D0 = ["0000", "00ff", "7f3f", "1f0f"]
-def FOLD_D1 = ["0000", "00ff", "ffff", "ffff"]
-def FOLD_D2 = ["0000", "00fc", "fcfc", "fcfc"]
-def FOLD_D3 = ["0703", "0100", "0000", "0000"]
-def FOLD_D4 = ["ffff", "ffff", "7f3f", "1f0f"]
-def FOLD_D5 = ["fcfc", "fcfc", "fcfc", "fcfc"]
-def FOLD_D6 = ["0000", "0000", "0000", "0000"]
-def FOLD_D7 = ["0703", "0100", "0000", "0000"]
-def FOLD_D8 = ["fcfc", "fcfc", "7c3c", "1c0c"]
-def FOLD_D9 = ["0000", "ff00", "ff00", "ffff"]
-def FOLD_D10 = ["0000", "ff00", "ff00", "ffff"]
-def FOLD_D11 = ["0700", "ff00", "ff00", "ffff"]
+def FOLD_D0 = [0x0000, 0x0000, 0x0000, 0x5555, 0x1AAA, 0x06AA, 0x01AA, 0x006A]
+def FOLD_D1 = [0x0000, 0x0000, 0x0000, 0x5555, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA]
+def FOLD_D2 = [0x0000, 0x0000, 0x0000, 0x5550, 0xAA90, 0xAA90, 0xAA90, 0xAA90]
+def FOLD_D3 = [0x001A, 0x0006, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
+def FOLD_D4 = [0xAAAA, 0xAAAA, 0xAAAA, 0x6AAA, 0x1AAA, 0x06AA, 0x01AA, 0x006A]
+def FOLD_D5 = [0xAA90, 0xAA90, 0xAA90, 0xAA90, 0xAA90, 0xAA90, 0xAA90, 0xAA90]
+def FOLD_D6 = [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
+def FOLD_D7 = [0x001A, 0x0006, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
+def FOLD_D8 = [0xAA90, 0xAA90, 0xAA90, 0x6A90, 0x1A90, 0x0690, 0x0190, 0x0050]
+def FOLD_D9 = [0x0000, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
+def FOLD_D10 = [0x0000, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
+def FOLD_D11 = [0x0015, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
 
 -- Next state
-def FOLD_N0 = ["00ff", "7f3f", "1f0f", "0703"]
-def FOLD_N1 = ["00ff", "ffff", "ffff", "ffff"]
-def FOLD_N2 = ["00ff", "ffff", "ffff", "ffff"]
-def FOLD_N3 = ["0100", "0000", "0000", "0000"]
-def FOLD_N4 = ["ffff", "7f3f", "1f0f", "0703"]
-def FOLD_N5 = ["ffff", "ffff", "ffff", "ffff"]
-def FOLD_N6 = ["0000", "0000", "0000", "0000"]
-def FOLD_N7 = ["0100", "0000", "0000", "0000"]
-def FOLD_N8 = ["ffff", "7f3f", "1f0f", "0703"]
-def FOLD_N9 = ["0000", "ff00", "ff00", "ffff"]
-def FOLD_N10 = ["0000", "ff00", "ff00", "ffff"]
-def FOLD_N11 = ["0100", "ff00", "ff00", "ffff"]
+def FOLD_N0 = [0x0000, 0x5555, 0x1AAA, 0x06AA, 0x01AA, 0x006A, 0x001A, 0x0006]
+def FOLD_N1 = [0x0000, 0x5555, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA]
+def FOLD_N2 = [0x0000, 0x5555, 0xAAA9, 0xAAA9, 0xAAA9, 0xAAA9, 0xAAA9, 0xAAA9]
+def FOLD_N3 = [0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
+def FOLD_N4 = [0xAAAA, 0x6AAA, 0x1AAA, 0x06AA, 0x01AA, 0x006A, 0x001A, 0x0006]
+def FOLD_N5 = [0xAAA9, 0xAAA9, 0xAAA9, 0xAAA9, 0xAAA9, 0xAAA9, 0xAAA9, 0xAAA9]
+def FOLD_N6 = [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
+def FOLD_N7 = [0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
+def FOLD_N8 = [0xAAA9, 0x6AA9, 0x1AA9, 0x06A9, 0x01A9, 0x0069, 0x0019, 0x0005]
+def FOLD_N9 = [0x0000, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
+def FOLD_N10 = [0x0000, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
+def FOLD_N11 = [0x0001, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
 
 -- Back state
-def FOLD_B0 = ["0000", "0000", "00ff", "7f3f"]
-def FOLD_B1 = ["0000", "0000", "00ff", "ffff"]
-def FOLD_B2 = ["0000", "0000", "00f0", "f0f0"]
-def FOLD_B3 = ["1f0f", "0703", "0100", "0000"]
-def FOLD_B4 = ["ffff", "ffff", "ffff", "7f3f"]
-def FOLD_B5 = ["f0f0", "f0f0", "f0f0", "f0f0"]
-def FOLD_B6 = ["0000", "0000", "0000", "0000"]
-def FOLD_B7 = ["1f0f", "0703", "0100", "0000"]
-def FOLD_B8 = ["f0f0", "f0f0", "f0f0", "7030"]
-def FOLD_B9 = ["0000", "ff00", "ff00", "ffff"]
-def FOLD_B10 = ["0000", "ff00", "ff00", "ffff"]
-def FOLD_B11 = ["1f00", "ff00", "ff00", "ffff"]
+def FOLD_B0 = [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x5555, 0x1AAA, 0x06AA]
+def FOLD_B1 = [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x5555, 0xAAAA, 0xAAAA]
+def FOLD_B2 = [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x5500, 0xA900, 0xA900]
+def FOLD_B3 = [0x01AA, 0x006A, 0x001A, 0x0006, 0x0001, 0x0000, 0x0000, 0x0000]
+def FOLD_B4 = [0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0xAAAA, 0x6AAA, 0x1AAA, 0x06AA]
+def FOLD_B5 = [0xA900, 0xA900, 0xA900, 0xA900, 0xA900, 0xA900, 0xA900, 0xA900]
+def FOLD_B6 = [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
+def FOLD_B7 = [0x01AA, 0x006A, 0x001A, 0x0006, 0x0001, 0x0000, 0x0000, 0x0000]
+def FOLD_B8 = [0xA900, 0xA900, 0xA900, 0xA900, 0xA900, 0x6900, 0x1900, 0x0500]
+def FOLD_B9 = [0x0000, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
+def FOLD_B10 = [0x0000, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
+def FOLD_B11 = [0x0155, 0x0000, 0x5555, 0x0000, 0x5555, 0x0000, 0x5555, 0x5555]
 
-:: get_fold_tile(state = num, idx = num) (( [any] ))
-    if state == 0
-        if idx == 0 <- FOLD_D0
-        if idx == 1 <- FOLD_D1
-        if idx == 2 <- FOLD_D2
-        if idx == 3 <- FOLD_D3
-        if idx == 4 <- FOLD_D4
-        if idx == 5 <- FOLD_D5
-        if idx == 6 <- FOLD_D6
-        if idx == 7 <- FOLD_D7
-        if idx == 8 <- FOLD_D8
-        if idx == 9 <- FOLD_D9
-        if idx == 10 <- FOLD_D10
-        if idx == 11 <- FOLD_D11
-    elif state == 1
-        if idx == 0 <- FOLD_N0
-        if idx == 1 <- FOLD_N1
-        if idx == 2 <- FOLD_N2
-        if idx == 3 <- FOLD_N3
-        if idx == 4 <- FOLD_N4
-        if idx == 5 <- FOLD_N5
-        if idx == 6 <- FOLD_N6
-        if idx == 7 <- FOLD_N7
-        if idx == 8 <- FOLD_N8
-        if idx == 9 <- FOLD_N9
-        if idx == 10 <- FOLD_N10
-        if idx == 11 <- FOLD_N11
-    elif state == 2
-        if idx == 0 <- FOLD_B0
-        if idx == 1 <- FOLD_B1
-        if idx == 2 <- FOLD_B2
-        if idx == 3 <- FOLD_B3
-        if idx == 4 <- FOLD_B4
-        if idx == 5 <- FOLD_B5
-        if idx == 6 <- FOLD_B6
-        if idx == 7 <- FOLD_B7
-        if idx == 8 <- FOLD_B8
-        if idx == 9 <- FOLD_B9
-        if idx == 10 <- FOLD_B10
-        if idx == 11 <- FOLD_B11
-    <- ["ffff", "ffff", "ffff", "ffff"]
+:: get_fold_addr(state = num) (( num ))
+    if state == 1 <- FOLD_N_ADDR
+    if state == 2 <- FOLD_B_ADDR
+    <- FOLD_D_ADDR
 ;
 
 :: install(scr = vimana.screen) (( -- ))
@@ -161,7 +128,7 @@ def FOLD_B11 = ["1f00", "ff00", "ff00", "ffff"]
     scr.set_font_glyph(74, ["0000", "0000", "0000", "1500", "0400", "0400", "0400", "0400", "0400", "0400", "0400", "0400", "0400", "0400", "5000", "0000"])
     scr.set_font_glyph(75, ["0000", "0000", "0000", "5454", "1010", "1040", "1100", "1400", "1100", "1040", "1010", "5454", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(76, ["0000", "0000", "0000", "1500", "0400", "0400", "0400", "0400", "0400", "0400", "0404", "1554", "0000", "0000", "0000", "0000"])
-    scr.set_font_chr(77, [0, 0, 0, 0, 0, 0, 224, 224, 96, 192, 96, 192, 81, 64, 81, 64, 74, 64, 74, 64, 68, 64, 228, 224, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x4D, [0, 0, 0, 0, 0, 0, 0xE0, 0xE0, 0x60, 0xC0, 0x60, 0xC0, 0x51, 0x40, 0x51, 0x40, 0x4A, 0x40, 0x4A, 0x40, 0x44, 0x40, 0xE4, 0xE0, 0, 0, 0, 0, 0, 0, 0, 0])
     scr.set_font_glyph(78, ["0000", "0000", "0000", "5415", "1404", "1104", "1104", "1044", "1044", "1014", "1014", "5404", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(79, ["0000", "0000", "0000", "0540", "1010", "4004", "4004", "4004", "4004", "4004", "1010", "0540", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(80, ["0000", "0000", "0000", "5540", "1010", "1004", "1004", "1010", "1540", "1000", "1000", "5400", "0000", "0000", "0000", "0000"])
@@ -171,7 +138,7 @@ def FOLD_B11 = ["1f00", "ff00", "ff00", "ffff"]
     scr.set_font_glyph(84, ["0000", "0000", "0000", "5554", "4104", "0100", "0100", "0100", "0100", "0100", "0100", "0540", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(85, ["0000", "0000", "0000", "5415", "1004", "1004", "1004", "1004", "1004", "1004", "0410", "0140", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(86, ["0000", "0000", "0000", "d405", "1001", "1001", "0404", "0404", "0110", "0110", "0040", "0040", "0000", "0000", "0000", "0000"])
-    scr.set_font_chr(87, [0, 0, 0, 0, 0, 0, 119, 112, 34, 32, 34, 32, 21, 64, 21, 64, 21, 64, 8, 128, 8, 128, 8, 128, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x57, [0, 0, 0, 0, 0, 0, 0x77, 0x70, 0x22, 0x20, 0x22, 0x20, 0x15, 0x40, 0x15, 0x40, 0x15, 0x40, 0x08, 0x80, 0x08, 0x80, 0x08, 0x80, 0, 0, 0, 0, 0, 0, 0, 0])
     scr.set_font_glyph(88, ["0000", "0000", "0000", "5454", "1010", "0440", "0440", "0100", "0440", "0440", "1010", "5454", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(89, ["0000", "0000", "0000", "5454", "1010", "0440", "0440", "0100", "0100", "0100", "0100", "0540", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(90, ["0000", "0000", "0000", "5540", "4040", "0100", "0100", "0400", "1000", "1000", "4040", "5540", "0000", "0000", "0000", "0000"])
@@ -193,7 +160,7 @@ def FOLD_B11 = ["1f00", "ff00", "ff00", "ffff"]
     scr.set_font_glyph(106, ["0000", "0000", "0000", "1000", "0000", "1000", "5000", "1000", "1000", "1000", "1000", "1000", "1000", "1000", "4000", "0000"])
     scr.set_font_glyph(107, ["0000", "0000", "0000", "1000", "5000", "1050", "1040", "1100", "1400", "1100", "1040", "5454", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(108, ["0000", "0000", "0000", "5000", "1000", "1000", "1000", "1000", "1000", "1000", "1000", "5400", "0000", "0000", "0000", "0000"])
-    scr.set_font_chr(109, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 128, 230, 64, 68, 64, 68, 64, 68, 64, 68, 64, 238, 224, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x6D, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x59, 0x80, 0xE6, 0x40, 0x44, 0x40, 0x44, 0x40, 0x44, 0x40, 0x44, 0x40, 0xEE, 0xE0, 0, 0, 0, 0, 0, 0, 0, 0])
     scr.set_font_glyph(110, ["0000", "0000", "0000", "0000", "0000", "1140", "5410", "1010", "1010", "1010", "1010", "5454", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(111, ["0000", "0000", "0000", "0000", "0000", "0500", "1040", "4010", "4010", "4010", "1040", "0500", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(112, ["0000", "0000", "0000", "0000", "0000", "5540", "1010", "1004", "1004", "1004", "1410", "1140", "1000", "1000", "5400", "0000"])
@@ -203,7 +170,7 @@ def FOLD_B11 = ["1f00", "ff00", "ff00", "ffff"]
     scr.set_font_glyph(116, ["0000", "0000", "0000", "1000", "1000", "5500", "1000", "1000", "1000", "1000", "1040", "0500", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(117, ["0000", "0000", "0000", "0000", "0000", "5050", "1010", "1010", "1010", "1010", "1010", "0544", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(118, ["0000", "0000", "0000", "0000", "0000", "5454", "1010", "1010", "0440", "0440", "0100", "0100", "0000", "0000", "0000", "0000"])
-    scr.set_font_chr(119, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 224, 224, 68, 64, 68, 64, 42, 128, 42, 128, 17, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    scr.set_font_chr(0x77, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xE0, 0xE0, 0x44, 0x40, 0x44, 0x40, 0x2A, 0x80, 0x2A, 0x80, 0x11, 0, 0x11, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     scr.set_font_glyph(120, ["0000", "0000", "0000", "0000", "0000", "5454", "1010", "0440", "0100", "0440", "1010", "5454", "0000", "0000", "0000", "0000"])
     scr.set_font_glyph(121, ["0000", "0000", "0000", "0000", "0000", "5454", "1010", "1010", "0440", "0440", "0100", "0100", "0400", "0400", "1000", "0000"])
     scr.set_font_glyph(122, ["0000", "0000", "0000", "0000", "0000", "5540", "4040", "0100", "0400", "1000", "4040", "5540", "0000", "0000", "0000", "0000"])
@@ -309,4 +276,44 @@ def FOLD_B11 = ["1f00", "ff00", "ff00", "ffff"]
     scr.set_font_width(124, 3)
     scr.set_font_width(125, 5)
     scr.set_font_width(126, 6)
+
+    -- Load fold sprites (2bpp)
+    scr.set_sprite(FOLD_D_ADDR, FOLD_D0, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x10, FOLD_D1, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x20, FOLD_D2, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x30, FOLD_D3, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x40, FOLD_D4, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x50, FOLD_D5, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x60, FOLD_D6, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x70, FOLD_D7, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x80, FOLD_D8, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0x90, FOLD_D9, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0xA0, FOLD_D10, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_D_ADDR + 0xB0, FOLD_D11, vimana.sprite_2bpp)
+
+    scr.set_sprite(FOLD_N_ADDR, FOLD_N0, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x10, FOLD_N1, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x20, FOLD_N2, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x30, FOLD_N3, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x40, FOLD_N4, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x50, FOLD_N5, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x60, FOLD_N6, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x70, FOLD_N7, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x80, FOLD_N8, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0x90, FOLD_N9, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0xA0, FOLD_N10, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_N_ADDR + 0xB0, FOLD_N11, vimana.sprite_2bpp)
+
+    scr.set_sprite(FOLD_B_ADDR, FOLD_B0, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x10, FOLD_B1, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x20, FOLD_B2, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x30, FOLD_B3, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x40, FOLD_B4, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x50, FOLD_B5, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x60, FOLD_B6, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x70, FOLD_B7, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x80, FOLD_B8, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0x90, FOLD_B9, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0xA0, FOLD_B10, vimana.sprite_2bpp)
+    scr.set_sprite(FOLD_B_ADDR + 0xB0, FOLD_B11, vimana.sprite_2bpp)
 ;

@@ -930,7 +930,7 @@ def ?search_index = -1
 ;
 
 --| ROM space (Vimana 64K) |--
-def ROM_SIZE = 65536
+def ROM_SIZE = 0x10000
 
 --| Bracket matching |--
 

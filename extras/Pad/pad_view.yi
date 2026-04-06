@@ -91,15 +91,16 @@ def ?_ps_corner = -1
         draw_cursor(scr, px, py)
 ;
 
---| Corner dog-ear graphic (1bpp tiles) |--
+--| Corner dog-ear graphic (2bpp tiles) |--
 
 : draw_corner(scr = vimana.screen) (( -- ))
-    let state = pad_model.corner_state
+    let base_addr = pad_font.get_fold_addr(pad_model.corner_state)
     let base_ty = stdr.floor(pad_model.FOOTER_Y / 8)
+    scr.set_auto(0x26)
     for (let ?row = 0; row < 4; row += 1)
-        for (let ?col = 0; col < 3; col += 1)
-            let idx = row * 3 + col
-            scr.put_icn(col, base_ty + row, pad_font.get_fold_tile(state, idx), pad_model.C_FG, pad_model.C_BG)
+        let row_addr = base_addr + row * 3 * 0x10
+        scr.set_addr(row_addr).set_x(0).set_y(base_ty + row).sprite(0x81)
+    scr.set_auto(0)
 ;
 
 --| Footer: bottom bar and page number |--

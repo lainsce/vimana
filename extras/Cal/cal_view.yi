@@ -56,65 +56,13 @@ def BOTTOM_ICN = ["ff00", "ff00", "ff00", "ffff"]
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : draw_corner(scr = vimana.screen) (( -- ))
-    let state = cal_model.corner_state
-    let cy = cal_model.WIN_H - 32
-
-    -- Fold crease Y offset depends on state:
-    -- default=3, next=1 (bigger fold), back=5 (smaller fold)
-    let ?crease = 3
-    if state == 1
-        crease = 1
-    elif state == 2
-        crease = 5
-
-    -- Back state: draw extra triangle above the crease (previous page peek)
-    if state == 2
-        let back_start = 11
-        scr.set_auto(1)
-        for (let ?r = 0; r < crease; r += 1)
-            let diag_x = back_start + (crease - 1 - r)
-            for (let ?px = 0; px < diag_x; px += 1)
-                scr.set_y(cy + r)
-                scr.set_x(px)
-                scr.pixel(cal_model.C_ACCENT)
-            scr.set_y(cy + r)
-            scr.set_x(diag_x)
-            scr.pixel(cal_model.C_FG)
-        scr.set_auto(0)
-
-    -- Horizontal fold crease line
-    hline(scr, 0, cy + crease, 22, cal_model.C_FG)
-
-    -- Accent-filled triangle below crease + diagonal line
-    let fold_h = 24 - crease - 1
-    scr.set_auto(1)
-    for (let ?row = 1; row <= fold_h; row += 1)
-        let y = cy + crease + row
-        let fill_start = row + 1
-        if fill_start <= 20
-            scr.set_y(y)
-            scr.set_x(fill_start)
-            for (let ?px = fill_start; px <= 20; px += 1)
-                scr.pixel(cal_model.C_ACCENT)
+    let base_addr = cal_font.get_fold_addr(cal_model.corner_state)
+    let base_ty = (cal_model.WIN_H - 32) / 8
+    scr.set_auto(0x26)
+    for (let ?row = 0; row < 4; row += 1)
+        let row_addr = base_addr + row * 3 * 0x10
+        scr.set_addr(row_addr).set_x(0).set_y(base_ty + row).sprite(0x81)
     scr.set_auto(0)
-
-    -- Diagonal fold line
-    for (let ?d = 0; d < fold_h; d += 1)
-        scr.set_y(cy + crease + 1 + d)
-        scr.set_x(d + 1)
-        scr.pixel(cal_model.C_FG)
-
-    -- Right vertical border of fold
-    vline(scr, 21, cy + crease + 1, fold_h, cal_model.C_FG)
-
-    -- Bottom connecting pixels
-    hline(scr, 21, cy + 24, 3, cal_model.C_FG)
-
-    -- Bottom border stripes within corner area
-    hline(scr, 0, cy + 26, 24, cal_model.C_FG)
-    hline(scr, 0, cy + 28, 24, cal_model.C_FG)
-    hline(scr, 0, cy + 30, 24, cal_model.C_FG)
-    hline(scr, 0, cy + 31, 24, cal_model.C_FG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────

@@ -95,7 +95,7 @@ def UF3_BPR = 2
 def UF3_STRIDE = 32
 def UF3_TOTAL = 8448
 
-def POW2 = [1, 2, 4, 8, 16, 32, 64, 128]
+def POW2 = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80]
 def DEFAULT_PANGRAM = "Sphinx of black quartz, judge my vow."
 
 --| State |--
