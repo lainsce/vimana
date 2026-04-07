@@ -18,7 +18,7 @@ bring vimana
     .put_text(32, 136, "TIME: " + pad2(dt.hour_at(now)) + ":" + pad2(dt.minute_at(now)) + ":" + pad2(dt.second_at(now)), vimana.color_2, vimana.color_bg)
 
     if dev.mouse_down(vimana.mouse_left)
-        scr.put_text(32, 152, "MOUSE LEFT DOWN", vimana.color_1, vimana.color_bg)
+        scr.put_text(32, 152, "MOUSE LEFT DOWN", vimana.color_fg, vimana.color_bg)
 
     scr.present()
 ;

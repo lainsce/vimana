@@ -56,6 +56,8 @@ struct VimanaSystem {
   float tone_freq_hz;
   float tone_amp;
   int tone_samples_left;
+  float *mix_buffer;           /* pre-allocated audio mix buffer */
+  int mix_buffer_cap;          /* capacity in samples */
 };
 
 static float vimana_pitch_to_hz(int pitch) {
@@ -84,9 +86,17 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
   if (sample_count <= 0)
     sample_count = 256;
 
-  float *buffer = (float *)calloc((size_t)sample_count, sizeof(float));
-  if (!buffer)
-    return;
+  /* Grow pre-allocated buffer if needed */
+  if (sample_count > system->mix_buffer_cap) {
+    float *grown = (float *)realloc(system->mix_buffer,
+                                    (size_t)sample_count * sizeof(float));
+    if (!grown)
+      return;
+    system->mix_buffer = grown;
+    system->mix_buffer_cap = sample_count;
+  }
+  float *buffer = system->mix_buffer;
+  memset(buffer, 0, (size_t)sample_count * sizeof(float));
 
   float phase = system->tone_phase;
   float freq = system->tone_freq_hz;
@@ -116,7 +126,6 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
   system->tone_samples_left = left;
   (void)SDL_PutAudioStreamData(stream, buffer,
                                sample_count * (int)sizeof(float));
-  free(buffer);
 }
 
 static void vimana_system_init_audio(vimana_system *system) {
@@ -200,6 +209,8 @@ struct VimanaScreen {
   bool titlebar_button_pressed;  /* set for one frame when right button clicked */
   bool theme_swap_fg_bg;         /* swap base_colors[0] and [1] after loading */
   int16_t theme_poll_counter;    /* frame counter for periodic theme check */
+  SDL_Texture *titlebar_tex;     /* cached titlebar texture (rebuilt on change) */
+  bool titlebar_dirty;           /* true = rebuild titlebar_tex next present */
 };
 
 /* ── ROM accessor implementations (need complete struct definition) ───── */
@@ -294,6 +305,7 @@ static void vimana_screen_load_theme(vimana_screen *screen) {
     screen->base_colors[1] = tmp;
   }
   vimana_colorize(screen);
+  screen->titlebar_dirty = true;
   struct stat st;
   if (stat(path, &st) == 0)
     screen->theme_mtime = st.st_mtime;
@@ -333,6 +345,7 @@ static void vimana_screen_update_titlebar_sizes(vimana_screen *screen) {
             ? bsz_max : screen->titlebar_bar_height - 4;
   screen->titlebar_box_size   = bsz;
   screen->titlebar_box_y      = (screen->titlebar_bar_height - bsz) / 2;
+  screen->titlebar_dirty = true;
 }
 
 static void vimana_screen_reset_font(vimana_screen *screen) {
@@ -760,6 +773,7 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
   screen->height_mar = height + 16;
   screen->title = strdup(title ? title : "vimana");
   screen->titlebar_bg_slot = 2; /* default to palette slot 2 (accent color) */
+  screen->titlebar_dirty = true;
   vimana_screen_reset_palette(screen);
   vimana_screen_load_theme(screen);
   vimana_screen_reset_font(screen);
@@ -886,6 +900,7 @@ void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
   unsigned int s = slot & 3;
   screen->base_colors[s] = vimana_parse_hex_color(hex);
   vimana_colorize(screen);
+  screen->titlebar_dirty = true;
 }
 
 void vimana_screen_set_font_glyph(vimana_screen *screen, unsigned int code,
@@ -1252,105 +1267,89 @@ void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
   }
 }
 
-static void vimana_draw_titlebar_content(vimana_screen *screen) {
+static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
   if (!screen || !screen->renderer)
     return;
-  SDL_Renderer *rend = screen->renderer;
   int win_w = screen->width * screen->scale;
-  uint32_t bg = screen->base_colors[screen->titlebar_bg_slot & 3];
+  int bar_h = screen->titlebar_height;
+  if (win_w <= 0 || bar_h <= 0)
+    return;
 
-  /* Stripe and contrast colors from the 2-bit palette */
-  uint32_t stripe   = screen->base_colors[1];
+  uint32_t bg = screen->base_colors[screen->titlebar_bg_slot & 3];
   uint32_t contrast = screen->base_colors[1];
 
-  /* Pinstripe background: solid bg fill, then stripes with top/bottom margins */
-  SDL_SetRenderDrawColor(rend, (uint8_t)((bg >> 16) & 0xFF),
-                         (uint8_t)((bg >> 8) & 0xFF), (uint8_t)(bg & 0xFF), 255);
-  SDL_FRect bar_bg = {0.0f, 0.0f, (float)win_w, (float)screen->titlebar_height};
-  SDL_RenderFillRect(rend, &bar_bg);
+  /* Allocate ARGB pixel buffer for the titlebar */
+  uint32_t *pixels = (uint32_t *)malloc((size_t)win_w * (size_t)bar_h * sizeof(uint32_t));
+  if (!pixels)
+    return;
+
+  /* Helper macros for pixel buffer access */
+  #define TB_SET(px, py, col) do { \
+    if ((px) >= 0 && (px) < win_w && (py) >= 0 && (py) < bar_h) \
+      pixels[(py) * win_w + (px)] = (col); \
+  } while(0)
+  #define TB_FILL(rx, ry, rw, rh, col) do { \
+    for (int _fy = (ry); _fy < (ry) + (rh); _fy++) \
+      for (int _fx = (rx); _fx < (rx) + (rw); _fx++) \
+        TB_SET(_fx, _fy, col); \
+  } while(0)
+
+  /* Fill background */
+  for (int i = 0; i < win_w * bar_h; i++)
+    pixels[i] = bg;
+
+  /* Pinstripe pattern */
   int stripe_top = 3;
   int stripe_bot = screen->titlebar_bar_height - 3;
-  SDL_SetRenderDrawColor(rend, (uint8_t)((stripe >> 16) & 0xFF),
-                         (uint8_t)((stripe >> 8) & 0xFF), (uint8_t)(stripe & 0xFF), 255);
   for (int row = stripe_top; row < stripe_bot; row++) {
     if (row & 1) {
-      SDL_FRect line = {0.0f, (float)row, (float)(win_w - 4), 1.0f};
-      SDL_RenderFillRect(rend, &line);
+      for (int col = 0; col < win_w - 4; col++)
+        TB_SET(col, row, contrast);
     }
   }
 
-  /* Close box (left side, System 6 style: halo gap around box) */
+  /* Close box (left side, System 6 style) */
   {
     int bx = VIMANA_TB_CLOSE_X, by = screen->titlebar_box_y, bsz = screen->titlebar_box_size;
-    /* Clear halo around close box — clamped so it never bleeds outside bar height
-       and always covers the full stripe zone (stripe_top..stripe_bot). */
-    int halo_y   = (by - 4 < stripe_top) ? by - 4 : stripe_top;
+    int halo_y = (by - 4 < stripe_top) ? by - 4 : stripe_top;
     if (halo_y < 0) halo_y = 0;
     int halo_bot = (by + bsz + 4 > stripe_bot) ? by + bsz + 4 : stripe_bot;
     if (halo_bot > screen->titlebar_bar_height) halo_bot = screen->titlebar_bar_height;
-    SDL_SetRenderDrawColor(rend, (uint8_t)((bg >> 16) & 0xFF),
-                           (uint8_t)((bg >> 8) & 0xFF), (uint8_t)(bg & 0xFF), 255);
-    SDL_FRect halo = {(float)(bx - 4), (float)halo_y,
-                      (float)(bsz + 8), (float)(halo_bot - halo_y)};
-    SDL_RenderFillRect(rend, &halo);
+    TB_FILL(bx - 4, halo_y, bsz + 8, halo_bot - halo_y, bg);
     /* 1px border */
-    SDL_SetRenderDrawColor(rend, (uint8_t)((contrast >> 16) & 0xFF),
-                           (uint8_t)((contrast >> 8) & 0xFF),
-                           (uint8_t)(contrast & 0xFF), 255);
-    SDL_FRect top    = {(float)bx,           (float)by,            (float)bsz, 1.0f};
-    SDL_FRect bot    = {(float)bx,           (float)(by + bsz - 1),(float)bsz, 1.0f};
-    SDL_FRect left   = {(float)bx,           (float)by,            1.0f, (float)bsz};
-    SDL_FRect right  = {(float)(bx + bsz-1), (float)by,            1.0f, (float)bsz};
-    SDL_RenderFillRect(rend, &top);
-    SDL_RenderFillRect(rend, &bot);
-    SDL_RenderFillRect(rend, &left);
-    SDL_RenderFillRect(rend, &right);
+    TB_FILL(bx, by, bsz, 1, contrast);
+    TB_FILL(bx, by + bsz - 1, bsz, 1, contrast);
+    TB_FILL(bx, by, 1, bsz, contrast);
+    TB_FILL(bx + bsz - 1, by, 1, bsz, contrast);
   }
 
-  /* Optional right button (zoom-box style: halo gap + outer box + inner offset box) */
+  /* Optional right button */
   if (screen->titlebar_has_button) {
     int bx = win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size;
     int by = screen->titlebar_box_y, bsz = screen->titlebar_box_size;
-    /* Clear halo around button — same clamping as close box */
-    int bhalo_y   = (by - 4 < stripe_top) ? by - 4 : stripe_top;
+    int bhalo_y = (by - 4 < stripe_top) ? by - 4 : stripe_top;
     if (bhalo_y < 0) bhalo_y = 0;
     int bhalo_bot = (by + bsz + 4 > stripe_bot) ? by + bsz + 4 : stripe_bot;
     if (bhalo_bot > screen->titlebar_bar_height) bhalo_bot = screen->titlebar_bar_height;
-    SDL_SetRenderDrawColor(rend, (uint8_t)((bg >> 16) & 0xFF),
-                           (uint8_t)((bg >> 8) & 0xFF), (uint8_t)(bg & 0xFF), 255);
-    SDL_FRect halo = {(float)(bx - 4), (float)bhalo_y,
-                      (float)(bsz + 8), (float)(bhalo_bot - bhalo_y)};
-    SDL_RenderFillRect(rend, &halo);
-    SDL_SetRenderDrawColor(rend, (uint8_t)((contrast >> 16) & 0xFF),
-                           (uint8_t)((contrast >> 8) & 0xFF),
-                           (uint8_t)(contrast & 0xFF), 255);
+    TB_FILL(bx - 4, bhalo_y, bsz + 8, bhalo_bot - bhalo_y, bg);
     /* Outer border */
-    SDL_FRect t  = {(float)bx,           (float)by,            (float)bsz, 1.0f};
-    SDL_FRect b  = {(float)bx,           (float)(by + bsz - 1),(float)bsz, 1.0f};
-    SDL_FRect l  = {(float)bx,           (float)by,            1.0f, (float)bsz};
-    SDL_FRect r  = {(float)(bx + bsz-1), (float)by,            1.0f, (float)bsz};
-    SDL_RenderFillRect(rend, &t);
-    SDL_RenderFillRect(rend, &b);
-    SDL_RenderFillRect(rend, &l);
-    SDL_RenderFillRect(rend, &r);
-    /* Inner offset box (zoom box indicator): top-right quadrant */
+    TB_FILL(bx, by, bsz, 1, contrast);
+    TB_FILL(bx, by + bsz - 1, bsz, 1, contrast);
+    TB_FILL(bx, by, 1, bsz, contrast);
+    TB_FILL(bx + bsz - 1, by, 1, bsz, contrast);
+    /* Inner offset box */
     int ix = bx + 4, iy = by + 2, isz = bsz - 6;
-    SDL_FRect it = {(float)ix,           (float)iy,            (float)isz, 1.0f};
-    SDL_FRect ib = {(float)ix,           (float)(iy + isz - 1),(float)isz, 1.0f};
-    SDL_FRect il = {(float)ix,           (float)iy,            1.0f, (float)isz};
-    SDL_FRect ir = {(float)(ix + isz-1), (float)iy,            1.0f, (float)isz};
-    SDL_RenderFillRect(rend, &it);
-    SDL_RenderFillRect(rend, &ib);
-    SDL_RenderFillRect(rend, &il);
-    SDL_RenderFillRect(rend, &ir);
+    TB_FILL(ix, iy, isz, 1, contrast);
+    TB_FILL(ix, iy + isz - 1, isz, 1, contrast);
+    TB_FILL(ix, iy, 1, isz, contrast);
+    TB_FILL(ix + isz - 1, iy, 1, isz, contrast);
   }
 
-  /* Title text: centered in the full titlebar width (with safety clamps for boxes). */
+  /* Title text: centered, using font ROM glyphs */
   const char *title = screen->titlebar_title ? screen->titlebar_title : screen->title;
   if (title && title[0]) {
     int len = (int)strlen(title);
     const uint8_t *widths = vimana_rom_font_widths(screen);
-    /* Compute total text width using font widths in ROM */
     int text_w = 0;
     for (int i = 0; i < len; i++) {
       unsigned int ch = (unsigned char)title[i];
@@ -1363,60 +1362,72 @@ static void vimana_draw_titlebar_content(vimana_screen *screen) {
     int gh = screen->font_height;
     int text_y = (screen->titlebar_bar_height - gh + 1) / 2;
     int text_x = (win_w - text_w) / 2;
-    text_x -= 1; /* optical nudge toward the close button */
+    text_x -= 1; /* optical nudge */
     if (text_x < left_bound)
       text_x = left_bound;
     if (text_x + text_w > right_bound)
       text_x = right_bound - text_w;
     if (text_x < left_bound)
       text_x = left_bound;
-    /* Clear halo behind title text (4px padding) */
+    /* Clear halo behind title text */
     int clipped_w = text_w;
     if (text_x + clipped_w > right_bound)
       clipped_w = right_bound - text_x;
-    if (clipped_w > 0) {
-      SDL_SetRenderDrawColor(rend, (uint8_t)((bg >> 16) & 0xFF),
-                             (uint8_t)((bg >> 8) & 0xFF), (uint8_t)(bg & 0xFF), 255);
-      SDL_FRect text_halo = {(float)(text_x - 4), 0.0f,
-                             (float)(clipped_w + 8), (float)screen->titlebar_bar_height};
-      SDL_RenderFillRect(rend, &text_halo);
-    }
-    SDL_SetRenderDrawColor(rend, (uint8_t)((contrast >> 16) & 0xFF),
-                           (uint8_t)((contrast >> 8) & 0xFF),
-                           (uint8_t)(contrast & 0xFF), 255);
+    if (clipped_w > 0)
+      TB_FILL(text_x - 4, 0, clipped_w + 8, screen->titlebar_bar_height, bg);
+    /* Render glyphs from font ROM */
     int gx = text_x;
     for (int i = 0; i < len; i++) {
       unsigned int c = (unsigned char)title[i];
       if (c >= VIMANA_GLYPH_COUNT) { gx += widths[' ']; continue; }
-      if (gx >= right_bound)
-        break;
+      if (gx >= right_bound) break;
       const uint8_t *bmp = vimana_rom_font_bitmap(screen, c);
       int gw = (int)widths[c];
       if (gw < screen->font_glyph_width) gw = screen->font_glyph_width;
-      /* Draw 1bpp glyph for titlebar */
       for (int row = 0; row < gh; row++) {
         int py = text_y + row;
         if (py < 0 || py >= screen->titlebar_bar_height) continue;
         const uint8_t *row_data = bmp + row * VIMANA_FONT_ROW_BYTES;
         for (int col = 0; col < gw; col++) {
           uint8_t mask = (uint8_t)(0x80u >> (col & 7));
-          if (row_data[col >> 3] & mask) {
-            SDL_FRect px = {(float)(gx + col), (float)py, 1.0f, 1.0f};
-            SDL_RenderFillRect(rend, &px);
-          }
+          if (row_data[col >> 3] & mask)
+            TB_SET(gx + col, py, contrast);
         }
       }
       gx += widths[c];
     }
   }
 
-  /* Separator line at bottom edge of bar — drawn last so nothing overdaws it */
-  {
-    SDL_SetRenderDrawColor(rend, (uint8_t)((contrast >> 16) & 0xFF),
-                           (uint8_t)((contrast >> 8) & 0xFF),
-                           (uint8_t)(contrast & 0xFF), 255);
-    SDL_FRect sep = {0.0f, (float)(screen->titlebar_height - 1), (float)win_w, 1.0f};
-    SDL_RenderFillRect(rend, &sep);
+  /* Separator line at bottom */
+  for (int x = 0; x < win_w; x++)
+    TB_SET(x, bar_h - 1, contrast);
+
+  #undef TB_SET
+  #undef TB_FILL
+
+  /* Upload to SDL_Texture */
+  if (screen->titlebar_tex)
+    SDL_DestroyTexture(screen->titlebar_tex);
+  screen->titlebar_tex = SDL_CreateTexture(screen->renderer,
+      SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, win_w, bar_h);
+  if (screen->titlebar_tex) {
+    SDL_UpdateTexture(screen->titlebar_tex, NULL, pixels,
+                      win_w * (int)sizeof(uint32_t));
+    SDL_SetTextureScaleMode(screen->titlebar_tex, SDL_SCALEMODE_NEAREST);
+  }
+  free(pixels);
+  screen->titlebar_dirty = false;
+}
+
+static void vimana_draw_titlebar_content(vimana_screen *screen) {
+  if (!screen || !screen->renderer)
+    return;
+  if (screen->titlebar_dirty || !screen->titlebar_tex)
+    vimana_rebuild_titlebar_tex(screen);
+  if (screen->titlebar_tex) {
+    int win_w = screen->width * screen->scale;
+    SDL_FRect dst = {0.0f, 0.0f, (float)win_w, (float)screen->titlebar_height};
+    SDL_RenderTexture(screen->renderer, screen->titlebar_tex, NULL, &dst);
   }
 }
 
@@ -1479,6 +1490,7 @@ void vimana_screen_draw_titlebar(vimana_screen *screen, unsigned int bg) {
   if (!screen)
     return;
   screen->titlebar_bg_slot = bg & 3;
+  screen->titlebar_dirty = true;
 }
 
 void vimana_screen_set_titlebar_title(vimana_screen *screen, const char *title) {
@@ -1486,12 +1498,14 @@ void vimana_screen_set_titlebar_title(vimana_screen *screen, const char *title) 
     return;
   free(screen->titlebar_title);
   screen->titlebar_title = title ? strdup(title) : NULL;
+  screen->titlebar_dirty = true;
 }
 
 void vimana_screen_set_titlebar_button(vimana_screen *screen, bool show) {
   if (!screen)
     return;
   screen->titlebar_has_button = show;
+  screen->titlebar_dirty = true;
 }
 
 bool vimana_screen_titlebar_button_pressed(vimana_screen *screen) {
@@ -1932,7 +1946,7 @@ void vimana_process_kill(vimana_process *proc) {
   if (proc->pid > 0) {
     kill(proc->pid, SIGTERM);
     int status;
-    waitpid(proc->pid, &status, 0);
+    waitpid(proc->pid, &status, WNOHANG);
     proc->pid = -1;
   }
 }
@@ -1953,14 +1967,19 @@ void vimana_process_free(vimana_process *proc) {
 void vimana_system_free(vimana_system *system) {
   if (!system)
     return;
-  if (system->audio_stream)
+  if (system->audio_stream) {
+    SDL_PauseAudioStreamDevice(system->audio_stream);
     SDL_DestroyAudioStream(system->audio_stream);
+  }
+  free(system->mix_buffer);
   free(system);
 }
 
 void vimana_screen_free(vimana_screen *screen) {
   if (!screen)
     return;
+  if (screen->titlebar_tex)
+    SDL_DestroyTexture(screen->titlebar_tex);
   if (screen->texture)
     SDL_DestroyTexture(screen->texture);
   if (screen->renderer)
