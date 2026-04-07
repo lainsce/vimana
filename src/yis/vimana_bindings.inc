@@ -403,6 +403,47 @@ static void __vimana_system_play_tone(YisVal sysv, YisVal pitchv,
                           (int)yis_as_int(volumev));
 }
 
+static void __vimana_system_set_voice(YisVal sysv, YisVal chv,
+                                      YisVal wavev) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_voice expects system");
+  vimana_system_set_voice(system, (int)yis_as_int(chv),
+                          (int)yis_as_int(wavev));
+}
+
+static void __vimana_system_set_envelope(YisVal sysv, YisVal chv,
+                                         YisVal av, YisVal dv,
+                                         YisVal sv, YisVal rv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_envelope expects system");
+  vimana_system_set_envelope(system, (int)yis_as_int(chv),
+                             (int)yis_as_int(av), (int)yis_as_int(dv),
+                             (int)yis_as_int(sv), (int)yis_as_int(rv));
+}
+
+static void __vimana_system_set_pulse_width(YisVal sysv, YisVal chv,
+                                            YisVal wv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_pulse_width expects system");
+  vimana_system_set_pulse_width(system, (int)yis_as_int(chv),
+                                (int)yis_as_int(wv));
+}
+
+static void __vimana_system_play_voice(YisVal sysv, YisVal chv,
+                                       YisVal pitchv, YisVal volumev) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.play_voice expects system");
+  vimana_system_play_voice(system, (int)yis_as_int(chv),
+                           (int)yis_as_int(pitchv),
+                           (int)yis_as_int(volumev));
+}
+
+static void __vimana_system_stop_voice(YisVal sysv, YisVal chv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.stop_voice expects system");
+  vimana_system_stop_voice(system, (int)yis_as_int(chv));
+}
+
 static YisVal __vimana_screen(YisVal titlev, YisVal widthv, YisVal heightv,
                               YisVal scalev) {
   YisStr *tmp = NULL;

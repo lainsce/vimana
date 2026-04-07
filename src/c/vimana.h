@@ -24,6 +24,13 @@ extern "C" {
 #define VIMANA_TEXT_INPUT_CAP      256 /* max UTF-8 text input length (Bs) */
 #define VIMANA_AUDIO_SAMPLE_RATE   44100 /* sample rate for generated tones*/
 #define VIMANA_AUDIO_CHANNELS      1     /* mono output for generated tones*/
+#define VIMANA_VOICE_COUNT         4     /* SID-style 4-voice polyphony    */
+
+/* Waveform types (SID-inspired) */
+#define VIMANA_WAVE_TRIANGLE       0
+#define VIMANA_WAVE_SAWTOOTH       1
+#define VIMANA_WAVE_PULSE          2
+#define VIMANA_WAVE_NOISE          3
 /* ─────────────────────────────────────────────────────────────────────── */
 
 /* ── Tile / Sprite ────────────────────────────────────────────────────── */
@@ -82,6 +89,16 @@ char *vimana_system_clipboard_text(vimana_system *system);
 char *vimana_system_home_dir(vimana_system *system);
 void vimana_system_play_tone(vimana_system *system, int pitch,
                              int duration_ms, int volume);
+void vimana_system_set_voice(vimana_system *system, int channel,
+                             int waveform);
+void vimana_system_set_envelope(vimana_system *system, int channel,
+                                int attack, int decay, int sustain,
+                                int release);
+void vimana_system_set_pulse_width(vimana_system *system, int channel,
+                                   int width);
+void vimana_system_play_voice(vimana_system *system, int channel,
+                              int pitch, int volume);
+void vimana_system_stop_voice(vimana_system *system, int channel);
 
 void vimana_system_free(vimana_system *system);
 

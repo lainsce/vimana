@@ -19,6 +19,12 @@ def flip_y = 0x20
 def sprite_bank_count = 16
 def gfx_size = 0x60000
 
+def wave_triangle = 0
+def wave_sawtooth = 1
+def wave_pulse = 2
+def wave_noise = 3
+def voice_count = 4
+
 : __vimana_system() (( system )) { }
 : __vimana_system_run(sys = system, scr = screen, frame = any) (( -- )) { }
 : __vimana_system_quit(sys = system) (( -- )) { }
@@ -31,6 +37,11 @@ def gfx_size = 0x60000
 : __vimana_system_set_clipboard_text(sys = system, text = string) (( bool )) { }
 : __vimana_system_home_dir(sys = system) (( string )) { }
 : __vimana_system_play_tone(sys = system, pitch = num, duration_ms = num, volume = num) (( -- )) { }
+: __vimana_system_set_voice(sys = system, channel = num, waveform = num) (( -- )) { }
+: __vimana_system_set_envelope(sys = system, channel = num, attack = num, decay = num, sustain = num, release = num) (( -- )) { }
+: __vimana_system_set_pulse_width(sys = system, channel = num, width = num) (( -- )) { }
+: __vimana_system_play_voice(sys = system, channel = num, pitch = num, volume = num) (( -- )) { }
+: __vimana_system_stop_voice(sys = system, channel = num) (( -- )) { }
 : __vimana_system_spawn(sys = system, cmd = string) (( num )) { }
 : __vimana_system_proc_write(sys = system, proc = num, text = string) (( bool )) { }
 : __vimana_system_proc_read_line(sys = system, proc = num) (( string )) { }
@@ -136,6 +147,27 @@ pub ,: system
     :: home_dir(this) (( string )) <- __vimana_system_home_dir(this) ;
     :: play_tone(this, pitch = num, duration_ms = num, volume = num) (( system ))
         __vimana_system_play_tone(this, pitch, duration_ms, volume)
+        <- this
+    ;
+
+    :: set_voice(this, channel = num, waveform = num) (( system ))
+        __vimana_system_set_voice(this, channel, waveform)
+        <- this
+    ;
+    :: set_envelope(this, channel = num, attack = num, decay = num, sustain = num, release = num) (( system ))
+        __vimana_system_set_envelope(this, channel, attack, decay, sustain, release)
+        <- this
+    ;
+    :: set_pulse_width(this, channel = num, width = num) (( system ))
+        __vimana_system_set_pulse_width(this, channel, width)
+        <- this
+    ;
+    :: play_voice(this, channel = num, pitch = num, volume = num) (( system ))
+        __vimana_system_play_voice(this, channel, pitch, volume)
+        <- this
+    ;
+    :: stop_voice(this, channel = num) (( system ))
+        __vimana_system_stop_voice(this, channel)
         <- this
     ;
 
