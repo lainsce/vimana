@@ -1,0 +1,101 @@
+cask draw_zoom
+
+bring stdr
+bring vimana
+bring draw_canvas
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Zoom state (8× magnification: 1 canvas pixel = 1 screen tile)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?active = false
+def ?zoom_x = 0      -- top-left canvas pixel x shown in zoom view
+def ?zoom_y = 0      -- top-left canvas pixel y shown in zoom view
+
+-- Zoom viewport size (how many canvas pixels visible)
+-- Same as canvas tile area on screen
+: view_w() (( num ))
+    <- draw_canvas.CANVAS_WT
+;
+
+: view_h() (( num ))
+    <- draw_canvas.CANVAS_HT
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Public API
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: is_active() (( bool ))
+    <- active
+;
+
+:: get_x() (( num ))
+    <- zoom_x
+;
+
+:: get_y() (( num ))
+    <- zoom_y
+;
+
+:: toggle() (( -- ))
+    if active
+        active = false
+    else
+        active = true
+        zoom_x = 0
+        zoom_y = 0
+    draw_canvas.mark_dirty()
+;
+
+:: center() (( -- ))
+    let vw = view_w()
+    let vh = view_h()
+    zoom_x = stdr.floor((draw_canvas.CANVAS_WP - vw) / 2)
+    zoom_y = stdr.floor((draw_canvas.CANVAS_HP - vh) / 2)
+    clamp()
+;
+
+: clamp() (( -- ))
+    let max_x = draw_canvas.CANVAS_WP - view_w()
+    let max_y = draw_canvas.CANVAS_HP - view_h()
+    if zoom_x < 0 { zoom_x = 0 }
+    if zoom_y < 0 { zoom_y = 0 }
+    if zoom_x > max_x { zoom_x = max_x }
+    if zoom_y > max_y { zoom_y = max_y }
+;
+
+:: move_up() (( -- ))
+    zoom_y = zoom_y - 8
+    clamp()
+    draw_canvas.mark_dirty()
+;
+
+:: move_down() (( -- ))
+    zoom_y = zoom_y + 8
+    clamp()
+    draw_canvas.mark_dirty()
+;
+
+:: move_left() (( -- ))
+    zoom_x = zoom_x - 8
+    clamp()
+    draw_canvas.mark_dirty()
+;
+
+:: move_right() (( -- ))
+    zoom_x = zoom_x + 8
+    clamp()
+    draw_canvas.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Convert screen pixel to canvas pixel in zoom mode
+-- Returns canvas-relative coordinates
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: screen_to_canvas(sx = num, sy = num) (( [num] ))
+    let cx = zoom_x + stdr.floor((sx - draw_canvas.CANVAS_PX) / 8)
+    let cy = zoom_y + stdr.floor((sy - draw_canvas.CANVAS_PY) / 8)
+    <- [cx, cy]
+;

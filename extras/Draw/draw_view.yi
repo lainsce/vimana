@@ -1,0 +1,300 @@
+cask draw_view
+
+bring stdr
+bring vimana
+bring draw_canvas
+bring draw_brush
+bring draw_tools
+bring draw_font
+bring draw_zoom
+bring draw_file
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Colors
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def FG = 1      -- canvas ink
+def BG = 0      -- canvas paper
+def UI = 2      -- outside-canvas background
+def GUIDE = 3   -- guide overlay color
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: i_abs(x = num) (( num ))
+    if x < 0 { <- 0 - x }
+    <- x
+;
+
+: i_min(a = num, b = num) (( num ))
+    if a < b { <- a }
+    <- b
+;
+
+: i_max(a = num, b = num) (( num ))
+    if a > b { <- a }
+    <- b
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Hash pattern for background (outside canvas area)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def HASH_ICN = [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]
+def BG_FILL_ICN = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+
+-- Frame glyphs (1px border edges + corners)
+def FR_TL = [0xFF, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]  -- top-left corner
+def FR_T  = [0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]  -- top edge
+def FR_TR = [0xFF, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]  -- top-right corner
+def FR_L  = [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]  -- left edge
+def FR_R  = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]  -- right edge
+def FR_BL = [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0xFF]  -- bottom-left corner
+def FR_B  = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF]  -- bottom edge
+def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right corner
+
+: draw_background(scr = vimana.screen) (( -- ))
+    let scr_wt = 85   -- 680 / 8
+    let scr_ht = 48    -- 384 / 8
+    let ctx = 6
+    let cty = 3
+    let cwt = 30
+    let cht = 24
+    -- Rows 0-1: solid green strip (filename bar, 16px for 8x16 fonts)
+    for (let ?ty = 0; ty <= 1; ty = ty + 1)
+        for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
+            scr.put_icn(tx, ty, BG_FILL_ICN, UI, UI)
+    -- Rows 2+: hash everywhere
+    for (let ?ty = 2; ty < scr_ht; ty = ty + 1)
+        for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
+            scr.put_icn(tx, ty, HASH_ICN, UI, BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw all canvas tiles from GFX ROM via put_icn
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_canvas_tiles(scr = vimana.screen) (( -- ))
+    for (let ?ty = 0; ty < draw_canvas.CANVAS_HT; ty = ty + 1)
+        for (let ?tx = 0; tx < draw_canvas.CANVAS_WT; tx = tx + 1)
+            let data = draw_canvas.read_tile(scr, tx, ty)
+            scr.put_icn(draw_canvas.CANVAS_TX + tx, draw_canvas.CANVAS_TY + ty, data, FG, BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw tile-based frame around a rectangle
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_frame(scr = vimana.screen, tx = num, ty = num, tw = num, th = num, fg = num, bg = num) (( -- ))
+    -- Corners
+    scr.put_icn(tx, ty, FR_TL, fg, bg)
+    scr.put_icn(tx + tw - 1, ty, FR_TR, fg, bg)
+    scr.put_icn(tx, ty + th - 1, FR_BL, fg, bg)
+    scr.put_icn(tx + tw - 1, ty + th - 1, FR_BR, fg, bg)
+    -- Top and bottom edges
+    for (let ?cx = tx + 1; cx < tx + tw - 1; cx = cx + 1)
+        scr.put_icn(cx, ty, FR_T, fg, bg)
+        scr.put_icn(cx, ty + th - 1, FR_B, fg, bg)
+    -- Left and right edges
+    for (let ?cy = ty + 1; cy < ty + th - 1; cy = cy + 1)
+        scr.put_icn(tx, cy, FR_L, fg, bg)
+        scr.put_icn(tx + tw - 1, cy, FR_R, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw frame around canvas area (1 tile border around canvas tiles)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_canvas_border(scr = vimana.screen) (( -- ))
+    -- 1px border around canvas (dynamic, adapts to resize)
+    -- Write to bg layer (FG + 64) so it shows over put_icn tiles.
+    let lx = draw_canvas.CANVAS_TX * 8 - 1
+    let rx = (draw_canvas.CANVAS_TX + draw_canvas.CANVAS_WT) * 8
+    let ty_ = draw_canvas.CANVAS_TY * 8 - 1
+    let by = (draw_canvas.CANVAS_TY + draw_canvas.CANVAS_HT) * 8
+    let c = FG + 64
+    -- Top and bottom lines
+    for (let ?px = lx; px <= rx; px = px + 1)
+        scr.set_x(px).set_y(ty_).pixel(c)
+        scr.set_x(px).set_y(by).pixel(c)
+    -- Left and right lines
+    for (let ?py = ty_; py <= by; py = py + 1)
+        scr.set_x(lx).set_y(py).pixel(c)
+        scr.set_x(rx).set_y(py).pixel(c)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw frame around panel (called from draw_panel or here)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_panel_frame(scr = vimana.screen, ptx = num, pty = num, pw = num, ph = num) (( -- ))
+    draw_frame(scr, ptx, pty, pw, ph, FG, BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw canvas size label (e.g. "30 x 24") at top-right of screen
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_size_label(scr = vimana.screen) (( -- ))
+    let w = draw_canvas.CANVAS_WT
+    let h = draw_canvas.CANVAS_HT
+    draw_font.draw_size(scr, 84, 0, w, h, FG, UI)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw filename label on the green strip (row 1)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_filename(scr = vimana.screen) (( -- ))
+    let ?name = draw_file.get_display_name()
+    if draw_canvas.is_modified()
+        name = name + " *"
+    -- Draw after menu categories (x=272 = tile 34 * 8)
+    scr.put_text(272, 0, name, FG, UI)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw guide overlay (line or rect preview)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_guide_line(scr = vimana.screen, x0 = num, y0 = num, x1 = num, y1 = num) (( -- ))
+    let ?x = x0
+    let ?y = y0
+    let dx = i_abs(x1 - x)
+    let dy = 0 - i_abs(y1 - y)
+    let ?sx = 1
+    if x > x1 { sx = 0 - 1 }
+    let ?sy = 1
+    if y > y1 { sy = 0 - 1 }
+    let ?err = dx + dy
+    let cpx = draw_canvas.CANVAS_PX
+    let cpy = draw_canvas.CANVAS_PY
+    for (let ?done = false; !done; )
+        scr.set_x(cpx + x).set_y(cpy + y).pixel(GUIDE)
+        if x == x1 && y == y1
+            done = true
+        else
+            let e2 = 2 * err
+            if e2 >= dy
+                err = err + dy
+                x = x + sx
+            if e2 <= dx
+                err = err + dx
+                y = y + sy
+;
+
+: draw_guide_rect(scr = vimana.screen, x0 = num, y0 = num, x1 = num, y1 = num) (( -- ))
+    let lx = i_min(x0, x1)
+    let rx = i_max(x0, x1)
+    let ty = i_min(y0, y1)
+    let by = i_max(y0, y1)
+    let cpx = draw_canvas.CANVAS_PX
+    let cpy = draw_canvas.CANVAS_PY
+    -- Top edge
+    for (let ?px = lx; px <= rx; px = px + 1)
+        scr.set_x(cpx + px).set_y(cpy + ty).pixel(GUIDE)
+    -- Bottom edge
+    for (let ?px = lx; px <= rx; px = px + 1)
+        scr.set_x(cpx + px).set_y(cpy + by).pixel(GUIDE)
+    -- Left edge
+    for (let ?py = ty + 1; py < by; py = py + 1)
+        scr.set_x(cpx + lx).set_y(cpy + py).pixel(GUIDE)
+    -- Right edge
+    for (let ?py = ty + 1; py < by; py = py + 1)
+        scr.set_x(cpx + rx).set_y(cpy + py).pixel(GUIDE)
+;
+
+: draw_guides(scr = vimana.screen) (( -- ))
+    if !draw_tools.has_active_guide() { <- }
+    let gx0 = draw_tools.get_guide_x0()
+    let gy0 = draw_tools.get_guide_y0()
+    let gx1 = draw_tools.get_guide_x1()
+    let gy1 = draw_tools.get_guide_y1()
+    let t = draw_brush.get_tool()
+    if t == draw_tools.TOOL_LINE
+        draw_guide_line(scr, gx0, gy0, gx1, gy1)
+    if t == draw_tools.TOOL_RECT
+        draw_guide_rect(scr, gx0, gy0, gx1, gy1)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Resizer dot at bottom-right corner of canvas
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def RESIZER_ICN = [0x7C, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0x7C, 0x00]
+
+: draw_resizer(scr = vimana.screen) (( -- ))
+    let rx = draw_canvas.CANVAS_TX + draw_canvas.CANVAS_WT
+    let ry = draw_canvas.CANVAS_TY + draw_canvas.CANVAS_HT
+    scr.put_icn(rx, ry, RESIZER_ICN, GUIDE, BG)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Draw zoomed canvas (1 canvas pixel = 1 screen tile, 8× magnification)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def GRID_H_ICN = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF]
+def GRID_V_ICN = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]
+def GRID_HV_ICN = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]
+
+: draw_zoom_view(scr = vimana.screen) (( -- ))
+    let zx = draw_zoom.get_x()
+    let zy = draw_zoom.get_y()
+    let ctw = draw_canvas.CANVAS_WT
+    let cth = draw_canvas.CANVAS_HT
+    let ctx = draw_canvas.CANVAS_TX
+    let cty = draw_canvas.CANVAS_TY
+    let pow2 = [128, 64, 32, 16, 8, 4, 2, 1]
+    let fill = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+    let grid_h = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF]
+    let grid_v = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]
+    let grid_hv = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]
+
+    for (let ?ty = 0; ty < cth; ty = ty + 1)
+        let py = zy + ty
+        for (let ?tx = 0; tx < ctw; tx = tx + 1)
+            let px = zx + tx
+            let stx = ctx + tx
+            let sty = cty + ty
+            if !draw_canvas.within(px, py)
+                scr.put_icn(stx, sty, HASH_ICN, UI, BG)
+            else
+                let ttx = stdr.floor(px / 8)
+                let tty = stdr.floor(py / 8)
+                let row = py % 8
+                let addr = (tty * draw_canvas.STRIDE_WT + ttx) * 8 + row
+                let byte = scr.gfx(addr)
+                let col = px % 8
+                let pixel = stdr.floor(byte / pow2[col]) % 2
+                let on_h = (py + 1) % 8 == 0
+                let on_v = (px + 1) % 8 == 0
+                let ?icn = fill
+                if on_h && on_v { icn = grid_hv }
+                if on_h && !on_v { icn = grid_h }
+                if !on_h && on_v { icn = grid_v }
+                let ?fg = BG
+                let ?bg = BG
+                if pixel == 1 { fg = FG; bg = FG }
+                if (on_h || on_v) && pixel == 0 { fg = UI }
+                scr.put_icn(stx, sty, icn, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Main render entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_canvas_all(scr = vimana.screen) (( -- ))
+    scr.clear(BG)
+    draw_background(scr)
+    draw_filename(scr)
+    if draw_zoom.is_active()
+        draw_zoom_view(scr)
+    else
+        draw_canvas_tiles(scr)
+    draw_canvas_border(scr)
+    draw_resizer(scr)
+    draw_size_label(scr)
+    draw_guides(scr)
+    draw_canvas.clear_dirty()
+;

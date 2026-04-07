@@ -1,0 +1,132 @@
+cask mine_view
+
+bring stdr
+bring vimana
+bring mine_model
+bring mine_data
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 16×16 tile rendering (2×2 quadrants via auto=0x16)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_tile16(scr = vimana.screen, addr = num, tx = num, ty = num) (( -- ))
+    scr.set_auto(0x16)
+       .set_addr(addr).set_x(tx).set_y(ty)
+       .sprite(0x81)
+       .set_x(tx)
+       .sprite(0x81)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Grid rendering
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: get_cell_tile(idx = num) (( num ))
+    if mine_model.get_state() == mine_model.STATE_DEAD
+        if mine_model.is_mine(idx)
+            <- mine_data.ADDR_MINE
+    if mine_model.is_flagged(idx)
+        <- mine_data.ADDR_FLAGGED
+    if !mine_model.is_revealed(idx)
+        <- mine_data.ADDR_UNTOUCHED
+    let v = mine_model.get_value(idx)
+    if v < 0
+        <- mine_data.ADDR_MINE
+    <- mine_data.digit_addr(v)
+;
+
+: draw_grid(scr = vimana.screen) (( -- ))
+    let gs = mine_model.GRID_SIZE
+    for (let ?gy = 0; gy < gs; gy = gy + 1)
+        for (let ?gx = 0; gx < gs; gx = gx + 1)
+            let idx = gy * gs + gx
+            let addr = get_cell_tile(idx)
+            let tx = mine_model.GRID_TX + gx * 2
+            let ty = mine_model.GRID_TY + gy * 2
+            draw_tile16(scr, addr, tx, ty)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Frame rendering
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_frame(scr = vimana.screen, fx = num, fy = num, fw = num, fh = num) (( -- ))
+    -- Top row: TL + TC×(fw-2) + TR
+    scr.set_auto(0x01)
+       .set_addr(mine_data.ADDR_FRAME_TL)
+       .set_x(fx).set_y(fy)
+       .sprite(0x81)
+    scr.set_addr(mine_data.ADDR_FRAME_TC)
+    for (let ?i = 0; i < fw - 2; i = i + 1)
+        scr.sprite(0x81)
+    -- Right side: TR then MR×(fh-2) going down
+    scr.set_auto(0x02)
+       .set_addr(mine_data.ADDR_FRAME_TR)
+       .sprite(0x81)
+    scr.set_addr(mine_data.ADDR_FRAME_MR)
+    for (let ?i = 0; i < fh - 2; i = i + 1)
+        scr.sprite(0x81)
+    -- Left side: ML×(fh-2) going down
+    scr.set_auto(0x02)
+       .set_addr(mine_data.ADDR_FRAME_ML)
+       .set_x(fx).set_y(fy + 1)
+    for (let ?i = 0; i < fh - 2; i = i + 1)
+        scr.sprite(0x81)
+    -- Bottom row: BL + BC×(fw-2) + BR
+    scr.set_auto(0x01)
+       .set_addr(mine_data.ADDR_FRAME_BL)
+       .set_x(fx).set_y(fy + fh - 1)
+       .sprite(0x81)
+    scr.set_addr(mine_data.ADDR_FRAME_BC)
+    for (let ?i = 0; i < fw - 2; i = i + 1)
+        scr.sprite(0x81)
+    scr.set_addr(mine_data.ADDR_FRAME_BR).sprite(0x81)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Header displays
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_status(scr = vimana.screen) (( -- ))
+    let addr = mine_data.status_addr(mine_model.get_state())
+    draw_tile16(scr, addr, mine_model.STATUS_TX, mine_model.STATUS_TY)
+;
+
+: draw_display_digits(scr = vimana.screen, tx = num, ty = num, value = num) (( -- ))
+    let ?v = value
+    if v < 0
+        v = 0
+    if v > 999
+        v = 999
+    let hundreds = stdr.floor(v / 100)
+    let tens = stdr.floor((v % 100) / 10)
+    let ones = v % 10
+    draw_tile16(scr, mine_data.timer_digit_addr(hundreds), tx, ty)
+    draw_tile16(scr, mine_data.timer_digit_addr(tens), tx + 2, ty)
+    draw_tile16(scr, mine_data.timer_digit_addr(ones), tx + 4, ty)
+;
+
+: draw_progress(scr = vimana.screen) (( -- ))
+    draw_display_digits(scr, mine_model.PROGRESS_TX, mine_model.PROGRESS_TY, mine_model.progress())
+;
+
+: draw_timer(scr = vimana.screen) (( -- ))
+    draw_display_digits(scr, mine_model.TIMER_TX, mine_model.TIMER_TY, mine_model.get_timer_seconds())
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Full redraw
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: draw_all(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+    draw_frame(scr, mine_model.F1_TX, mine_model.F1_TY, mine_model.F1_W, mine_model.F1_H)
+    draw_frame(scr, mine_model.F2_TX, mine_model.F2_TY, mine_model.F2_W, mine_model.F2_H)
+
+    draw_progress(scr)
+    draw_status(scr)
+    draw_timer(scr)
+    draw_grid(scr)
+    scr.set_auto(0x00)
+    scr.present()
+;

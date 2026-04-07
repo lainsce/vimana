@@ -1,0 +1,158 @@
+cask draw_tools
+
+bring stdr
+bring vimana
+bring draw_canvas
+bring draw_brush
+bring draw_line
+bring draw_zoom
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Tool indices
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def TOOL_PEN   = 0
+def TOOL_BRUSH = 1
+def TOOL_LINE  = 2
+def TOOL_MAGIC = 3
+def TOOL_RECT  = 4
+def TOOL_ZOOM  = 5
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Pointer state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?px0 = 0       -- press start (canvas coords)
+def ?py0 = 0
+def ?px1 = 0       -- current / last position
+def ?py1 = 0
+def ?dragging = false
+
+-- Previous drag position for incremental pen/brush strokes
+def ?prev_x = 0
+def ?prev_y = 0
+
+-- Guide endpoints (for line/rect preview)
+def ?guide_x0 = 0
+def ?guide_y0 = 0
+def ?guide_x1 = 0
+def ?guide_y1 = 0
+def ?has_guide = false
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Guide state accessors
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: has_active_guide() (( bool ))
+    <- has_guide
+;
+
+:: get_guide_x0() (( num )) <- guide_x0 ;
+:: get_guide_y0() (( num )) <- guide_y0 ;
+:: get_guide_x1() (( num )) <- guide_x1 ;
+:: get_guide_y1() (( num )) <- guide_y1 ;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse press in canvas area (canvas-relative coordinates)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_press(scr = vimana.screen, x = num, y = num) (( -- ))
+    px0 = x
+    py0 = y
+    px1 = x
+    py1 = y
+    prev_x = x
+    prev_y = y
+    dragging = true
+    has_guide = false
+
+    let t = draw_brush.get_tool()
+
+    if t == TOOL_PEN
+        draw_brush.paint_dot(scr, x, y)
+
+    if t == TOOL_BRUSH
+        draw_brush.paint_dot(scr, x, y)
+
+    if t == TOOL_LINE
+        guide_x0 = x
+        guide_y0 = y
+        guide_x1 = x
+        guide_y1 = y
+        has_guide = true
+        draw_canvas.set_guide_active(true)
+
+    if t == TOOL_MAGIC
+        draw_brush.paint_magic(scr, x, y)
+
+    if t == TOOL_RECT
+        guide_x0 = x
+        guide_y0 = y
+        guide_x1 = x
+        guide_y1 = y
+        has_guide = true
+        draw_canvas.set_guide_active(true)
+
+    if t == TOOL_ZOOM
+        draw_zoom.toggle()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse drag (canvas-relative coordinates)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_drag(scr = vimana.screen, x = num, y = num) (( -- ))
+    if !dragging { <- }
+
+    px1 = x
+    py1 = y
+
+    let t = draw_brush.get_tool()
+
+    if t == TOOL_PEN
+        draw_line.line_dots(scr, prev_x, prev_y, x, y)
+
+    if t == TOOL_BRUSH
+        draw_line.line_dots(scr, prev_x, prev_y, x, y)
+
+    if t == TOOL_LINE
+        guide_x1 = x
+        guide_y1 = y
+        draw_canvas.mark_dirty()
+
+    if t == TOOL_MAGIC
+        draw_brush.paint_magic(scr, x, y)
+
+    if t == TOOL_RECT
+        guide_x1 = x
+        guide_y1 = y
+        draw_canvas.mark_dirty()
+
+    prev_x = x
+    prev_y = y
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse release (canvas-relative coordinates)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_release(scr = vimana.screen, x = num, y = num) (( -- ))
+    if !dragging { <- }
+    dragging = false
+
+    let t = draw_brush.get_tool()
+
+    if t == TOOL_LINE
+        draw_line.line_dots(scr, px0, py0, x, y)
+
+    if t == TOOL_RECT
+        draw_brush.paint_rect(scr, px0, py0, x, y)
+
+    has_guide = false
+    draw_canvas.set_guide_active(false)
+    draw_canvas.mark_dirty()
+;
+
+:: is_dragging() (( bool ))
+    <- dragging
+;

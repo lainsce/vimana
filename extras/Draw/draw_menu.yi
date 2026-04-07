@@ -1,0 +1,210 @@
+cask draw_menu
+
+bring stdr
+bring vimana
+bring draw_canvas
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Menu categories and items
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def CAT_FILE = 0
+def CAT_EDIT = 1
+def CAT_ZOOM = 2
+def CAT_TOOL = 3
+def CAT_PATT = 4
+def CAT_COUNT = 5
+
+def CAT_LABELS = ["File", "Edit", "Zoom", "Tool", "Pattern"]
+
+-- Item labels per category (max 10 per category, padded with "")
+def FILE_ITEMS = ["New", "Open", "Save", "Export TGA"]
+def EDIT_ITEMS = ["Clear", "Invert", "Crop W", "Crop H", "Size W", "Size H"]
+def ZOOM_ITEMS = ["Toggle"]
+def TOOL_ITEMS = ["Pen", "Brush", "Line", "Magic", "Rect", "Erase"]
+def PATT_ITEMS = ["1 Solid", "2 Check", "3 H-half", "4 Diamond", "5 Diag-R", "6 Diag-L", "7 V-stripe", "8 H-stripe"]
+
+def FILE_COUNT = 4
+def EDIT_COUNT = 6
+def ZOOM_COUNT = 1
+def TOOL_COUNT = 6
+def PATT_COUNT = 8
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Menu state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?active_cat = -1       -- -1 = menu closed
+def ?hover_item = -1       -- -1 = no hover
+
+-- Category layout: each label at fixed x tile positions
+-- "File" at x=1, "Edit" at x=6, "Zoom" at x=11, "Tool" at x=17, "Pattern" at x=22
+def CAT_X = [1, 6, 11, 17, 22]
+def CAT_W = [4, 4, 4, 4, 7]    -- width per label in tiles (for hit test)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Accessors
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: is_open() (( bool ))
+    <- active_cat >= 0
+;
+
+:: close() (( -- ))
+    active_cat = -1
+    hover_item = -1
+    draw_canvas.mark_dirty()
+;
+
+: item_count(cat = num) (( num ))
+    if cat == CAT_FILE { <- FILE_COUNT }
+    if cat == CAT_EDIT { <- EDIT_COUNT }
+    if cat == CAT_ZOOM { <- ZOOM_COUNT }
+    if cat == CAT_TOOL { <- TOOL_COUNT }
+    if cat == CAT_PATT { <- PATT_COUNT }
+    <- 0
+;
+
+: item_label(cat = num, idx = num) (( string ))
+    if cat == CAT_FILE { <- FILE_ITEMS[idx] }
+    if cat == CAT_EDIT { <- EDIT_ITEMS[idx] }
+    if cat == CAT_ZOOM { <- ZOOM_ITEMS[idx] }
+    if cat == CAT_TOOL { <- TOOL_ITEMS[idx] }
+    if cat == CAT_PATT { <- PATT_ITEMS[idx] }
+    <- ""
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse interaction
+-- Returns: -1 = not handled, or action code (cat*10 + item)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_press(mx = num, my = num) (( num ))
+    let tx = stdr.floor(mx / 8)
+    let ty = stdr.floor(my / 8)
+
+    -- Click on title bar row (ty 0 or 1)
+    if ty <= 1
+        -- Check which category was clicked
+        for (let ?c = 0; c < CAT_COUNT; c = c + 1)
+            if tx >= CAT_X[c] && tx < CAT_X[c] + CAT_W[c]
+                if active_cat == c
+                    close()
+                    <- -1
+                active_cat = c
+                hover_item = -1
+                draw_canvas.mark_dirty()
+                <- -1
+        -- Clicked on title bar but outside categories: close
+        if active_cat >= 0
+            close()
+        <- -1
+
+    -- Click on dropdown area
+    if active_cat >= 0
+        let cat_x = CAT_X[active_cat]
+        let drop_w = 12   -- dropdown width in tiles
+        if tx >= cat_x && tx < cat_x + drop_w
+            let item_row = stdr.floor((ty - 2) / 2)
+            let count = item_count(active_cat)
+            if item_row >= 0 && item_row < count
+                let action = active_cat * 10 + item_row
+                close()
+                <- action
+        -- Clicked outside dropdown: close
+        close()
+        <- -1
+
+    <- -1
+;
+
+:: on_move(mx = num, my = num) (( -- ))
+    if active_cat < 0 { <- }
+    let tx = stdr.floor(mx / 8)
+    let ty = stdr.floor(my / 8)
+
+    -- Hovering over title bar: switch category
+    if ty <= 1
+        for (let ?c = 0; c < CAT_COUNT; c = c + 1)
+            if tx >= CAT_X[c] && tx < CAT_X[c] + CAT_W[c]
+                if active_cat != c
+                    active_cat = c
+                    hover_item = -1
+                    draw_canvas.mark_dirty()
+                <-
+        <- 
+
+    -- Hovering over dropdown items
+    let cat_x = CAT_X[active_cat]
+    let drop_w = 12
+    if tx >= cat_x && tx < cat_x + drop_w
+        let item_row = stdr.floor((ty - 2) / 2)
+        let count = item_count(active_cat)
+        if item_row >= 0 && item_row < count
+            if hover_item != item_row
+                hover_item = item_row
+                draw_canvas.mark_dirty()
+            <-
+    hover_item = -1
+    draw_canvas.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Drawing
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def HILIGHT = 3
+
+:: draw(scr = vimana.screen) (( -- ))
+    -- Draw category labels on green bar (always)
+    for (let ?c = 0; c < CAT_COUNT; c = c + 1)
+        let label = CAT_LABELS[c]
+        let px = CAT_X[c] * 8
+        let ?fg = FG
+        let ?bg = UI
+        if c == active_cat
+            fg = BG
+            bg = FG
+        scr.put_text(px, 0, label, fg, bg)
+
+    -- Draw dropdown if open
+    if active_cat < 0 { <- }
+    let cat_x = CAT_X[active_cat]
+    let drop_w = 12
+    let count = item_count(active_cat)
+
+    -- Draw dropdown background (2 tile rows per item)
+    let fill = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+    for (let ?r = 0; r < count * 2; r = r + 1)
+        for (let ?c = 0; c < drop_w; c = c + 1)
+            scr.put_icn(cat_x + c, 2 + r, fill, BG, BG)
+
+    -- Draw item labels (each item spans 2 tile rows = 16px)
+    for (let ?r = 0; r < count; r = r + 1)
+        let label = item_label(active_cat, r)
+        let px = (cat_x + 1) * 8
+        let py_tile = 2 + r * 2
+        let ?fg = FG
+        let ?bg = BG
+        if r == hover_item
+            -- Highlight row (2 tiles tall)
+            for (let ?c = 0; c < drop_w; c = c + 1)
+                scr.put_icn(cat_x + c, py_tile, fill, FG, FG)
+                scr.put_icn(cat_x + c, py_tile + 1, fill, FG, FG)
+            fg = BG
+            bg = FG
+        scr.put_text(px, py_tile * 8, label, fg, bg)
+
+    -- Draw dropdown border (1px)
+    let lx = cat_x * 8 - 1
+    let rx = (cat_x + drop_w) * 8
+    let top_y = 2 * 8 - 1
+    let bot_y = (2 + count * 2) * 8
+    let border = FG + 64
+    for (let ?px = lx; px <= rx; px = px + 1)
+        scr.set_x(px).set_y(top_y).pixel(border)
+        scr.set_x(px).set_y(bot_y).pixel(border)
+    for (let ?py = top_y; py <= bot_y; py = py + 1)
+        scr.set_x(lx).set_y(py).pixel(border)
+        scr.set_x(rx).set_y(py).pixel(border)
+;

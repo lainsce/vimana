@@ -1,0 +1,185 @@
+cask draw_brush
+
+bring stdr
+bring vimana
+bring draw_canvas
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Brush state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?tool = 0      -- 0=pen, 1=brush, 2=line, 3=magic, 4=rect
+def ?size = 0      -- 0-7
+def ?mode = 0      -- 0=draw, 1=erase
+def ?patt = 0      -- 0-7
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Pattern data (8 patterns × 8 bytes each, flat array)
+-- Matching Noodle's built-in patterns exactly
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def PATTERNS = [
+    255, 255, 255, 255, 255, 255, 255, 255,     -- 0: solid
+     85, 170,  85, 170,  85, 170,  85, 170,     -- 1: checker
+    255,   0, 255,   0, 255,   0, 255,   0,     -- 2: h-halve
+    130,  68,  40,  16,  40,  68, 130,   1,     -- 3: diamond
+    136,  68,  34,  17, 136,  68,  34,  17,     -- 4: diag-r
+     17,  34,  68, 136,  17,  34,  68, 136,     -- 5: diag-l
+     85,  85,  85,  85,  85,  85,  85,  85,     -- 6: v-stripe
+    255, 255,   0,   0, 255, 255,   0,   0      -- 7: h-stripe
+]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Brush size shapes (8 sizes × 8 bytes each, flat array)
+-- Each byte encodes one row of the brush shape (MSB = leftmost)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def SIZES = [
+      1,   0,   0,   0,   0,   0,   0,   0,   -- 0: 1px
+      3,   3,   0,   0,   0,   0,   0,   0,   -- 1: 2px
+      7,   7,   7,   0,   0,   0,   0,   0,   -- 2: 3px
+     14,  31,  31,  14,   0,   0,   0,   0,   -- 3: 4px
+     28,  62,  62,  62,  28,   0,   0,   0,   -- 4: 5px
+     60, 126, 126, 126, 126,  60,   0,   0,   -- 5: 6px
+     56, 124, 254, 254, 254, 124,  56,   0,   -- 6: 7px
+    124, 254, 255, 255, 255, 255, 254, 124     -- 7: 8px
+]
+
+-- Brush centering offsets per size
+def OFFSETS = [0, 0, 1, 1, 2, 2, 3, 3]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Getters / setters
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: get_tool() (( num ))   <- tool ;
+:: get_size() (( num ))   <- size ;
+:: get_mode() (( num ))   <- mode ;
+:: get_patt() (( num ))   <- patt ;
+
+:: set_tool(t = num) (( -- ))
+    if t >= 0 && t <= 5
+        tool = t
+;
+
+:: set_size(s = num) (( -- ))
+    if s >= 0 && s <= 7
+        size = s
+;
+
+:: set_patt(p = num) (( -- ))
+    if p >= 0 && p <= 7
+        patt = p
+;
+
+:: toggle_mode() (( -- ))
+    if mode == 0
+        mode = 1
+    else
+        mode = 0
+;
+
+:: set_mode(m = num) (( -- ))
+    mode = m
+;
+
+:: size_up() (( -- ))
+    if size < 7
+        size = size + 1
+;
+
+:: size_down() (( -- ))
+    if size > 0
+        size = size - 1
+;
+
+:: get_size_icon(idx = num) (( [num] ))
+    let base = idx * 8
+    <- [SIZES[base], SIZES[base + 1], SIZES[base + 2], SIZES[base + 3],
+        SIZES[base + 4], SIZES[base + 5], SIZES[base + 6], SIZES[base + 7]]
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Pattern test: returns 1 if pattern allows drawing at (x, y)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: pattern_test(x = num, y = num) (( num ))
+    let row_byte = PATTERNS[patt * 8 + (y % 8)]
+    let bit = x % 8
+    <- stdr.floor(row_byte / draw_canvas.POW2[bit]) % 2
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Apply: set a single pixel respecting pattern and erase mode
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: apply(scr = vimana.screen, x = num, y = num) (( -- ))
+    if !draw_canvas.within(x, y) { <- }
+    if pattern_test(x, y) == 0 { <- }
+    let on = 1
+    if mode == 1
+        on = 0
+    draw_canvas.set_pixel(scr, x, y, on)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Paint dot: sized brush shape centered at (cx, cy)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: paint_dot(scr = vimana.screen, cx = num, cy = num) (( -- ))
+    let off = OFFSETS[size]
+    let bx = cx - off
+    let by = cy - off
+    let base = size * 8
+    for (let ?row = 0; row < 8; row = row + 1)
+        let row_byte = SIZES[base + row]
+        if row_byte > 0
+            for (let ?col = 0; col < 8; col = col + 1)
+                let px_on = stdr.floor(row_byte / draw_canvas.POW2[7 - col]) % 2
+                if px_on == 1
+                    apply(scr, bx + col, by + row)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Paint rect: filled rectangle from (x0,y0) to (x1,y1) inclusive
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: paint_rect(scr = vimana.screen, x0 = num, y0 = num, x1 = num, y1 = num) (( -- ))
+    let ?lx = x0
+    let ?rx = x1
+    if x0 > x1
+        lx = x1
+        rx = x0
+    let ?ty = y0
+    let ?by = y1
+    if y0 > y1
+        ty = y1
+        by = y0
+    for (let ?py = ty; py <= by; py = py + 1)
+        for (let ?px = lx; px <= rx; px = px + 1)
+            apply(scr, px, py)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Paint magic: 7×7 grid of magic_pixel centered at (cx, cy)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: magic_pixel(scr = vimana.screen, x = num, y = num) (( -- ))
+    if !draw_canvas.within(x, y) { <- }
+    let cur = draw_canvas.get_pixel(scr, x, y)
+    let n = draw_canvas.get_pixel(scr, x, y - 1)
+    let s = draw_canvas.get_pixel(scr, x, y + 1)
+    let e = draw_canvas.get_pixel(scr, x + 1, y)
+    let w = draw_canvas.get_pixel(scr, x - 1, y)
+    let sum = n + s + e + w
+    if cur == 0 && sum == 3
+        draw_canvas.set_pixel(scr, x, y, 1)
+    if cur == 1 && sum == 0
+        draw_canvas.set_pixel(scr, x, y, 0)
+;
+
+:: paint_magic(scr = vimana.screen, cx = num, cy = num) (( -- ))
+    for (let ?row = 0; row < 7; row = row + 1)
+        for (let ?col = 0; col < 7; col = col + 1)
+            magic_pixel(scr, cx - 3 + col, cy - 3 + row)
+;

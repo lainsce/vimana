@@ -326,9 +326,9 @@ void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap) {
 static void vimana_screen_update_titlebar_sizes(vimana_screen *screen) {
   if (!screen) return;
   unsigned int fh = screen->font_height;
-  screen->titlebar_bar_height = fh + 5;
-  screen->titlebar_height     = fh + 5;
-  int bsz_max = VIMANA_TB_BOX_SIZE + (screen->titlebar_bar_height > 21 ? 2 : 0);
+  screen->titlebar_bar_height = fh + 4;
+  screen->titlebar_height     = fh + 4;
+  int bsz_max = VIMANA_TB_BOX_SIZE + (screen->titlebar_bar_height > VIMANA_TITLEBAR_HEIGHT ? 2 : 0);
   int bsz = bsz_max < screen->titlebar_bar_height - 4
             ? bsz_max : screen->titlebar_bar_height - 4;
   screen->titlebar_box_size   = bsz;

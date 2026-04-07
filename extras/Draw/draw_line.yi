@@ -1,0 +1,112 @@
+cask draw_line
+
+bring stdr
+bring vimana
+bring draw_canvas
+bring draw_brush
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: i_abs(x = num) (( num ))
+    if x < 0 { <- 0 - x }
+    <- x
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Bresenham line: calls brush.apply at each pixel (pen / line tool)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: line_apply(scr = vimana.screen, x0_in = num, y0_in = num, x1 = num, y1 = num) (( -- ))
+    let ?x = x0_in
+    let ?y = y0_in
+    let dx = i_abs(x1 - x)
+    let dy = 0 - i_abs(y1 - y)
+    let ?sx = 1
+    if x > x1 { sx = 0 - 1 }
+    let ?sy = 1
+    if y > y1 { sy = 0 - 1 }
+    let ?err = dx + dy
+    for (let ?done = false; !done; )
+        draw_brush.apply(scr, x, y)
+        if x == x1 && y == y1
+            done = true
+        else
+            let e2 = 2 * err
+            if e2 >= dy
+                err = err + dy
+                x = x + sx
+            if e2 <= dx
+                err = err + dx
+                y = y + sy
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Bresenham line: calls brush.paint_dot at each pixel (brush tool)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: line_dots(scr = vimana.screen, x0_in = num, y0_in = num, x1 = num, y1 = num) (( -- ))
+    let ?x = x0_in
+    let ?y = y0_in
+    let dx = i_abs(x1 - x)
+    let dy = 0 - i_abs(y1 - y)
+    let ?sx = 1
+    if x > x1 { sx = 0 - 1 }
+    let ?sy = 1
+    if y > y1 { sy = 0 - 1 }
+    let ?err = dx + dy
+    for (let ?done = false; !done; )
+        draw_brush.paint_dot(scr, x, y)
+        if x == x1 && y == y1
+            done = true
+        else
+            let e2 = 2 * err
+            if e2 >= dy
+                err = err + dy
+                x = x + sx
+            if e2 <= dx
+                err = err + dx
+                y = y + sy
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Bresenham line: magic tool (cleanup isolated pixels)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: magic_pixel(scr = vimana.screen, x = num, y = num) (( -- ))
+    let cur = draw_canvas.get_pixel(scr, x, y)
+    let n = draw_canvas.get_pixel(scr, x, y - 1)
+    let s = draw_canvas.get_pixel(scr, x, y + 1)
+    let e = draw_canvas.get_pixel(scr, x + 1, y)
+    let w = draw_canvas.get_pixel(scr, x - 1, y)
+    let sum = n + s + e + w
+    if cur == 0 && sum == 3
+        draw_canvas.set_pixel(scr, x, y, 1)
+    if cur == 1 && sum == 0
+        draw_canvas.set_pixel(scr, x, y, 0)
+;
+
+:: line_magic(scr = vimana.screen, x0_in = num, y0_in = num, x1 = num, y1 = num) (( -- ))
+    let ?x = x0_in
+    let ?y = y0_in
+    let dx = i_abs(x1 - x)
+    let dy = 0 - i_abs(y1 - y)
+    let ?sx = 1
+    if x > x1 { sx = 0 - 1 }
+    let ?sy = 1
+    if y > y1 { sy = 0 - 1 }
+    let ?err = dx + dy
+    for (let ?done = false; !done; )
+        magic_pixel(scr, x, y)
+        if x == x1 && y == y1
+            done = true
+        else
+            let e2 = 2 * err
+            if e2 >= dy
+                err = err + dy
+                x = x + sx
+            if e2 <= dx
+                err = err + dx
+                y = y + sy
+;

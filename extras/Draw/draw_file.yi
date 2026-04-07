@@ -1,0 +1,304 @@
+cask draw_file
+
+bring stdr
+bring vimana
+bring draw_canvas
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- File state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?filename = "untitled"
+def ?file_wt = 77
+def ?file_ht = 43
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Filename helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: num_to_2char(n = num) (( string ))
+    let tens = stdr.floor(n / 10) % 10
+    let ones = n % 10
+    <- stdr.str(tens) + stdr.str(ones)
+;
+
+: make_icn_name() (( string ))
+    <- filename + num_to_2char(draw_canvas.CANVAS_WT) + "x" + num_to_2char(draw_canvas.CANVAS_HT) + ".icn"
+;
+
+: make_tga_name() (( string ))
+    <- filename + ".tga"
+;
+
+:: get_display_name() (( string ))
+    <- make_icn_name()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Parse tile dimensions from ICN filename: ...NNxNN.icn
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: char_to_digit(c = string) (( num ))
+    if c == "0" { <- 0 }
+    if c == "1" { <- 1 }
+    if c == "2" { <- 2 }
+    if c == "3" { <- 3 }
+    if c == "4" { <- 4 }
+    if c == "5" { <- 5 }
+    if c == "6" { <- 6 }
+    if c == "7" { <- 7 }
+    if c == "8" { <- 8 }
+    if c == "9" { <- 9 }
+    <- -1
+;
+
+: parse_icn_dims(path = string) (( [num] ))
+    -- Find last '/' to get basename
+    let len = stdr.len(path)
+    let ?base_start = 0
+    for (let ?i = 0; i < len; i = i + 1)
+        if stdr.substring_len(path, i, 1) == "/"
+            base_start = i + 1
+    -- Find ".icn" at the end
+    let icn_pos = len - 4
+    if icn_pos < 5 { <- [0, 0] }
+    let ext = stdr.substring_len(path, icn_pos, 4)
+    if ext != ".icn" { <- [0, 0] }
+    -- Parse NNxNN before .icn
+    let x_pos = icn_pos - 3
+    let x_char = stdr.substring_len(path, x_pos, 1)
+    if x_char != "x" { <- [0, 0] }
+    let wt_hi = char_to_digit(stdr.substring_len(path, x_pos - 2, 1))
+    let wt_lo = char_to_digit(stdr.substring_len(path, x_pos - 1, 1))
+    let ht_hi = char_to_digit(stdr.substring_len(path, x_pos + 1, 1))
+    let ht_lo = char_to_digit(stdr.substring_len(path, x_pos + 2, 1))
+    if wt_hi < 0 || wt_lo < 0 || ht_hi < 0 || ht_lo < 0 { <- [0, 0] }
+    let wt = wt_hi * 10 + wt_lo
+    let ht = ht_hi * 10 + ht_lo
+    if wt < 1 || ht < 1 { <- [0, 0] }
+    -- Extract base filename (before NNxNN.icn)
+    let name_end = x_pos - 2
+    if name_end > base_start
+        filename = stdr.substring_len(path, base_start, name_end - base_start)
+    <- [wt, ht]
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- New file
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: new_file(scr = vimana.screen) (( -- ))
+    filename = "untitled"
+    draw_canvas.resize(scr, 77, 43)
+    draw_canvas.clear_modified()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Save ICN
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: save_icn(scr = vimana.screen, fsys = vimana.file) (( -- ))
+    let wt = draw_canvas.CANVAS_WT
+    let ht = draw_canvas.CANVAS_HT
+    let stride = draw_canvas.STRIDE_WT
+    let ?bytes = []: [any]
+    for (let ?ty = 0; ty < ht; ty = ty + 1)
+        let row = ty * stride * 8
+        for (let ?tx = 0; tx < wt; tx = tx + 1)
+            let addr = row + tx * 8
+            stdr.push(bytes, scr.gfx(addr))
+            stdr.push(bytes, scr.gfx(addr + 1))
+            stdr.push(bytes, scr.gfx(addr + 2))
+            stdr.push(bytes, scr.gfx(addr + 3))
+            stdr.push(bytes, scr.gfx(addr + 4))
+            stdr.push(bytes, scr.gfx(addr + 5))
+            stdr.push(bytes, scr.gfx(addr + 6))
+            stdr.push(bytes, scr.gfx(addr + 7))
+    let path = make_icn_name()
+    fsys.write_bytes(path, bytes)
+    draw_canvas.clear_modified()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Open file (auto-detect ICN or TGA)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: open_file(scr = vimana.screen, fsys = vimana.file, path = string) (( -- ))
+    let len = stdr.len(path)
+    if len < 4 { <- }
+    let ext = stdr.substring_len(path, len - 4, 4)
+    if ext == ".tga"
+        open_tga(scr, fsys, path)
+    else
+        open_icn(scr, fsys, path)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Open ICN
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: open_icn(scr = vimana.screen, fsys = vimana.file, path = string) (( -- ))
+    let bytes = fsys.read_bytes(path)
+    if stdr.is_null(bytes) { <- }
+    let count = stdr.len(bytes)
+    if count < 8 { <- }
+    -- Parse dimensions from filename
+    let dims = parse_icn_dims(path)
+    let ?wt = dims[0]
+    let ?ht = dims[1]
+    if wt < 1 || ht < 1
+        -- Guess square-ish dimensions from byte count
+        let tiles = stdr.floor(count / 8)
+        -- Integer square root via iteration
+        let ?s = 1
+        for (let ?g = 1; g * g <= tiles; g = g + 1)
+            s = g
+        wt = s
+        if wt < 1 { wt = 1 }
+        ht = stdr.floor(tiles / wt)
+        if ht < 1 { ht = 1 }
+    -- Resize canvas (clears) then load data
+    draw_canvas.resize(scr, wt, ht)
+    let load_wt = draw_canvas.CANVAS_WT
+    let load_ht = draw_canvas.CANVAS_HT
+    let stride = draw_canvas.STRIDE_WT
+    let total = load_wt * load_ht * 8
+    let ?limit = count
+    if limit > total { limit = total }
+    let ?src = 0
+    for (let ?ty = 0; ty < load_ht; ty = ty + 1)
+        let row = ty * stride * 8
+        for (let ?tx = 0; tx < load_wt; tx = tx + 1)
+            if src >= limit { <- }
+            let addr = row + tx * 8
+            let ?b0 = 0
+            let ?b1 = 0
+            let ?b2 = 0
+            let ?b3 = 0
+            let ?b4 = 0
+            let ?b5 = 0
+            let ?b6 = 0
+            let ?b7 = 0
+            if src < limit     { b0 = bytes[src] }
+            if src + 1 < limit { b1 = bytes[src + 1] }
+            if src + 2 < limit { b2 = bytes[src + 2] }
+            if src + 3 < limit { b3 = bytes[src + 3] }
+            if src + 4 < limit { b4 = bytes[src + 4] }
+            if src + 5 < limit { b5 = bytes[src + 5] }
+            if src + 6 < limit { b6 = bytes[src + 6] }
+            if src + 7 < limit { b7 = bytes[src + 7] }
+            scr.set_gfx(addr, [b0, b1, b2, b3, b4, b5, b6, b7])
+            src = src + 8
+    draw_canvas.clear_modified()
+    draw_canvas.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TGA Import (type 3 = uncompressed 8bpp grayscale)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: open_tga(scr = vimana.screen, fsys = vimana.file, path = string) (( -- ))
+    let bytes = fsys.read_bytes(path)
+    if stdr.is_null(bytes) { <- }
+    let count = stdr.len(bytes)
+    if count < 18 { <- }
+
+    -- Parse 18-byte TGA header
+    let id_length = bytes[0]
+    let image_type = bytes[2]
+    -- Only accept type 3 (uncompressed grayscale)
+    if image_type != 3 { <- }
+    let width = bytes[12] + bytes[13] * 256
+    let height = bytes[14] + bytes[15] * 256
+    let depth = bytes[16]
+    let descriptor = bytes[17]
+    if width < 1 || height < 1 { <- }
+    if depth != 8 { <- }
+
+    -- Compute tile dimensions
+    let wt = stdr.floor((width + 7) / 8)
+    let ht = stdr.floor((height + 7) / 8)
+
+    -- Pixel data starts after header + id + color map
+    let color_map_length = bytes[5] + bytes[6] * 256
+    let color_map_entry_size = bytes[7]
+    let color_map_bytes = stdr.floor(color_map_length * color_map_entry_size / 8)
+    let data_offset = 18 + id_length + color_map_bytes
+
+    -- Descriptor bit 5: 0 = bottom-to-top (default), 1 = top-to-bottom
+    let top_to_bottom = stdr.floor(descriptor / 32) % 2
+
+    -- Resize and clear
+    draw_canvas.resize(scr, wt, ht)
+
+    -- Convert grayscale pixels to 1bpp canvas
+    for (let ?py = 0; py < height; py = py + 1)
+        let ?src_row = py
+        if top_to_bottom == 0
+            src_row = height - 1 - py
+        let row_offset = data_offset + src_row * width
+        for (let ?px = 0; px < width; px = px + 1)
+            let byte_idx = row_offset + px
+            if byte_idx < count
+                let val = bytes[byte_idx]
+                if val >= 128
+                    draw_canvas.set_pixel(scr, px, py, 1)
+
+    -- Extract base filename from path
+    let len = stdr.len(path)
+    let ?base_start = 0
+    for (let ?i = 0; i < len; i = i + 1)
+        if stdr.substring_len(path, i, 1) == "/"
+            base_start = i + 1
+    let ?name_end = len
+    -- Strip .tga extension
+    if len >= 4
+        let ext = stdr.substring_len(path, len - 4, 4)
+        if ext == ".tga"
+            name_end = len - 4
+    if name_end > base_start
+        filename = stdr.substring_len(path, base_start, name_end - base_start)
+
+    draw_canvas.clear_modified()
+    draw_canvas.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TGA Export (type 3 = uncompressed 8bpp grayscale, top-to-bottom)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: export_tga(scr = vimana.screen, fsys = vimana.file) (( -- ))
+    let w = draw_canvas.CANVAS_WP
+    let h = draw_canvas.CANVAS_HP
+
+    -- Build TGA header (18 bytes)
+    let w_lo = w % 256
+    let w_hi = stdr.floor(w / 256)
+    let h_lo = h % 256
+    let h_hi = stdr.floor(h / 256)
+
+    let ?bytes = [
+        0,          -- id length
+        0,          -- no color map
+        3,          -- image type: uncompressed grayscale
+        0, 0, 0, 0, 0,   -- color map spec (unused)
+        0, 0,       -- x origin
+        0, 0,       -- y origin
+        w_lo, w_hi, -- width (little-endian)
+        h_lo, h_hi, -- height (little-endian)
+        8,          -- depth (8 bits per pixel)
+        0x20        -- descriptor: bit 5 = top-to-bottom
+    ]
+
+    -- Pixel data: 1 byte per pixel (0xFF=on, 0x00=off)
+    for (let ?py = 0; py < h; py = py + 1)
+        for (let ?px = 0; px < w; px = px + 1)
+            let pixel = draw_canvas.get_pixel(scr, px, py)
+            if pixel == 1
+                stdr.push(bytes, 0xFF)
+            else
+                stdr.push(bytes, 0x00)
+
+    let path = make_tga_name()
+    fsys.write_bytes(path, bytes)
+;

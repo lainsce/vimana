@@ -1,0 +1,162 @@
+cask mine_logic
+
+bring stdr
+bring vimana
+bring mine_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- PRNG (linear congruential generator)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?seed = 12345
+
+:: seed_prng(sys = vimana.system) (( -- ))
+    let dt = sys.datetime()
+    seed = dt.second() + dt.minute() * 60 + dt.hour() * 3600 + dt.day() * 17 + dt.month() * 31
+    if seed == 0
+        seed = 1
+;
+
+: prng() (( num ))
+    seed = (seed * 1103515245 + 12345) % 65536
+    if seed < 0
+        seed = 0 - seed
+    <- seed
+;
+
+: prng_range(n = num) (( num ))
+    <- prng() % n
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Neighbor counting
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def OFFSETS_X = [-1, 0, 1, -1, 1, -1, 0, 1]
+def OFFSETS_Y = [-1, -1, -1, 0, 0, 1, 1, 1]
+
+: count_neighbors(gx = num, gy = num) (( num ))
+    let ?count = 0
+    for (let ?i = 0; i < 8; i = i + 1)
+        let nx = gx + OFFSETS_X[i]
+        let ny = gy + OFFSETS_Y[i]
+        if nx >= 0 && nx < mine_model.GRID_SIZE && ny >= 0 && ny < mine_model.GRID_SIZE
+            if mine_model.is_mine(ny * mine_model.GRID_SIZE + nx)
+                count = count + 1
+    <- count
+;
+
+: compute_values() (( -- ))
+    for (let ?gy = 0; gy < mine_model.GRID_SIZE; gy = gy + 1)
+        for (let ?gx = 0; gx < mine_model.GRID_SIZE; gx = gx + 1)
+            let idx = gy * mine_model.GRID_SIZE + gx
+            if mine_model.is_mine(idx)
+                mine_model.set_value(idx, -1)
+            else
+                mine_model.set_value(idx, count_neighbors(gx, gy))
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Game initialization
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: reset(sys = vimana.system) (( -- ))
+    mine_model.clear_all()
+    seed_prng(sys)
+    -- Place mines at random positions (may overlap → fewer actual mines)
+    for (let ?i = 0; i < mine_model.NUM_MINES; i = i + 1)
+        let idx = prng_range(64)
+        mine_model.set_mine(idx)
+    compute_values()
+    mine_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Flood fill (reveal empty cells recursively)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: flood_fill(gx = num, gy = num) (( -- ))
+    if gx < 0 || gx >= mine_model.GRID_SIZE || gy < 0 || gy >= mine_model.GRID_SIZE
+        <-
+    let idx = gy * mine_model.GRID_SIZE + gx
+    if mine_model.is_revealed(idx)
+        <-
+    if mine_model.is_flagged(idx)
+        <-
+    mine_model.set_revealed(idx)
+    if mine_model.get_value(idx) == 0
+        flood_fill(gx - 1, gy - 1)
+        flood_fill(gx, gy - 1)
+        flood_fill(gx + 1, gy - 1)
+        flood_fill(gx - 1, gy)
+        flood_fill(gx + 1, gy)
+        flood_fill(gx - 1, gy + 1)
+        flood_fill(gx, gy + 1)
+        flood_fill(gx + 1, gy + 1)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Victory check
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: check_victory() (( -- ))
+    for (let ?i = 0; i < 64; i = i + 1)
+        if !mine_model.is_mine(i) && !mine_model.is_revealed(i)
+            <-
+    mine_model.set_state(mine_model.STATE_WIN)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Explode (reveal all mines)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: explode() (( -- ))
+    for (let ?i = 0; i < 64; i = i + 1)
+        if mine_model.is_mine(i)
+            mine_model.set_revealed(i)
+    mine_model.set_state(mine_model.STATE_DEAD)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Player actions
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: reveal(gx = num, gy = num) (( -- ))
+    let idx = gy * mine_model.GRID_SIZE + gx
+    if mine_model.is_revealed(idx) || mine_model.is_flagged(idx)
+        <-
+    -- First click: ensure safe start
+    if mine_model.get_state() == mine_model.STATE_IDLE
+        mine_model.set_state(mine_model.STATE_PLAYING)
+        if mine_model.is_mine(idx)
+            mine_model.clear_mine(idx)
+            compute_values()
+    -- Reveal
+    if mine_model.is_mine(idx)
+        explode()
+    else
+        flood_fill(gx, gy)
+        check_victory()
+    mine_model.mark_dirty()
+;
+
+:: toggle_flag(gx = num, gy = num) (( -- ))
+    let idx = gy * mine_model.GRID_SIZE + gx
+    if mine_model.is_revealed(idx)
+        <-
+    if mine_model.is_flagged(idx)
+        mine_model.set_flagged(idx, 0)
+        mine_model.set_flag_count(mine_model.get_flag_count() - 1)
+    else
+        mine_model.set_flagged(idx, 1)
+        mine_model.set_flag_count(mine_model.get_flag_count() + 1)
+    mine_model.mark_dirty()
+;
+
+:: timer_tick() (( -- ))
+    if mine_model.get_state() == mine_model.STATE_PLAYING
+        mine_model.inc_timer_frames()
+        -- Trigger redraw once per second
+        if mine_model.get_timer_frames() % 60 == 0
+            mine_model.mark_dirty()
+;

@@ -1,0 +1,266 @@
+cask draw_panel
+
+bring stdr
+bring vimana
+bring draw_canvas
+bring draw_brush
+bring draw_tools
+bring draw_view
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Panel layout
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def PANEL_W  = 4       -- width in tiles (32px)
+def PANEL_H  = 15      -- height in tiles (120px)
+def PANEL_WP = 32      -- width in pixels
+def PANEL_HP = 120     -- height in pixels
+
+-- Section layout (2-column grid like Noodle)
+def TOOL_ROWS = 3      -- rows 0-2: tools (2×3 grid, 5 tools + mode toggle)
+def SEP1_ROW  = 3      -- first separator
+def PATT_ROW0 = 4      -- patterns start (rows 4-7)
+def PATT_ROWS = 4
+def SEP2_ROW  = 8      -- second separator
+def SIZE_ROW0 = 9      -- sizes start (rows 9-12)
+def SIZE_ROWS = 4
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Panel state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?panel_tx = 1       -- panel tile x position
+def ?panel_ty = 3       -- panel tile y position (below 2-row green bar + 1 gap)
+def ?panel_px = 8       -- panel pixel x (tx * 8)
+def ?panel_py = 24      -- panel pixel y (ty * 8)
+def ?drag_ox = 0
+def ?drag_oy = 0
+def ?panel_dragging = false
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Tool icons (8 bytes each, 1bpp)
+-- Simplified symbolic icons for each tool
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def TOOL_ICONS = [
+    -- 0: Pen
+    0xC0, 0xE0, 0x50, 0x28, 0x14, 0x0A, 0x04, 0x00,
+    -- 1: Brush
+    0xE0, 0xD0, 0xA8, 0x44, 0x22, 0x12, 0x0C, 0x00,
+    -- 2: Line
+    0xC0, 0xB8, 0x48, 0x48, 0x78, 0x04, 0x02, 0x00,
+    -- 3: Magic
+    0xA8, 0x50, 0x88, 0x50, 0xA8, 0x04, 0x02, 0x00,
+    -- 4: Rect
+    0xFC, 0x84, 0x84, 0x80, 0x84, 0xEA, 0x04, 0x00,
+    -- 5: Zoom (magnify)
+    0x30, 0x48, 0x84, 0x84, 0x48, 0x34, 0x02, 0x00,
+    -- 5: Zoom (magnify)
+    0x30, 0x48, 0x84, 0x84, 0x48, 0x34, 0x02, 0x00
+]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Pattern icons (8 bytes each, 1bpp) — same as PATTERNS data
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def PATT_ICONS = [
+    0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0x00,    -- 0: solid
+    0xFE, 0xD6, 0xAA, 0xD6, 0xAA, 0xD6, 0xFE, 0x00,    -- 1: checker
+    0xFE, 0x92, 0x82, 0xD6, 0x82, 0x92, 0xFE, 0x00,    -- 2: h-halve
+    0xFE, 0x82, 0x92, 0xAA, 0x92, 0x82, 0xFE, 0x00,    -- 3: diamond
+    0xFE, 0xA6, 0xCA, 0x92, 0xA6, 0xCA, 0xFE, 0x00,    -- 4: diag-r
+    0xFE, 0xCA, 0xA6, 0x92, 0xCA, 0xA6, 0xFE, 0x00,    -- 5: diag-l
+    0xFE, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xFE, 0x00,    -- 6: v-stripe
+    0xFE, 0x82, 0xFE, 0x82, 0xFE, 0x82, 0xFE, 0x00     -- 7: h-stripe
+]
+
+-- Separator dash
+def DASH_ICN = [0x00, 0x00, 0x00, 0xAA, 0x00, 0x00, 0x00, 0x00]
+
+-- Rounded corner tiles (1-bits = outside color, 0-bits = white fill)
+def FILL_ICN  = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+
+-- Mode indicators
+def MODE_DRAW_ICN  = [0x00, 0x00, 0x3C, 0x3C, 0x3C, 0x3C, 0x00, 0x00]
+def MODE_ERASE_ICN = [0x00, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x00]
+
+-- Size icons for draw mode (filled circles)
+def SIZE_DRAW = [
+    0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x10, 0x38, 0x10, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x38, 0x38, 0x38, 0x00, 0x00, 0x00,
+    0x00, 0x10, 0x38, 0x7C, 0x38, 0x10, 0x00, 0x00,
+    0x00, 0x38, 0x7C, 0x7C, 0x7C, 0x38, 0x00, 0x00,
+    0x10, 0x38, 0x7C, 0xFE, 0x7C, 0x38, 0x10, 0x00,
+    0x38, 0x7C, 0xFE, 0xFE, 0xFE, 0x7C, 0x38, 0x00,
+    0x7C, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0x7C, 0x00
+]
+
+-- Size icons for erase mode (outline circles)
+def SIZE_ERASE = [
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x10, 0x28, 0x10, 0x00, 0x00, 0x00,
+    0x00, 0x10, 0x28, 0x44, 0x28, 0x10, 0x00, 0x00,
+    0x00, 0x38, 0x44, 0x44, 0x44, 0x38, 0x00, 0x00,
+    0x10, 0x28, 0x44, 0x82, 0x44, 0x28, 0x10, 0x00,
+    0x38, 0x44, 0x82, 0x82, 0x82, 0x44, 0x38, 0x00,
+    0x7C, 0x82, 0x82, 0x82, 0x82, 0x82, 0x7C, 0x00
+]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Accessors
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: get_px() (( num )) <- panel_px ;
+:: get_py() (( num )) <- panel_py ;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Hit testing
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: hit_test(mx = num, my = num) (( bool ))
+    <- mx >= panel_px && mx < panel_px + PANEL_WP && my >= panel_py && my < panel_py + PANEL_HP
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Panel interaction
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: on_press(mx = num, my = num) (( bool ))
+    if !hit_test(mx, my) { <- false }
+    let rx = mx - panel_px
+    let ry = my - panel_py
+    let col = stdr.floor(rx / 8) - 1
+    let row = stdr.floor(ry / 8) - 1
+
+    -- Outside content area (margin tiles): start drag
+    if col < 0 || col >= 2 || row < 0 || row >= PANEL_H - 2
+        panel_dragging = true
+        drag_ox = rx
+        drag_oy = ry
+        <- true
+
+    -- Separator rows: start drag
+    if row == SEP1_ROW || row == SEP2_ROW
+        panel_dragging = true
+        drag_ox = rx
+        drag_oy = ry
+        <- true
+
+    -- Tool area: rows 0-2
+    if row < TOOL_ROWS
+        let ti = row * 2 + col
+        if ti < 6
+            draw_brush.set_tool(ti)
+            draw_canvas.mark_dirty()
+            <- true
+        <- true
+
+    -- Pattern area: rows 4-7
+    if row >= PATT_ROW0 && row < PATT_ROW0 + PATT_ROWS
+        let pi = (row - PATT_ROW0) * 2 + col
+        draw_brush.set_patt(pi)
+        draw_canvas.mark_dirty()
+        <- true
+
+    -- Size area: rows 9-12
+    if row >= SIZE_ROW0 && row < SIZE_ROW0 + SIZE_ROWS
+        let si = (row - SIZE_ROW0) * 2 + col
+        draw_brush.set_size(si)
+        draw_canvas.mark_dirty()
+        <- true
+
+    <- false
+;
+
+:: on_drag(mx = num, my = num) (( -- ))
+    if !panel_dragging { <- }
+    panel_px = mx - drag_ox
+    panel_py = my - drag_oy
+    if panel_px < 0 { panel_px = 0 }
+    if panel_py < 8 { panel_py = 8 }
+    if panel_px > 680 - PANEL_WP { panel_px = 680 - PANEL_WP }
+    if panel_py > 384 - PANEL_HP { panel_py = 384 - PANEL_HP }
+    panel_tx = stdr.floor(panel_px / 8)
+    panel_ty = stdr.floor(panel_py / 8)
+    draw_canvas.mark_dirty()
+;
+
+:: on_release() (( -- ))
+    panel_dragging = false
+;
+
+:: is_dragging() (( bool ))
+    <- panel_dragging
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Drawing
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: icon_slice(data = [num], idx = num) (( [num] ))
+    let base = idx * 8
+    <- [data[base], data[base + 1], data[base + 2], data[base + 3],
+        data[base + 4], data[base + 5], data[base + 6], data[base + 7]]
+;
+
+:: draw(scr = vimana.screen) (( -- ))
+    let ptx = stdr.floor(panel_px / 8)
+    let pty = stdr.floor(panel_py / 8)
+    let cur_tool = draw_brush.get_tool()
+    let cur_patt = draw_brush.get_patt()
+    let cur_size = draw_brush.get_size()
+    let cur_mode = draw_brush.get_mode()
+
+    -- White background fill
+    for (let ?r = 0; r < PANEL_H; r = r + 1)
+        for (let ?c = 0; c < PANEL_W; c = c + 1)
+            scr.put_icn(ptx + c, pty + r, FILL_ICN, 0, 0)
+
+    -- Tile-based frame
+    draw_view.draw_panel_frame(scr, ptx, pty, PANEL_W, PANEL_H)
+
+    -- ── Tool section (rows 0-2, 2×3 grid = 6 tools) ──
+    for (let ?i = 0; i < 6; i = i + 1)
+        let col = i % 2
+        let row = stdr.floor(i / 2)
+        let icon = icon_slice(TOOL_ICONS, i)
+        let ?fg = 1
+        if i == cur_tool
+            fg = 3
+        scr.put_icn(ptx + 1 + col, pty + 1 + row, icon, fg, 0)
+
+    -- Mode indicator on separator row
+    if cur_mode == 0
+        scr.put_icn(ptx + 1, pty + 1 + SEP1_ROW, MODE_DRAW_ICN, 1, 0)
+    else
+        scr.put_icn(ptx + 1, pty + 1 + SEP1_ROW, MODE_ERASE_ICN, 3, 0)
+    scr.put_icn(ptx + 2, pty + 1 + SEP1_ROW, DASH_ICN, 3, 0)
+
+    -- ── Pattern section (rows 4-7, 2×4 grid) ──
+    for (let ?i = 0; i < 8; i = i + 1)
+        let col = i % 2
+        let row = PATT_ROW0 + stdr.floor(i / 2)
+        let icon = icon_slice(PATT_ICONS, i)
+        let ?fg = 1
+        if i == cur_patt
+            fg = 3
+        scr.put_icn(ptx + 1 + col, pty + 1 + row, icon, fg, 0)
+
+    -- ── Separator row 8 ──
+    scr.put_icn(ptx + 1, pty + 1 + SEP2_ROW, DASH_ICN, 3, 0)
+    scr.put_icn(ptx + 2, pty + 1 + SEP2_ROW, DASH_ICN, 3, 0)
+
+    -- ── Size section (rows 9-12, 2×4 grid) ──
+    for (let ?i = 0; i < 8; i = i + 1)
+        let col = i % 2
+        let row = SIZE_ROW0 + stdr.floor(i / 2)
+        let ?icon = icon_slice(SIZE_DRAW, i)
+        if cur_mode == 1
+            icon = icon_slice(SIZE_ERASE, i)
+        let ?fg = 1
+        if i == cur_size
+            fg = 3
+        scr.put_icn(ptx + 1 + col, pty + 1 + row, icon, fg, 0)
+;

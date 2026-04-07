@@ -1,0 +1,75 @@
+cask main
+
+bring stdr
+bring vimana
+bring mine_model
+bring mine_logic
+bring mine_data
+bring mine_font
+bring mine_view
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Input handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_mouse(sys = vimana.system, dev = vimana.device) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+    if dev.mouse_pressed(vimana.mouse_left)
+        -- Status face click: reset game
+        if mx >= 72 && mx < 88 && my >= 24 && my < 40
+            mine_logic.reset(sys)
+            <-
+        -- Grid click: reveal cell
+        if mx >= 16 && mx < 144 && my >= 64 && my < 192
+            let state = mine_model.get_state()
+            if state == mine_model.STATE_DEAD || state == mine_model.STATE_WIN
+                <-
+            let gx = stdr.floor((mx - 16) / 16)
+            let gy = stdr.floor((my - 64) / 16)
+            mine_logic.reveal(gx, gy)
+    if dev.mouse_pressed(vimana.mouse_right)
+        -- Grid right-click: toggle flag
+        if mx >= 16 && mx < 144 && my >= 64 && my < 192
+            let state = mine_model.get_state()
+            if state == mine_model.STATE_DEAD || state == mine_model.STATE_WIN
+                <-
+            let gx = stdr.floor((mx - 16) / 16)
+            let gy = stdr.floor((my - 64) / 16)
+            mine_logic.toggle_flag(gx, gy)
+;
+
+: on_key(sys = vimana.system, dev = vimana.device) (( -- ))
+    -- R key (scancode 21): reset game
+    if dev.key_pressed(21)
+        mine_logic.reset(sys)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-> ()
+    let sys = vimana.system()
+    let scr = vimana.screen("MINESWEEPER", 160, 208, 1)
+    mine_font.setup(scr)
+    mine_data.load_sprites(scr)
+
+    -- Set default palette
+    scr.set_palette(vimana.color_bg, "#cccccc")
+        .set_palette(vimana.color_fg, "#ffffff")
+        .set_palette(vimana.color_2,  "#888888")
+        .set_palette(vimana.color_3,  "#000000")
+
+    let dev = sys.device()
+    mine_logic.reset(sys)
+
+    sys.run(scr, () => {
+        dev.poll()
+        on_mouse(sys, dev)
+        on_key(sys, dev)
+        mine_logic.timer_tick()
+        if mine_model.is_dirty()
+            mine_view.draw_all(scr)
+    })
+;
