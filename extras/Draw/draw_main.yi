@@ -324,28 +324,28 @@ def ?resizer_dragging = false
     if dev.key_pressed(KEY_UP)
         if draw_zoom.is_active()
             draw_zoom.move_up()
-        else if shift
+        elif shift
             draw_canvas.crop_h(scr)
         else
             draw_canvas.drag_up(scr)
     if dev.key_pressed(KEY_DOWN)
         if draw_zoom.is_active()
             draw_zoom.move_down()
-        else if shift
+        elif shift
             draw_canvas.size_h(scr)
         else
             draw_canvas.drag_down(scr)
     if dev.key_pressed(KEY_LEFT)
         if draw_zoom.is_active()
             draw_zoom.move_left()
-        else if shift
+        elif shift
             draw_canvas.crop_w(scr)
         else
             draw_canvas.drag_left(scr)
     if dev.key_pressed(KEY_RIGHT)
         if draw_zoom.is_active()
             draw_zoom.move_right()
-        else if shift
+        elif shift
             draw_canvas.size_w(scr)
         else
             draw_canvas.drag_right(scr)

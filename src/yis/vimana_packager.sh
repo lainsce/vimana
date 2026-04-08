@@ -380,6 +380,81 @@ case "$1" in
       fi
     fi
 
+    # ── Embed dylibs for self-contained .app bundle ──────────────────────
+    if [ "$(uname)" = "Darwin" ]; then
+      FRAMEWORKS_DIR="$CONTENTS_DIR/Frameworks"
+      mkdir -p "$FRAMEWORKS_DIR"
+
+      # Find libvimana.dylib path from the linked executable.
+      VIMANA_REF="$(otool -L "$OUT_PATH" 2>/dev/null \
+        | grep 'libvimana' | head -1 | awk '{print $1}')"
+
+      # Resolve @rpath to the actual file by searching common locations.
+      VIMANA_LIB="$VIMANA_REF"
+      case "$VIMANA_LIB" in
+        @rpath/*)
+          VIMANA_LEAF="${VIMANA_LIB#@rpath/}"
+          for d in /opt/homebrew/lib /usr/local/lib /usr/lib; do
+            if [ -f "$d/$VIMANA_LEAF" ]; then
+              VIMANA_LIB="$d/$VIMANA_LEAF"; break
+            fi
+          done
+          ;;
+      esac
+
+      if [ -f "$VIMANA_LIB" ]; then
+        cp "$VIMANA_LIB" "$FRAMEWORKS_DIR/libvimana.dylib"
+
+        # Find SDL3 dependency of libvimana.
+        SDL3_REF="$(otool -L "$VIMANA_LIB" 2>/dev/null \
+          | grep 'libSDL3' | head -1 | awk '{print $1}')"
+        SDL3_LIB="$SDL3_REF"
+        # Resolve @rpath in SDL3 reference too.
+        case "$SDL3_LIB" in
+          @rpath/*)
+            SDL3_LEAF="${SDL3_LIB#@rpath/}"
+            for d in /opt/homebrew/lib /usr/local/lib /usr/lib; do
+              if [ -f "$d/$SDL3_LEAF" ]; then
+                SDL3_LIB="$d/$SDL3_LEAF"; break
+              fi
+            done
+            ;;
+        esac
+        if [ -f "$SDL3_LIB" ]; then
+          cp "$SDL3_LIB" "$FRAMEWORKS_DIR/libSDL3.dylib"
+        fi
+
+        # Fix install names on embedded copies.
+        install_name_tool -id \
+          @executable_path/../Frameworks/libvimana.dylib \
+          "$FRAMEWORKS_DIR/libvimana.dylib" 2>/dev/null || true
+
+        if [ -f "$FRAMEWORKS_DIR/libSDL3.dylib" ]; then
+          install_name_tool -id \
+            @executable_path/../Frameworks/libSDL3.dylib \
+            "$FRAMEWORKS_DIR/libSDL3.dylib" 2>/dev/null || true
+
+          # Rewrite libvimana's reference to SDL3.
+          if [ -n "$SDL3_REF" ]; then
+            install_name_tool -change "$SDL3_REF" \
+              @executable_path/../Frameworks/libSDL3.dylib \
+              "$FRAMEWORKS_DIR/libvimana.dylib" 2>/dev/null || true
+          fi
+        fi
+
+        # Ad-hoc codesign embedded dylibs first, then the whole bundle.
+        codesign --force --sign - \
+          "$FRAMEWORKS_DIR/libvimana.dylib" 2>/dev/null || true
+        [ -f "$FRAMEWORKS_DIR/libSDL3.dylib" ] && \
+          codesign --force --sign - \
+            "$FRAMEWORKS_DIR/libSDL3.dylib" 2>/dev/null || true
+      fi
+    fi
+
+    # Ad-hoc codesign the full .app bundle (deep) for Gatekeeper.
+    APP_BUNDLE="$(cd "$CONTENTS_DIR/.." && pwd)"
+    codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || true
+
     exit 0
     ;;
 esac

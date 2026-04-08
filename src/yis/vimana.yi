@@ -25,6 +25,12 @@ def wave_pulse = 2
 def wave_noise = 3
 def voice_count = 4
 
+def filter_lp = 1
+def filter_bp = 2
+def filter_hp = 4
+def audio_clock = 1024000
+def paddle_count = 2
+
 : __vimana_system() (( system )) { }
 : __vimana_system_run(sys = system, scr = screen, frame = any) (( -- )) { }
 : __vimana_system_quit(sys = system) (( -- )) { }
@@ -42,6 +48,14 @@ def voice_count = 4
 : __vimana_system_set_pulse_width(sys = system, channel = num, width = num) (( -- )) { }
 : __vimana_system_play_voice(sys = system, channel = num, pitch = num, volume = num) (( -- )) { }
 : __vimana_system_stop_voice(sys = system, channel = num) (( -- )) { }
+: __vimana_system_set_frequency(sys = system, channel = num, freq16 = num) (( -- )) { }
+: __vimana_system_set_sync(sys = system, channel = num, enable = num) (( -- )) { }
+: __vimana_system_set_ring_mod(sys = system, channel = num, enable = num) (( -- )) { }
+: __vimana_system_set_filter(sys = system, cutoff = num, resonance = num, mode = num) (( -- )) { }
+: __vimana_system_set_filter_route(sys = system, channel = num, enable = num) (( -- )) { }
+: __vimana_system_set_master_volume(sys = system, volume = num) (( -- )) { }
+: __vimana_system_set_paddle(sys = system, paddle = num, value = num) (( -- )) { }
+: __vimana_system_get_paddle(sys = system, paddle = num) (( num )) { }
 : __vimana_system_spawn(sys = system, cmd = string) (( num )) { }
 : __vimana_system_proc_write(sys = system, proc = num, text = string) (( bool )) { }
 : __vimana_system_proc_read_line(sys = system, proc = num) (( string )) { }
@@ -170,6 +184,35 @@ pub ,: system
         __vimana_system_stop_voice(this, channel)
         <- this
     ;
+    :: set_frequency(this, channel = num, freq16 = num) (( system ))
+        __vimana_system_set_frequency(this, channel, freq16)
+        <- this
+    ;
+    :: set_sync(this, channel = num, enable = num) (( system ))
+        __vimana_system_set_sync(this, channel, enable)
+        <- this
+    ;
+    :: set_ring_mod(this, channel = num, enable = num) (( system ))
+        __vimana_system_set_ring_mod(this, channel, enable)
+        <- this
+    ;
+    :: set_filter(this, cutoff = num, resonance = num, mode = num) (( system ))
+        __vimana_system_set_filter(this, cutoff, resonance, mode)
+        <- this
+    ;
+    :: set_filter_route(this, channel = num, enable = num) (( system ))
+        __vimana_system_set_filter_route(this, channel, enable)
+        <- this
+    ;
+    :: set_master_volume(this, volume = num) (( system ))
+        __vimana_system_set_master_volume(this, volume)
+        <- this
+    ;
+    :: set_paddle(this, paddle = num, value = num) (( system ))
+        __vimana_system_set_paddle(this, paddle, value)
+        <- this
+    ;
+    :: paddle(this, paddle = num) (( num )) <- __vimana_system_get_paddle(this, paddle) ;
 
     :: spawn(this, cmd = string) (( num )) <- __vimana_system_spawn(this, cmd) ;
     :: proc_write(this, proc = num, text = string) (( bool )) <- __vimana_system_proc_write(this, proc, text) ;

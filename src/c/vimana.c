@@ -54,7 +54,9 @@ static const float vimana_decrel_table[16] = {
 
 typedef struct {
   float    phase;        /* oscillator phase [0.0, 1.0) */
-  float    freq_hz;      /* current frequency */
+  float    prev_phase;   /* phase from previous sample (for sync detection) */
+  float    freq_hz;      /* current frequency (derived from freq_reg) */
+  uint16_t freq_reg;     /* 16-bit frequency register (SID-style) */
   float    amp;          /* target amplitude (volume) */
   int      waveform;     /* VIMANA_WAVE_* */
   float    pulse_width;  /* pulse duty cycle [0.0, 1.0) */
@@ -62,10 +64,21 @@ typedef struct {
   int      env_stage;    /* VimanaEnvStage */
   float    env_level;    /* current envelope amplitude [0.0, 1.0] */
   bool     gate;         /* true = key held */
+  bool     sync;         /* hard sync: reset phase when source voice wraps */
+  bool     ring_mod;     /* ring modulation with source voice */
   int      samples_left; /* >0 for timed auto-release (play_tone mode) */
   uint32_t noise_lfsr;   /* Galois LFSR state for noise waveform */
   uint32_t age;          /* monotonic counter for voice-stealing */
 } VimanaVoice;
+
+typedef struct {
+  int   cutoff;          /* 0–2047 (11-bit) */
+  int   resonance;       /* 0–15 */
+  int   mode;            /* bitmask: VIMANA_FILT_LP | BP | HP */
+  bool  route[VIMANA_VOICE_COUNT]; /* per-voice filter routing */
+  float bp;              /* bandpass state */
+  float lp;              /* lowpass state */
+} VimanaFilter;
 
 struct VimanaSystem {
   uint64_t key_down[VIMANA_KEY_WORDS];     /* 512 bits packed */
@@ -84,6 +97,9 @@ struct VimanaSystem {
   SDL_AudioStream *audio_stream;
   int audio_sample_rate;
   VimanaVoice voices[VIMANA_VOICE_COUNT];
+  VimanaFilter filter;
+  int master_volume;       /* 0–15, default 15 */
+  uint8_t paddle[VIMANA_PADDLE_COUNT]; /* 2 × 8-bit A/D converters */
   uint32_t voice_clock;    /* monotonic counter for age tracking */
   float *mix_buffer;       /* pre-allocated audio mix buffer */
   int mix_buffer_cap;      /* capacity in samples */
@@ -99,13 +115,33 @@ static float vimana_pitch_to_hz(int pitch) {
   return hz;
 }
 
+/* Convert Hz to 16-bit SID frequency register value.
+   freq_reg = hz × 16777216 / VIMANA_AUDIO_CLOCK */
+static uint16_t vimana_hz_to_freq_reg(float hz) {
+  float reg = hz * 16777216.0f / (float)VIMANA_AUDIO_CLOCK;
+  if (reg < 0.0f) reg = 0.0f;
+  if (reg > 65535.0f) reg = 65535.0f;
+  return (uint16_t)(reg + 0.5f);
+}
+
+/* Convert 16-bit frequency register to Hz.
+   freq_hz = freq_reg × VIMANA_AUDIO_CLOCK / 16777216 */
+static float vimana_freq_reg_to_hz(uint16_t freq_reg) {
+  return (float)freq_reg * (float)VIMANA_AUDIO_CLOCK / 16777216.0f;
+}
+
 /* ── Per-voice waveform generation ──────────────────────────────────── */
+
+/* Triangle waveform from phase — used standalone for ring modulation source */
+static inline float vimana_triangle_from_phase(float p) {
+  return 2.0f * fabsf(2.0f * p - 1.0f) - 1.0f;
+}
 
 static inline float vimana_voice_sample(VimanaVoice *v) {
   float p = v->phase;
   switch (v->waveform) {
   case VIMANA_WAVE_TRIANGLE:
-    return 2.0f * fabsf(2.0f * p - 1.0f) - 1.0f;
+    return vimana_triangle_from_phase(p);
   case VIMANA_WAVE_SAWTOOTH:
     return 2.0f * p - 1.0f;
   case VIMANA_WAVE_PULSE:
@@ -199,11 +235,48 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
   memset(buffer, 0, (size_t)sample_count * sizeof(float));
 
   int sr = system->audio_sample_rate;
+  VimanaFilter *filt = &system->filter;
+
+  /* Filter cutoff: map 0–2047 to normalized angular frequency.
+     Approximate SID mapping: fc ≈ cutoff / 2048 × (π/sr) scaled. */
+  float fc = (float)filt->cutoff / 2048.0f;
+  fc = fc * fc; /* quadratic curve for more musical sweep */
+  if (fc > 0.99f) fc = 0.99f;
+  float q_factor = 1.0f - (float)filt->resonance / 17.0f;
+  if (q_factor < 0.05f) q_factor = 0.05f;
+
+  /* Master volume: 0–15 linear scale */
+  float master_scale = (float)system->master_volume / 15.0f;
 
   for (int i = 0; i < sample_count; i++) {
-    float mix = 0.0f;
+    float voice_out[VIMANA_VOICE_COUNT];
+
+    /* 1. Phase advance for all voices */
     for (int ch = 0; ch < VIMANA_VOICE_COUNT; ch++) {
       VimanaVoice *v = &system->voices[ch];
+      v->prev_phase = v->phase;
+      float step = (sr > 0) ? (v->freq_hz / (float)sr) : 0.0f;
+      v->phase += step;
+      if (v->phase >= 1.0f)
+        v->phase -= floorf(v->phase);
+    }
+
+    /* 2. Oscillator sync (tone voices 0–2 only) */
+    for (int ch = 0; ch < 3; ch++) {
+      VimanaVoice *v = &system->voices[ch];
+      if (!v->sync)
+        continue;
+      int src = (ch + 2) % 3; /* circular: 0←2, 1←0, 2←1 */
+      VimanaVoice *sv = &system->voices[src];
+      /* Detect wrap: source phase went backward (wrapped past 1.0) */
+      if (sv->phase < sv->prev_phase)
+        v->phase = 0.0f;
+    }
+
+    /* 3. Waveform generation + 4. Ring modulation */
+    for (int ch = 0; ch < VIMANA_VOICE_COUNT; ch++) {
+      VimanaVoice *v = &system->voices[ch];
+      voice_out[ch] = 0.0f;
       if (v->env_stage == VIMANA_ENV_OFF)
         continue;
 
@@ -221,17 +294,50 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
       if (v->env_stage == VIMANA_ENV_OFF)
         continue;
 
-      /* Generate sample */
-      float s = vimana_voice_sample(v) * v->amp * v->env_level;
-      mix += s;
+      float s = vimana_voice_sample(v);
 
-      /* Advance phase */
-      float step = (sr > 0) ? (v->freq_hz / (float)sr) : 0.0f;
-      v->phase += step;
-      if (v->phase >= 1.0f)
-        v->phase -= floorf(v->phase);
+      /* Ring modulation (tone voices 0–2 only):
+         multiply output by triangle of source voice */
+      if (ch < 3 && v->ring_mod) {
+        int src = (ch + 2) % 3;
+        float tri = vimana_triangle_from_phase(system->voices[src].phase);
+        s *= tri;
+      }
+
+      /* 5. Amplitude × Envelope */
+      voice_out[ch] = s * v->amp * v->env_level;
     }
-    /* Clamp to [-1, 1] */
+
+    /* 6. Filter routing: split into filtered/direct paths */
+    float filt_in = 0.0f;
+    float direct  = 0.0f;
+    for (int ch = 0; ch < VIMANA_VOICE_COUNT; ch++) {
+      if (filt->route[ch])
+        filt_in += voice_out[ch];
+      else
+        direct += voice_out[ch];
+    }
+
+    /* 7. State-variable filter tick */
+    float filt_out = 0.0f;
+    if (filt->mode != 0 && filt_in != 0.0f) {
+      float hp = filt_in - filt->lp - q_factor * filt->bp;
+      filt->bp += fc * hp;
+      filt->lp += fc * filt->bp;
+      if (filt->mode & VIMANA_FILT_LP) filt_out += filt->lp;
+      if (filt->mode & VIMANA_FILT_BP) filt_out += filt->bp;
+      if (filt->mode & VIMANA_FILT_HP) filt_out += hp;
+    } else if (filt->mode != 0) {
+      /* Keep filter state ticking even with zero input */
+      float hp = -filt->lp - q_factor * filt->bp;
+      filt->bp += fc * hp;
+      filt->lp += fc * filt->bp;
+    }
+
+    /* 8. Mix with master volume */
+    float mix = (filt_out + direct) * master_scale;
+
+    /* 9. Clamp to [-1, 1] */
     if (mix > 1.0f)  mix = 1.0f;
     if (mix < -1.0f) mix = -1.0f;
     buffer[i] = mix;
@@ -243,7 +349,9 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
 
 static void vimana_voice_init(VimanaVoice *v) {
   v->phase = 0.0f;
+  v->prev_phase = 0.0f;
   v->freq_hz = 0.0f;
+  v->freq_reg = 0;
   v->amp = 0.0f;
   v->waveform = VIMANA_WAVE_PULSE;
   v->pulse_width = 0.5f;
@@ -254,9 +362,21 @@ static void vimana_voice_init(VimanaVoice *v) {
   v->env_stage = VIMANA_ENV_OFF;
   v->env_level = 0.0f;
   v->gate = false;
+  v->sync = false;
+  v->ring_mod = false;
   v->samples_left = 0;
   v->noise_lfsr = 0xACE1u;
   v->age = 0;
+}
+
+static void vimana_filter_init(VimanaFilter *f) {
+  f->cutoff = 0;
+  f->resonance = 0;
+  f->mode = 0;
+  for (int i = 0; i < VIMANA_VOICE_COUNT; i++)
+    f->route[i] = false;
+  f->bp = 0.0f;
+  f->lp = 0.0f;
 }
 
 static void vimana_system_init_audio(vimana_system *system) {
@@ -276,8 +396,12 @@ static void vimana_system_init_audio(vimana_system *system) {
 
   system->audio_sample_rate = VIMANA_AUDIO_SAMPLE_RATE;
   system->voice_clock = 0;
+  system->master_volume = 15;
+  for (int i = 0; i < VIMANA_PADDLE_COUNT; i++)
+    system->paddle[i] = 0;
   for (int i = 0; i < VIMANA_VOICE_COUNT; i++)
     vimana_voice_init(&system->voices[i]);
+  vimana_filter_init(&system->filter);
   (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
 }
 
@@ -834,12 +958,14 @@ void vimana_system_play_tone(vimana_system *system, int pitch,
     total_samples = 1;
 
   float freq = vimana_pitch_to_hz(pitch);
+  uint16_t freg = vimana_hz_to_freq_reg(freq);
   float amp = ((float)volume / 15.0f) * 0.25f;
 
   (void)SDL_LockAudioStream(system->audio_stream);
   int ch = vimana_alloc_voice(system);
   VimanaVoice *v = &system->voices[ch];
-  v->freq_hz = freq;
+  v->freq_reg = freg;
+  v->freq_hz = vimana_freq_reg_to_hz(freg);
   v->amp = amp;
   v->phase = 0.0f;
   v->gate = true;
@@ -907,11 +1033,13 @@ void vimana_system_play_voice(vimana_system *system, int channel,
   if (volume < 0) volume = 0; else if (volume > 15) volume = 15;
 
   float freq = vimana_pitch_to_hz(pitch);
+  uint16_t freg = vimana_hz_to_freq_reg(freq);
   float amp = ((float)volume / 15.0f) * 0.25f;
 
   (void)SDL_LockAudioStream(system->audio_stream);
   VimanaVoice *v = &system->voices[channel];
-  v->freq_hz = freq;
+  v->freq_reg = freg;
+  v->freq_hz = vimana_freq_reg_to_hz(freg);
   v->amp = amp;
   v->phase = 0.0f;
   v->gate = true;
@@ -935,6 +1063,92 @@ void vimana_system_stop_voice(vimana_system *system, int channel) {
     v->env_stage = VIMANA_ENV_RELEASE;
   }
   (void)SDL_UnlockAudioStream(system->audio_stream);
+}
+
+void vimana_system_set_frequency(vimana_system *system, int channel,
+                                 int freq16) {
+  if (!system || !system->audio_stream)
+    return;
+  if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
+    return;
+  if (freq16 < 0) freq16 = 0; else if (freq16 > 65535) freq16 = 65535;
+  (void)SDL_LockAudioStream(system->audio_stream);
+  VimanaVoice *v = &system->voices[channel];
+  v->freq_reg = (uint16_t)freq16;
+  v->freq_hz = vimana_freq_reg_to_hz(v->freq_reg);
+  (void)SDL_UnlockAudioStream(system->audio_stream);
+}
+
+void vimana_system_set_sync(vimana_system *system, int channel, int enable) {
+  if (!system || !system->audio_stream)
+    return;
+  if (channel < 0 || channel >= 3) /* sync only for tone voices 0–2 */
+    return;
+  (void)SDL_LockAudioStream(system->audio_stream);
+  system->voices[channel].sync = (enable != 0);
+  (void)SDL_UnlockAudioStream(system->audio_stream);
+}
+
+void vimana_system_set_ring_mod(vimana_system *system, int channel,
+                                int enable) {
+  if (!system || !system->audio_stream)
+    return;
+  if (channel < 0 || channel >= 3) /* ring mod only for tone voices 0–2 */
+    return;
+  (void)SDL_LockAudioStream(system->audio_stream);
+  system->voices[channel].ring_mod = (enable != 0);
+  (void)SDL_UnlockAudioStream(system->audio_stream);
+}
+
+void vimana_system_set_filter(vimana_system *system, int cutoff,
+                              int resonance, int mode) {
+  if (!system || !system->audio_stream)
+    return;
+  if (cutoff < 0) cutoff = 0; else if (cutoff > 2047) cutoff = 2047;
+  if (resonance < 0) resonance = 0; else if (resonance > 15) resonance = 15;
+  mode &= (VIMANA_FILT_LP | VIMANA_FILT_BP | VIMANA_FILT_HP);
+  (void)SDL_LockAudioStream(system->audio_stream);
+  system->filter.cutoff = cutoff;
+  system->filter.resonance = resonance;
+  system->filter.mode = mode;
+  (void)SDL_UnlockAudioStream(system->audio_stream);
+}
+
+void vimana_system_set_filter_route(vimana_system *system, int channel,
+                                    int enable) {
+  if (!system || !system->audio_stream)
+    return;
+  if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
+    return;
+  (void)SDL_LockAudioStream(system->audio_stream);
+  system->filter.route[channel] = (enable != 0);
+  (void)SDL_UnlockAudioStream(system->audio_stream);
+}
+
+void vimana_system_set_master_volume(vimana_system *system, int volume) {
+  if (!system || !system->audio_stream)
+    return;
+  if (volume < 0) volume = 0; else if (volume > 15) volume = 15;
+  (void)SDL_LockAudioStream(system->audio_stream);
+  system->master_volume = volume;
+  (void)SDL_UnlockAudioStream(system->audio_stream);
+}
+
+void vimana_system_set_paddle(vimana_system *system, int paddle, int value) {
+  if (!system)
+    return;
+  if (paddle < 0 || paddle >= VIMANA_PADDLE_COUNT)
+    return;
+  if (value < 0) value = 0; else if (value > 255) value = 255;
+  system->paddle[paddle] = (uint8_t)value;
+}
+
+int vimana_system_get_paddle(vimana_system *system, int paddle) {
+  if (!system)
+    return 0;
+  if (paddle < 0 || paddle >= VIMANA_PADDLE_COUNT)
+    return 0;
+  return (int)system->paddle[paddle];
 }
 
 void vimana_system_run(vimana_system *system, vimana_screen *screen,

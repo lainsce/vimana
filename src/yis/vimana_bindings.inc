@@ -444,6 +444,66 @@ static void __vimana_system_stop_voice(YisVal sysv, YisVal chv) {
   vimana_system_stop_voice(system, (int)yis_as_int(chv));
 }
 
+static void __vimana_system_set_frequency(YisVal sysv, YisVal chv,
+                                          YisVal freqv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_frequency expects system");
+  vimana_system_set_frequency(system, (int)yis_as_int(chv),
+                              (int)yis_as_int(freqv));
+}
+
+static void __vimana_system_set_sync(YisVal sysv, YisVal chv,
+                                     YisVal enablev) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_sync expects system");
+  vimana_system_set_sync(system, (int)yis_as_int(chv),
+                         (int)yis_as_int(enablev));
+}
+
+static void __vimana_system_set_ring_mod(YisVal sysv, YisVal chv,
+                                         YisVal enablev) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_ring_mod expects system");
+  vimana_system_set_ring_mod(system, (int)yis_as_int(chv),
+                             (int)yis_as_int(enablev));
+}
+
+static void __vimana_system_set_filter(YisVal sysv, YisVal cutoffv,
+                                       YisVal resv, YisVal modev) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_filter expects system");
+  vimana_system_set_filter(system, (int)yis_as_int(cutoffv),
+                           (int)yis_as_int(resv), (int)yis_as_int(modev));
+}
+
+static void __vimana_system_set_filter_route(YisVal sysv, YisVal chv,
+                                             YisVal enablev) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_filter_route expects system");
+  vimana_system_set_filter_route(system, (int)yis_as_int(chv),
+                                 (int)yis_as_int(enablev));
+}
+
+static void __vimana_system_set_master_volume(YisVal sysv, YisVal volv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_master_volume expects system");
+  vimana_system_set_master_volume(system, (int)yis_as_int(volv));
+}
+
+static void __vimana_system_set_paddle(YisVal sysv, YisVal paddlev,
+                                       YisVal valv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.set_paddle expects system");
+  vimana_system_set_paddle(system, (int)yis_as_int(paddlev),
+                           (int)yis_as_int(valv));
+}
+
+static YisVal __vimana_system_get_paddle(YisVal sysv, YisVal paddlev) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.get_paddle expects system");
+  return YV_INT(vimana_system_get_paddle(system, (int)yis_as_int(paddlev)));
+}
+
 static YisVal __vimana_screen(YisVal titlev, YisVal widthv, YisVal heightv,
                               YisVal scalev) {
   YisStr *tmp = NULL;

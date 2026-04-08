@@ -22,15 +22,24 @@ extern "C" {
 #define VIMANA_KEY_WORDS           (512 / 64)             /* 8 × uint64_t  */
 #define VIMANA_MOUSE_CAP           8        /* 8 buttons (enough for mice) */
 #define VIMANA_TEXT_INPUT_CAP      256 /* max UTF-8 text input length (Bs) */
-#define VIMANA_AUDIO_SAMPLE_RATE   44100 /* sample rate for generated tones*/
-#define VIMANA_AUDIO_CHANNELS      1     /* mono output for generated tones*/
-#define VIMANA_VOICE_COUNT         4     /* SID-style 4-voice polyphony    */
+#define VIMANA_AUDIO_SAMPLE_RATE   44100   /* sample rate for generated tones */
+#define VIMANA_AUDIO_CHANNELS      1       /* mono output for generated tones */
+#define VIMANA_VOICE_COUNT         4       /* 3 tone + 1 noise channel        */
+#define VIMANA_AUDIO_CLOCK         1024000 /* virtual oscillator clock (~1 MHz)*/
 
 /* Waveform types (SID-inspired) */
 #define VIMANA_WAVE_TRIANGLE       0
 #define VIMANA_WAVE_SAWTOOTH       1
 #define VIMANA_WAVE_PULSE          2
 #define VIMANA_WAVE_NOISE          3
+
+/* Filter mode bits */
+#define VIMANA_FILT_LP             1       /* low-pass                        */
+#define VIMANA_FILT_BP             2       /* band-pass                       */
+#define VIMANA_FILT_HP             4       /* high-pass                       */
+
+/* Paddle (A/D converter) */
+#define VIMANA_PADDLE_COUNT        2       /* 2 × 8-bit A/D converters        */
 /* ─────────────────────────────────────────────────────────────────────── */
 
 /* ── Tile / Sprite ────────────────────────────────────────────────────── */
@@ -99,6 +108,18 @@ void vimana_system_set_pulse_width(vimana_system *system, int channel,
 void vimana_system_play_voice(vimana_system *system, int channel,
                               int pitch, int volume);
 void vimana_system_stop_voice(vimana_system *system, int channel);
+void vimana_system_set_frequency(vimana_system *system, int channel,
+                                 int freq16);
+void vimana_system_set_sync(vimana_system *system, int channel, int enable);
+void vimana_system_set_ring_mod(vimana_system *system, int channel,
+                                int enable);
+void vimana_system_set_filter(vimana_system *system, int cutoff,
+                              int resonance, int mode);
+void vimana_system_set_filter_route(vimana_system *system, int channel,
+                                    int enable);
+void vimana_system_set_master_volume(vimana_system *system, int volume);
+void vimana_system_set_paddle(vimana_system *system, int paddle, int value);
+int  vimana_system_get_paddle(vimana_system *system, int paddle);
 
 void vimana_system_free(vimana_system *system);
 
