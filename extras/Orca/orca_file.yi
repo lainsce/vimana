@@ -1,0 +1,78 @@
+cask orca_file
+
+bring stdr
+bring vimana
+bring orca_grid
+bring orca_model
+
+-- Serialize grid to text (25 lines of 25 chars each)
+:: grid_to_text() (( string ))
+    let ?text = ""
+    for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
+        for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
+            text = text + orca_grid.get(x, y)
+        if y < orca_grid.GRID_H - 1
+            text = text + "\n"
+    <- text
+;
+
+-- Load text into grid
+:: text_to_grid(text = string) (( -- ))
+    orca_grid.clear_all()
+    let ?x = 0
+    let ?y = 0
+    for (let ?i = 0; i < stdr.len(text); i += 1)
+        let ch = stdr.char_at(text, i)
+        if ch == "\n"
+            x = 0
+            y = y + 1
+        else
+            if orca_grid.in_bounds(x, y)
+                orca_grid.set(x, y, ch)
+            x = x + 1
+;
+
+-- Save
+:: save(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if stdr.len(orca_model.file_path) == 0
+        save_as(fsys, scr)
+        <-
+    fsys.write_text(orca_model.file_path, grid_to_text())
+    update_title(scr)
+;
+
+:: save_as(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let picked = stdr.save_file_dialog("Save Orca", "untitled.orca", "orca")
+    if is_null(picked)
+        <-
+    let path = str(picked)
+    if stdr.len(path) == 0
+        <-
+    orca_model.set_file_path(path)
+    fsys.write_text(path, grid_to_text())
+    update_title(scr)
+;
+
+-- Open
+:: open(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let picked = stdr.open_file_dialog("Open Orca", "orca")
+    if is_null(picked)
+        <-
+    let path = str(picked)
+    if stdr.len(path) == 0
+        <-
+    let text = fsys.read_text(path)
+    text_to_grid(text)
+    orca_model.set_file_path(path)
+    orca_model.set_frame(0)
+    orca_model.set_cursor_pos(0, 0)
+    orca_model.set_dirty(true)
+    update_title(scr)
+;
+
+: update_title(scr = vimana.screen) (( -- ))
+    let ?title = "Orca"
+    if stdr.len(orca_model.file_path) > 0
+        title = stdr.basename(orca_model.file_path)
+    scr.set_titlebar_title(title)
+;

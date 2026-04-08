@@ -1,0 +1,116 @@
+cask orca_view
+
+bring stdr
+bring vimana
+bring orca_grid
+bring orca_base36
+bring orca_model
+
+def COLOR_BG = 0
+def COLOR_FG = 1
+def COLOR_BANG = 2
+def COLOR_OUTPUT = 3
+
+def CELL_W = 8
+def CELL_H = 16
+def MARGIN_X = 16
+def MARGIN_Y = 16
+
+:: draw(scr = vimana.screen) (( -- ))
+    scr.clear(COLOR_BG)
+    scr.draw_titlebar(0)
+
+    -- Draw grid cells
+    for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
+        for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
+            let ch = orca_grid.get(x, y)
+            let px = MARGIN_X + x * CELL_W
+            let py = MARGIN_Y + y * CELL_H
+
+            -- Determine cell color
+            let ?fg = COLOR_FG
+            let ?bg = COLOR_BG
+
+            -- Bang highlight
+            if orca_grid.is_banged(x, y)
+                bg = COLOR_BANG
+                fg = COLOR_BG
+
+            -- Locked cells (input ports) slightly different
+            if orca_grid.is_locked(x, y) && !orca_grid.is_banged(x, y)
+                fg = COLOR_OUTPUT
+
+            -- Cursor highlight
+            let is_cursor = x == orca_model.cursor_x && y == orca_model.cursor_y
+            if is_cursor
+                bg = COLOR_FG
+                fg = COLOR_BG
+
+            -- Selection highlight
+            if orca_model.has_sel()
+                let sx0 = orca_model.sel_min_x()
+                let sy0 = orca_model.sel_min_y()
+                let sx1 = orca_model.sel_max_x()
+                let sy1 = orca_model.sel_max_y()
+                if x >= sx0 && x <= sx1 && y >= sy0 && y <= sy1
+                    if !is_cursor
+                        bg = COLOR_FG
+                        fg = COLOR_BG
+
+            -- Draw the character
+            if ch == "."
+                if bg != COLOR_BG
+                    scr.put(px, py, ".", fg, bg)
+                elif x % 8 == 0 && y % 4 == 0
+                    scr.put(px, py, "+", COLOR_OUTPUT, COLOR_BG)
+                else
+                    scr.put(px, py, ".", COLOR_OUTPUT, COLOR_BG)
+            else
+                scr.put(px, py, ch, fg, bg)
+
+    -- Status bar below grid
+    let bar_y = MARGIN_Y + orca_grid.GRID_H * CELL_H + 8
+
+    -- 1. Cursor position XXYY (hex)
+    let cx_hi = orca_base36.b36_chr(stdr.floor(orca_model.cursor_x / 16))
+    let cx_lo = orca_base36.b36_chr(orca_model.cursor_x % 16)
+    let cy_hi = orca_base36.b36_chr(stdr.floor(orca_model.cursor_y / 16))
+    let cy_lo = orca_base36.b36_chr(orca_model.cursor_y % 16)
+    let pos_str = cx_hi + cx_lo + cy_hi + cy_lo
+
+    -- 2. BPM
+    let bpm_str = stdr.str(orca_model.bpm)
+
+    -- 3. Filename
+    let ?fname = "untitled"
+    if stdr.len(orca_model.file_path) > 0
+        fname = stdr.basename(orca_model.file_path)
+
+    -- Build left side: beat pos bpm filename
+    let ?beat_glyph = stdr.char_from_code(0x0A)
+    if orca_model.playing && orca_model.frame % 4 == 0
+        beat_glyph = stdr.char_from_code(0x09)
+    let left = bpm_str + "bpm " + fname
+    scr.put(MARGIN_X, bar_y, beat_glyph, COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + CELL_W + CELL_W, bar_y, pos_str, COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + CELL_W + CELL_W + 5 * CELL_W, bar_y, left, COLOR_FG, COLOR_BG)
+
+    -- 5. Voice volume bars (right-aligned, 4 bar glyphs)
+    let vol_x = MARGIN_X + (orca_grid.GRID_W - 4) * CELL_W
+    for (let ?ch = 0; ch < 4; ch += 1)
+        let vol = orca_model.voice_vol[ch]
+        -- Map 0-35 to 0-8 rows filled
+        let rows = stdr.floor(vol * 8 / 35)
+        if vol > 0 && rows < 1
+            rows = 1
+        let ?glyph = " "
+        if rows > 0
+            glyph = stdr.char_from_code(rows)
+        let ?col = COLOR_FG
+        if vol > 0
+            col = COLOR_BANG
+        scr.put(vol_x + ch * CELL_W, bar_y, glyph, col, COLOR_BG)
+
+    scr.present()
+    orca_model.set_dirty(false)
+;

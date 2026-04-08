@@ -1,0 +1,107 @@
+cask orca_grid
+
+bring stdr
+
+def GRID_W = 81
+def GRID_H = 25
+def GRID_SIZE = GRID_W * GRID_H
+
+-- Cell data, locks, and bangs
+def ?cells = []: [any]
+def ?locks = []: [any]
+def ?bangs = []: [any]
+
+-- Variable storage for V operator (36 slots: 0-9, a-z)
+def ?vars = []: [any]
+
+:: init() (( -- ))
+    cells = []: [any]
+    locks = []: [any]
+    bangs = []: [any]
+    vars = []: [any]
+    for (let ?i = 0; i < GRID_SIZE; i += 1)
+        stdr.push(cells, ".")
+        stdr.push(locks, false)
+        stdr.push(bangs, false)
+    for (let ?i = 0; i < 36; i += 1)
+        stdr.push(vars, ".")
+;
+
+:: in_bounds(x = num, y = num) (( bool ))
+    <- x >= 0 && x < GRID_W && y >= 0 && y < GRID_H
+;
+
+: idx(x = num, y = num) (( num ))
+    <- y * GRID_W + x
+;
+
+:: get(x = num, y = num) (( string ))
+    if !in_bounds(x, y)
+        <- "."
+    <- cells[idx(x, y)]
+;
+
+:: set(x = num, y = num, ch = string) (( -- ))
+    if in_bounds(x, y)
+        cells[idx(x, y)] = ch
+;
+
+:: is_locked(x = num, y = num) (( bool ))
+    if !in_bounds(x, y)
+        <- false
+    <- locks[idx(x, y)]
+;
+
+:: lock(x = num, y = num) (( -- ))
+    if in_bounds(x, y)
+        locks[idx(x, y)] = true
+;
+
+:: is_banged(x = num, y = num) (( bool ))
+    if !in_bounds(x, y)
+        <- false
+    <- bangs[idx(x, y)]
+;
+
+:: bang(x = num, y = num) (( -- ))
+    if in_bounds(x, y)
+        bangs[idx(x, y)] = true
+;
+
+:: clear_frame() (( -- ))
+    for (let ?i = 0; i < GRID_SIZE; i += 1)
+        locks[i] = false
+        bangs[i] = false
+;
+
+:: clear_all() (( -- ))
+    for (let ?i = 0; i < GRID_SIZE; i += 1)
+        cells[i] = "."
+        locks[i] = false
+        bangs[i] = false
+;
+
+:: get_var(key = num) (( string ))
+    if key >= 0 && key < 36
+        <- vars[key]
+    <- "."
+;
+
+:: set_var(key = num, val = string) (( -- ))
+    if key >= 0 && key < 36
+        vars[key] = val
+;
+
+-- Simple PRNG (xorshift-like using multiply-and-truncate)
+def ?rng_state = 1
+
+:: rand(mn = num, mx = num) (( num ))
+    if mx <= mn
+        <- mn
+    rng_state = (rng_state * 1103515245 + 12345) % 2147483648
+    let range = mx - mn
+    let r = stdr.floor(rng_state / 2147483648 * range)
+    if r < 0
+        r = 0 - r
+    <- mn + (r % range)
+;

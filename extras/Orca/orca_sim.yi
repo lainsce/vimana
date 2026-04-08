@@ -1,0 +1,137 @@
+cask orca_sim
+
+bring vimana
+bring orca_grid
+bring orca_base36
+bring orca_ops
+bring orca_model
+
+-- Run one simulation frame
+:: tick(sys = vimana.system) (( -- ))
+    orca_grid.clear_frame()
+    orca_model.decay_voices()
+
+    -- Pre-pass A: Lock comments and input ports of uppercase (always-active) operators.
+    -- This prevents operator letters in input positions from executing.
+    for (let ?py = 0; py < orca_grid.GRID_H; py += 1)
+        for (let ?px = 0; px < orca_grid.GRID_W; px += 1)
+            let pch = orca_grid.get(px, py)
+            if pch == "#"
+                -- Lock comment cells between # pairs
+                orca_grid.lock(px, py)
+                let ?end_x = orca_grid.GRID_W
+                let ?cx = px + 1
+                for (; cx < orca_grid.GRID_W; cx += 1)
+                    orca_grid.lock(cx, py)
+                    if orca_grid.get(cx, py) == "#"
+                        end_x = cx
+                        cx = orca_grid.GRID_W
+                px = end_x
+            elif orca_base36.is_upper(pch)
+                -- Uppercase operator: lock its input ports
+                let pupper = orca_base36.to_upper(pch)
+                if pupper != "E" && pupper != "N" && pupper != "S" && pupper != "W"
+                    orca_ops.lock_ports(px, py)
+
+    -- Pass 1: movement operators (E, N, S, W) — skip locked cells
+    for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
+        for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
+            if orca_grid.is_locked(x, y)
+                -- skip: locked cell (input port or comment)
+            else
+                let ch = orca_grid.get(x, y)
+                let upper = orca_base36.to_upper(ch)
+                let should_run = orca_base36.is_upper(ch) || orca_grid.is_banged(x, y)
+                if !should_run
+                    -- skip lowercase without bang
+                elif upper == "E"
+                    orca_ops.move_e(x, y)
+                elif upper == "N"
+                    orca_ops.move_n(x, y)
+                elif upper == "S"
+                    orca_ops.move_s(x, y)
+                elif upper == "W"
+                    orca_ops.move_w(x, y)
+
+    -- Pass 2: bang pass — process all * to set bangs before operators run
+    for (let ?by = 0; by < orca_grid.GRID_H; by += 1)
+        for (let ?bx = 0; bx < orca_grid.GRID_W; bx += 1)
+            if orca_grid.get(bx, by) == "*"
+                orca_ops.op_bang(bx, by)
+
+    -- Pre-pass B: Lock input ports of banged lowercase operators (now that bangs are known)
+    for (let ?ly = 0; ly < orca_grid.GRID_H; ly += 1)
+        for (let ?lx = 0; lx < orca_grid.GRID_W; lx += 1)
+            if !orca_grid.is_locked(lx, ly)
+                let lch = orca_grid.get(lx, ly)
+                if !orca_base36.is_upper(lch) && orca_grid.is_banged(lx, ly)
+                    let lupper = orca_base36.to_upper(lch)
+                    if lupper != "." && lupper != "*" && lupper != "#"
+                        if lupper != "E" && lupper != "N" && lupper != "S" && lupper != "W"
+                            orca_ops.lock_ports(lx, ly)
+
+    -- Pass 3: all other operators, top-to-bottom left-to-right
+    for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
+        for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
+            let ch = orca_grid.get(x, y)
+            if orca_grid.is_locked(x, y)
+                -- skip: locked cell (input port, comment, or held by H)
+            elif ch == "*"
+                -- Bang neighbors then consume self
+                orca_ops.op_bang(x, y)
+                orca_grid.set(x, y, ".")
+            elif ch == "="
+                if orca_grid.is_banged(x, y)
+                    orca_ops.op_play(x, y, sys)
+            else
+                let upper = orca_base36.to_upper(ch)
+                let should_run = orca_base36.is_upper(ch) || orca_grid.is_banged(x, y)
+                if !should_run
+                    -- skip: lowercase without bang
+                elif upper == "E" || upper == "N" || upper == "S" || upper == "W"
+                    -- movement already handled
+                elif upper == "A"
+                    orca_ops.op_a(x, y)
+                elif upper == "B"
+                    orca_ops.op_b(x, y)
+                elif upper == "C"
+                    orca_ops.op_c(x, y)
+                elif upper == "D"
+                    orca_ops.op_d(x, y)
+                elif upper == "F"
+                    orca_ops.op_f(x, y)
+                elif upper == "G"
+                    orca_ops.op_g(x, y)
+                elif upper == "H"
+                    orca_ops.op_h(x, y)
+                elif upper == "I"
+                    orca_ops.op_i(x, y)
+                elif upper == "J"
+                    orca_ops.op_j(x, y)
+                elif upper == "K"
+                    orca_ops.op_k(x, y)
+                elif upper == "L"
+                    orca_ops.op_l(x, y)
+                elif upper == "M"
+                    orca_ops.op_m(x, y)
+                elif upper == "O"
+                    orca_ops.op_o(x, y)
+                elif upper == "P"
+                    orca_ops.op_p(x, y)
+                elif upper == "Q"
+                    orca_ops.op_q(x, y)
+                elif upper == "R"
+                    orca_ops.op_r(x, y)
+                elif upper == "T"
+                    orca_ops.op_t(x, y)
+                elif upper == "U"
+                    orca_ops.op_u(x, y)
+                elif upper == "V"
+                    orca_ops.op_v(x, y)
+                elif upper == "X"
+                    orca_ops.op_x(x, y)
+                elif upper == "Y"
+                    orca_ops.op_y(x, y)
+                elif upper == "Z"
+                    orca_ops.op_z(x, y)
+;

@@ -1,0 +1,197 @@
+cask orca_model
+
+bring stdr
+bring orca_grid
+
+-- Cursor
+def ?cursor_x = 0
+def ?cursor_y = 0
+
+-- Selection (second corner, -1 = no selection)
+def ?sel_x = -1
+def ?sel_y = -1
+
+-- Playback
+def ?playing = false
+def ?frame = 0
+def ?bpm = 120
+
+-- Display
+def ?dirty = true
+
+-- File
+def ?file_path = ""
+
+-- Clipboard (flat array of strings, w, h)
+def ?clip_data = []: [any]
+def ?clip_w = 0
+def ?clip_h = 0
+
+-- Voice volume tracking (0-15 per channel, decays each frame)
+def ?voice_vol = [0, 0, 0, 0]: [any]
+
+-- Setters for cross-module access
+:: set_dirty(v = bool) (( -- )) dirty = v ;
+:: set_frame(v = num) (( -- )) frame = v ;
+:: set_cursor_pos(x = num, y = num) (( -- ))
+    cursor_x = x
+    cursor_y = y
+    dirty = true
+;
+:: set_file_path(p = string) (( -- )) file_path = p ;
+:: set_playing(v = bool) (( -- )) playing = v ;
+
+:: set_voice_vol(ch = num, vol = num) (( -- ))
+    if ch >= 0 && ch < 4
+        voice_vol[ch] = vol
+;
+
+:: decay_voices() (( -- ))
+    for (let ?i = 0; i < 4; i += 1)
+        if voice_vol[i] > 0
+            voice_vol[i] = voice_vol[i] - 1
+;
+
+:: move_cursor(dx = num, dy = num) (( -- ))
+    cursor_x = cursor_x + dx
+    if cursor_x < 0
+        cursor_x = 0
+    if cursor_x >= orca_grid.GRID_W
+        cursor_x = orca_grid.GRID_W - 1
+    cursor_y = cursor_y + dy
+    if cursor_y < 0
+        cursor_y = 0
+    if cursor_y >= orca_grid.GRID_H
+        cursor_y = orca_grid.GRID_H - 1
+    dirty = true
+;
+
+:: type_at_cursor(ch = string) (( -- ))
+    orca_grid.set(cursor_x, cursor_y, ch)
+    move_cursor(1, 0)
+;
+
+:: delete_at_cursor() (( -- ))
+    orca_grid.set(cursor_x, cursor_y, ".")
+    dirty = true
+;
+
+:: toggle_play() (( -- ))
+    playing = !playing
+    dirty = true
+;
+
+:: inc_bpm() (( -- ))
+    if bpm < 300
+        bpm = bpm + 10
+    dirty = true
+;
+
+:: dec_bpm() (( -- ))
+    if bpm > 60
+        bpm = bpm - 10
+    dirty = true
+;
+
+:: inc_bpm_fine() (( -- ))
+    if bpm < 300
+        bpm = bpm + 1
+    dirty = true
+;
+
+:: dec_bpm_fine() (( -- ))
+    if bpm > 60
+        bpm = bpm - 1
+    dirty = true
+;
+
+:: tick_frame() (( -- ))
+    frame = frame + 1
+    dirty = true
+;
+
+-- Selection helpers
+:: start_sel() (( -- ))
+    sel_x = cursor_x
+    sel_y = cursor_y
+;
+
+:: clear_sel() (( -- ))
+    sel_x = -1
+    sel_y = -1
+;
+
+:: has_sel() (( bool ))
+    <- sel_x >= 0
+;
+
+:: sel_min_x() (( num ))
+    if cursor_x < sel_x
+        <- cursor_x
+    <- sel_x
+;
+
+:: sel_min_y() (( num ))
+    if cursor_y < sel_y
+        <- cursor_y
+    <- sel_y
+;
+
+:: sel_max_x() (( num ))
+    if cursor_x > sel_x
+        <- cursor_x
+    <- sel_x
+;
+
+:: sel_max_y() (( num ))
+    if cursor_y > sel_y
+        <- cursor_y
+    <- sel_y
+;
+
+-- Copy selection to clipboard
+:: copy_sel() (( -- ))
+    if !has_sel()
+        <-
+    let x0 = sel_min_x()
+    let y0 = sel_min_y()
+    let x1 = sel_max_x()
+    let y1 = sel_max_y()
+    clip_w = x1 - x0 + 1
+    clip_h = y1 - y0 + 1
+    clip_data = []: [any]
+    for (let ?cy = y0; cy <= y1; cy += 1)
+        for (let ?cx = x0; cx <= x1; cx += 1)
+            stdr.push(clip_data, orca_grid.get(cx, cy))
+;
+
+-- Cut selection
+:: cut_sel() (( -- ))
+    copy_sel()
+    if !has_sel()
+        <-
+    let x0 = sel_min_x()
+    let y0 = sel_min_y()
+    let x1 = sel_max_x()
+    let y1 = sel_max_y()
+    for (let ?cy = y0; cy <= y1; cy += 1)
+        for (let ?cx = x0; cx <= x1; cx += 1)
+            orca_grid.set(cx, cy, ".")
+    clear_sel()
+    dirty = true
+;
+
+-- Paste clipboard at cursor
+:: paste_clip() (( -- ))
+    if clip_w == 0 || clip_h == 0
+        <-
+    let ?ci = 0
+    for (let ?py = 0; py < clip_h; py += 1)
+        for (let ?px = 0; px < clip_w; px += 1)
+            let tx = cursor_x + px
+            let ty = cursor_y + py
+            if orca_grid.in_bounds(tx, ty)
+                orca_grid.set(tx, ty, clip_data[ci])
+            ci = ci + 1
+    dirty = true
+;
