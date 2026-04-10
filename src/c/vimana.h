@@ -134,6 +134,8 @@ void vimana_screen_clear(vimana_screen *screen, unsigned int bg);
 void vimana_screen_resize(vimana_screen *screen, unsigned int width, unsigned int height);
 void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
                                const char *hex);
+void vimana_screen_set_intensity(vimana_screen *screen, unsigned int slot,
+                                 bool on);
 void vimana_screen_set_font_glyph(vimana_screen *screen, unsigned int code,
                                   const uint16_t rows[16]);
 void vimana_screen_set_font_chr(vimana_screen *screen, unsigned int code,
