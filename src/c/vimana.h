@@ -24,7 +24,7 @@ extern "C" {
 #define VIMANA_TEXT_INPUT_CAP      256 /* max UTF-8 text input length (Bs) */
 #define VIMANA_AUDIO_SAMPLE_RATE   44100   /* sample rate for generated tones */
 #define VIMANA_AUDIO_CHANNELS      1       /* mono output for generated tones */
-#define VIMANA_VOICE_COUNT         4       /* 3 tone + 1 noise channel        */
+#define VIMANA_VOICE_COUNT         8       /* 4 SID + 3 SID accomp + 1 PSG    */
 #define VIMANA_AUDIO_CLOCK         1024000 /* virtual oscillator clock (~1 MHz)*/
 
 /* Waveform types (SID-inspired) */
@@ -32,6 +32,7 @@ extern "C" {
 #define VIMANA_WAVE_SAWTOOTH       1
 #define VIMANA_WAVE_PULSE          2
 #define VIMANA_WAVE_NOISE          3
+#define VIMANA_WAVE_PSG            4       /* 80s PSG square (4-bit DAC)      */
 
 /* Filter mode bits */
 #define VIMANA_FILT_LP             1       /* low-pass                        */
@@ -118,6 +119,8 @@ void vimana_system_set_filter(vimana_system *system, int cutoff,
 void vimana_system_set_filter_route(vimana_system *system, int channel,
                                     int enable);
 void vimana_system_set_master_volume(vimana_system *system, int volume);
+void vimana_system_begin_audio(vimana_system *system);
+void vimana_system_end_audio(vimana_system *system);
 void vimana_system_set_paddle(vimana_system *system, int paddle, int value);
 int  vimana_system_get_paddle(vimana_system *system, int paddle);
 

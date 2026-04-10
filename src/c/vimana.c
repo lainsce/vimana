@@ -103,6 +103,8 @@ struct VimanaSystem {
   uint32_t voice_clock;    /* monotonic counter for age tracking */
   float *mix_buffer;       /* pre-allocated audio mix buffer */
   int mix_buffer_cap;      /* capacity in samples */
+  bool audio_locked;       /* true while inside begin/end audio batch */
+  bool audio_needs_resume; /* deferred resume until end_audio */
 };
 
 static float vimana_pitch_to_hz(int pitch) {
@@ -156,6 +158,9 @@ static inline float vimana_voice_sample(VimanaVoice *v) {
     v->noise_lfsr = lf;
     return ((float)(lf & 0xFFFF) / 32767.5f) - 1.0f;
   }
+  case VIMANA_WAVE_PSG:
+    /* 80s PSG: fixed 50% square (AY-3-8910 style) */
+    return (p < 0.5f) ? 1.0f : -1.0f;
   default: /* fallback: pulse (square) */
     return (p < 0.5f) ? 1.0f : -1.0f;
   }
@@ -217,9 +222,9 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
 
   int wanted = additional_amount;
   if (wanted <= 0)
-    wanted = (int)(sizeof(float) * 256);
+    wanted = (int)(sizeof(float) * 1024);
   int sample_count = wanted / (int)sizeof(float);
-  if (sample_count <= 0)
+  if (sample_count < 256)
     sample_count = 256;
 
   /* Grow pre-allocated buffer if needed */
@@ -261,14 +266,22 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
         v->phase -= floorf(v->phase);
     }
 
-    /* 2. Oscillator sync (tone voices 0–2 only) */
+    /* 2. Oscillator sync (tone voices 0–2 and 4–6) */
     for (int ch = 0; ch < 3; ch++) {
       VimanaVoice *v = &system->voices[ch];
       if (!v->sync)
         continue;
       int src = (ch + 2) % 3; /* circular: 0←2, 1←0, 2←1 */
       VimanaVoice *sv = &system->voices[src];
-      /* Detect wrap: source phase went backward (wrapped past 1.0) */
+      if (sv->phase < sv->prev_phase)
+        v->phase = 0.0f;
+    }
+    for (int ch = 4; ch < 7; ch++) {
+      VimanaVoice *v = &system->voices[ch];
+      if (!v->sync)
+        continue;
+      int src = 4 + ((ch - 4 + 2) % 3); /* circular: 4←6, 5←4, 6←5 */
+      VimanaVoice *sv = &system->voices[src];
       if (sv->phase < sv->prev_phase)
         v->phase = 0.0f;
     }
@@ -296,16 +309,25 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
 
       float s = vimana_voice_sample(v);
 
-      /* Ring modulation (tone voices 0–2 only):
-         multiply output by triangle of source voice */
+      /* Ring modulation (tone voices 0–2 and 4–6) */
       if (ch < 3 && v->ring_mod) {
         int src = (ch + 2) % 3;
+        float tri = vimana_triangle_from_phase(system->voices[src].phase);
+        s *= tri;
+      } else if (ch >= 4 && ch < 7 && v->ring_mod) {
+        int src = 4 + ((ch - 4 + 2) % 3);
         float tri = vimana_triangle_from_phase(system->voices[src].phase);
         s *= tri;
       }
 
       /* 5. Amplitude × Envelope */
       voice_out[ch] = s * v->amp * v->env_level;
+
+      /* PSG 4-bit DAC quantization — stepped volume levels */
+      if (v->waveform == VIMANA_WAVE_PSG) {
+        float val = voice_out[ch] * 8.0f;
+        voice_out[ch] = roundf(val) / 8.0f;
+      }
     }
 
     /* 6. Filter routing: split into filtered/direct paths */
@@ -402,6 +424,12 @@ static void vimana_system_init_audio(vimana_system *system) {
   for (int i = 0; i < VIMANA_VOICE_COUNT; i++)
     vimana_voice_init(&system->voices[i]);
   vimana_filter_init(&system->filter);
+
+  /* Pre-allocate mix buffer — 2048 samples (~46ms at 44100 Hz) */
+  system->mix_buffer_cap = 2048;
+  system->mix_buffer =
+      (float *)calloc((size_t)system->mix_buffer_cap, sizeof(float));
+
   (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
 }
 
@@ -436,6 +464,7 @@ struct VimanaScreen {
   uint16_t width_mar;   /* width + 16 (8px margin each side) */
   uint16_t height_mar;  /* height + 16 */
   uint32_t base_colors[4];  /* ARGB palette, slots 0-3 */
+  uint8_t intensity;        /* per-slot intensity bit mask (bits 0-3) */
   uint32_t palette[16];     /* expanded 16-entry composite */
   /* Font ROM: always allocated (64 KB). */
   uint8_t *font_rom;                             /* VIMANA_FONT_SIZE bytes */
@@ -515,16 +544,32 @@ static uint32_t vimana_parse_hex_color(const char *hex) {
   return 0xFF000000u | (uint32_t)(r << 16) | (uint32_t)(g << 8) | (uint32_t)b;
 }
 
+static uint32_t vimana_intensify(uint32_t c) {
+  unsigned int r = (c >> 16) & 0xFF;
+  unsigned int g = (c >>  8) & 0xFF;
+  unsigned int b =  c        & 0xFF;
+  r = r + 0x22 > 0xFF ? 0xFF : r + 0x22;
+  g = g + 0x22 > 0xFF ? 0xFF : g + 0x22;
+  b = b + 0x22 > 0xFF ? 0xFF : b + 0x22;
+  return 0xFF000000u | (r << 16) | (g << 8) | b;
+}
+
 static void vimana_colorize(vimana_screen *screen) {
   if (!screen)
     return;
-  for (unsigned int i = 0; i < 16; i++)
-    screen->palette[i] = screen->base_colors[i >> 2 ? i >> 2 : i & 3];
+  for (unsigned int i = 0; i < 16; i++) {
+    unsigned int slot = i >> 2 ? i >> 2 : i & 3;
+    uint32_t c = screen->base_colors[slot];
+    if (screen->intensity & (1u << slot))
+      c = vimana_intensify(c);
+    screen->palette[i] = c;
+  }
 }
 
 static void vimana_screen_reset_palette(vimana_screen *screen) {
   if (!screen)
     return;
+  screen->intensity = 0;
   screen->base_colors[0] = 0xFFFFFFFFu;
   screen->base_colors[1] = 0xFF000000u;
   screen->base_colors[2] = 0xFF77DDCCu;
@@ -920,6 +965,40 @@ char *vimana_system_home_dir(vimana_system *system) {
   return strdup(home);
 }
 
+/* ── Batch audio lock ─────────────────────────────────────────────────
+   Call begin_audio / end_audio to take the stream lock once for a batch
+   of voice/filter parameter changes instead of locking per call. */
+
+static inline void vimana_audio_lock(vimana_system *s) {
+  if (!s->audio_locked)
+    (void)SDL_LockAudioStream(s->audio_stream);
+}
+static inline void vimana_audio_unlock(vimana_system *s) {
+  if (!s->audio_locked)
+    (void)SDL_UnlockAudioStream(s->audio_stream);
+}
+
+void vimana_system_begin_audio(vimana_system *system) {
+  if (!system || !system->audio_stream)
+    return;
+  if (!system->audio_locked) {
+    (void)SDL_LockAudioStream(system->audio_stream);
+    system->audio_locked = true;
+    system->audio_needs_resume = false;
+  }
+}
+
+void vimana_system_end_audio(vimana_system *system) {
+  if (!system || !system->audio_stream)
+    return;
+  if (system->audio_locked) {
+    system->audio_locked = false;
+    (void)SDL_UnlockAudioStream(system->audio_stream);
+    if (system->audio_needs_resume)
+      (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
+  }
+}
+
 /* Find the best voice to allocate: prefer OFF voices, then oldest playing. */
 static int vimana_alloc_voice(vimana_system *system) {
   int best = 0;
@@ -961,7 +1040,7 @@ void vimana_system_play_tone(vimana_system *system, int pitch,
   uint16_t freg = vimana_hz_to_freq_reg(freq);
   float amp = ((float)volume / 15.0f) * 0.25f;
 
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   int ch = vimana_alloc_voice(system);
   VimanaVoice *v = &system->voices[ch];
   v->freq_reg = freg;
@@ -973,8 +1052,11 @@ void vimana_system_play_tone(vimana_system *system, int pitch,
   v->env_level = 0.0f;
   v->samples_left = total_samples;
   v->age = ++system->voice_clock;
-  (void)SDL_UnlockAudioStream(system->audio_stream);
-  (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
+  vimana_audio_unlock(system);
+  if (!system->audio_locked)
+    (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
+  else
+    system->audio_needs_resume = true;
 }
 
 void vimana_system_set_voice(vimana_system *system, int channel,
@@ -983,11 +1065,11 @@ void vimana_system_set_voice(vimana_system *system, int channel,
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
-  if (waveform < 0 || waveform > VIMANA_WAVE_NOISE)
+  if (waveform < 0 || waveform > VIMANA_WAVE_PSG)
     waveform = VIMANA_WAVE_PULSE;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   system->voices[channel].waveform = waveform;
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_envelope(vimana_system *system, int channel,
@@ -1001,13 +1083,13 @@ void vimana_system_set_envelope(vimana_system *system, int channel,
   if (decay < 0) decay = 0; else if (decay > 15) decay = 15;
   if (sustain < 0) sustain = 0; else if (sustain > 15) sustain = 15;
   if (release < 0) release = 0; else if (release > 15) release = 15;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   VimanaVoice *v = &system->voices[channel];
   v->adsr[0] = attack;
   v->adsr[1] = decay;
   v->adsr[2] = sustain;
   v->adsr[3] = release;
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_pulse_width(vimana_system *system, int channel,
@@ -1017,9 +1099,9 @@ void vimana_system_set_pulse_width(vimana_system *system, int channel,
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
   if (width < 0) width = 0; else if (width > 255) width = 255;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   system->voices[channel].pulse_width = (float)width / 255.0f;
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_play_voice(vimana_system *system, int channel,
@@ -1036,7 +1118,7 @@ void vimana_system_play_voice(vimana_system *system, int channel,
   uint16_t freg = vimana_hz_to_freq_reg(freq);
   float amp = ((float)volume / 15.0f) * 0.25f;
 
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   VimanaVoice *v = &system->voices[channel];
   v->freq_reg = freg;
   v->freq_hz = vimana_freq_reg_to_hz(freg);
@@ -1047,8 +1129,11 @@ void vimana_system_play_voice(vimana_system *system, int channel,
   v->env_level = 0.0f;
   v->samples_left = 0; /* no auto-release; use stop_voice */
   v->age = ++system->voice_clock;
-  (void)SDL_UnlockAudioStream(system->audio_stream);
-  (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
+  vimana_audio_unlock(system);
+  if (!system->audio_locked)
+    (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
+  else
+    system->audio_needs_resume = true;
 }
 
 void vimana_system_stop_voice(vimana_system *system, int channel) {
@@ -1056,13 +1141,13 @@ void vimana_system_stop_voice(vimana_system *system, int channel) {
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   VimanaVoice *v = &system->voices[channel];
   if (v->gate) {
     v->gate = false;
     v->env_stage = VIMANA_ENV_RELEASE;
   }
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_frequency(vimana_system *system, int channel,
@@ -1072,32 +1157,32 @@ void vimana_system_set_frequency(vimana_system *system, int channel,
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
   if (freq16 < 0) freq16 = 0; else if (freq16 > 65535) freq16 = 65535;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   VimanaVoice *v = &system->voices[channel];
   v->freq_reg = (uint16_t)freq16;
   v->freq_hz = vimana_freq_reg_to_hz(v->freq_reg);
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_sync(vimana_system *system, int channel, int enable) {
   if (!system || !system->audio_stream)
     return;
-  if (channel < 0 || channel >= 3) /* sync only for tone voices 0–2 */
-    return;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  if (!((channel >= 0 && channel < 3) || (channel >= 4 && channel < 7)))
+    return; /* sync for tone voices 0–2 and 4–6 */
+  vimana_audio_lock(system);
   system->voices[channel].sync = (enable != 0);
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_ring_mod(vimana_system *system, int channel,
                                 int enable) {
   if (!system || !system->audio_stream)
     return;
-  if (channel < 0 || channel >= 3) /* ring mod only for tone voices 0–2 */
-    return;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  if (!((channel >= 0 && channel < 3) || (channel >= 4 && channel < 7)))
+    return; /* ring mod for tone voices 0–2 and 4–6 */
+  vimana_audio_lock(system);
   system->voices[channel].ring_mod = (enable != 0);
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_filter(vimana_system *system, int cutoff,
@@ -1107,11 +1192,11 @@ void vimana_system_set_filter(vimana_system *system, int cutoff,
   if (cutoff < 0) cutoff = 0; else if (cutoff > 2047) cutoff = 2047;
   if (resonance < 0) resonance = 0; else if (resonance > 15) resonance = 15;
   mode &= (VIMANA_FILT_LP | VIMANA_FILT_BP | VIMANA_FILT_HP);
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   system->filter.cutoff = cutoff;
   system->filter.resonance = resonance;
   system->filter.mode = mode;
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_filter_route(vimana_system *system, int channel,
@@ -1120,18 +1205,18 @@ void vimana_system_set_filter_route(vimana_system *system, int channel,
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   system->filter.route[channel] = (enable != 0);
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_master_volume(vimana_system *system, int volume) {
   if (!system || !system->audio_stream)
     return;
   if (volume < 0) volume = 0; else if (volume > 15) volume = 15;
-  (void)SDL_LockAudioStream(system->audio_stream);
+  vimana_audio_lock(system);
   system->master_volume = volume;
-  (void)SDL_UnlockAudioStream(system->audio_stream);
+  vimana_audio_unlock(system);
 }
 
 void vimana_system_set_paddle(vimana_system *system, int paddle, int value) {
@@ -1158,14 +1243,28 @@ void vimana_system_run(vimana_system *system, vimana_screen *screen,
   system->quit = false;
   system->running = true;
   SDL_StartTextInput(screen->window);
+  const uint64_t freq = SDL_GetPerformanceFrequency();
+  const uint64_t frame_ns = freq / 60; /* 60 fps cap */
+  uint64_t last = SDL_GetPerformanceCounter();
   while (!system->quit) {
     vimana_reset_pressed(system);
     vimana_pump_events(system, screen);
     vimana_screen_poll_theme(screen);
     if (frame)
       frame(system, screen, user);
-    if (!SDL_HasEvents(SDL_EVENT_FIRST, SDL_EVENT_LAST))
-      SDL_WaitEventTimeout(NULL, 16);
+    /* Cap at 60 fps: sleep until the next frame boundary */
+    uint64_t now = SDL_GetPerformanceCounter();
+    uint64_t elapsed = now - last;
+    if (elapsed < frame_ns) {
+      uint64_t remain = frame_ns - elapsed;
+      uint32_t ms = (uint32_t)((remain * 1000) / freq);
+      if (ms > 0)
+        SDL_Delay(ms);
+      /* Spin the remainder for precision */
+      while (SDL_GetPerformanceCounter() - last < frame_ns)
+        ;
+    }
+    last = SDL_GetPerformanceCounter();
   }
   SDL_StopTextInput(screen->window);
   system->running = false;
@@ -1351,6 +1450,19 @@ void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
     return;
   unsigned int s = slot & 3;
   screen->base_colors[s] = vimana_parse_hex_color(hex);
+  vimana_colorize(screen);
+  screen->titlebar_dirty = true;
+}
+
+void vimana_screen_set_intensity(vimana_screen *screen, unsigned int slot,
+                                bool on) {
+  if (!screen)
+    return;
+  unsigned int s = slot & 3;
+  if (on)
+    screen->intensity |= (1u << s);
+  else
+    screen->intensity &= ~(1u << s);
   vimana_colorize(screen);
   screen->titlebar_dirty = true;
 }

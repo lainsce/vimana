@@ -23,7 +23,8 @@ def wave_triangle = 0
 def wave_sawtooth = 1
 def wave_pulse = 2
 def wave_noise = 3
-def voice_count = 4
+def wave_psg = 4
+def voice_count = 8
 
 def filter_lp = 1
 def filter_bp = 2
@@ -54,6 +55,8 @@ def paddle_count = 2
 : __vimana_system_set_filter(sys = system, cutoff = num, resonance = num, mode = num) (( -- )) { }
 : __vimana_system_set_filter_route(sys = system, channel = num, enable = num) (( -- )) { }
 : __vimana_system_set_master_volume(sys = system, volume = num) (( -- )) { }
+: __vimana_system_begin_audio(sys = system) (( -- )) { }
+: __vimana_system_end_audio(sys = system) (( -- )) { }
 : __vimana_system_set_paddle(sys = system, paddle = num, value = num) (( -- )) { }
 : __vimana_system_get_paddle(sys = system, paddle = num) (( num )) { }
 : __vimana_system_spawn(sys = system, cmd = string) (( num )) { }
@@ -67,6 +70,7 @@ def paddle_count = 2
 : __vimana_screen_clear(scr = screen, bg = num) (( -- )) { }
 : __vimana_screen_resize(scr = screen, width = num, height = num) (( -- )) { }
 : __vimana_screen_set_palette(scr = screen, slot = num, color = string) (( -- )) { }
+: __vimana_screen_set_intensity(scr = screen, slot = num, on = num) (( -- )) { }
 : __vimana_screen_set_font_glyph(scr = screen, code = num, icn = any) (( -- )) { }
 : __vimana_screen_set_font_chr(scr = screen, code = num, chr = any) (( -- )) { }
 : __vimana_screen_set_font_width(scr = screen, code = num, width = num) (( -- )) { }
@@ -208,6 +212,14 @@ pub ,: system
         __vimana_system_set_master_volume(this, volume)
         <- this
     ;
+    :: begin_audio(this) (( system ))
+        __vimana_system_begin_audio(this)
+        <- this
+    ;
+    :: end_audio(this) (( system ))
+        __vimana_system_end_audio(this)
+        <- this
+    ;
     :: set_paddle(this, paddle = num, value = num) (( system ))
         __vimana_system_set_paddle(this, paddle, value)
         <- this
@@ -245,6 +257,11 @@ pub ,: screen
 
     :: set_palette(this, slot = num, color = string) (( screen ))
         __vimana_screen_set_palette(this, slot, color)
+        <- this
+    ;
+
+    :: set_intensity(this, slot = num, on = num) (( screen ))
+        __vimana_screen_set_intensity(this, slot, on)
         <- this
     ;
 

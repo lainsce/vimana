@@ -490,6 +490,18 @@ static void __vimana_system_set_master_volume(YisVal sysv, YisVal volv) {
   vimana_system_set_master_volume(system, (int)yis_as_int(volv));
 }
 
+static void __vimana_system_begin_audio(YisVal sysv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.begin_audio expects system");
+  vimana_system_begin_audio(system);
+}
+
+static void __vimana_system_end_audio(YisVal sysv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.end_audio expects system");
+  vimana_system_end_audio(system);
+}
+
 static void __vimana_system_set_paddle(YisVal sysv, YisVal paddlev,
                                        YisVal valv) {
   vimana_system *system =
@@ -537,6 +549,14 @@ static void __vimana_screen_set_palette(YisVal scrv, YisVal slotv,
   vimana_screen_set_palette(screen, (unsigned int)yis_as_int(slotv), color);
   if (tmp)
     yis_release_val(YV_STR(tmp));
+}
+
+static void __vimana_screen_set_intensity(YisVal scrv, YisVal slotv,
+                                          YisVal onv) {
+  vimana_screen *screen =
+      vimana_screen_from_val(scrv, "vimana.screen.set_intensity expects screen");
+  vimana_screen_set_intensity(screen, (unsigned int)yis_as_int(slotv),
+                              yis_as_int(onv) != 0);
 }
 
 static void __vimana_screen_set_font_glyph(YisVal scrv, YisVal codev,
