@@ -478,16 +478,16 @@ struct VimanaScreen {
   uint16_t port_y;
   uint16_t port_addr;
   uint8_t port_auto;
-  uint8_t font_height;       /* UF1=8, UF2=16, UF3=24 */
-  uint8_t font_glyph_width;  /* bitmap pixel width: 8 (UF1/UF2) or 24 (UF3) */
-  uint8_t *layers;    /* width_mar * height_mar bytes: bits[1:0]=bg, bits[3:2]=fg */
+  uint8_t font_height;           /* UF1=8, UF2=16, UF3=24 */
+  uint8_t font_glyph_width;      /* bitmap pixel width: 8 (UF1/UF2) or 24 (UF3) */
+  uint8_t *layers;               /* width_mar * height_mar bytes: bits[1:0]=bg, bits[3:2]=fg */
   char *titlebar_title;          /* NULL = use screen->title */
   time_t theme_mtime;            /* last known mtime of ~/.theme */
-  int16_t titlebar_height;       /* total titlebar height: font_height + 5 */
-  int16_t titlebar_bar_height;   /* drawn bar height: font_height + 5 */
-  int16_t titlebar_box_size;     /* close/button box size: min(13, bar_height-4) */
+  int16_t titlebar_height;       /* total titlebar height */
+  int16_t titlebar_bar_height;   /* drawn bar height */
+  int16_t titlebar_box_size;     /* close/button box size */
   int16_t titlebar_box_y;        /* y of close/button box within bar */
-  uint8_t titlebar_bg_slot;      /* palette slot for titlebar background, default 0 */
+  uint8_t titlebar_bg_slot;      /* palette slot for titlebar background */
   bool titlebar_has_button;      /* show optional right button */
   bool titlebar_button_pressed;  /* set for one frame when right button clicked */
   bool theme_swap_fg_bg;         /* swap base_colors[0] and [1] after loading */
@@ -637,8 +637,8 @@ void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap) {
 static void vimana_screen_update_titlebar_sizes(vimana_screen *screen) {
   if (!screen) return;
   unsigned int fh = screen->font_height;
-  screen->titlebar_bar_height = fh + 1;
-  screen->titlebar_height     = fh + 1;
+  screen->titlebar_bar_height = fh < 16 ? fh + 7 : fh + 1;
+  screen->titlebar_height     = fh < 16 ? fh + 7 : fh + 1;
   int bsz_max = VIMANA_TB_BOX_SIZE + (screen->titlebar_bar_height > VIMANA_TITLEBAR_HEIGHT ? 1 : 0);
   int bsz = bsz_max < screen->titlebar_bar_height - 1
             ? bsz_max : screen->titlebar_bar_height - 1;
@@ -1538,10 +1538,10 @@ void vimana_screen_set_font_size(vimana_screen *screen, unsigned int size) {
     return;
   int w;
   if (size == 3) {
-    screen->font_height = VIMANA_FONT_MAX_HEIGHT;   /* 24 */
-    w = VIMANA_FONT_MAX_HEIGHT;                      /* 24 */
+    screen->font_height = VIMANA_FONT_MAX_HEIGHT;    /* 24 */
+    w = VIMANA_TILE_SIZE * 2;                        /* 16 */
   } else if (size == 2) {
-    screen->font_height = VIMANA_GLYPH_HEIGHT;      /* 16 */
+    screen->font_height = VIMANA_GLYPH_HEIGHT;       /* 16 */
     w = VIMANA_TILE_SIZE;                            /*  8 */
   } else {
     screen->font_height = VIMANA_TILE_SIZE;          /*  8 */
@@ -1839,6 +1839,11 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
   if (win_w <= 0 || bar_h <= 0)
     return;
 
+  /* Skip rendering entirely if no title */
+  const char *title = screen->titlebar_title ? screen->titlebar_title : screen->title;
+  if (!title || !title[0])
+    return;
+
   uint32_t bg = screen->base_colors[screen->titlebar_bg_slot & 3];
   uint32_t contrast = screen->base_colors[1];
 
@@ -1924,7 +1929,7 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
                         ? win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size - 3
                         : win_w - 3;
     int gh = screen->font_height;
-    int text_y = 1; // 1 from top.
+    int text_y = gh < 16 ? 4 : 1; // 1 from top if UF2/3, else 4 if UF1.
     int text_x = (win_w - text_w) / 2;
     text_x -= 1; /* optical nudge */
     if (text_x < left_bound)

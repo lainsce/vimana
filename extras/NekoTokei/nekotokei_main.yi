@@ -6,7 +6,7 @@ bring nekotokei_view
 
 -> ()
     let sys = vimana.system()
-    let scr = vimana.screen("NekoTokei", nekotokei_model.WIN_W, nekotokei_model.WIN_H, 1)
+    let scr = vimana.screen("", nekotokei_model.WIN_W, nekotokei_model.WIN_H, 1)
     let dev = sys.device()
     let dt = sys.datetime()
     nekotokei_view.draw(scr, dt, nekotokei_model.tick)
