@@ -10,11 +10,11 @@ extern "C" {
 #endif
 
 /* ── Titlebar ─────────────────────────────────────────────────────────── */
-#define VIMANA_TITLEBAR_HEIGHT     18  /* total titlebar height (px)       */
-#define VIMANA_TITLEBAR_BAR_HEIGHT 18  /* drawn bar height (px)            */
-#define VIMANA_TB_BOX_SIZE         12  /* close/button box (px)            */
+#define VIMANA_TITLEBAR_HEIGHT     17  /* total titlebar height (px)       */
+#define VIMANA_TITLEBAR_BAR_HEIGHT 17  /* drawn bar height (px)            */
+#define VIMANA_TB_BOX_SIZE         11  /* close/button box (px)            */
 #define VIMANA_TB_BOX_Y             3  /* y offset of box within bar       */
-#define VIMANA_TB_CLOSE_X           4  /* close box left edge x            */
+#define VIMANA_TB_CLOSE_X           9  /* close box left edge x            */
 /* ─────────────────────────────────────────────────────────────────────── */
 
 /* ── Input / Audio ────────────────────────────────────────────────────── */

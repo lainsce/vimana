@@ -637,11 +637,11 @@ void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap) {
 static void vimana_screen_update_titlebar_sizes(vimana_screen *screen) {
   if (!screen) return;
   unsigned int fh = screen->font_height;
-  screen->titlebar_bar_height = fh + 4;
-  screen->titlebar_height     = fh + 4;
-  int bsz_max = VIMANA_TB_BOX_SIZE + (screen->titlebar_bar_height > VIMANA_TITLEBAR_HEIGHT ? 2 : 0);
-  int bsz = bsz_max < screen->titlebar_bar_height - 4
-            ? bsz_max : screen->titlebar_bar_height - 4;
+  screen->titlebar_bar_height = fh + 1;
+  screen->titlebar_height     = fh + 1;
+  int bsz_max = VIMANA_TB_BOX_SIZE + (screen->titlebar_bar_height > VIMANA_TITLEBAR_HEIGHT ? 1 : 0);
+  int bsz = bsz_max < screen->titlebar_bar_height - 1
+            ? bsz_max : screen->titlebar_bar_height - 1;
   screen->titlebar_box_size   = bsz;
   screen->titlebar_box_y      = (screen->titlebar_bar_height - bsz) / 2;
   screen->titlebar_dirty = true;
@@ -847,7 +847,7 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
       int ex = (int)event.button.x;
       int ey = (int)event.button.y;
       if (screen && ey < screen->titlebar_height) {
-        /* System 7 titlebar button clicks */
+        /* System 6 titlebar button clicks */
         if (button == SDL_BUTTON_LEFT &&
             ey >= screen->titlebar_box_y && ey < screen->titlebar_box_y + screen->titlebar_box_size) {
           /* Close box */
@@ -1390,7 +1390,7 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
     free(screen);
     return NULL;
   }
-  SDL_SetTextureScaleMode(screen->texture, SDL_SCALEMODE_NEAREST);
+  SDL_SetTextureScaleMode(screen->texture, SDL_SCALEMODE_PIXELART);
   SDL_SetWindowHitTest(screen->window, vimana_hit_test, screen);
 
   vimana_screen_clear(screen, 0);
@@ -1440,7 +1440,7 @@ void vimana_screen_resize(vimana_screen *screen, unsigned int width, unsigned in
         SDL_CreateTexture(screen->renderer, SDL_PIXELFORMAT_ARGB8888,
                           SDL_TEXTUREACCESS_STREAMING, width, height);
     if (screen->texture)
-      SDL_SetTextureScaleMode(screen->texture, SDL_SCALEMODE_NEAREST);
+      SDL_SetTextureScaleMode(screen->texture, SDL_SCALEMODE_PIXELART);
   }
 }
 
@@ -1867,7 +1867,7 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
   int stripe_bot = screen->titlebar_bar_height - 3;
   for (int row = stripe_top; row < stripe_bot; row++) {
     if (row & 1) {
-      for (int col = 0; col < win_w - 4; col++)
+      for (int col = 2; col < win_w - 2; col++)
         TB_SET(col, row, contrast);
     }
   }
@@ -1875,11 +1875,11 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
   /* Close box (left side, System 6 style) */
   {
     int bx = VIMANA_TB_CLOSE_X, by = screen->titlebar_box_y, bsz = screen->titlebar_box_size;
-    int halo_y = (by - 4 < stripe_top) ? by - 4 : stripe_top;
+    int halo_y = (by - 3 < stripe_top) ? by - 3 : stripe_top;
     if (halo_y < 0) halo_y = 0;
-    int halo_bot = (by + bsz + 4 > stripe_bot) ? by + bsz + 4 : stripe_bot;
+    int halo_bot = (by + bsz + 3 > stripe_bot) ? by + bsz + 3 : stripe_bot;
     if (halo_bot > screen->titlebar_bar_height) halo_bot = screen->titlebar_bar_height;
-    TB_FILL(bx - 4, halo_y, bsz + 8, halo_bot - halo_y, bg);
+    TB_FILL(bx - 1, halo_y, bsz + 2, halo_bot - halo_y, bg);
     /* 1px border */
     TB_FILL(bx, by, bsz, 1, contrast);
     TB_FILL(bx, by + bsz - 1, bsz, 1, contrast);
@@ -1891,11 +1891,11 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
   if (screen->titlebar_has_button) {
     int bx = win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size;
     int by = screen->titlebar_box_y, bsz = screen->titlebar_box_size;
-    int bhalo_y = (by - 4 < stripe_top) ? by - 4 : stripe_top;
+    int bhalo_y = (by - 3 < stripe_top) ? by - 3 : stripe_top;
     if (bhalo_y < 0) bhalo_y = 0;
-    int bhalo_bot = (by + bsz + 4 > stripe_bot) ? by + bsz + 4 : stripe_bot;
+    int bhalo_bot = (by + bsz + 3 > stripe_bot) ? by + bsz + 3 : stripe_bot;
     if (bhalo_bot > screen->titlebar_bar_height) bhalo_bot = screen->titlebar_bar_height;
-    TB_FILL(bx - 4, bhalo_y, bsz + 8, bhalo_bot - bhalo_y, bg);
+    TB_FILL(bx - 1, bhalo_y, bsz + 2, bhalo_bot - bhalo_y, bg);
     /* Outer border */
     TB_FILL(bx, by, bsz, 1, contrast);
     TB_FILL(bx, by + bsz - 1, bsz, 1, contrast);
@@ -1919,12 +1919,12 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
       unsigned int ch = (unsigned char)title[i];
       text_w += (ch < VIMANA_GLYPH_COUNT) ? widths[ch] : VIMANA_TILE_SIZE;
     }
-    int left_bound  = VIMANA_TB_CLOSE_X + screen->titlebar_box_size + 4;
+    int left_bound  = VIMANA_TB_CLOSE_X + screen->titlebar_box_size + 3;
     int right_bound = screen->titlebar_has_button
-                        ? win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size - 4
-                        : win_w - 4;
+                        ? win_w - VIMANA_TB_CLOSE_X - screen->titlebar_box_size - 3
+                        : win_w - 3;
     int gh = screen->font_height;
-    int text_y = (screen->titlebar_bar_height - gh + 1) / 2;
+    int text_y = 1; // 1 from top.
     int text_x = (win_w - text_w) / 2;
     text_x -= 1; /* optical nudge */
     if (text_x < left_bound)
@@ -1938,7 +1938,7 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
     if (text_x + clipped_w > right_bound)
       clipped_w = right_bound - text_x;
     if (clipped_w > 0)
-      TB_FILL(text_x - 4, 0, clipped_w + 8, screen->titlebar_bar_height, bg);
+      TB_FILL(text_x - 3, 0, clipped_w + 6, screen->titlebar_bar_height, bg);
     /* Render glyphs from font ROM */
     int gx = text_x;
     for (int i = 0; i < len; i++) {
@@ -1977,7 +1977,7 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
   if (screen->titlebar_tex) {
     SDL_UpdateTexture(screen->titlebar_tex, NULL, pixels,
                       win_w * (int)sizeof(uint32_t));
-    SDL_SetTextureScaleMode(screen->titlebar_tex, SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(screen->titlebar_tex, SDL_SCALEMODE_PIXELART);
   }
   free(pixels);
   screen->titlebar_dirty = false;
