@@ -1915,7 +1915,6 @@ static void vimana_rebuild_titlebar_tex(vimana_screen *screen) {
   }
 
   /* Title text: centered, using font ROM glyphs */
-  const char *title = screen->titlebar_title ? screen->titlebar_title : screen->title;
   if (title && title[0]) {
     int len = (int)strlen(title);
     const uint8_t *widths = vimana_rom_font_widths(screen);
