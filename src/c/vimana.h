@@ -44,11 +44,12 @@ extern "C" {
 /* ─────────────────────────────────────────────────────────────────────── */
 
 /* ── Tile / Sprite ────────────────────────────────────────────────────── */
-#define VIMANA_COLOR_COUNT         8     /* palette slots: BG, FG, CLR2..CLR7 */
+#define VIMANA_COLOR_COUNT         16    /* palette slots: BG, FG, CLR2..CLR15 */
 #define VIMANA_TILE_SIZE           8                /* 8×8 pixels per tile */
 #define VIMANA_SPRITE_1BPP_BYTES   8                 /* 8 Bs / 1bpp sprite */
 #define VIMANA_SPRITE_2BPP_BYTES   (8 * 2)          /* 16 Bs / 2bpp sprite */
 #define VIMANA_SPRITE_3BPP_BYTES   (8 * 3)          /* 24 Bs / 3bpp sprite */
+#define VIMANA_SPRITE_4BPP_BYTES   (8 * 4)          /* 32 Bs / 4bpp sprite */
 /* ─────────────────────────────────────────────────────────────────────── */
 
 /* ── Font metrics ─────────────────────────────────────────────────────── */

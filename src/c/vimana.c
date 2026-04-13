@@ -17,31 +17,47 @@
 #include <objc/message.h>
 #endif
 
-/* Blend look-up table: blend_lut[mode][layer(0=bg,1=fg)][color(0-7)]
-   BG entries: palette slot (0-7) written to bits[2:0] of the layer byte.
-   FG entries: palette slot pre-shifted left 3, written to bits[5:3].
+/* Blend look-up table: blend_lut[mode][layer(0=bg,1=fg)][color(0-15)]
+   BG entries: palette slot (0-15) written to bits[3:0] of the layer byte.
+   FG entries: palette slot pre-shifted left 4, written to bits[7:4].
    mode bits[3:2] = fill slot for color-0 (0-3); bits[1:0] = color rotation.
-   Rotation 0: color1→0(transparent), 2→1,3→2,4→3,5→4,6→5,7→6
-   Rotation 1: identity  1→1,2→2,...,7→7
-   Rotation 2: cyclic+1  1→2,2→3,...,6→7,7→1
-   Rotation 3: cyclic+2  1→3,2→4,...,5→7,6→1,7→2 */
-static const uint8_t blend_lut[16][2][8] = {
-    /* fill=0 */ {{0, 0, 1, 2, 3, 4, 5, 6}, { 0,  0,  8, 16, 24, 32, 40, 48}},
-                 {{0, 1, 2, 3, 4, 5, 6, 7}, { 0,  8, 16, 24, 32, 40, 48, 56}},
-                 {{0, 2, 3, 4, 5, 6, 7, 1}, { 0, 16, 24, 32, 40, 48, 56,  8}},
-                 {{0, 3, 4, 5, 6, 7, 1, 2}, { 0, 24, 32, 40, 48, 56,  8, 16}},
-    /* fill=1 */ {{1, 0, 1, 2, 3, 4, 5, 6}, { 8,  0,  8, 16, 24, 32, 40, 48}},
-                 {{1, 1, 2, 3, 4, 5, 6, 7}, { 8,  8, 16, 24, 32, 40, 48, 56}},
-                 {{1, 2, 3, 4, 5, 6, 7, 1}, { 8, 16, 24, 32, 40, 48, 56,  8}},
-                 {{1, 3, 4, 5, 6, 7, 1, 2}, { 8, 24, 32, 40, 48, 56,  8, 16}},
-    /* fill=2 */ {{2, 0, 1, 2, 3, 4, 5, 6}, {16,  0,  8, 16, 24, 32, 40, 48}},
-                 {{2, 1, 2, 3, 4, 5, 6, 7}, {16,  8, 16, 24, 32, 40, 48, 56}},
-                 {{2, 2, 3, 4, 5, 6, 7, 1}, {16, 16, 24, 32, 40, 48, 56,  8}},
-                 {{2, 3, 4, 5, 6, 7, 1, 2}, {16, 24, 32, 40, 48, 56,  8, 16}},
-    /* fill=3 */ {{3, 0, 1, 2, 3, 4, 5, 6}, {24,  0,  8, 16, 24, 32, 40, 48}},
-                 {{3, 1, 2, 3, 4, 5, 6, 7}, {24,  8, 16, 24, 32, 40, 48, 56}},
-                 {{3, 2, 3, 4, 5, 6, 7, 1}, {24, 16, 24, 32, 40, 48, 56,  8}},
-                 {{3, 3, 4, 5, 6, 7, 1, 2}, {24, 24, 32, 40, 48, 56,  8, 16}}};
+   Rotation 0: color1→0(transparent), 2→1,3→2,...,15→14
+   Rotation 1: identity  1→1,2→2,...,15→15
+   Rotation 2: cyclic+1  1→2,2→3,...,15→1
+   Rotation 3: cyclic+2  1→3,2→4,...,15→2 */
+static const uint8_t blend_lut[16][2][16] = {
+    /* fill=0 */ {{0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14},
+                 {0,  0,16,32,48,64,80,96,112,128,144,160,176,192,208,224}},
+                 {{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},
+                 {0, 16,32,48,64,80,96,112,128,144,160,176,192,208,224,240}},
+                 {{0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,1},
+                 {0, 32,48,64,80,96,112,128,144,160,176,192,208,224,240,16}},
+                 {{0,3,4,5,6,7,8,9,10,11,12,13,14,15,1,2},
+                 {0, 48,64,80,96,112,128,144,160,176,192,208,224,240,16,32}},
+    /* fill=1 */ {{1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14},
+                 {16,  0,16,32,48,64,80,96,112,128,144,160,176,192,208,224}},
+                 {{1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},
+                 {16, 16,32,48,64,80,96,112,128,144,160,176,192,208,224,240}},
+                 {{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,1},
+                 {16, 32,48,64,80,96,112,128,144,160,176,192,208,224,240,16}},
+                 {{1,3,4,5,6,7,8,9,10,11,12,13,14,15,1,2},
+                 {16, 48,64,80,96,112,128,144,160,176,192,208,224,240,16,32}},
+    /* fill=2 */ {{2,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14},
+                 {32,  0,16,32,48,64,80,96,112,128,144,160,176,192,208,224}},
+                 {{2,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},
+                 {32, 16,32,48,64,80,96,112,128,144,160,176,192,208,224,240}},
+                 {{2,2,3,4,5,6,7,8,9,10,11,12,13,14,15,1},
+                 {32, 32,48,64,80,96,112,128,144,160,176,192,208,224,240,16}},
+                 {{2,3,4,5,6,7,8,9,10,11,12,13,14,15,1,2},
+                 {32, 48,64,80,96,112,128,144,160,176,192,208,224,240,16,32}},
+    /* fill=3 */ {{3,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14},
+                 {48,  0,16,32,48,64,80,96,112,128,144,160,176,192,208,224}},
+                 {{3,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},
+                 {48, 16,32,48,64,80,96,112,128,144,160,176,192,208,224,240}},
+                 {{3,2,3,4,5,6,7,8,9,10,11,12,13,14,15,1},
+                 {48, 32,48,64,80,96,112,128,144,160,176,192,208,224,240,16}},
+                 {{3,3,4,5,6,7,8,9,10,11,12,13,14,15,1,2},
+                 {48, 48,64,80,96,112,128,144,160,176,192,208,224,240,16,32}}};
 
 /* ── Voice / Envelope types ──────────────────────────────────────────── */
 
@@ -470,8 +486,8 @@ struct VimanaScreen {
   uint8_t scale;
   uint16_t width_mar;   /* width + 16 (8px margin each side) */
   uint16_t height_mar;  /* height + 16 */
-  uint32_t base_colors[8];  /* ARGB palette, slots 0-7 (BG,FG,CLR2..CLR7) */
-  uint32_t palette[64];     /* expanded 64-entry composite (6-bit layer index) */
+  uint32_t base_colors[16]; /* ARGB palette, slots 0-15 (BG,FG,CLR2..CLR15) */
+  uint32_t palette[256];    /* expanded 256-entry composite (8-bit layer index) */
   /* Font ROM: always allocated (64 KB). */
   uint8_t *font_rom;                             /* VIMANA_FONT_SIZE bytes */
   /* GFX ROM: lazy-allocated on first set_gfx (384 KB). */
@@ -553,11 +569,11 @@ static uint32_t vimana_parse_hex_color(const char *hex) {
 static void vimana_colorize(vimana_screen *screen) {
   if (!screen)
     return;
-  /* Layer byte: bits[5:3]=FG slot, bits[2:0]=BG slot.
+  /* Layer byte: bits[7:4]=FG slot, bits[3:0]=BG slot.
      FG≠0 wins; FG=0 is transparent so BG slot is used. */
-  for (unsigned int i = 0; i < 64; i++) {
-    unsigned int fg_slot = i >> 3;
-    unsigned int bg_slot = i & 7;
+  for (unsigned int i = 0; i < 256; i++) {
+    unsigned int fg_slot = i >> 4;
+    unsigned int bg_slot = i & 15;
     unsigned int slot = fg_slot ? fg_slot : bg_slot;
     screen->palette[i] = screen->base_colors[slot];
   }
@@ -566,14 +582,22 @@ static void vimana_colorize(vimana_screen *screen) {
 static void vimana_screen_reset_palette(vimana_screen *screen) {
   if (!screen)
     return;
-  screen->base_colors[0] = 0xFFFFFFFFu; /* BG   */
-  screen->base_colors[1] = 0xFF000000u; /* FG   */
-  screen->base_colors[2] = 0xFF77DDCCu; /* CLR2 */
-  screen->base_colors[3] = 0xFFFFBB22u; /* CLR3 */
-  screen->base_colors[4] = 0xFFFF4444u; /* CLR4 */
-  screen->base_colors[5] = 0xFF44AA44u; /* CLR5 */
-  screen->base_colors[6] = 0xFF4488FFu; /* CLR6 */
-  screen->base_colors[7] = 0xFFAA44AAu; /* CLR7 */
+  screen->base_colors[0]  = 0xFFFFFFFFu; /* BG   */
+  screen->base_colors[1]  = 0xFF000000u; /* FG   */
+  screen->base_colors[2]  = 0xFF77DDCCu; /* CLR2 */
+  screen->base_colors[3]  = 0xFFFFBB22u; /* CLR3 */
+  screen->base_colors[4]  = 0xFFFF4444u; /* CLR4 */
+  screen->base_colors[5]  = 0xFF44AA44u; /* CLR5 */
+  screen->base_colors[6]  = 0xFF4488FFu; /* CLR6 */
+  screen->base_colors[7]  = 0xFFAA44AAu; /* CLR7 */
+  screen->base_colors[8]  = 0xFF888888u; /* CLR8 */
+  screen->base_colors[9]  = 0xFF666666u; /* CLR9 */
+  screen->base_colors[10] = 0xFFBBBB44u; /* CLR10 */
+  screen->base_colors[11] = 0xFF44BBBBu; /* CLR11 */
+  screen->base_colors[12] = 0xFF8844BBu; /* CLR12 */
+  screen->base_colors[13] = 0xFFBB4488u; /* CLR13 */
+  screen->base_colors[14] = 0xFF44BB88u; /* CLR14 */
+  screen->base_colors[15] = 0xFFBB8844u; /* CLR15 */
   vimana_colorize(screen);
 }
 
@@ -694,7 +718,8 @@ static void vimana_screen_reset_ports(vimana_screen *screen) {
 }
 
 static unsigned int vimana_sprite_stride(unsigned int mode) {
-  if (mode >= 2) return VIMANA_SPRITE_3BPP_BYTES;
+  if (mode >= 3) return VIMANA_SPRITE_4BPP_BYTES;
+  if (mode == 2) return VIMANA_SPRITE_3BPP_BYTES;
   return mode ? VIMANA_SPRITE_2BPP_BYTES : VIMANA_SPRITE_1BPP_BYTES;
 }
 
@@ -1401,7 +1426,7 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
 void vimana_screen_clear(vimana_screen *screen, unsigned int bg) {
   if (!screen || !screen->layers)
     return;
-  uint8_t bg_val = (uint8_t)(bg & 0x7);
+  uint8_t bg_val = (uint8_t)(bg & 0xF);
   size_t total =
       (size_t)screen->width_mar * (size_t)screen->height_mar;
   memset(screen->layers, (int)bg_val, total);
@@ -1449,7 +1474,7 @@ void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
                                const char *hex) {
   if (!screen)
     return;
-  unsigned int s = slot & 7;
+  unsigned int s = slot & 15;
   screen->base_colors[s] = vimana_parse_hex_color(hex);
   vimana_colorize(screen);
   screen->titlebar_dirty = true;
@@ -1643,10 +1668,11 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
   const unsigned int col_start = flipy ? 7 : 0;
   const int col_delta = flipy ? -1 : 1;
   const unsigned int layer = ctrl & 0x40;
-  const unsigned int layer_mask = layer ? 0x07 : 0x38;
+  const unsigned int layer_mask = layer ? 0x0F : 0xF0;
   const unsigned int is_2bpp = ctrl & 0x80;
   const unsigned int is_3bpp = ctrl & 0x100;
-  const unsigned int bytes_per_sprite = is_3bpp ? 24u : (is_2bpp ? 16u : 8u);
+  const unsigned int is_4bpp = ctrl & 0x200;
+  const unsigned int bytes_per_sprite = is_4bpp ? 32u : (is_3bpp ? 24u : (is_2bpp ? 16u : 8u));
   const unsigned int addr_incr = (rMA >> 2) * bytes_per_sprite;
   const unsigned int stride = (unsigned int)screen->width_mar;
   const unsigned int blend = ctrl & 0xf;
@@ -1669,19 +1695,22 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
       const uint8_t ch1 =
           (a1 < VIMANA_SPRITE_BANK_SIZE) ? bank[a1] : 0;
       const uint8_t ch2 =
-          ((is_2bpp || is_3bpp) && a2 < VIMANA_SPRITE_BANK_SIZE)
+          ((is_2bpp || is_3bpp || is_4bpp) && a2 < VIMANA_SPRITE_BANK_SIZE)
               ? bank[a2]
               : 0;
       const unsigned int a3 = rA + sr + 16;
       const uint8_t ch3 =
-          (is_3bpp && a3 < VIMANA_SPRITE_BANK_SIZE) ? bank[a3] : 0;
+          ((is_3bpp || is_4bpp) && a3 < VIMANA_SPRITE_BANK_SIZE) ? bank[a3] : 0;
+      const unsigned int a4 = rA + sr + 24;
+      const uint8_t ch4 =
+          (is_4bpp && a4 < VIMANA_SPRITE_BANK_SIZE) ? bank[a4] : 0;
       uint8_t *d = dst_row;
       for (unsigned int k = 0, row = row_start; k < 8;
            k++, d++, row += row_delta) {
         const unsigned int bit = 1u << row;
         const uint8_t color =
             (uint8_t)((!!(ch1 & bit)) | ((!!(ch2 & bit)) << 1) |
-                      ((!!(ch3 & bit)) << 2));
+                      ((!!(ch3 & bit)) << 2) | ((!!(ch4 & bit)) << 3));
         if (opaque_mask || color)
           *d = (*d & (uint8_t)layer_mask) | table[color];
       }
@@ -1699,9 +1728,9 @@ void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl) {
   if (!screen || !screen->layers)
     return;
   const unsigned int layer = ctrl & 0x40;
-  const uint8_t layer_mask = (uint8_t)(layer ? 0x07 : 0x38);
+  const uint8_t layer_mask = (uint8_t)(layer ? 0x0F : 0xF0);
   const uint8_t color =
-      layer ? (uint8_t)((ctrl & 0x7) << 3) : (uint8_t)(ctrl & 0x7);
+      layer ? (uint8_t)((ctrl & 0xF) << 4) : (uint8_t)(ctrl & 0xF);
   if (ctrl & 0x80) {
     /* fill rectangle */
     unsigned int x1, x2, y1, y2;
@@ -1754,8 +1783,8 @@ void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
     ch = ' ';
   const uint8_t *bmp = vimana_rom_font_bitmap(screen, ch);
   const uint8_t *widths = vimana_rom_font_widths(screen);
-  unsigned int bg_slot = bg & 0x7;
-  unsigned int fg_slot = fg & 0x7;
+  unsigned int bg_slot = bg & 0xF;
+  unsigned int fg_slot = fg & 0xF;
   unsigned int gh = screen->font_height;
   unsigned int gw = widths[ch];
   if (gw == 0) gw = screen->font_glyph_width;
@@ -1775,7 +1804,7 @@ void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
       uint8_t mask = (uint8_t)(0x80u >> (col & 7));
       uint8_t hit = (row_data[col >> 3] & mask) ? 1u : 0u;
       uint8_t slot = hit ? (uint8_t)fg_slot : (uint8_t)bg_slot;
-      *dst++ = (uint8_t)((slot << 3) | slot);
+      *dst++ = (uint8_t)((slot << 4) | slot);
     }
   }
 }
@@ -1787,8 +1816,8 @@ void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
     return;
   x *= 8;  /* tile → pixel */
   y *= 8;  /* tile → pixel */
-  unsigned int bg_slot = bg & 0x7;
-  unsigned int fg_slot = fg & 0x7;
+  unsigned int bg_slot = bg & 0xF;
+  unsigned int fg_slot = fg & 0xF;
   for (unsigned int row = 0; row < VIMANA_TILE_SIZE; row++) {
     unsigned int py = y + row;
     if (py >= (unsigned int)screen->height)
@@ -1805,7 +1834,7 @@ void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
       uint8_t mask = (uint8_t)(0x80u >> col);
       uint8_t hit = (plane0 & mask) ? 1u : 0u;
       uint8_t slot = hit ? (uint8_t)fg_slot : (uint8_t)bg_slot;
-      *dst++ = (uint8_t)((slot << 3) | slot);
+      *dst++ = (uint8_t)((slot << 4) | slot);
     }
   }
 }

@@ -270,9 +270,24 @@ static void vimana_icn_bytes_from_val(YisVal value, uint8_t rows[8],
 }
 
 static void vimana_sprite_bytes_from_val(YisVal value, unsigned int mode,
-                                         uint8_t sprite[24],
+                                         uint8_t sprite[32],
                                          const char *what) {
-  memset(sprite, 0, 24);
+  memset(sprite, 0, 32);
+  if (mode >= 3) {
+    /* 4bpp: 16 × 16-bit words — plane0 (4 words), plane1 (4), plane2 (4), plane3 (4).
+       Each word packs two consecutive row-bytes: high byte = even row,
+       low byte = odd row.  Unpack straight into 32 bytes. */
+    if (value.tag != EVT_ARR)
+      yis_trap(what);
+    YisArr *arr = (YisArr *)value.as.p;
+    size_t limit = arr ? (arr->len < 16 ? arr->len : 16) : 0;
+    for (size_t i = 0; i < limit; i++) {
+      uint16_t w = vimana_icn_short_from_val(arr->items[i]);
+      sprite[i * 2]     = (uint8_t)(w >> 8);
+      sprite[i * 2 + 1] = (uint8_t)(w & 0xFF);
+    }
+    return;
+  }
   if (mode >= 2) {
     /* 3bpp: 12 × 16-bit words — plane0 (4 words), plane1 (4), plane2 (4).
        Each word packs two consecutive row-bytes: high byte = even row,
@@ -309,7 +324,7 @@ static void vimana_sprite_bytes_from_val(YisVal value, unsigned int mode,
     return;
   }
   vimana_icn_bytes_from_val(value, sprite,
-                            what ? what : "vimana sprite expects 1bpp, 2bpp, or 3bpp rows");
+                            what ? what : "vimana sprite expects 1bpp, 2bpp, 3bpp, or 4bpp rows");
 }
 
 static void vimana_frame_call(vimana_system *system, vimana_screen *screen,
@@ -619,9 +634,9 @@ static void __vimana_screen_set_sprite(YisVal scrv, YisVal addrv, YisVal spritev
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.set_sprite expects screen");
   unsigned int mode = (unsigned int)yis_as_int(modev);
-  uint8_t sprite[24] = {0};
+  uint8_t sprite[32] = {0};
   vimana_sprite_bytes_from_val(spritev, mode, sprite,
-                               "vimana.screen.set_sprite expects 1bpp, 2bpp, or 3bpp rows");
+                               "vimana.screen.set_sprite expects 1bpp, 2bpp, 3bpp, or 4bpp rows");
   vimana_screen_set_sprite(screen, (unsigned int)yis_as_int(addrv), sprite, mode);
 }
 
