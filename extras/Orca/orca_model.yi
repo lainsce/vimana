@@ -100,6 +100,9 @@ def ?voice_vol = []: [any]
 :: toggle_play() (( -- ))
     playing = !playing
     if !playing -- Not playing, stop all voices
+        -- Flush the current simulation frame so no operator stays active
+        -- visually or logically after pause.
+        orca_grid.clear_frame()
         stop_all_voices()
     dirty = true
 ;
