@@ -27,6 +27,7 @@ run.exe
 
 *.mcp.json
 INSTRUCTIONS.md
+CLAUDE.md
 *.json
 
 .venv
