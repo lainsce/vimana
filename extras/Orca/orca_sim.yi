@@ -33,25 +33,40 @@ bring orca_model
                 if pupper != "E" && pupper != "N" && pupper != "S" && pupper != "W"
                     orca_ops.lock_ports(px, py)
 
-    -- Pass 1: movement operators (E, N, S, W) — skip locked cells
+    -- Pass 1: movement operators — each direction scanned opposite to its movement
+    -- so a mover never lands on an unvisited cell and double-moves in one frame.
+    -- N moves north: scan top-to-bottom (already-visited rows)
     for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
         for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
-            if orca_grid.is_locked(x, y)
-                -- skip: locked cell (input port or comment)
-            else
+            if !orca_grid.is_locked(x, y)
                 let ch = orca_grid.get(x, y)
-                let upper = orca_base36.to_upper(ch)
                 let should_run = orca_base36.is_upper(ch) || orca_grid.is_banged(x, y)
-                if !should_run
-                    -- skip lowercase without bang
-                elif upper == "E"
-                    orca_ops.move_e(x, y)
-                elif upper == "N"
+                if should_run && orca_base36.to_upper(ch) == "N"
                     orca_ops.move_n(x, y)
-                elif upper == "S"
-                    orca_ops.move_s(x, y)
-                elif upper == "W"
+    -- W moves west: scan left-to-right (already-visited columns)
+    for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
+        for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
+            if !orca_grid.is_locked(x, y)
+                let ch = orca_grid.get(x, y)
+                let should_run = orca_base36.is_upper(ch) || orca_grid.is_banged(x, y)
+                if should_run && orca_base36.to_upper(ch) == "W"
                     orca_ops.move_w(x, y)
+    -- S moves south: scan bottom-to-top (already-visited rows)
+    for (let ?y = orca_grid.GRID_H - 1; y >= 0; y -= 1)
+        for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
+            if !orca_grid.is_locked(x, y)
+                let ch = orca_grid.get(x, y)
+                let should_run = orca_base36.is_upper(ch) || orca_grid.is_banged(x, y)
+                if should_run && orca_base36.to_upper(ch) == "S"
+                    orca_ops.move_s(x, y)
+    -- E moves east: scan right-to-left (already-visited columns)
+    for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
+        for (let ?x = orca_grid.GRID_W - 1; x >= 0; x -= 1)
+            if !orca_grid.is_locked(x, y)
+                let ch = orca_grid.get(x, y)
+                let should_run = orca_base36.is_upper(ch) || orca_grid.is_banged(x, y)
+                if should_run && orca_base36.to_upper(ch) == "E"
+                    orca_ops.move_e(x, y)
 
     -- Pass 2: bang pass — process all * to set bangs before operators run
     for (let ?by = 0; by < orca_grid.GRID_H; by += 1)
@@ -77,8 +92,9 @@ bring orca_model
             if orca_grid.is_locked(x, y)
                 -- skip: locked cell (input port, comment, or held by H)
             elif ch == "*"
-                -- Bang neighbors then consume self
+                -- Bang neighbors, record visual flash, then consume
                 orca_ops.op_bang(x, y)
+                orca_grid.mark_visual_bang(x, y)
                 orca_grid.set(x, y, ".")
             elif ch == "="
                 if orca_grid.is_banged(x, y)

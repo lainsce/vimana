@@ -8,9 +8,14 @@ def color_bg = 0
 def color_fg = 1
 def color_2 = 2
 def color_3 = 3
+def color_4 = 4
+def color_5 = 5
+def color_6 = 6
+def color_7 = 7
 
 def sprite_1bpp = 0
 def sprite_2bpp = 1
+def sprite_3bpp = 2
 def layer_bg = 0
 def layer_fg = 0x40
 def flip_x = 0x10
@@ -70,7 +75,6 @@ def paddle_count = 2
 : __vimana_screen_clear(scr = screen, bg = num) (( -- )) { }
 : __vimana_screen_resize(scr = screen, width = num, height = num) (( -- )) { }
 : __vimana_screen_set_palette(scr = screen, slot = num, color = string) (( -- )) { }
-: __vimana_screen_set_intensity(scr = screen, slot = num, on = num) (( -- )) { }
 : __vimana_screen_set_font_glyph(scr = screen, code = num, icn = any) (( -- )) { }
 : __vimana_screen_set_font_chr(scr = screen, code = num, chr = any) (( -- )) { }
 : __vimana_screen_set_font_width(scr = screen, code = num, width = num) (( -- )) { }
@@ -257,11 +261,6 @@ pub ,: screen
 
     :: set_palette(this, slot = num, color = string) (( screen ))
         __vimana_screen_set_palette(this, slot, color)
-        <- this
-    ;
-
-    :: set_intensity(this, slot = num, on = num) (( screen ))
-        __vimana_screen_set_intensity(this, slot, on)
         <- this
     ;
 

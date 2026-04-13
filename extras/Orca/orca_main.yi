@@ -55,12 +55,14 @@ def ?mouse_dragging = false
     let dev = sys.device()
     let fsys = sys.file()
 
-    -- Set up default SID pulse voices
-    for (let ?ch = 0; ch < 4; ch += 1)
+    -- Use a consistent pulse voice on every synth channel so stop/pause
+    -- behaves the same no matter which Orca channel is active.
+    for (let ?ch = 0; ch < vimana.voice_count; ch += 1)
         sys.set_voice(ch, vimana.wave_pulse)
-        sys.set_envelope(ch, 0, 5, 5, 8)
+        sys.set_envelope(ch, 0, 5, 5, 0)
 
     orca_grid.init()
+    orca_model.init()
     orca_font.load_font(scr)
 
     sys.run(scr, () => {

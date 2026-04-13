@@ -78,8 +78,8 @@ bring orca_model
 -- E: move east (handled in movement pass, not here)
 -- F: if(west == east) outputs * south
 :: op_f(x = num, y = num) (( -- ))
-    let a = peek(x, y, -1, 0)
-    let b = peek(x, y, 1, 0)
+    let a = peek_val(x, y, -1, 0)
+    let b = peek_val(x, y, 1, 0)
     if a == b
         poke(x, y, 0, 1, "*")
     else
@@ -88,8 +88,8 @@ bring orca_model
 
 -- G: gen(x_off, y_off; len) copies len cells east into offset
 :: op_g(x = num, y = num) (( -- ))
-    let xo = peek_val(x, y, -3, 0)
-    let yo = peek_val(x, y, -2, 0)
+    let xo = peek_val(x, y, -2, 0)
+    let yo = peek_val(x, y, -1, 0)
     let len = peek_val(x, y, -1, 0)
     if len < 1
         len = 1
@@ -153,21 +153,23 @@ bring orca_model
 ;
 
 -- N: move north (handled in movement pass)
--- O: read(x_off, y_off) output south
+-- O: read(x, y; read) reads cell at offset, output south
+-- Layout: [x][-2] [y][-1] O → output south
 :: op_o(x = num, y = num) (( -- ))
     let xo = peek_val(x, y, -1, 0)
-    let yo = peek_val(x, y, 1, 0)
+    let yo = peek_val(x, y, -1, 0)
     let ch = orca_grid.get(x + xo, y + yo + 1)
     poke(x, y, 0, 1, ch)
 ;
 
--- P: push(len, key; val) writes val into ring buffer below
+-- P: push(len, key; in) writes east operand into ring buffer below
+-- Layout: [len][-2] [key][-1] P [in]+1 → south buffer
 :: op_p(x = num, y = num) (( -- ))
     let len = peek_val(x, y, -1, 0)
-    let key = peek_val(x, y, 1, 0)
+    let key = peek_val(x, y, -1, 0)
     if len < 1
         len = 1
-    let val = peek(x, y, 2, 0)
+    let val = peek(x, y, 1, 0)
     let pos = key % len
     -- lock all len cells below
     for (let ?i = 0; i < len; i += 1)
@@ -178,9 +180,9 @@ bring orca_model
 -- Q: query(x_off, y_off; len) reads len cells at offset, writes below self
 -- Q: query(x_off, y_off; len) reads len cells at offset, outputs left of Q
 :: op_q(x = num, y = num) (( -- ))
-    let xo = peek_val(x, y, -3, 0)
-    let yo = peek_val(x, y, -2, 0)
-    let len = peek_val(x, y, -1, 0)
+    let xo = peek_val(x, y, -1, 0)
+    let yo = peek_val(x, y, -1, 0)
+    let len = peek_val(x, y, 1, 0)
     if len < 1
         len = 1
     let out_x = 1 - len
@@ -201,15 +203,17 @@ bring orca_model
 
 -- S: move south (handled in movement pass)
 -- T: track(key, len; out) reads cell at key within next len east
+-- Layout: [key][-2] [len][-1] T [track cells +1..+len] → output south
 :: op_t(x = num, y = num) (( -- ))
-    let key = peek_val(x, y, -1, 0)
-    let len = peek_val(x, y, 1, 0)
+    let key = peek_val(x, y, -2, 0)
+    let len = peek_val(x, y, -1, 0)
     if len < 1
         len = 1
     let pos = key % len
-    -- lock track cells
+    -- lock track cells starting immediately east; highlight the active one
     for (let ?i = 0; i < len; i += 1)
-        orca_grid.lock(x + i + 1, y)
+        orca_grid.lock(x + 1 + i, y)
+    orca_grid.highlight(x + 1 + pos, y)
     let ch = orca_grid.get(x + 1 + pos, y)
     poke(x, y, 0, 1, ch)
 ;
@@ -230,16 +234,15 @@ bring orca_model
         poke(x, y, 0, 1, ".")
 ;
 
--- V: var(write_name, read_name; value)
+-- V: var(write; read) — east cell is both the stored value and the variable name read
+-- Write: if west != '.', store east into var[west]
+-- Read: output var[east] south
 :: op_v(x = num, y = num) (( -- ))
     let w_ch = peek(x, y, -1, 0)
     let r_ch = peek(x, y, 1, 0)
-    -- write: if west is not dot, store east into var[west]
     if w_ch != "."
         let w_key = orca_base36.b36_val(w_ch)
-        let val = peek(x, y, 2, 0)
-        orca_grid.set_var(w_key, val)
-    -- read: if east is not dot, output var[east] south
+        orca_grid.set_var(w_key, r_ch)
     if r_ch != "."
         let r_key = orca_base36.b36_val(r_ch)
         poke(x, y, 0, 1, orca_grid.get_var(r_key))
@@ -286,7 +289,7 @@ bring orca_model
     let ch = orca_grid.get(x, y)
     let upper = orca_base36.to_upper(ch)
     -- Standard binary ops: west(-1,0) and east(1,0)
-    if upper == "A" || upper == "B" || upper == "C" || upper == "D" || upper == "F" || upper == "I" || upper == "L" || upper == "M" || upper == "O" || upper == "R" || upper == "U" || upper == "Z"
+    if upper == "A" || upper == "B" || upper == "C" || upper == "D" || upper == "F" || upper == "I" || upper == "L" || upper == "M" || upper == "R" || upper == "U" || upper == "Z"
         orca_grid.lock(x - 1, y)
         orca_grid.lock(x + 1, y)
     elif upper == "G"
@@ -311,12 +314,16 @@ bring orca_model
             len = 1
         for (let ?i = 0; i < len; i += 1)
             orca_grid.lock(x + 1 + i, y)
+    elif upper == "O"
+        -- O: x_off(-2), y_off(-1)
+        orca_grid.lock(x - 2, y)
+        orca_grid.lock(x - 1, y)
     elif upper == "P"
-        -- P: len(-1), key(+1), val(+2), then len cells south
+        -- P: len(-2), key(-1), in(+1), then len cells south
+        orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
         orca_grid.lock(x + 1, y)
-        orca_grid.lock(x + 2, y)
-        let ?len = orca_base36.b36_val(orca_grid.get(x - 1, y))
+        let ?len = orca_base36.b36_val(orca_grid.get(x - 2, y))
         if len < 1
             len = 1
         for (let ?i = 0; i < len; i += 1)
@@ -327,18 +334,18 @@ bring orca_model
         orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
     elif upper == "T"
-        -- T: key(-1), len(+1), then len track cells east
+        -- T: key(-2), len(-1), then len track cells east starting at +1
+        orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
-        let ?len = orca_base36.b36_val(orca_grid.get(x + 1, y))
+        let ?len = orca_base36.b36_val(orca_grid.get(x - 1, y))
         if len < 1
             len = 1
         for (let ?i = 0; i < len; i += 1)
             orca_grid.lock(x + 1 + i, y)
     elif upper == "V"
-        -- V: write_name(-1), read_name(+1), value(+2)
+        -- V: write(-1), read(+1)
         orca_grid.lock(x - 1, y)
         orca_grid.lock(x + 1, y)
-        orca_grid.lock(x + 2, y)
     elif upper == "X"
         -- X: x_off(-2), y_off(-1), val(+1)
         orca_grid.lock(x - 2, y)
@@ -370,6 +377,7 @@ bring orca_model
     let oct = peek_val(x, y, 2, 0)
     let note_ch = peek(x, y, 3, 0)
     let vel = peek_val(x, y, 4, 0)
+    let channel = ch % vimana.voice_count
     -- lock the 4 input cells
     orca_grid.lock(x + 1, y)
     orca_grid.lock(x + 2, y)
@@ -380,7 +388,6 @@ bring orca_model
     let pitch = orca_base36.note_to_pitch(oct, note_ch)
     if pitch < 0
         <-
-    let channel = ch % 4
     -- Velocity: dot means default 7, otherwise use as-is
     let ?velocity = vel
     if velocity < 1
@@ -393,10 +400,12 @@ bring orca_model
 :: move_e(x = num, y = num) (( bool ))
     let tx = x + 1
     if !orca_grid.in_bounds(tx, y)
+        orca_grid.set(x, y, ".")
         <- false
     let target = orca_grid.get(tx, y)
     if target != "."
         orca_grid.bang(tx, y)
+        orca_grid.set(x, y, ".")
         <- false
     orca_grid.set(tx, y, orca_grid.get(x, y))
     orca_grid.set(x, y, ".")
@@ -406,10 +415,12 @@ bring orca_model
 :: move_n(x = num, y = num) (( bool ))
     let ty = y - 1
     if !orca_grid.in_bounds(x, ty)
+        orca_grid.set(x, y, ".")
         <- false
     let target = orca_grid.get(x, ty)
     if target != "."
         orca_grid.bang(x, ty)
+        orca_grid.set(x, y, ".")
         <- false
     orca_grid.set(x, ty, orca_grid.get(x, y))
     orca_grid.set(x, y, ".")
@@ -419,10 +430,12 @@ bring orca_model
 :: move_s(x = num, y = num) (( bool ))
     let ty = y + 1
     if !orca_grid.in_bounds(x, ty)
+        orca_grid.set(x, y, ".")
         <- false
     let target = orca_grid.get(x, ty)
     if target != "."
         orca_grid.bang(x, ty)
+        orca_grid.set(x, y, ".")
         <- false
     orca_grid.set(x, ty, orca_grid.get(x, y))
     orca_grid.set(x, y, ".")
@@ -432,10 +445,12 @@ bring orca_model
 :: move_w(x = num, y = num) (( bool ))
     let tx = x - 1
     if !orca_grid.in_bounds(tx, y)
+        orca_grid.set(x, y, ".")
         <- false
     let target = orca_grid.get(tx, y)
     if target != "."
         orca_grid.bang(tx, y)
+        orca_grid.set(x, y, ".")
         <- false
     orca_grid.set(tx, y, orca_grid.get(x, y))
     orca_grid.set(x, y, ".")

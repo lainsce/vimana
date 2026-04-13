@@ -31,14 +31,18 @@ def MARGIN_Y = 16
             let ?fg = COLOR_FG
             let ?bg = COLOR_BG
 
-            -- Bang highlight
-            if orca_grid.is_banged(x, y)
-                bg = COLOR_BANG
+            -- Operators (uppercase letters and special chars) stand out: inverted
+            if orca_base36.is_upper(ch) || orca_base36.is_special(ch)
+                bg = COLOR_FG
                 fg = COLOR_BG
 
             -- Locked cells (input ports) slightly different
             if orca_grid.is_locked(x, y) && !orca_grid.is_banged(x, y)
                 fg = COLOR_OUTPUT
+
+            -- Active track cell (T operator selection)
+            if orca_grid.is_highlighted(x, y) && !orca_grid.is_banged(x, y)
+                fg = COLOR_FG
 
             -- Cursor highlight
             let is_cursor = x == orca_model.cursor_x && y == orca_model.cursor_y
@@ -58,12 +62,15 @@ def MARGIN_Y = 16
                         fg = COLOR_BG
 
             -- Draw the character
-            if ch == "."
+            if ch == "." && orca_grid.has_visual_bang(x, y)
+                -- * fired this tick: show it with bang colours
+                scr.put(px, py, "*", COLOR_BG, COLOR_BANG)
+            elif ch == "."
                 if bg != COLOR_BG
                     scr.put(px, py, ".", fg, bg)
-                elif x % 8 == 0 && y % 4 == 0
+                elif x % 16 == 0 && y % 8 == 0
                     scr.put(px, py, "+", COLOR_OUTPUT, COLOR_BG)
-                else
+                elif x % 4 == 0 && y % 2 == 0
                     scr.put(px, py, ".", COLOR_OUTPUT, COLOR_BG)
             else
                 scr.put(px, py, ch, fg, bg)
@@ -95,9 +102,9 @@ def MARGIN_Y = 16
     scr.put_text(MARGIN_X + CELL_W + CELL_W, bar_y, pos_str, COLOR_FG, COLOR_BG)
     scr.put_text(MARGIN_X + CELL_W + CELL_W + 5 * CELL_W, bar_y, left, COLOR_FG, COLOR_BG)
 
-    -- 5. Voice volume bars (right-aligned, 4 bar glyphs)
-    let vol_x = MARGIN_X + (orca_grid.GRID_W - 4) * CELL_W
-    for (let ?ch = 0; ch < 4; ch += 1)
+    -- 5. Voice volume bars (right-aligned, one bar per synth voice)
+    let vol_x = MARGIN_X + (orca_grid.GRID_W - vimana.voice_count) * CELL_W
+    for (let ?ch = 0; ch < vimana.voice_count; ch += 1)
         let vol = orca_model.voice_vol[ch]
         -- Map 0-35 to 0-8 rows filled
         let rows = stdr.floor(vol * 8 / 35)
