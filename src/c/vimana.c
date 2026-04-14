@@ -157,36 +157,80 @@ static float vimana_freq_reg_to_hz(uint16_t freq_reg) {
 
 /* ── Per-voice waveform generation ──────────────────────────────────── */
 
+/* SID-style waveform amplitude normalization.
+   The original SID chip outputs all waveforms at the same peak amplitude,
+   but their harmonic content makes triangle/noise *perceive* quieter than
+   pulse/sawtooth. We apply RMS normalization so all voices have equal
+   perceived loudness while preserving their character.
+
+   RMS values (for ±1 peak):
+     Triangle: 1/sqrt(3) ≈ 0.577  → gain ≈ 1.732
+     Sawtooth: 1/sqrt(3) ≈ 0.577  → gain ≈ 1.732
+     Pulse:    1.0                 → gain =  1.0
+     Noise:    ~0.577              → gain ≈ 1.732
+     PSG:      1.0                 → gain =  1.0 */
+
+static const float vimana_wave_gain[5] = {
+  1.7320508f, /* VIMANA_WAVE_TRIANGLE */
+  1.7320508f, /* VIMANA_WAVE_SAWTOOTH */
+  1.0f,       /* VIMANA_WAVE_PULSE */
+  0.25f,      /* VIMANA_WAVE_NOISE — broadband energy needs attenuation */
+  1.0f        /* VIMANA_WAVE_PSG */
+};
+
 /* Triangle waveform from phase — used standalone for ring modulation source */
 static inline float vimana_triangle_from_phase(float p) {
   return 2.0f * fabsf(2.0f * p - 1.0f) - 1.0f;
 }
 
-static inline float vimana_voice_sample(VimanaVoice *v) {
+static inline float vimana_voice_sample(VimanaVoice *v, int sr) {
   float p = v->phase;
+  float s;
   switch (v->waveform) {
   case VIMANA_WAVE_TRIANGLE:
-    return vimana_triangle_from_phase(p);
+    s = vimana_triangle_from_phase(p);
+    break;
   case VIMANA_WAVE_SAWTOOTH:
-    return 2.0f * p - 1.0f;
+    s = 2.0f * p - 1.0f;
+    break;
   case VIMANA_WAVE_PULSE:
-    return (p < v->pulse_width) ? 1.0f : -1.0f;
+    s = (p < v->pulse_width) ? 1.0f : -1.0f;
+    break;
   case VIMANA_WAVE_NOISE: {
-    /* Galois LFSR (bit 22 taps, period ~4M) — stepped each cycle */
-    uint32_t lf = v->noise_lfsr;
-    if (lf == 0) lf = 0xACE1u;
-    unsigned int bit = lf & 1u;
-    lf >>= 1;
-    if (bit) lf ^= 0x00400000u;
-    v->noise_lfsr = lf;
-    return ((float)(lf & 0xFFFF) / 32767.5f) - 1.0f;
+    /* SID-style noise: 23-bit LFSR clocked at oscillator frequency.
+       The real SID clocks the LFSR at freq_hz, so at higher pitches
+       it advances many times per sample producing true white noise. */
+    if (sr > 0 && v->freq_hz > 0) {
+      float clocks = v->freq_hz / (float)sr;
+      int n = (int)clocks;
+      /* Always clock at least once per sample if freq > 0 */
+      if (n == 0) n = 1;
+      /* Cap to avoid CPU waste at extreme high frequencies */
+      if (n > 128) n = 128;
+
+      for (int i = 0; i < n; i++) {
+        uint32_t lf = v->noise_lfsr;
+        if (lf == 0) lf = 0x7FFFFF; /* 23-bit, non-zero seed */
+        /* XOR feedback at bits 22 and 17 (SID 6581 taps) */
+        unsigned int bit = ((lf >> 22) ^ (lf >> 17)) & 1;
+        lf = (lf << 1) | bit;
+        v->noise_lfsr = lf & 0x7FFFFF; /* Keep 23 bits */
+      }
+    }
+    /* Output is the LSB of the LFSR */
+    s = (v->noise_lfsr & 1) ? 1.0f : -1.0f;
+    break;
   }
   case VIMANA_WAVE_PSG:
     /* 80s PSG: fixed 50% square (AY-3-8910 style) */
-    return (p < 0.5f) ? 1.0f : -1.0f;
+    s = (p < 0.5f) ? 1.0f : -1.0f;
+    break;
   default: /* fallback: pulse (square) */
-    return (p < 0.5f) ? 1.0f : -1.0f;
+    s = (p < 0.5f) ? 1.0f : -1.0f;
+    break;
   }
+  /* Apply SID-style RMS normalization gain */
+  return s * vimana_wave_gain[v->waveform];
 }
 
 /* ── ADSR envelope tick (called once per sample per voice) ──────────── */
@@ -270,8 +314,10 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
   float fc = (float)filt->cutoff / 2048.0f;
   fc = fc * fc; /* quadratic curve for more musical sweep */
   if (fc > 0.99f) fc = 0.99f;
-  float q_factor = 1.0f - (float)filt->resonance / 17.0f;
-  if (q_factor < 0.05f) q_factor = 0.05f;
+  /* Resonance: higher = more feedback = more resonance (SID-accurate).
+     q_factor approaches 0 at resonance=15, nearing self-oscillation. */
+  float q_factor = 1.0f - (float)filt->resonance / 16.0f;
+  if (q_factor < 0.01f) q_factor = 0.01f;
 
   /* Master volume: 0–15 linear scale */
   float master_scale = (float)system->master_volume / 15.0f;
@@ -330,26 +376,43 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
       if (v->env_stage == VIMANA_ENV_OFF)
         continue;
 
-      float s = vimana_voice_sample(v);
+      float s = vimana_voice_sample(v, sr);
 
-      /* Ring modulation (tone voices 0–2 and 4–6) */
+      /* Ring modulation (tone voices 0–2 and 4–6).
+         SID-style: multiply by source voice's raw waveform output. */
       if (ch < 3 && v->ring_mod) {
         int src = (ch + 2) % 3;
-        float tri = vimana_triangle_from_phase(system->voices[src].phase);
-        s *= tri;
+        float mod = vimana_voice_sample(&system->voices[src], sr);
+        s *= mod;
       } else if (ch >= 4 && ch < 7 && v->ring_mod) {
         int src = 4 + ((ch - 4 + 2) % 3);
-        float tri = vimana_triangle_from_phase(system->voices[src].phase);
-        s *= tri;
+        float mod = vimana_voice_sample(&system->voices[src], sr);
+        s *= mod;
       }
 
       /* 5. Amplitude × Envelope */
       voice_out[ch] = s * v->amp * v->env_level;
 
-      /* PSG 4-bit DAC quantization — stepped volume levels */
+      /* PSG 4-bit DAC quantization — AY-3-8910 style logarithmic volume.
+         The AY-3-8910 volume table follows ~1.5 dB per step (logarithmic),
+         not linear steps. We quantize to 16 levels matching the AY curve. */
       if (v->waveform == VIMANA_WAVE_PSG) {
-        float val = voice_out[ch] * 8.0f;
-        voice_out[ch] = roundf(val) / 8.0f;
+        /* AY-3-8910 logarithmic amplitude table (normalized to 0-1) */
+        static const float ay_vol_table[16] = {
+          0.0000f, 0.0134f, 0.0168f, 0.0211f,
+          0.0266f, 0.0335f, 0.0422f, 0.0531f,
+          0.0668f, 0.0841f, 0.1059f, 0.1333f,
+          0.1678f, 0.2112f, 0.2658f, 0.3346f
+        };
+        /* Map from [-1,1] to AY amplitude steps */
+        float abs_val = voice_out[ch];
+        if (abs_val < 0.0f) abs_val = -abs_val;
+        int level = (int)(abs_val * 15.0f + 0.5f);
+        if (level > 15) level = 15;
+        if (level < 0) level = 0;
+        float ay_amp = ay_vol_table[level];
+        float sign = (voice_out[ch] >= 0.0f) ? 1.0f : -1.0f;
+        voice_out[ch] = sign * ay_amp * 3.0f; /* normalize to ~[-1,1] range */
       }
     }
 
@@ -410,7 +473,7 @@ static void vimana_voice_init(VimanaVoice *v) {
   v->sync = false;
   v->ring_mod = false;
   v->samples_left = 0;
-  v->noise_lfsr = 0xACE1u;
+  v->noise_lfsr = 0x7FFFFF; /* 23-bit LFSR seed (non-zero) */
   v->age = 0;
 }
 

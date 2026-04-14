@@ -357,14 +357,9 @@ def ?resizer_dragging = false
 
 -> ()
     let sys = vimana.system()
-    let scr = vimana.screen("DRAW", 680, 384, 1)
+    let scr = vimana.screen("Draw", 680, 384, 1)
 
     draw_font.setup(scr)
-
-    scr.set_palette(vimana.color_bg, "#ffffff")
-       .set_palette(vimana.color_fg, "#000000")
-       .set_palette(vimana.color_2,  "#77cc99")
-       .set_palette(vimana.color_3,  "#ff3333")
 
     scr.set_titlebar_title("Draw")
 
