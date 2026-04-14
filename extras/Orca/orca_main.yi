@@ -49,9 +49,10 @@ def ?mouse_dragging = false
     let sys = vimana.system()
     let scr = vimana.screen("Orca", SCREEN_W, SCREEN_H, SCALE)
     scr.set_palette(vimana.color_bg, "#000000")
-       .set_palette(vimana.color_fg, "#77ddcc")
-       .set_palette(vimana.color_2, "#ffbb22")
-       .set_palette(vimana.color_3, "#888888")
+       .set_palette(vimana.color_fg, "#ffffff")
+       .set_palette(vimana.color_2, "#77ddcc")
+       .set_palette(vimana.color_3, "#ffbb22")
+       .set_palette(vimana.color_4, "#888888")
     let dev = sys.device()
     let fsys = sys.file()
 
@@ -140,7 +141,7 @@ def ?mouse_dragging = false
 
             -- Space = play/pause
             if dev.key_pressed(KEY_SPACE)
-                orca_model.toggle_play()
+                orca_model.toggle_play(sys)
 
             -- Backspace/Delete = clear cell
             if dev.key_pressed(KEY_BACKSPACE) || dev.key_pressed(KEY_DELETE)
@@ -150,7 +151,7 @@ def ?mouse_dragging = false
             if dev.key_pressed(KEY_ESCAPE)
                 orca_model.clear_sel()
                 if orca_model.playing
-                    orca_model.toggle_play()
+                    orca_model.toggle_play(sys)
 
             -- [ / ] = bpm (shift = ±1, plain = ±10)
             if dev.key_pressed(KEY_LBRACKET)

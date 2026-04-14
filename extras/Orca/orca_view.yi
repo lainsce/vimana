@@ -8,8 +8,9 @@ bring orca_model
 
 def COLOR_BG = 0
 def COLOR_FG = 1
-def COLOR_BANG = 2
-def COLOR_OUTPUT = 3
+def COLOR_DATA = 2
+def COLOR_BANG = 3
+def COLOR_OUTPUT = 4
 
 def CELL_W = 8
 def CELL_H = 16
@@ -27,18 +28,28 @@ def MARGIN_Y = 16
             let px = MARGIN_X + x * CELL_W
             let py = MARGIN_Y + y * CELL_H
 
-            -- Determine cell color
-            let ?fg = COLOR_FG
+            -- Determine cell color (default dim; operators and highlights override)
+            let ?fg = COLOR_OUTPUT
             let ?bg = COLOR_BG
 
-            -- Operators (uppercase letters and special chars) stand out: inverted
-            if orca_base36.is_upper(ch) || orca_base36.is_special(ch)
+            -- Cells acting as data: lowercase nsew movers, uppercase NSEW movers, or output cells written this frame
+            let is_data_lower = ch == "n" || ch == "s" || ch == "e" || ch == "w"
+            let is_data_mover = ch == "N" || ch == "S" || ch == "E" || ch == "W"
+            let is_data = is_data_lower || is_data_mover || orca_grid.is_output(x, y)
+
+            -- Operators (uppercase/special, unlocked) stand out: inverted
+            -- Locked uppercase letters are input values — never invert them
+            if (orca_base36.is_upper(ch) || orca_base36.is_special(ch)) && !is_data && !orca_grid.is_locked(x, y)
                 bg = COLOR_FG
                 fg = COLOR_BG
 
-            -- Locked cells (input ports) slightly different
-            if orca_grid.is_locked(x, y) && !orca_grid.is_banged(x, y)
-                fg = COLOR_OUTPUT
+            -- Non-locked data cells (movers, outputs) are visible
+            if is_data && !orca_grid.is_locked(x, y)
+                fg = COLOR_DATA
+
+            -- Locked east-input cells (direct operands) use COLOR_DATA; other locked cells stay dim
+            if orca_grid.is_east_input(x, y) && !orca_grid.is_banged(x, y)
+                fg = COLOR_DATA
 
             -- Active track cell (T operator selection)
             if orca_grid.is_highlighted(x, y) && !orca_grid.is_banged(x, y)
@@ -72,8 +83,17 @@ def MARGIN_Y = 16
                     scr.put(px, py, "+", COLOR_OUTPUT, COLOR_BG)
                 elif x % 4 == 0 && y % 2 == 0
                     scr.put(px, py, ".", COLOR_OUTPUT, COLOR_BG)
+            elif is_data
+                -- Data cell: color already set in fg (dim or cyan for east inputs)
+                if bg != COLOR_BG
+                    scr.put(px, py, ch, fg, bg)
+                else
+                    scr.put(px, py, ch, fg, COLOR_BG)
             else
-                scr.put(px, py, ch, fg, bg)
+                if bg != COLOR_BG
+                    scr.put(px, py, ch, fg, bg)
+                else
+                    scr.put(px, py, ch, fg, COLOR_BG)
 
     -- Status bar below grid
     let bar_y = MARGIN_Y + orca_grid.GRID_H * CELL_H + 8

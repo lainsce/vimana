@@ -25,6 +25,7 @@ bring orca_model
     let tx = x + ox
     let ty = y + oy
     orca_grid.set(tx, ty, ch)
+    orca_grid.mark_output(tx, ty)
 ;
 
 -- Write base-36 value to cell
@@ -288,12 +289,12 @@ bring orca_model
 :: lock_ports(x = num, y = num) (( -- ))
     let ch = orca_grid.get(x, y)
     let upper = orca_base36.to_upper(ch)
-    -- Standard binary ops: west(-1,0) and east(1,0)
+    -- Standard binary ops: west(-1,0) and east(1,0); east is a direct operand
     if upper == "A" || upper == "B" || upper == "C" || upper == "D" || upper == "F" || upper == "I" || upper == "L" || upper == "M" || upper == "R" || upper == "U" || upper == "Z"
         orca_grid.lock(x - 1, y)
-        orca_grid.lock(x + 1, y)
+        orca_grid.lock_east(x + 1, y)
     elif upper == "G"
-        -- G: x_off(-3), y_off(-2), len(-1), then len cells east
+        -- G: x_off(-3), y_off(-2), len(-1), then len data cells east (not operands)
         orca_grid.lock(x - 3, y)
         orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
@@ -307,7 +308,7 @@ bring orca_model
     elif upper == "J"
         orca_grid.lock(x, y - 1)
     elif upper == "K"
-        -- K: len(-1), then len name cells east
+        -- K: len(-1), then len name cells east (variable keys, not operands)
         orca_grid.lock(x - 1, y)
         let ?len = orca_base36.b36_val(orca_grid.get(x - 1, y))
         if len < 1
@@ -319,10 +320,10 @@ bring orca_model
         orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
     elif upper == "P"
-        -- P: len(-2), key(-1), in(+1), then len cells south
+        -- P: len(-2), key(-1), in(+1) is a direct operand, then len cells south
         orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
-        orca_grid.lock(x + 1, y)
+        orca_grid.lock_east(x + 1, y)
         let ?len = orca_base36.b36_val(orca_grid.get(x - 2, y))
         if len < 1
             len = 1
@@ -334,7 +335,7 @@ bring orca_model
         orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
     elif upper == "T"
-        -- T: key(-2), len(-1), then len track cells east starting at +1
+        -- T: key(-2), len(-1), then len track cells east (data sequence, not operands)
         orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
         let ?len = orca_base36.b36_val(orca_grid.get(x - 1, y))
@@ -343,22 +344,22 @@ bring orca_model
         for (let ?i = 0; i < len; i += 1)
             orca_grid.lock(x + 1 + i, y)
     elif upper == "V"
-        -- V: write(-1), read(+1)
+        -- V: write(-1), read(+1) is a direct operand
         orca_grid.lock(x - 1, y)
-        orca_grid.lock(x + 1, y)
+        orca_grid.lock_east(x + 1, y)
     elif upper == "X"
-        -- X: x_off(-2), y_off(-1), val(+1)
+        -- X: x_off(-2), y_off(-1), val(+1) is a direct operand
         orca_grid.lock(x - 2, y)
         orca_grid.lock(x - 1, y)
-        orca_grid.lock(x + 1, y)
+        orca_grid.lock_east(x + 1, y)
     elif upper == "Y"
         orca_grid.lock(x - 1, y)
     elif upper == "="
-        -- =: ch(+1), oct(+2), note(+3), vel(+4)
-        orca_grid.lock(x + 1, y)
-        orca_grid.lock(x + 2, y)
-        orca_grid.lock(x + 3, y)
-        orca_grid.lock(x + 4, y)
+        -- =: all four inputs are direct operands
+        orca_grid.lock_east(x + 1, y)
+        orca_grid.lock_east(x + 2, y)
+        orca_grid.lock_east(x + 3, y)
+        orca_grid.lock_east(x + 4, y)
 ;
 
 -- * bang: bangs all 4 cardinal neighbors
@@ -378,11 +379,11 @@ bring orca_model
     let note_ch = peek(x, y, 3, 0)
     let vel = peek_val(x, y, 4, 0)
     let channel = ch % vimana.voice_count
-    -- lock the 4 input cells
-    orca_grid.lock(x + 1, y)
-    orca_grid.lock(x + 2, y)
-    orca_grid.lock(x + 3, y)
-    orca_grid.lock(x + 4, y)
+    -- lock the 4 input cells as east operands
+    orca_grid.lock_east(x + 1, y)
+    orca_grid.lock_east(x + 2, y)
+    orca_grid.lock_east(x + 3, y)
+    orca_grid.lock_east(x + 4, y)
     if note_ch == "."
         <-
     let pitch = orca_base36.note_to_pitch(oct, note_ch)
@@ -405,7 +406,7 @@ bring orca_model
     let target = orca_grid.get(tx, y)
     if target != "."
         orca_grid.bang(tx, y)
-        orca_grid.set(x, y, ".")
+        orca_grid.set(x, y, "*")
         <- false
     orca_grid.set(tx, y, orca_grid.get(x, y))
     orca_grid.set(x, y, ".")
@@ -420,7 +421,7 @@ bring orca_model
     let target = orca_grid.get(x, ty)
     if target != "."
         orca_grid.bang(x, ty)
-        orca_grid.set(x, y, ".")
+        orca_grid.set(x, y, "*")
         <- false
     orca_grid.set(x, ty, orca_grid.get(x, y))
     orca_grid.set(x, y, ".")
@@ -435,7 +436,7 @@ bring orca_model
     let target = orca_grid.get(x, ty)
     if target != "."
         orca_grid.bang(x, ty)
-        orca_grid.set(x, y, ".")
+        orca_grid.set(x, y, "*")
         <- false
     orca_grid.set(x, ty, orca_grid.get(x, y))
     orca_grid.set(x, y, ".")
@@ -450,7 +451,7 @@ bring orca_model
     let target = orca_grid.get(tx, y)
     if target != "."
         orca_grid.bang(tx, y)
-        orca_grid.set(x, y, ".")
+        orca_grid.set(x, y, "*")
         <- false
     orca_grid.set(tx, y, orca_grid.get(x, y))
     orca_grid.set(x, y, ".")

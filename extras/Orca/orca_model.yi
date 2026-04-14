@@ -66,10 +66,11 @@ def ?voice_vol = []: [any]
             voice_vol[i] = voice_vol[i] - 1
 ;
 
-:: stop_all_voices() (( -- ))
-    let sys = vimana.system()
+:: stop_all_voices(sys = vimana.system) (( -- ))
+    sys.begin_audio()
     for (let ?ch = 0; ch < VOICE_COUNT; ch += 1)
         sys.stop_voice(ch)
+    sys.end_audio()
     reset_voice_vols()
 ;
 
@@ -97,13 +98,13 @@ def ?voice_vol = []: [any]
     dirty = true
 ;
 
-:: toggle_play() (( -- ))
+:: toggle_play(sys = vimana.system) (( -- ))
     playing = !playing
     if !playing -- Not playing, stop all voices
         -- Flush the current simulation frame so no operator stays active
         -- visually or logically after pause.
         orca_grid.clear_frame()
-        stop_all_voices()
+        stop_all_voices(sys)
     dirty = true
 ;
 

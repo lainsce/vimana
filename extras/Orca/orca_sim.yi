@@ -27,8 +27,8 @@ bring orca_model
                         end_x = cx
                         cx = orca_grid.GRID_W
                 px = end_x
-            elif orca_base36.is_upper(pch)
-                -- Uppercase operator: lock its input ports
+            elif orca_base36.is_upper(pch) || pch == "="
+                -- Uppercase or special operator: lock its input ports
                 let pupper = orca_base36.to_upper(pch)
                 if pupper != "E" && pupper != "N" && pupper != "S" && pupper != "W"
                     orca_ops.lock_ports(px, py)
@@ -83,7 +83,8 @@ bring orca_model
                     let lupper = orca_base36.to_upper(lch)
                     if lupper != "." && lupper != "*" && lupper != "#"
                         if lupper != "E" && lupper != "N" && lupper != "S" && lupper != "W"
-                            orca_ops.lock_ports(lx, ly)
+                            if lupper != "A" && lupper != "B" && lupper != "C" && lupper != "D" && lupper != "F" && lupper != "G"
+                                orca_ops.lock_ports(lx, ly)
 
     -- Pass 3: all other operators, top-to-bottom left-to-right
     for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
@@ -101,9 +102,11 @@ bring orca_model
                     orca_ops.op_play(x, y, sys)
             else
                 let upper = orca_base36.to_upper(ch)
-                let should_run = orca_base36.is_upper(ch) || orca_grid.is_banged(x, y)
+                -- Lowercase a-g are data: never execute, even when banged
+                let is_lower_abcdfg = !orca_base36.is_upper(ch) && (upper == "A" || upper == "B" || upper == "C" || upper == "D" || upper == "F" || upper == "G")
+                let should_run = (orca_base36.is_upper(ch) || orca_grid.is_banged(x, y)) && !is_lower_abcdfg
                 if !should_run
-                    -- skip: lowercase without bang
+                    -- skip: lowercase without bang, or lowercase a-g data
                 elif upper == "E" || upper == "N" || upper == "S" || upper == "W"
                     -- movement already handled
                 elif upper == "A"

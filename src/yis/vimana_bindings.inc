@@ -122,8 +122,8 @@ static void vimana_debug_dump_icn_value(YisVal value, const char *what) {
 }
 
 static uint16_t vimana_icn_short_from_val(YisVal value) {
-  if (value.tag == EVT_INT)
-    return (uint16_t)yis_as_int(value);
+  if (vimana_is_numeric_tag(value.tag))
+    return (uint16_t)(yis_as_int(value) & 0xFFFFu);
   YisStr *tmp = NULL;
   const char *text = vimana_required_cstr(value, &tmp);
   unsigned long out = text && text[0] ? strtoul(text, NULL, 16) : 0;
