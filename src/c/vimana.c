@@ -1658,7 +1658,7 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
   const unsigned int rMA = screen->port_auto & 0x4;
   const unsigned int rML = vimana_screen_auto_repeat(screen) - 1;
   const unsigned int rDX = rMX << 3;
-  const unsigned int rDY = rMY << 2;
+  const unsigned int rDY = rMY << 3;
   const unsigned int flipx = ctrl & 0x10;
   const unsigned int flipy = ctrl & 0x20;
   const int dx = flipx ? -(int)rDY : (int)rDY;
