@@ -181,9 +181,9 @@ bring orca_model
 -- Q: query(x_off, y_off; len) reads len cells at offset, writes below self
 -- Q: query(x_off, y_off; len) reads len cells at offset, outputs left of Q
 :: op_q(x = num, y = num) (( -- ))
-    let xo = peek_val(x, y, -1, 0)
-    let yo = peek_val(x, y, -1, 0)
-    let len = peek_val(x, y, 1, 0)
+    let xo = peek_val(x, y, -3, 0)
+    let yo = peek_val(x, y, -2, 0)
+    let len = peek_val(x, y, -1, 0)
     if len < 1
         len = 1
     let out_x = 1 - len
