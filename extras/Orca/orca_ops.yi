@@ -89,8 +89,8 @@ bring orca_model
 
 -- G: gen(x_off, y_off; len) copies len cells east into offset
 :: op_g(x = num, y = num) (( -- ))
-    let xo = peek_val(x, y, -2, 0)
-    let yo = peek_val(x, y, -1, 0)
+    let xo = peek_val(x, y, -3, 0)
+    let yo = peek_val(x, y, -2, 0)
     let len = peek_val(x, y, -1, 0)
     if len < 1
         len = 1
@@ -157,7 +157,7 @@ bring orca_model
 -- O: read(x, y; read) reads cell at offset, output south
 -- Layout: [x][-2] [y][-1] O → output south
 :: op_o(x = num, y = num) (( -- ))
-    let xo = peek_val(x, y, -1, 0)
+    let xo = peek_val(x, y, -2, 0)
     let yo = peek_val(x, y, -1, 0)
     let ch = orca_grid.get(x + xo, y + yo + 1)
     poke(x, y, 0, 1, ch)
@@ -166,7 +166,7 @@ bring orca_model
 -- P: push(len, key; in) writes east operand into ring buffer below
 -- Layout: [len][-2] [key][-1] P [in]+1 → south buffer
 :: op_p(x = num, y = num) (( -- ))
-    let len = peek_val(x, y, -1, 0)
+    let len = peek_val(x, y, -2, 0)
     let key = peek_val(x, y, -1, 0)
     if len < 1
         len = 1
@@ -178,8 +178,7 @@ bring orca_model
     poke(x, y, 0, 1 + pos, val)
 ;
 
--- Q: query(x_off, y_off; len) reads len cells at offset, writes below self
--- Q: query(x_off, y_off; len) reads len cells at offset, outputs left of Q
+-- Q: query(x_off, y_off; len) reads len cells at offset, outputs below self
 :: op_q(x = num, y = num) (( -- ))
     let xo = peek_val(x, y, -3, 0)
     let yo = peek_val(x, y, -2, 0)

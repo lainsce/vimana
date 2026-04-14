@@ -56,10 +56,20 @@ def ?mouse_dragging = false
     let dev = sys.device()
     let fsys = sys.file()
 
-    -- Use a consistent pulse voice on every synth channel so stop/pause
-    -- behaves the same no matter which Orca channel is active.
+    -- Initialize voices according to Vimana's spec:
+    -- 0-2: main SID voices (triangle, sawtooth, pulse)
+    -- 3: unused/no main voice (noise)
+    -- 4-6: accompaniment SID voices (triangle, sawtooth, pulse)
+    -- 7: PSG voice
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_voice(1, vimana.wave_sawtooth)
+    sys.set_voice(2, vimana.wave_pulse)
+    sys.set_voice(3, vimana.wave_triangle)
+    sys.set_voice(4, vimana.wave_sawtooth)
+    sys.set_voice(5, vimana.wave_pulse)
+    sys.set_voice(6, vimana.wave_noise)
+    sys.set_voice(7, vimana.wave_psg)
     for (let ?ch = 0; ch < vimana.voice_count; ch += 1)
-        sys.set_voice(ch, vimana.wave_pulse)
         sys.set_envelope(ch, 0, 5, 5, 0)
 
     orca_grid.init()
