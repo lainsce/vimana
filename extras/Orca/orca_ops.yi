@@ -207,6 +207,15 @@ bring orca_model
 :: op_t(x = num, y = num) (( -- ))
     let key = peek_val(x, y, -2, 0)
     let len = peek_val(x, y, -1, 0)
+    -- If len is not a digit (like 'T'), treat it as len of following cells
+    if len > 35
+        len = 0
+        for (let ?tx = x + 1; tx < orca_grid.GRID_W; tx += 1)
+            let tc = orca_grid.get(tx, y)
+            if tc == "." || orca_base36.is_upper(tc) || orca_base36.is_lower(tc)
+                len = len + 1
+            else
+                tx = orca_grid.GRID_W
     if len < 1
         len = 1
     let pos = key % len
@@ -236,16 +245,20 @@ bring orca_model
 
 -- V: var(write; read) — east cell is both the stored value and the variable name read
 -- Write: if west != '.', store east into var[west]
--- Read: output var[east] south
+-- Read: handled in separate pass after all operators write
 :: op_v(x = num, y = num) (( -- ))
     let w_ch = peek(x, y, -1, 0)
     let r_ch = peek(x, y, 1, 0)
     if w_ch != "."
         let w_key = orca_base36.b36_val(w_ch)
         orca_grid.set_var(w_key, r_ch)
+;
+
+-- V read pass: output east cell directly (not var[east])
+:: op_v_read(x = num, y = num) (( -- ))
+    let r_ch = peek(x, y, 1, 0)
     if r_ch != "."
-        let r_key = orca_base36.b36_val(r_ch)
-        poke(x, y, 0, 1, orca_grid.get_var(r_key))
+        poke(x, y, 0, 1, r_ch)
 ;
 
 -- W: move west (handled in movement pass)

@@ -153,4 +153,11 @@ bring orca_model
                     orca_ops.op_y(x, y)
                 elif upper == "Z"
                     orca_ops.op_z(x, y)
+
+    -- Pass 4: V operator read pass — output var[east] south after all writes complete
+    for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
+        for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
+            let ch = orca_grid.get(x, y)
+            if orca_base36.to_upper(ch) == "V"
+                orca_ops.op_v_read(x, y)
 ;
