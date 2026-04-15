@@ -68,7 +68,7 @@ bring stdr
 ;
 
 :: is_special(ch = string) (( bool ))
-    <- ch == "*" || ch == "#" || ch == "="
+    <- ch == "*" || ch == "#" || ch == ":"
 ;
 
 :: to_upper(ch = string) (( string ))

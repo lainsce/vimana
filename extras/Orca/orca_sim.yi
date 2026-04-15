@@ -27,7 +27,7 @@ bring orca_model
                         end_x = cx
                         cx = orca_grid.GRID_W
                 px = end_x
-            elif orca_base36.is_upper(pch) || pch == "="
+            elif orca_base36.is_upper(pch) || pch == ":" || pch == "$" || pch == ";" || pch == "="
                 -- Uppercase or special operator: lock its input ports
                 let pupper = orca_base36.to_upper(pch)
                 if pupper != "E" && pupper != "N" && pupper != "S" && pupper != "W"
@@ -99,9 +99,18 @@ bring orca_model
                 orca_ops.op_bang(x, y)
                 orca_grid.mark_visual_bang(x, y)
                 orca_grid.set(x, y, ".")
+            elif ch == ":"
+                if orca_grid.is_banged(x, y)
+                    orca_ops.op_colon(x, y, sys)
+            elif ch == "$"
+                if orca_grid.is_banged(x, y)
+                    orca_ops.op_dollar(x, y, sys)
+            elif ch == ";"
+                if orca_grid.is_banged(x, y)
+                    orca_ops.op_semi(x, y, sys)
             elif ch == "="
                 if orca_grid.is_banged(x, y)
-                    orca_ops.op_play(x, y, sys)
+                    orca_ops.op_eq(x, y, sys)
             else
                 let upper = orca_base36.to_upper(ch)
                 -- Lowercase a-g are data: never execute, even when banged

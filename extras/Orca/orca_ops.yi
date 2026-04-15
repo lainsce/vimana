@@ -205,20 +205,11 @@ bring orca_model
 ;
 
 -- S: move south (handled in movement pass)
--- T: track(key, len; out) reads cell at key within next len east
+-- T: track(key, len; track cells) reads track cell at key, outputs south
 -- Layout: [key][-2] [len][-1] T [track cells +1..+len] → output south
 :: op_t(x = num, y = num) (( -- ))
     let key = peek_val(x, y, -2, 0)
     let len = peek_val(x, y, -1, 0)
-    -- If len is not a digit (like 'T'), treat it as len of following cells
-    if len > 35
-        len = 0
-        for (let ?tx = x + 1; tx < orca_grid.GRID_W; tx += 1)
-            let tc = orca_grid.get(tx, y)
-            if tc == "." || orca_base36.is_upper(tc) || orca_base36.is_lower(tc)
-                len = len + 1
-            else
-                tx = orca_grid.GRID_W
     if len < 1
         len = 1
     let pos = key % len
@@ -371,12 +362,35 @@ bring orca_model
         orca_grid.lock_east(x + 1, y)
     elif upper == "Y"
         orca_grid.lock(x - 1, y)
-    elif upper == "="
-        -- =: all four inputs are direct operands
+    elif upper == ":"
+        -- :: all four inputs are direct operands (midi)
         orca_grid.lock_east(x + 1, y)
         orca_grid.lock_east(x + 2, y)
         orca_grid.lock_east(x + 3, y)
         orca_grid.lock_east(x + 4, y)
+    elif upper == "$"
+        -- $: cmd(+1), optional modifier(+2)
+        orca_grid.lock_east(x + 1, y)
+    elif upper == ";"
+        -- ;: message east (variable length)
+        let ?msg_len = 1
+        for (let ?ml = 1; ml < 10; ml += 1)
+            if orca_grid.get(x + ml, y) != "."
+                msg_len = ml
+            else
+                ml = 10
+        for (let ?ml = 1; ml <= msg_len; ml += 1)
+            orca_grid.lock_east(x + ml, y)
+    elif upper == "="
+        -- =: address east (variable length)
+        let ?addr_len = 1
+        for (let ?al = 1; al < 10; al += 1)
+            if orca_grid.get(x + al, y) != "."
+                addr_len = al
+            else
+                al = 10
+        for (let ?al = 1; al <= addr_len; al += 1)
+            orca_grid.lock_east(x + al, y)
 ;
 
 -- * bang: bangs all 4 cardinal neighbors
@@ -389,8 +403,8 @@ bring orca_model
 
 -- # comment: handled in sim (skip rest of row)
 
--- = play(ch, oct, note, vel) triggers synth on bang
-:: op_play(x = num, y = num, sys = vimana.system) (( -- ))
+-- : midi(ch, oct, note, vel) triggers synth on bang
+:: op_colon(x = num, y = num, sys = vimana.system) (( -- ))
     let ch = peek_val(x, y, 1, 0)
     let oct = peek_val(x, y, 2, 0)
     let note_ch = peek(x, y, 3, 0)
@@ -412,6 +426,52 @@ bring orca_model
         velocity = 7
     sys.play_voice(channel, pitch, velocity)
     orca_model.set_voice_vol(channel, velocity)
+;
+
+-- $: self(cmd) executes Orca command on bang
+:: op_dollar(x = num, y = num, sys = vimana.system) (( -- ))
+    let cmd_ch = peek(x, y, 1, 0)
+    orca_grid.lock_east(x + 1, y)
+    if cmd_ch == "."
+        <- 
+    if cmd_ch == "p"
+        orca_model.set_playing(true)
+    elif cmd_ch == "P"
+        orca_model.set_playing(false)
+    elif cmd_ch == "r"
+        orca_model.set_frame(0)
+    elif cmd_ch == "R"
+        sys.spawn("open .")
+;
+
+-- ;: udp(msg) sends UDP message on bang (uses netcat if available)
+:: op_semi(x = num, y = num, sys = vimana.system) (( -- ))
+    let msg = ""
+    for (let ?ix = 1; ix < 10; ix += 1)
+        let mc = orca_grid.get(x + ix, y)
+        if mc == "."
+            ix = 10
+        else
+            msg = msg + mc
+    if msg == ""
+        <- 
+    let cmd = "nc -u -w1 127.0.0.1 49161 <<< " + msg
+    sys.spawn(cmd)
+;
+
+-- =: osc(addr) sends OSC message on bang (uses netcat if available)
+:: op_eq(x = num, y = num, sys = vimana.system) (( -- ))
+    let addr = ""
+    for (let ?ix = 1; ix < 10; ix += 1)
+        let mc = orca_grid.get(x + ix, y)
+        if mc == "."
+            ix = 10
+        else
+            addr = addr + mc
+    if addr == ""
+        <- 
+    let cmd = "nc -u -w1 127.0.0.1 4560 <<< /" + addr
+    sys.spawn(cmd)
 ;
 
 -- Movement operators: return true if cell should be removed from origin
