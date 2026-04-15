@@ -187,7 +187,10 @@ bring orca_model
         len = 1
     let out_x = 1 - len
     for (let ?i = 0; i < len; i += 1)
-        let ch = orca_grid.get(x + xo + 1 + i, y + yo + 1)
+        let src_x = x + xo + 1 + i
+        let src_y = y + yo + 1
+        let ch = orca_grid.get(src_x, src_y)
+        orca_grid.mark_q_read(src_x, src_y)
         poke(x, y, out_x + i, 1, ch)
 ;
 
@@ -254,11 +257,13 @@ bring orca_model
         orca_grid.set_var(w_key, r_ch)
 ;
 
--- V read pass: output east cell directly (not var[east])
+-- V read pass: output var[east] south
 :: op_v_read(x = num, y = num) (( -- ))
     let r_ch = peek(x, y, 1, 0)
     if r_ch != "."
-        poke(x, y, 0, 1, r_ch)
+        let r_key = orca_base36.b36_val(r_ch)
+        let val = orca_grid.get_var(r_key)
+        poke(x, y, 0, 1, val)
 ;
 
 -- W: move west (handled in movement pass)

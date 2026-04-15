@@ -29,8 +29,9 @@ bring orca_model
         else
             if orca_grid.in_bounds(x, y)
                 orca_grid.set(x, y, ch)
+                orca_grid.clear_output(x, y)
             x = x + 1
-;
+    ;
 
 -- Save
 :: save(fsys = vimana.file, scr = vimana.screen) (( -- ))

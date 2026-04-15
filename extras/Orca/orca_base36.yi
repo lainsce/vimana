@@ -85,41 +85,81 @@ bring stdr
 
 -- Note to semitone: matches Orca's midi_note_number_of / transpose table
 -- Letters only (A-Z). Lowercase = sharp (+1). Digits return -1.
--- C=0 D=2 E=4 F=5 G=7 A=9 B=11 H=9 I=11 J=12 K=14 ... Z=35
+-- C=0 D=2 E=4 F=5 G=7 A=9 B=11 H=9 I=11 J=12 K=14 L=16 M=18 N=20 O=21 P=23 Q=25 R=26 S=28 T=30 U=31 V=33 W=35 X=37 Y=38 Z=40
 :: note_semitone(ch = string) (( num ))
     let u = to_upper(ch)
     let sharp = is_lower(ch)
     let code = stdr.char_code(u)
     if code < 65 || code > 90
         <- -1
-    -- A and B are aliases: A=degree5(=A0), B=degree6(=B0)
-    -- C through Z: degree = code - 67
+    -- Special handling for letters beyond G in the chromatic scale
+    -- A,B as octave wrap: A=B+1, B=C+1
     let ?deg = 0
     if u == "A"
-        deg = 5
+        deg = 9
     elif u == "B"
-        deg = 6
+        deg = 11
+    elif u == "H"
+        deg = 9
+    elif u == "I"
+        deg = 11
+    elif u == "J"
+        deg = 12
+    elif u == "K"
+        deg = 14
+    elif u == "L"
+        deg = 16
+    elif u == "M"
+        deg = 18
+    elif u == "N"
+        deg = 20
+    elif u == "O"
+        deg = 21
+    elif u == "P"
+        deg = 23
+    elif u == "Q"
+        deg = 25
+    elif u == "R"
+        deg = 26
+    elif u == "S"
+        deg = 28
+    elif u == "T"
+        deg = 30
+    elif u == "U"
+        deg = 31
+    elif u == "V"
+        deg = 33
+    elif u == "W"
+        deg = 35
+    elif u == "X"
+        deg = 37
+    elif u == "Y"
+        deg = 38
+    elif u == "Z"
+        deg = 40
     else
+        -- C through G: 0-6 mapping to diatonic semitones
         deg = code - 67
-    -- Semitone table for one diatonic octave: C D E F G A B
-    let r = deg % 7
-    let ?semi = 0
-    if r == 1
-        semi = 2
-    elif r == 2
-        semi = 4
-    elif r == 3
-        semi = 5
-    elif r == 4
-        semi = 7
-    elif r == 5
-        semi = 9
-    elif r == 6
-        semi = 11
-    let result = stdr.floor(deg / 7) * 12 + semi
+    -- Convert diatonic degrees to semitones for C-G
+    if u != "A" && u != "B" && u != "H" && u != "I" && u != "J" && u != "K" && u != "L" && u != "M" && u != "N" && u != "O" && u != "P" && u != "Q" && u != "R" && u != "S" && u != "T" && u != "U" && u != "V" && u != "W" && u != "X" && u != "Y" && u != "Z"
+        let r = deg % 7
+        let ?semi = 0
+        if r == 1
+            semi = 2
+        elif r == 2
+            semi = 4
+        elif r == 3
+            semi = 5
+        elif r == 4
+            semi = 7
+        elif r == 5
+            semi = 9
+        elif r == 6
+            semi = 11
+        deg = semi
     if sharp
-        result = result + 1
-    <- result
+        deg = deg + 1
+    <- deg
 ;
 
 -- Convert octave + note char to Vimana pitch (57 = A4)

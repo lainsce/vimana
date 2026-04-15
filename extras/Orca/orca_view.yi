@@ -51,6 +51,10 @@ def MARGIN_Y = 16
             if orca_grid.is_east_input(x, y) && !orca_grid.is_banged(x, y)
                 fg = COLOR_DATA
 
+            -- Q-read cells (accessed by Q operator)
+            if orca_grid.is_q_read(x, y)
+                fg = COLOR_DATA
+
             -- Active track cell (T operator selection)
             if orca_grid.is_highlighted(x, y) && !orca_grid.is_banged(x, y)
                 fg = COLOR_FG
@@ -58,7 +62,7 @@ def MARGIN_Y = 16
             -- Cursor highlight
             let is_cursor = x == orca_model.cursor_x && y == orca_model.cursor_y
             if is_cursor
-                bg = COLOR_FG
+                bg = COLOR_BANG
                 fg = COLOR_BG
 
             -- Selection highlight
@@ -73,16 +77,17 @@ def MARGIN_Y = 16
                         fg = COLOR_BG
 
             -- Draw the character
-            if ch == "." && orca_grid.has_visual_bang(x, y)
-                -- * fired this tick: show it with bang colours
-                scr.put(px, py, "*", COLOR_BG, COLOR_BANG)
+            if ch == "*"
+                -- * to the right of T: gray (inactive) or white bg (active) as drum beat
+                if orca_grid.is_highlighted(x, y)
+                    scr.put(px, py, "*", COLOR_BG, COLOR_FG)
+                else
+                    scr.put(px, py, "*", COLOR_OUTPUT, COLOR_BANG)
             elif ch == "."
                 if bg != COLOR_BG
                     scr.put(px, py, ".", fg, bg)
                 elif x % 16 == 0 && y % 8 == 0
                     scr.put(px, py, "+", COLOR_OUTPUT, COLOR_BG)
-                elif x % 4 == 0 && y % 2 == 0
-                    scr.put(px, py, ".", COLOR_OUTPUT, COLOR_BG)
             elif is_data
                 -- Data cell: color already set in fg (dim or cyan for east inputs)
                 if bg != COLOR_BG

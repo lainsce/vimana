@@ -6,7 +6,7 @@ def GRID_W = 81
 def GRID_H = 25
 def GRID_SIZE = GRID_W * GRID_H
 
--- Cell data, locks, bangs, highlights, visual bang flash, operator outputs, and east-input markers
+-- Cell data, locks, bangs, highlights, visual bang flash, operator outputs, east-input markers, Q-read markers
 def ?cells = []: [any]
 def ?locks = []: [any]
 def ?bangs = []: [any]
@@ -14,6 +14,7 @@ def ?highlights = []: [any]
 def ?visual_bangs = []: [any]
 def ?outputs = []: [any]
 def ?east_inputs = []: [any]
+def ?q_reads = []: [any]
 
 -- Variable storage for V operator (36 slots: 0-9, a-z)
 def ?vars = []: [any]
@@ -26,6 +27,7 @@ def ?vars = []: [any]
     visual_bangs = []: [any]
     outputs = []: [any]
     east_inputs = []: [any]
+    q_reads = []: [any]
     vars = []: [any]
     for (let ?i = 0; i < GRID_SIZE; i += 1)
         stdr.push(cells, ".")
@@ -35,6 +37,7 @@ def ?vars = []: [any]
         stdr.push(visual_bangs, false)
         stdr.push(outputs, false)
         stdr.push(east_inputs, false)
+        stdr.push(q_reads, false)
     for (let ?i = 0; i < 36; i += 1)
         stdr.push(vars, ".")
 ;
@@ -111,12 +114,28 @@ def ?vars = []: [any]
 :: mark_output(x = num, y = num) (( -- ))
     if in_bounds(x, y)
         outputs[idx(x, y)] = true
-;
+    ;
+
+:: clear_output(x = num, y = num) (( -- ))
+    if in_bounds(x, y)
+        outputs[idx(x, y)] = false
+    ;
 
 :: is_east_input(x = num, y = num) (( bool ))
     if !in_bounds(x, y)
         <- false
     <- east_inputs[idx(x, y)]
+;
+
+:: mark_q_read(x = num, y = num) (( -- ))
+    if in_bounds(x, y)
+        q_reads[idx(x, y)] = true
+;
+
+:: is_q_read(x = num, y = num) (( bool ))
+    if !in_bounds(x, y)
+        <- false
+    <- q_reads[idx(x, y)]
 ;
 
 :: lock_east(x = num, y = num) (( -- ))
@@ -131,9 +150,10 @@ def ?vars = []: [any]
         bangs[i] = false
         highlights[i] = false
         visual_bangs[i] = false
-        outputs[i] = false
         east_inputs[i] = false
-;
+        q_reads[i] = false
+    ;
+    -- Note: outputs[] persist across frames to protect operator output from re-execution
 
 :: clear_all() (( -- ))
     for (let ?i = 0; i < GRID_SIZE; i += 1)
@@ -144,6 +164,7 @@ def ?vars = []: [any]
         visual_bangs[i] = false
         outputs[i] = false
         east_inputs[i] = false
+        q_reads[i] = false
 ;
 
 :: get_var(key = num) (( string ))

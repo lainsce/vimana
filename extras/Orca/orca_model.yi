@@ -90,11 +90,13 @@ def ?voice_vol = []: [any]
 
 :: type_at_cursor(ch = string) (( -- ))
     orca_grid.set(cursor_x, cursor_y, ch)
+    orca_grid.clear_output(cursor_x, cursor_y)
     move_cursor(1, 0)
 ;
 
 :: delete_at_cursor() (( -- ))
     orca_grid.set(cursor_x, cursor_y, ".")
+    orca_grid.clear_output(cursor_x, cursor_y)
     dirty = true
 ;
 
@@ -204,6 +206,7 @@ def ?voice_vol = []: [any]
     for (let ?cy = y0; cy <= y1; cy += 1)
         for (let ?cx = x0; cx <= x1; cx += 1)
             orca_grid.set(cx, cy, ".")
+            orca_grid.clear_output(cx, cy)
     clear_sel()
     dirty = true
 ;
@@ -219,6 +222,7 @@ def ?voice_vol = []: [any]
             let ty = cursor_y + py
             if orca_grid.in_bounds(tx, ty)
                 orca_grid.set(tx, ty, clip_data[ci])
+                orca_grid.clear_output(tx, ty)
             ci = ci + 1
     dirty = true
 ;

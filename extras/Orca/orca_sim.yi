@@ -92,6 +92,8 @@ bring orca_model
             let ch = orca_grid.get(x, y)
             if orca_grid.is_locked(x, y)
                 -- skip: locked cell (input port, comment, or held by H)
+            elif orca_grid.is_output(x, y)
+                -- skip: output from previous operator (don't execute user data as operator)
             elif ch == "*"
                 -- Bang neighbors, record visual flash, then consume
                 orca_ops.op_bang(x, y)
