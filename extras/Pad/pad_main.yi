@@ -49,13 +49,11 @@ def ?dragging = false
 : update_title(scr = vimana.screen) (( -- ))
     let ?title = "Note Pad"
     if pad_model.dirty
-        title = "Note Pad *"
+        title = "Note Pad"
     scr.set_titlebar_title(title)
 ;
 
 --| Mouse input |--
-
-
 
 : on_mouse(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
     let mx = dev.pointer_x()
@@ -245,11 +243,15 @@ def ?dragging = false
         update_title(scr)
 ;
 
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 --| Entry |--
 
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Note Pad", 224, 200, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     pad_font.install(scr)
     let dev = sys.device()
     let fsys = sys.file()
@@ -268,5 +270,13 @@ def ?dragging = false
         on_text(dev, scr)
 
         pad_view.draw_all(scr)
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;

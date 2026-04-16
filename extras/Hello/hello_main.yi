@@ -5,7 +5,7 @@ bring vimana
 bring hello_font
 bring hello_scene
 
-def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF]
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
 
 -> ()
     let sys = vimana.system()
@@ -22,6 +22,8 @@ def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF]
         dev.poll()
         if dev.key_pressed(vimana.key_escape)
             sys.quit()
+
+        scr.clear(vimana.color_bg)
 
         -- Draw cursor every frame
         let mx = dev.pointer_x()

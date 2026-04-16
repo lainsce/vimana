@@ -119,8 +119,6 @@ def ?_ps_corner = -1
 --| Main draw entry |--
 
 :: draw_all(scr = vimana.screen) (( -- ))
-    if !frame_changed()
-        <-
     scr.clear(pad_model.C_BG)
     draw_content(scr)
     draw_corner(scr)
