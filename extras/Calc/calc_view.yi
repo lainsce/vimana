@@ -348,7 +348,6 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
 
 :: draw_all(scr = vimana.screen, press_id = num) (( -- ))
     scr.set_titlebar_title(calc_model.mode_name())
-    scr.clear(calc_model.C_BG)
     draw_display_bg(scr)
     draw_stack(scr)
     draw_sep(scr)
@@ -356,5 +355,4 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
     draw_binary(scr)
     draw_modes(scr)
     draw_buttons(scr, press_id)
-    scr.present()
 ;

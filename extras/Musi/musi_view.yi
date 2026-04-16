@@ -168,9 +168,7 @@ bring musi_assets
 -- ─────────────────────────────────────────────────────────────────────────────
 
 :: draw_all(scr = vimana.screen) (( -- ))
-    scr.clear(musi_model.C_BG)
     if musi_model.playing
         draw_player(scr)
     draw_dir(scr)
-    scr.present()
 ;

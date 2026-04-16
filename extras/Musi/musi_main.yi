@@ -1,18 +1,359 @@
 cask main
 
+bring stdr
+bring vimana
+bring musi_model
+bring musi_player
+bring musi_view
+bring musi_assets
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: in_rect(sx = num, sy = num, rx = num, ry = num, rw = num, rh = num) (( bool ))
+    <- sx >= rx && sx < rx + rw && sy >= ry && sy < ry + rh
+;
+
+: fit_window(scr = vimana.screen) (( -- ))
+    scr.resize(musi_model.WIN_W, musi_model.fit_height())
+;
+
+-- Lowercase a char code (A-Z → a-z)
+: lc_code(c = num) (( num ))
+    if c >= 65 && c <= 90
+        <- c + 32
+    <- c
+;
+
+-- If name contains " - ", split into artist and title (autofill from filename)
+: autofill_tags(name = string) (( -- ))
+    let n   = stdr.len(name)
+    for (let ?i = 0; i < n - 2; i += 1)
+        if stdr.char_at(name, i)     == " "
+        && stdr.char_at(name, i + 1) == "-"
+        && stdr.char_at(name, i + 2) == " "
+            musi_model.set_artist(stdr.slice(name, 0, i))
+            musi_model.set_title(stdr.slice(name, i + 3, n))
+            <-
+;
+
+-- Jump selection to first folder/track whose name starts with target char code
+: find_any(target = num, scr = vimana.screen) (( -- ))
+    let num_folders = stdr.len(musi_model.folders)
+    let num_tracks  = stdr.len(musi_model.tracks)
+    let ?dd         = 0
+    if musi_model.has_dotdot()
+        dd = 1
+    for (let ?i = 0; i < num_folders; i += 1)
+        let f = stdr.str(musi_model.folders[i] ?? "")
+        if stdr.len(f) > 0 && lc_code(stdr.char_code(stdr.char_at(f, 0))) == target
+            musi_model.add_sel(dd + i - musi_model.sel)
+            musi_model.scroll_for_sel()
+            fit_window(scr)
+            <-
+    for (let ?j = 0; j < num_tracks; j += 1)
+        let t = musi_model.strip_ext(stdr.str(musi_model.tracks[j] ?? ""))
+        if stdr.len(t) > 0 && lc_code(stdr.char_code(stdr.char_at(t, 0))) == target
+            let tidx = dd + num_folders + j
+            musi_model.add_sel(tidx - musi_model.sel)
+            musi_model.scroll_for_sel()
+            fit_window(scr)
+            <-
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Directory listing
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: load_dir(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    musi_model.clear_dir()
+    let entries = fsys.list(musi_model.path)
+    let n       = stdr.len(entries)
+    for (let ?i = 0; i < n; i += 1)
+        let name = stdr.str(entries[i] ?? "")
+        if stdr.len(name) == 0
+            continue
+        -- Skip hidden / macOS resource-fork files
+        if stdr.char_at(name, 0) == "."
+            continue
+        if fsys.is_dir(musi_model.path + name)
+            stdr.push(musi_model.folders, name)
+        else
+            let nlen = stdr.len(name)
+            if nlen >= 4
+                let ext = stdr.slice(name, nlen - 4, nlen)
+                if ext == ".mp3" || ext == ".MP3"
+                    stdr.push(musi_model.tracks, name)
+    musi_model.sort_strings(musi_model.folders)
+    musi_model.sort_strings(musi_model.tracks)
+    musi_model.compute_prefixes()
+    fit_window(scr)
+    let p    = musi_model.path
+    let pn   = stdr.len(p)
+    let ?si  = pn - 2
+    let ?cut = 0
+    for (; si > 0; si -= 1)
+        if stdr.char_at(p, si) == "/"
+            cut = si + 1
+            break
+    scr.set_titlebar_title(stdr.slice(p, cut, pn))
+;
+
+-- Strip the trailing path component and reload
+: nav_up(fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let p    = musi_model.path
+    let plen = stdr.len(p)
+    if plen <= 1
+        <-
+    -- Remove trailing slash, then scan back for the previous one
+    let base = stdr.slice(p, 0, plen - 1)
+    let blen = stdr.len(base)
+    let ?i   = blen - 1
+    for (; i >= 0; i -= 1)
+        if stdr.char_at(base, i) == "/"
+            break
+    if i < 0
+        musi_model.set_path("./")
+    else
+        musi_model.set_path(stdr.slice(p, 0, i + 1))
+    load_dir(fsys, scr)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Playback
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: play_track(sys = vimana.system, scr = vimana.screen, track_idx = num) (( -- ))
+    let num_tracks = stdr.len(musi_model.tracks)
+    if num_tracks == 0
+        <-
+    if track_idx < 0
+        track_idx = 0
+    if track_idx >= num_tracks
+        track_idx = num_tracks - 1
+    let track_title = musi_model.strip_ext(stdr.str(musi_model.tracks[track_idx] ?? ""))
+    musi_model.init_track(track_idx, track_title)
+    autofill_tags(track_title)
+    let full_path = musi_model.path + stdr.str(musi_model.tracks[track_idx] ?? "")
+    musi_player.send_load(sys, full_path)
+    musi_player.send_volume(sys)
+    fit_window(scr)
+;
+
+: skip_next(sys = vimana.system, scr = vimana.screen) (( -- ))
+    let num_tracks = stdr.len(musi_model.tracks)
+    if num_tracks == 0
+        <-
+    if musi_model.shuffle
+        let next = musi_model.next_shuffle_track()
+        if next < 0
+            -- Exhausted the shuffled list
+            if musi_model.repeat
+                -- Re-shuffle and continue
+                musi_model.build_shuffle(num_tracks, sys.ticks())
+                let next2 = musi_model.next_shuffle_track()
+                if next2 >= 0
+                    play_track(sys, scr, next2)
+                <-
+            else
+                -- Stop playback
+                musi_model.set_playing(false)
+                fit_window(scr)
+                <-
+        play_track(sys, scr, next)
+        <-
+    let ?next = musi_model.sel_track + 1
+    if next >= num_tracks
+        if musi_model.repeat
+            next = 0
+        else
+            musi_model.set_playing(false)
+            fit_window(scr)
+            <-
+    play_track(sys, scr, next)
+;
+
+: skip_prev(sys = vimana.system, scr = vimana.screen) (( -- ))
+    let num_tracks = stdr.len(musi_model.tracks)
+    if num_tracks == 0
+        <-
+    -- Go to previous track, wrapping from first back to last
+    let ?prev = musi_model.sel_track - 1
+    if prev < 0
+        prev = num_tracks - 1
+    play_track(sys, scr, prev)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Row pick (single click / enter)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: pick_row(sys = vimana.system, fsys = vimana.file, scr = vimana.screen, row_idx = num) (( -- ))
+    let num_folders = stdr.len(musi_model.folders)
+    let ?dd         = 0
+    if musi_model.has_dotdot()
+        dd = 1
+    if row_idx == 0 && dd == 1
+        -- Navigate up
+        nav_up(fsys, scr)
+        <-
+    let list_idx = row_idx - dd
+    if list_idx < num_folders
+        -- Navigate into folder
+        let folder_name = stdr.str(musi_model.folders[list_idx] ?? "")
+        musi_model.set_path(musi_model.path + folder_name + "/")
+        load_dir(fsys, scr)
+    else
+        -- Play selected track
+        let track_idx = list_idx - num_folders
+        if !musi_model.playing
+            musi_model.set_playing(true)
+        if musi_model.shuffle
+            musi_model.build_shuffle(stdr.len(musi_model.tracks), sys.ticks())
+        play_track(sys, scr, track_idx)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Selection movement
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: move_sel(delta = num, scr = vimana.screen) (( -- ))
+    musi_model.add_sel(delta)
+    musi_model.scroll_for_sel()
+    fit_window(scr)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Mouse input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_mouse(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if !dev.mouse_pressed(vimana.mouse_left)
+        <-
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+
+    -- Controls bar (only when playing)
+    if musi_model.playing && in_rect(mx, my, 0, musi_model.CTRL_BG_Y * 8, musi_model.WIN_W, 48)
+        if in_rect(mx, my, musi_model.CTRL_REPEAT_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+            musi_model.toggle_repeat()
+            <-
+        if in_rect(mx, my, musi_model.CTRL_VOLDN_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+            musi_model.change_volume(-1)
+            musi_player.send_volume(sys)
+            <-
+        if in_rect(mx, my, musi_model.CTRL_PREV_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+            skip_prev(sys, scr)
+            <-
+        if in_rect(mx, my, musi_model.CTRL_PLAY_X * 8, musi_model.CTRL_Y * 8, 32, 16)
+            musi_player.toggle_pause(sys)
+            <-
+        if in_rect(mx, my, musi_model.CTRL_NEXT_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+            skip_next(sys, scr)
+            <-
+        if in_rect(mx, my, musi_model.CTRL_VOLUP_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+            musi_model.change_volume(1)
+            musi_player.send_volume(sys)
+            <-
+        if in_rect(mx, my, musi_model.CTRL_SHUF_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+            musi_model.toggle_shuffle()
+            if musi_model.shuffle
+                musi_model.build_shuffle(stdr.len(musi_model.tracks), sys.ticks())
+            <-
+        <-
+
+    -- Progress bar seek (drag: seek every frame while button held)
+    if musi_model.playing && in_rect(mx, my, musi_model.PROG_X * 8, musi_model.PROG_Y * 8 - 4, musi_model.PROG_W, 16) && dev.mouse_down(vimana.mouse_left)
+        let offset     = mx - musi_model.PROG_X * 8
+        if offset < 0
+            offset = 0
+        let total_secs = musi_model.sec_from + musi_model.sec_to
+        if total_secs > 0
+            let target = stdr.floor(offset * total_secs / musi_model.PROG_W)
+            musi_player.send_jump(sys, target)
+        <-
+
+    -- Directory list click (single-click = execute immediately)
+    let dir_y  = musi_model.dir_y()
+    let win_h  = musi_model.fit_height()
+    if my >= dir_y && my < win_h
+        let clicked = stdr.floor((my - dir_y) / musi_model.ROW_H) + musi_model.scroll
+        if clicked >= 0 && clicked < musi_model.row_count()
+            pick_row(sys, fsys, scr, clicked)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Keyboard input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_key(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if dev.key_pressed(musi_model.KEY_ESCAPE)
+        sys.quit()
+        <-
+    if dev.key_pressed(musi_model.KEY_BACKSPACE)
+        nav_up(fsys, scr)
+        <-
+    if dev.key_pressed(musi_model.KEY_UP)
+        move_sel(-1, scr)
+        <-
+    if dev.key_pressed(musi_model.KEY_DOWN)
+        move_sel(1, scr)
+        <-
+    if dev.key_pressed(musi_model.KEY_RETURN)
+        pick_row(sys, fsys, scr, musi_model.sel)
+        <-
+    if dev.key_pressed(musi_model.KEY_SPACE)
+        musi_player.toggle_pause(sys)
+        <-
+    if dev.key_pressed(musi_model.KEY_LEFT)
+        -- seek-prev: skip to previous track if <10 s elapsed, else seek back 10 s
+        if musi_model.playing && musi_model.sec_from < 10
+            skip_prev(sys, scr)
+        else
+            let target = musi_model.sec_from - 10
+            if target < 0
+                target = 0
+            musi_player.send_jump(sys, target)
+        <-
+    if dev.key_pressed(musi_model.KEY_RIGHT)
+        -- seek-next: skip to next track if <10 s remaining, else seek forward 10 s
+        if musi_model.playing && musi_model.sec_to < 10
+            skip_next(sys, scr)
+        else
+            musi_player.send_jump(sys, musi_model.sec_from + 10)
+        <-
+    -- find-any: typing a letter (SDL scancodes 4–29 = a–z) jumps to first match
+    for (let ?sc = 4; sc <= 29; sc += 1)
+        if dev.key_pressed(sc)
+            find_any(sc + 93, scr)
+            <-
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Scroll wheel
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_scroll(dev = vimana.device, scr = vimana.screen) (( -- ))
+    let dy = dev.wheel_y()
+    if dy == 0
+        <-
+    musi_model.scroll_by(dy)
+    musi_model.clamp_scroll()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- Entry point
 -- ─────────────────────────────────────────────────────────────────────────────
 
 def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
-def CURSOR_ADDR = 0x0000
+def CURSOR_ADDR = 0x9000
 
 -> ()
     let sys = vimana.system()
     let scr  = vimana.screen("Musi", musi_model.WIN_W, 200, 1)
     scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
     scr.hide_cursor()
-    scr.set_gfx(CURSOR_ADDR, CURSOR_PTR)
     let dev  = sys.device()
     let fsys = sys.file()
     if !fsys.exists(sys.home_dir() + "/.theme")
@@ -21,6 +362,8 @@ def CURSOR_ADDR = 0x0000
            .set_palette(vimana.color_2,  "#aaeebb")
            .set_palette(vimana.color_3,  "#77bb88")
     musi_assets.setup(scr)
+    -- Upload cursor AFTER loading sprites so it doesn't get overwritten
+    scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
 
     -- Start in the user's Music home directory
     musi_model.set_path(sys.home_dir() + "/Music/")
@@ -56,7 +399,7 @@ def CURSOR_ADDR = 0x0000
         let my = dev.pointer_y()
         let cx = stdr.floor(mx / 8)
         let cy = stdr.floor(my / 8)
-        scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(cx).set_y(cy).sprite(0x40)
+        scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(cx).set_y(cy).sprite(0x81)
         scr.present()
     })
 ;

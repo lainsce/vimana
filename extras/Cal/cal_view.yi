@@ -244,8 +244,6 @@ def BOTTOM_ICN = ["ff00", "ff00", "ff00", "ffff"]
 -- ─────────────────────────────────────────────────────────────────────────────
 
 :: draw_all(scr = vimana.screen) (( -- ))
-    scr.clear(cal_model.C_BG)
-
     draw_header(scr)
     draw_weekdays(scr)
     draw_grid(scr)
@@ -257,6 +255,4 @@ def BOTTOM_ICN = ["ff00", "ff00", "ff00", "ffff"]
     draw_footer(scr)
     draw_bottom_bar(scr)
     draw_corner(scr)
-
-    scr.present()
 ;
