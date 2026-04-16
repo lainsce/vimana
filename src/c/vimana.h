@@ -186,6 +186,13 @@ bool vimana_screen_titlebar_button_pressed(vimana_screen *screen);
 unsigned int vimana_screen_width(vimana_screen *screen);
 unsigned int vimana_screen_height(vimana_screen *screen);
 unsigned int vimana_screen_scale(vimana_screen *screen);
+
+// Cursor
+void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8],
+                              unsigned int fg, unsigned int bg);
+void vimana_screen_hide_cursor(vimana_screen *screen);
+void vimana_screen_show_cursor(vimana_screen *screen);
+
 size_t vimana_screen_ram_usage(vimana_screen *screen);
 size_t vimana_system_ram_usage(vimana_system *system);
 

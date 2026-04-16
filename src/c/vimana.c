@@ -579,6 +579,13 @@ struct VimanaScreen {
   int16_t theme_poll_counter;    /* frame counter for periodic theme check */
   SDL_Texture *titlebar_tex;     /* cached titlebar texture (rebuilt on change) */
   bool titlebar_dirty;           /* true = rebuild titlebar_tex next present */
+  vimana_system *system;         /* parent system for device input access */
+  /* Custom cursor */
+  uint8_t cursor_icn[8];         /* 8×8 cursor icon data */
+  bool cursor_visible;          /* is cursor currently visible */
+  bool cursor_dirty;             /* cursor data changed */
+  unsigned int cursor_fg;        /* cursor foreground color slot */
+  unsigned int cursor_bg;        /* cursor background color slot */
 };
 
 /* ── ROM accessor implementations (need complete struct definition) ───── */
@@ -1331,6 +1338,7 @@ void vimana_system_run(vimana_system *system, vimana_screen *screen,
     return;
   system->quit = false;
   system->running = true;
+  screen->system = system;
   SDL_StartTextInput(screen->window);
   const uint64_t freq = SDL_GetPerformanceFrequency();
   const uint64_t frame_ns = freq / 60; /* 60 fps cap */
@@ -1414,6 +1422,10 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
   screen->title = strdup(title ? title : "vimana");
   screen->titlebar_bg_slot = 2; /* default to palette slot 2 (accent color) */
   screen->titlebar_dirty = true;
+  screen->cursor_visible = false; /* cursor hidden by default */
+  screen->cursor_dirty = false;
+  screen->system = NULL;
+  SDL_ShowCursor(); /* show system cursor by default; apps set custom cursor via set_cursor() */
   vimana_screen_reset_palette(screen);
   vimana_screen_load_theme(screen);
   vimana_screen_reset_font(screen);
@@ -2176,6 +2188,38 @@ unsigned int vimana_screen_height(vimana_screen *screen) {
 
 unsigned int vimana_screen_scale(vimana_screen *screen) {
   return screen ? screen->scale : 0;
+}
+
+void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8],
+                              unsigned int fg, unsigned int bg) {
+  if (!screen || !rows)
+    return;
+  memcpy(screen->cursor_icn, rows, 8);
+  screen->cursor_fg = fg < 16 ? fg : 1;
+  screen->cursor_bg = bg < 16 ? bg : 0;
+  screen->cursor_dirty = true;
+  if (!screen->cursor_visible) {
+    screen->cursor_visible = true;
+    SDL_ShowCursor();
+  }
+}
+
+void vimana_screen_hide_cursor(vimana_screen *screen) {
+  if (!screen)
+    return;
+  if (screen->cursor_visible) {
+    screen->cursor_visible = false;
+    SDL_HideCursor();
+  }
+}
+
+void vimana_screen_show_cursor(vimana_screen *screen) {
+  if (!screen)
+    return;
+  if (!screen->cursor_visible && screen->cursor_dirty) {
+    screen->cursor_visible = true;
+    SDL_ShowCursor();
+  }
 }
 
 void vimana_device_poll(vimana_system *system) { (void)system; }

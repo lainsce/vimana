@@ -108,6 +108,9 @@ def paddle_count = 2
 : __vimana_screen_set_titlebar_title(scr = screen, title = string) (( -- )) { }
 : __vimana_screen_set_titlebar_button(scr = screen, show = bool) (( -- )) { }
 : __vimana_screen_titlebar_button_pressed(scr = screen) (( bool )) { }
+: __vimana_screen_set_cursor(scr = screen, icn = any, fg = num, bg = num) (( -- )) { }
+: __vimana_screen_hide_cursor(scr = screen) (( -- )) { }
+: __vimana_screen_show_cursor(scr = screen) (( -- )) { }
 : __vimana_screen_x(scr = screen) (( num )) { }
 : __vimana_screen_y(scr = screen) (( num )) { }
 : __vimana_screen_addr(scr = screen) (( num )) { }
@@ -384,6 +387,21 @@ pub ,: screen
 
     :: titlebar_button_pressed(this) (( bool ))
         <- __vimana_screen_titlebar_button_pressed(this)
+    ;
+
+    :: set_cursor(this, icn = any, fg = num, bg = num) (( screen ))
+        __vimana_screen_set_cursor(this, icn, fg, bg)
+        <- this
+    ;
+
+    :: hide_cursor(this) (( screen ))
+        __vimana_screen_hide_cursor(this)
+        <- this
+    ;
+
+    :: show_cursor(this) (( screen ))
+        __vimana_screen_show_cursor(this)
+        <- this
     ;
 
     :: x(this) (( num )) <- __vimana_screen_x(this) ;
