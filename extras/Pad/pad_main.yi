@@ -243,13 +243,13 @@ def ?dragging = false
         update_title(scr)
 ;
 
-def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+def CURSOR_PTR = [0x4060, 0x7078, 0x7c70, 0x5808]
 def CURSOR_ADDR = 0x9000
 
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Note Pad", 224, 200, 1)
-    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.set_cursor(CURSOR_PTR)
     scr.hide_cursor()
     pad_font.install(scr)
     -- Upload cursor AFTER loading sprites so it doesn't get overwritten

@@ -2185,17 +2185,13 @@ unsigned int vimana_screen_scale(vimana_screen *screen) {
   return screen ? screen->scale : 0;
 }
 
-void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8],
-                              unsigned int fg, unsigned int bg) {
+void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8]) {
   if (!screen || !rows)
     return;
   memcpy(screen->cursor_icn, rows, 8);
-  screen->cursor_fg = fg < 16 ? fg : 1;
-  screen->cursor_bg = bg < 16 ? bg : 0;
   screen->cursor_dirty = true;
   if (!screen->cursor_visible) {
     screen->cursor_visible = true;
-    SDL_ShowCursor();
   }
 }
 

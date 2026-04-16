@@ -188,8 +188,7 @@ unsigned int vimana_screen_height(vimana_screen *screen);
 unsigned int vimana_screen_scale(vimana_screen *screen);
 
 // Cursor
-void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8],
-                              unsigned int fg, unsigned int bg);
+void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8]);
 void vimana_screen_hide_cursor(vimana_screen *screen);
 void vimana_screen_show_cursor(vimana_screen *screen);
 

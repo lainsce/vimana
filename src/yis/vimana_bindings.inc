@@ -752,12 +752,12 @@ static YisVal __vimana_screen_titlebar_button_pressed(YisVal scrv) {
   return YV_BOOL(vimana_screen_titlebar_button_pressed(screen));
 }
 
-static void __vimana_screen_set_cursor(YisVal scrv, YisVal icnv, YisVal fgv, YisVal bgv) {
+static void __vimana_screen_set_cursor(YisVal scrv, YisVal icnv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.set_cursor expects screen");
   uint8_t rows[8] = {0};
   vimana_icn_bytes_from_val(icnv, rows, "vimana.screen.set_cursor expects 8 byte rows");
-  vimana_screen_set_cursor(screen, rows, (unsigned int)yis_as_int(fgv), (unsigned int)yis_as_int(bgv));
+  vimana_screen_set_cursor(screen, rows);
 }
 
 static void __vimana_screen_hide_cursor(YisVal scrv) {

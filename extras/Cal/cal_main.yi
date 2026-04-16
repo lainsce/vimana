@@ -9,13 +9,13 @@ bring cal_events
 bring cal_view
 bring cal_input
 
-def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+def CURSOR_PTR = [0x4060, 0x7078, 0x7c70, 0x5808]
 def CURSOR_ADDR = 0x9000
 
 -> ()
     let sys  = vimana.system()
     let scr  = vimana.screen("Cal", cal_model.WIN_W, cal_model.WIN_H, 1)
-    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.set_cursor(CURSOR_PTR)
     scr.hide_cursor()
     scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
     let fsys = sys.file()
@@ -49,6 +49,9 @@ def CURSOR_ADDR = 0x9000
         scr.clear(vimana.color_bg)
         cal_view.draw_all(scr)
 
+        if cal_model.consume_dirty()
+            cal_view.draw_all(scr)
+
         -- Draw cursor every frame
         let mx = dev.pointer_x()
         let my = dev.pointer_y()
@@ -56,8 +59,5 @@ def CURSOR_ADDR = 0x9000
         let cy = stdr.floor(my / 8)
         scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(cx).set_y(cy).sprite(0x81)
         scr.present()
-
-        if cal_model.consume_dirty()
-            cal_view.draw_all(scr)
     })
 ;
