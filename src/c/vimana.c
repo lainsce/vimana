@@ -535,7 +535,6 @@ static inline void vimana_bit_clr(uint64_t *bits, int idx) {
 static inline uint8_t *vimana_rom_font_widths(vimana_screen *s);
 static inline uint8_t *vimana_rom_font_bitmap(vimana_screen *s, unsigned int code);
 static inline uint8_t *vimana_rom_font_uf2(vimana_screen *s, unsigned int code);
-static inline uint8_t *vimana_ensure_gfx_rom(vimana_screen *s);
 static inline uint8_t *vimana_ensure_sprite_bank(vimana_screen *s, unsigned int bank);
 static inline uint8_t *vimana_active_sprite_bank(vimana_screen *s);
 
@@ -600,11 +599,6 @@ static inline uint8_t *vimana_rom_font_bitmap(vimana_screen *s, unsigned int cod
 static inline uint8_t *vimana_rom_font_uf2(vimana_screen *s, unsigned int code) {
   return s->font_rom + VIMANA_FONT_UF2_OFF
          + code * VIMANA_UF2_BYTES;
-}
-static inline uint8_t *vimana_ensure_gfx_rom(vimana_screen *s) {
-  if (!s->gfx_rom)
-    s->gfx_rom = (uint8_t *)calloc(VIMANA_GFX_SIZE, 1);
-  return s->gfx_rom;
 }
 static inline uint8_t *vimana_ensure_sprite_bank(vimana_screen *s, unsigned int bank) {
   if (bank >= VIMANA_SPRITE_BANK_COUNT)
@@ -1708,12 +1702,13 @@ void vimana_screen_set_gfx(vimana_screen *screen, unsigned int addr,
                             const uint8_t *data, unsigned int len) {
   if (!screen || !data)
     return;
-  if (addr + len > VIMANA_GFX_SIZE)
+  /* Upload to sprite bank 0 (for use with sprite() command) */
+  uint8_t *bank = vimana_ensure_sprite_bank(screen, 0);
+  if (!bank)
     return;
-  uint8_t *gfx = vimana_ensure_gfx_rom(screen);
-  if (!gfx)
-    return;
-  memcpy(gfx + addr, data, (size_t)len);
+  if (addr + len > VIMANA_SPRITE_BANK_SIZE)
+    len = VIMANA_SPRITE_BANK_SIZE - addr;
+  memcpy(bank + addr, data, (size_t)len);
 }
 
 const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr) {

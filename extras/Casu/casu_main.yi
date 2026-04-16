@@ -216,6 +216,7 @@ bring casu_file
 ;
 
 def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+def CURSOR_ADDR = 0x0000
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Entry point
@@ -225,6 +226,7 @@ def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000
     let scr = vimana.screen("Casu", casu_model.SCR_W, casu_model.SCR_H, 1)
     scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
     scr.hide_cursor()
+    scr.set_gfx(CURSOR_ADDR, CURSOR_PTR)
     let fsys = sys.file()
 
     -- Sync model palette arrays from global ~/.theme
@@ -419,7 +421,7 @@ def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000
         let my = dev.pointer_y()
         let cx = stdr.floor(mx / 8)
         let cy = stdr.floor(my / 8)
-        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(cx).set_y(cy).sprite(0x40)
         scr.present()
     })
 ;
