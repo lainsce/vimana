@@ -552,8 +552,6 @@ struct VimanaScreen {
   uint32_t palette[256];    /* expanded 256-entry composite (8-bit layer index) */
   /* Font ROM: always allocated (64 KB). */
   uint8_t *font_rom;                             /* VIMANA_FONT_SIZE bytes */
-  /* GFX ROM: lazy-allocated on first set_gfx (384 KB). */
-  uint8_t *gfx_rom;                              /* VIMANA_GFX_SIZE bytes, or NULL */
   /* Sprite banks: 16 × 64 KB, bank-switched.  Lazy-allocated (NULL until first use). */
   uint8_t *sprite_banks[VIMANA_SPRITE_BANK_COUNT];
   uint8_t active_sprite_bank;                    /* 0–15 */
@@ -1406,7 +1404,6 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
     return NULL;
   }
   /* Sprite banks are lazy-allocated on first use (calloc'd in vimana_ensure_sprite_bank). */
-  /* GFX ROM is lazy-allocated on first set_gfx call (calloc'd in vimana_ensure_gfx_rom). */
 
   screen->width = width;
   screen->height = height;
@@ -1712,9 +1709,13 @@ void vimana_screen_set_gfx(vimana_screen *screen, unsigned int addr,
 }
 
 const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr) {
-  if (!screen || !screen->gfx_rom || addr >= VIMANA_GFX_SIZE)
+  if (!screen)
     return NULL;
-  return screen->gfx_rom + addr;
+  /* Read from sprite bank 0 (where set_gfx writes to) */
+  uint8_t *bank = vimana_ensure_sprite_bank(screen, 0);
+  if (!bank || addr >= VIMANA_SPRITE_BANK_SIZE)
+    return NULL;
+  return bank + addr;
 }
 
 void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
@@ -2678,7 +2679,6 @@ void vimana_screen_free(vimana_screen *screen) {
   for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
     free(screen->sprite_banks[i]);
   free(screen->font_rom);
-  free(screen->gfx_rom);
   free(screen->layers);
   free(screen->title);
   free(screen->titlebar_title);
@@ -2699,9 +2699,6 @@ size_t vimana_screen_ram_usage(vimana_screen *screen) {
   size_t total = 0;
   /* Font ROM (always allocated) */
   total += VIMANA_FONT_SIZE;
-  /* GFX ROM (only if allocated) */
-  if (screen->gfx_rom)
-    total += VIMANA_GFX_SIZE;
   /* Sprite banks (only count allocated ones) */
   for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
     if (screen->sprite_banks[i])

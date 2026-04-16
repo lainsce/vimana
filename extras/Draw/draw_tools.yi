@@ -69,7 +69,7 @@ def ?has_guide = false
     let t = draw_brush.get_tool()
 
     if t == TOOL_PEN
-        draw_brush.paint_dot(scr, x, y)
+        draw_brush.apply(scr, x, y)
 
     if t == TOOL_BRUSH
         draw_brush.paint_dot(scr, x, y)
@@ -110,7 +110,7 @@ def ?has_guide = false
     let t = draw_brush.get_tool()
 
     if t == TOOL_PEN
-        draw_line.line_dots(scr, prev_x, prev_y, x, y)
+        draw_line.line_apply(scr, prev_x, prev_y, x, y)
 
     if t == TOOL_BRUSH
         draw_line.line_dots(scr, prev_x, prev_y, x, y)

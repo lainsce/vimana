@@ -114,6 +114,8 @@ def SIZE_ERASE = [
 
 :: get_px() (( num )) <- panel_px ;
 :: get_py() (( num )) <- panel_py ;
+:: get_w() (( num )) <- PANEL_WP ;
+:: get_h() (( num )) <- PANEL_HP ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Hit testing
@@ -180,8 +182,10 @@ def SIZE_ERASE = [
     panel_py = my - drag_oy
     if panel_px < 0 { panel_px = 0 }
     if panel_py < 8 { panel_py = 8 }
-    if panel_px > 680 - PANEL_WP { panel_px = 680 - PANEL_WP }
-    if panel_py > 384 - PANEL_HP { panel_py = 384 - PANEL_HP }
+    let max_x = draw_canvas.window_cols * 8 - PANEL_WP
+    let max_y = draw_canvas.window_rows * 8 - PANEL_HP
+    if panel_px > max_x { panel_px = max_x }
+    if panel_py > max_y { panel_py = max_y }
     panel_tx = stdr.floor(panel_px / 8)
     panel_ty = stdr.floor(panel_py / 8)
     draw_canvas.mark_dirty()

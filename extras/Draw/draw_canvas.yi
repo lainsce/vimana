@@ -17,8 +17,7 @@ def ?CANVAS_PX = 6 * 8   -- screen pixel x offset (TX * 8)
 def ?CANVAS_PY = 3 * 8   -- screen pixel y offset (TY * 8)
 
 -- Fixed row stride for GFX ROM addressing (max canvas width = 85 - TX - 1)
--- Using a fixed stride means resize never needs to rearrange GFX data.
-def STRIDE_WT = 78
+def STRIDE_WT = 85
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Bit manipulation lookup
@@ -30,14 +29,25 @@ def POW2 = [128, 64, 32, 16, 8, 4, 2, 1]
 -- Dirty state
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def ?dirty = true        -- any change since last redraw
+def ?dirty = true
 def ?guide_active = false
+def ?filestate_changed = false
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Modified state (tracks unsaved changes)
+-- Window dimensions (from Noodle's @window/cols and @window/rows)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def ?modified = false
+def ?window_cols = 80    -- default 640/8
+def ?window_rows = 44    -- default 352/8
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Canvas rect (for hit testing - matches Noodle's @canvas/rect)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?canvas_x = 0
+def ?canvas_y = 0
+def ?canvas_x2 = 0
+def ?canvas_y2 = 0
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Helpers
@@ -80,7 +90,7 @@ def ?modified = false
         new_byte = byte - POW2[bit]
     scr.set_gfx(addr, [new_byte])
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 :: clear(scr = vimana.screen) (( -- ))
@@ -90,7 +100,7 @@ def ?modified = false
         for (let ?tx = 0; tx < CANVAS_WT; tx = tx + 1)
             scr.set_gfx(row + tx * 8, zeroes)
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 :: invert(scr = vimana.screen) (( -- ))
@@ -108,7 +118,7 @@ def ?modified = false
             let b7 = 255 - scr.gfx(addr + 7)
             scr.set_gfx(addr, [b0, b1, b2, b3, b4, b5, b6, b7])
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 :: read_tile(scr = vimana.screen, tx = num, ty = num) (( [num] ))
@@ -141,12 +151,37 @@ def ?modified = false
     guide_active = active
 ;
 
-:: is_modified() (( bool ))
-    <- modified
+:: filestate_changed() (( bool ))
+    <- filestate_changed
 ;
 
-:: clear_modified() (( -- ))
-    modified = false
+:: filestate_unchange() (( -- ))
+    filestate_changed = false
+;
+
+:: filestate_change() (( -- ))
+    filestate_changed = true
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Set window dimensions (called on reset)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: set_window_dims(cols = num, rows = num) (( -- ))
+    window_cols = cols
+    window_rows = rows
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Maximize canvas to window size (Noodle's canvas/<maximize>)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: maximize(scr = vimana.screen) (( -- ))
+    let new_wt = window_cols - 2
+    let new_ht = window_rows - 2
+    if new_wt < 2 { new_wt = 2 }
+    if new_ht < 2 { new_ht = 2 }
+    resize(scr, new_wt, new_ht)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -166,13 +201,11 @@ def ?modified = false
     let old_wt = CANVAS_WT
     let old_ht = CANVAS_HT
     let zeroes = [0, 0, 0, 0, 0, 0, 0, 0]
-    -- Zero new columns if width grew
     if nw > old_wt
         for (let ?ty = 0; ty < old_ht; ty = ty + 1)
             let row = ty * STRIDE_WT * 8
             for (let ?tx = old_wt; tx < nw; tx = tx + 1)
                 scr.set_gfx(row + tx * 8, zeroes)
-    -- Zero new rows if height grew
     if nh > old_ht
         for (let ?ty = old_ht; ty < nh; ty = ty + 1)
             let row = ty * STRIDE_WT * 8
@@ -182,8 +215,31 @@ def ?modified = false
     CANVAS_HT = nh
     CANVAS_WP = nw * 8
     CANVAS_HP = nh * 8
+    canvas_x = 0
+    canvas_y = 0
+    canvas_x2 = CANVAS_WP
+    canvas_y2 = CANVAS_HP
     dirty = true
-    modified = true
+    if nw != old_wt || nh != old_ht
+        filestate_change()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Center canvas in window
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: center(scr = vimana.screen) (( -- ))
+    let screen_w = window_cols * 8
+    let screen_h = window_rows * 8
+    CANVAS_PX = stdr.floor((screen_w - CANVAS_WP) / 2)
+    CANVAS_PY = stdr.floor((screen_h - CANVAS_HP) / 2)
+    CANVAS_TX = stdr.floor(CANVAS_PX / 8)
+    CANVAS_TY = stdr.floor(CANVAS_PY / 8)
+    canvas_x = 0
+    canvas_y = 0
+    canvas_x2 = CANVAS_WP
+    canvas_y2 = CANVAS_HP
+    dirty = true
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -203,6 +259,10 @@ def ?modified = false
     CANVAS_HT = nh
     CANVAS_WP = nw * 8
     CANVAS_HP = nh * 8
+    canvas_x = 0
+    canvas_y = 0
+    canvas_x2 = CANVAS_WP
+    canvas_y2 = CANVAS_HP
     dirty = true
 ;
 
@@ -227,11 +287,10 @@ def ?modified = false
             let b7 = scr.gfx(src + i + 7)
             scr.set_gfx(dst + i, [b0, b1, b2, b3, b4, b5, b6, b7])
     let bottom = (CANVAS_HT - 1) * row_bytes
-    let zeroes = [0, 0, 0, 0, 0, 0, 0, 0]
     for (let ?tx = 0; tx < CANVAS_WT; tx = tx + 1)
-        scr.set_gfx(bottom + tx * 8, zeroes)
+        scr.set_gfx(bottom + tx * 8, [0, 0, 0, 0, 0, 0, 0, 0])
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 :: drag_down(scr = vimana.screen) (( -- ))
@@ -250,11 +309,10 @@ def ?modified = false
             let b6 = scr.gfx(src + i + 6)
             let b7 = scr.gfx(src + i + 7)
             scr.set_gfx(dst + i, [b0, b1, b2, b3, b4, b5, b6, b7])
-    let zeroes = [0, 0, 0, 0, 0, 0, 0, 0]
     for (let ?tx = 0; tx < CANVAS_WT; tx = tx + 1)
-        scr.set_gfx(tx * 8, zeroes)
+        scr.set_gfx(tx * 8, [0, 0, 0, 0, 0, 0, 0, 0])
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 :: drag_left(scr = vimana.screen) (( -- ))
@@ -275,7 +333,7 @@ def ?modified = false
         let last = row + (CANVAS_WT - 1) * 8
         scr.set_gfx(last, [0, 0, 0, 0, 0, 0, 0, 0])
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 :: drag_right(scr = vimana.screen) (( -- ))
@@ -295,7 +353,7 @@ def ?modified = false
             scr.set_gfx(dst, [b0, b1, b2, b3, b4, b5, b6, b7])
         scr.set_gfx(row, [0, 0, 0, 0, 0, 0, 0, 0])
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -306,16 +364,18 @@ def ?modified = false
     if CANVAS_WT <= 2 { <- }
     CANVAS_WT = CANVAS_WT - 1
     CANVAS_WP = CANVAS_WT * 8
+    canvas_x2 = CANVAS_WP
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 :: crop_h(scr = vimana.screen) (( -- ))
     if CANVAS_HT <= 2 { <- }
     CANVAS_HT = CANVAS_HT - 1
     CANVAS_HP = CANVAS_HT * 8
+    canvas_y2 = CANVAS_HP
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -328,11 +388,11 @@ def ?modified = false
     let old_wt = CANVAS_WT
     CANVAS_WT = old_wt + 1
     CANVAS_WP = CANVAS_WT * 8
-    let zeroes = [0, 0, 0, 0, 0, 0, 0, 0]
+    canvas_x2 = CANVAS_WP
     for (let ?ty = 0; ty < CANVAS_HT; ty = ty + 1)
-        scr.set_gfx(ty * STRIDE_WT * 8 + old_wt * 8, zeroes)
+        scr.set_gfx(ty * STRIDE_WT * 8 + old_wt * 8, [0, 0, 0, 0, 0, 0, 0, 0])
     dirty = true
-    modified = true
+    filestate_change()
 ;
 
 :: size_h(scr = vimana.screen) (( -- ))
@@ -341,10 +401,10 @@ def ?modified = false
     let old_ht = CANVAS_HT
     CANVAS_HT = old_ht + 1
     CANVAS_HP = CANVAS_HT * 8
+    canvas_y2 = CANVAS_HP
     let row = old_ht * STRIDE_WT * 8
-    let zeroes = [0, 0, 0, 0, 0, 0, 0, 0]
     for (let ?tx = 0; tx < CANVAS_WT; tx = tx + 1)
-        scr.set_gfx(row + tx * 8, zeroes)
+        scr.set_gfx(row + tx * 8, [0, 0, 0, 0, 0, 0, 0, 0])
     dirty = true
-    modified = true
+    filestate_change()
 ;

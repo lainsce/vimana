@@ -8,8 +8,8 @@ bring draw_canvas
 -- Brush state
 -- ─────────────────────────────────────────────────────────────────────────────
 
-def ?tool = 0      -- 0=pen, 1=brush, 2=line, 3=magic, 4=rect
-def ?size = 0      -- 0-7
+def ?tool = 1      -- 1=brush for larger dots
+def ?size = 4      -- 5px dot, visible
 def ?mode = 0      -- 0=draw, 1=erase
 def ?patt = 0      -- 0-7
 

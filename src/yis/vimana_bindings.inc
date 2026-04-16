@@ -815,18 +815,14 @@ static void __vimana_screen_set_gfx(YisVal scrv, YisVal addrv,
   if (datav.tag != EVT_ARR)
     yis_trap("vimana.screen.set_gfx expects byte array");
   YisArr *arr = (YisArr *)datav.as.p;
-  size_t num_words = arr ? arr->len : 0;
-  size_t num_bytes = num_words * 2;
-  uint8_t *bytes = num_bytes > 0 ? (uint8_t *)malloc(num_bytes) : NULL;
-  if (num_bytes > 0 && !bytes)
+  size_t len = arr ? arr->len : 0;
+  uint8_t *bytes = len > 0 ? (uint8_t *)malloc(len) : NULL;
+  if (len > 0 && !bytes)
     return;
-  for (size_t i = 0; i < num_words; i++) {
-    uint16_t word = (uint16_t)(yis_as_int(arr->items[i]) & 0xFFFFu);
-    bytes[i * 2] = (uint8_t)(word >> 8);
-    bytes[i * 2 + 1] = (uint8_t)(word & 0xFF);
-  }
+  for (size_t i = 0; i < len; i++)
+    bytes[i] = vimana_byte_from_val(arr->items[i]);
   vimana_screen_set_gfx(screen, (unsigned int)yis_as_int(addrv), bytes,
-                         (unsigned int)num_bytes);
+                         (unsigned int)len);
   free(bytes);
 }
 

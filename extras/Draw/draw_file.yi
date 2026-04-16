@@ -90,7 +90,7 @@ def ?file_ht = 43
 :: new_file(scr = vimana.screen) (( -- ))
     filename = "untitled"
     draw_canvas.resize(scr, 77, 43)
-    draw_canvas.clear_modified()
+    draw_canvas.filestate_unchange()
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ def ?file_ht = 43
             stdr.push(bytes, scr.gfx(addr + 7))
     let path = make_icn_name()
     fsys.write_bytes(path, bytes)
-    draw_canvas.clear_modified()
+    draw_canvas.filestate_unchange()
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ def ?file_ht = 43
             if src + 7 < limit { b7 = bytes[src + 7] }
             scr.set_gfx(addr, [b0, b1, b2, b3, b4, b5, b6, b7])
             src = src + 8
-    draw_canvas.clear_modified()
+    draw_canvas.filestate_unchange()
     draw_canvas.mark_dirty()
 ;
 
@@ -259,7 +259,7 @@ def ?file_ht = 43
     if name_end > base_start
         filename = stdr.substring_len(path, base_start, name_end - base_start)
 
-    draw_canvas.clear_modified()
+    draw_canvas.filestate_unchange()
     draw_canvas.mark_dirty()
 ;
 

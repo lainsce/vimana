@@ -55,20 +55,22 @@ def FR_B  = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF]  -- bottom edge
 def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right corner
 
 : draw_background(scr = vimana.screen) (( -- ))
-    let scr_wt = 85   -- 680 / 8
-    let scr_ht = 48    -- 384 / 8
-    let ctx = 6
-    let cty = 3
-    let cwt = 30
-    let cht = 24
+    let scr_wt = draw_canvas.window_cols
+    let scr_ht = draw_canvas.window_rows
+    let ctx = draw_canvas.CANVAS_TX
+    let cty = draw_canvas.CANVAS_TY
+    let cwt = draw_canvas.CANVAS_WT
+    let cht = draw_canvas.CANVAS_HT
     -- Rows 0-1: solid green strip (filename bar, 16px for 8x16 fonts)
     for (let ?ty = 0; ty <= 1; ty = ty + 1)
         for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
             scr.put_icn(tx, ty, BG_FILL_ICN, UI, UI)
-    -- Rows 2+: hash everywhere
+
+    -- Rows 2+: hash outside canvas
     for (let ?ty = 2; ty < scr_ht; ty = ty + 1)
         for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
-            scr.put_icn(tx, ty, HASH_ICN, UI, BG)
+            if tx < ctx || tx >= ctx + draw_canvas.CANVAS_WT || ty < cty || ty >= cty + draw_canvas.CANVAS_HT
+                scr.put_icn(tx, ty, HASH_ICN, UI, BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -148,9 +150,8 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
 
 : draw_filename(scr = vimana.screen) (( -- ))
     let ?name = draw_file.get_display_name()
-    if draw_canvas.is_modified()
+    if draw_canvas.filestate_changed()
         name = name + " *"
-    -- Draw after menu categories (x=272 = tile 34 * 8)
     scr.put_text(272, 0, name, FG, UI)
 ;
 

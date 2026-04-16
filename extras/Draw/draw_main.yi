@@ -60,60 +60,55 @@ def ?resizer_dragging = false
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : handle_menu_action(scr = vimana.screen, fsys = vimana.file, action = num) (( -- ))
-    -- File actions (0-9)
-    if action == 0  -- New
+    if action == 0
         draw_file.new_file(scr)
-    if action == 1  -- Open
+    if action == 1
         let picked = stdr.open_file_dialog("Open", "*")
         if picked != null
             draw_file.open_file(scr, fsys, picked)
-    if action == 2  -- Save
+    if action == 2
         draw_file.save_icn(scr, fsys)
-    if action == 3  -- Export TGA
+    if action == 3
         draw_file.export_tga(scr, fsys)
-    -- Edit actions (10-19)
-    if action == 10  -- Clear
+    if action == 10
         draw_canvas.clear(scr)
-    if action == 11  -- Invert
+    if action == 11
         draw_canvas.invert(scr)
-    if action == 12  -- Crop W
+    if action == 12
         draw_canvas.crop_w(scr)
-    if action == 13  -- Crop H
+    if action == 13
         draw_canvas.crop_h(scr)
-    if action == 14  -- Size W
+    if action == 14
         draw_canvas.size_w(scr)
-    if action == 15  -- Size H
+    if action == 15
         draw_canvas.size_h(scr)
-    -- Zoom actions (20-29)
-    if action == 20  -- Toggle
+    if action == 20
         draw_zoom.toggle()
-    -- Tool actions (30-39)
-    if action == 30  -- Pen
+    if action == 30
         draw_brush.set_tool(0)
         draw_canvas.mark_dirty()
-    if action == 31  -- Brush
+    if action == 31
         draw_brush.set_tool(1)
         draw_canvas.mark_dirty()
-    if action == 32  -- Line
+    if action == 32
         draw_brush.set_tool(2)
         draw_canvas.mark_dirty()
-    if action == 33  -- Magic
+    if action == 33
         draw_brush.set_tool(3)
         draw_canvas.mark_dirty()
-    if action == 34  -- Rect
+    if action == 34
         draw_brush.set_tool(4)
         draw_canvas.mark_dirty()
-    if action == 35  -- Erase
+    if action == 35
         draw_brush.toggle_mode()
         draw_canvas.mark_dirty()
-    -- Pattern actions (40-49)
     if action >= 40 && action <= 47
         draw_brush.set_patt(action - 40)
         draw_canvas.mark_dirty()
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Mouse handling
+-- Resizer hit test
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : resizer_hit(mx = num, my = num) (( bool ))
@@ -121,6 +116,22 @@ def ?resizer_dragging = false
     let ry = (draw_canvas.CANVAS_TY + draw_canvas.CANVAS_HT) * 8
     <- mx >= rx && mx < rx + 8 && my >= ry && my < ry + 8
 ;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Panel rect (for hit testing - matches Noodle's @panel/rect)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: panel_within(mx = num, my = num, px = num, py = num, pw = num, ph = num) (( bool ))
+    let x1 = px
+    let y1 = py
+    let x2 = px + pw
+    let y2 = py + ph
+    <- mx >= x1 && mx < x2 && my >= y1 && my < y2
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Unified mouse handler (Noodle style)
+-- ─────────────────────────────────────────────────────────────────────────────
 
 : on_mouse(scr = vimana.screen, dev = vimana.device, fsys = vimana.file) (( -- ))
     let mx = dev.pointer_x()
@@ -132,25 +143,28 @@ def ?resizer_dragging = false
     let down = left_down || right_down
     let pressed = left_pressed || right_pressed
 
-    -- Menu interaction: always track mouse movement for hover
     if draw_menu.is_open()
         draw_menu.on_move(mx, my)
 
-    -- Menu click (left only)
     if left_pressed
         let action = draw_menu.on_press(mx, my)
         if action >= 0
             handle_menu_action(scr, fsys, action)
             <-
-        -- If menu consumed the click (title bar), stop
         let ty = stdr.floor(my / 8)
         if ty <= 1
             <-
 
-    -- Panel interaction (left only)
-    if left_pressed
-        if draw_panel.on_press(mx, my)
-            <- 
+    let pp = draw_panel.get_px()
+    let ppy = draw_panel.get_py()
+    let ppw = draw_panel.get_w()
+    let pph = draw_panel.get_h()
+    let panel_hit = panel_within(mx, my, pp, ppy, ppw, pph)
+
+    if panel_hit
+        if left_pressed
+            if draw_panel.on_press(mx, my)
+                <- 
 
     if draw_panel.is_dragging()
         if left_down
@@ -160,7 +174,6 @@ def ?resizer_dragging = false
             draw_panel.on_release()
             <-
 
-    -- Resizer interaction
     if left_pressed && resizer_hit(mx, my)
         resizer_dragging = true
         <-
@@ -175,20 +188,17 @@ def ?resizer_dragging = false
             resizer_dragging = false
             <-
 
-    -- Convert to canvas-relative coordinates
-    let ?cx = mx - draw_canvas.CANVAS_PX
-    let ?cy = my - draw_canvas.CANVAS_PY
+    let cx = mx - draw_canvas.CANVAS_PX
+    let cy = my - draw_canvas.CANVAS_PY
     if draw_zoom.is_active()
         let zc = draw_zoom.screen_to_canvas(mx, my)
         cx = zc[0]
         cy = zc[1]
 
-    -- Skip canvas interaction if click is on the panel
-    if pressed && draw_panel.hit_test(mx, my)
+    if pressed && panel_hit
         <-
 
     if pressed && draw_canvas.within(cx, cy)
-        -- Right-click sets erase mode, left-click sets draw mode (like Noodle)
         saved_mode = draw_brush.get_mode()
         if right_pressed
             draw_brush.set_mode(1)
@@ -216,29 +226,24 @@ def ?resizer_dragging = false
     let ctrl = dev.key_down(KEY_LCTRL) || dev.key_down(KEY_RCTRL)
     let shift = dev.key_down(KEY_LSHIFT) || dev.key_down(KEY_RSHIFT)
 
-    -- Ctrl+N = new file
     if ctrl && dev.key_pressed(KEY_N)
         draw_file.new_file(scr)
         <-
 
-    -- Ctrl+S = save ICN
     if ctrl && dev.key_pressed(KEY_S)
         draw_file.save_icn(scr, fsys)
         <-
 
-    -- Ctrl+O = open file (ICN or TGA)
     if ctrl && dev.key_pressed(KEY_O)
         let picked = stdr.open_file_dialog("Open", "*")
         if picked != null
             draw_file.open_file(scr, fsys, picked)
         <-
 
-    -- Ctrl+E = export TGA
     if ctrl && dev.key_pressed(KEY_E)
         draw_file.export_tga(scr, fsys)
         <-
 
-    -- Ctrl+arrow = crop/size canvas
     if ctrl && dev.key_pressed(KEY_LEFT)
         draw_canvas.crop_w(scr)
         <-
@@ -252,7 +257,6 @@ def ?resizer_dragging = false
         draw_canvas.size_h(scr)
         <-
 
-    -- Tool selection: Q W E R T
     if dev.key_pressed(KEY_Q)
         draw_brush.set_tool(0)
         draw_canvas.mark_dirty()
@@ -269,11 +273,9 @@ def ?resizer_dragging = false
         draw_brush.set_tool(4)
         draw_canvas.mark_dirty()
 
-    -- Toggle zoom: Y
     if dev.key_pressed(KEY_Y)
         draw_zoom.toggle()
 
-    -- Pattern selection: 1-8
     if dev.key_pressed(KEY_1)
         draw_brush.set_patt(0)
         draw_canvas.mark_dirty()
@@ -299,7 +301,6 @@ def ?resizer_dragging = false
         draw_brush.set_patt(7)
         draw_canvas.mark_dirty()
 
-    -- Brush size: [ and ]
     if dev.key_pressed(KEY_LBRACKET)
         draw_brush.size_down()
         draw_canvas.mark_dirty()
@@ -307,20 +308,16 @@ def ?resizer_dragging = false
         draw_brush.size_up()
         draw_canvas.mark_dirty()
 
-    -- Toggle erase mode: X
     if dev.key_pressed(KEY_X)
         draw_brush.toggle_mode()
         draw_canvas.mark_dirty()
 
-    -- Clear canvas: C
     if dev.key_pressed(KEY_C)
         draw_canvas.clear(scr)
 
-    -- Invert canvas: I
     if dev.key_pressed(KEY_I)
         draw_canvas.invert(scr)
 
-    -- Arrow keys: zoom navigate / shift+crop|size / drag canvas
     if dev.key_pressed(KEY_UP)
         if draw_zoom.is_active()
             draw_zoom.move_up()
@@ -352,26 +349,30 @@ def ?resizer_dragging = false
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
-def CURSOR_PTR = [0x4060, 0x7078, 0x7c70, 0x5808]
-def CURSOR_ADDR = 0x9000
-
 -- Entry point
 -- ─────────────────────────────────────────────────────────────────────────────
+
+def CURSOR_PTR = [0x0070 0x6844 0x2211 0x0906]
+def CURSOR_ADDR = 0xFF00
 
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Draw", 680, 384, 1)
     scr.set_cursor(CURSOR_PTR)
     scr.hide_cursor()
-    scr.set_gfx(CURSOR_ADDR, CURSOR_PTR)
-
-    draw_font.setup(scr)
-    -- Upload cursor AFTER loading sprites so it doesn't get overwritten
     scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
+    draw_font.setup(scr)
 
     scr.set_titlebar_title("Draw")
 
+    draw_canvas.set_window_dims(scr.width() / 8, scr.height() / 8)
+    draw_canvas.maximize(scr)
+    draw_canvas.center(scr)
     draw_canvas.clear(scr)
+    draw_panel.draw(scr)
+    draw_menu.draw(scr)
+    draw_view.draw_filename(scr)
+    draw_canvas.clear_dirty()
 
     let dev = sys.device()
     let fsys = sys.file()
@@ -381,17 +382,10 @@ def CURSOR_ADDR = 0x9000
         on_mouse(scr, dev, fsys)
         on_key(scr, dev, fsys)
 
-        scr.clear(vimana.color_bg)
         draw_view.draw_canvas_all(scr)
         draw_panel.draw(scr)
         draw_menu.draw(scr)
 
-        if draw_canvas.is_dirty()
-            draw_view.draw_canvas_all(scr)
-            draw_panel.draw(scr)
-            draw_menu.draw(scr)
-
-        -- Draw cursor every frame
         let mx = dev.pointer_x()
         let my = dev.pointer_y()
         scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x81)
