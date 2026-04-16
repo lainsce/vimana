@@ -8,13 +8,13 @@ bring vimana
 -- ─────────────────────────────────────────────────────────────────────────────
 
 def ?CANVAS_WT = 77      -- width in tiles (mutable for resize)
-def ?CANVAS_HT = 43      -- height in tiles (mutable for resize)
+def ?CANVAS_HT = 42      -- height in tiles (mutable for resize)
 def ?CANVAS_WP = 77 * 8  -- width in pixels (WT * 8)
-def ?CANVAS_HP = 43 * 8  -- height in pixels (HT * 8)
+def ?CANVAS_HP = 42 * 8  -- height in pixels (HT * 8)
 def ?CANVAS_TX = 6       -- screen tile x offset (fixed)
-def ?CANVAS_TY = 3       -- screen tile y offset (fixed)
+def ?CANVAS_TY = 4       -- screen tile y offset (fixed)
 def ?CANVAS_PX = 6 * 8   -- screen pixel x offset (TX * 8)
-def ?CANVAS_PY = 3 * 8   -- screen pixel y offset (TY * 8)
+def ?CANVAS_PY = 4 * 8   -- screen pixel y offset (TY * 8)
 
 -- Fixed row stride for GFX ROM addressing (max canvas width = 85 - TX - 1)
 def STRIDE_WT = 85
@@ -173,18 +173,6 @@ def ?canvas_y2 = 0
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Maximize canvas to window size (Noodle's canvas/<maximize>)
--- ─────────────────────────────────────────────────────────────────────────────
-
-:: maximize(scr = vimana.screen) (( -- ))
-    let new_wt = window_cols - 2
-    let new_ht = window_rows - 2
-    if new_wt < 2 { new_wt = 2 }
-    if new_ht < 2 { new_ht = 2 }
-    resize(scr, new_wt, new_ht)
-;
-
--- ─────────────────────────────────────────────────────────────────────────────
 -- Resize canvas, preserving existing content
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -222,24 +210,6 @@ def ?canvas_y2 = 0
     dirty = true
     if nw != old_wt || nh != old_ht
         filestate_change()
-;
-
--- ─────────────────────────────────────────────────────────────────────────────
--- Center canvas in window
--- ─────────────────────────────────────────────────────────────────────────────
-
-:: center(scr = vimana.screen) (( -- ))
-    let screen_w = window_cols * 8
-    let screen_h = window_rows * 8
-    CANVAS_PX = stdr.floor((screen_w - CANVAS_WP) / 2)
-    CANVAS_PY = stdr.floor((screen_h - CANVAS_HP) / 2)
-    CANVAS_TX = stdr.floor(CANVAS_PX / 8)
-    CANVAS_TY = stdr.floor(CANVAS_PY / 8)
-    canvas_x = 0
-    canvas_y = 0
-    canvas_x2 = CANVAS_WP
-    canvas_y2 = CANVAS_HP
-    dirty = true
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────

@@ -235,12 +235,9 @@ def SIZE_ERASE = [
             fg = 3
         scr.put_icn(ptx + 1 + col, pty + 1 + row, icon, fg, 0)
 
-    -- Mode indicator on separator row
-    if cur_mode == 0
-        scr.put_icn(ptx + 1, pty + 1 + SEP1_ROW, MODE_DRAW_ICN, 1, 0)
-    else
-        scr.put_icn(ptx + 1, pty + 1 + SEP1_ROW, MODE_ERASE_ICN, 3, 0)
-    scr.put_icn(ptx + 2, pty + 1 + SEP1_ROW, DASH_ICN, 3, 0)
+    -- separator row
+    scr.put_icn(ptx + 1, pty + 1 + SEP1_ROW, DASH_ICN, 1, 0)
+    scr.put_icn(ptx + 2, pty + 1 + SEP1_ROW, DASH_ICN, 1, 0)
 
     -- ── Pattern section (rows 4-7, 2×4 grid) ──
     for (let ?i = 0; i < 8; i = i + 1)
@@ -253,8 +250,8 @@ def SIZE_ERASE = [
         scr.put_icn(ptx + 1 + col, pty + 1 + row, icon, fg, 0)
 
     -- ── Separator row 8 ──
-    scr.put_icn(ptx + 1, pty + 1 + SEP2_ROW, DASH_ICN, 3, 0)
-    scr.put_icn(ptx + 2, pty + 1 + SEP2_ROW, DASH_ICN, 3, 0)
+    scr.put_icn(ptx + 1, pty + 1 + SEP2_ROW, DASH_ICN, 1, 0)
+    scr.put_icn(ptx + 2, pty + 1 + SEP2_ROW, DASH_ICN, 1, 0)
 
     -- ── Size section (rows 9-12, 2×4 grid) ──
     for (let ?i = 0; i < 8; i = i + 1)

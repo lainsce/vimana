@@ -366,8 +366,6 @@ def CURSOR_ADDR = 0xFF00
     scr.set_titlebar_title("Draw")
 
     draw_canvas.set_window_dims(scr.width() / 8, scr.height() / 8)
-    draw_canvas.maximize(scr)
-    draw_canvas.center(scr)
     draw_canvas.clear(scr)
     draw_panel.draw(scr)
     draw_menu.draw(scr)
