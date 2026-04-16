@@ -175,12 +175,16 @@ def ?press_id = -1
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 -- Entry point
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Calc", calc_model.WIN_W, calc_model.WIN_H, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     calc_icons.load_sprites(scr)
     let fsys = sys.file()
     if !fsys.exists(sys.home_dir() + "/.theme")
@@ -200,8 +204,20 @@ def ?press_id = -1
         dev.poll()
         on_mouse(sys, dev)
         on_key(sys, dev)
+
+        scr.clear(vimana.color_bg)
+        calc_view.draw_all(scr, press_id)
+
         if calc_model.is_dirty()
             calc_view.draw_all(scr, press_id)
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 
     calc_tone.shutdown(sys)

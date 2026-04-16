@@ -15,9 +15,13 @@ bring casevo_browser
 -- Entry point
 -- ─────────────────────────────────────────────────────────────────────────────
 
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 -> ()
     let sys  = vimana.system()
     let scr  = vimana.screen("Casevo", casevo_model.WIN_W, casevo_model.WIN_H, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     let dev  = sys.device()
     let fsys = sys.file()
 
@@ -55,7 +59,18 @@ bring casevo_browser
         casevo_input.on_scroll(dev)
 
         -- Render only when state changed
+        scr.clear(vimana.color_bg)
+        casevo_view.draw_all(scr)
+
         if casevo_model.consume_dirty()
             casevo_view.draw_all(scr)
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;

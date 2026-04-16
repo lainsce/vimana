@@ -241,20 +241,37 @@ bring orca_model
 -- Write: if west != '.', store east into var[west]
 -- Read: handled in separate pass after all operators write
 :: op_v(x = num, y = num) (( -- ))
-    let w_ch = peek(x, y, -1, 0)
-    let r_ch = peek(x, y, 1, 0)
+    let w_ch = orca_grid.get(x - 1, y)
+    let r_ch = orca_grid.get(x + 1, y)
+    -- Check for V in diagonals - if present, this is a read-only V, don't output below
+    let has_v_nw = orca_base36.to_upper(orca_grid.get(x - 1, y - 1)) == "V"
+    let has_v_ne = orca_base36.to_upper(orca_grid.get(x + 1, y - 1)) == "V"
+    let has_v_sw = orca_base36.to_upper(orca_grid.get(x - 1, y + 1)) == "V"
+    let has_v_se = orca_base36.to_upper(orca_grid.get(x + 1, y + 1)) == "V"
+    let is_read_only = has_v_nw || has_v_ne || has_v_sw || has_v_se
     if w_ch != "."
         let w_key = orca_base36.b36_val(w_ch)
         orca_grid.set_var(w_key, r_ch)
+    elif r_ch != "." && !is_read_only
+        orca_grid.lock(x + 1, y)
+        orca_grid.mark_output(x, y + 1)
 ;
 
--- V read pass: output var[east] south
+-- V read pass: output var[east] south (same diagonal check)
 :: op_v_read(x = num, y = num) (( -- ))
-    let r_ch = peek(x, y, 1, 0)
+    let r_ch = orca_grid.get(x + 1, y)
     if r_ch != "."
+        let has_v_nw = orca_base36.to_upper(orca_grid.get(x - 1, y - 1)) == "V"
+        let has_v_ne = orca_base36.to_upper(orca_grid.get(x + 1, y - 1)) == "V"
+        let has_v_sw = orca_base36.to_upper(orca_grid.get(x - 1, y + 1)) == "V"
+        let has_v_se = orca_base36.to_upper(orca_grid.get(x + 1, y + 1)) == "V"
+        let is_read_only = has_v_nw || has_v_ne || has_v_sw || has_v_se
+        if is_read_only
+            <- 
         let r_key = orca_base36.b36_val(r_ch)
         let val = orca_grid.get_var(r_key)
-        poke(x, y, 0, 1, val)
+        orca_grid.set(x, y + 1, val)
+        orca_grid.mark_output(x, y + 1)
 ;
 
 -- W: move west (handled in movement pass)
@@ -352,9 +369,7 @@ bring orca_model
         for (let ?i = 0; i < len; i += 1)
             orca_grid.lock(x + 1 + i, y)
     elif upper == "V"
-        -- V: write(-1), read(+1) is a direct operand
-        orca_grid.lock(x - 1, y)
-        orca_grid.lock_east(x + 1, y)
+        -- V: don't lock in pre-pass - user needs to type here. Lock only when executing.
     elif upper == "X"
         -- X: x_off(-2), y_off(-1), val(+1) is a direct operand
         orca_grid.lock(x - 2, y)

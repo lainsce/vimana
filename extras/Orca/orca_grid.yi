@@ -152,8 +152,8 @@ def ?vars = []: [any]
         visual_bangs[i] = false
         east_inputs[i] = false
         q_reads[i] = false
+        outputs[i] = false
     ;
-    -- Note: outputs[] persist across frames to protect operator output from re-execution
 
 :: clear_all() (( -- ))
     for (let ?i = 0; i < GRID_SIZE; i += 1)

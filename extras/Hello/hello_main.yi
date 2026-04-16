@@ -1,12 +1,17 @@
 cask main
 
+bring stdr
 bring vimana
 bring hello_font
 bring hello_scene
 
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF]
+
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Hello", 320, 192, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     let fsys = sys.file()
     hello_font.install(scr)
 
@@ -17,6 +22,15 @@ bring hello_scene
         dev.poll()
         if dev.key_pressed(vimana.key_escape)
             sys.quit()
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.clear(vimana.color_bg)
         hello_scene.draw(scr, dev, dt, sys)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;

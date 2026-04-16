@@ -46,12 +46,16 @@ bring mine_view
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 -- Entry point
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("MINESWEEPER", 160, 208, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     mine_font.setup(scr)
     mine_data.load_sprites(scr)
 
@@ -69,7 +73,19 @@ bring mine_view
         on_mouse(sys, dev)
         on_key(sys, dev)
         mine_logic.timer_tick()
+
+        scr.clear(vimana.color_bg)
+        mine_view.draw_all(scr)
+
         if mine_model.is_dirty()
             mine_view.draw_all(scr)
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;

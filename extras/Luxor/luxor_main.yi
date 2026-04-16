@@ -211,12 +211,16 @@ def ?screen_h = 0
         luxor_model.set_dirty()
 ;
 
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 -> ()
     luxor_model.init()
 
     let sys = vimana.system()
     screen_h = luxor_model.desired_screen_h()
     let scr = vimana.screen("Luxor", luxor_model.SCR_W, screen_h, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     let dev = sys.device()
     let fsys = sys.file()
 
@@ -236,6 +240,15 @@ def ?screen_h = 0
         sync_screen_size(scr)
 
         luxor_file.update_title(scr)
+        scr.clear(vimana.color_bg)
         luxor_view.draw_all(scr)
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;

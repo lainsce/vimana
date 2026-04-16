@@ -45,14 +45,18 @@ def ?tick_acc = 0.0
 -- Mouse drag state
 def ?mouse_dragging = false
 
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Orca", SCREEN_W, SCREEN_H, SCALE)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     scr.set_palette(vimana.color_bg, "#000000")
        .set_palette(vimana.color_fg, "#ffffff")
        .set_palette(vimana.color_2, "#77ddcc")
        .set_palette(vimana.color_3, "#ffbb22")
-       .set_palette(vimana.color_4, "#888888")
+       .set_palette(vimana.color_4, "#666666")
     let dev = sys.device()
     let fsys = sys.file()
 
@@ -177,34 +181,33 @@ def ?mouse_dragging = false
 
             -- Text input for typing characters into grid
             let typed = dev.text_input()
-            if stdr.len(typed) > 0
-                for (let ?ti = 0; ti < stdr.len(typed); ti += 1)
-                    let ch = stdr.char_at(typed, ti)
-                    -- Allow alphanumeric, dot, *, #, =
-                    let code = stdr.char_code(ch)
-                    let valid = false
-                    if code >= 65 && code <= 90
-                        valid = true
-                    if code >= 97 && code <= 122
-                        valid = true
-                    if code >= 48 && code <= 57
-                        valid = true
-                    if ch == "." || ch == "*" || ch == "#" || ch == "=" || ch == ":" || ch == ";"
-                        valid = true
-                    if valid
-                        orca_model.type_at_cursor(ch)
+            for (let ?ti = 0; ti < stdr.len(typed); ti += 1)
+                let ch = stdr.char_at(typed, ti)
+                let code = stdr.char_code(ch)
+                let valid = false
+                if code >= 65 && code <= 90
+                    valid = true
+                if code >= 97 && code <= 122
+                    valid = true
+                if code >= 48 && code <= 57
+                    valid = true
+                if ch == "." || ch == "*" || ch == "#" || ch == "=" || ch == ":" || ch == ";"
+                    valid = true
+                if valid
+                    orca_model.type_at_cursor(ch)
 
-        -- Simulation tick (FPS-independent using accumulator)
-        if orca_model.playing
-            tick_acc = tick_acc + 1.0
-            let tick_interval = 900.0 / orca_model.bpm
-            if tick_acc >= tick_interval
-                tick_acc = tick_acc - tick_interval
-                orca_sim.tick(sys)
-                orca_model.tick_frame()
+        -- Clear screen every frame to avoid cursor trails
+        scr.clear(vimana.color_bg)
+        orca_view.draw(scr)
 
         -- Render when dirty
         if orca_model.dirty
             orca_view.draw(scr)
+
+        -- Draw cursor every frame
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;

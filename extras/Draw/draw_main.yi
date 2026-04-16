@@ -352,12 +352,16 @@ def ?resizer_dragging = false
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 -- Entry point
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Draw", 680, 384, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
 
     draw_font.setup(scr)
 
@@ -372,10 +376,23 @@ def ?resizer_dragging = false
         dev.poll()
         on_mouse(scr, dev, fsys)
         on_key(scr, dev, fsys)
+
+        scr.clear(vimana.color_bg)
+        draw_view.draw_canvas_all(scr)
+        draw_panel.draw(scr)
+        draw_menu.draw(scr)
+
         if draw_canvas.is_dirty()
             draw_view.draw_canvas_all(scr)
             draw_panel.draw(scr)
             draw_menu.draw(scr)
-            scr.present()
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;

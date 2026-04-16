@@ -215,12 +215,16 @@ bring casu_file
             casu_file.file_save(fsys, casu_model.filepath)
 ;
 
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Entry point
 -- ─────────────────────────────────────────────────────────────────────────────
 -> () (( -- ))
     let sys = vimana.system()
     let scr = vimana.screen("Casu", casu_model.SCR_W, casu_model.SCR_H, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     let fsys = sys.file()
 
     -- Sync model palette arrays from global ~/.theme
@@ -401,11 +405,21 @@ bring casu_file
                 needs_redraw = true
 
         -- ─── Sync and redraw ─────────────────────────────────────────────
+        scr.clear(vimana.color_bg)
+        casu_view.draw_all(scr)
+
         if needs_redraw
             if casu_model.dirty
                 casu_edit.sync_all(scr)
                 casu_model.clear_dirty()
             casu_view.draw_all(scr)
-            scr.present()
+
+        -- Draw cursor every frame (even when not dirty)
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;

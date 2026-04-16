@@ -95,9 +95,10 @@ bring orca_model
             elif orca_grid.is_output(x, y)
                 -- skip: output from previous operator (don't execute user data as operator)
             elif ch == "*"
-                -- Bang neighbors, record visual flash, then consume
-                orca_ops.op_bang(x, y)
-                orca_grid.mark_visual_bang(x, y)
+                -- Bang neighbors only if not locked (not held by X/x mover)
+                if !orca_grid.is_locked(x, y)
+                    orca_ops.op_bang(x, y)
+                    orca_grid.mark_visual_bang(x, y)
                 orca_grid.set(x, y, ".")
             elif ch == ":"
                 if orca_grid.is_banged(x, y)

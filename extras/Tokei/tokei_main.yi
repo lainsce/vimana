@@ -1,13 +1,18 @@
 cask main
 
+bring stdr
 bring vimana
 bring tokei_assets
 bring tokei_model
 bring tokei_view
 
+def CURSOR_PTR = [0x80C0, 0xE0F0, 0xF8FC, 0xFEFF, 0xf8d8, 0x8c0c, 0x0606, 0x0000]
+
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Tokei", tokei_model.WIN_W, tokei_model.WIN_H, 1)
+    scr.set_cursor(CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+    scr.hide_cursor()
     let dev = sys.device()
     let dt = sys.datetime()
 
@@ -22,7 +27,18 @@ bring tokei_view
         if dev.key_pressed(vimana.key_escape) || scr.titlebar_button_pressed()
             sys.quit()
 
+        scr.clear(vimana.color_bg)
+        tokei_view.draw(scr)
+
         if tokei_model.step(dt)
             tokei_view.draw(scr)
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let cx = stdr.floor(mx / 8)
+        let cy = stdr.floor(my / 8)
+        scr.put_icn(cx, cy, CURSOR_PTR, vimana.color_fg, vimana.color_bg)
+        scr.present()
     })
 ;
