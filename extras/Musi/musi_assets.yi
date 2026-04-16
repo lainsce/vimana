@@ -158,8 +158,8 @@ def VOL6_BR = [0xC5, 0xC9, 0xCA, 0xD2, 0xC4, 0, 0, 0]
 
 :: draw_button_frame(scr = vimana.screen, x = num, y = num, _fg = num, _bg = num) (( -- ))
     scr.set_auto(0x36)
-    scr.set_x(x)
-    scr.set_y(y)
+    scr.set_x(x*8)
+    scr.set_y(y*8)
     if musi_model.paused
         scr.set_addr(0x180)
     else
@@ -178,8 +178,8 @@ def VOL6_BR = [0xC5, 0xC9, 0xCA, 0xD2, 0xC4, 0, 0, 0]
 
 :: draw_progress(scr = vimana.screen, fp = num) (( -- ))
     scr.set_auto(0x15)
-    scr.set_y(musi_model.PROG_Y)
-    scr.set_x(musi_model.PROG_X)
+    scr.set_y(musi_model.PROG_Y*8)
+    scr.set_x(musi_model.PROG_X*8)
     -- Background pill: left cap + 28 middle + right cap
     scr.set_addr(0)
     scr.sprite(0x81)
@@ -192,7 +192,7 @@ def VOL6_BR = [0xC5, 0xC9, 0xCA, 0xD2, 0xC4, 0, 0, 0]
     -- Elapsed fill: draw fill-icn at x = fi+PROG_X for fi in 0..fp-2
     let ?fi = 0
     for (; fi < fp - 1; fi += 1)
-        scr.set_x(fi + musi_model.PROG_X)
+        scr.set_x(fi + musi_model.PROG_X + 7)
         scr.set_addr(0x60)
         scr.sprite(0x0A)
         scr.sprite(0x0A)

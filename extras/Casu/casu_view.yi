@@ -71,46 +71,46 @@ def C_WH   = 3   -- bright / selected (white)
 
     -- Top-left corner
     scr.set_auto(0)
-    scr.set_x(tx - 1).set_y(ty - 1).set_addr(addr_e)
+    scr.set_x((tx - 1)*8).set_y((ty - 1)*8).set_addr(addr_e)
     scr.sprite(ctrl)
 
     -- Top bar
     scr.set_auto(1)
-    scr.set_x(tx).set_y(ty - 1).set_addr(addr_h)
+    scr.set_x(tx*8).set_y((ty - 1)*8).set_addr(addr_h)
     for (let ?i = 0; i < tw; i += 1)
         scr.sprite(ctrl)
 
     -- Top-right corner
     scr.set_auto(0)
-    scr.set_x(tx + tw).set_y(ty - 1).set_addr(addr_e)
+    scr.set_x((tx + tw)*8).set_y((ty - 1)*8).set_addr(addr_e)
     scr.sprite(ctrl_fx)
 
     -- Left bar
     scr.set_auto(2)
-    scr.set_x(tx - 1).set_y(ty).set_addr(addr_v)
+    scr.set_x((tx - 1)*8).set_y(ty*8).set_addr(addr_v)
     for (let ?i = 0; i < th; i += 1)
         scr.sprite(ctrl_fx)
 
     -- Right bar
     scr.set_auto(2)
-    scr.set_x(tx + tw).set_y(ty).set_addr(addr_v)
+    scr.set_x((tx + tw)*8).set_y(ty*8).set_addr(addr_v)
     for (let ?i = 0; i < th; i += 1)
         scr.sprite(ctrl)
 
     -- Bottom-left corner
     scr.set_auto(0)
-    scr.set_x(tx - 1).set_y(ty + th).set_addr(addr_e)
+    scr.set_x((tx - 1)*8).set_y((ty + th)*8).set_addr(addr_e)
     scr.sprite(ctrl_fy)
 
     -- Bottom bar
     scr.set_auto(1)
-    scr.set_x(tx).set_y(ty + th).set_addr(addr_h)
+    scr.set_x(tx*8).set_y((ty + th)*8).set_addr(addr_h)
     for (let ?i = 0; i < tw; i += 1)
         scr.sprite(ctrl_fy)
 
     -- Bottom-right corner
     scr.set_auto(0)
-    scr.set_x(tx + tw).set_y(ty + th).set_addr(addr_e)
+    scr.set_x((tx + tw)*8).set_y((ty + th)*8).set_addr(addr_e)
     scr.sprite(ctrl_fxy)
 
     scr.set_auto(0)
@@ -132,8 +132,8 @@ def C_WH   = 3   -- bright / selected (white)
     -- Draw all 256 tiles: set_auto(0xF6) then sprite() per row.
     -- 0xF6: rML=15 (16 tiles per call), rMY (auto-x by 8 each tile), rMA (addr+16/tile 2bpp)
     scr.set_auto(0xF6)
-    scr.set_x(casu_model.TILEVIEW_X)
-    scr.set_y(casu_model.TILEVIEW_Y)
+    scr.set_x(casu_model.TILEVIEW_X * 8)
+    scr.set_y(casu_model.TILEVIEW_Y * 8)
     scr.set_addr(0)
     for (let ?ty = 0; ty < 16; ty += 1)
         scr.sprite(0x81)    -- 2bpp bg layer blend=1
@@ -146,8 +146,8 @@ def C_WH   = 3   -- bright / selected (white)
     let row_stride = 16 * casu_model.TILE_BYTES
     scr.set_auto(sel_auto)
     for (let ?r = 0; r < sel_h; r += 1)
-        scr.set_x(casu_model.TILEVIEW_X + casu_model.sel_x1)
-        scr.set_y(casu_model.TILEVIEW_Y + casu_model.sel_y1 + r)
+        scr.set_x((casu_model.TILEVIEW_X + casu_model.sel_x1)*8)
+        scr.set_y((casu_model.TILEVIEW_Y + casu_model.sel_y1 + r)*8)
         scr.set_addr(sel_base + r * row_stride)
         scr.sprite(0x84)   -- 2bpp bg-layer blend=4 (highlight)
     scr.set_auto(1)
@@ -230,8 +230,8 @@ def C_WH   = 3   -- bright / selected (white)
                 let tile_idx = tile_hi * 256 + tile_lo
                 if tile_idx < 256
                     scr.set_auto(0)
-                    scr.set_x(casu_model.NTAB_X + tx)
-                    scr.set_y(casu_model.NTAB_Y + ty)
+                    scr.set_x((casu_model.NTAB_X + tx)*8)
+                    scr.set_y((casu_model.NTAB_Y + ty)*8)
                     scr.set_addr(tile_idx * 16)
                     scr.sprite(blend)
 ;
@@ -281,8 +281,8 @@ def C_WH   = 3   -- bright / selected (white)
     for (let ?row = 0; row < 4; row += 1)
         for (let ?col = 0; col < 4; col += 1)
             if col < ratio_x && row < ratio_y
-                scr.set_x(casu_model.PREVIEW_X + col)
-                scr.set_y(casu_model.PREVIEW_Y + row)
+                scr.set_x((casu_model.PREVIEW_X + col)*8)
+                scr.set_y((casu_model.PREVIEW_Y + row)*8)
                 scr.set_addr(addr)
                 scr.sprite(casu_model.blend)
                 addr = addr + tile_step
@@ -351,8 +351,8 @@ def C_WH   = 3   -- bright / selected (white)
         -- background: fill with bg color first
         fill(scr, cx * 8, cy * 8, 8, 8, C_BG)
         -- draw the focused tile with blend mode i (upper nibble = 0xb0 mask)
-        scr.set_x(cx)
-        scr.set_y(cy)
+        scr.set_x(cx*8)
+        scr.set_y(cy*8)
         scr.set_addr(casu_model.focus)
         scr.sprite((casu_model.blend % 0xB0) + i)
 

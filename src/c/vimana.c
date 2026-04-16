@@ -1651,13 +1651,13 @@ void vimana_screen_set_sprite(vimana_screen *screen, unsigned int addr,
 void vimana_screen_set_x(vimana_screen *screen, unsigned int x) {
   if (!screen)
     return;
-  screen->port_x = (uint16_t)x;
+  screen->port_x = (uint16_t)x;  /* stored as pixels */
 }
 
 void vimana_screen_set_y(vimana_screen *screen, unsigned int y) {
   if (!screen)
     return;
-  screen->port_y = (uint16_t)y;
+  screen->port_y = (uint16_t)y;  /* stored as pixels */
 }
 
 void vimana_screen_set_addr(vimana_screen *screen, unsigned int addr) {
@@ -1748,8 +1748,8 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
   const unsigned int blend = ctrl & 0xf;
   const uint8_t opaque_mask = (uint8_t)(blend % 5);
   const uint8_t *table = blend_lut[blend][(layer != 0) ? 1 : 0];
-  unsigned int x = screen->port_x * 8;  /* tile → pixel */
-  unsigned int y = screen->port_y * 8;  /* tile → pixel */
+  unsigned int x = screen->port_x;  /* already pixels */
+  unsigned int y = screen->port_y;
   unsigned int rA = screen->port_addr;
 
   for (unsigned int i = 0; i <= rML; i++, x += dx, y += dy, rA += addr_incr) {
@@ -1789,9 +1789,9 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
 
   screen->port_addr = (uint16_t)rA;
   if (rMX)
-    screen->port_x += flipx ? -1 : 1;  /* ±1 tile */
+    screen->port_x += flipx ? -VIMANA_TILE_SIZE : VIMANA_TILE_SIZE;  /* ±1 sprite (8px) */
   if (rMY)
-    screen->port_y += flipy ? -1 : 1;  /* ±1 tile */
+    screen->port_y += flipy ? -VIMANA_TILE_SIZE : VIMANA_TILE_SIZE;
 }
 
 void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl) {

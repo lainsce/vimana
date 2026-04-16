@@ -289,8 +289,8 @@ bring vimana
 -- ctrl=133 (0x85): 2bpp, BG layer, blend 5
 :: draw_bar(scr = vimana.screen, y = num) (( -- ))
     scr.set_auto(0x15)
-    scr.set_y(y)
-    scr.set_x(1)
+    scr.set_y(y*8)
+    scr.set_x(8)
     scr.set_addr(0)
     scr.sprite(0x85)
     for (let ?i = 0; i < 15; i += 1)
@@ -303,8 +303,8 @@ bring vimana
 -- Draw the selector knob (16×16, 2 columns of 8×16)
 :: draw_selector(scr = vimana.screen, x = num, y = num) (( -- ))
     scr.set_auto(0x15)
-    scr.set_y(y)
-    scr.set_x(x)
+    scr.set_y(y*8)
+    scr.set_x(x*8)
     scr.set_addr(0x60)
     scr.sprite(0x85)
     scr.sprite(0x85)
@@ -313,8 +313,8 @@ bring vimana
 -- Draw a radio button (16×16)
 :: draw_radio(scr = vimana.screen, x = num, y = num, sel = bool) (( -- ))
     scr.set_auto(0x15)
-    scr.set_y(y)
-    scr.set_x(x)
+    scr.set_y(y*8)
+    scr.set_x(x*8)
     if sel
         scr.set_addr(0xE0)
     else

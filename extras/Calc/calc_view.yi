@@ -153,12 +153,12 @@ bring calc_icons
 
     scr.set_auto(0x26)
     -- Top row (TL TC TR)
-    scr.set_addr(base).set_x(tx).set_y(ty).sprite(0x81)
+    scr.set_addr(base).set_x(tx * 8).set_y(ty * 8).sprite(0x81)
     -- Middle rows (ML MC MR)
     for (let ?r = 1; r < th - 1; r += 1)
-        scr.set_addr(base + 0x30).set_x(tx).sprite(0x81)
+        scr.set_addr(base + 0x30).set_x(tx * 8).sprite(0x81)
     -- Bottom row (BL BC BR)
-    scr.set_addr(base + 0x60).set_x(tx).sprite(0x81)
+    scr.set_addr(base + 0x60).set_x(tx * 8).sprite(0x81)
     scr.set_auto(0)
 ;
 

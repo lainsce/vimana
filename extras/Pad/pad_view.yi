@@ -99,7 +99,7 @@ def ?_ps_corner = -1
     scr.set_auto(0x26)
     for (let ?row = 0; row < 4; row += 1)
         let row_addr = base_addr + row * 3 * 0x10
-        scr.set_addr(row_addr).set_x(0).set_y(base_ty + row).sprite(0x81)
+        scr.set_addr(row_addr).set_x(0).set_y((base_ty + row)*8).sprite(0x81)
     scr.set_auto(0)
 ;
 

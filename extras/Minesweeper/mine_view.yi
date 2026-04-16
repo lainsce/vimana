@@ -11,9 +11,9 @@ bring mine_data
 
 : draw_tile16(scr = vimana.screen, addr = num, tx = num, ty = num) (( -- ))
     scr.set_auto(0x16)
-       .set_addr(addr).set_x(tx).set_y(ty)
+       .set_addr(addr).set_x(tx*8).set_y(ty*8)
        .sprite(0x81)
-       .set_x(tx)
+       .set_x(tx*8)
        .sprite(0x81)
 ;
 
@@ -54,7 +54,7 @@ bring mine_data
     -- Top row: TL + TC×(fw-2) + TR
     scr.set_auto(0x01)
        .set_addr(mine_data.ADDR_FRAME_TL)
-       .set_x(fx).set_y(fy)
+       .set_x(fx*8).set_y(fy*8)
        .sprite(0x81)
     scr.set_addr(mine_data.ADDR_FRAME_TC)
     for (let ?i = 0; i < fw - 2; i = i + 1)
@@ -69,13 +69,13 @@ bring mine_data
     -- Left side: ML×(fh-2) going down
     scr.set_auto(0x02)
        .set_addr(mine_data.ADDR_FRAME_ML)
-       .set_x(fx).set_y(fy + 1)
+       .set_x(fx*8).set_y((fy + 1)*8)
     for (let ?i = 0; i < fh - 2; i = i + 1)
         scr.sprite(0x81)
     -- Bottom row: BL + BC×(fw-2) + BR
     scr.set_auto(0x01)
        .set_addr(mine_data.ADDR_FRAME_BL)
-       .set_x(fx).set_y(fy + fh - 1)
+       .set_x(fx*8).set_y((fy + fh - 1)*8)
        .sprite(0x81)
     scr.set_addr(mine_data.ADDR_FRAME_BC)
     for (let ?i = 0; i < fw - 2; i = i + 1)
