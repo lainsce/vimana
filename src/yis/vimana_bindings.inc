@@ -634,10 +634,27 @@ static void __vimana_screen_set_sprite(YisVal scrv, YisVal addrv, YisVal spritev
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.set_sprite expects screen");
   unsigned int mode = (unsigned int)yis_as_int(modev);
-  uint8_t sprite[32] = {0};
-  vimana_sprite_bytes_from_val(spritev, mode, sprite,
-                               "vimana.screen.set_sprite expects 1bpp, 2bpp, 3bpp, or 4bpp rows");
-  vimana_screen_set_sprite(screen, (unsigned int)yis_as_int(addrv), sprite, mode);
+  if (spritev.tag != EVT_ARR)
+    yis_trap("vimana.screen.set_sprite expects array");
+  YisArr *arr = (YisArr *)spritev.as.p;
+  if (!arr || arr->len == 0)
+    return;
+  /* words_per_tile: 4 for 1bpp, 8 for 2bpp, 12 for 3bpp, 16 for 4bpp */
+  size_t words_per_tile = mode >= 3 ? 16 : (mode == 2 ? 12 : (mode == 1 ? 8 : 4));
+  size_t num_tiles = arr->len / words_per_tile;
+  if (num_tiles == 0)
+    return;
+  size_t len = num_tiles * words_per_tile * 2;
+  uint8_t *bytes = (uint8_t *)calloc(len, 1);
+  if (!bytes)
+    return;
+  for (size_t i = 0; i < num_tiles * words_per_tile; i++) {
+    uint16_t w = vimana_icn_short_from_val(arr->items[i]);
+    bytes[i * 2]     = (uint8_t)(w >> 8);
+    bytes[i * 2 + 1] = (uint8_t)(w & 0xFF);
+  }
+  vimana_screen_set_sprite(screen, (unsigned int)yis_as_int(addrv), bytes, mode, len);
+  free(bytes);
 }
 
 static void __vimana_screen_set_x(YisVal scrv, YisVal xv) {

@@ -138,7 +138,8 @@ void vimana_screen_set_font_width(vimana_screen *screen, unsigned int code,
 void vimana_screen_set_font_size(vimana_screen *screen, unsigned int size);
 void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap);
 void vimana_screen_set_sprite(vimana_screen *screen, unsigned int addr,
-                              const uint8_t *sprite, unsigned int mode);
+                              const uint8_t *sprite, unsigned int mode,
+                              size_t len);
 // Port registers — sprite() interprets as tiles, pixel() as pixels
 void vimana_screen_set_x(vimana_screen *screen, unsigned int x);
 void vimana_screen_set_y(vimana_screen *screen, unsigned int y);

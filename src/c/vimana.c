@@ -102,6 +102,8 @@ struct VimanaSystem {
   int16_t wheel_y;
   int16_t pointer_x;
   int16_t pointer_y;
+  int16_t pointer_x_raw;
+  int16_t pointer_y_raw;
   int16_t tile_x;
   int16_t tile_y;
   char text_input[VIMANA_TEXT_INPUT_CAP];
@@ -746,12 +748,6 @@ static void vimana_screen_reset_ports(vimana_screen *screen) {
   screen->port_auto = 0;
 }
 
-static unsigned int vimana_sprite_stride(unsigned int mode) {
-  if (mode >= 3) return VIMANA_SPRITE_4BPP_BYTES;
-  if (mode == 2) return VIMANA_SPRITE_3BPP_BYTES;
-  return mode ? VIMANA_SPRITE_2BPP_BYTES : VIMANA_SPRITE_1BPP_BYTES;
-}
-
 static unsigned int vimana_screen_addr_clamp(vimana_screen *screen,
                                               unsigned int addr) {
   (void)screen;
@@ -763,16 +759,15 @@ static unsigned int vimana_screen_addr_clamp(vimana_screen *screen,
 static void vimana_screen_store_sprite_bytes(vimana_screen *screen,
                                              unsigned int addr,
                                              const uint8_t *sprite,
-                                             unsigned int mode) {
-  if (!screen || !sprite)
+                                             size_t len) {
+  if (!screen || !sprite || len == 0)
     return;
   uint8_t *bank = vimana_active_sprite_bank(screen);
   if (!bank)
     return;
-  unsigned int stride = vimana_sprite_stride(mode);
-  if (addr + stride > VIMANA_SPRITE_BANK_SIZE)
-    return;
-  memcpy(bank + addr, sprite, (size_t)stride);
+  size_t max_len = VIMANA_SPRITE_BANK_SIZE - (size_t)addr;
+  if (len > max_len) len = max_len;
+  memcpy(bank + addr, sprite, len);
 }
 
 static int vimana_screen_auto_repeat(vimana_screen *screen) {
@@ -806,6 +801,8 @@ static void vimana_update_pointer(vimana_system *system, vimana_screen *screen,
   if (!system)
     return;
   unsigned int scale = (screen && screen->scale > 0) ? screen->scale : 1;
+  system->pointer_x_raw = x;
+  system->pointer_y_raw = y;
   system->pointer_x = x / scale;
   system->pointer_y = y / scale;
   system->tile_x = system->pointer_x / VIMANA_TILE_SIZE;
@@ -875,9 +872,11 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
     switch (event.type) {
     case SDL_EVENT_QUIT:
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       system->quit = true;
       break;
     case SDL_EVENT_KEY_DOWN: {
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       int scancode = (int)event.key.scancode;
       if (scancode >= 0 && scancode < VIMANA_KEY_CAP) {
         if (!vimana_bit_get(system->key_down, scancode) && !event.key.repeat)
@@ -887,16 +886,19 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
       break;
     }
     case SDL_EVENT_KEY_UP: {
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       int scancode = (int)event.key.scancode;
       if (scancode >= 0 && scancode < VIMANA_KEY_CAP)
         vimana_bit_clr(system->key_down, scancode);
       break;
     }
     case SDL_EVENT_MOUSE_MOTION:
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       vimana_update_pointer(system, screen, (int)event.motion.x,
                             (int)event.motion.y);
       break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       int button = (int)event.button.button;
       int ex = (int)event.button.x;
       int ey = (int)event.button.y;
@@ -910,6 +912,7 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
       break;
     }
     case SDL_EVENT_MOUSE_BUTTON_UP: {
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       int button = (int)event.button.button;
       if (button >= 0 && button < VIMANA_MOUSE_CAP)
         system->mouse_down &= (uint8_t)~(1u << button);
@@ -918,13 +921,16 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
       break;
     }
     case SDL_EVENT_MOUSE_WHEEL:
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       system->wheel_x += (int)event.wheel.x;
       system->wheel_y += (int)event.wheel.y;
       break;
     case SDL_EVENT_TEXT_INPUT:
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       vimana_append_text_input(system, event.text.text);
       break;
     default:
+      SDL_HideCursor(); /* ensure system cursor stays hidden */
       break;
     }
   }
@@ -1314,14 +1320,24 @@ static SDL_HitTestResult vimana_hit_test(SDL_Window *win,
                                         void *data) {
   (void)win;
   vimana_screen *screen = (vimana_screen *)data;
+  vimana_system *system = screen->system;
   int scale = screen->scale > 0 ? screen->scale : 1;
 
   int drag_h_px = 0;
   if (screen->drag_region_height > 0)
     drag_h_px = screen->drag_region_height * scale;
 
-  if (drag_h_px > 0 && area->y < drag_h_px)
+  if (drag_h_px > 0 && area->y < drag_h_px) {
+    if (system) {
+      system->pointer_x = area->x / scale;
+      system->pointer_y = area->y;
+      system->pointer_x_raw = area->x;
+      system->pointer_y_raw = area->y;
+      system->tile_x = system->pointer_x / VIMANA_TILE_SIZE;
+      system->tile_y = system->pointer_y / VIMANA_TILE_SIZE;
+    }
     return SDL_HITTEST_DRAGGABLE;
+  }
   return SDL_HITTEST_NORMAL;
 }
 
@@ -1377,8 +1393,8 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
 
   screen->window =
       SDL_CreateWindow(screen->title, width * scale,
-                       screen->canvas_height * scale,
-                       SDL_WINDOW_BORDERLESS);
+                     screen->canvas_height * scale,
+                     SDL_WINDOW_BORDERLESS);
   if (!screen->window) {
     free(screen->layers);
     free(screen->font_rom);
@@ -1386,6 +1402,9 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
     free(screen);
     return NULL;
   }
+
+  /* Ensure system cursor is hidden on window creation */
+  SDL_HideCursor();
 
   /* Reduce Metal memory footprint: prefer integrated GPU, enable vsync */
   SDL_SetHint(SDL_HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE, "1");
@@ -1576,11 +1595,13 @@ void vimana_screen_set_font_size(vimana_screen *screen, unsigned int size) {
 }
 
 void vimana_screen_set_sprite(vimana_screen *screen, unsigned int addr,
-                              const uint8_t *sprite, unsigned int mode) {
-  if (!screen || !sprite)
+                              const uint8_t *sprite, unsigned int mode,
+                              size_t len) {
+  (void)mode;
+  if (!screen || !sprite || len == 0)
     return;
   vimana_screen_store_sprite_bytes(
-      screen, vimana_screen_addr_clamp(screen, addr), sprite, mode);
+      screen, vimana_screen_addr_clamp(screen, addr), sprite, len);
 }
 
 void vimana_screen_set_x(vimana_screen *screen, unsigned int x) {
@@ -1874,6 +1895,8 @@ void vimana_screen_present(vimana_screen *screen) {
   if (!screen || !screen->renderer || !screen->layers ||
       !screen->texture)
     return;
+
+  SDL_HideCursor(); /* ensure system cursor is always hidden */
 
   int w = screen->width;
   int h = screen->canvas_height;
