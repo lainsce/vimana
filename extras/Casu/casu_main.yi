@@ -217,6 +217,9 @@ bring casu_file
 
 def CURSOR_PTR = [0x0070 0x6844 0x2211 0x0906]
 def CURSOR_ADDR = 0x9000
+def CLOSE_ADDR = 0x9020
+def CLOSE_DOWN_ADDR = 0x9040
+def BG_ADDR = 0x9060
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Entry point
@@ -227,6 +230,10 @@ def CURSOR_ADDR = 0x9000
     scr.set_cursor(CURSOR_PTR)
     scr.hide_cursor()
     scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
+    scr.set_sprite(CLOSE_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(CLOSE_DOWN_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(BG_ADDR, CURSOR_PTR, 1)
+    scr.set_drag_region(16)
     let fsys = sys.file()
 
     -- Sync model palette arrays from global ~/.theme

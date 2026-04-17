@@ -17,6 +17,12 @@ bring casevo_browser
 
 def CURSOR_PTR = [0x4060, 0x7078, 0x7c70, 0x5808]
 def CURSOR_ADDR = 0x9000
+def CLOSE_ADDR = 0x9020
+def CLOSE_DOWN_ADDR = 0x9040
+def BG_ADDR = 0x9060
+
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
 
 -> ()
     let sys  = vimana.system()
@@ -30,10 +36,21 @@ def CURSOR_ADDR = 0x9000
     casevo_font.setup(scr)
     -- Upload cursor AFTER loading sprites so it doesn't get overwritten
     scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
+    scr.set_sprite(CLOSE_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(CLOSE_DOWN_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(BG_ADDR, CURSOR_PTR, 1)
+    scr.set_drag_region(16)
 
     -- Calculate viewport rows: (height - header) / row_h - 3
     let usable_h = casevo_model.WIN_H - casevo_model.HEADER_H
     casevo_model.set_viewport_rows(stdr.floor(usable_h / casevo_model.ROW_H) - 3)
+
+-- Draw titlebar BG
+scr.set_auto(0x25).set_x(0).set_y(24)
+for (let ?i = 0; i < scr.width() / 8; i += 1)
+    scr.set_addr(BG_ADDR).sprite(0x85)
+-- Draw close button
+scr.set_auto(0x15).set_addr(CLOSE_ADDR).set_x(8).set_y(24)
 
     -- Start on a temporary untitled sheet by default
     casevo_file.new_project()

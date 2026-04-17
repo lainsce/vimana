@@ -354,6 +354,9 @@ def ?resizer_dragging = false
 
 def CURSOR_PTR = [0x0070 0x6844 0x2211 0x0906]
 def CURSOR_ADDR = 0xFF00
+def CLOSE_ADDR = 0xFF20
+def CLOSE_DOWN_ADDR = 0xFF40
+def BG_ADDR = 0xFF60
 
 -> ()
     let sys = vimana.system()
@@ -361,6 +364,10 @@ def CURSOR_ADDR = 0xFF00
     scr.set_cursor(CURSOR_PTR)
     scr.hide_cursor()
     scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
+    scr.set_sprite(CLOSE_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(CLOSE_DOWN_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(BG_ADDR, CURSOR_PTR, 1)
+    scr.set_drag_region(16)
     draw_font.setup(scr)
 
     draw_canvas.set_window_dims(scr.width() / 8, scr.height() / 8)

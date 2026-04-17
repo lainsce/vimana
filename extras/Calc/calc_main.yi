@@ -175,8 +175,26 @@ def ?press_id = -1
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
-def CURSOR_PTR = [0x4060, 0x7078, 0x7c70, 0x5808]
-def CURSOR_ADDR = 0x9000
+def CURSOR_ICN = [0x4060, 0x7078, 0x7c70, 0x5808]
+def BG_CHR = [
+    0x0000, 0x00ff, 0x00ff, 0x00ff, 0xffff, 0xff00, 0xff00, 0xff00,
+    0x00ff, 0x00ff, 0x00ff, 0x0000, 0xff00, 0xff00, 0xff00, 0xffff,
+    0x00ff, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000
+]
+def CLOSE_ICN = [
+    0x0000, 0x007f, 0x4040, 0x4040, 0x4040, 0x4040, 0x407f, 0x0000,
+    0x0000, 0x00f7, 0x1017, 0x1017, 0x1017, 0x1017, 0x10f7, 0x0000
+]
+def CLOSE_DOWN_ICN = [
+    0x0000, 0x007f, 0x4252, 0x4a40, 0x7840, 0x4a52, 0x427f, 0x0000,
+    0x0000, 0x00f7, 0x1057, 0x9017, 0xf017, 0x9057, 0x10f7, 0x0000
+]
+
+-- Titlebar sprites placed above CHROME/DPAD end (0x024F)
+def CURSOR_ADDR = 0x120
+def CLOSE_ADDR = 0x138
+def CLOSE_DOWN_ADDR = 0x148
+def BG_ADDR = 0x168
 
 -- Entry point
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -184,11 +202,15 @@ def CURSOR_ADDR = 0x9000
 -> ()
     let sys = vimana.system()
     let scr = vimana.screen("Calc", calc_model.WIN_W, calc_model.WIN_H, 1)
-    scr.set_cursor(CURSOR_PTR)
+    scr.set_cursor(CURSOR_ICN)
     scr.hide_cursor()
     calc_icons.load_sprites(scr)
-    -- Upload cursor AFTER loading sprites so it doesn't get overwritten
-    scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
+    -- Upload titlebar sprites AFTER game sprites to avoid overlap
+    scr.set_sprite(CURSOR_ADDR, CURSOR_ICN, 0)
+    scr.set_sprite(BG_ADDR, BG_CHR, 1)
+    scr.set_sprite(CLOSE_ADDR, CLOSE_ICN, 1)
+    scr.set_sprite(CLOSE_DOWN_ADDR, CLOSE_DOWN_ICN, 1)
+    scr.set_drag_region(16)
     let fsys = sys.file()
     if !fsys.exists(sys.home_dir() + "/.theme")
         scr.set_palette(vimana.color_bg, "#ffffff")
@@ -205,11 +227,24 @@ def CURSOR_ADDR = 0x9000
 
     sys.run(scr, () => {
         dev.poll()
+        if dev.mouse_pressed(vimana.mouse_left)
+            if dev.pointer_x() >= 8 && dev.pointer_x() < 24 && dev.pointer_y() < 16
+                sys.quit()
         on_mouse(sys, dev)
         on_key(sys, dev)
 
         scr.clear(vimana.color_bg)
         calc_view.draw_all(scr, press_id)
+
+        -- Draw titlebar BG
+        scr.set_auto(0x25).set_x(0).set_y(24)
+        for (let ?i = 0; i < scr.width() / 8; i += 1)
+            scr.set_addr(BG_ADDR).sprite(0x85)
+        -- Draw close button
+        scr.set_auto(0x15).set_addr(CLOSE_ADDR).set_x(8).set_y(24)
+        scr.sprite(0x09)
+        scr.set_addr(CLOSE_ADDR).set_x(13).sprite(0x19)
+        scr.set_auto(0x00)
 
         -- Draw cursor every frame
         let mx = dev.pointer_x()

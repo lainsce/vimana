@@ -9,7 +9,7 @@ def ?menu_open = -1
 def ?menu_hover = -1
 
 -- Menu bar geometry
-def MENUBAR_Y = 0
+def MENUBAR_Y = 17
 def MENUBAR_H = 24
 def MENU_START_X = 16
 def MENU_GAP = 8
@@ -426,7 +426,7 @@ def INSERT_COUNT = 3
     let dy = MENUBAR_Y + 6
     if right_model.dirty
         -- Accent background behind diamond area
-        fill(scr, 0, 0, 14, MENUBAR_H + 3, right_model.C_ACCENT)
+        fill(scr, 0, MENUBAR_Y, 14, MENUBAR_H + 3, right_model.C_ACCENT)
         draw_diamond(scr, dx, dy, right_model.C_BG)
     else
         draw_diamond(scr, dx, dy, right_model.C_FG)
