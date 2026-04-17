@@ -168,10 +168,10 @@ def ICN_CARET    = [0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0]
 --| Scrollbar (far left, halftone bg, solid thumb) |--
 
 : draw_scrollbar(scr = vimana.screen) (( -- ))
-    let bar_x = 0
-    let bar_y = right_model.CONTENT_Y / 8
-    let bar_h = right_model.screen_h - right_model.CONTENT_Y - right_model.STATUS_H
-    let bar_tiles = stdr.floor(bar_h / 8)
+    let bar_x = 4
+    let bar_y = right_model.CONTENT_Y + 4
+    let bar_h = right_model.screen_h - right_model.CONTENT_Y - right_model.STATUS_H + 4
+    let bar_tiles = stdr.floor(bar_h)
 
     -- Halftone background
     draw_icn_col(scr, bar_x, bar_y, bar_tiles, ICN_HALFTONE, right_model.C_FG, right_model.C_BG)
@@ -344,7 +344,7 @@ def ICN_CARET    = [0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0]
         right_model.C_SEL)
 ;
 
---| Status bar (titlebar row, right-aligned alongside menu) |--
+--| Status bar (right-aligned alongside menu) |--
 
 : draw_status(scr = vimana.screen) (( -- ))
     let bytes = right_model.get_text_len()
@@ -627,7 +627,6 @@ def ICN_CARET    = [0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0]
 :: draw_all(scr = vimana.screen) (( -- ))
     save_snapshot()
     scr.clear(right_model.C_BG)
-    scr.draw_titlebar(right_model.C_SEL)
     draw_scrollbar(scr)
     draw_separator(scr)
     draw_outline(scr)

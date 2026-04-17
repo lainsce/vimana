@@ -107,9 +107,9 @@ def ?_ps_corner = -1
 
 : draw_footer(scr = vimana.screen) (( -- ))
     -- Bottom bar tiles at y=192 (tile_y=24), after corner (tx>=3)
-    let tile_y = stdr.floor((pad_model.WIN_H - 8) / 8)
-    for (let ?tx = 3; tx < 28; tx += 1)
-        scr.put_icn(tx, tile_y, pad_font.ICN_BOTTOM, pad_model.C_FG, pad_model.C_BG)
+    let ty = (pad_model.WIN_H - 8)
+    for (let ?tx = 24; tx < pad_model.WIN_W; tx += 1)
+        scr.put_icn(tx, ty, pad_font.ICN_BOTTOM, pad_model.C_FG, pad_model.C_BG)
 
     -- Page number centered at top of footer
     let label = str(pad_model.current_page + 1)

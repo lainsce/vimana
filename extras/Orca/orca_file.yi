@@ -75,5 +75,4 @@ bring orca_model
     let ?title = "Orca"
     if stdr.len(orca_model.file_path) > 0
         title = stdr.basename(orca_model.file_path)
-    scr.set_titlebar_title(title)
 ;

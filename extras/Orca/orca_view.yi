@@ -19,7 +19,6 @@ def MARGIN_Y = 16
 
 :: draw(scr = vimana.screen) (( -- ))
     scr.clear(COLOR_BG)
-    scr.draw_titlebar(0)
 
     -- Draw grid cells
     for (let ?y = 0; y < orca_grid.GRID_H; y += 1)

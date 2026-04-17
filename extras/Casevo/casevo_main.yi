@@ -52,10 +52,6 @@ def CURSOR_ADDR = 0x9000
     sys.run(scr, () => {
         dev.poll()
 
-        -- Quit on titlebar button
-        if scr.titlebar_button_pressed()
-            sys.quit()
-
         -- Input
         casevo_input.on_mouse(dev, scr, fsys)
         casevo_input.on_key(dev, sys, fsys, scr)

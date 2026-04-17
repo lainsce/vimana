@@ -20,8 +20,6 @@ def CURSOR_ADDR = 0x9000
     scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
     sys.run(scr, () => {
         dev.poll()
-        if dev.key_pressed(vimana.key_escape) || scr.titlebar_button_pressed()
-            sys.quit()
 
         scr.clear(vimana.color_bg)
         nekotokei_view.draw(scr, dt, nekotokei_model.tick)

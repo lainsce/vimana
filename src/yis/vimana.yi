@@ -104,10 +104,7 @@ def paddle_count = 2
 : __vimana_screen_sprite(scr = screen, ctrl = num) (( -- )) { }
 : __vimana_screen_pixel(scr = screen, ctrl = num) (( -- )) { }
 : __vimana_screen_present(scr = screen) (( -- )) { }
-: __vimana_screen_draw_titlebar(scr = screen, bg = num) (( -- )) { }
-: __vimana_screen_set_titlebar_title(scr = screen, title = string) (( -- )) { }
-: __vimana_screen_set_titlebar_button(scr = screen, show = bool) (( -- )) { }
-: __vimana_screen_titlebar_button_pressed(scr = screen) (( bool )) { }
+: __vimana_screen_set_drag_region(scr = screen, h = num) (( -- )) { }
 : __vimana_screen_set_cursor(scr = screen, icn = any) (( -- )) { }
 : __vimana_screen_hide_cursor(scr = screen) (( -- )) { }
 : __vimana_screen_show_cursor(scr = screen) (( -- )) { }
@@ -370,23 +367,9 @@ pub ,: screen
         <- this
     ;
 
-    :: draw_titlebar(this, bg = num) (( screen ))
-        __vimana_screen_draw_titlebar(this, bg)
+    :: set_drag_region(this, h = num) (( screen ))
+        __vimana_screen_set_drag_region(this, h)
         <- this
-    ;
-
-    :: set_titlebar_title(this, title = string) (( screen ))
-        __vimana_screen_set_titlebar_title(this, title)
-        <- this
-    ;
-
-    :: set_titlebar_button(this, show = bool) (( screen ))
-        __vimana_screen_set_titlebar_button(this, show)
-        <- this
-    ;
-
-    :: titlebar_button_pressed(this) (( bool ))
-        <- __vimana_screen_titlebar_button_pressed(this)
     ;
 
     :: set_cursor(this, icn = any) (( screen ))

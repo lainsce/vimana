@@ -33,12 +33,12 @@ def TAIL_R_TX = 7
     for (let ?row = 0; row < 8; row += 1)
         for (let ?col = 0; col < 8; col += 1)
             let idx = row * 8 + col
-            scr.put_icn(HEAD_TX + col, HEAD_TY + row, nekotokei_data.head(idx), CAT_COLOR, 0)
+            scr.put_icn((HEAD_TX + col) * 8, (HEAD_TY + row) * 8, nekotokei_data.head(idx), CAT_COLOR, 0)
 
     for (let ?row = 0; row < 5; row += 1)
         for (let ?col = 0; col < 8; col += 1)
             let idx = row * 8 + col
-            scr.put_icn(BODY_TX + col, BODY_TY + row, nekotokei_data.body(idx), CAT_COLOR, 0)
+            scr.put_icn((BODY_TX + col) * 8, (BODY_TY + row) * 8, nekotokei_data.body(idx), CAT_COLOR, 0)
 ;
 
 : draw_eyes(scr = vimana.screen, tick = num) (( -- ))
@@ -47,7 +47,7 @@ def TAIL_R_TX = 7
     for (let ?row = 0; row < 2; row += 1)
         for (let ?col = 0; col < 6; col += 1)
             let idx = base + row * 6 + col
-            scr.put_icn(EYES_TX + col, EYES_TY + row, nekotokei_data.eyes(idx), 0, CAT_COLOR)
+            scr.put_icn((EYES_TX + col) * 8, (EYES_TY + row) * 8, nekotokei_data.eyes(idx)), 0, CAT_COLOR)
 ;
 
 : draw_tail(scr = vimana.screen, tick = num) (( -- ))
@@ -62,14 +62,14 @@ def TAIL_R_TX = 7
                 tile = nekotokei_data.tail_r(idx)
             else
                 tile = nekotokei_data.tail_l(idx)
-            scr.put_icn(TAIL_L_TX + col, TAIL_TY + row, tile, CAT_COLOR, 0)
+            scr.put_icn((TAIL_L_TX + col) * 8, (TAIL_TY + row) * 8, tile, CAT_COLOR, 0)
 ;
 
 : draw_fill_clock(scr = vimana.screen) (( -- ))
     for (let ?row = 0; row < 4; row += 1)
         for (let ?col = 0; col < 4; col += 1)
             let body_idx = row * 8 + (col + 2)
-            scr.put_icn(FILL_TX + col, FILL_TY + row, nekotokei_data.body(body_idx), CAT_COLOR, 0)
+            scr.put_icn((FILL_TX + col) * 8, (FILL_TY + row) * 8, nekotokei_data.body(body_idx)), CAT_COLOR, 0)
 ;
 
 : draw_line(scr = vimana.screen, x0 = num, y0 = num, x1 = num, y1 = num, color = num) (( -- ))

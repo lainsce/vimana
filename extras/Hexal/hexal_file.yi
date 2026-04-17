@@ -12,7 +12,6 @@ bring hexal_model
         title = stdr.basename(hexal_model.file_path)
     if hexal_model.changed
         title = title + "*"
-    scr.set_titlebar_title(title)
 ;
 
 --| New |--

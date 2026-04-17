@@ -24,7 +24,6 @@ def DBLCLICK_DIST = 8
     let ?title = "Untitled"
     if stdr.len(right_model.file_path) > 0
         title = stdr.basename(right_model.file_path)
-    scr.set_titlebar_title(title)
 ;
 
 --| File I/O |--

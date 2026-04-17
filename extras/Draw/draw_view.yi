@@ -64,13 +64,13 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
     -- Rows 0-1: solid green strip (filename bar, 16px for 8x16 fonts)
     for (let ?ty = 0; ty <= 1; ty = ty + 1)
         for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
-            scr.put_icn(tx, ty, BG_FILL_ICN, UI, UI)
+            scr.put_icn(tx * 8, ty * 8, BG_FILL_ICN, UI, UI)
 
     -- Rows 2+: hash outside canvas
     for (let ?ty = 2; ty < scr_ht; ty = ty + 1)
         for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
             if tx < ctx || tx >= ctx + draw_canvas.CANVAS_WT || ty < cty || ty >= cty + draw_canvas.CANVAS_HT
-                scr.put_icn(tx, ty, HASH_ICN, UI, BG)
+                scr.put_icn(tx * 8, ty * 8, HASH_ICN, UI, BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
     for (let ?ty = 0; ty < draw_canvas.CANVAS_HT; ty = ty + 1)
         for (let ?tx = 0; tx < draw_canvas.CANVAS_WT; tx = tx + 1)
             let data = draw_canvas.read_tile(scr, tx, ty)
-            scr.put_icn(draw_canvas.CANVAS_TX + tx, draw_canvas.CANVAS_TY + ty, data, FG, BG)
+            scr.put_icn((draw_canvas.CANVAS_TX + tx) * 8, (draw_canvas.CANVAS_TY + ty) * 8, data, FG, BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -89,19 +89,23 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : draw_frame(scr = vimana.screen, tx = num, ty = num, tw = num, th = num, fg = num, bg = num) (( -- ))
+    let px = tx * 8
+    let py = ty * 8
+    let pw = tw * 8
+    let ph = th * 8
     -- Corners
-    scr.put_icn(tx, ty, FR_TL, fg, bg)
-    scr.put_icn(tx + tw - 1, ty, FR_TR, fg, bg)
-    scr.put_icn(tx, ty + th - 1, FR_BL, fg, bg)
-    scr.put_icn(tx + tw - 1, ty + th - 1, FR_BR, fg, bg)
+    scr.put_icn(px, py, FR_TL, fg, bg)
+    scr.put_icn(px + pw - 8, py, FR_TR, fg, bg)
+    scr.put_icn(px, py + ph - 8, FR_BL, fg, bg)
+    scr.put_icn(px + pw - 8, py + ph - 8, FR_BR, fg, bg)
     -- Top and bottom edges
-    for (let ?cx = tx + 1; cx < tx + tw - 1; cx = cx + 1)
-        scr.put_icn(cx, ty, FR_T, fg, bg)
-        scr.put_icn(cx, ty + th - 1, FR_B, fg, bg)
+    for (let ?cx = 8; cx < pw - 8; cx = cx + 8)
+        scr.put_icn(px + cx, py, FR_T, fg, bg)
+        scr.put_icn(px + cx, py + ph - 8, FR_B, fg, bg)
     -- Left and right edges
-    for (let ?cy = ty + 1; cy < ty + th - 1; cy = cy + 1)
-        scr.put_icn(tx, cy, FR_L, fg, bg)
-        scr.put_icn(tx + tw - 1, cy, FR_R, fg, bg)
+    for (let ?cy = 8; cy < ph - 8; cy = cy + 8)
+        scr.put_icn(px, py + cy, FR_L, fg, bg)
+        scr.put_icn(px + pw - 8, py + cy, FR_R, fg, bg)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -141,7 +145,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
 : draw_size_label(scr = vimana.screen) (( -- ))
     let w = draw_canvas.CANVAS_WT
     let h = draw_canvas.CANVAS_HT
-    draw_font.draw_size(scr, 84, 0, w, h, FG, UI)
+    draw_font.draw_size(scr, 672, 0, w, h, FG, UI)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -226,8 +230,8 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
 def RESIZER_ICN = [0x7C, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0x7C, 0x00]
 
 : draw_resizer(scr = vimana.screen) (( -- ))
-    let rx = draw_canvas.CANVAS_TX + draw_canvas.CANVAS_WT
-    let ry = draw_canvas.CANVAS_TY + draw_canvas.CANVAS_HT
+    let rx = (draw_canvas.CANVAS_TX + draw_canvas.CANVAS_WT) * 8
+    let ry = (draw_canvas.CANVAS_TY + draw_canvas.CANVAS_HT) * 8
     scr.put_icn(rx, ry, RESIZER_ICN, GUIDE, BG)
 ;
 
@@ -259,7 +263,7 @@ def GRID_HV_ICN = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]
             let stx = ctx + tx
             let sty = cty + ty
             if !draw_canvas.within(px, py)
-                scr.put_icn(stx, sty, HASH_ICN, UI, BG)
+                scr.put_icn(stx * 8, sty * 8, HASH_ICN, UI, BG)
             else
                 let ttx = stdr.floor(px / 8)
                 let tty = stdr.floor(py / 8)
@@ -278,7 +282,7 @@ def GRID_HV_ICN = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]
                 let ?bg = BG
                 if pixel == 1 { fg = FG; bg = FG }
                 if (on_h || on_v) && pixel == 0 { fg = UI }
-                scr.put_icn(stx, sty, icn, fg, bg)
+                scr.put_icn(stx * 8, sty * 8, icn, fg, bg)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────

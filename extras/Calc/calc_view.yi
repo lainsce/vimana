@@ -78,10 +78,10 @@ bring calc_icons
 --| Tiles |--
 
 : draw_digit16(scr = vimana.screen, tx = num, ty = num, data = [any], fg = num, bg = num) (( -- ))
-    scr.put_icn(tx, ty, [data[0], data[1], data[2], data[3]], fg, bg)
-    scr.put_icn(tx + 1, ty, [data[4], data[5], data[6], data[7]], fg, bg)
-    scr.put_icn(tx, ty + 1, [data[8], data[9], data[10], data[11]], fg, bg)
-    scr.put_icn(tx + 1, ty + 1, [data[12], data[13], data[14], data[15]], fg, bg)
+    scr.put_icn(tx*8, ty*8, [data[0], data[1], data[2], data[3]], fg, bg)
+    scr.put_icn(tx*8 + 1, ty*8, [data[4], data[5], data[6], data[7]], fg, bg)
+    scr.put_icn(tx*8, ty*8 + 1, [data[8], data[9], data[10], data[11]], fg, bg)
+    scr.put_icn(tx*8 + 1, ty*8 + 1, [data[12], data[13], data[14], data[15]], fg, bg)
 ;
 
 --| Num to Arrays |--
@@ -276,7 +276,7 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
 : draw_display_bg(scr = vimana.screen) (( -- ))
     for (let ?ty = 0; ty < 18; ty += 1)
         for (let ?tx = 0; tx < 29; tx += 1)
-            scr.put_icn(tx, ty, calc_icons.FILL, calc_model.C_FG, calc_model.C_BG)
+            scr.put_icn(tx*8, ty*8, calc_icons.FILL, calc_model.C_FG, calc_model.C_BG)
 ;
 
 --| Separator |--
@@ -284,14 +284,14 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
 : draw_sep(scr = vimana.screen) (( -- ))
     let ty = calc_model.SEP_TY
     for (let ?tx = 0; tx < 28; tx += 1)
-        scr.put_icn(tx, ty, calc_icons.DOTTED, calc_model.C_BG, calc_model.C_FG)
+        scr.put_icn(tx*8, ty*8, calc_icons.DOTTED, calc_model.C_BG, calc_model.C_FG)
 ;
 
 --| Input Display |--
 
 : draw_input(scr = vimana.screen) (( -- ))
     draw_icn_px(scr, 0, calc_model.IND_PY, calc_icons.ARROW, calc_model.C_BG)
-    draw_num(scr, calc_model.STACK_TX * 8, calc_model.INPUT_TY * 8, calc_model.input_num, calc_model.C_BG)
+    draw_num(scr, calc_model.STACK_TX * 8, calc_model.INPUT_TY * 8 - 2, calc_model.input_num, calc_model.C_BG)
 ;
 
 --| Binary Display (16 bits) |--
@@ -347,7 +347,6 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
 --| Full Frame |--
 
 :: draw_all(scr = vimana.screen, press_id = num) (( -- ))
-    scr.set_titlebar_title(calc_model.mode_name())
     draw_display_bg(scr)
     draw_stack(scr)
     draw_sep(scr)

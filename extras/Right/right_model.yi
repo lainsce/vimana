@@ -9,7 +9,7 @@ def DEFAULT_H = 716
 def FONT_W = 16
 def FONT_H = 24
 def SCROLLBAR_W = 12
-def SCROLLBAR_X = 0
+def SCROLLBAR_X = 4
 def SIDEBAR_X = 16
 def SIDEBAR_MIN = 128
 def SIDEBAR_MAX = 480
@@ -23,7 +23,7 @@ def RESIZE_ZONE = 8
 def ?screen_w = 1360
 def ?screen_h = 716
 def ?sidebar_visible = true
-def ?sidebar_width = 376
+def ?sidebar_width = 320
 def ?resizing_sidebar = false
 
 --| Palette |--
@@ -929,8 +929,8 @@ def ?search_index = -1
     sel_end = caret
 ;
 
---| ROM space (Vimana 64K) |--
-def ROM_SIZE = 0x10000
+--| ROM space (Vimana 128K) |--
+def ROM_SIZE = 0x20000
 
 --| Bracket matching |--
 

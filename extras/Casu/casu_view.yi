@@ -162,7 +162,7 @@ def C_WH   = 3   -- bright / selected (white)
         let ?dir_icn = casu_icons.ICN_DIR0
         if casu_model.dir == 1
             dir_icn = casu_icons.ICN_DIR1
-        scr.put_icn(casu_model.TILEVIEW_X + casu_model.sel_x1 + 2, casu_model.TILEVIEW_Y + casu_model.sel_y2 + 1, dir_icn, C_FG, C_BG)
+        scr.put_icn((casu_model.TILEVIEW_X + casu_model.sel_x1 + 2) * 8, (casu_model.TILEVIEW_Y + casu_model.sel_y2 + 1) * 8, dir_icn, C_FG, C_BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -181,7 +181,7 @@ def C_WH   = 3   -- bright / selected (white)
             let ay = casu_model.sel_zy + row
             if ax < 128 && ay < 128
                 let c = casu_edit.get_pixel(ax, ay)
-                scr.put_icn(casu_model.TILEVIEW_X + col, casu_model.TILEVIEW_Y + row, casu_icons.ICN_FILL, c, C_BG)
+                scr.put_icn((casu_model.TILEVIEW_X + col) * 8, (casu_model.TILEVIEW_Y + row) * 8, casu_icons.ICN_FILL, c, C_BG)
 
     -- Dashed guide lines at tile boundaries
     let gy = (8 - (casu_model.sel_zy % 8)) % 8
@@ -259,9 +259,9 @@ def C_WH   = 3   -- bright / selected (white)
               casu_icons.FRAME2_ADDR_E, casu_icons.FRAME2_ADDR_H, casu_icons.FRAME2_ADDR_V, 1)
 
     -- Arrow icons at bottom of zoom panel
-    let arrow_y = casu_model.ZOOM_Y + casu_model.ZOOM_H / 8 - 1
-    scr.put_icn(casu_model.ZOOM_X,     arrow_y, casu_icons.ICN_ARROW_U, C_FG, C_BG)
-    scr.put_icn(casu_model.ZOOM_X + 1, arrow_y, casu_icons.ICN_ARROW_R, C_FG, C_BG)
+    let arrow_y = (casu_model.ZOOM_Y + casu_model.ZOOM_H / 8 - 1) * 8
+    scr.put_icn(casu_model.ZOOM_X * 8,     arrow_y, casu_icons.ICN_ARROW_U, C_FG, C_BG)
+    scr.put_icn(casu_model.ZOOM_X * 8 + 8, arrow_y, casu_icons.ICN_ARROW_R, C_FG, C_BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -287,7 +287,7 @@ def C_WH   = 3   -- bright / selected (white)
                 scr.sprite(casu_model.blend)
                 addr = addr + tile_step
             else
-                scr.put_icn(casu_model.PREVIEW_X + col, casu_model.PREVIEW_Y + row, casu_icons.ICN_HALF, C_FG, C_BG)
+                scr.put_icn((casu_model.PREVIEW_X + col) * 8, (casu_model.PREVIEW_Y + row) * 8, casu_icons.ICN_HALF, C_FG, C_BG)
 
     -- Ratio label at bottom
     let label_y = casu_model.PREVIEW_Y * 8 + casu_model.PREVIEW_H - 8
@@ -357,17 +357,17 @@ def C_WH   = 3   -- bright / selected (white)
         scr.sprite((casu_model.blend % 0xB0) + i)
 
     -- Direction arrows at bottom of blendview
-    let arrow_y = casu_model.BLEND_Y + casu_model.BLEND_H / 8 - 1
+    let arrow_y = (casu_model.BLEND_Y + casu_model.BLEND_H / 8 - 1) * 8
     -- vertical blend direction arrow
     let ?ver_icn = casu_icons.ICN_ARROW_U
     if (casu_model.blend % 64) >= 32
         ver_icn = casu_icons.ICN_ARROW_D
-    scr.put_icn(casu_model.BLEND_X + 2, arrow_y, ver_icn, C_HL, C_BG)
+    scr.put_icn((casu_model.BLEND_X + 2) * 8, arrow_y, ver_icn, C_HL, C_BG)
     -- horizontal blend direction arrow
     let ?hor_icn = casu_icons.ICN_ARROW_L
     if (casu_model.blend % 32) >= 16
         hor_icn = casu_icons.ICN_ARROW_R
-    scr.put_icn(casu_model.BLEND_X + 3, arrow_y, hor_icn, C_HL, C_BG)
+    scr.put_icn((casu_model.BLEND_X + 3) * 8, arrow_y, hor_icn, C_HL, C_BG)
     -- Blend byte hex label
     scr.put_text(casu_model.BLEND_X * 8, arrow_y * 8, to_hex2(casu_model.blend), C_WH, C_BG)
 ;
@@ -403,9 +403,9 @@ def C_WH   = 3   -- bright / selected (white)
     fill(scr, casu_model.TOOL_X * 8, casu_model.TOOL_Y * 8,
          casu_model.TOOL_W, casu_model.TOOL_H, C_BG)
 
-    let ty = casu_model.TOOL_Y
-    let tx = casu_model.TOOL_X
-    let x2 = tx + casu_model.TOOL_W / 8
+    let ty = casu_model.TOOL_Y * 8
+    let tx = casu_model.TOOL_X * 8
+    let x2 = tx + casu_model.TOOL_W
 
     -- Color circles: colors 1, 2, 3 (color 0/bg only via key 1)
     let ?c1_icn = casu_icons.ICN_CIRCLE0
@@ -416,12 +416,12 @@ def C_WH   = 3   -- bright / selected (white)
     let ?c2_icn = casu_icons.ICN_CIRCLE0
     if casu_model.color == 2
         c2_icn = casu_icons.ICN_CIRCLE1
-    scr.put_icn(tx + 1,  ty, c2_icn, C_HL, C_BG)
+    scr.put_icn(tx + 8,  ty, c2_icn, C_HL, C_BG)
 
     let ?c3_icn = casu_icons.ICN_CIRCLE0
     if casu_model.color == 3
         c3_icn = casu_icons.ICN_CIRCLE1
-    scr.put_icn(tx + 2, ty, c3_icn, C_WH, C_BG)
+    scr.put_icn(tx + 16, ty, c3_icn, C_WH, C_BG)
 
     -- Tool icons (brush / select / zoom) at x+4 tiles
     let ?brush_hi  = 1
@@ -433,23 +433,23 @@ def C_WH   = 3   -- bright / selected (white)
         select_hi = 2
     if casu_model.tool == casu_model.TOOL_ZOOM
         zoom_hi   = 2
-    scr.put_icn(tx + 4, ty, casu_icons.ICN_BRUSH,  brush_hi,  C_BG)
-    scr.put_icn(tx + 5, ty, casu_icons.ICN_SELECT, select_hi, C_BG)
+    scr.put_icn(tx + 32, ty, casu_icons.ICN_BRUSH,  brush_hi,  C_BG)
+    scr.put_icn(tx + 40, ty, casu_icons.ICN_SELECT, select_hi, C_BG)
     let ?zoom_icn = casu_icons.ICN_ZOOM0
     if casu_model.zoom_on
         zoom_icn = casu_icons.ICN_ZOOM1
-    scr.put_icn(tx + 6, ty, zoom_icn, zoom_hi, C_BG)
+    scr.put_icn(tx + 48, ty, zoom_icn, zoom_hi, C_BG)
 
     -- Filepath at x+64px
-    scr.put_text(tx * 8 + 64, ty * 8 + 1, casu_model.filepath, C_FG, C_BG)
+    scr.put_text(tx + 64, ty + 1, casu_model.filepath, C_FG, C_BG)
 
     -- File ops on right side: make at x2-4, load at x2-3, save at x2-1
-    scr.put_icn(x2 - 4, ty, casu_icons.ICN_MAKE, C_FG, C_BG)
-    scr.put_icn(x2 - 3, ty, casu_icons.ICN_LOAD, C_FG, C_BG)
+    scr.put_icn(x2 - 32, ty, casu_icons.ICN_MAKE, C_FG, C_BG)
+    scr.put_icn(x2 - 24, ty, casu_icons.ICN_LOAD, C_FG, C_BG)
     let ?save_fg = C_FG
     if casu_model.changed
         save_fg = C_WH
-    scr.put_icn(x2 - 1,  ty, casu_icons.ICN_SAVE, save_fg, C_BG)
+    scr.put_icn(x2 - 8,  ty, casu_icons.ICN_SAVE, save_fg, C_BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────

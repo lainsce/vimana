@@ -97,7 +97,6 @@ bring musi_assets
         if stdr.char_at(p, si) == "/"
             cut = si + 1
             break
-    scr.set_titlebar_title(stdr.slice(p, cut, pn))
 ;
 
 -- Strip the trailing path component and reload

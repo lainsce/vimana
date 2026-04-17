@@ -133,7 +133,6 @@ def MAX_ROWS = 15
     hexal_model.set_buffer(bytes)
     hexal_model.set_file_path(full)
     close()
-    scr.set_titlebar_title(stdr.basename(full))
 ;
 
 :: on_key(dev = vimana.device, fsys = vimana.file, scr = vimana.screen) (( -- ))

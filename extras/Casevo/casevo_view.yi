@@ -28,26 +28,22 @@ def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : fill_cell(scr = vimana.screen, x = num, y = num, color = num) (( -- ))
-    let tx = x / 8
-    let ty = y / 8
-    for (let ?r = 0; r < 2; r += 1)
-        for (let ?c = 0; c < 8; c += 1)
-            scr.put_icn(tx + c, ty + r, fill_icn, color, color)
+    for (let ?r = 0; r < 16; r += 8)
+        for (let ?c = 0; c < 64; c += 8)
+            scr.put_icn(x + c, y + r, fill_icn, color, color)
 ;
 
 : draw_framed_cell(scr = vimana.screen, x = num, y = num, bg = num) (( -- ))
-    let tx = x / 8
-    let ty = y / 8
     -- Top-left corner: 1-bits=FG border, 0-bits=cell bg
-    scr.put_icn(tx, ty, frame_tl, casevo_model.C_FG, bg)
-    -- Top edge: top line + cell bg
-    for (let ?c = 1; c < 8; c += 1)
-        scr.put_icn(tx + c, ty, frame_top, casevo_model.C_FG, bg)
-    -- Bottom-left: left line + cell bg
-    scr.put_icn(tx, ty + 1, frame_left, casevo_model.C_FG, bg)
-    -- Bottom fill: solid cell bg
-    for (let ?c = 1; c < 8; c += 1)
-        scr.put_icn(tx + c, ty + 1, fill_icn, bg, bg)
+    scr.put_icn(x, y, frame_tl, casevo_model.C_FG, bg)
+    -- Top edge: top line + cell bg (icons at x+8, x+16, ... x+56)
+    for (let ?c = 8; c < 64; c += 8)
+        scr.put_icn(x + c, y, frame_top, casevo_model.C_FG, bg)
+    -- Bottom-left: left line + cell bg (at y+8)
+    scr.put_icn(x, y + 8, frame_left, casevo_model.C_FG, bg)
+    -- Bottom fill: solid cell bg (icons at x+8 through x+56, y+8)
+    for (let ?c = 8; c < 64; c += 8)
+        scr.put_icn(x + c, y + 8, fill_icn, bg, bg)
 ;
 
 : clamp_text(text = string, max_chars = num) (( string ))
@@ -55,15 +51,6 @@ def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
     if n <= max_chars
         <- text
     <- stdr.slice(text, 0, max_chars - 1) + "~"
-;
-
--- ─────────────────────────────────────────────────────────────────────────────
--- Titlebar
--- ─────────────────────────────────────────────────────────────────────────────
-
-: draw_titlebar(scr = vimana.screen) (( -- ))
-    scr.set_titlebar_title(casevo_model.title_text())
-    scr.set_titlebar_button(false)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -79,9 +66,9 @@ def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
 
     -- Top-left corner (row header × col header intersection)
     fill_cell(scr, 0, hy, casevo_model.C_ACCENT)
-    -- Right-edge dashed border only (no top border)
-    scr.put_icn(7, hy / 8, frame_rx, casevo_model.C_FG, casevo_model.C_ACCENT)
-    scr.put_icn(7, hy / 8 + 1, frame_rx, casevo_model.C_FG, casevo_model.C_ACCENT)
+    -- Right-edge dashed border only (no top border) at x=56
+    scr.put_icn(56, hy, frame_rx, casevo_model.C_FG, casevo_model.C_ACCENT)
+    scr.put_icn(56, hy + 8, frame_rx, casevo_model.C_FG, casevo_model.C_ACCENT)
     -- Selection range text (e.g. "A0:B5")
     let range_text = casevo_model.col_label(sel_ax) + str(num(ss[1] ?? 0)) + ":" + casevo_model.col_label(sel_bx) + str(num(se[1] ?? 0))
     scr.put_text(4, hy + 2, range_text, casevo_model.C_FG, casevo_model.C_ACCENT)
@@ -96,15 +83,15 @@ def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
         let label = casevo_model.col_label(c)
         scr.put_text(x + 45, hy + 2, label, casevo_model.C_FG, bg)
 
-    -- Pass 2: draw dashed borders between columns (last tile of each cell)
-    for (let ?c = 0; c < casevo_model.COLS; c += 1)
+    -- Pass 2: draw borders between columns only
+    for (let ?c = 0; c < casevo_model.COLS - 1; c += 1)
         let x = (c + 1) * casevo_model.COL_W
-        let etx = (x / 8) + 7
+        let etx = x + casevo_model.COL_W - 7
         let ?bg = casevo_model.C_ACCENT
         if c >= sel_ax && c <= sel_bx
             bg = casevo_model.C_SEL
-        scr.put_icn(etx, hy / 8, frame_rx, casevo_model.C_FG, bg)
-        scr.put_icn(etx, hy / 8 + 1, frame_rx, casevo_model.C_FG, bg)
+        scr.put_icn(etx, hy, frame_rx, casevo_model.C_FG, bg)
+        scr.put_icn(etx, hy + 8, frame_rx, casevo_model.C_FG, bg)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -127,9 +114,9 @@ def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
         if row >= sel_ay && row <= sel_by
             bg = casevo_model.C_SEL
         fill_cell(scr, 0, y, bg)
-        let rty = y / 8
-        -- Top-edge horizontal dashed border
-        for (let ?ht = 0; ht < 8; ht += 1)
+        let rty = y
+        -- Top-edge horizontal dashed border across row header (64px wide)
+        for (let ?ht = 0; ht < 64; ht += 8)
             scr.put_icn(ht, rty, frame_ry, casevo_model.C_FG, bg)
         -- Row number right-aligned at x=60
         let label = casevo_model.row_label(row)
@@ -182,16 +169,16 @@ def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
 
 : draw_command_bar(scr = vimana.screen) (( -- ))
     let bar_y = (casevo_model.viewport_rows + 2) * casevo_model.ROW_H + casevo_model.HEADER_H
-    let bty = bar_y / 8
+    let bty = bar_y
 
-    -- Dashed top border across full width
-    let ltx = casevo_model.WIN_W / 8
-    for (let ?c = 0; c < ltx; c += 1)
+    -- Dashed top border across full width (icons every 8px)
+    let ltx = casevo_model.WIN_W
+    for (let ?c = 0; c < ltx; c += 8)
         scr.put_icn(c, bty, line_icn, casevo_model.C_FG, casevo_model.C_BG)
 
-    -- Arrow icon at left of input area (x tile 7 = pixel 56)
-    scr.put_icn(7, bty, arrow_top, casevo_model.C_FG, casevo_model.C_BG)
-    scr.put_icn(7, bty + 1, arrow_bot, casevo_model.C_FG, casevo_model.C_BG)
+    -- Arrow icon at left of input area (x = 56)
+    scr.put_icn(56, bty, arrow_top, casevo_model.C_FG, casevo_model.C_BG)
+    scr.put_icn(56, bty + 8, arrow_bot, casevo_model.C_FG, casevo_model.C_BG)
 
     -- Cell content at x=72 (after arrow)
     let ?raw = ""
@@ -227,35 +214,31 @@ def FONT_W = 8
 def BROWSER_X = 16
 
 : browser_fill_rect(scr = vimana.screen, rx = num, ry = num, rw = num, rh = num, c = num) (( -- ))
-    let tw = stdr.floor(rw / 8)
-    let th = stdr.floor(rh / 8)
-    let tx0 = stdr.floor(rx / 8)
-    let ty0 = stdr.floor(ry / 8)
-    for (let ?row = 0; row < th; row += 1)
-        for (let ?col = 0; col < tw; col += 1)
-            scr.put_icn(tx0 + col, ty0 + row, EMPTY_ICN, c, c)
+    for (let ?row = 0; row < rh; row += 8)
+        for (let ?col = 0; col < rw; col += 8)
+            scr.put_icn(rx + col, ry + row, EMPTY_ICN, c, c)
 ;
 
 : draw_browser_bg(scr = vimana.screen) (( -- ))
-    let tiles_w = stdr.floor(casevo_model.WIN_W / 8)
-    let tile_rows = stdr.floor(casevo_model.WIN_H / 8)
+    let win_w = casevo_model.WIN_W
+    let win_h = casevo_model.WIN_H
 
-    -- Top halftone stripe (1 tile row, at top)
-    for (let ?tx = 0; tx < tiles_w; tx += 1)
+    -- Top halftone stripe (y=0)
+    for (let ?tx = 0; tx < win_w; tx += 8)
         scr.put_icn(tx, 0, HALFTONE, casevo_model.C_SEL, casevo_model.C_BG)
 
-    -- Solid fill stripe (1 tile row below halftone) for path
-    for (let ?tx = 0; tx < tiles_w; tx += 1)
-        scr.put_icn(tx, 1, FILL_ICN, casevo_model.C_SEL, casevo_model.C_BG)
+    -- Solid fill stripe (y=8) for path
+    for (let ?tx = 0; tx < win_w; tx += 8)
+        scr.put_icn(tx, 8, FILL_ICN, casevo_model.C_SEL, casevo_model.C_BG)
 
-    -- SEL bg from below toolbar to wavey
-    let wave_y = tile_rows - 1
-    for (let ?ty = 2; ty < wave_y; ty += 1)
-        for (let ?tx = 0; tx < tiles_w; tx += 1)
+    -- SEL bg from y=16 to wavey
+    let wave_y = win_h - 8
+    for (let ?ty = 16; ty < wave_y; ty += 8)
+        for (let ?tx = 0; tx < win_w; tx += 8)
             scr.put_icn(tx, ty, EMPTY_ICN, casevo_model.C_SEL, casevo_model.C_SEL)
 
-    -- Bottom wavy decoration (single)
-    for (let ?tx = 0; tx < tiles_w; tx += 1)
+    -- Bottom wavy decoration (y=wave_y)
+    for (let ?tx = 0; tx < win_w; tx += 8)
         scr.put_icn(tx, wave_y, WAVEY, casevo_model.C_SEL, casevo_model.C_BG)
 ;
 
@@ -291,16 +274,16 @@ def BROWSER_X = 16
             label = stdr.slice(label, 0, max_chars)
         if idx == casevo_browser.sel
             -- Selected: rounded caps + solid fill
-            let tx0 = stdr.floor(sx / 8) - 1
-            let ty = stdr.floor(y / 8)
+            let tx0 = sx - 8
+            let ty = y
             scr.put_icn(tx0, ty, CAP_LEFT_TOP, casevo_model.C_FG, casevo_model.C_SEL)
-            scr.put_icn(tx0, ty + 1, CAP_LEFT_BOT, casevo_model.C_FG, casevo_model.C_SEL)
-            let text_tiles = stdr.floor(stdr.len(label) * FONT_W / 8) + 1
+            scr.put_icn(tx0, ty + 8, CAP_LEFT_BOT, casevo_model.C_FG, casevo_model.C_SEL)
+            let text_tiles = stdr.len(label) + 1
             for (let ?ft = 0; ft < text_tiles; ft += 1)
-                scr.put_icn(tx0 + 1 + ft, ty, FILL_ICN, casevo_model.C_FG, casevo_model.C_SEL)
-                scr.put_icn(tx0 + 1 + ft, ty + 1, FILL_ICN, casevo_model.C_FG, casevo_model.C_SEL)
-            scr.put_icn(tx0 + 1 + text_tiles, ty, CAP_RIGHT_TOP, casevo_model.C_FG, casevo_model.C_SEL)
-            scr.put_icn(tx0 + 1 + text_tiles, ty + 1, CAP_RIGHT_BOT, casevo_model.C_FG, casevo_model.C_SEL)
+                scr.put_icn(tx0 + 8 + ft * 8, ty, FILL_ICN, casevo_model.C_FG, casevo_model.C_SEL)
+                scr.put_icn(tx0 + 8 + ft * 8, ty + 8, FILL_ICN, casevo_model.C_FG, casevo_model.C_SEL)
+            scr.put_icn(tx0 + 8 + text_tiles * 8, ty, CAP_RIGHT_TOP, casevo_model.C_FG, casevo_model.C_SEL)
+            scr.put_icn(tx0 + 8 + text_tiles * 8, ty + 8, CAP_RIGHT_BOT, casevo_model.C_FG, casevo_model.C_SEL)
             scr.put_text(sx, y, label, casevo_model.C_ACCENT, casevo_model.C_FG)
         else
             scr.put_text(sx, y, label, casevo_model.C_FG, casevo_model.C_SEL)
@@ -312,7 +295,6 @@ def BROWSER_X = 16
 
 :: draw_all(scr = vimana.screen) (( -- ))
     scr.clear(casevo_model.C_BG)
-    draw_titlebar(scr)
     draw_col_headers(scr)
     draw_row_headers(scr)
     draw_grid(scr)

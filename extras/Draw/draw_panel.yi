@@ -210,58 +210,58 @@ def SIZE_ERASE = [
 ;
 
 :: draw(scr = vimana.screen) (( -- ))
-    let ptx = stdr.floor(panel_px / 8)
-    let pty = stdr.floor(panel_py / 8)
+    let ptx = panel_px
+    let pty = panel_py
     let cur_tool = draw_brush.get_tool()
     let cur_patt = draw_brush.get_patt()
     let cur_size = draw_brush.get_size()
     let cur_mode = draw_brush.get_mode()
 
     -- White background fill
-    for (let ?r = 0; r < PANEL_H; r = r + 1)
-        for (let ?c = 0; c < PANEL_W; c = c + 1)
+    for (let ?r = 0; r < PANEL_HP; r = r + 8)
+        for (let ?c = 0; c < PANEL_WP; c = c + 8)
             scr.put_icn(ptx + c, pty + r, FILL_ICN, 0, 0)
 
-    -- Tile-based frame
-    draw_view.draw_panel_frame(scr, ptx, pty, PANEL_W, PANEL_H)
+    -- Tile-based frame (pass pixel sizes)
+    draw_view.draw_panel_frame(scr, ptx / 8, pty / 8, PANEL_W, PANEL_H)
 
     -- ── Tool section (rows 0-2, 2×3 grid = 6 tools) ──
     for (let ?i = 0; i < 6; i = i + 1)
-        let col = i % 2
-        let row = stdr.floor(i / 2)
+        let col = (i % 2) * 8
+        let row = stdr.floor(i / 2) * 8
         let icon = icon_slice(TOOL_ICONS, i)
         let ?fg = 1
         if i == cur_tool
             fg = 3
-        scr.put_icn(ptx + 1 + col, pty + 1 + row, icon, fg, 0)
+        scr.put_icn(ptx + 8 + col, pty + 8 + row, icon, fg, 0)
 
     -- separator row
-    scr.put_icn(ptx + 1, pty + 1 + SEP1_ROW, DASH_ICN, 1, 0)
-    scr.put_icn(ptx + 2, pty + 1 + SEP1_ROW, DASH_ICN, 1, 0)
+    scr.put_icn(ptx + 8, pty + (SEP1_ROW + 1) * 8, DASH_ICN, 1, 0)
+    scr.put_icn(ptx + 16, pty + (SEP1_ROW + 1) * 8, DASH_ICN, 1, 0)
 
     -- ── Pattern section (rows 4-7, 2×4 grid) ──
     for (let ?i = 0; i < 8; i = i + 1)
-        let col = i % 2
-        let row = PATT_ROW0 + stdr.floor(i / 2)
+        let col = (i % 2) * 8
+        let row = (PATT_ROW0 + stdr.floor(i / 2)) * 8
         let icon = icon_slice(PATT_ICONS, i)
         let ?fg = 1
         if i == cur_patt
             fg = 3
-        scr.put_icn(ptx + 1 + col, pty + 1 + row, icon, fg, 0)
+        scr.put_icn(ptx + 8 + col, pty + 8 + row, icon, fg, 0)
 
     -- ── Separator row 8 ──
-    scr.put_icn(ptx + 1, pty + 1 + SEP2_ROW, DASH_ICN, 1, 0)
-    scr.put_icn(ptx + 2, pty + 1 + SEP2_ROW, DASH_ICN, 1, 0)
+    scr.put_icn(ptx + 8, pty + (SEP2_ROW + 1) * 8, DASH_ICN, 1, 0)
+    scr.put_icn(ptx + 16, pty + (SEP2_ROW + 1) * 8, DASH_ICN, 1, 0)
 
     -- ── Size section (rows 9-12, 2×4 grid) ──
     for (let ?i = 0; i < 8; i = i + 1)
-        let col = i % 2
-        let row = SIZE_ROW0 + stdr.floor(i / 2)
+        let col = (i % 2) * 8
+        let row = (SIZE_ROW0 + stdr.floor(i / 2)) * 8
         let ?icon = icon_slice(SIZE_DRAW, i)
         if cur_mode == 1
             icon = icon_slice(SIZE_ERASE, i)
         let ?fg = 1
         if i == cur_size
             fg = 3
-        scr.put_icn(ptx + 1 + col, pty + 1 + row, icon, fg, 0)
+        scr.put_icn(ptx + 8 + col, pty + 8 + row, icon, fg, 0)
 ;

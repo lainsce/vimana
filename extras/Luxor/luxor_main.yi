@@ -233,9 +233,6 @@ def CURSOR_ADDR = 0x9000
     sys.run(scr, () => {
         dev.poll()
 
-        if scr.titlebar_button_pressed()
-            sys.quit()
-
         on_mouse(dev)
         on_key(dev, sys, fsys, scr)
         on_text(dev)

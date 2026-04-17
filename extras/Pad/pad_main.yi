@@ -50,7 +50,6 @@ def ?dragging = false
     let ?title = "Note Pad"
     if pad_model.dirty
         title = "Note Pad"
-    scr.set_titlebar_title(title)
 ;
 
 --| Mouse input |--

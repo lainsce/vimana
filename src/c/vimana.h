@@ -9,14 +9,6 @@
 extern "C" {
 #endif
 
-/* ── Titlebar ─────────────────────────────────────────────────────────── */
-#define VIMANA_TITLEBAR_HEIGHT     17  /* total titlebar height (px)       */
-#define VIMANA_TITLEBAR_BAR_HEIGHT 17  /* drawn bar height (px)            */
-#define VIMANA_TB_BOX_SIZE         11  /* close/button box (px)            */
-#define VIMANA_TB_BOX_Y             3  /* y offset of box within bar       */
-#define VIMANA_TB_CLOSE_X           9  /* close box left edge x            */
-/* ─────────────────────────────────────────────────────────────────────── */
-
 /* ── Input / Audio ────────────────────────────────────────────────────── */
 #define VIMANA_KEY_CAP             512   /* 512 SCs (enough for every key) */
 #define VIMANA_KEY_WORDS           (512 / 64)             /* 8 × uint64_t  */
@@ -178,12 +170,9 @@ void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
 void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
                             unsigned int y, const char *text,
                             unsigned int fg, unsigned int bg);
-void vimana_screen_present(vimana_screen *screen);
-void vimana_screen_draw_titlebar(vimana_screen *screen, unsigned int bg);
-void vimana_screen_set_titlebar_title(vimana_screen *screen, const char *title);
-void vimana_screen_set_titlebar_button(vimana_screen *screen, bool show);
-bool vimana_screen_titlebar_button_pressed(vimana_screen *screen);
-unsigned int vimana_screen_width(vimana_screen *screen);
+ void vimana_screen_present(vimana_screen *screen);
+ void vimana_screen_set_drag_region(vimana_screen *screen, unsigned int h);
+ unsigned int vimana_screen_width(vimana_screen *screen);
 unsigned int vimana_screen_height(vimana_screen *screen);
 unsigned int vimana_screen_scale(vimana_screen *screen);
 

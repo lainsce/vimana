@@ -5,9 +5,9 @@ bring vimana
 -- 2x2 icon helper (16x16 from four 8x8 tiles)
 :: draw_icn(scr = vimana.screen, x = num, y = num, tl = any, tr = any, bl = any, br = any, fg = num, bg = num) (( -- ))
     scr.put_icn(x,     y,     tl, fg, bg)
-    scr.put_icn(x + 1, y,     tr, fg, bg)
-    scr.put_icn(x,     y + 1, bl, fg, bg)
-    scr.put_icn(x + 1, y + 1, br, fg, bg)
+    scr.put_icn(x + 8, y,     tr, fg, bg)
+    scr.put_icn(x,     y + 8, bl, fg, bg)
+    scr.put_icn(x + 8, y + 8, br, fg, bg)
 ;
 
 -- Undo arrow (left-pointing arrow)
@@ -163,10 +163,8 @@ def SWATCH_BR = [0xC6, 0xC6, 0x06, 0x06, 0x06, 0x06, 0xFE, 0]
 def EMPTY  = [0, 0, 0, 0, 0, 0, 0, 0]
 
 :: draw_filled_rect(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
-    let ?cy = 0
-    for (; cy < h; cy += 1)
-        let ?cx = 0
-        for (; cx < w; cx += 1)
+    for (let ?cy = 0; cy < h; cy += 8)
+        for (let ?cx = 0; cx < w; cx += 8)
             scr.put_icn(x + cx, y + cy, EMPTY, c, c)
 ;
 

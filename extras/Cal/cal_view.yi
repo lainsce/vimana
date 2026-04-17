@@ -70,8 +70,8 @@ def BOTTOM_ICN = ["ff00", "ff00", "ff00", "ffff"]
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : draw_bottom_bar(scr = vimana.screen) (( -- ))
-    let ty = (cal_model.WIN_H - 8) / 8
-    for (let ?tx = 3; tx < cal_model.WIN_W / 8; tx += 1)
+    let ty = (cal_model.WIN_H - 8)
+    for (let ?tx = 24; tx < cal_model.WIN_W; tx += 1)
         scr.put_icn(tx, ty, BOTTOM_ICN, cal_model.C_FG, cal_model.C_BG)
 ;
 
@@ -108,8 +108,6 @@ def BOTTOM_ICN = ["ff00", "ff00", "ff00", "ffff"]
         title = cal_date.dotw_name(dotw) + " " + str(cal_model.today_day) + " " + cal_date.month_name(cal_model.today_month) + " " + str(cal_model.today_year)
     else
         title = cal_date.month_name(cal_model.view_month) + " " + str(cal_model.view_year)
-
-    scr.set_titlebar_title(title)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────

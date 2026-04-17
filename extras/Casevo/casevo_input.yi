@@ -15,6 +15,11 @@ def KEY_TAB = 43
 def KEY_DELETE = 76
 def KEY_LEFT = 80
 def KEY_RIGHT = 79
+def KEY_UP = 82
+def KEY_DOWN = 81
+def KEY_RETURN = 40
+def KEY_BACKSPACE = 42
+def KEY_ESCAPE = 41
 def KEY_S = 22
 def KEY_O = 18
 def KEY_N = 17
@@ -46,12 +51,6 @@ def ?drag_active = false
     let my = dev.pointer_y()
     let down = dev.mouse_down(vimana.mouse_left)
 
-    -- Check titlebar close button
-    if scr.titlebar_button_pressed()
-        casevo_model.set_editing(false)
-        -- Signal quit by some mechanism (handled in main)
-        <-
-
     -- Browser intercepts clicks when active
     if casevo_browser.active
         if down && !mouse_was_down
@@ -59,7 +58,6 @@ def ?drag_active = false
             let picked = casevo_browser.consume_picked()
             if stdr.len(picked) > 0
                 casevo_file.load(fsys, picked)
-                scr.set_titlebar_title(stdr.basename(picked))
         mouse_was_down = down
         <-
 
@@ -119,15 +117,6 @@ def ?drag_active = false
         let picked = casevo_browser.consume_picked()
         if stdr.len(picked) > 0
             casevo_file.load(fsys, picked)
-            scr.set_titlebar_title(stdr.basename(picked))
-        <-
-
-    -- Escape
-    if dev.key_pressed(KEY_ESCAPE)
-        if casevo_model.editing
-            casevo_model.cancel_edit()
-        else
-            sys.quit()
         <-
 
     -- Cmd/Ctrl+S: save

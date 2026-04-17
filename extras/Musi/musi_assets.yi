@@ -8,9 +8,9 @@ bring vimana
 
 : draw_icn(scr = vimana.screen, x = num, y = num, tl = any, tr = any, bl = any, br = any, fg = num, bg = num) (( -- ))
     scr.put_icn(x,     y,     tl, fg, bg)
-    scr.put_icn(x + 1, y,     tr, fg, bg)
-    scr.put_icn(x,     y + 1, bl, fg, bg)
-    scr.put_icn(x + 1, y + 1, br, fg, bg)
+    scr.put_icn(x + 8, y,     tr, fg, bg)
+    scr.put_icn(x,     y + 8, bl, fg, bg)
+    scr.put_icn(x + 8, y + 8, br, fg, bg)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ def POKE_BOT = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
 
 :: draw_poke(scr = vimana.screen, y = num, fg = num, bg = num) (( -- ))
     scr.put_icn(0, y,     POKE_TOP, fg, bg)
-    scr.put_icn(0, y + 1, POKE_BOT, fg, bg)
+    scr.put_icn(0, y + 8, POKE_BOT, fg, bg)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -158,8 +158,8 @@ def VOL6_BR = [0xC5, 0xC9, 0xCA, 0xD2, 0xC4, 0, 0, 0]
 
 :: draw_button_frame(scr = vimana.screen, x = num, y = num, _fg = num, _bg = num) (( -- ))
     scr.set_auto(0x36)
-    scr.set_x(x*8)
-    scr.set_y(y*8)
+    scr.set_x(x)
+    scr.set_y(y)
     if musi_model.paused
         scr.set_addr(0x180)
     else

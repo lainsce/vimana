@@ -27,9 +27,6 @@ def CURSOR_ADDR = 0x9000
     sys.run(scr, () => {
         dev.poll()
 
-        if dev.key_pressed(vimana.key_escape) || scr.titlebar_button_pressed()
-            sys.quit()
-
         scr.clear(vimana.color_bg)
         tokei_view.draw(scr)
 

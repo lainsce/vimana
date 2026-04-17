@@ -245,7 +245,7 @@ def BLANK_ICN  = [0, 0, 0, 0, 0, 0, 0, 0]
 
 : draw_monaco_digit(scr = vimana.screen, tx = num, ty = num, d = num, fg = num, bg = num) (( -- ))
     scr.put_icn(tx, ty, monaco_top(d), fg, bg)
-    scr.put_icn(tx, ty + 1, monaco_bot(d), fg, bg)
+    scr.put_icn(tx, ty + 8, monaco_bot(d), fg, bg)
 ;
 
 :: draw_size(scr = vimana.screen, right_tx = num, ty = num, w = num, h = num, fg = num, bg = num) (( -- ))
@@ -253,15 +253,15 @@ def BLANK_ICN  = [0, 0, 0, 0, 0, 0, 0, 0]
     let w0 = w - (w1 * 10)
     let h1 = h / 10
     let h0 = h - (h1 * 10)
-    let ?tx = right_tx - 6
+    let ?tx = right_tx - 48
     draw_monaco_digit(scr, tx, ty, w1, fg, bg)
-    tx = tx + 1
+    tx = tx + 8
     draw_monaco_digit(scr, tx, ty, w0, fg, bg)
-    tx = tx + 1
+    tx = tx + 8
     scr.put_icn(tx, ty, MONACO_X_T, fg, bg)
-    scr.put_icn(tx, ty + 1, MONACO_X_B, fg, bg)
-    tx = tx + 1
+    scr.put_icn(tx, ty + 8, MONACO_X_B, fg, bg)
+    tx = tx + 8
     draw_monaco_digit(scr, tx, ty, h1, fg, bg)
-    tx = tx + 1
+    tx = tx + 8
     draw_monaco_digit(scr, tx, ty, h0, fg, bg)
 ;

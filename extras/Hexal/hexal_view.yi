@@ -12,8 +12,6 @@ bring hexal_browser
         <-
     hexal_model.clear_dirty()
 
-    scr.clear(hexal_model.C_BG)
-
     draw_separator(scr)
     draw_labels(scr)
     draw_lines(scr)
@@ -25,8 +23,6 @@ bring hexal_browser
 
     if hexal_browser.active
         draw_browser(scr)
-
-    scr.present()
 ;
 
 --| Separator bar |--
@@ -49,11 +45,11 @@ bring hexal_browser
 
 : draw_labels(scr = vimana.screen) (( -- ))
     scr.put_text(hexal_model.OFFSET_X, hexal_model.LABEL_Y,
-        "line", hexal_model.C_DIM, hexal_model.C_BG)
+        "line", hexal_model.C_FG, hexal_model.C_BG)
     scr.put_text(hexal_model.HEX_X, hexal_model.LABEL_Y,
-        "data", hexal_model.C_DIM, hexal_model.C_BG)
+        "data", hexal_model.C_FG, hexal_model.C_BG)
     scr.put_text(hexal_model.ASCII_X, hexal_model.LABEL_Y,
-        "ascii", hexal_model.C_DIM, hexal_model.C_BG)
+        "ascii", hexal_model.C_FG, hexal_model.C_BG)
 ;
 
 --| Dashed vertical column separators |--
@@ -88,7 +84,7 @@ bring hexal_browser
     let po = hexal_model.page_offset()
     for (let ?row = 0; row < hexal_model.ROWS; row += 1)
         let base = po + row * hexal_model.COLS
-        let ty = 3 + row * 2
+        let ty = (3 + row * 2) * 8
         let c = hexal_model.byte_color(base)
         let ?fg = hexal_model.C_FG
         let ?bg = hexal_model.C_BG
@@ -98,13 +94,13 @@ bring hexal_browser
         elif c == hexal_model.C_DIM
             fg = hexal_model.C_DIM
         -- Left tile (bytes 0-7)
-        scr.put_icn(8, ty,
+        scr.put_icn(64, ty,
             [icn_byte(base), icn_byte(base + 1),
              icn_byte(base + 2), icn_byte(base + 3),
              icn_byte(base + 4), icn_byte(base + 5),
              icn_byte(base + 6), icn_byte(base + 7)], fg, bg)
         -- Right tile (bytes 8-15)
-        scr.put_icn(9, ty,
+        scr.put_icn(72, ty,
             [icn_byte(base + 8), icn_byte(base + 9),
              icn_byte(base + 10), icn_byte(base + 11),
              icn_byte(base + 12), icn_byte(base + 13),
@@ -205,36 +201,32 @@ def CAP_RIGHT_TOP = [0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF]
 def CAP_RIGHT_BOT = [0xFF, 0xFE, 0xFC, 0xF8, 0xF0, 0xE0, 0xC0, 0x80]
 
 : fill_rect(scr = vimana.screen, rx = num, ry = num, rw = num, rh = num, c = num) (( -- ))
-    let tw = stdr.floor(rw / 8)
-    let th = stdr.floor(rh / 8)
-    let tx0 = stdr.floor(rx / 8)
-    let ty0 = stdr.floor(ry / 8)
-    for (let ?row = 0; row < th; row += 1)
-        for (let ?col = 0; col < tw; col += 1)
-            scr.put_icn(tx0 + col, ty0 + row, EMPTY, c, c)
+    for (let ?row = 0; row < rh; row += 8)
+        for (let ?col = 0; col < rw; col += 8)
+            scr.put_icn(rx + col, ry + row, EMPTY, c, c)
 ;
 
 : draw_browser_bg(scr = vimana.screen) (( -- ))
-    let tiles_w = stdr.floor(hexal_model.SCR_W / 8)
-    let tile_y0 = stdr.floor(hexal_model.DATA_Y / 8)
-    let tile_rows = stdr.floor((hexal_model.ROWS * hexal_model.ROW_H) / 8)
+    let win_w = hexal_model.SCR_W
+    let data_y = hexal_model.DATA_Y
+    let win_h = hexal_model.ROWS * hexal_model.ROW_H
 
-    -- Top halftone stripe (1 tile row, at toolbar level)
-    for (let ?tx = 0; tx < tiles_w; tx += 1)
-        scr.put_icn(tx, tile_y0 - 1, HALFTONE, hexal_model.C_DIM, hexal_model.C_BG)
+    -- Top halftone stripe (y = DATA_Y - 8)
+    for (let ?tx = 0; tx < win_w; tx += 8)
+        scr.put_icn(tx, data_y - 8, HALFTONE, hexal_model.C_DIM, hexal_model.C_BG)
 
-    -- Solid fill stripe (1 tile row below halftone) for path
-    for (let ?tx = 0; tx < tiles_w; tx += 1)
-        scr.put_icn(tx, tile_y0, FILL, hexal_model.C_DIM, hexal_model.C_BG)
+    -- Solid fill stripe (at DATA_Y) for path
+    for (let ?tx = 0; tx < win_w; tx += 8)
+        scr.put_icn(tx, data_y, FILL, hexal_model.C_DIM, hexal_model.C_BG)
 
     -- SEL bg from below toolbar to wavey
-    let wave_y = tile_y0 + tile_rows - 1
-    for (let ?ty = tile_y0 + 1; ty < wave_y; ty += 1)
-        for (let ?tx = 0; tx < tiles_w; tx += 1)
+    let wave_y = data_y + win_h - 8
+    for (let ?ty = data_y + 8; ty < wave_y; ty += 8)
+        for (let ?tx = 0; tx < win_w; tx += 8)
             scr.put_icn(tx, ty, EMPTY, hexal_model.C_DIM, hexal_model.C_DIM)
 
     -- Bottom wavy decoration (single)
-    for (let ?tx = 0; tx < tiles_w; tx += 1)
+    for (let ?tx = 0; tx < win_w; tx += 8)
         scr.put_icn(tx, wave_y, WAVEY, hexal_model.C_DIM, hexal_model.C_BG)
 ;
 
@@ -271,16 +263,16 @@ def CAP_RIGHT_BOT = [0xFF, 0xFE, 0xFC, 0xF8, 0xF0, 0xE0, 0xC0, 0x80]
             label = stdr.slice(label, 0, max_chars)
         if idx == hexal_browser.sel
             -- Selected: rounded caps + solid fill
-            let tx0 = stdr.floor(sx / 8) - 1
-            let ty = stdr.floor(y / 8)
+            let tx0 = sx - 8
+            let ty = y
             scr.put_icn(tx0, ty, CAP_LEFT_TOP, hexal_model.C_FG, hexal_model.C_DIM)
-            scr.put_icn(tx0, ty + 1, CAP_LEFT_BOT, hexal_model.C_FG, hexal_model.C_DIM)
-            let text_tiles = stdr.floor(stdr.len(label) * hexal_model.FONT_W / 8) + 1
+            scr.put_icn(tx0, ty + 8, CAP_LEFT_BOT, hexal_model.C_FG, hexal_model.C_DIM)
+            let text_tiles = stdr.len(label) + 1
             for (let ?ft = 0; ft < text_tiles; ft += 1)
-                scr.put_icn(tx0 + 1 + ft, ty, FILL, hexal_model.C_FG, hexal_model.C_DIM)
-                scr.put_icn(tx0 + 1 + ft, ty + 1, FILL, hexal_model.C_FG, hexal_model.C_DIM)
-            scr.put_icn(tx0 + 1 + text_tiles, ty, CAP_RIGHT_TOP, hexal_model.C_FG, hexal_model.C_DIM)
-            scr.put_icn(tx0 + 1 + text_tiles, ty + 1, CAP_RIGHT_BOT, hexal_model.C_FG, hexal_model.C_DIM)
+                scr.put_icn(tx0 + 8 + ft * 8, ty, FILL, hexal_model.C_FG, hexal_model.C_DIM)
+                scr.put_icn(tx0 + 8 + ft * 8, ty + 8, FILL, hexal_model.C_FG, hexal_model.C_DIM)
+            scr.put_icn(tx0 + 8 + text_tiles * 8, ty, CAP_RIGHT_TOP, hexal_model.C_FG, hexal_model.C_DIM)
+            scr.put_icn(tx0 + 8 + text_tiles * 8, ty + 8, CAP_RIGHT_BOT, hexal_model.C_FG, hexal_model.C_DIM)
             scr.put_text(sx, y, label, hexal_model.C_ACCENT, hexal_model.C_FG)
         else
             scr.put_text(sx, y, label, hexal_model.C_FG, hexal_model.C_DIM)

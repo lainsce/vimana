@@ -607,7 +607,7 @@ def INSERT_COUNT = 3
 ;
 
 :: handle_click(mx = num, my = num) (( string ))
-    -- Click in menubar area (between titlebar and content)
+    -- Click in menubar area
     if my >= MENUBAR_Y && my < right_model.CONTENT_Y
         let cat = cat_from_x(mx)
         if cat >= 0

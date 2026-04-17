@@ -724,33 +724,11 @@ static void __vimana_screen_present(YisVal scrv) {
   vimana_screen_present(screen);
 }
 
-static void __vimana_screen_draw_titlebar(YisVal scrv, YisVal bgv) {
-  vimana_screen *screen =
-      vimana_screen_from_val(scrv, "vimana.screen.draw_titlebar expects screen");
-  vimana_screen_draw_titlebar(screen, (unsigned int)yis_as_int(bgv));
-}
 
-static void __vimana_screen_set_titlebar_title(YisVal scrv, YisVal titlev) {
-  vimana_screen *screen =
-      vimana_screen_from_val(scrv, "vimana.screen.set_titlebar_title expects screen");
-  YisStr *tmp = NULL;
-  const char *title = vimana_required_cstr(titlev, &tmp);
-  vimana_screen_set_titlebar_title(screen, title);
-  if (tmp)
-    yis_release_val(YV_STR(tmp));
-}
 
-static void __vimana_screen_set_titlebar_button(YisVal scrv, YisVal showv) {
-  vimana_screen *screen =
-      vimana_screen_from_val(scrv, "vimana.screen.set_titlebar_button expects screen");
-  vimana_screen_set_titlebar_button(screen, yis_as_int(showv) != 0);
-}
 
-static YisVal __vimana_screen_titlebar_button_pressed(YisVal scrv) {
-  vimana_screen *screen =
-      vimana_screen_from_val(scrv, "vimana.screen.titlebar_button_pressed expects screen");
-  return YV_BOOL(vimana_screen_titlebar_button_pressed(screen));
-}
+
+
 
 static void __vimana_screen_set_cursor(YisVal scrv, YisVal icnv) {
   vimana_screen *screen =
@@ -770,6 +748,14 @@ static void __vimana_screen_show_cursor(YisVal scrv) {
   vimana_screen *screen =
       vimana_screen_from_val(scrv, "vimana.screen.show_cursor expects screen");
   vimana_screen_show_cursor(screen);
+}
+
+
+
+static void __vimana_screen_set_drag_region(YisVal scrv, YisVal heightv) {
+  vimana_screen *screen =
+      vimana_screen_from_val(scrv, "vimana.screen.set_drag_region expects screen");
+  vimana_screen_set_drag_region(screen, (unsigned int)yis_as_int(heightv));
 }
 
 static YisVal __vimana_screen_x(YisVal scrv) {

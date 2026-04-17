@@ -9,8 +9,6 @@ bring luxor_model
     if stdr.len(name) == 0
         name = luxor_model.default_path()
     let title = "./" + name
-
-    scr.set_titlebar_title(title)
 ;
 
 : ensure_font_extension(path = string) (( string ))

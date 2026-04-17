@@ -363,8 +363,6 @@ def CURSOR_ADDR = 0xFF00
     scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
     draw_font.setup(scr)
 
-    scr.set_titlebar_title("Draw")
-
     draw_canvas.set_window_dims(scr.width() / 8, scr.height() / 8)
     draw_canvas.clear(scr)
     draw_panel.draw(scr)

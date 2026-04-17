@@ -144,8 +144,8 @@ bring world_assets
         for (let ?col = 0; col < world_model.MAP_COLS; col += 1)
             let glyph_idx = world_model.cell_glyph_idx(col, row)
             let ci = world_model.cell_color(col, row)
-            let tx = world_model.MAP_X / 8 + col * 2
-            let ty = world_model.MAP_Y / 8 + row * 2
+            let tx = (world_model.MAP_X / 8 + col * 2) * 8
+            let ty = (world_model.MAP_Y / 8 + row * 2) * 8
             let fg = color_slot(ci)
             let bg = world_model.C_BG
 
@@ -230,10 +230,11 @@ def TB_PAD = 4
         fill(scr, x, y, TB_BTN_W, TB_BTN_H, world_model.C_BG)
 ;
 
--- Tile-addressed icon position (for put_icn / draw_icn)
+-- Tile-addressed icon position (for put_icn / draw_icn) - now returns pixels
 : tb_icon_tile(idx = num) (( num ))
-    <- idx * 3
+    <- idx * 3 * 8
 ;
+
 def ICON_TILE_Y = 0
 
 : draw_toolbar(scr = vimana.screen) (( -- ))
@@ -334,23 +335,23 @@ def PICKER_PAD = 1
 : draw_glyph_picker(scr = vimana.screen) (( -- ))
     scr.put_text(8, world_model.TOOLBAR_Y + 6, "Glyph Picker", world_model.C_FG, world_model.C_BG)
     -- Back button
-    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, (world_model.WIN_W / 8 - 3) * 8, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
     let ci = color_slot(world_model.selected_color)
 
     for (let ?i = 0; i < world_model.GLYPH_COUNT; i += 1)
         let col_idx = i % PICKER_COLS
         let row_idx = stdr.floor(i / PICKER_COLS)
-        let gx = PICKER_PAD + col_idx * 3
+        let gx = (PICKER_PAD + col_idx * 3) * 8
         let gy_px = PICKER_START_Y * 8 + row_idx * 24 - world_model.glyph_picker_scroll
-        let gy = gy_px / 8
+        let gy = gy_px
 
         if gy_px + world_model.TILE_H < PICKER_START_Y * 8 || gy_px > world_model.WIN_H
             continue
 
         -- Highlight selected
         if i == world_model.selected_glyph
-            fill(scr, gx * 8 - 1, gy_px - 1, world_model.TILE_W + 2, world_model.TILE_H + 2, world_model.C_CLR1)
+            fill(scr, gx - 1, gy_px - 1, world_model.TILE_W + 2, world_model.TILE_H + 2, world_model.C_CLR1)
 
         if world_model.text_mode
             world_text_glyphs.draw_text_glyph(scr, gx, gy, i, ci, world_model.C_BG)
@@ -364,7 +365,7 @@ def PICKER_PAD = 1
 
 : draw_color_picker(scr = vimana.screen) (( -- ))
     scr.put_text(8, world_model.TOOLBAR_Y + 6, "Color Picker", world_model.C_FG, world_model.C_BG)
-    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, (world_model.WIN_W / 8 - 3) * 8, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
     let start_y = 10
     let swatch_size = 8
@@ -406,7 +407,7 @@ def PICKER_PAD = 1
 
 : draw_theme_picker(scr = vimana.screen) (( -- ))
     scr.put_text(8, world_model.TOOLBAR_Y + 6, "Theme Picker", world_model.C_FG, world_model.C_BG)
-    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, (world_model.WIN_W / 8 - 3) * 8, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
     let start_y = 64
     let row_h = 20
@@ -463,8 +464,8 @@ def PICKER_PAD = 1
                 if found >= 0
                     gidx = found
 
-            let tile_x = (ox + px * world_model.TILE_W) / 8
-            let tile_y = (oy + py * world_model.TILE_H) / 8
+            let tile_x = ox + px * world_model.TILE_W
+            let tile_y = oy + py * world_model.TILE_H
             if world_model.text_mode
                 world_text_glyphs.draw_text_glyph(scr, tile_x, tile_y, gidx, slot, world_model.C_BG)
             else
@@ -473,7 +474,7 @@ def PICKER_PAD = 1
 
 : draw_preset_picker(scr = vimana.screen) (( -- ))
     scr.put_text(8, world_model.TOOLBAR_Y + 6, "Preset Picker", world_model.C_FG, world_model.C_BG)
-    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, (world_model.WIN_W / 8 - 3) * 8, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
     let start_y = 64
     let cols = 4
@@ -535,7 +536,6 @@ def PICKER_PAD = 1
 
 :: draw_all(scr = vimana.screen) (( -- ))
     scr.clear(world_model.C_BG)
-    scr.draw_titlebar(world_model.C_CLR2)
 
     let mode = world_model.screen_mode
 
@@ -573,7 +573,7 @@ def BROWSER_MAX_ROWS = 32
     if world_model.browser_save_mode
         title = "Save File"
     scr.put_text(8, world_model.TOOLBAR_Y + 6, title, world_model.C_FG, world_model.C_BG)
-    world_assets.draw_back(scr, world_model.WIN_W / 8 - 3, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
+    world_assets.draw_back(scr, (world_model.WIN_W / 8 - 3) * 8, ICON_TILE_Y, world_model.C_FG, world_model.C_BG)
 
     -- Path indicator
     let path_display = clamp_text(world_model.browser_path, 70)

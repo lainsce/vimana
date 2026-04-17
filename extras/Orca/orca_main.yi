@@ -124,7 +124,6 @@ def CURSOR_ADDR = 0x9000
                 orca_model.set_file_path("")
                 orca_model.set_frame(0)
                 orca_model.set_dirty(true)
-                scr.set_titlebar_title("Orca")
             elif dev.key_pressed(KEY_C)
                 orca_model.copy_sel()
             elif dev.key_pressed(KEY_X)

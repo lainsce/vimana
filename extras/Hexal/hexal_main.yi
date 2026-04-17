@@ -219,10 +219,8 @@ def CURSOR_ADDR = 0x9000
         on_text(dev, scr)
         on_scroll(dev)
 
-        scr.clear(vimana.color_bg)
         hexal_view.draw_all(scr)
 
-        -- Draw cursor every frame
         let mx = dev.pointer_x()
         let my = dev.pointer_y()
         scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x81)
