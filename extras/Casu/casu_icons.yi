@@ -4,47 +4,47 @@ bring stdr
 bring vimana
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Toolbar icons: 8 bytes (1bpp 8×8), rows high-bit = leftmost pixel
+-- Toolbar icons: 4 words (1bpp 8×8), rows high-bit = leftmost pixel
 -- ─────────────────────────────────────────────────────────────────────────────
-def ICN_BRUSH  = [0, 0x70, 0x68, 0x44, 0x22, 0x11, 0x09, 0x06]
-def ICN_SELECT = [0, 0x40, 0x60, 0x70, 0x78, 0x7C, 0x70, 0x08]
-def ICN_ZOOM   = [0, 0x30, 0x48, 0x84, 0x84, 0x48, 0x34, 0x02]
-def ICN_PIXEL  = [0x7C, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0x7C, 0]
-def ICN_SAVE   = [0, 0x08, 0x2A, 0x14, 0x63, 0x14, 0x2A, 0x08]
-def ICN_MAKE   = [0, 0x7F, 0x41, 0x41, 0x41, 0x42, 0x45, 0x7A]
-def ICN_LOAD   = [0, 0x7F, 0x55, 0x6B, 0x55, 0x6A, 0x55, 0x7A]
-def ICN_FILL   = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
-def ICN_BLANK  = [0, 0, 0, 0, 0, 0, 0, 0]
-def ICN_HALF   = [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]
+def ICN_BRUSH  = [0x0070, 0x6844, 0x2211, 0x0906]
+def ICN_SELECT = [0x0040, 0x6070, 0x787c, 0x7008]
+def ICN_ZOOM   = [0x0030, 0x4884, 0x8448, 0x3402]
+def ICN_PIXEL  = [0x7cfe, 0xfefe, 0xfefe, 0x7c00]
+def ICN_SAVE   = [0x0008, 0x2a14, 0x6314, 0x2a08]
+def ICN_MAKE   = [0x007f, 0x4141, 0x4142, 0x457a]
+def ICN_LOAD   = [0x007f, 0x556b, 0x556a, 0x557a]
+def ICN_FILL   = [0xffff, 0xffff, 0xffff, 0xffff]
+def ICN_BLANK  = [0x0000, 0x0000, 0x0000, 0x0000]
+def ICN_HALF   = [0xaa55, 0xaa55, 0xaa55, 0xaa55]
 
 -- Zoom icons (two states: not zoomed / zoomed)
-def ICN_ZOOM0  = [0, 0x30, 0x48, 0x84, 0x84, 0x48, 0x34, 0x02]
-def ICN_ZOOM1  = [0, 0x32, 0x45, 0x82, 0x84, 0x48, 0x34, 0x02]
+def ICN_ZOOM0  = [0x0030, 0x4884, 0x8448, 0x3402]
+def ICN_ZOOM1  = [0x0032, 0x4582, 0x8448, 0x3402]
 
 -- Direction icon (for scroll direction indicator)
-def ICN_DIR0   = [0, 0x7E, 0, 0x7E, 0, 0x70, 0, 0]
-def ICN_DIR1   = [0, 0x54, 0x54, 0x54, 0x50, 0x50, 0, 0]
+def ICN_DIR0   = [0x007e, 0x007e, 0x0070, 0x0000]
+def ICN_DIR1   = [0x0054, 0x5454, 0x5050, 0x5000]
 
 -- Big pixel: top-left 4×4 block of an 8×8 cell (for 4× zoom rendering)
-def ICN_BIGPIXEL = [0xF0, 0xF0, 0xF0, 0xF0, 0, 0, 0, 0]
+def ICN_BIGPIXEL = [0xf0f0, 0xf0f0, 0x0000, 0x0000]
 
 -- Slider left/right end caps
-def ICN_SLIDER0 = [0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0]
-def ICN_SLIDER1 = [0x50, 0xA0, 0x50, 0xA0, 0x50, 0xA0, 0x50, 0]
+def ICN_SLIDER0 = [0xf0f0, 0xf0f0, 0xf0f0, 0xf000]
+def ICN_SLIDER1 = [0x50a0, 0x50a0, 0x50a0, 0x5000]
 
 -- Circle (empty / filled)
-def ICN_CIRCLE0 = [0, 0x1C, 0x22, 0x41, 0x41, 0x41, 0x22, 0x1C]
-def ICN_CIRCLE1 = [0, 0x1C, 0x3E, 0x7F, 0x7F, 0x7F, 0x3E, 0x1C]
+def ICN_CIRCLE0 = [0x001c, 0x2241, 0x4141, 0x221c]
+def ICN_CIRCLE1 = [0x001c, 0x3e7f, 0x7f7f, 0x3e1c]
 
 -- Arrow icons
-def ICN_ARROW_L = [0x08, 0x0C, 0x0E, 0x7F, 0x0E, 0x0C, 0x08, 0]
-def ICN_ARROW_R = [0x08, 0x18, 0x38, 0x7F, 0x38, 0x18, 0x08, 0]
-def ICN_ARROW_U = [0x08, 0x1C, 0x3E, 0x7F, 0x08, 0x08, 0x08, 0]
-def ICN_ARROW_D = [0x08, 0x08, 0x08, 0x7F, 0x3E, 0x1C, 0x08, 0]
+def ICN_ARROW_L = [0x080c, 0x0e7f, 0x0e0c, 0x0800]
+def ICN_ARROW_R = [0x0818, 0x387f, 0x3818, 0x0800]
+def ICN_ARROW_U = [0x081c, 0x3e7f, 0x0808, 0x0800]
+def ICN_ARROW_D = [0x0808, 0x087f, 0x3e1c, 0x0800]
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Atari 8-bit font from nasu.tal @font section — 96 glyphs (ASCII 32–127).
--- Each glyph is 8 bytes (1bpp 8×8), transcribed directly from nasu.tal hex words.
+-- Each glyph is 4 words (1bpp 8×8), transcribed directly from nasu.tal hex words.
 -- ─────────────────────────────────────────────────────────────────────────────
 def FONT_BYTES = [
     -- nasu.tal: 0000 0000 0000 0000
@@ -266,71 +266,39 @@ def ICON_SLOT_BASE = 0xF100
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Frame CHR data (2bpp 8×8 tiles) for panel borders
--- Each tile = 16 bytes: plane0 (8 bytes) + plane1 (8 bytes)
--- Two frames: FRAME1 = thick rounded, FRAME2 = thin
+-- Frame sprite data for panel borders.
+-- The active Casu UI border uses 1bpp sprite tiles uploaded here and drawn
+-- through `screen.sprite(...)` from casu_view.yi.
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Frame 1: thick rounded frame (tileview, nametable)
--- 3 tiles (edge, horizontal, vertical), each 2 planes × 8 bytes
-def FRAME1 = [
-    -- Edge tile plane0
-    0, 0, 0, 0, 0x07, 0x0F, 0x0F, 0x0F,
-    -- Edge tile plane1
-    0, 0, 0, 0x07, 0x08, 0x10, 0x10, 0x10,
-    -- Horizontal bar plane0
-    0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF,
-    -- Horizontal bar plane1
-    0, 0, 0, 0xFF, 0, 0, 0, 0,
-    -- Vertical bar plane0
-    0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0,
-    -- Vertical bar plane1
-    0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08
-]
-
--- Frame 2: thin frame (zoomview)
-def FRAME2 = [
-    -- Edge tile plane0
-    0, 0, 0, 0, 0, 0, 0, 0,
-    -- Edge tile plane1
-    0, 0, 0, 0, 0, 0x01, 0x02, 0x04,
-    -- Horizontal bar plane0
-    0, 0, 0, 0, 0, 0, 0, 0,
-    -- Horizontal bar plane1
-    0, 0, 0, 0, 0, 0xFF, 0, 0,
-    -- Vertical bar plane0
-    0, 0, 0, 0, 0, 0, 0, 0,
-    -- Vertical bar plane1
-    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20
-]
+-- 1bpp frame icons derived from the visible frame2 stroke in casu.tal.
+def FRAME2_TL = [0x0000, 0x0000, 0x0001, 0x0204]
+def FRAME2_TR = [0x0000, 0x0000, 0x0080, 0x4020]
+def FRAME2_BL = [0x0402, 0x0100, 0x0000, 0x0000]
+def FRAME2_BR = [0x2040, 0x8000, 0x0000, 0x0000]
+def FRAME2_HT = [0x0000, 0x0000, 0x00ff, 0x0000]
+def FRAME2_HB = [0x0000, 0xff00, 0x0000, 0x0000]
+def FRAME2_VL = [0x0404, 0x0404, 0x0404, 0x0404]
+def FRAME2_VR = [0x2020, 0x2020, 0x2020, 0x2020]
 
 -- Sprite memory addresses for frame tiles (each tile = 16 bytes)
--- Base addresses (start of each frame's 48-byte block)
-def FRAME1_ADDR = 0x1000
-def FRAME2_ADDR = 0x1030
--- Component tile addresses
-def FRAME1_ADDR_E = FRAME1_ADDR + 0
-def FRAME1_ADDR_H = FRAME1_ADDR + 16
-def FRAME1_ADDR_V = FRAME1_ADDR + 32
-def FRAME2_ADDR_E = FRAME2_ADDR + 0
-def FRAME2_ADDR_H = FRAME2_ADDR + 16
-def FRAME2_ADDR_V = FRAME2_ADDR + 32
+def FRAME2_TL_ADDR = 0x1060
+def FRAME2_TR_ADDR = 0x1068
+def FRAME2_BL_ADDR = 0x1070
+def FRAME2_BR_ADDR = 0x1078
+def FRAME2_HT_ADDR = 0x1080
+def FRAME2_HB_ADDR = 0x1088
+def FRAME2_VL_ADDR = 0x1090
+def FRAME2_VR_ADDR = 0x1098
 
--- Upload frame CHR tiles to sprite memory (each tile = 2 planes of 8 bytes)
+-- Upload active frame tiles to sprite memory.
 : setup_frames(scr = vimana.screen) (( -- ))
-    -- FRAME1: edge (E), horizontal (H), vertical (V) — each plane0 then plane1
-    scr.set_sprite(FRAME1_ADDR_E,     [FRAME1[0],  FRAME1[1],  FRAME1[2],  FRAME1[3],  FRAME1[4],  FRAME1[5],  FRAME1[6],  FRAME1[7]],  0)
-    scr.set_sprite(FRAME1_ADDR_E + 8, [FRAME1[8],  FRAME1[9],  FRAME1[10], FRAME1[11], FRAME1[12], FRAME1[13], FRAME1[14], FRAME1[15]], 0)
-    scr.set_sprite(FRAME1_ADDR_H,     [FRAME1[16], FRAME1[17], FRAME1[18], FRAME1[19], FRAME1[20], FRAME1[21], FRAME1[22], FRAME1[23]], 0)
-    scr.set_sprite(FRAME1_ADDR_H + 8, [FRAME1[24], FRAME1[25], FRAME1[26], FRAME1[27], FRAME1[28], FRAME1[29], FRAME1[30], FRAME1[31]], 0)
-    scr.set_sprite(FRAME1_ADDR_V,     [FRAME1[32], FRAME1[33], FRAME1[34], FRAME1[35], FRAME1[36], FRAME1[37], FRAME1[38], FRAME1[39]], 0)
-    scr.set_sprite(FRAME1_ADDR_V + 8, [FRAME1[40], FRAME1[41], FRAME1[42], FRAME1[43], FRAME1[44], FRAME1[45], FRAME1[46], FRAME1[47]], 0)
-    -- FRAME2
-    scr.set_sprite(FRAME2_ADDR_E,     [FRAME2[0],  FRAME2[1],  FRAME2[2],  FRAME2[3],  FRAME2[4],  FRAME2[5],  FRAME2[6],  FRAME2[7]],  0)
-    scr.set_sprite(FRAME2_ADDR_E + 8, [FRAME2[8],  FRAME2[9],  FRAME2[10], FRAME2[11], FRAME2[12], FRAME2[13], FRAME2[14], FRAME2[15]], 0)
-    scr.set_sprite(FRAME2_ADDR_H,     [FRAME2[16], FRAME2[17], FRAME2[18], FRAME2[19], FRAME2[20], FRAME2[21], FRAME2[22], FRAME2[23]], 0)
-    scr.set_sprite(FRAME2_ADDR_H + 8, [FRAME2[24], FRAME2[25], FRAME2[26], FRAME2[27], FRAME2[28], FRAME2[29], FRAME2[30], FRAME2[31]], 0)
-    scr.set_sprite(FRAME2_ADDR_V,     [FRAME2[32], FRAME2[33], FRAME2[34], FRAME2[35], FRAME2[36], FRAME2[37], FRAME2[38], FRAME2[39]], 0)
-    scr.set_sprite(FRAME2_ADDR_V + 8, [FRAME2[40], FRAME2[41], FRAME2[42], FRAME2[43], FRAME2[44], FRAME2[45], FRAME2[46], FRAME2[47]], 0)
+    scr.set_sprite(FRAME2_TL_ADDR, FRAME2_TL, vimana.sprite_1bpp)
+    scr.set_sprite(FRAME2_TR_ADDR, FRAME2_TR, vimana.sprite_1bpp)
+    scr.set_sprite(FRAME2_BL_ADDR, FRAME2_BL, vimana.sprite_1bpp)
+    scr.set_sprite(FRAME2_BR_ADDR, FRAME2_BR, vimana.sprite_1bpp)
+    scr.set_sprite(FRAME2_HT_ADDR, FRAME2_HT, vimana.sprite_1bpp)
+    scr.set_sprite(FRAME2_HB_ADDR, FRAME2_HB, vimana.sprite_1bpp)
+    scr.set_sprite(FRAME2_VL_ADDR, FRAME2_VL, vimana.sprite_1bpp)
+    scr.set_sprite(FRAME2_VR_ADDR, FRAME2_VR, vimana.sprite_1bpp)
 ;
-

@@ -57,66 +57,39 @@ def C_WH   = 3   -- bright / selected (white)
     fill(scr, x + w - 1, y + 1,     1, h - 2, c)
 ;
 
--- Draw a 2bpp sprite frame around a panel at tile (tx, ty), size tw×th tiles.
--- addr_e/addr_h/addr_v = sprite memory addresses for corner (edge), horizontal bar, vertical bar tiles.
--- Flip bits mirror tiles: corners use edge tile; edges use bar tiles with flips to orient correctly.
+-- Draw a 1-tile border around a panel at tile (tx, ty), size tw×th tiles.
+-- This stays on the sprite pipeline like the Tal implementation, but uses
+-- explicit 1bpp frame pieces so the current Vimana runtime renders them
+-- reliably.
 : draw_frame(scr = vimana.screen,
              tx = num, ty = num, tw = num, th = num,
-             addr_e = num, addr_h = num, addr_v = num,
-             blend = num) (( -- ))
-    let ctrl     = 128 + blend
-    let ctrl_fx  = 144 + blend   -- flip X
-    let ctrl_fy  = 160 + blend   -- flip Y
-    let ctrl_fxy = 176 + blend   -- flip X+Y
+             tl_addr = num, tr_addr = num, bl_addr = num, br_addr = num,
+             ht_addr = num, hb_addr = num, vl_addr = num, vr_addr = num) (( -- ))
+    let ctrl = 0x05
+    let px = (tx - 1) * 8
+    let py = (ty - 1) * 8
 
-    -- Top-left corner (no flip)
     scr.set_auto(0)
-    scr.set_x((tx - 1) * 8).set_y((ty - 1) * 8).set_addr(addr_e)
-    scr.sprite(ctrl)
+    scr.set_x(px).set_y(py).set_addr(tl_addr).sprite(ctrl)
+    scr.set_x((tx + tw) * 8).set_y(py).set_addr(tr_addr).sprite(ctrl)
+    scr.set_x(px).set_y((ty + th) * 8).set_addr(bl_addr).sprite(ctrl)
+    scr.set_x((tx + tw) * 8).set_y((ty + th) * 8).set_addr(br_addr).sprite(ctrl)
 
-    -- Top edge (horizontal bar) - tw tiles, no flip
-    scr.set_auto(1)  -- auto-X increment
-    scr.set_x(tx * 8).set_y((ty - 1) * 8).set_addr(addr_h)
-    for (let ?i = 0; i < tw; i += 1)
-        scr.sprite(ctrl)
-    scr.set_auto(0)
-
-    -- Top-right corner (flip X)
-    scr.set_auto(0)
-    scr.set_x((tx + tw) * 8).set_y((ty - 1) * 8).set_addr(addr_e)
-    scr.sprite(ctrl_fx)
-
-    -- Left edge (vertical bar) - th tiles, flip X (bar on right)
-    scr.set_auto(2)  -- auto-Y increment
-    scr.set_x((tx - 1) * 8).set_y(ty * 8).set_addr(addr_v)
-    for (let ?i = 0; i < th; i += 1)
-        scr.sprite(ctrl_fx)
-    scr.set_auto(0)
-
-    -- Right edge (vertical bar) - th tiles, no flip (bar on left)
-    scr.set_auto(2)
-    scr.set_x((tx + tw) * 8).set_y(ty * 8).set_addr(addr_v)
-    for (let ?i = 0; i < th; i += 1)
-        scr.sprite(ctrl)
-    scr.set_auto(0)
-
-    -- Bottom-left corner (flip Y)
-    scr.set_auto(0)
-    scr.set_x((tx - 1) * 8).set_y((ty + th) * 8).set_addr(addr_e)
-    scr.sprite(ctrl_fy)
-
-    -- Bottom edge (horizontal bar) - tw tiles, flip Y
     scr.set_auto(1)
-    scr.set_x(tx * 8).set_y((ty + th) * 8).set_addr(addr_h)
+    scr.set_x(tx * 8).set_y(py).set_addr(ht_addr)
     for (let ?i = 0; i < tw; i += 1)
-        scr.sprite(ctrl_fy)
-    scr.set_auto(0)
+        scr.sprite(ctrl)
+    scr.set_x(tx * 8).set_y((ty + th) * 8).set_addr(hb_addr)
+    for (let ?i = 0; i < tw; i += 1)
+        scr.sprite(ctrl)
 
-    -- Bottom-right corner (flip XY)
-    scr.set_auto(0)
-    scr.set_x((tx + tw) * 8).set_y((ty + th) * 8).set_addr(addr_e)
-    scr.sprite(ctrl_fxy)
-
+    scr.set_auto(2)
+    scr.set_x(px).set_y(ty * 8).set_addr(vl_addr)
+    for (let ?i = 0; i < th; i += 1)
+        scr.sprite(ctrl)
+    scr.set_x((tx + tw) * 8).set_y(ty * 8).set_addr(vr_addr)
+    for (let ?i = 0; i < th; i += 1)
+        scr.sprite(ctrl)
     scr.set_auto(0)
 ;
 
@@ -260,7 +233,10 @@ def C_WH   = 3   -- bright / selected (white)
 
     -- Frame border around the 32×32 zoom area (4×4 tiles)
     draw_frame(scr, casu_model.ZOOM_X, casu_model.ZOOM_Y, 4, 4,
-              casu_icons.FRAME2_ADDR_E, casu_icons.FRAME2_ADDR_H, casu_icons.FRAME2_ADDR_V, 1)
+              casu_icons.FRAME2_TL_ADDR, casu_icons.FRAME2_TR_ADDR,
+              casu_icons.FRAME2_BL_ADDR, casu_icons.FRAME2_BR_ADDR,
+              casu_icons.FRAME2_HT_ADDR, casu_icons.FRAME2_HB_ADDR,
+              casu_icons.FRAME2_VL_ADDR, casu_icons.FRAME2_VR_ADDR)
 
     -- Arrow icons at bottom of zoom panel
     let arrow_y = (casu_model.ZOOM_Y + casu_model.ZOOM_H / 8 - 1) * 8
@@ -486,8 +462,14 @@ def C_WH   = 3   -- bright / selected (white)
     draw_nametable(scr)
     -- Frames around editor and nametable fields (16×16 tiles each)
     draw_frame(scr, casu_model.TILEVIEW_X, casu_model.TILEVIEW_Y, 16, 16,
-              casu_icons.FRAME1_ADDR_E, casu_icons.FRAME1_ADDR_H, casu_icons.FRAME1_ADDR_V, 0)
+              casu_icons.FRAME2_TL_ADDR, casu_icons.FRAME2_TR_ADDR,
+              casu_icons.FRAME2_BL_ADDR, casu_icons.FRAME2_BR_ADDR,
+              casu_icons.FRAME2_HT_ADDR, casu_icons.FRAME2_HB_ADDR,
+              casu_icons.FRAME2_VL_ADDR, casu_icons.FRAME2_VR_ADDR)
     draw_frame(scr, casu_model.NTAB_X, casu_model.NTAB_Y, 16, 16,
-              casu_icons.FRAME1_ADDR_E, casu_icons.FRAME1_ADDR_H, casu_icons.FRAME1_ADDR_V, 0)
+              casu_icons.FRAME2_TL_ADDR, casu_icons.FRAME2_TR_ADDR,
+              casu_icons.FRAME2_BL_ADDR, casu_icons.FRAME2_BR_ADDR,
+              casu_icons.FRAME2_HT_ADDR, casu_icons.FRAME2_HB_ADDR,
+              casu_icons.FRAME2_VL_ADDR, casu_icons.FRAME2_VR_ADDR)
     draw_toolview(scr)
 ;
