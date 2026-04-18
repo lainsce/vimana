@@ -63,6 +63,8 @@ static const float vimana_decrel_table[16] = {
   0.300f, 0.750f, 1.500f, 2.400f, 3.000f, 9.000f, 15.00f, 24.00f
 };
 
+#define VIMANA_CONSOLE_CAP 256
+
 typedef struct {
   float    phase;        /* oscillator phase [0.0, 1.0) */
   float    prev_phase;   /* phase from previous sample (for sync detection) */
@@ -94,6 +96,14 @@ typedef struct {
 struct VimanaSystem {
   uint64_t key_down[VIMANA_KEY_WORDS];     /* 512 bits packed */
   uint64_t key_pressed[VIMANA_KEY_WORDS];  /* 512 bits packed */
+  uint8_t controller_key_down;             /* Uxn controller bits from keys */
+  uint8_t controller_pad_button_down;      /* Uxn controller bits from pad  */
+  uint8_t controller_pad_axis_down;        /* Uxn controller bits from axes */
+  uint8_t controller_pressed;              /* edge-triggered controller bits */
+  uint8_t console_bytes[VIMANA_CONSOLE_CAP];
+  uint8_t console_types[VIMANA_CONSOLE_CAP];
+  uint16_t console_head;
+  uint16_t console_len;
   uint8_t mouse_down;                      /* 8 bits packed */
   uint8_t mouse_pressed;                   /* 8 bits packed */
   bool quit;
@@ -118,6 +128,8 @@ struct VimanaSystem {
   int mix_buffer_cap;      /* capacity in samples */
   bool audio_locked;       /* true while inside begin/end audio batch */
   bool audio_needs_resume; /* deferred resume until end_audio */
+  SDL_Gamepad *gamepad;    /* primary opened gamepad, if any */
+  SDL_JoystickID gamepad_id;
 };
 
 static float vimana_pitch_to_hz(int pitch) {
@@ -694,15 +706,6 @@ static void vimana_screen_poll_theme(vimana_screen *screen) {
   }
 }
 
-void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap) {
-  if (!screen)
-    return;
-  screen->theme_swap_fg_bg = swap;
-  vimana_screen_load_theme(screen);
-}
-
-
-
 static void vimana_screen_reset_font(vimana_screen *screen) {
   if (!screen || !screen->font_rom)
     return;
@@ -780,10 +783,180 @@ static void vimana_reset_pressed(vimana_system *system) {
   if (!system)
     return;
   memset(system->key_pressed, 0, sizeof(system->key_pressed));
+  system->controller_pressed = 0;
   system->mouse_pressed = 0;
   system->wheel_x = 0;
   system->wheel_y = 0;
   system->text_input[0] = 0;
+}
+
+static bool vimana_console_enqueue(vimana_system *system, uint8_t byte,
+                                   uint8_t type) {
+  if (!system || system->console_len >= VIMANA_CONSOLE_CAP)
+    return false;
+  uint16_t slot =
+      (uint16_t)((system->console_head + system->console_len) %
+                 VIMANA_CONSOLE_CAP);
+  system->console_bytes[slot] = byte;
+  system->console_types[slot] = type;
+  system->console_len++;
+  return true;
+}
+
+static void vimana_console_enqueue_text(vimana_system *system, const char *text,
+                                        uint8_t type) {
+  if (!system || !text)
+    return;
+  for (size_t i = 0; text[i] != 0; i++)
+    if (!vimana_console_enqueue(system, (uint8_t)text[i], type))
+      break;
+}
+
+static uint8_t vimana_controller_bits(vimana_system *system) {
+  if (!system)
+    return 0;
+  return (uint8_t)(system->controller_key_down |
+                   system->controller_pad_button_down |
+                   system->controller_pad_axis_down);
+}
+
+static void vimana_controller_update_source(vimana_system *system,
+                                            uint8_t *field,
+                                            uint8_t mask, bool down) {
+  if (!system || !field || !mask)
+    return;
+  uint8_t before = vimana_controller_bits(system);
+  if (down)
+    *field |= mask;
+  else
+    *field &= (uint8_t)~mask;
+  uint8_t after = vimana_controller_bits(system);
+  system->controller_pressed |= (uint8_t)(after & (uint8_t)~before);
+}
+
+static uint8_t vimana_controller_mask_from_scancode(SDL_Scancode scancode) {
+  switch (scancode) {
+  case SDL_SCANCODE_LCTRL:
+    return VIMANA_CONTROLLER_A;
+  case SDL_SCANCODE_LALT:
+    return VIMANA_CONTROLLER_B;
+  case SDL_SCANCODE_LSHIFT:
+    return VIMANA_CONTROLLER_SELECT;
+  case SDL_SCANCODE_HOME:
+    return VIMANA_CONTROLLER_START;
+  case SDL_SCANCODE_UP:
+    return VIMANA_CONTROLLER_UP;
+  case SDL_SCANCODE_DOWN:
+    return VIMANA_CONTROLLER_DOWN;
+  case SDL_SCANCODE_LEFT:
+    return VIMANA_CONTROLLER_LEFT;
+  case SDL_SCANCODE_RIGHT:
+    return VIMANA_CONTROLLER_RIGHT;
+  default:
+    return 0;
+  }
+}
+
+static uint8_t vimana_controller_mask_from_button(Uint8 button) {
+  switch ((SDL_GamepadButton)button) {
+  case SDL_GAMEPAD_BUTTON_SOUTH:
+    return VIMANA_CONTROLLER_A;
+  case SDL_GAMEPAD_BUTTON_EAST:
+    return VIMANA_CONTROLLER_B;
+  case SDL_GAMEPAD_BUTTON_WEST:
+  case SDL_GAMEPAD_BUTTON_BACK:
+    return VIMANA_CONTROLLER_SELECT;
+  case SDL_GAMEPAD_BUTTON_NORTH:
+  case SDL_GAMEPAD_BUTTON_START:
+    return VIMANA_CONTROLLER_START;
+  case SDL_GAMEPAD_BUTTON_DPAD_UP:
+    return VIMANA_CONTROLLER_UP;
+  case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+    return VIMANA_CONTROLLER_DOWN;
+  case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+    return VIMANA_CONTROLLER_LEFT;
+  case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+    return VIMANA_CONTROLLER_RIGHT;
+  default:
+    return 0;
+  }
+}
+
+static uint8_t vimana_controller_axis_mask(Uint8 axis, Sint16 value) {
+  switch ((SDL_GamepadAxis)axis) {
+  case SDL_GAMEPAD_AXIS_LEFTX:
+    if (value < -3200)
+      return VIMANA_CONTROLLER_LEFT;
+    if (value > 3200)
+      return VIMANA_CONTROLLER_RIGHT;
+    return 0;
+  case SDL_GAMEPAD_AXIS_LEFTY:
+    if (value < -3200)
+      return VIMANA_CONTROLLER_UP;
+    if (value > 3200)
+      return VIMANA_CONTROLLER_DOWN;
+    return 0;
+  default:
+    return 0;
+  }
+}
+
+static void vimana_controller_update_axis(vimana_system *system, Uint8 axis,
+                                          Sint16 value) {
+  if (!system)
+    return;
+  uint8_t clear_mask = 0;
+  switch ((SDL_GamepadAxis)axis) {
+  case SDL_GAMEPAD_AXIS_LEFTX:
+    clear_mask = VIMANA_CONTROLLER_LEFT | VIMANA_CONTROLLER_RIGHT;
+    break;
+  case SDL_GAMEPAD_AXIS_LEFTY:
+    clear_mask = VIMANA_CONTROLLER_UP | VIMANA_CONTROLLER_DOWN;
+    break;
+  default:
+    return;
+  }
+  vimana_controller_update_source(system, &system->controller_pad_axis_down,
+                                  clear_mask, false);
+  vimana_controller_update_source(system, &system->controller_pad_axis_down,
+                                  vimana_controller_axis_mask(axis, value),
+                                  true);
+}
+
+static void vimana_system_close_gamepad(vimana_system *system) {
+  if (!system)
+    return;
+  if (system->gamepad) {
+    SDL_CloseGamepad(system->gamepad);
+    system->gamepad = NULL;
+  }
+  system->gamepad_id = 0;
+  system->controller_pad_button_down = 0;
+  system->controller_pad_axis_down = 0;
+}
+
+static void vimana_system_open_gamepad(vimana_system *system,
+                                       SDL_JoystickID instance_id) {
+  if (!system || system->gamepad || !SDL_IsGamepad(instance_id))
+    return;
+  system->gamepad = SDL_OpenGamepad(instance_id);
+  if (system->gamepad)
+    system->gamepad_id = SDL_GetGamepadID(system->gamepad);
+}
+
+static void vimana_system_open_first_gamepad(vimana_system *system) {
+  if (!system || system->gamepad || !SDL_WasInit(SDL_INIT_GAMEPAD))
+    return;
+  int count = 0;
+  SDL_JoystickID *ids = SDL_GetGamepads(&count);
+  if (!ids)
+    return;
+  for (int i = 0; i < count; i++) {
+    vimana_system_open_gamepad(system, ids[i]);
+    if (system->gamepad)
+      break;
+  }
+  SDL_free(ids);
 }
 
 static void vimana_append_text_input(vimana_system *system, const char *text) {
@@ -809,60 +982,6 @@ static void vimana_update_pointer(vimana_system *system, vimana_screen *screen,
   system->tile_y = system->pointer_y / VIMANA_TILE_SIZE;
 }
 
-typedef enum VimanaDatetimePart {
-  VIMANA_DT_YEAR = 0,
-  VIMANA_DT_MONTH,
-  VIMANA_DT_DAY,
-  VIMANA_DT_HOUR,
-  VIMANA_DT_MINUTE,
-  VIMANA_DT_SECOND,
-  VIMANA_DT_WEEKDAY,
-} VimanaDatetimePart;
-
-static bool vimana_localtime_safe(time_t ts, struct tm *out_tm) {
-  if (!out_tm)
-    return false;
-#if defined(_WIN32)
-  return localtime_s(out_tm, &ts) == 0;
-#else
-  return localtime_r(&ts, out_tm) != NULL;
-#endif
-}
-
-static int64_t vimana_datetime_now_value(void) {
-  time_t now = time(NULL);
-  if (now == (time_t)-1)
-    return 0;
-  return (int64_t)now;
-}
-
-static int vimana_datetime_part_value(int64_t timestamp,
-                                      VimanaDatetimePart part) {
-  time_t ts = (time_t)timestamp;
-  struct tm tmv;
-  memset(&tmv, 0, sizeof(tmv));
-  if (!vimana_localtime_safe(ts, &tmv))
-    return 0;
-  switch (part) {
-  case VIMANA_DT_YEAR:
-    return tmv.tm_year + 1900;
-  case VIMANA_DT_MONTH:
-    return tmv.tm_mon + 1;
-  case VIMANA_DT_DAY:
-    return tmv.tm_mday;
-  case VIMANA_DT_HOUR:
-    return tmv.tm_hour;
-  case VIMANA_DT_MINUTE:
-    return tmv.tm_min;
-  case VIMANA_DT_SECOND:
-    return tmv.tm_sec;
-  case VIMANA_DT_WEEKDAY:
-    return tmv.tm_wday;
-  default:
-    return 0;
-  }
-}
-
 static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
   if (!system)
     return;
@@ -883,6 +1002,10 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
           vimana_bit_set(system->key_pressed, scancode);
         vimana_bit_set(system->key_down, scancode);
       }
+      vimana_controller_update_source(system, &system->controller_key_down,
+                                      vimana_controller_mask_from_scancode(
+                                          event.key.scancode),
+                                      true);
       break;
     }
     case SDL_EVENT_KEY_UP: {
@@ -890,6 +1013,10 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
       int scancode = (int)event.key.scancode;
       if (scancode >= 0 && scancode < VIMANA_KEY_CAP)
         vimana_bit_clr(system->key_down, scancode);
+      vimana_controller_update_source(system, &system->controller_key_down,
+                                      vimana_controller_mask_from_scancode(
+                                          event.key.scancode),
+                                      false);
       break;
     }
     case SDL_EVENT_MOUSE_MOTION:
@@ -928,6 +1055,32 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
     case SDL_EVENT_TEXT_INPUT:
       SDL_HideCursor(); /* ensure system cursor stays hidden */
       vimana_append_text_input(system, event.text.text);
+      vimana_console_enqueue_text(system, event.text.text, VIMANA_CONSOLE_STD);
+      break;
+    case SDL_EVENT_GAMEPAD_ADDED:
+      vimana_system_open_gamepad(system, event.gdevice.which);
+      break;
+    case SDL_EVENT_GAMEPAD_REMOVED:
+      if (system->gamepad && system->gamepad_id == event.gdevice.which) {
+        vimana_system_close_gamepad(system);
+        vimana_system_open_first_gamepad(system);
+      }
+      break;
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+      vimana_controller_update_source(system, &system->controller_pad_button_down,
+                                      vimana_controller_mask_from_button(
+                                          event.gbutton.button),
+                                      true);
+      break;
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
+      vimana_controller_update_source(system, &system->controller_pad_button_down,
+                                      vimana_controller_mask_from_button(
+                                          event.gbutton.button),
+                                      false);
+      break;
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+      vimana_controller_update_axis(system, event.gaxis.axis,
+                                    event.gaxis.value);
       break;
     default:
       SDL_HideCursor(); /* ensure system cursor stays hidden */
@@ -935,6 +1088,8 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
     }
   }
 }
+
+/* ── System API ─────────────────────────────────────────────────────────── */
 
 vimana_system *vimana_system_new(void) {
   if (!SDL_WasInit(SDL_INIT_VIDEO)) {
@@ -946,6 +1101,8 @@ vimana_system *vimana_system_new(void) {
     if (!SDL_WasInit(SDL_INIT_AUDIO))
       (void)SDL_Init(SDL_INIT_AUDIO);
   }
+  if (!SDL_WasInit(SDL_INIT_GAMEPAD))
+    (void)SDL_InitSubSystem(SDL_INIT_GAMEPAD);
   vimana_system *system = (vimana_system *)calloc(1, sizeof(vimana_system));
   if (!system)
     return NULL;
@@ -954,6 +1111,7 @@ vimana_system *vimana_system_new(void) {
   system->tile_x = -1;
   system->tile_y = -1;
   vimana_system_init_audio(system);
+  vimana_system_open_first_gamepad(system);
   return system;
 }
 
@@ -1315,6 +1473,26 @@ void vimana_system_run(vimana_system *system, vimana_screen *screen,
   system->running = false;
 }
 
+void vimana_system_free(vimana_system *system) {
+  if (!system)
+    return;
+  vimana_system_close_gamepad(system);
+  if (system->audio_stream) {
+    SDL_PauseAudioStreamDevice(system->audio_stream);
+    SDL_DestroyAudioStream(system->audio_stream);
+  }
+  free(system->mix_buffer);
+  free(system);
+}
+
+size_t vimana_system_ram_usage(vimana_system *system) {
+  if (!system)
+    return 0;
+  return sizeof(vimana_system);
+}
+
+/* ── Screen API ─────────────────────────────────────────────────────────── */
+
 static SDL_HitTestResult vimana_hit_test(SDL_Window *win,
                                         const SDL_Point *area,
                                         void *data) {
@@ -1328,6 +1506,18 @@ static SDL_HitTestResult vimana_hit_test(SDL_Window *win,
     drag_h_px = screen->drag_region_height * scale;
 
   if (drag_h_px > 0 && area->y < drag_h_px) {
+    int close_x0 = 8 * scale;
+    int close_x1 = 24 * scale;
+    int right_hole_x0 = ((int)screen->width - 24) * scale;
+    int right_hole_x1 = ((int)screen->width - 8) * scale;
+    if (right_hole_x0 < 0)
+      right_hole_x0 = 0;
+    if (right_hole_x1 < 0)
+      right_hole_x1 = 0;
+    if (area->x >= close_x0 && area->x < close_x1)
+      return SDL_HITTEST_NORMAL;
+    if (area->x >= right_hole_x0 && area->x < right_hole_x1)
+      return SDL_HITTEST_NORMAL;
     if (system) {
       system->pointer_x = area->x / scale;
       system->pointer_y = area->y;
@@ -1506,6 +1696,13 @@ void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
   unsigned int s = slot & 15;
   screen->base_colors[s] = vimana_parse_hex_color(hex);
   vimana_colorize(screen);
+}
+
+void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap) {
+  if (!screen)
+    return;
+  screen->theme_swap_fg_bg = swap;
+  vimana_screen_load_theme(screen);
 }
 
 void vimana_screen_set_font_glyph(vimana_screen *screen, unsigned int code,
@@ -1987,7 +2184,56 @@ void vimana_screen_show_cursor(vimana_screen *screen) {
   screen->cursor_visible = true;
 }
 
+void vimana_screen_free(vimana_screen *screen) {
+  if (!screen)
+    return;
+  if (screen->texture)
+    SDL_DestroyTexture(screen->texture);
+  if (screen->renderer)
+    SDL_DestroyRenderer(screen->renderer);
+  if (screen->window)
+    SDL_DestroyWindow(screen->window);
+  for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
+    free(screen->sprite_banks[i]);
+  free(screen->font_rom);
+  free(screen->layers);
+  free(screen->title);
+  free(screen);
+}
+
+size_t vimana_screen_ram_usage(vimana_screen *screen) {
+  if (!screen)
+    return 0;
+  size_t total = 0;
+  total += VIMANA_FONT_SIZE;
+  for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
+    if (screen->sprite_banks[i])
+      total += VIMANA_SPRITE_BANK_SIZE;
+  total += sizeof(screen->port_x) + sizeof(screen->port_y)
+         + sizeof(screen->port_addr) + sizeof(screen->port_auto);
+  total += sizeof(screen->base_colors) + sizeof(screen->palette);
+  return total;
+}
+
+/* ── Device API ─────────────────────────────────────────────────────────── */
+
 void vimana_device_poll(vimana_system *system) { (void)system; }
+
+unsigned int vimana_device_controller(vimana_system *system) {
+  return vimana_controller_bits(system);
+}
+
+bool vimana_device_controller_down(vimana_system *system, unsigned int mask) {
+  uint8_t bits = vimana_controller_bits(system);
+  return ((unsigned int)bits & mask) != 0;
+}
+
+bool vimana_device_controller_pressed(vimana_system *system,
+                                      unsigned int mask) {
+  if (!system)
+    return false;
+  return ((unsigned int)system->controller_pressed & mask) != 0;
+}
 
 bool vimana_device_key_down(vimana_system *system, int scancode) {
   if (!system || scancode < 0 || scancode >= VIMANA_KEY_CAP)
@@ -2041,6 +2287,119 @@ const char *vimana_device_text_input(vimana_system *system) {
   return system ? system->text_input : "";
 }
 
+/* ── Console API ────────────────────────────────────────────────────────── */
+
+bool vimana_console_pending(vimana_system *system) {
+  return system && system->console_len > 0;
+}
+
+int vimana_console_input(vimana_system *system) {
+  if (!system || system->console_len == 0)
+    return 0;
+  return (int)system->console_bytes[system->console_head];
+}
+
+int vimana_console_type(vimana_system *system) {
+  if (!system || system->console_len == 0)
+    return 0;
+  return (int)system->console_types[system->console_head];
+}
+
+void vimana_console_next(vimana_system *system) {
+  if (!system || system->console_len == 0)
+    return;
+  system->console_head =
+      (uint16_t)((system->console_head + 1) % VIMANA_CONSOLE_CAP);
+  system->console_len--;
+  if (system->console_len == 0)
+    system->console_head = 0;
+}
+
+bool vimana_console_push(vimana_system *system, int byte, int type) {
+  return vimana_console_enqueue(system, (uint8_t)(byte & 0xff),
+                                (uint8_t)(type & 0xff));
+}
+
+void vimana_console_stdout(vimana_system *system, int byte) {
+  (void)system;
+  fputc(byte & 0xff, stdout);
+  fflush(stdout);
+}
+
+void vimana_console_stderr(vimana_system *system, int byte) {
+  (void)system;
+  fputc(byte & 0xff, stderr);
+  fflush(stderr);
+}
+
+void vimana_console_stderr_hex(vimana_system *system, int byte) {
+  (void)system;
+  fprintf(stderr, "%02x", byte & 0xff);
+  fflush(stderr);
+}
+
+/* ── Datetime API ───────────────────────────────────────────────────────── */
+
+typedef enum VimanaDatetimePart {
+  VIMANA_DT_YEAR = 0,
+  VIMANA_DT_MONTH,
+  VIMANA_DT_DAY,
+  VIMANA_DT_HOUR,
+  VIMANA_DT_MINUTE,
+  VIMANA_DT_SECOND,
+  VIMANA_DT_WEEKDAY,
+  VIMANA_DT_YDAY,
+  VIMANA_DT_DST,
+} VimanaDatetimePart;
+
+static bool vimana_localtime_safe(time_t ts, struct tm *out_tm) {
+  if (!out_tm)
+    return false;
+#if defined(_WIN32)
+  return localtime_s(out_tm, &ts) == 0;
+#else
+  return localtime_r(&ts, out_tm) != NULL;
+#endif
+}
+
+static int64_t vimana_datetime_now_value(void) {
+  time_t now = time(NULL);
+  if (now == (time_t)-1)
+    return 0;
+  return (int64_t)now;
+}
+
+static int vimana_datetime_part_value(int64_t timestamp,
+                                      VimanaDatetimePart part) {
+  time_t ts = (time_t)timestamp;
+  struct tm tmv;
+  memset(&tmv, 0, sizeof(tmv));
+  if (!vimana_localtime_safe(ts, &tmv))
+    return 0;
+  switch (part) {
+  case VIMANA_DT_YEAR:
+    return tmv.tm_year + 1900;
+  case VIMANA_DT_MONTH:
+    return tmv.tm_mon + 1;
+  case VIMANA_DT_DAY:
+    return tmv.tm_mday;
+  case VIMANA_DT_HOUR:
+    return tmv.tm_hour;
+  case VIMANA_DT_MINUTE:
+    return tmv.tm_min;
+  case VIMANA_DT_SECOND:
+    return tmv.tm_sec;
+  case VIMANA_DT_WEEKDAY:
+    return tmv.tm_wday;
+  case VIMANA_DT_YDAY:
+    return tmv.tm_yday;
+  case VIMANA_DT_DST:
+    return tmv.tm_isdst;
+  default:
+    return 0;
+  }
+}
+
 int64_t vimana_datetime_now(vimana_system *system) {
   (void)system;
   return vimana_datetime_now_value();
@@ -2072,6 +2431,14 @@ int vimana_datetime_second(vimana_system *system) {
 
 int vimana_datetime_weekday(vimana_system *system) {
   return vimana_datetime_weekday_at(system, vimana_datetime_now_value());
+}
+
+int vimana_datetime_yday(vimana_system *system) {
+  return vimana_datetime_yday_at(system, vimana_datetime_now_value());
+}
+
+int vimana_datetime_dst(vimana_system *system) {
+  return vimana_datetime_dst_at(system, vimana_datetime_now_value());
 }
 
 int vimana_datetime_year_at(vimana_system *system, int64_t timestamp) {
@@ -2108,6 +2475,18 @@ int vimana_datetime_weekday_at(vimana_system *system, int64_t timestamp) {
   (void)system;
   return vimana_datetime_part_value(timestamp, VIMANA_DT_WEEKDAY);
 }
+
+int vimana_datetime_yday_at(vimana_system *system, int64_t timestamp) {
+  (void)system;
+  return vimana_datetime_part_value(timestamp, VIMANA_DT_YDAY);
+}
+
+int vimana_datetime_dst_at(vimana_system *system, int64_t timestamp) {
+  (void)system;
+  return vimana_datetime_part_value(timestamp, VIMANA_DT_DST);
+}
+
+/* ── File API ───────────────────────────────────────────────────────────── */
 
 unsigned char *vimana_file_read_bytes(vimana_system *system, const char *path,
                                       size_t *out_size) {
@@ -2268,7 +2647,7 @@ bool vimana_file_is_dir(vimana_system *system, const char *path) {
   return S_ISDIR(st.st_mode);
 }
 
-/* ── Subprocess IPC ─────────────────────────────────────────────────────── */
+/* ── Process API ────────────────────────────────────────────────────────── */
 
 #define VIMANA_PROC_LINE_CAP 4096
 
@@ -2424,59 +2803,3 @@ void vimana_process_free(vimana_process *proc) {
     close(proc->stdout_fd);
   free(proc);
 }
-
-/* ── Cleanup ────────────────────────────────────────────────────────────── */
-
-void vimana_system_free(vimana_system *system) {
-  if (!system)
-    return;
-  if (system->audio_stream) {
-    SDL_PauseAudioStreamDevice(system->audio_stream);
-    SDL_DestroyAudioStream(system->audio_stream);
-  }
-  free(system->mix_buffer);
-  free(system);
-}
-
-void vimana_screen_free(vimana_screen *screen) {
-  if (!screen)
-    return;
-  if (screen->texture)
-    SDL_DestroyTexture(screen->texture);
-  if (screen->renderer)
-    SDL_DestroyRenderer(screen->renderer);
-  if (screen->window)
-    SDL_DestroyWindow(screen->window);
-  for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
-    free(screen->sprite_banks[i]);
-  free(screen->font_rom);
-   free(screen->layers);
-   free(screen->title);
-   free(screen);
- }
-
-/* ── Memory budget helpers ──────────────────────────────────────────────── */
-
-size_t vimana_system_ram_usage(vimana_system *system) {
-  if (!system)
-    return 0;
-  return sizeof(vimana_system);
-}
-
-size_t vimana_screen_ram_usage(vimana_screen *screen) {
-  if (!screen)
-    return 0;
-  size_t total = 0;
-  /* Font ROM (always allocated) */
-  total += VIMANA_FONT_SIZE;
-  /* Sprite banks (only count allocated ones) */
-  for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
-    if (screen->sprite_banks[i])
-      total += VIMANA_SPRITE_BANK_SIZE;
-  /* Port registers + palette */
-  total += sizeof(screen->port_x) + sizeof(screen->port_y)
-         + sizeof(screen->port_addr) + sizeof(screen->port_auto);
-  total += sizeof(screen->base_colors) + sizeof(screen->palette);
-  return total;
-}
-

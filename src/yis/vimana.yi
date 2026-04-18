@@ -1,8 +1,22 @@
 cask vimana
 
+bring stdr
+
 def key_escape = 41
 def mouse_left = 1
 def mouse_right = 3
+def controller_a = 0x01
+def controller_b = 0x02
+def controller_select = 0x04
+def controller_start = 0x08
+def controller_up = 0x10
+def controller_down = 0x20
+def controller_left = 0x40
+def controller_right = 0x80
+def console_std = 0x01
+def console_arg = 0x02
+def console_eoa = 0x03
+def console_end = 0x04
 
 def color_bg = 0
 def color_fg = 1
@@ -46,10 +60,13 @@ def filter_hp = 4
 def audio_clock = 1024000
 def paddle_count = 2
 
+--| System Bindings |--
+
 : __vimana_system() (( system )) { }
 : __vimana_system_run(sys = system, scr = screen, frame = any) (( -- )) { }
 : __vimana_system_quit(sys = system) (( -- )) { }
 : __vimana_system_device(sys = system) (( device )) { }
+: __vimana_system_console(sys = system) (( console )) { }
 : __vimana_system_datetime(sys = system) (( datetime )) { }
 : __vimana_system_file(sys = system) (( file )) { }
 : __vimana_system_ticks(sys = system) (( num )) { }
@@ -79,6 +96,8 @@ def paddle_count = 2
 : __vimana_system_proc_running(sys = system, proc = num) (( bool )) { }
 : __vimana_system_proc_kill(sys = system, proc = num) (( -- )) { }
 : __vimana_system_proc_free(sys = system, proc = num) (( -- )) { }
+
+--| Screen Bindings |--
 
 : __vimana_screen(title = string, width = num, height = num, scale = num) (( screen )) { }
 : __vimana_screen_clear(scr = screen, bg = num) (( -- )) { }
@@ -116,7 +135,12 @@ def paddle_count = 2
 : __vimana_screen_height(scr = screen) (( num )) { }
 : __vimana_screen_scale(scr = screen) (( num )) { }
 
+--| Device Bindings |--
+
 : __vimana_device_poll(dev = device) (( -- )) { }
+: __vimana_device_controller(dev = device) (( num )) { }
+: __vimana_device_controller_down(dev = device, mask = num) (( bool )) { }
+: __vimana_device_controller_pressed(dev = device, mask = num) (( bool )) { }
 : __vimana_device_key_down(dev = device, scancode = num) (( bool )) { }
 : __vimana_device_key_pressed(dev = device, scancode = num) (( bool )) { }
 : __vimana_device_mouse_down(dev = device, button = num) (( bool )) { }
@@ -129,6 +153,19 @@ def paddle_count = 2
 : __vimana_device_wheel_y(dev = device) (( num )) { }
 : __vimana_device_text_input(dev = device) (( string )) { }
 
+--| Console Bindings |--
+
+: __vimana_console_pending(c = console) (( bool )) { }
+: __vimana_console_input(c = console) (( num )) { }
+: __vimana_console_type(c = console) (( num )) { }
+: __vimana_console_next(c = console) (( -- )) { }
+: __vimana_console_push(c = console, byte = num, type = num) (( bool )) { }
+: __vimana_console_stdout(c = console, byte = num) (( -- )) { }
+: __vimana_console_stderr(c = console, byte = num) (( -- )) { }
+: __vimana_console_stderr_hex(c = console, byte = num) (( -- )) { }
+
+--| Datetime Bindings |--
+
 : __vimana_datetime_now(dt = datetime) (( num )) { }
 : __vimana_datetime_year(dt = datetime) (( num )) { }
 : __vimana_datetime_month(dt = datetime) (( num )) { }
@@ -137,6 +174,8 @@ def paddle_count = 2
 : __vimana_datetime_minute(dt = datetime) (( num )) { }
 : __vimana_datetime_second(dt = datetime) (( num )) { }
 : __vimana_datetime_weekday(dt = datetime) (( num )) { }
+: __vimana_datetime_yday(dt = datetime) (( num )) { }
+: __vimana_datetime_dst(dt = datetime) (( num )) { }
 : __vimana_datetime_year_at(dt = datetime, timestamp = num) (( num )) { }
 : __vimana_datetime_month_at(dt = datetime, timestamp = num) (( num )) { }
 : __vimana_datetime_day_at(dt = datetime, timestamp = num) (( num )) { }
@@ -144,6 +183,10 @@ def paddle_count = 2
 : __vimana_datetime_minute_at(dt = datetime, timestamp = num) (( num )) { }
 : __vimana_datetime_second_at(dt = datetime, timestamp = num) (( num )) { }
 : __vimana_datetime_weekday_at(dt = datetime, timestamp = num) (( num )) { }
+: __vimana_datetime_yday_at(dt = datetime, timestamp = num) (( num )) { }
+: __vimana_datetime_dst_at(dt = datetime, timestamp = num) (( num )) { }
+
+--| File Bindings |--
 
 : __vimana_file_read_text(f = file, path = string) (( string )) { }
 : __vimana_file_read_bytes(f = file, path = string) (( [any] )) { }
@@ -154,6 +197,25 @@ def paddle_count = 2
 : __vimana_file_rename(f = file, path = string, new_path = string) (( bool )) { }
 : __vimana_file_list(f = file, path = string) (( [any] )) { }
 : __vimana_file_is_dir(f = file, path = string) (( bool )) { }
+
+--| System API |--
+
+pub :: system() (( system ))
+    let sys = __vimana_system()
+    let args = stdr.args()
+    let argc = len(args)
+    if argc > 0
+        let con = __vimana_system_console(sys)
+        for (let ?i = 0; i < argc; i += 1)
+            let arg = str(args[i] ?? "")
+            for (let ?j = 0; j < stdr.len(arg); j += 1)
+                __vimana_console_push(con, stdr.char_code(stdr.slice(arg, j, j + 1)), console_arg)
+            if i == argc - 1
+                __vimana_console_push(con, stdr.char_code("\n"), console_end)
+            else
+                __vimana_console_push(con, stdr.char_code("\n"), console_eoa)
+    <- sys
+;
 
 pub ,: system
     :: run(this, scr = screen, frame = any) (( system ))
@@ -253,9 +315,14 @@ pub ,: system
     ;
 
     :: device(this) (( device )) <- __vimana_system_device(this) ;
+    :: console(this) (( console )) <- __vimana_system_console(this) ;
     :: datetime(this) (( datetime )) <- __vimana_system_datetime(this) ;
     :: file(this) (( file )) <- __vimana_system_file(this) ;
 ;
+
+--| Screen API |--
+
+pub :: screen(title = string, width = num, height = num, scale = num) (( screen )) <- __vimana_screen(title, width, height, scale) ;
 
 pub ,: screen
     :: clear(this, bg = num) (( screen ))
@@ -397,12 +464,17 @@ pub ,: screen
     :: scale(this) (( num )) <- __vimana_screen_scale(this) ;
 ;
 
+--| Device API |--
+
 pub ,: device
     :: poll(this) (( device ))
         __vimana_device_poll(this)
         <- this
     ;
 
+    :: controller(this) (( num )) <- __vimana_device_controller(this) ;
+    :: controller_down(this, mask = num) (( bool )) <- __vimana_device_controller_down(this, mask) ;
+    :: controller_pressed(this, mask = num) (( bool )) <- __vimana_device_controller_pressed(this, mask) ;
     :: key_down(this, scancode = num) (( bool )) <- __vimana_device_key_down(this, scancode) ;
     :: key_pressed(this, scancode = num) (( bool )) <- __vimana_device_key_pressed(this, scancode) ;
     :: mouse_down(this, button = num) (( bool )) <- __vimana_device_mouse_down(this, button) ;
@@ -416,6 +488,32 @@ pub ,: device
     :: text_input(this) (( string )) <- __vimana_device_text_input(this) ;
 ;
 
+--| Console API |--
+
+pub ,: console
+    :: pending(this) (( bool )) <- __vimana_console_pending(this) ;
+    :: input(this) (( num )) <- __vimana_console_input(this) ;
+    :: type(this) (( num )) <- __vimana_console_type(this) ;
+    :: next(this) (( console ))
+        __vimana_console_next(this)
+        <- this
+    ;
+    :: stdout(this, byte = num) (( console ))
+        __vimana_console_stdout(this, byte)
+        <- this
+    ;
+    :: stderr(this, byte = num) (( console ))
+        __vimana_console_stderr(this, byte)
+        <- this
+    ;
+    :: stderr_hex(this, byte = num) (( console ))
+        __vimana_console_stderr_hex(this, byte)
+        <- this
+    ;
+;
+
+--| Datetime API |--
+
 pub ,: datetime
     :: now(this) (( num )) <- __vimana_datetime_now(this) ;
     :: year(this) (( num )) <- __vimana_datetime_year(this) ;
@@ -425,6 +523,8 @@ pub ,: datetime
     :: minute(this) (( num )) <- __vimana_datetime_minute(this) ;
     :: second(this) (( num )) <- __vimana_datetime_second(this) ;
     :: weekday(this) (( num )) <- __vimana_datetime_weekday(this) ;
+    :: yday(this) (( num )) <- __vimana_datetime_yday(this) ;
+    :: dst(this) (( num )) <- __vimana_datetime_dst(this) ;
     :: year_at(this, timestamp = num) (( num )) <- __vimana_datetime_year_at(this, timestamp) ;
     :: month_at(this, timestamp = num) (( num )) <- __vimana_datetime_month_at(this, timestamp) ;
     :: day_at(this, timestamp = num) (( num )) <- __vimana_datetime_day_at(this, timestamp) ;
@@ -432,7 +532,11 @@ pub ,: datetime
     :: minute_at(this, timestamp = num) (( num )) <- __vimana_datetime_minute_at(this, timestamp) ;
     :: second_at(this, timestamp = num) (( num )) <- __vimana_datetime_second_at(this, timestamp) ;
     :: weekday_at(this, timestamp = num) (( num )) <- __vimana_datetime_weekday_at(this, timestamp) ;
+    :: yday_at(this, timestamp = num) (( num )) <- __vimana_datetime_yday_at(this, timestamp) ;
+    :: dst_at(this, timestamp = num) (( num )) <- __vimana_datetime_dst_at(this, timestamp) ;
 ;
+
+--| File API |--
 
 pub ,: file
     :: read_text(this, path = string) (( string )) <- __vimana_file_read_text(this, path) ;
@@ -445,6 +549,3 @@ pub ,: file
     :: list(this, path = string) (( [any] )) <- __vimana_file_list(this, path) ;
     :: is_dir(this, path = string) (( bool )) <- __vimana_file_is_dir(this, path) ;
 ;
-
-pub :: system() (( system )) <- __vimana_system() ;
-pub :: screen(title = string, width = num, height = num, scale = num) (( screen )) <- __vimana_screen(title, width, height, scale) ;

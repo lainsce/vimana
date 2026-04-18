@@ -7,6 +7,7 @@ typedef enum VimanaHandleKind {
   VIMANA_HANDLE_SYSTEM = 1,
   VIMANA_HANDLE_SCREEN,
   VIMANA_HANDLE_DEVICE,
+  VIMANA_HANDLE_CONSOLE,
   VIMANA_HANDLE_DATETIME,
   VIMANA_HANDLE_FILE,
 } VimanaHandleKind;
@@ -367,6 +368,12 @@ static YisVal __vimana_system_device(YisVal sysv) {
   return vimana_wrap(system, VIMANA_HANDLE_DEVICE);
 }
 
+static YisVal __vimana_system_console(YisVal sysv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.console expects system");
+  return vimana_wrap(system, VIMANA_HANDLE_CONSOLE);
+}
+
 static YisVal __vimana_system_datetime(YisVal sysv) {
   vimana_system *system =
       vimana_system_from_val(sysv, "vimana.system.datetime expects system");
@@ -545,6 +552,64 @@ static YisVal __vimana_system_get_paddle(YisVal sysv, YisVal paddlev) {
       vimana_system_from_val(sysv, "vimana.system.get_paddle expects system");
   return YV_INT(vimana_system_get_paddle(system, (int)yis_as_int(paddlev)));
 }
+
+/* ── Process API bindings ─────────────────────────────────────────────── */
+
+static YisVal __vimana_system_spawn(YisVal sysv, YisVal cmdv) {
+  vimana_system *system =
+      vimana_system_from_val(sysv, "vimana.system.spawn expects system");
+  YisStr *tmp = NULL;
+  const char *cmd = vimana_required_cstr(cmdv, &tmp);
+  vimana_process *proc = vimana_process_spawn(system, cmd);
+  if (tmp)
+    yis_release_val(YV_STR(tmp));
+  if (!proc)
+    return YV_INT(0);
+  return YV_INT((uintptr_t)proc);
+}
+
+static YisVal __vimana_system_proc_write(YisVal sysv, YisVal procv,
+                                         YisVal textv) {
+  (void)sysv;
+  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
+  YisStr *tmp = NULL;
+  const char *text = vimana_required_cstr(textv, &tmp);
+  bool ok = vimana_process_write(proc, text);
+  if (tmp)
+    yis_release_val(YV_STR(tmp));
+  return YV_BOOL(ok);
+}
+
+static YisVal __vimana_system_proc_read_line(YisVal sysv, YisVal procv) {
+  (void)sysv;
+  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
+  char *line = vimana_process_read_line(proc);
+  if (!line)
+    return YV_STR(stdr_str_lit(""));
+  YisVal result = YV_STR(stdr_str_lit(line));
+  free(line);
+  return result;
+}
+
+static YisVal __vimana_system_proc_running(YisVal sysv, YisVal procv) {
+  (void)sysv;
+  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
+  return YV_BOOL(vimana_process_running(proc));
+}
+
+static void __vimana_system_proc_kill(YisVal sysv, YisVal procv) {
+  (void)sysv;
+  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
+  vimana_process_kill(proc);
+}
+
+static void __vimana_system_proc_free(YisVal sysv, YisVal procv) {
+  (void)sysv;
+  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
+  vimana_process_free(proc);
+}
+
+/* ── Screen API bindings ──────────────────────────────────────────────── */
 
 static YisVal __vimana_screen(YisVal titlev, YisVal widthv, YisVal heightv,
                               YisVal scalev) {
@@ -857,10 +922,32 @@ static YisVal __vimana_screen_scale(YisVal scrv) {
   return YV_INT(vimana_screen_scale(screen));
 }
 
+/* ── Device API bindings ──────────────────────────────────────────────── */
+
 static void __vimana_device_poll(YisVal devv) {
   vimana_system *system =
       vimana_system_from_val(devv, "vimana.device.poll expects device");
   vimana_device_poll(system);
+}
+
+static YisVal __vimana_device_controller(YisVal devv) {
+  vimana_system *system =
+      vimana_system_from_val(devv, "vimana.device.controller expects device");
+  return YV_INT(vimana_device_controller(system));
+}
+
+static YisVal __vimana_device_controller_down(YisVal devv, YisVal maskv) {
+  vimana_system *system = vimana_system_from_val(
+      devv, "vimana.device.controller_down expects device");
+  return YV_BOOL(
+      vimana_device_controller_down(system, (unsigned int)yis_as_int(maskv)));
+}
+
+static YisVal __vimana_device_controller_pressed(YisVal devv, YisVal maskv) {
+  vimana_system *system = vimana_system_from_val(
+      devv, "vimana.device.controller_pressed expects device");
+  return YV_BOOL(vimana_device_controller_pressed(
+      system, (unsigned int)yis_as_int(maskv)));
 }
 
 static YisVal __vimana_device_key_down(YisVal devv, YisVal scancodev) {
@@ -932,6 +1019,60 @@ static YisVal __vimana_device_text_input(YisVal devv) {
   return YV_STR(stdr_str_lit(text ? text : ""));
 }
 
+/* ── Console API bindings ─────────────────────────────────────────────── */
+
+static YisVal __vimana_console_pending(YisVal consolev) {
+  vimana_system *system =
+      vimana_system_from_val(consolev, "vimana.console.pending expects console");
+  return YV_BOOL(vimana_console_pending(system));
+}
+
+static YisVal __vimana_console_input(YisVal consolev) {
+  vimana_system *system =
+      vimana_system_from_val(consolev, "vimana.console.input expects console");
+  return YV_INT(vimana_console_input(system));
+}
+
+static YisVal __vimana_console_type(YisVal consolev) {
+  vimana_system *system =
+      vimana_system_from_val(consolev, "vimana.console.type expects console");
+  return YV_INT(vimana_console_type(system));
+}
+
+static void __vimana_console_next(YisVal consolev) {
+  vimana_system *system =
+      vimana_system_from_val(consolev, "vimana.console.next expects console");
+  vimana_console_next(system);
+}
+
+static YisVal __vimana_console_push(YisVal consolev, YisVal bytev,
+                                    YisVal typev) {
+  vimana_system *system =
+      vimana_system_from_val(consolev, "vimana.console.push expects console");
+  return YV_BOOL(vimana_console_push(system, (int)yis_as_int(bytev),
+                                     (int)yis_as_int(typev)));
+}
+
+static void __vimana_console_stdout(YisVal consolev, YisVal bytev) {
+  vimana_system *system =
+      vimana_system_from_val(consolev, "vimana.console.stdout expects console");
+  vimana_console_stdout(system, (int)yis_as_int(bytev));
+}
+
+static void __vimana_console_stderr(YisVal consolev, YisVal bytev) {
+  vimana_system *system =
+      vimana_system_from_val(consolev, "vimana.console.stderr expects console");
+  vimana_console_stderr(system, (int)yis_as_int(bytev));
+}
+
+static void __vimana_console_stderr_hex(YisVal consolev, YisVal bytev) {
+  vimana_system *system = vimana_system_from_val(
+      consolev, "vimana.console.stderr_hex expects console");
+  vimana_console_stderr_hex(system, (int)yis_as_int(bytev));
+}
+
+/* ── Datetime API bindings ────────────────────────────────────────────── */
+
 static YisVal __vimana_datetime_now(YisVal datetimev) {
   vimana_system *system = vimana_system_from_val(
       datetimev, "vimana.datetime.now expects datetime");
@@ -980,6 +1121,18 @@ static YisVal __vimana_datetime_weekday(YisVal datetimev) {
   return YV_INT(vimana_datetime_weekday(system));
 }
 
+static YisVal __vimana_datetime_yday(YisVal datetimev) {
+  vimana_system *system = vimana_system_from_val(
+      datetimev, "vimana.datetime.yday expects datetime");
+  return YV_INT(vimana_datetime_yday(system));
+}
+
+static YisVal __vimana_datetime_dst(YisVal datetimev) {
+  vimana_system *system = vimana_system_from_val(
+      datetimev, "vimana.datetime.dst expects datetime");
+  return YV_INT(vimana_datetime_dst(system));
+}
+
 static YisVal __vimana_datetime_year_at(YisVal datetimev, YisVal timestampv) {
   vimana_system *system = vimana_system_from_val(
       datetimev, "vimana.datetime.year_at expects datetime");
@@ -1025,6 +1178,20 @@ static YisVal __vimana_datetime_weekday_at(YisVal datetimev,
       datetimev, "vimana.datetime.weekday_at expects datetime");
   return YV_INT(vimana_datetime_weekday_at(system, yis_as_int(timestampv)));
 }
+
+static YisVal __vimana_datetime_yday_at(YisVal datetimev, YisVal timestampv) {
+  vimana_system *system = vimana_system_from_val(
+      datetimev, "vimana.datetime.yday_at expects datetime");
+  return YV_INT(vimana_datetime_yday_at(system, yis_as_int(timestampv)));
+}
+
+static YisVal __vimana_datetime_dst_at(YisVal datetimev, YisVal timestampv) {
+  vimana_system *system = vimana_system_from_val(
+      datetimev, "vimana.datetime.dst_at expects datetime");
+  return YV_INT(vimana_datetime_dst_at(system, yis_as_int(timestampv)));
+}
+
+/* ── File API bindings ────────────────────────────────────────────────── */
 
 static YisVal __vimana_file_read_text(YisVal filev, YisVal pathv) {
   vimana_system *system =
@@ -1167,61 +1334,4 @@ static YisVal __vimana_file_is_dir(YisVal filev, YisVal pathv) {
   if (tmp)
     yis_release_val(YV_STR(tmp));
   return YV_BOOL(ok);
-}
-
-/* ── Subprocess IPC bindings ──────────────────────────────────────────── */
-
-static YisVal __vimana_system_spawn(YisVal sysv, YisVal cmdv) {
-  vimana_system *system =
-      vimana_system_from_val(sysv, "vimana.system.spawn expects system");
-  YisStr *tmp = NULL;
-  const char *cmd = vimana_required_cstr(cmdv, &tmp);
-  vimana_process *proc = vimana_process_spawn(system, cmd);
-  if (tmp)
-    yis_release_val(YV_STR(tmp));
-  if (!proc)
-    return YV_INT(0);
-  /* store proc pointer as a number (opaque handle) */
-  return YV_INT((uintptr_t)proc);
-}
-
-static YisVal __vimana_system_proc_write(YisVal sysv, YisVal procv,
-                                         YisVal textv) {
-  (void)sysv;
-  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
-  YisStr *tmp = NULL;
-  const char *text = vimana_required_cstr(textv, &tmp);
-  bool ok = vimana_process_write(proc, text);
-  if (tmp)
-    yis_release_val(YV_STR(tmp));
-  return YV_BOOL(ok);
-}
-
-static YisVal __vimana_system_proc_read_line(YisVal sysv, YisVal procv) {
-  (void)sysv;
-  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
-  char *line = vimana_process_read_line(proc);
-  if (!line)
-    return YV_STR(stdr_str_lit(""));
-  YisVal result = YV_STR(stdr_str_lit(line));
-  free(line);
-  return result;
-}
-
-static YisVal __vimana_system_proc_running(YisVal sysv, YisVal procv) {
-  (void)sysv;
-  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
-  return YV_BOOL(vimana_process_running(proc));
-}
-
-static void __vimana_system_proc_kill(YisVal sysv, YisVal procv) {
-  (void)sysv;
-  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
-  vimana_process_kill(proc);
-}
-
-static void __vimana_system_proc_free(YisVal sysv, YisVal procv) {
-  (void)sysv;
-  vimana_process *proc = (vimana_process *)(uintptr_t)yis_as_int(procv);
-  vimana_process_free(proc);
 }

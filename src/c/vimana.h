@@ -1,4 +1,4 @@
-// Vimana pixel runtime — public C API
+// Vimana — public C API
 #pragma once
 
 #include <stdbool.h>
@@ -14,6 +14,18 @@ extern "C" {
 #define VIMANA_KEY_WORDS           (512 / 64)             /* 8 × uint64_t  */
 #define VIMANA_MOUSE_CAP           8        /* 8 buttons (enough for mice) */
 #define VIMANA_TEXT_INPUT_CAP      256 /* max UTF-8 text input length (Bs) */
+#define VIMANA_CONTROLLER_A        0x01     /* controller bit 0         */
+#define VIMANA_CONTROLLER_B        0x02     /* controller bit 1         */
+#define VIMANA_CONTROLLER_SELECT   0x04     /* controller bit 2         */
+#define VIMANA_CONTROLLER_START    0x08     /* controller bit 3         */
+#define VIMANA_CONTROLLER_UP       0x10     /* controller bit 4         */
+#define VIMANA_CONTROLLER_DOWN     0x20     /* controller bit 5         */
+#define VIMANA_CONTROLLER_LEFT     0x40     /* controller bit 6         */
+#define VIMANA_CONTROLLER_RIGHT    0x80     /* controller bit 7         */
+#define VIMANA_CONSOLE_STD         0x01     /* standard input byte      */
+#define VIMANA_CONSOLE_ARG         0x02     /* argv byte                */
+#define VIMANA_CONSOLE_EOA         0x03     /* end of argument          */
+#define VIMANA_CONSOLE_END         0x04     /* end of input             */
 #define VIMANA_AUDIO_SAMPLE_RATE   44100   /* sample rate for generated tones */
 #define VIMANA_AUDIO_CHANNELS      1       /* mono output for generated tones */
 #define VIMANA_VOICE_COUNT         8       /* 4 SID + 3 SID accomp + 1 PSG    */
@@ -81,7 +93,7 @@ typedef struct VimanaScreen vimana_screen;
 typedef void (*vimana_frame_fn)(vimana_system *system, vimana_screen *screen,
                                 void *user);
 
-// System
+/* ── System API ─────────────────────────────────────────────────────────── */
 vimana_system *vimana_system_new(void);
 void vimana_system_quit(vimana_system *system);
 bool vimana_system_running(vimana_system *system);
@@ -117,16 +129,16 @@ void vimana_system_set_master_volume(vimana_system *system, int volume);
 void vimana_system_begin_audio(vimana_system *system);
 void vimana_system_end_audio(vimana_system *system);
 void vimana_system_set_paddle(vimana_system *system, int paddle, int value);
-int  vimana_system_get_paddle(vimana_system *system, int paddle);
-
+int vimana_system_get_paddle(vimana_system *system, int paddle);
 void vimana_system_free(vimana_system *system);
+size_t vimana_system_ram_usage(vimana_system *system);
 
-// Screen
-vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned int height,
-                                 unsigned int scale);
-void vimana_screen_free(vimana_screen *screen);
+/* ── Screen API ─────────────────────────────────────────────────────────── */
+vimana_screen *vimana_screen_new(const char *title, unsigned int width,
+                                 unsigned int height, unsigned int scale);
 void vimana_screen_clear(vimana_screen *screen, unsigned int bg);
-void vimana_screen_resize(vimana_screen *screen, unsigned int width, unsigned int height);
+void vimana_screen_resize(vimana_screen *screen, unsigned int width,
+                          unsigned int height);
 void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
                                const char *hex);
 void vimana_screen_set_font_glyph(vimana_screen *screen, unsigned int code,
@@ -140,53 +152,49 @@ void vimana_screen_set_theme_swap(vimana_screen *screen, bool swap);
 void vimana_screen_set_sprite(vimana_screen *screen, unsigned int addr,
                               const uint8_t *sprite, unsigned int mode,
                               size_t len);
-// Port registers — sprite() interprets as tiles, pixel() as pixels
+/* Port registers — sprite() interprets as tiles, pixel() as pixels. */
 void vimana_screen_set_x(vimana_screen *screen, unsigned int x);
 void vimana_screen_set_y(vimana_screen *screen, unsigned int y);
 void vimana_screen_set_addr(vimana_screen *screen, unsigned int addr);
 void vimana_screen_set_auto(vimana_screen *screen, unsigned int auto_flags);
+void vimana_screen_set_sprite_bank(vimana_screen *screen, unsigned int bank);
+unsigned int vimana_screen_sprite_bank(vimana_screen *screen);
+void vimana_screen_set_gfx(vimana_screen *screen, unsigned int addr,
+                           const uint8_t *data, unsigned int len);
+const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr);
+/* Tile-addressed: sprite x/y = port × 8, auto-increments ±1 tile. */
+void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl);
+/* Pixel-addressed: x/y = port value, auto-increments ±1 pixel. */
+void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl);
+void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
+                       const char *glyph, unsigned int fg, unsigned int bg);
+void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
+                           unsigned int y, const uint8_t rows[8],
+                           unsigned int fg, unsigned int bg);
+void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
+                            unsigned int y, const char *text,
+                            unsigned int fg, unsigned int bg);
+void vimana_screen_present(vimana_screen *screen);
+void vimana_screen_set_drag_region(vimana_screen *screen, unsigned int h);
+void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8]);
+void vimana_screen_hide_cursor(vimana_screen *screen);
+void vimana_screen_show_cursor(vimana_screen *screen);
 unsigned int vimana_screen_x(vimana_screen *screen);
 unsigned int vimana_screen_y(vimana_screen *screen);
 unsigned int vimana_screen_addr(vimana_screen *screen);
 unsigned int vimana_screen_auto(vimana_screen *screen);
-// Sprite bank switching (16 × 64 KB banks, NES CHR-ROM style)
-void vimana_screen_set_sprite_bank(vimana_screen *screen, unsigned int bank);
-unsigned int vimana_screen_sprite_bank(vimana_screen *screen);
-// General graphical data section (384 KB persistent ROM region)
-void vimana_screen_set_gfx(vimana_screen *screen, unsigned int addr,
-                            const uint8_t *data, unsigned int len);
-const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr);
-// Tile-addressed: sprite x/y = port × 8, auto-increments ±1 tile
-void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl);
-// Pixel-addressed: x/y = port value, auto-increments ±1 pixel
-void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl);
-// Pixel-addressed
-void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
-                       const char *glyph, unsigned int fg, unsigned int bg);
-// Tile-addressed: x/y in tiles (internally × 8)
-void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
-                           unsigned int y, const uint8_t rows[8],
-                           unsigned int fg, unsigned int bg);
-// Pixel-addressed
-void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
-                            unsigned int y, const char *text,
-                            unsigned int fg, unsigned int bg);
- void vimana_screen_present(vimana_screen *screen);
- void vimana_screen_set_drag_region(vimana_screen *screen, unsigned int h);
- unsigned int vimana_screen_width(vimana_screen *screen);
+unsigned int vimana_screen_width(vimana_screen *screen);
 unsigned int vimana_screen_height(vimana_screen *screen);
 unsigned int vimana_screen_scale(vimana_screen *screen);
-
-// Cursor
-void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8]);
-void vimana_screen_hide_cursor(vimana_screen *screen);
-void vimana_screen_show_cursor(vimana_screen *screen);
-
 size_t vimana_screen_ram_usage(vimana_screen *screen);
-size_t vimana_system_ram_usage(vimana_system *system);
+void vimana_screen_free(vimana_screen *screen);
 
-// Device
+/* ── Device API ─────────────────────────────────────────────────────────── */
 void vimana_device_poll(vimana_system *system);
+unsigned int vimana_device_controller(vimana_system *system);
+bool vimana_device_controller_down(vimana_system *system, unsigned int mask);
+bool vimana_device_controller_pressed(vimana_system *system,
+                                      unsigned int mask);
 bool vimana_device_key_down(vimana_system *system, int scancode);
 bool vimana_device_key_pressed(vimana_system *system, int scancode);
 bool vimana_device_mouse_down(vimana_system *system, int button);
@@ -199,7 +207,17 @@ int vimana_device_wheel_x(vimana_system *system);
 int vimana_device_wheel_y(vimana_system *system);
 const char *vimana_device_text_input(vimana_system *system);
 
-// Datetime
+/* ── Console API ────────────────────────────────────────────────────────── */
+bool vimana_console_pending(vimana_system *system);
+int vimana_console_input(vimana_system *system);
+int vimana_console_type(vimana_system *system);
+void vimana_console_next(vimana_system *system);
+bool vimana_console_push(vimana_system *system, int byte, int type);
+void vimana_console_stdout(vimana_system *system, int byte);
+void vimana_console_stderr(vimana_system *system, int byte);
+void vimana_console_stderr_hex(vimana_system *system, int byte);
+
+/* ── Datetime API ───────────────────────────────────────────────────────── */
 int64_t vimana_datetime_now(vimana_system *system);
 int vimana_datetime_year(vimana_system *system);
 int vimana_datetime_month(vimana_system *system);
@@ -208,6 +226,8 @@ int vimana_datetime_hour(vimana_system *system);
 int vimana_datetime_minute(vimana_system *system);
 int vimana_datetime_second(vimana_system *system);
 int vimana_datetime_weekday(vimana_system *system);
+int vimana_datetime_yday(vimana_system *system);
+int vimana_datetime_dst(vimana_system *system);
 int vimana_datetime_year_at(vimana_system *system, int64_t timestamp);
 int vimana_datetime_month_at(vimana_system *system, int64_t timestamp);
 int vimana_datetime_day_at(vimana_system *system, int64_t timestamp);
@@ -215,25 +235,27 @@ int vimana_datetime_hour_at(vimana_system *system, int64_t timestamp);
 int vimana_datetime_minute_at(vimana_system *system, int64_t timestamp);
 int vimana_datetime_second_at(vimana_system *system, int64_t timestamp);
 int vimana_datetime_weekday_at(vimana_system *system, int64_t timestamp);
+int vimana_datetime_yday_at(vimana_system *system, int64_t timestamp);
+int vimana_datetime_dst_at(vimana_system *system, int64_t timestamp);
 
-// File I/O
+/* ── File API ───────────────────────────────────────────────────────────── */
 unsigned char *vimana_file_read_bytes(vimana_system *system, const char *path,
                                       size_t *out_size);
+char *vimana_file_read_text(vimana_system *system, const char *path);
 bool vimana_file_write_bytes(vimana_system *system, const char *path,
                              const unsigned char *bytes, size_t size);
-char *vimana_file_read_text(vimana_system *system, const char *path);
 bool vimana_file_write_text(vimana_system *system, const char *path,
                             const char *text);
 bool vimana_file_exists(vimana_system *system, const char *path);
 bool vimana_file_remove(vimana_system *system, const char *path);
 bool vimana_file_rename(vimana_system *system, const char *path,
                         const char *new_path);
-bool vimana_file_is_dir(vimana_system *system, const char *path);
 char **vimana_file_list(vimana_system *system, const char *path,
                         int *out_count);
 void vimana_file_list_free(char **items, int count);
+bool vimana_file_is_dir(vimana_system *system, const char *path);
 
-// Subprocess IPC
+/* ── Process API ────────────────────────────────────────────────────────── */
 typedef struct VimanaProcess vimana_process;
 vimana_process *vimana_process_spawn(vimana_system *system, const char *cmd);
 bool vimana_process_write(vimana_process *proc, const char *text);
