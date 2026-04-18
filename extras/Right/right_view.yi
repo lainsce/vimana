@@ -355,7 +355,7 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
     let status = str(free) + "  Ln " + str(cur_line) + "/" + str(total) + " Col " + str(cur_col)
     let sw = stdr.len(status) * right_model.FONT_W
     let sx = right_model.screen_w - sw - 8
-    scr.put_text(sx, 20, status, right_model.C_SEL, right_model.C_BG)
+    scr.put_text(sx, 27, status, right_model.C_SEL, right_model.C_BG)
 ;
 
 --| Editor panel |--

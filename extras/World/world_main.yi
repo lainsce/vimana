@@ -32,6 +32,63 @@ def CURSOR_ADDR = 0x120
 def CLOSE_ADDR = 0x138
 def CLOSE_DOWN_ADDR = 0x148
 def BG_ADDR = 0x168
+def ?close_button_active = false
+
+: draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
+    let ?max_chars = stdr.floor((scr.width() - 48) / 8) - 2
+    if max_chars <= 0
+        <-
+    let ?body = title
+    if stdr.len(body) > max_chars
+        if max_chars > 3
+            body = stdr.slice(body, 0, max_chars - 3) + "..."
+        else
+            body = stdr.slice(body, 0, max_chars)
+    let label = " " + body + " "
+    let ?tx = stdr.floor((scr.width() - stdr.len(label) * 8) / 2)
+    if tx < 24
+        tx = 24
+    scr.put_text(tx, 1, label, vimana.color_fg, 2)
+;
+
+: title_text() (( string ))
+    if world_model.screen_mode == "glyph_picker"
+        <- "Glyph Picker"
+    if world_model.screen_mode == "color_picker"
+        <- "Color Picker"
+    if world_model.screen_mode == "theme_picker"
+        <- "Theme Picker"
+    if world_model.screen_mode == "preset_picker"
+        <- "Preset Picker"
+    if world_model.screen_mode == "browser"
+        if world_model.browser_save_mode
+            <- "Save File"
+        <- "Load File"
+    if stdr.len(world_model.world_title) > 0
+        <- world_model.world_title
+    <- "World"
+;
+
+: in_close_button(dev = vimana.device) (( bool ))
+    <- dev.pointer_x() >= 8 && dev.pointer_x() < 24 && dev.pointer_y() >= 0 && dev.pointer_y() < 16
+;
+
+: update_close_button(dev = vimana.device, sys = vimana.system) (( -- ))
+    let hover = in_close_button(dev)
+    let down = dev.mouse_down(vimana.mouse_left)
+    if !down && close_button_active && hover
+        sys.quit()
+    close_button_active = down && hover
+;
+
+: draw_close_button(scr = vimana.screen) (( -- ))
+    let ?addr = CLOSE_ADDR
+    if close_button_active
+        addr = CLOSE_DOWN_ADDR
+    scr.set_auto(0x15).set_addr(addr).set_x(8).set_y(0)
+    scr.sprite(0x09)
+    scr.set_addr(addr).set_x(13).sprite(0x19)
+;
 
 -> ()
     let sys  = vimana.system()
@@ -54,9 +111,7 @@ def BG_ADDR = 0x168
         dev.poll()
 
         -- Input
-        if dev.mouse_pressed(vimana.mouse_left)
-            if dev.pointer_x() >= 8 && dev.pointer_x() < 24 && dev.pointer_y() < 16
-                sys.quit()
+        update_close_button(dev, sys)
         world_input.on_mouse(dev, sys, fsys, scr)
         world_input.on_key(dev, sys, fsys, scr)
         world_input.on_scroll(dev)
@@ -72,10 +127,9 @@ def BG_ADDR = 0x168
         scr.set_auto(0x25).set_x(0).set_y(0)
         for (let ?i = 0; i < scr.width() / 8; i += 1)
             scr.set_addr(BG_ADDR).sprite(0x85)
+        draw_titlebar_text(scr, title_text())
         -- Draw close button
-        scr.set_auto(0x15).set_addr(CLOSE_ADDR).set_x(8).set_y(0)
-        scr.sprite(0x09)
-        scr.set_addr(CLOSE_ADDR).set_x(13).sprite(0x19)
+        draw_close_button(scr)
         scr.set_auto(0x00)
 
         -- Draw cursor every frame

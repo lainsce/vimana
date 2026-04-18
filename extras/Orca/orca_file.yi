@@ -71,8 +71,13 @@ bring orca_model
     update_title(scr)
 ;
 
-: update_title(scr = vimana.screen) (( -- ))
+: title_text() (( string ))
     let ?title = "Orca"
     if stdr.len(orca_model.file_path) > 0
         title = stdr.basename(orca_model.file_path)
+    <- title
+;
+
+: update_title(scr = vimana.screen) (( -- ))
+    title_text()
 ;

@@ -6,12 +6,17 @@ bring hexal_model
 
 --| Title |--
 
-: update_title(scr = vimana.screen) (( -- ))
+: title_text() (( string ))
     let ?title = "Hexal"
     if stdr.len(hexal_model.file_path) > 0
         title = stdr.basename(hexal_model.file_path)
     if hexal_model.changed
         title = title + "*"
+    <- title
+;
+
+: update_title(scr = vimana.screen) (( -- ))
+    title_text()
 ;
 
 --| New |--

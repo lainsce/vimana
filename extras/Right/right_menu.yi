@@ -9,8 +9,8 @@ def ?menu_open = -1
 def ?menu_hover = -1
 
 -- Menu bar geometry
-def MENUBAR_Y = 16
-def MENUBAR_H = 44
+def MENUBAR_Y = 25
+def MENUBAR_H = 28
 def MENU_START_X = 16
 def MENU_GAP = 8
 def SUBMENU_PAD = 16
@@ -426,7 +426,7 @@ def INSERT_COUNT = 3
     let dy = MENUBAR_Y + 6
     if right_model.dirty
         -- Accent background behind diamond area
-        fill(scr, 0, MENUBAR_Y, 14, MENUBAR_H + 3, right_model.C_ACCENT)
+        fill(scr, 0, MENUBAR_Y, 14, MENUBAR_H, right_model.C_ACCENT)
         draw_diamond(scr, dx, dy, right_model.C_BG)
     else
         draw_diamond(scr, dx, dy, right_model.C_FG)
@@ -551,7 +551,7 @@ def INSERT_COUNT = 3
     let cat = menu_open
     let count = item_count(cat)
     let sx = cat_x(cat)
-    let sy = MENUBAR_H
+    let sy = right_model.CONTENT_Y
     let sw = submenu_width(cat)
     let sh = count * SUBMENU_ITEM_H
     let th = sh + 1
@@ -624,7 +624,7 @@ def INSERT_COUNT = 3
     if menu_open >= 0
         let cat = menu_open
         let sx = cat_x(cat)
-        let sy = MENUBAR_H
+        let sy = right_model.CONTENT_Y
         let sw = submenu_width(cat)
         let count = item_count(cat)
         let sh = count * SUBMENU_ITEM_H
@@ -657,7 +657,7 @@ def INSERT_COUNT = 3
     -- Hover over submenu items
     let cat = menu_open
     let sx = cat_x(cat)
-    let sy = MENUBAR_H
+    let sy = right_model.CONTENT_Y
     let sw = submenu_width(cat)
     let count = item_count(cat)
     let sh = count * SUBMENU_ITEM_H

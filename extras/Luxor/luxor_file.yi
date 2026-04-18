@@ -4,11 +4,15 @@ bring stdr
 bring vimana
 bring luxor_model
 
-: update_title(scr = vimana.screen) (( -- ))
+: title_text() (( string ))
     let ?name = stdr.basename(luxor_model.file_path)
     if stdr.len(name) == 0
         name = luxor_model.default_path()
-    let title = "./" + name
+    <- "./" + name
+;
+
+: update_title(scr = vimana.screen) (( -- ))
+    title_text()
 ;
 
 : ensure_font_extension(path = string) (( string ))

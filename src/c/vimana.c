@@ -1822,9 +1822,9 @@ void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
     ch = ' ';
   const uint8_t *bmp = vimana_rom_font_bitmap(screen, ch);
   const uint8_t *widths = vimana_rom_font_widths(screen);
-  unsigned int bg_slot = bg & 0xF;
-  unsigned int fg_slot = fg & 0xF;
-  unsigned int gh = screen->font_height;
+  unsigned int bg_slot = bg & 0xFF;
+  unsigned int fg_slot = fg & 0xFF;
+  unsigned int gh = screen->font_height; /* max 24, but typically 8 or 16; use height-1 to allow for descenders */
   unsigned int gw = widths[ch];
   if (gw == 0) gw = screen->font_glyph_width;
   for (unsigned int row = 0; row < gh; row++) {
