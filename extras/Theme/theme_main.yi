@@ -128,11 +128,11 @@ def BG_ADDR = 0x168
             theme_model.clear_dirty()
 
         -- Draw titlebar BG
-        scr.set_auto(0x25).set_x(0).set_y(24)
+        scr.set_auto(0x25).set_x(0).set_y(0)
         for (let ?i = 0; i < theme_model.WIN_W / 8; i += 1)
             scr.set_addr(BG_ADDR).sprite(0x85)
         -- Draw close button
-        scr.set_auto(0x15).set_addr(CLOSE_ADDR).set_x(8).set_y(24)
+        scr.set_auto(0x15).set_addr(CLOSE_ADDR).set_x(8).set_y(0)
         scr.sprite(0x09)
         scr.set_addr(CLOSE_ADDR).set_x(13).sprite(0x19)
         scr.set_auto(0x00)

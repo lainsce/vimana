@@ -246,7 +246,7 @@ def CURSOR_ICN = [0x4060, 0x7078, 0x7c70, 0x5808]
 def BG_CHR = [
     0x0000, 0x00ff, 0x00ff, 0x00ff, 0xffff, 0xff00, 0xff00, 0xff00,
     0x00ff, 0x00ff, 0x00ff, 0x0000, 0xff00, 0xff00, 0xff00, 0xffff,
-    0x00ff, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000
+    0xff00, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000
 ]
 def CLOSE_ICN = [
     0x0000, 0x007f, 0x4040, 0x4040, 0x4040, 0x4040, 0x407f, 0x0000,
@@ -258,10 +258,10 @@ def CLOSE_DOWN_ICN = [
 ]
 
 -- Titlebar sprites placed above FOLD_B end (0x023F)
-def CURSOR_ADDR = 0x120
-def CLOSE_ADDR = 0x138
-def CLOSE_DOWN_ADDR = 0x148
-def BG_ADDR = 0x168
+def CURSOR_ADDR = 0x1320
+def CLOSE_ADDR = 0x1338
+def CLOSE_DOWN_ADDR = 0x1348
+def BG_ADDR = 0x1368
 
 -> ()
     let sys = vimana.system()
@@ -294,14 +294,15 @@ def BG_ADDR = 0x168
         on_key(dev, sys, fsys, scr)
         on_text(dev, scr)
 
+            scr.clear(pad_model.C_BG)
         pad_view.draw_all(scr)
 
         -- Draw titlebar BG
-        scr.set_auto(0x25).set_x(0).set_y(24)
+        scr.set_auto(0x15).set_x(0).set_y(0)
         for (let ?i = 0; i < scr.width() / 8; i += 1)
             scr.set_addr(BG_ADDR).sprite(0x85)
         -- Draw close button
-        scr.set_auto(0x15).set_addr(CLOSE_ADDR).set_x(8).set_y(24)
+        scr.set_auto(0x15).set_addr(CLOSE_ADDR).set_x(8).set_y(0)
         scr.sprite(0x09)
         scr.set_addr(CLOSE_ADDR).set_x(13).sprite(0x19)
         scr.set_auto(0x00)

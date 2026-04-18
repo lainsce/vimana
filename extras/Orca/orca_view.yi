@@ -15,11 +15,9 @@ def COLOR_OUTPUT = 4
 def CELL_W = 8
 def CELL_H = 16
 def MARGIN_X = 16
-def MARGIN_Y = 16
+def MARGIN_Y = 24
 
 :: draw(scr = vimana.screen) (( -- ))
-    scr.clear(COLOR_BG)
-
     -- Draw grid cells
     for (let ?y = 0; y < orca_grid.GRID_H; y += 1)
         for (let ?x = 0; x < orca_grid.GRID_W; x += 1)
@@ -144,6 +142,5 @@ def MARGIN_Y = 16
             col = COLOR_BANG
         scr.put(vol_x + ch * CELL_W, bar_y, glyph, col, COLOR_BG)
 
-    scr.present()
     orca_model.set_dirty(false)
 ;

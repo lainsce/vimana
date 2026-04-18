@@ -268,13 +268,10 @@ bring luxor_model
     if !luxor_model.dirty
         <-
 
-    scr.clear(luxor_model.C_BG)
-
     draw_header(scr)
     draw_editor(scr)
     draw_collection(scr)
     draw_pangram(scr)
-
-    scr.present()
     luxor_model.clear_dirty()
+    scr.present()
 ;

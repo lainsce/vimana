@@ -95,11 +95,10 @@ def ?_ps_corner = -1
 
 : draw_corner(scr = vimana.screen) (( -- ))
     let base_addr = pad_font.get_fold_addr(pad_model.corner_state)
-    let base_ty = stdr.floor(pad_model.FOOTER_Y / 8)
+    let base_ty = pad_model.FOOTER_Y / 8
     scr.set_auto(0x26)
     for (let ?row = 0; row < 4; row += 1)
-        let row_addr = base_addr + row * 3 * 0x10
-        scr.set_addr(row_addr).set_x(0).set_y((base_ty + row)*8).sprite(0x81)
+        scr.set_addr(base_addr + row * 0x30).set_x(0).set_y((base_ty + row) * 8).sprite(0x85)
     scr.set_auto(0)
 ;
 
@@ -119,10 +118,8 @@ def ?_ps_corner = -1
 --| Main draw entry |--
 
 :: draw_all(scr = vimana.screen) (( -- ))
-    scr.clear(pad_model.C_BG)
     draw_content(scr)
     draw_corner(scr)
     draw_footer(scr)
-    scr.present()
     save_snapshot()
 ;

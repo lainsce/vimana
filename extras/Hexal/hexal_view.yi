@@ -84,7 +84,7 @@ bring hexal_browser
     let po = hexal_model.page_offset()
     for (let ?row = 0; row < hexal_model.ROWS; row += 1)
         let base = po + row * hexal_model.COLS
-        let ty = (3 + row * 2) * 8
+        let ty = (5 + row * 2) * 8
         let c = hexal_model.byte_color(base)
         let ?fg = hexal_model.C_FG
         let ?bg = hexal_model.C_BG

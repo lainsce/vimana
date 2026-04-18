@@ -168,7 +168,7 @@ def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : draw_command_bar(scr = vimana.screen) (( -- ))
-    let bar_y = (casevo_model.viewport_rows + 2) * casevo_model.ROW_H + casevo_model.HEADER_H
+    let bar_y = (casevo_model.viewport_rows + 3) * casevo_model.ROW_H
     let bty = bar_y
 
     -- Dashed top border across full width (icons every 8px)
@@ -294,7 +294,6 @@ def BROWSER_X = 16
 -- ─────────────────────────────────────────────────────────────────────────────
 
 :: draw_all(scr = vimana.screen) (( -- ))
-    scr.clear(casevo_model.C_BG)
     draw_col_headers(scr)
     draw_row_headers(scr)
     draw_grid(scr)
@@ -302,6 +301,4 @@ def BROWSER_X = 16
 
     if casevo_browser.active
         draw_browser(scr)
-
-    scr.present()
 ;

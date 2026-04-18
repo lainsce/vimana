@@ -9,8 +9,8 @@ def ?menu_open = -1
 def ?menu_hover = -1
 
 -- Menu bar geometry
-def MENUBAR_Y = 17
-def MENUBAR_H = 24
+def MENUBAR_Y = 16
+def MENUBAR_H = 44
 def MENU_START_X = 16
 def MENU_GAP = 8
 def SUBMENU_PAD = 16

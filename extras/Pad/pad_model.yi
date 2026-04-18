@@ -5,7 +5,7 @@ bring pad_font
 
 --| Layout |--
 def TEXT_X = 8
-def TEXT_Y = 17
+def TEXT_Y = 24
 def WRAP_X = 208
 def LINE_H = 16
 def WIN_W = 224

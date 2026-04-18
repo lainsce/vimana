@@ -353,6 +353,20 @@ def ?resizer_dragging = false
 -- ─────────────────────────────────────────────────────────────────────────────
 
 def CURSOR_PTR = [0x0070 0x6844 0x2211 0x0906]
+def BG_CHR = [
+    0x0000, 0x00ff, 0x00ff, 0x00ff, 0xffff, 0xff00, 0xff00, 0xff00,
+    0x00ff, 0x00ff, 0x00ff, 0x0000, 0xff00, 0xff00, 0xff00, 0xffff,
+    0xff00, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000
+]
+def CLOSE_ICN = [
+	0x0000, 0x007f, 0x4040, 0x4040, 0x4040, 0x4040, 0x407f, 0x0000,
+	0x0000, 0x00f7, 0x1017, 0x1017, 0x1017, 0x1017, 0x10f7, 0x0000
+]
+def CLOSE_DOWN_ICN = [
+	0x0000, 0x007f, 0x4252, 0x4a40, 0x7840, 0x4a52, 0x427f, 0x0000,
+	0x0000, 0x00f7, 0x1057, 0x9017, 0xf017, 0x9057, 0x10f7, 0x0000
+]
+
 def CURSOR_ADDR = 0xFF00
 def CLOSE_ADDR = 0xFF20
 def CLOSE_DOWN_ADDR = 0xFF40
@@ -364,9 +378,9 @@ def BG_ADDR = 0xFF60
     scr.set_cursor(CURSOR_PTR)
     scr.hide_cursor()
     scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
-    scr.set_sprite(CLOSE_ADDR, CURSOR_PTR, 1)
-    scr.set_sprite(CLOSE_DOWN_ADDR, CURSOR_PTR, 1)
-    scr.set_sprite(BG_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(CLOSE_ADDR, CLOSE_ICN, 1)
+    scr.set_sprite(CLOSE_DOWN_ADDR, CLOSE_DOWN_ICN, 1)
+    scr.set_sprite(BG_ADDR, BG_CHR, 1)
     scr.set_drag_region(16)
     draw_font.setup(scr)
 
@@ -388,6 +402,20 @@ def BG_ADDR = 0xFF60
         draw_view.draw_canvas_all(scr)
         draw_panel.draw(scr)
         draw_menu.draw(scr)
+
+        if dev.mouse_pressed(vimana.mouse_left)
+            if dev.pointer_x() > 8 && dev.pointer_x() < 24 && dev.pointer_y() < 16
+                sys.quit()
+
+        -- Draw titlebar BG
+        scr.set_auto(0x25).set_x(0).set_y(0)
+        for (let ?i = 0; i < (85 * 8) / 8; i += 1)
+            scr.set_addr(BG_ADDR).sprite(0x85)
+        -- Draw close button
+        scr.set_auto(0x15).set_addr(CLOSE_ADDR).set_x(8).set_y(0)
+        scr.sprite(0x09)
+        scr.set_addr(CLOSE_ADDR).set_x(13).sprite(0x19)
+        scr.set_auto(0x00)
 
         let mx = dev.pointer_x()
         let my = dev.pointer_y()

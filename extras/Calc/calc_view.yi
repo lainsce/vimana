@@ -142,23 +142,56 @@ bring calc_icons
 
 --| Buttons |--
 
-: draw_chrome(scr = vimana.screen, tx = num, ty = num, tw = num, th = num, pressed = bool, is_opc = bool) (( -- ))
-    let ?base = calc_icons.CHROME_UP
-    if pressed && !is_opc
-        base = calc_icons.CHROME_DN
-    elif !pressed && is_opc
+: draw_chrome_small(scr = vimana.screen, tx = num, ty = num, pressed = bool, is_opc = bool) (( -- ))
+    let base = calc_icons.CHROME_UP
+    if is_opc
         base = calc_icons.CHROME_OPC_UP
-    elif pressed && is_opc
-        base = calc_icons.CHROME_OPC_DN
+    if pressed
+        base = calc_icons.CHROME_DN
+        if is_opc
+            base = calc_icons.CHROME_OPC_DN
 
     scr.set_auto(0x26)
-    -- Top row (TL TC TR)
     scr.set_addr(base).set_x(tx * 8).set_y(ty * 8).sprite(0x81)
-    -- Middle rows (ML MC MR)
-    for (let ?r = 1; r < th - 1; r += 1)
-        scr.set_addr(base + 0x30).set_x(tx * 8).sprite(0x81)
-    -- Bottom row (BL BC BR)
-    scr.set_addr(base + 0x60).set_x(tx * 8).sprite(0x81)
+    scr.set_addr(base).set_x(tx * 8).set_y(ty * 8).sprite(0x81)
+    scr.set_addr(base).set_x(tx * 8).set_y((ty + 1) * 8).sprite(0xa1)
+    scr.set_addr(base).set_x(tx * 8).set_y((ty + 1) * 8).sprite(0xa1)
+    scr.set_auto(0)
+;
+
+: draw_chrome_tall(scr = vimana.screen, tx = num, ty = num, pressed = bool, is_opc = bool) (( -- ))
+    let base = calc_icons.CHROME_UP
+    if is_opc
+        base = calc_icons.CHROME_OPC_UP
+    if pressed
+        base = calc_icons.CHROME_DN
+        if is_opc
+            base = calc_icons.CHROME_OPC_DN
+
+    scr.set_auto(0x26)
+    scr.set_addr(base).set_x(tx * 8).set_y(ty * 8).sprite(0x81)
+    for (let ?r = 1; r < 5; r += 1)
+        scr.set_addr(base + 0x30).set_x(tx * 8).set_y((ty + r) * 8).sprite(0x81)
+    scr.set_addr(base + 0x60).set_x(tx * 8).set_y((ty + 5) * 8).sprite(0x81)
+    scr.set_auto(0)
+;
+
+: draw_chrome(scr = vimana.screen, tx = num, ty = num, tw = num, th = num, pressed = bool, is_opc = bool) (( -- ))
+    let base = calc_icons.CHROME_UP
+    if is_opc
+        base = calc_icons.CHROME_OPC_UP
+    if pressed
+        base = calc_icons.CHROME_DN
+        if is_opc
+            base = calc_icons.CHROME_OPC_DN
+
+    scr.set_auto(0x26)
+    for (let ?row = 0; row < th; row += 1)
+        let y = ty + row
+        let row_base = base + row * 0x30
+        for (let ?col = 0; col < tw; col += 1)
+            let tile_addr = row_base + col * 0x10
+            scr.set_addr(tile_addr).set_x((tx + col) * 8).set_y(y * 8).sprite(0x81)
     scr.set_auto(0)
 ;
 
@@ -246,7 +279,12 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
     let ty = btn_ty(id)
     let th = btn_th(id)
     let is_opc = btn_is_opc(id)
-    draw_chrome(scr, tx, ty, 3, th, pressed, is_opc)
+    if th == 2
+        draw_chrome_small(scr, tx, ty, pressed, is_opc)
+    elif th == 6
+        draw_chrome_tall(scr, tx, ty, pressed, is_opc)
+    else
+        draw_chrome(scr, tx, ty, 1, th, pressed, is_opc)
     draw_btn_icon(scr, id, pressed, is_opc)
 ;
 
@@ -274,7 +312,7 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
 --| Display Background |--
 
 : draw_display_bg(scr = vimana.screen) (( -- ))
-    for (let ?ty = 0; ty < 18; ty += 1)
+    for (let ?ty = 2; ty < 18; ty += 1)
         for (let ?tx = 0; tx < 29; tx += 1)
             scr.put_icn(tx*8, ty*8, calc_icons.FILL, calc_model.C_FG, calc_model.C_BG)
 ;

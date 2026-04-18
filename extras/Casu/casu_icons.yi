@@ -268,46 +268,69 @@ def ICON_SLOT_BASE = 0xF100
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Frame CHR data (2bpp 8×8 tiles) for panel borders
 -- Each tile = 16 bytes: plane0 (8 bytes) + plane1 (8 bytes)
--- e = corner/edge, h = horizontal bar, v = vertical bar
+-- Two frames: FRAME1 = thick rounded, FRAME2 = thin
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- Frame 1: thick rounded frame (tileview, nametable)
-def FRAME1_E_P0 = [0, 0, 0, 0, 0x07, 0x0F, 0x0F, 0x0F]
-def FRAME1_E_P1 = [0, 0, 0, 0x07, 0x08, 0x10, 0x10, 0x10]
-def FRAME1_H_P0 = [0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]
-def FRAME1_H_P1 = [0, 0, 0, 0xFF, 0, 0, 0, 0]
-def FRAME1_V_P0 = [0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0]
-def FRAME1_V_P1 = [0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08]
+-- 3 tiles (edge, horizontal, vertical), each 2 planes × 8 bytes
+def FRAME1 = [
+    -- Edge tile plane0
+    0, 0, 0, 0, 0x07, 0x0F, 0x0F, 0x0F,
+    -- Edge tile plane1
+    0, 0, 0, 0x07, 0x08, 0x10, 0x10, 0x10,
+    -- Horizontal bar plane0
+    0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF,
+    -- Horizontal bar plane1
+    0, 0, 0, 0xFF, 0, 0, 0, 0,
+    -- Vertical bar plane0
+    0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0,
+    -- Vertical bar plane1
+    0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08
+]
 
 -- Frame 2: thin frame (zoomview)
-def FRAME2_E_P0 = [0, 0, 0, 0, 0, 0, 0, 0]
-def FRAME2_E_P1 = [0, 0, 0, 0, 0, 0x01, 0x02, 0x04]
-def FRAME2_H_P0 = [0, 0, 0, 0, 0, 0, 0, 0]
-def FRAME2_H_P1 = [0, 0, 0, 0, 0, 0xFF, 0, 0]
-def FRAME2_V_P0 = [0, 0, 0, 0, 0, 0, 0, 0]
-def FRAME2_V_P1 = [0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20]
+def FRAME2 = [
+    -- Edge tile plane0
+    0, 0, 0, 0, 0, 0, 0, 0,
+    -- Edge tile plane1
+    0, 0, 0, 0, 0, 0x01, 0x02, 0x04,
+    -- Horizontal bar plane0
+    0, 0, 0, 0, 0, 0, 0, 0,
+    -- Horizontal bar plane1
+    0, 0, 0, 0, 0, 0xFF, 0, 0,
+    -- Vertical bar plane0
+    0, 0, 0, 0, 0, 0, 0, 0,
+    -- Vertical bar plane1
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20
+]
 
--- Sprite memory addresses for frame tiles (after user spritesheet at 0-4095)
-def FRAME1_ADDR_E = 0x1000
-def FRAME1_ADDR_H = 0x1010
-def FRAME1_ADDR_V = 0x1020
-def FRAME2_ADDR_E = 0x1030
-def FRAME2_ADDR_H = 0x1040
-def FRAME2_ADDR_V = 0x1050
+-- Sprite memory addresses for frame tiles (each tile = 16 bytes)
+-- Base addresses (start of each frame's 48-byte block)
+def FRAME1_ADDR = 0x1000
+def FRAME2_ADDR = 0x1030
+-- Component tile addresses
+def FRAME1_ADDR_E = FRAME1_ADDR + 0
+def FRAME1_ADDR_H = FRAME1_ADDR + 16
+def FRAME1_ADDR_V = FRAME1_ADDR + 32
+def FRAME2_ADDR_E = FRAME2_ADDR + 0
+def FRAME2_ADDR_H = FRAME2_ADDR + 16
+def FRAME2_ADDR_V = FRAME2_ADDR + 32
 
--- Upload frame CHR tiles to sprite memory
+-- Upload frame CHR tiles to sprite memory (each tile = 2 planes of 8 bytes)
 : setup_frames(scr = vimana.screen) (( -- ))
-    scr.set_sprite(FRAME1_ADDR_E,     FRAME1_E_P0, 0)
-    scr.set_sprite(FRAME1_ADDR_E + 8, FRAME1_E_P1, 0)
-    scr.set_sprite(FRAME1_ADDR_H,     FRAME1_H_P0, 0)
-    scr.set_sprite(FRAME1_ADDR_H + 8, FRAME1_H_P1, 0)
-    scr.set_sprite(FRAME1_ADDR_V,     FRAME1_V_P0, 0)
-    scr.set_sprite(FRAME1_ADDR_V + 8, FRAME1_V_P1, 0)
-    scr.set_sprite(FRAME2_ADDR_E,     FRAME2_E_P0, 0)
-    scr.set_sprite(FRAME2_ADDR_E + 8, FRAME2_E_P1, 0)
-    scr.set_sprite(FRAME2_ADDR_H,     FRAME2_H_P0, 0)
-    scr.set_sprite(FRAME2_ADDR_H + 8, FRAME2_H_P1, 0)
-    scr.set_sprite(FRAME2_ADDR_V,     FRAME2_V_P0, 0)
-    scr.set_sprite(FRAME2_ADDR_V + 8, FRAME2_V_P1, 0)
+    -- FRAME1: edge (E), horizontal (H), vertical (V) — each plane0 then plane1
+    scr.set_sprite(FRAME1_ADDR_E,     [FRAME1[0],  FRAME1[1],  FRAME1[2],  FRAME1[3],  FRAME1[4],  FRAME1[5],  FRAME1[6],  FRAME1[7]],  0)
+    scr.set_sprite(FRAME1_ADDR_E + 8, [FRAME1[8],  FRAME1[9],  FRAME1[10], FRAME1[11], FRAME1[12], FRAME1[13], FRAME1[14], FRAME1[15]], 0)
+    scr.set_sprite(FRAME1_ADDR_H,     [FRAME1[16], FRAME1[17], FRAME1[18], FRAME1[19], FRAME1[20], FRAME1[21], FRAME1[22], FRAME1[23]], 0)
+    scr.set_sprite(FRAME1_ADDR_H + 8, [FRAME1[24], FRAME1[25], FRAME1[26], FRAME1[27], FRAME1[28], FRAME1[29], FRAME1[30], FRAME1[31]], 0)
+    scr.set_sprite(FRAME1_ADDR_V,     [FRAME1[32], FRAME1[33], FRAME1[34], FRAME1[35], FRAME1[36], FRAME1[37], FRAME1[38], FRAME1[39]], 0)
+    scr.set_sprite(FRAME1_ADDR_V + 8, [FRAME1[40], FRAME1[41], FRAME1[42], FRAME1[43], FRAME1[44], FRAME1[45], FRAME1[46], FRAME1[47]], 0)
+    -- FRAME2
+    scr.set_sprite(FRAME2_ADDR_E,     [FRAME2[0],  FRAME2[1],  FRAME2[2],  FRAME2[3],  FRAME2[4],  FRAME2[5],  FRAME2[6],  FRAME2[7]],  0)
+    scr.set_sprite(FRAME2_ADDR_E + 8, [FRAME2[8],  FRAME2[9],  FRAME2[10], FRAME2[11], FRAME2[12], FRAME2[13], FRAME2[14], FRAME2[15]], 0)
+    scr.set_sprite(FRAME2_ADDR_H,     [FRAME2[16], FRAME2[17], FRAME2[18], FRAME2[19], FRAME2[20], FRAME2[21], FRAME2[22], FRAME2[23]], 0)
+    scr.set_sprite(FRAME2_ADDR_H + 8, [FRAME2[24], FRAME2[25], FRAME2[26], FRAME2[27], FRAME2[28], FRAME2[29], FRAME2[30], FRAME2[31]], 0)
+    scr.set_sprite(FRAME2_ADDR_V,     [FRAME2[32], FRAME2[33], FRAME2[34], FRAME2[35], FRAME2[36], FRAME2[37], FRAME2[38], FRAME2[39]], 0)
+    scr.set_sprite(FRAME2_ADDR_V + 8, [FRAME2[40], FRAME2[41], FRAME2[42], FRAME2[43], FRAME2[44], FRAME2[45], FRAME2[46], FRAME2[47]], 0)
 ;
 

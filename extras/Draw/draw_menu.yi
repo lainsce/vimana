@@ -173,7 +173,7 @@ def HILIGHT = 3
         if c == active_cat
             fg = BG
             bg = FG
-        scr.put_text(px, 0, label, fg, bg)
+        scr.put_text(px, 16, label, fg, bg)
 
     -- Draw dropdown if open
     if active_cat < 0 { <- }

@@ -58,59 +58,63 @@ def C_WH   = 3   -- bright / selected (white)
 ;
 
 -- Draw a 2bpp sprite frame around a panel at tile (tx, ty), size tw×th tiles.
--- addr_e/addr_h/addr_v = sprite memory addresses for edge/horizontal/vertical CHR.
--- Uses flip bits to mirror corner and bar tiles for all four sides.
+-- addr_e/addr_h/addr_v = sprite memory addresses for corner (edge), horizontal bar, vertical bar tiles.
+-- Flip bits mirror tiles: corners use edge tile; edges use bar tiles with flips to orient correctly.
 : draw_frame(scr = vimana.screen,
              tx = num, ty = num, tw = num, th = num,
              addr_e = num, addr_h = num, addr_v = num,
              blend = num) (( -- ))
     let ctrl     = 128 + blend
-    let ctrl_fx  = 144 + blend
-    let ctrl_fy  = 160 + blend
-    let ctrl_fxy = 176 + blend
+    let ctrl_fx  = 144 + blend   -- flip X
+    let ctrl_fy  = 160 + blend   -- flip Y
+    let ctrl_fxy = 176 + blend   -- flip X+Y
 
-    -- Top-left corner
+    -- Top-left corner (no flip)
     scr.set_auto(0)
-    scr.set_x((tx - 1)*8).set_y((ty - 1)*8).set_addr(addr_e)
+    scr.set_x((tx - 1) * 8).set_y((ty - 1) * 8).set_addr(addr_e)
     scr.sprite(ctrl)
 
-    -- Top bar
-    scr.set_auto(1)
-    scr.set_x(tx*8).set_y((ty - 1)*8).set_addr(addr_h)
+    -- Top edge (horizontal bar) - tw tiles, no flip
+    scr.set_auto(1)  -- auto-X increment
+    scr.set_x(tx * 8).set_y((ty - 1) * 8).set_addr(addr_h)
     for (let ?i = 0; i < tw; i += 1)
         scr.sprite(ctrl)
-
-    -- Top-right corner
     scr.set_auto(0)
-    scr.set_x((tx + tw)*8).set_y((ty - 1)*8).set_addr(addr_e)
+
+    -- Top-right corner (flip X)
+    scr.set_auto(0)
+    scr.set_x((tx + tw) * 8).set_y((ty - 1) * 8).set_addr(addr_e)
     scr.sprite(ctrl_fx)
 
-    -- Left bar
-    scr.set_auto(2)
-    scr.set_x((tx - 1)*8).set_y(ty*8).set_addr(addr_v)
+    -- Left edge (vertical bar) - th tiles, flip X (bar on right)
+    scr.set_auto(2)  -- auto-Y increment
+    scr.set_x((tx - 1) * 8).set_y(ty * 8).set_addr(addr_v)
     for (let ?i = 0; i < th; i += 1)
         scr.sprite(ctrl_fx)
+    scr.set_auto(0)
 
-    -- Right bar
+    -- Right edge (vertical bar) - th tiles, no flip (bar on left)
     scr.set_auto(2)
-    scr.set_x((tx + tw)*8).set_y(ty*8).set_addr(addr_v)
+    scr.set_x((tx + tw) * 8).set_y(ty * 8).set_addr(addr_v)
     for (let ?i = 0; i < th; i += 1)
         scr.sprite(ctrl)
-
-    -- Bottom-left corner
     scr.set_auto(0)
-    scr.set_x((tx - 1)*8).set_y((ty + th)*8).set_addr(addr_e)
+
+    -- Bottom-left corner (flip Y)
+    scr.set_auto(0)
+    scr.set_x((tx - 1) * 8).set_y((ty + th) * 8).set_addr(addr_e)
     scr.sprite(ctrl_fy)
 
-    -- Bottom bar
+    -- Bottom edge (horizontal bar) - tw tiles, flip Y
     scr.set_auto(1)
-    scr.set_x(tx*8).set_y((ty + th)*8).set_addr(addr_h)
+    scr.set_x(tx * 8).set_y((ty + th) * 8).set_addr(addr_h)
     for (let ?i = 0; i < tw; i += 1)
         scr.sprite(ctrl_fy)
-
-    -- Bottom-right corner
     scr.set_auto(0)
-    scr.set_x((tx + tw)*8).set_y((ty + th)*8).set_addr(addr_e)
+
+    -- Bottom-right corner (flip XY)
+    scr.set_auto(0)
+    scr.set_x((tx + tw) * 8).set_y((ty + th) * 8).set_addr(addr_e)
     scr.sprite(ctrl_fxy)
 
     scr.set_auto(0)

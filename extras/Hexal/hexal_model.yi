@@ -18,9 +18,9 @@ def HEX_X = 88
 def ASCII_X = 480
 
 -- Y positions
-def LABEL_Y = 0
-def SEP_Y = 16
-def DATA_Y = 24
+def LABEL_Y = 16
+def SEP_Y = 32
+def DATA_Y = 40
 
 -- Colors
 def C_BG = 0

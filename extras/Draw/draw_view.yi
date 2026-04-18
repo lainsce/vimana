@@ -62,14 +62,14 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
     let cwt = draw_canvas.CANVAS_WT
     let cht = draw_canvas.CANVAS_HT
     -- Rows 0-1: solid green strip (filename bar, 16px for 8x16 fonts)
-    for (let ?ty = 0; ty <= 1; ty = ty + 1)
+    for (let ?ty = 2; ty <= 3; ty = ty + 1)
         for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
             scr.put_icn(tx * 8, ty * 8, BG_FILL_ICN, UI, UI)
 
     -- Rows 2+: hash outside canvas
-    for (let ?ty = 2; ty < scr_ht; ty = ty + 1)
+    for (let ?ty = 4; ty < scr_ht; ty = ty + 1)
         for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
-            if tx < ctx || tx >= ctx + draw_canvas.CANVAS_WT || ty < cty || ty >= cty + draw_canvas.CANVAS_HT
+            if tx < ctx || tx >= ctx + draw_canvas.CANVAS_WT || ty < cty|| ty >= cty + draw_canvas.CANVAS_HT
                 scr.put_icn(tx * 8, ty * 8, HASH_ICN, UI, BG)
 ;
 
@@ -117,7 +117,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
     -- Write to bg layer (FG + 64) so it shows over put_icn tiles.
     let lx = draw_canvas.CANVAS_TX * 8 - 1
     let rx = (draw_canvas.CANVAS_TX + draw_canvas.CANVAS_WT) * 8
-    let ty_ = draw_canvas.CANVAS_TY * 8 - 1
+    let ty_ = (draw_canvas.CANVAS_TY) * 8 - 1
     let by = (draw_canvas.CANVAS_TY + draw_canvas.CANVAS_HT) * 8
     let c = FG + 64
     -- Top and bottom lines
@@ -145,7 +145,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
 : draw_size_label(scr = vimana.screen) (( -- ))
     let w = draw_canvas.CANVAS_WT
     let h = draw_canvas.CANVAS_HT
-    draw_font.draw_size(scr, 672, 0, w, h, FG, UI)
+    draw_font.draw_size(scr, 672, 16, w, h, FG, UI)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
     let ?name = draw_file.get_display_name()
     if draw_canvas.filestate_changed()
         name = name + " *"
-    scr.put_text(272, 0, name, FG, UI)
+    scr.put_text(272, 16, name, FG, UI)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
