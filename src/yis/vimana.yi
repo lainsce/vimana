@@ -206,7 +206,7 @@ pub :: system() (( system ))
         for (let ?i = 0; i < argc; i += 1)
             let arg = str(args[i] ?? "")
             for (let ?j = 0; j < stdr.len(arg); j += 1)
-                __vimana_console_push(con, stdr.char_code(stdr.slice(arg, j, j + 1)), console_arg)
+                __vimana_console_push(con, stdr.char_code(arg[j]), console_arg)
             if i == argc - 1
                 __vimana_console_push(con, stdr.char_code("\n"), console_end)
             else

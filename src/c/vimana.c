@@ -763,6 +763,53 @@ static void vimana_draw_manual_cursor_overlay(vimana_screen *screen) {
   screen->manual_cursor_pending = false;
 }
 
+static void vimana_screen_draw_sprite_1bpp(vimana_screen *screen,
+                                           unsigned int x,
+                                           unsigned int y,
+                                           const uint8_t *rows,
+                                           unsigned int fg,
+                                           unsigned int bg) {
+  if (!screen || !rows || !screen->layers)
+    return;
+  if (x >= (unsigned int)screen->width ||
+      y >= (unsigned int)screen->canvas_height)
+    return;
+  unsigned int bg_slot = bg & 0xF;
+  unsigned int fg_slot = fg & 0xF;
+  for (unsigned int row = 0; row < VIMANA_TILE_SIZE; row++) {
+    unsigned int py = y + row;
+    if (py >= (unsigned int)screen->canvas_height)
+      continue;
+    const uint8_t plane0 = rows[row];
+    for (unsigned int col = 0; col < VIMANA_TILE_SIZE; col++) {
+      unsigned int px = x + col;
+      if (px >= (unsigned int)screen->width)
+        continue;
+      uint8_t mask = (uint8_t)(0x80u >> col);
+      uint8_t hit = (plane0 & mask) ? 1u : 0u;
+      uint8_t slot = hit ? (uint8_t)fg_slot : (uint8_t)bg_slot;
+      screen->layers[py * screen->width_mar + px] =
+          (uint8_t)((slot << 4) | slot);
+    }
+  }
+}
+
+static void vimana_screen_draw_sprite_1bpp_addr(vimana_screen *screen,
+                                                unsigned int x,
+                                                unsigned int y,
+                                                unsigned int addr,
+                                                unsigned int fg,
+                                                unsigned int bg) {
+  if (!screen)
+    return;
+  if (addr + VIMANA_SPRITE_1BPP_BYTES > VIMANA_SPRITE_BANK_SIZE)
+    return;
+  const uint8_t *bank = vimana_sprite_bank(screen, screen->active_sprite_bank);
+  if (!bank)
+    return;
+  vimana_screen_draw_sprite_1bpp(screen, x, y, bank + addr, fg, bg);
+}
+
 static uint32_t vimana_parse_hex_color(const char *hex) {
   unsigned int r = 0, g = 0, b = 0;
   if (!hex)
@@ -2170,28 +2217,21 @@ static void vimana_screen_put_glyph_fg(vimana_screen *screen, unsigned int x,
 void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
                            unsigned int y, const uint8_t rows[8],
                            unsigned int fg, unsigned int bg) {
-  if (!screen || !rows || !screen->layers)
+  if (!screen || !rows)
     return;
-  if (x >= (unsigned int)screen->width || y >= (unsigned int)screen->canvas_height)
+  const unsigned int scratch_addr =
+      VIMANA_SPRITE_BANK_SIZE - VIMANA_SPRITE_1BPP_BYTES;
+  uint8_t *bank = vimana_sprite_bank(screen, screen->active_sprite_bank);
+  if (!bank) {
+    vimana_screen_draw_sprite_1bpp(screen, x, y, rows, fg, bg);
     return;
-  unsigned int bg_slot = bg & 0xF;
-  unsigned int fg_slot = fg & 0xF;
-  for (unsigned int row = 0; row < VIMANA_TILE_SIZE; row++) {
-    unsigned int py = y + row;
-    if (py >= (unsigned int)screen->canvas_height)
-      continue;
-    const uint8_t plane0 = rows[row];
-    for (unsigned int col = 0; col < VIMANA_TILE_SIZE; col++) {
-      unsigned int px = x + col;
-      if (px >= (unsigned int)screen->width)
-        continue;
-      uint8_t mask = (uint8_t)(0x80u >> col);
-      uint8_t hit = (plane0 & mask) ? 1u : 0u;
-      uint8_t slot = hit ? (uint8_t)fg_slot : (uint8_t)bg_slot;
-      screen->layers[py * screen->width_mar + px] =
-          (uint8_t)((slot << 4) | slot);
-    }
   }
+  uint8_t saved[VIMANA_SPRITE_1BPP_BYTES];
+  memcpy(saved, bank + scratch_addr, sizeof(saved));
+  vimana_screen_set_sprite(screen, scratch_addr, rows, 0,
+                           VIMANA_SPRITE_1BPP_BYTES);
+  vimana_screen_draw_sprite_1bpp_addr(screen, x, y, scratch_addr, fg, bg);
+  memcpy(bank + scratch_addr, saved, sizeof(saved));
 }
 
 void vimana_screen_put_text(vimana_screen *screen, unsigned int x,

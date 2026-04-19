@@ -11,7 +11,7 @@ def WIDTHS = [4, 6, 7, 10, 7, 11, 10, 3, 5, 5, 7, 7, 4, 7, 4, 7, 8, 8, 8, 8, 8, 
     let ?w = 0
     let n = stdr.len(s)
     for (let ?i = 0; i < n; i += 1)
-        let c = stdr.char_code(stdr.slice(s, i, i + 1))
+        let c = stdr.char_code(s[i])
         if c >= 32 && c < 128
             w = w + WIDTHS[c - 32]
         else
