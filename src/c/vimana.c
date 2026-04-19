@@ -875,16 +875,29 @@ static void vimana_screen_load_theme(vimana_screen *screen) {
   FILE *f = fopen(path, "rb");
   if (!f)
     return;
-  uint8_t buf[14];
-  if (fread(buf, 1, 14, f) != 14 || buf[4] != 0x20 || buf[9] != 0x20) {
+  uint8_t buf[6];
+  if (fread(buf, 1, 6, f) != 6) {
     fclose(f);
     return;
   }
   fclose(f);
+  uint8_t r[4], g[4], b[4];
+  r[0] = buf[0] >> 4;
+  r[1] = buf[0] & 0x0F;
+  r[2] = buf[1] >> 4;
+  r[3] = buf[1] & 0x0F;
+  g[0] = buf[2] >> 4;
+  g[1] = buf[2] & 0x0F;
+  g[2] = buf[3] >> 4;
+  g[3] = buf[3] & 0x0F;
+  b[0] = buf[4] >> 4;
+  b[1] = buf[4] & 0x0F;
+  b[2] = buf[5] >> 4;
+  b[3] = buf[5] & 0x0F;
   for (int i = 0; i < 4; i++)
     screen->base_colors[i] =
-        0xFF000000u | ((uint32_t)buf[i] << 16) | ((uint32_t)buf[5 + i] << 8) |
-        (uint32_t)buf[10 + i];
+        0xFF000000u | ((uint32_t)r[i] * 17 << 16) | ((uint32_t)g[i] * 17 << 8) |
+        (uint32_t)b[i] * 17;
   if (screen->theme_swap_fg_bg) {
     uint32_t tmp = screen->base_colors[0];
     screen->base_colors[0] = screen->base_colors[1];
