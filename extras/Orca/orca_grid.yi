@@ -7,28 +7,28 @@ def GRID_H = 25
 def GRID_SIZE = GRID_W * GRID_H
 
 -- Cell data, locks, bangs, highlights, visual bang flash, operator outputs, east-input markers, Q-read markers
-def ?cells = []: [any]
-def ?locks = []: [any]
-def ?bangs = []: [any]
-def ?highlights = []: [any]
-def ?visual_bangs = []: [any]
-def ?outputs = []: [any]
-def ?east_inputs = []: [any]
-def ?q_reads = []: [any]
+def ?cells = []: [string]
+def ?locks = []: [bool]
+def ?bangs = []: [bool]
+def ?highlights = []: [bool]
+def ?visual_bangs = []: [bool]
+def ?outputs = []: [bool]
+def ?east_inputs = []: [bool]
+def ?q_reads = []: [bool]
 
 -- Variable storage for V operator (36 slots: 0-9, a-z)
-def ?vars = []: [any]
+def ?vars = []: [string]
 
 :: init() (( -- ))
-    cells = []: [any]
-    locks = []: [any]
-    bangs = []: [any]
-    highlights = []: [any]
-    visual_bangs = []: [any]
-    outputs = []: [any]
-    east_inputs = []: [any]
-    q_reads = []: [any]
-    vars = []: [any]
+    cells = []: [string]
+    locks = []: [bool]
+    bangs = []: [bool]
+    highlights = []: [bool]
+    visual_bangs = []: [bool]
+    outputs = []: [bool]
+    east_inputs = []: [bool]
+    q_reads = []: [bool]
+    vars = []: [string]
     for (let ?i = 0; i < GRID_SIZE; i += 1)
         stdr.push(cells, ".")
         stdr.push(locks, false)

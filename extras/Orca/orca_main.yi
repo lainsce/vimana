@@ -42,6 +42,9 @@ def KEY_X = 27
 -- Timing accumulator for FPS-independent tick rate
 def ?tick_acc = 0.0
 
+-- Visual frame counter (increments every 60fps frame, not simulation tick)
+def ?visual_frame = 0
+
 -- Mouse drag state
 def ?mouse_dragging = false
 
@@ -220,9 +223,6 @@ def ?last_titlebar_shaded = false
 
         let mx = dev.pointer_x()
         let my = dev.pointer_y()
-        let ?needs_redraw = mx != last_mx || my != last_my ||
-            close_button_active != last_close_button_state ||
-            titlebar_shaded != last_titlebar_shaded
         if !titlebar_shaded
             -- Mouse handling
             let gx = stdr.floor((mx - 16) / 8)
@@ -335,7 +335,7 @@ def ?last_titlebar_shaded = false
                         orca_model.type_at_cursor(ch)
 
             if orca_model.dirty
-                needs_redraw = true
+                orca_view.draw(scr)
         else
             mouse_dragging = false
 
@@ -347,10 +347,6 @@ def ?last_titlebar_shaded = false
                 tick_acc = tick_acc - tick_interval
                 orca_sim.tick(sys)
                 orca_model.tick_frame()
-                needs_redraw = true
-
-        if !needs_redraw
-            <-
 
         last_mx = mx
         last_my = my
@@ -373,6 +369,12 @@ def ?last_titlebar_shaded = false
 
         -- Draw cursor every frame
         scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+
+        -- Force unique frame for vimana's hash (uses visual frame counter)
+        visual_frame = visual_frame + 1
+        let ?frame_dot_x = visual_frame % scr.width()
+        scr.set_auto(0x00).set_x(frame_dot_x).set_y(0).pixel(0)
+
         scr.present()
     })
 ;
