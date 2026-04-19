@@ -235,7 +235,7 @@ def TB_PAD = 4
     <- idx * 3 * 8
 ;
 
-def ICON_TILE_Y = 0
+def ICON_TILE_Y = world_model.TOOLBAR_Y
 
 : draw_toolbar(scr = vimana.screen) (( -- ))
     fill(scr, 0, world_model.TOOLBAR_Y, world_model.WIN_W, world_model.TOOLBAR_H, world_model.C_BG)

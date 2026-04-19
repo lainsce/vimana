@@ -1,0 +1,195 @@
+cask nanovine_model
+
+bring stdr
+
+def WIN_W    = 768
+def WIN_H    = 384
+def MSG_Y    = 24
+def INPUT_Y  = 335
+def INPUT_H  = 24
+
+def MAX_MSGS = 64
+def MAX_MSG_LEN = 128
+
+def LINE_H   = 16
+def MSG_STEP_Y = 16
+
+def ?host       = "0.0.0.0"
+def ?port       = "44322"
+def ?proc       = 0
+def ?connected  = false
+def ?messages   = []: [any]
+def ?last_msg   = -1
+def ?input_buf  = ""
+def ?input_pos  = 0
+def ?username   = ""
+def ?dirty      = true
+
+def ?view_scroll = 0
+def ?view_lines  = 0
+
+-- Protocol state for server responses
+def ?hist_state       = 0  -- 0=idle, 1=reading count, 2=reading messages, 3=reading final
+def ?hist_remaining   = 0  -- messages left to read in current response
+def ?hist_line_buf    = "" -- temporary buffer for HIST reason line
+
+def C_FG  = 1
+def C_BG  = 0
+def C_HL  = 2
+def C_DIM = 3
+
+:: set_dirty() (( -- ))
+    dirty = true
+;
+
+:: clear_dirty() (( -- ))
+    -- disabled
+;
+
+:: is_dirty() (( bool ))
+    <- dirty
+;
+
+:: set_scroll(sc = num) (( -- ))
+    view_scroll = sc
+;
+
+:: set_username(name = string) (( -- ))
+    username = name
+;
+
+:: add_message(msg = string) (( -- ))
+    if stdr.len(messages) >= MAX_MSGS
+        let ?next = []: [any]
+        for (let ?i = 1; i < stdr.len(messages); i += 1)
+            stdr.push(next, stdr.str(messages[i] ?? ""))
+        messages = next
+    stdr.push(messages, msg)
+    set_dirty()
+;
+
+:: clear_messages() (( -- ))
+    messages = []
+    set_dirty()
+;
+
+:: get_messages() (( [any] ))
+    <- messages
+;
+
+:: get_message_count() (( num ))
+    <- stdr.len(messages)
+;
+
+:: get_input() (( string ))
+    <- input_buf
+;
+
+:: set_input(text = string) (( -- ))
+    input_buf = text
+    input_pos = stdr.len(text)
+    set_dirty()
+;
+
+:: append_input(ch = string) (( -- ))
+    if stdr.len(input_buf) < MAX_MSG_LEN - 1
+        let prefix = stdr.slice(input_buf, 0, input_pos)
+        let suffix = stdr.slice(input_buf, input_pos, stdr.len(input_buf))
+        input_buf = prefix + ch + suffix
+        input_pos = input_pos + 1
+    set_dirty()
+;
+
+:: backspace_input() (( -- ))
+    if input_pos > 0
+        let prefix = stdr.slice(input_buf, 0, input_pos - 1)
+        let suffix = stdr.slice(input_buf, input_pos, stdr.len(input_buf))
+        input_buf = prefix + suffix
+        input_pos = input_pos - 1
+    set_dirty()
+;
+
+:: delete_input() (( -- ))
+    if input_pos < stdr.len(input_buf)
+        let prefix = stdr.slice(input_buf, 0, input_pos)
+        let suffix = stdr.slice(input_buf, input_pos + 1, stdr.len(input_buf))
+        input_buf = prefix + suffix
+    set_dirty()
+;
+
+:: move_cursor_left() (( -- ))
+    if input_pos > 0
+        input_pos = input_pos - 1
+    set_dirty()
+;
+
+:: move_cursor_right() (( -- ))
+    if input_pos < stdr.len(input_buf)
+        input_pos = input_pos + 1
+    set_dirty()
+;
+
+:: get_cursor_pos() (( num ))
+    <- input_pos
+;
+
+:: clear_input() (( -- ))
+    input_buf = ""
+    input_pos = 0
+    set_dirty()
+;
+
+:: set_host(h = string) (( -- ))
+    host = h
+    set_dirty()
+;
+
+:: set_port(p = string) (( -- ))
+    port = p
+    set_dirty()
+;
+
+:: get_host() (( string ))
+    <- host
+;
+
+:: get_port() (( string ))
+    <- port
+;
+
+:: set_connected(c = bool) (( -- ))
+    connected = c
+    set_dirty()
+;
+
+:: is_connected() (( bool ))
+    <- connected
+;
+
+:: set_proc(p = num) (( -- ))
+    proc = p
+;
+
+:: get_proc() (( num ))
+    <- proc
+;
+
+:: set_last_msg(n = num) (( -- ))
+    last_msg = n
+;
+
+:: get_last_msg() (( num ))
+    <- last_msg
+;
+
+:: set_view_lines(n = num) (( -- ))
+    view_lines = n
+;
+
+:: get_view_lines() (( num ))
+    <- view_lines
+;
+
+:: get_username() (( string ))
+    <- username
+;

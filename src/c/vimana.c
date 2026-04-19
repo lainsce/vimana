@@ -577,6 +577,9 @@ struct VimanaScreen {
   bool cursor_dirty;             /* cursor data changed */
   unsigned int cursor_fg;        /* cursor foreground color slot */
   unsigned int cursor_bg;        /* cursor background color slot */
+  bool manual_cursor_pending;    /* app-drawn cursor recorded this frame */
+  uint16_t manual_cursor_x;      /* app-drawn cursor x */
+  uint16_t manual_cursor_y;      /* app-drawn cursor y */
 };
 
 /* ── ROM accessor implementations (need complete struct definition) ───── */
@@ -601,6 +604,45 @@ static inline uint8_t *vimana_ensure_sprite_bank(vimana_screen *s, unsigned int 
 }
 static inline uint8_t *vimana_active_sprite_bank(vimana_screen *s) {
   return vimana_ensure_sprite_bank(s, s->active_sprite_bank);
+}
+
+static bool vimana_is_manual_cursor_draw(vimana_screen *screen,
+                                         const uint8_t *bank,
+                                         unsigned int addr,
+                                         unsigned int ctrl,
+                                         unsigned int repeat) {
+  if (!screen || !bank)
+    return false;
+  if (ctrl != 0x85 || repeat != 0)
+    return false;
+  if (addr + VIMANA_TILE_SIZE > VIMANA_SPRITE_BANK_SIZE)
+    return false;
+  return memcmp(bank + addr, screen->cursor_icn, VIMANA_TILE_SIZE) == 0;
+}
+
+static void vimana_draw_manual_cursor_overlay(vimana_screen *screen) {
+  if (!screen || !screen->manual_cursor_pending)
+    return;
+  uint32_t fg_rgb = screen->base_colors[1];
+  SDL_SetRenderDrawColor(screen->renderer,
+                         (uint8_t)((fg_rgb >> 16) & 0xFF),
+                         (uint8_t)((fg_rgb >> 8) & 0xFF),
+                         (uint8_t)(fg_rgb & 0xFF), 255);
+  for (unsigned int row = 0; row < VIMANA_TILE_SIZE; row++) {
+    uint8_t bits = screen->cursor_icn[row];
+    for (unsigned int col = 0; col < VIMANA_TILE_SIZE; col++) {
+      if (!(bits & (uint8_t)(0x80u >> col)))
+        continue;
+      SDL_FRect px = {
+        (float)((screen->manual_cursor_x + col) * screen->scale),
+        (float)((screen->manual_cursor_y + row) * screen->scale),
+        (float)screen->scale,
+        (float)screen->scale
+      };
+      SDL_RenderFillRect(screen->renderer, &px);
+    }
+  }
+  screen->manual_cursor_pending = false;
 }
 
 static uint32_t vimana_parse_hex_color(const char *hex) {
@@ -1564,6 +1606,11 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
 
   screen->cursor_visible = false;
   screen->cursor_dirty = false;
+  screen->cursor_fg = 1;
+  screen->cursor_bg = 0;
+  screen->manual_cursor_pending = false;
+  screen->manual_cursor_x = 0;
+  screen->manual_cursor_y = 0;
   screen->system = NULL;
   SDL_HideCursor(); /* apps draw their own cursors */
   vimana_screen_reset_palette(screen);
@@ -1908,6 +1955,18 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
   unsigned int y = screen->port_y;
   unsigned int rA = screen->port_addr;
 
+  if (vimana_is_manual_cursor_draw(screen, bank, rA, ctrl, rML)) {
+    screen->manual_cursor_pending = true;
+    screen->manual_cursor_x = (uint16_t)x;
+    screen->manual_cursor_y = (uint16_t)y;
+    screen->port_addr = (uint16_t)rA;
+    if (rMX)
+      screen->port_x += flipx ? -VIMANA_TILE_SIZE : VIMANA_TILE_SIZE;
+    if (rMY)
+      screen->port_y += flipy ? -VIMANA_TILE_SIZE : VIMANA_TILE_SIZE;
+    return;
+  }
+
   for (unsigned int i = 0; i <= rML; i++, x += dx, y += dy, rA += addr_incr) {
     const unsigned int x0 = x + 8;
     const unsigned int y0 = y + 8;
@@ -2021,17 +2080,35 @@ void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
   const uint8_t *widths = vimana_rom_font_widths(screen);
   unsigned int bg_slot = bg & 0xFF;
   unsigned int fg_slot = fg & 0xFF;
-  unsigned int gh = screen->font_height; /* max 24, but typically 8 or 16; use height-1 to allow for descenders */
+  unsigned int gh = screen->font_height;
   unsigned int gw = widths[ch];
-  if (gw == 0) gw = screen->font_glyph_width;
+  if (gw == 0)
+    gw = screen->font_glyph_width;
   for (unsigned int row = 0; row < gh; row++) {
     unsigned int py = y + row;
     if (py >= (unsigned int)screen->canvas_height)
       continue;
     const uint8_t *row_data = bmp + row * VIMANA_FONT_ROW_BYTES;
-    uint8_t *dst =
-        screen->layers + (py + 8) * screen->width_mar + (x + 8);
+
+    /* Limit the background pass to the actual ink extents of this row,
+       so spaces and trailing empty columns don't wipe what is behind the
+       text. */
+    unsigned int first_hit = gw;
+    unsigned int last_hit = 0;
     for (unsigned int col = 0; col < gw; col++) {
+      uint8_t mask = (uint8_t)(0x80u >> (col & 7));
+      if (row_data[col >> 3] & mask) {
+        if (first_hit == gw)
+          first_hit = col;
+        last_hit = col;
+      }
+    }
+    if (first_hit == gw)
+      continue;
+
+    uint8_t *dst = screen->layers + (py + 8) * screen->width_mar + (x + 8) +
+                   first_hit;
+    for (unsigned int col = first_hit; col <= last_hit; col++) {
       unsigned int px = x + col;
       if (px >= (unsigned int)screen->width) {
         dst++;
@@ -2041,6 +2118,95 @@ void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
       uint8_t hit = (row_data[col >> 3] & mask) ? 1u : 0u;
       uint8_t slot = hit ? (uint8_t)fg_slot : (uint8_t)bg_slot;
       *dst++ = (uint8_t)((slot << 4) | slot);
+    }
+  }
+}
+
+static bool vimana_screen_glyph_bounds(vimana_screen *screen, unsigned int ch,
+                                       unsigned int *min_col,
+                                       unsigned int *max_col,
+                                       unsigned int *min_row,
+                                       unsigned int *max_row) {
+  if (!screen || !screen->font_rom || ch >= VIMANA_GLYPH_COUNT)
+    return false;
+  const uint8_t *bmp = vimana_rom_font_bitmap(screen, ch);
+  const uint8_t *widths = vimana_rom_font_widths(screen);
+  unsigned int gh = screen->font_height;
+  unsigned int gw = widths[ch];
+  if (gw == 0)
+    gw = screen->font_glyph_width;
+
+  bool any = false;
+  unsigned int left = gw;
+  unsigned int right = 0;
+  unsigned int top = gh;
+  unsigned int bottom = 0;
+
+  for (unsigned int row = 0; row < gh; row++) {
+    const uint8_t *row_data = bmp + row * VIMANA_FONT_ROW_BYTES;
+    for (unsigned int col = 0; col < gw; col++) {
+      uint8_t mask = (uint8_t)(0x80u >> (col & 7));
+      if (!(row_data[col >> 3] & mask))
+        continue;
+      if (!any) {
+        left = right = col;
+        top = bottom = row;
+        any = true;
+      } else {
+        if (col < left)
+          left = col;
+        if (col > right)
+          right = col;
+        if (row < top)
+          top = row;
+        if (row > bottom)
+          bottom = row;
+      }
+    }
+  }
+  if (!any)
+    return false;
+  if (min_col)
+    *min_col = left;
+  if (max_col)
+    *max_col = right;
+  if (min_row)
+    *min_row = top;
+  if (max_row)
+    *max_row = bottom;
+  return true;
+}
+
+static void vimana_screen_put_glyph_fg(vimana_screen *screen, unsigned int x,
+                                       unsigned int y, unsigned int ch,
+                                       unsigned int fg) {
+  if (!screen || !screen->layers || !screen->font_rom ||
+      ch >= VIMANA_GLYPH_COUNT)
+    return;
+  const uint8_t *bmp = vimana_rom_font_bitmap(screen, ch);
+  const uint8_t *widths = vimana_rom_font_widths(screen);
+  unsigned int fg_slot = fg & 0x0F;
+  unsigned int gh = screen->font_height;
+  unsigned int gw = widths[ch];
+  if (gw == 0)
+    gw = screen->font_glyph_width;
+
+  for (unsigned int row = 0; row < gh; row++) {
+    unsigned int py = y + row;
+    if (py >= (unsigned int)screen->canvas_height)
+      continue;
+    const uint8_t *row_data = bmp + row * VIMANA_FONT_ROW_BYTES;
+    uint8_t *dst = screen->layers + (py + 8) * screen->width_mar + (x + 8);
+    for (unsigned int col = 0; col < gw; col++) {
+      unsigned int px = x + col;
+      if (px >= (unsigned int)screen->width) {
+        dst++;
+        continue;
+      }
+      uint8_t mask = (uint8_t)(0x80u >> (col & 7));
+      if (row_data[col >> 3] & mask)
+        *dst = (uint8_t)fg_slot;
+      dst++;
     }
   }
 }
@@ -2079,12 +2245,77 @@ void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
   if (!screen || !text || !screen->font_rom)
     return;
   const uint8_t *widths = vimana_rom_font_widths(screen);
+  bool any_ink = false;
+  bool any_char = false;
+  unsigned int ink_top = 0;
+  unsigned int ink_bottom = 0;
   unsigned int cx = x;
+
   for (int i = 0; text[i] != 0; i++) {
     unsigned int ch = (unsigned char)text[i];
-    if (ch >= VIMANA_GLYPH_COUNT) ch = ' ';
-    vimana_screen_put(screen, cx, y, &text[i], fg, bg);
-    cx += widths[ch];
+    unsigned int glyph_left, glyph_right, glyph_top, glyph_bottom;
+    unsigned int advance;
+    if (ch >= VIMANA_GLYPH_COUNT)
+      ch = ' ';
+    advance = widths[ch];
+    if (advance == 0)
+      advance = screen->font_glyph_width;
+    if (advance > 0)
+      any_char = true;
+    if (vimana_screen_glyph_bounds(screen, ch, &glyph_left, &glyph_right,
+                                   &glyph_top, &glyph_bottom)) {
+      unsigned int top = y + glyph_top;
+      unsigned int bottom = y + glyph_bottom;
+      if (!any_ink) {
+        ink_top = top;
+        ink_bottom = bottom;
+        any_ink = true;
+      } else {
+        if (top < ink_top)
+          ink_top = top;
+        if (bottom > ink_bottom)
+          ink_bottom = bottom;
+      }
+    }
+    cx += advance;
+  }
+
+  if (any_char && screen->layers && screen->width > 0 &&
+      screen->canvas_height > 0 && cx > x) {
+    unsigned int bg_slot = bg & 0x0F;
+    unsigned int left = x;
+    unsigned int right = cx - 1;
+    unsigned int top = y;
+    unsigned int bottom = y + screen->font_height - 1;
+    if (any_ink) {
+      left = left > 0 ? left - 1 : 0;
+      right = right + 1;
+      top = ink_top > 0 ? ink_top - 1 : 0;
+      bottom = ink_bottom + 1;
+    }
+    if (right >= (unsigned int)screen->width)
+      right = (unsigned int)screen->width - 1;
+    if (bottom >= (unsigned int)screen->canvas_height)
+      bottom = (unsigned int)screen->canvas_height - 1;
+    for (unsigned int py = top; py <= bottom; py++) {
+      uint8_t *dst =
+          screen->layers + (py + 8) * screen->width_mar + (left + 8);
+      for (unsigned int px = left; px <= right; px++)
+        *dst = (uint8_t)bg_slot, dst++;
+    }
+  }
+
+  cx = x;
+  for (int i = 0; text[i] != 0; i++) {
+    unsigned int ch = (unsigned char)text[i];
+    unsigned int advance;
+    if (ch >= VIMANA_GLYPH_COUNT)
+      ch = ' ';
+    advance = widths[ch];
+    if (advance == 0)
+      advance = screen->font_glyph_width;
+    vimana_screen_put_glyph_fg(screen, cx, y, ch, fg);
+    cx += advance;
   }
 }
 
@@ -2140,6 +2371,8 @@ void vimana_screen_present(vimana_screen *screen) {
     SDL_RenderFillRect(screen->renderer, &bl);
     SDL_RenderFillRect(screen->renderer, &br);
   }
+
+  vimana_draw_manual_cursor_overlay(screen);
 
   SDL_RenderPresent(screen->renderer);
 }

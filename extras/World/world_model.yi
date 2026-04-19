@@ -16,9 +16,9 @@ def GLYPH_LAYOUT = "qQwWeErRtTyYuUiIoOpPaAsSdDfFgGhHjJkKlLzZxXcCvVbBnNmM,<.>1!2@
 def WIN_W = 560
 def WIN_H = 408
 def TOOLBAR_H = 24
-def TOOLBAR_Y = 0
+def TOOLBAR_Y = 17
 def MAP_X = 8
-def MAP_Y = 32
+def MAP_Y = 48
 
 -- Palette slot indices
 def C_BG = 0

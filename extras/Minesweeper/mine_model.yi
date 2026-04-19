@@ -14,27 +14,27 @@ def NUM_MINES = 16
 
 -- Grid pixel origin
 def GRID_PX = 16
-def GRID_PY = 64
+def GRID_PY = 72
 
 -- Grid tile origin (pixels / 8)
 def GRID_TX = 2
-def GRID_TY = 8
+def GRID_TY = 9
 
 -- Display tile positions (header area)
 def STATUS_TX = 9
-def STATUS_TY = 3
+def STATUS_TY = 4
 def PROGRESS_TX = 3
-def PROGRESS_TY = 3
+def PROGRESS_TY = 4
 def TIMER_TX = 11
-def TIMER_TY = 3
+def TIMER_TY = 4
 
 -- Frame positions (tile coords) and sizes (in 8px tiles)
 def F1_TX = 1
-def F1_TY = 1
+def F1_TY = 3
 def F1_W  = 18
-def F1_H  = 6
+def F1_H  = 5
 def F2_TX = 1
-def F2_TY = 7
+def F2_TY = 8
 def F2_W  = 18
 def F2_H  = 18
 

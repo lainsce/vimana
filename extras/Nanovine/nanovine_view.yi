@@ -1,0 +1,243 @@
+cask nanovine_view
+
+bring stdr
+bring vimana
+bring nanovine_model
+
+def LINE_H = 16
+def MSG_STEP_Y = 16
+def TITLEBAR_H = 17
+
+def ?cursorblink_timer = 0
+def ?cursorblink_on = true
+
+: char_width(ch = string) (( num ))
+    let code = stdr.char_code(ch)
+    if code == 32: <- 4
+    elif code == 33: <- 5
+    elif code == 34: <- 5
+    elif code == 35: <- 9
+    elif code == 36: <- 7
+    elif code == 37: <- 9
+    elif code == 38: <- 9
+    elif code == 39: <- 3
+    elif code == 40: <- 5
+    elif code == 41: <- 5
+    elif code == 42: <- 8
+    elif code == 43: <- 7
+    elif code == 44: <- 4
+    elif code == 45: <- 7
+    elif code == 46: <- 3
+    elif code == 47: <- 7
+    elif code == 48: <- 8
+    elif code == 49: <- 8
+    elif code == 50: <- 8
+    elif code == 51: <- 8
+    elif code == 52: <- 8
+    elif code == 53: <- 8
+    elif code == 54: <- 8
+    elif code == 55: <- 8
+    elif code == 56: <- 8
+    elif code == 57: <- 8
+    elif code == 58: <- 4
+    elif code == 59: <- 4
+    elif code == 60: <- 6
+    elif code == 61: <- 7
+    elif code == 62: <- 6
+    elif code == 63: <- 8
+    elif code == 64: <- 10
+    elif code == 65: <- 9
+    elif code == 66: <- 9
+    elif code == 67: <- 8
+    elif code == 68: <- 8
+    elif code == 69: <- 7
+    elif code == 70: <- 7
+    elif code == 71: <- 8
+    elif code == 72: <- 8
+    elif code == 73: <- 6
+    elif code == 74: <- 7
+    elif code == 75: <- 8
+    elif code == 76: <- 7
+    elif code == 77: <- 11
+    elif code == 78: <- 10
+    elif code == 79: <- 8
+    elif code == 80: <- 8
+    elif code == 81: <- 8
+    elif code == 82: <- 8
+    elif code == 83: <- 8
+    elif code == 84: <- 8
+    elif code == 85: <- 9
+    elif code == 86: <- 9
+    elif code == 87: <- 11
+    elif code == 88: <- 7
+    elif code == 89: <- 7
+    elif code == 90: <- 7
+    elif code == 91: <- 6
+    elif code == 92: <- 7
+    elif code == 93: <- 6
+    elif code == 94: <- 4
+    elif code == 95: <- 8
+    elif code == 96: <- 1
+    elif code == 97: <- 8
+    elif code == 98: <- 8
+    elif code == 99: <- 7
+    elif code == 100: <- 7
+    elif code == 101: <- 7
+    elif code == 102: <- 6
+    elif code == 103: <- 7
+    elif code == 104: <- 7
+    elif code == 105: <- 4
+    elif code == 106: <- 6
+    elif code == 107: <- 6
+    elif code == 108: <- 4
+    elif code == 109: <- 11
+    elif code == 110: <- 7
+    elif code == 111: <- 7
+    elif code == 112: <- 8
+    elif code == 113: <- 7
+    elif code == 114: <- 6
+    elif code == 115: <- 7
+    elif code == 116: <- 6
+    elif code == 117: <- 8
+    elif code == 118: <- 7
+    elif code == 119: <- 10
+    elif code == 120: <- 7
+    elif code == 121: <- 7
+    elif code == 122: <- 7
+    elif code == 123: <- 5
+    elif code == 124: <- 4
+    elif code == 125: <- 5
+    elif code == 126: <- 8
+    else: <- 8
+;
+
+: draw_fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
+    for (let ?iy = 0; iy < h; iy += 1)
+        for (let ?ix = 0; ix < w; ix += 1)
+            scr.set_x((x + ix) * 8).set_y((y + iy) * 8).pixel(c)
+;
+
+:: update_cursorblink(sys = vimana.system) (( -- ))
+    let now = sys.ticks()
+    if now - cursorblink_timer > 400
+        cursorblink_timer = now
+        cursorblink_on = !cursorblink_on
+        nanovine_model.set_dirty()
+;
+
+:: draw_all(scr = vimana.screen) (( -- ))
+    scr.clear(vimana.color_bg)
+
+    -- Get message count early
+    let messages = nanovine_model.get_messages()
+    let total = stdr.len(messages)
+
+    -- Status bar: server/host on left, message count on right of it, username far right
+    let status = nanovine_model.get_host() + ":" + nanovine_model.get_port()
+    if nanovine_model.is_connected()
+        status = "[online] " + status
+    else
+        status = "[inactive] " + status
+    scr.put_text(8, scr.height() - 24, status, vimana.color_3, vimana.color_bg)
+
+    -- Compute status text width in pixels
+    let ?status_w = 0
+    let ?si = 0
+    for (; si < stdr.len(status); si += 1)
+        status_w = status_w + char_width(stdr.char_at(status, si))
+
+    -- Messages count to the right of status
+    let msg_label = "messages: " + stdr.str(total)
+    let msg_label_x = 8 + status_w + 32
+    let msg_label_y = scr.height() - 24
+    let ?mpx = 0
+    for (; mpx < stdr.len(msg_label); )
+        let mch = stdr.char_at(msg_label, mpx)
+        scr.put_text(msg_label_x, msg_label_y, mch, vimana.color_3, vimana.color_bg)
+        msg_label_x = msg_label_x + char_width(mch)
+        mpx = mpx + 1
+
+    let uname = nanovine_model.get_username()
+    scr.put_text(720, scr.height() - 24, uname, vimana.color_2, vimana.color_bg)
+
+    -- Input line
+    let input = nanovine_model.get_input()
+    let cursor = nanovine_model.get_cursor_pos()
+    let base_py = scr.height() - 42
+    let px = 8
+    scr.put_text(px, base_py, "> ", vimana.color_fg, vimana.color_bg)
+    px = px + char_width(">")
+    px = px + char_width(" ")
+    let in_len = stdr.len(input)
+    let ?ti = 0
+    for (; ti < in_len; ti += 1)
+        let ch = stdr.char_at(input, ti)
+        scr.put_text(px, base_py, ch, vimana.color_fg, vimana.color_bg)
+        px = px + char_width(ch)
+
+    if cursorblink_on
+        let cursor_px = 8
+        cursor_px = cursor_px + char_width(">")
+        cursor_px = cursor_px + char_width(" ")
+        let ?i = 0
+        for (; i < cursor && i < in_len; i += 1)
+            cursor_px = cursor_px + char_width(stdr.char_at(input, i))
+        let cw_px = char_width(" ")
+        if cursor < in_len
+            cw_px = char_width(stdr.char_at(input, cursor))
+        let ?dy = 0
+        for (; dy < 16; dy += 1)
+            let ?dx = 0
+            for (; dx < cw_px; dx += 1)
+                scr.set_x(cursor_px + dx).set_y(base_py + dy).pixel(vimana.color_2)
+
+    -- Messages
+    let top = nanovine_model.MSG_Y
+    let bottom = scr.height() - 64
+    let top_tile = stdr.floor(top / 8)
+    let ?rows = stdr.floor((bottom - (top + MSG_STEP_Y)) / MSG_STEP_Y)
+    if rows <= 0
+        nanovine_model.set_view_lines(0)
+        <-
+    nanovine_model.set_view_lines(rows)
+
+    if total == 0
+        let empty = "(no messages loaded)"
+        if !nanovine_model.is_connected()
+            empty = "(disconnected: no history fetched)"
+        let empty_px = 1 * 8
+        let empty_py = top_tile * 8
+        let ?ei = 0
+        for (; ei < stdr.len(empty); ei += 1)
+            let ech = stdr.char_at(empty, ei)
+            scr.put_text(empty_px, empty_py, ech, vimana.color_3, vimana.color_bg)
+            empty_px = empty_px + char_width(ech)
+        <-
+
+    -- Render visible message lines, stepping by 2 tiles (16px) per row
+    let ?shown = total
+    if shown > rows
+        shown = rows
+    let start = total - shown
+    let ?mi = 0
+    for (; mi < shown; mi += 1)
+        let idx = start + mi
+        let msg = stdr.str(messages[idx] ?? "")
+        let msg_px = 1 * 8
+        let msg_py = (top_tile + mi * 2) * 8
+        let max_px = scr.width() - 16
+        let ?ci = 0
+        for (; ci < stdr.len(msg); ci += 1)
+            let ch = stdr.char_at(msg, ci)
+            let ch_w = char_width(ch)
+            if msg_px + ch_w > max_px
+                let suffix = "..."
+                let ?si = 0
+                for (; si < 3; si += 1)
+                    let sch = stdr.char_at(suffix, si)
+                    scr.put_text(msg_px, msg_py, sch, vimana.color_fg, vimana.color_bg)
+                    msg_px = msg_px + char_width(sch)
+                break
+            scr.put_text(msg_px, msg_py, ch, vimana.color_fg, vimana.color_bg)
+            msg_px = msg_px + ch_w
+;

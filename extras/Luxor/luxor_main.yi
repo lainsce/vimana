@@ -230,7 +230,45 @@ def CURSOR_ADDR = 0x120
 def CLOSE_ADDR = 0x138
 def CLOSE_DOWN_ADDR = 0x148
 def BG_ADDR = 0x168
+def TITLEBAR_H = 16
+def TITLEBAR_SHADE_H = 17
+def TITLEBAR_EDGE_Y = 14
+def HEADER_DBLCLICK_MS = 400
+def HEADER_DBLCLICK_DIST = 8
 def ?close_button_active = false
+def ?titlebar_capture = false
+def ?titlebar_shaded = false
+def ?titlebar_saved_height = 0
+def ?header_click_time = 0
+def ?header_click_x = 0
+def ?header_click_y = 0
+
+: redraw_titlebar_span(scr = vimana.screen, x = num, w = num) (( -- ))
+    if w <= 0
+        <-
+    let tiles = stdr.floor((w + 7) / 8)
+    scr.set_auto(0x15).set_addr(BG_ADDR).set_x(x).set_y(0)
+    for (let ?i = 0; i < tiles; i += 1)
+        scr.sprite(0x85)
+;
+
+: draw_titlebar_decor(scr = vimana.screen) (( -- ))
+    scr.set_auto(0x00).set_x(scr.width() - 1).set_y(TITLEBAR_EDGE_Y)
+    scr.pixel(0xa2)
+    scr.set_x(1)
+    scr.pixel(0xb2)
+;
+
+: toggle_titlebar_shade(scr = vimana.screen) (( -- ))
+    if titlebar_shaded
+        titlebar_shaded = false
+        scr.resize(scr.width(), titlebar_saved_height)
+        <-
+    if scr.height() > TITLEBAR_SHADE_H
+        titlebar_saved_height = scr.height()
+    titlebar_shaded = true
+    scr.resize(scr.width(), TITLEBAR_SHADE_H)
+;
 
 : draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
     let ?max_chars = stdr.floor((scr.width() - 48) / 8) - 2
@@ -246,6 +284,7 @@ def ?close_button_active = false
     let ?tx = stdr.floor((scr.width() - stdr.len(label) * 8) / 2)
     if tx < 24
         tx = 24
+    redraw_titlebar_span(scr, tx, stdr.len(label) * 8)
     scr.put_text(tx, 1, label, vimana.color_fg, 2)
 ;
 
@@ -253,12 +292,43 @@ def ?close_button_active = false
     <- dev.pointer_x() >= 8 && dev.pointer_x() < 24 && dev.pointer_y() >= 0 && dev.pointer_y() < 16
 ;
 
+: in_titlebar(dev = vimana.device) (( bool ))
+    <- dev.pointer_y() >= 0 && dev.pointer_y() < TITLEBAR_H
+;
+
 : update_close_button(dev = vimana.device, sys = vimana.system) (( -- ))
     let hover = in_close_button(dev)
-    let down = dev.mouse_down(vimana.mouse_left)
-    if !down && close_button_active && hover
-        sys.quit()
-    close_button_active = down && hover
+    if dev.mouse_pressed(vimana.mouse_left) && hover
+        close_button_active = true
+        <-
+    if !dev.mouse_down(vimana.mouse_left)
+        if close_button_active && hover
+            sys.quit()
+        close_button_active = false
+;
+
+: update_titlebar(dev = vimana.device, sys = vimana.system, scr = vimana.screen) (( bool ))
+    if !titlebar_shaded && scr.height() > TITLEBAR_SHADE_H
+        titlebar_saved_height = scr.height()
+    let hover = in_titlebar(dev)
+    if dev.mouse_pressed(vimana.mouse_left) && hover
+        titlebar_capture = true
+        if !in_close_button(dev)
+            let now = sys.ticks()
+            let dx = dev.pointer_x() - header_click_x
+            let dy = dev.pointer_y() - header_click_y
+            let dist = dx * dx + dy * dy
+            if now - header_click_time < HEADER_DBLCLICK_MS && dist < HEADER_DBLCLICK_DIST * HEADER_DBLCLICK_DIST
+                toggle_titlebar_shade(scr)
+                header_click_time = 0
+            else
+                header_click_time = now
+                header_click_x = dev.pointer_x()
+                header_click_y = dev.pointer_y()
+    elif !dev.mouse_down(vimana.mouse_left)
+        titlebar_capture = false
+    update_close_button(dev, sys)
+    <- titlebar_capture || (hover && !dev.mouse_down(vimana.mouse_left))
 ;
 
 : draw_close_button(scr = vimana.screen) (( -- ))
@@ -288,13 +358,15 @@ def ?close_button_active = false
     scr.set_sprite(CLOSE_ADDR, CLOSE_ICN, 1)
     scr.set_sprite(CLOSE_DOWN_ADDR, CLOSE_DOWN_ICN, 1)
     scr.set_drag_region(16)
+    titlebar_saved_height = scr.height()
     luxor_file.update_title(scr)
 
     sys.run(scr, () => {
         dev.poll()
 
-        update_close_button(dev, sys)
-        on_mouse(dev)
+        let titlebar_busy = update_titlebar(dev, sys, scr)
+        if !titlebar_busy
+            on_mouse(dev)
         on_key(dev, sys, fsys, scr)
         on_text(dev)
         on_scroll(dev)
@@ -307,6 +379,7 @@ def ?close_button_active = false
         scr.set_auto(0x25).set_x(0).set_y(0)
         for (let ?i = 0; i < scr.width() / 8; i += 1)
             scr.set_addr(BG_ADDR).sprite(0x85)
+        draw_titlebar_decor(scr)
         draw_titlebar_text(scr, luxor_file.title_text())
         -- Draw close button
         draw_close_button(scr)

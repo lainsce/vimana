@@ -11,9 +11,9 @@ def ROW_H     = 16
 def MAX_ROWS  = 24
 
 -- Player panel Y positions (pixel-addressed, for put_text)
-def TITLE_Y   = 16
-def ARTIST_Y  = 32
-def ALBUM_Y   = 48
+def TITLE_Y   = 24
+def ARTIST_Y  = 40
+def ALBUM_Y   = 56
 def TS_Y      = 102
 
 -- Control bar (tile-addressed; ×8 for pixels)

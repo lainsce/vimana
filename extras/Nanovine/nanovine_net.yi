@@ -1,0 +1,283 @@
+cask nanovine_net
+
+bring stdr
+bring vimana
+bring nanovine_model
+
+def ?store_messages = []: [any]
+def ?store_total = 0
+
+-- Protocol response parsing state
+def ?hist_state     = 0  -- 0=idle, 1=reading count, 2=reading messages, 3=reading final
+def ?hist_remaining = 0  -- messages left to read in current batch
+
+
+: safe_name_part(text = string) (( string ))
+    let ?parts = []: [any]
+    for (let ?i = 0; i < stdr.len(text); i += 1)
+        let ch = stdr.char_at(text, i)
+        let code = stdr.char_code(ch)
+        if (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122)
+            stdr.push(parts, ch)
+        elif ch == "." || ch == "-" || ch == "_"
+            stdr.push(parts, ch)
+        else
+            stdr.push(parts, "_")
+    <- stdr.join(parts)
+;
+
+: log_path() (( string ))
+    let cwd = stdr.getcwd()
+    let host = safe_name_part(nanovine_model.get_host())
+    let port = safe_name_part(nanovine_model.get_port())
+    let fname = "chat_" + host + "_" + port + ".log"
+    let p0 = cwd + "/" + fname
+    if stdr.file_exists(p0)
+        <- p0
+
+    let p1 = cwd + "/../" + fname
+    if stdr.file_exists(p1)
+        <- p1
+
+    let p2 = cwd + "/../../" + fname
+    if stdr.file_exists(p2)
+        <- p2
+
+    <- p0
+;
+
+: sanitize_message(text = string) (( string ))
+    let ?parts = []: [any]
+    for (let ?i = 0; i < stdr.len(text); i += 1)
+        let ch = stdr.char_at(text, i)
+        let code = stdr.char_code(ch)
+        if code == 127
+            stdr.push(parts, "?")
+        elif code >= 32
+            stdr.push(parts, ch)
+        elif code == 9
+            stdr.push(parts, ch)
+        else
+            stdr.push(parts, "?")
+    <- stdr.join(parts)
+;
+
+: read_log_lines() (( [any], num ))
+    let ?out = []: [any]
+    let raw_any = stdr.read_text_file(log_path())
+    if stdr.is_null(raw_any)
+        <- (out, 0)
+
+    let raw = stdr.str(raw_any)
+    let n = stdr.len(raw)
+    let ?start = 0
+    let ?total = 0
+    for (let ?i = 0; i < n; i += 1)
+        if stdr.char_at(raw, i) == "\n"
+            let line = stdr.slice(raw, start, i)
+            stdr.push(out, line)
+            total = total + stdr.len(line)
+            start = i + 1
+
+    if start < n
+        let line = stdr.slice(raw, start, n)
+        stdr.push(out, line)
+        total = total + stdr.len(line)
+
+    <- (out, total)
+;
+
+: append_log_line(line = string) (( bool ))
+    let path = log_path()
+    let raw_any = stdr.read_text_file(path)
+    let ?blob = ""
+    if !stdr.is_null(raw_any)
+        blob = stdr.str(raw_any)
+
+    blob = blob + line + "\n"
+    <- stdr.write_text_file(path, blob)
+;
+
+: load_store() (( -- ))
+    let loaded = read_log_lines()
+    store_messages = loaded[0] ?? ([]: [any])
+    store_total = stdr.num(loaded[1] ?? 0)
+;
+
+: store_count() (( num ))
+    <- stdr.len(store_messages)
+;
+
+: store_append(line = string) (( -- ))
+    stdr.push(store_messages, line)
+    store_total = store_total + stdr.len(line)
+;
+
+: replace_visible(lines = [any], start = num) (( -- ))
+    nanovine_model.clear_messages()
+    let total = stdr.len(lines)
+    for (let ?i = start; i < total; i += 1)
+        nanovine_model.add_message(stdr.str(lines[i] ?? ""))
+
+    if total > 0
+        nanovine_model.set_last_msg(total - 1)
+    else
+        nanovine_model.set_last_msg(-1)
+;
+
+:: reset_chat_state() (( -- ))
+    nanovine_model.clear_messages()
+    nanovine_model.set_last_msg(-1)
+;
+
+:: connect(sys = vimana.system) (( bool ))
+    load_store()
+    let host = nanovine_model.get_host()
+    let port = nanovine_model.get_port()
+    let cmd = "nc " + host + " " + port
+    let ?proc = sys.spawn(cmd)
+    nanovine_model.set_proc(proc)
+    nanovine_model.set_connected(true)
+    hist_state = 0
+    hist_remaining = 0
+    <- true
+;
+
+:: disconnect(sys = vimana.system) (( -- ))
+    let ?proc = nanovine_model.get_proc()
+    if proc != 0
+        sys.proc_kill(proc)
+        sys.proc_free(proc)
+        nanovine_model.set_proc(0)
+    nanovine_model.set_connected(false)
+;
+
+:: shutdown(sys = vimana.system) (( -- ))
+    disconnect(sys)
+    reset_chat_state()
+;
+
+:: send_message(sys = vimana.system, msg = string) (( -- ))
+    if !nanovine_model.is_connected()
+        <-
+    let ?proc = nanovine_model.get_proc()
+    if proc == 0
+        <-
+    let username = sanitize_message(nanovine_model.get_username())
+    let body = sanitize_message(msg)
+    let full_msg = username + ": " + body
+    -- Show immediately locally
+    store_append(full_msg)
+    append_log_line(full_msg)
+    nanovine_model.add_message(full_msg)
+    nanovine_model.set_last_msg(store_count() - 1)
+    sys.proc_write(proc, "SEND " + full_msg + "\n")
+;
+
+:: request_history(sys = vimana.system, now = num) (( -- ))
+    if hist_state != 0 || nanovine_model.get_proc() == 0
+        <-
+    let ?proc = nanovine_model.get_proc()
+    sys.proc_write(proc, "HIST\n")
+    store_messages = []: [any]
+    store_total = 0
+    nanovine_model.clear_messages()
+    nanovine_model.set_last_msg(-1)
+    hist_state = 1
+    hist_remaining = 0
+;
+
+:: request_last(sys = vimana.system, count = num, now = num) (( -- ))
+    if hist_state != 0 || nanovine_model.get_proc() == 0
+        <-
+    let ?proc = nanovine_model.get_proc()
+    sys.proc_write(proc, "LAST " + stdr.str(count) + "\n")
+    store_messages = []: [any]
+    store_total = 0
+    nanovine_model.clear_messages()
+    nanovine_model.set_last_msg(-1)
+    hist_state = 1
+    hist_remaining = 0
+;
+
+:: request_skip(sys = vimana.system, now = num) (( -- ))
+    if hist_state != 0 || nanovine_model.get_proc() == 0
+        <-
+    let ?proc = nanovine_model.get_proc()
+    let last = nanovine_model.get_last_msg()
+    if last < 0
+        sys.proc_write(proc, "HIST\n")
+        store_messages = []: [any]
+        store_total = 0
+        -- keep visible messages? maybe clear? We'll clear to start fresh
+        nanovine_model.clear_messages()
+        nanovine_model.set_last_msg(-1)
+        hist_state = 1
+        hist_remaining = 0
+    else
+        sys.proc_write(proc, "SKIP " + stdr.str(last) + "\n")
+        hist_state = 1
+        hist_remaining = 0
+    <-
+;
+
+:: tick(sys = vimana.system, now = num) (( -- ))
+    let ?proc = nanovine_model.get_proc()
+    if proc == 0
+        <-
+    if hist_state == 0
+        -- Idle: drain all pending lines
+        for (;;)
+            let line = sys.proc_read_line(proc)
+            if stdr.len(line) == 0
+                break
+            -- Check if line is purely numeric (SEND ack)
+            let ?is_num = true
+            let ?tlen = stdr.len(line)
+            let ?ti = 0
+            for (; ti < tlen; ti += 1)
+                let c = stdr.char_code(stdr.char_at(line, ti))
+                if c < 48 || c > 57
+                    is_num = false
+                    break
+            if is_num
+                -- SEND acknowledgment: update last_msg from server
+                nanovine_model.set_last_msg(stdr.num(line))
+            else
+                store_append(line)
+                append_log_line(line)
+                nanovine_model.add_message(line)
+                nanovine_model.set_last_msg(nanovine_model.get_last_msg() + 1)
+
+    elif hist_state == 1
+        let count_line = sys.proc_read_line(proc)
+        if stdr.len(count_line) == 0
+            <-
+        let count = stdr.num(count_line)
+        hist_remaining = count
+        hist_state = 2
+        if count == 0
+            hist_state = 3
+        <-
+
+    elif hist_state == 2
+        for (; hist_remaining > 0; )
+            let line = sys.proc_read_line(proc)
+            if stdr.len(line) == 0
+                <-  -- wait for more
+            store_append(line)
+            append_log_line(line)
+            nanovine_model.add_message(line)
+            hist_remaining = hist_remaining - 1
+        hist_state = 3
+        <-
+
+    elif hist_state == 3
+        let final_line = sys.proc_read_line(proc)
+        if stdr.len(final_line) == 0
+            <-
+        let final_num = stdr.num(final_line)
+        nanovine_model.set_last_msg(final_num)
+        hist_state = 0
+        <-
+;

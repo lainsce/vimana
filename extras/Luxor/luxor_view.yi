@@ -75,9 +75,9 @@ bring luxor_model
 ;
 
 : draw_header(scr = vimana.screen) (( -- ))
-    fill_rect(scr, 0, 0, luxor_model.SCR_W, luxor_model.HEADER_H, luxor_model.C_BG)
-    hline(scr, 0, 0, luxor_model.SCR_W, luxor_model.C_DIM)
-    hline(scr, 0, luxor_model.HEADER_H - 1, luxor_model.SCR_W, luxor_model.C_DIM)
+    fill_rect(scr, 0, luxor_model.HEADER_Y, luxor_model.SCR_W, luxor_model.HEADER_H, luxor_model.C_BG)
+    hline(scr, 0, luxor_model.HEADER_Y, luxor_model.SCR_W, luxor_model.C_DIM)
+    hline(scr, 0, luxor_model.HEADER_Y + luxor_model.HEADER_H - 1, luxor_model.SCR_W, luxor_model.C_DIM)
 ;
 
 : glyph_index(code = num) (( num ))

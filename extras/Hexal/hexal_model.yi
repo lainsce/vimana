@@ -18,7 +18,7 @@ def HEX_X = 88
 def ASCII_X = 480
 
 -- Y positions
-def LABEL_Y = 16
+def LABEL_Y = 17
 def SEP_Y = 32
 def DATA_Y = 40
 

@@ -222,18 +222,21 @@ def BROWSER_X = 16
 : draw_browser_bg(scr = vimana.screen) (( -- ))
     let win_w = casevo_model.WIN_W
     let win_h = casevo_model.WIN_H
+    let top_y = casevo_model.HEADER_H
+    let path_y = top_y + 8
+    let body_y = top_y + 16
 
-    -- Top halftone stripe (y=0)
+    -- Top halftone stripe, kept below the titlebar.
     for (let ?tx = 0; tx < win_w; tx += 8)
-        scr.put_icn(tx, 0, HALFTONE, casevo_model.C_SEL, casevo_model.C_BG)
+        scr.put_icn(tx, top_y, HALFTONE, casevo_model.C_SEL, casevo_model.C_BG)
 
-    -- Solid fill stripe (y=8) for path
+    -- Solid fill stripe for the browser path.
     for (let ?tx = 0; tx < win_w; tx += 8)
-        scr.put_icn(tx, 8, FILL_ICN, casevo_model.C_SEL, casevo_model.C_BG)
+        scr.put_icn(tx, path_y, FILL_ICN, casevo_model.C_SEL, casevo_model.C_BG)
 
-    -- SEL bg from y=16 to wavey
+    -- SEL bg from below the path bar to the footer wave.
     let wave_y = win_h - 8
-    for (let ?ty = 16; ty < wave_y; ty += 8)
+    for (let ?ty = body_y; ty < wave_y; ty += 8)
         for (let ?tx = 0; tx < win_w; tx += 8)
             scr.put_icn(tx, ty, EMPTY_ICN, casevo_model.C_SEL, casevo_model.C_SEL)
 
@@ -253,10 +256,10 @@ def BROWSER_X = 16
     let ?header = casevo_browser.path
     if stdr.len(header) > max_chars
         header = stdr.slice(header, stdr.len(header) - max_chars, stdr.len(header))
-    scr.put_text(sx, 8, header, casevo_model.C_FG, casevo_model.C_SEL)
+    scr.put_text(sx, casevo_model.HEADER_H + 8, header, casevo_model.C_FG, casevo_model.C_SEL)
 
     -- Entry list starts after the two decoration rows (halftone + solid = 16px)
-    let list_y0 = 24
+    let list_y0 = casevo_model.HEADER_H + 24
     let max_visible = casevo_browser.MAX_ROWS - 2
 
     if total == 0

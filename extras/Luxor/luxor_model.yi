@@ -8,7 +8,8 @@ def SCR_H = 672
 def SCR_H_UF2 = 672
 def SCR_H_UF3 = 592
 
-def HEADER_H = 18
+def HEADER_Y = 17
+def HEADER_H = 11
 
 def COLLECTION_X = 8
 def COLLECTION_COLS = 16

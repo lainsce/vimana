@@ -145,7 +145,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
 : draw_size_label(scr = vimana.screen) (( -- ))
     let w = draw_canvas.CANVAS_WT
     let h = draw_canvas.CANVAS_HT
-    draw_font.draw_size(scr, 672, 16, w, h, FG, UI)
+    draw_font.draw_size(scr, 672, 24, w, h, FG, UI)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
     let ?name = draw_file.get_display_name()
     if draw_canvas.filestate_changed()
         name = name + " *"
-    scr.put_text(272, 16, name, FG, UI)
+    scr.put_text(272, 24, name, FG, UI)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
