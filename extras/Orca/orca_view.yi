@@ -105,26 +105,21 @@ def MARGIN_Y = 24
     let cx_lo = orca_base36.b36_chr(orca_model.cursor_x % 16)
     let cy_hi = orca_base36.b36_chr(stdr.floor(orca_model.cursor_y / 16))
     let cy_lo = orca_base36.b36_chr(orca_model.cursor_y % 16)
-    let pos_str = cx_hi + cx_lo + cy_hi + cy_lo
-
-    -- 2. BPM
-    let bpm_str = stdr.str(orca_model.bpm)
-
-    -- 3. Filename
-    let ?fname = "untitled"
-    if stdr.len(orca_model.file_path) > 0
-        fname = stdr.basename(orca_model.file_path)
 
     -- Build left side: beat pos bpm filename
     let ?beat_glyph = stdr.char_from_code(0x0A)
     if orca_model.playing && orca_model.frame % 4 == 0
         beat_glyph = stdr.char_from_code(0x09)
     let ?bpm_glyph = stdr.char_from_code(0x0F)
-    let left = bpm_str + " " + fname
     scr.put_text(MARGIN_X, bar_y, beat_glyph, COLOR_DATA, COLOR_BG)
-    scr.put_text(MARGIN_X + CELL_W, bar_y, pos_str, COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + CELL_W, bar_y, cx_hi, COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + 2 * CELL_W, bar_y, cx_lo, COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + 3 * CELL_W, bar_y, cy_hi, COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + 4 * CELL_W, bar_y, cy_lo, COLOR_FG, COLOR_BG)
     scr.put_text(MARGIN_X + 7 * CELL_W, bar_y, bpm_glyph, COLOR_DATA, COLOR_BG)
-    scr.put_text(MARGIN_X + 8 * CELL_W, bar_y, left, COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + 8 * CELL_W, bar_y, orca_model.bpm_text, COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + (8 + stdr.len(orca_model.bpm_text)) * CELL_W, bar_y, " ", COLOR_FG, COLOR_BG)
+    scr.put_text(MARGIN_X + (9 + stdr.len(orca_model.bpm_text)) * CELL_W, bar_y, orca_model.file_name, COLOR_FG, COLOR_BG)
 
     -- 5. Voice volume bars (right-aligned, one bar per synth voice)
     let vol_x = MARGIN_X + (orca_grid.GRID_W - vimana.voice_count) * CELL_W

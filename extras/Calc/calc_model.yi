@@ -34,8 +34,8 @@ def NUM_BUTTONS   = 32
 def MAX_STACK = 64
 
 -- Mutable state: stack as parallel arrays (numerators and denominators)
-def ?stack_nums = []: [any]
-def ?stack_dens = []: [any]
+def ?stack_nums = []: [num]
+def ?stack_dens = []: [num]
 def ?stack_len  = 0
 
 -- Current input
@@ -59,15 +59,15 @@ def ?dirty = true
     dirty = true
 ;
 
-:: stack_pop() (( [any] ))
+:: stack_pop() (( [num] ))
     if stack_len == 0
         <- [0, 1]
     stack_len = stack_len - 1
     let n = stack_nums[stack_len]
     let d = stack_dens[stack_len]
     -- Remove from arrays by rebuilding
-    let ?nn = []: [any]
-    let ?dd = []: [any]
+    let ?nn = []: [num]
+    let ?dd = []: [num]
     for (let ?i = 0; i < stack_len; i += 1)
         stdr.push(nn, stack_nums[i])
         stdr.push(dd, stack_dens[i])
@@ -77,15 +77,15 @@ def ?dirty = true
     <- [n, d]
 ;
 
-:: stack_peek(idx = num) (( [any] ))
+:: stack_peek(idx = num) (( [num] ))
     if idx < 0 || idx >= stack_len
         <- [0, 1]
     <- [stack_nums[idx], stack_dens[idx]]
 ;
 
 :: stack_clear() (( -- ))
-    stack_nums = []: [any]
-    stack_dens = []: [any]
+    stack_nums = []: [num]
+    stack_dens = []: [num]
     stack_len = 0
     dirty = true
 ;

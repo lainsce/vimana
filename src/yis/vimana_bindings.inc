@@ -70,6 +70,12 @@ static const char *vimana_required_cstr(YisVal value, YisStr **tmp) {
 
 static bool vimana_is_numeric_tag(YisTag tag);
 
+static YisVal vimana_arr_item(YisArr *arr, size_t idx) {
+  if (!arr)
+    return YV_NULLV;
+  return yis_arr_get(arr, (int64_t)idx);
+}
+
 static const char *vimana_tag_name(YisTag tag) {
   switch (tag) {
   case EVT_NULL:
@@ -104,7 +110,7 @@ static void vimana_debug_dump_icn_value(YisVal value, const char *what) {
     fprintf(stderr, "  array len=%zu\n", len);
     size_t limit = len < 8 ? len : 8;
     for (size_t i = 0; i < limit; i++) {
-      YisVal item = arr->items[i];
+      YisVal item = vimana_arr_item(arr, i);
       fprintf(stderr, "  item[%zu] tag=%s", i, vimana_tag_name(item.tag));
       if (vimana_is_numeric_tag(item.tag)) {
         fprintf(stderr, " value=%lld", (long long)yis_as_int(item));
@@ -183,7 +189,7 @@ static void vimana_icn_rows_from_val(YisVal value, uint16_t rows[8],
     return;
   size_t limit = arr->len < 8 ? arr->len : 8;
   for (size_t i = 0; i < limit; i++)
-    rows[i] = vimana_icn_short_from_val(arr->items[i]);
+    rows[i] = vimana_icn_short_from_val(vimana_arr_item(arr, i));
 }
 
 static void vimana_icn_byte_rows_from_val(YisVal value, uint8_t rows[8],
@@ -220,12 +226,13 @@ static void vimana_icn_words_from_val(YisVal value, uint16_t words[4],
     yis_trap(what);
   }
   for (size_t i = 0; i < 4; i++) {
-    if (vimana_is_numeric_tag(arr->items[i].tag)) {
-      words[i] = (uint16_t)(yis_as_int(arr->items[i]) & 0xFFFFu);
+    YisVal item = vimana_arr_item(arr, i);
+    if (vimana_is_numeric_tag(item.tag)) {
+      words[i] = (uint16_t)(yis_as_int(item) & 0xFFFFu);
       continue;
     }
     YisStr *tmp = NULL;
-    const char *text = vimana_required_cstr(arr->items[i], &tmp);
+    const char *text = vimana_required_cstr(item, &tmp);
     if (!text || strlen(text) != 4) {
       if (tmp)
         yis_release_val(YV_STR(tmp));
@@ -269,7 +276,7 @@ static void vimana_sprite_bytes_from_val(YisVal value, unsigned int mode,
     YisArr *arr = (YisArr *)value.as.p;
     size_t limit = arr ? (arr->len < 16 ? arr->len : 16) : 0;
     for (size_t i = 0; i < limit; i++) {
-      uint16_t w = vimana_icn_short_from_val(arr->items[i]);
+      uint16_t w = vimana_icn_short_from_val(vimana_arr_item(arr, i));
       sprite[i * 2]     = (uint8_t)(w >> 8);
       sprite[i * 2 + 1] = (uint8_t)(w & 0xFF);
     }
@@ -284,7 +291,7 @@ static void vimana_sprite_bytes_from_val(YisVal value, unsigned int mode,
     YisArr *arr = (YisArr *)value.as.p;
     size_t limit = arr ? (arr->len < 12 ? arr->len : 12) : 0;
     for (size_t i = 0; i < limit; i++) {
-      uint16_t w = vimana_icn_short_from_val(arr->items[i]);
+      uint16_t w = vimana_icn_short_from_val(vimana_arr_item(arr, i));
       sprite[i * 2]     = (uint8_t)(w >> 8);
       sprite[i * 2 + 1] = (uint8_t)(w & 0xFF);
     }
@@ -638,7 +645,7 @@ static void __vimana_screen_set_font(YisVal scrv, YisVal codev,
   if (arr) {
     len = (unsigned int)(arr->len < 36 ? arr->len : 36);
     for (unsigned int i = 0; i < len; i++)
-      words[i] = (uint16_t)((uint64_t)yis_as_int(arr->items[i]) & 0xFFFFu);
+      words[i] = (uint16_t)((uint64_t)yis_as_int(vimana_arr_item(arr, i)) & 0xFFFFu);
   }
   vimana_screen_set_font(screen, (unsigned int)yis_as_int(codev), words,
                          len);
@@ -684,7 +691,7 @@ static void __vimana_screen_set_sprite(YisVal scrv, YisVal addrv, YisVal spritev
   if (!bytes)
     return;
   for (size_t i = 0; i < num_tiles * words_per_tile; i++) {
-    uint16_t w = vimana_icn_short_from_val(arr->items[i]);
+    uint16_t w = vimana_icn_short_from_val(vimana_arr_item(arr, i));
     bytes[i * 2]     = (uint8_t)(w >> 8);
     bytes[i * 2 + 1] = (uint8_t)(w & 0xFF);
   }
@@ -844,7 +851,7 @@ static void __vimana_screen_set_gfx(YisVal scrv, YisVal addrv,
   if (len > 0 && !bytes)
     return;
   for (size_t i = 0; i < len; i++)
-    bytes[i] = vimana_byte_from_val(arr->items[i]);
+    bytes[i] = vimana_byte_from_val(vimana_arr_item(arr, i));
   vimana_screen_set_gfx(screen, (unsigned int)yis_as_int(addrv), bytes,
                          (unsigned int)len);
   free(bytes);
@@ -972,7 +979,9 @@ static YisVal __vimana_device_text_input(YisVal devv) {
   vimana_system *system =
       vimana_system_from_val(devv, "vimana.device.text_input expects device");
   const char *text = vimana_device_text_input(system);
-  return YV_STR(stdr_str_lit(text ? text : ""));
+  if (!text || !text[0])
+    return YV_STR(&yis_static_empty);
+  return YV_STR(stdr_str_lit(text));
 }
 
 /* ── Console API bindings ─────────────────────────────────────────────── */
@@ -1215,7 +1224,7 @@ static YisVal __vimana_file_write_bytes(YisVal filev, YisVal pathv,
     return YV_BOOL(false);
   }
   for (size_t i = 0; i < len; i++)
-    bytes[i] = vimana_byte_from_val(arr->items[i]);
+    bytes[i] = vimana_byte_from_val(vimana_arr_item(arr, i));
   bool ok = vimana_file_write_bytes(system, path, bytes, len);
   free(bytes);
   if (path_tmp)

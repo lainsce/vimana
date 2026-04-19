@@ -96,10 +96,10 @@ def ?show_line_endings = false
 def ?show_tabs = true
 
 --| View caches (used by right_view) |--
-def ?_line_starts = []: [any]
-def ?_line_ends = []: [any]
-def ?_line_log_starts = []: [any]
-def ?_line_is_nl = []: [any]
+def ?_line_starts = []: [num]
+def ?_line_ends = []: [num]
+def ?_line_log_starts = []: [num]
+def ?_line_is_nl = []: [bool]
 
 --| Directory listing |--
 def ?dir_listing_active = false
@@ -393,10 +393,10 @@ def ?search_index = -1
 ;
 
 :: build_line_map() (( -- ))
-    _line_starts = []: [any]
-    _line_ends = []: [any]
-    _line_log_starts = []: [any]
-    _line_is_nl = []: [any]
+    _line_starts = []: [num]
+    _line_ends = []: [num]
+    _line_log_starts = []: [num]
+    _line_is_nl = []: [bool]
 
     let code = editor_text
     let total = stdr.len(code)
@@ -410,7 +410,7 @@ def ?search_index = -1
             stdr.push(_line_starts, row_start)
             stdr.push(_line_ends, i)
             stdr.push(_line_log_starts, logical_start)
-            stdr.push(_line_is_nl, 1)
+            stdr.push(_line_is_nl, true)
             row_start = i + 1
             logical_start = i + 1
             col = 0
@@ -420,7 +420,7 @@ def ?search_index = -1
                 stdr.push(_line_starts, row_start)
                 stdr.push(_line_ends, i + 1)
                 stdr.push(_line_log_starts, logical_start)
-                stdr.push(_line_is_nl, 0)
+                stdr.push(_line_is_nl, false)
                 row_start = i + 1
                 col = 0
 
@@ -428,13 +428,13 @@ def ?search_index = -1
         stdr.push(_line_starts, row_start)
         stdr.push(_line_ends, total)
         stdr.push(_line_log_starts, logical_start)
-        stdr.push(_line_is_nl, 0)
+        stdr.push(_line_is_nl, false)
     else
         -- Keep an addressable row for EOF caret on empty docs, wrapped lines, and trailing newlines.
         stdr.push(_line_starts, total)
         stdr.push(_line_ends, total)
         stdr.push(_line_log_starts, logical_start)
-        stdr.push(_line_is_nl, 0)
+        stdr.push(_line_is_nl, false)
 ;
 
 --| Setters |--

@@ -24,6 +24,9 @@ def ?dirty = true
 
 -- File
 def ?file_path = ""
+def ?file_name = "untitled"
+def ?title_text = "Orca"
+def ?bpm_text = "120"
 
 -- Clipboard (flat array of strings, w, h)
 def ?clip_data = []: [any]
@@ -31,10 +34,26 @@ def ?clip_w = 0
 def ?clip_h = 0
 
 -- Voice volume tracking (0-15 per channel, decays each frame)
-def ?voice_vol = []: [any]
+def ?voice_vol = []: [num]
+
+: refresh_file_labels() (( -- ))
+    if stdr.len(file_path) > 0
+        let name = stdr.basename(file_path)
+        file_name = name
+        title_text = name
+    else
+        file_name = "untitled"
+        title_text = "Orca"
+;
+
+: refresh_bpm_text() (( -- ))
+    bpm_text = stdr.str(bpm)
+;
 
 :: init() (( -- ))
-    voice_vol = []: [any]
+    refresh_file_labels()
+    refresh_bpm_text()
+    voice_vol = []: [num]
     for (let ?i = 0; i < VOICE_COUNT; i += 1)
         stdr.push(voice_vol, 0)
 ;
@@ -47,7 +66,11 @@ def ?voice_vol = []: [any]
     cursor_y = y
     dirty = true
 ;
-:: set_file_path(p = string) (( -- )) file_path = p ;
+:: set_file_path(p = string) (( -- ))
+    file_path = p
+    refresh_file_labels()
+    dirty = true
+;
 :: set_playing(v = bool) (( -- )) playing = v ;
 
 :: reset_voice_vols() (( -- ))
@@ -113,24 +136,28 @@ def ?voice_vol = []: [any]
 :: inc_bpm() (( -- ))
     if bpm < 300
         bpm = bpm + 10
+    refresh_bpm_text()
     dirty = true
 ;
 
 :: dec_bpm() (( -- ))
     if bpm > 60
         bpm = bpm - 10
+    refresh_bpm_text()
     dirty = true
 ;
 
 :: inc_bpm_fine() (( -- ))
     if bpm < 300
         bpm = bpm + 1
+    refresh_bpm_text()
     dirty = true
 ;
 
 :: dec_bpm_fine() (( -- ))
     if bpm > 60
         bpm = bpm - 1
+    refresh_bpm_text()
     dirty = true
 ;
 
@@ -143,11 +170,13 @@ def ?voice_vol = []: [any]
 :: start_sel() (( -- ))
     sel_x = cursor_x
     sel_y = cursor_y
+    dirty = true
 ;
 
 :: clear_sel() (( -- ))
     sel_x = -1
     sel_y = -1
+    dirty = true
 ;
 
 :: has_sel() (( bool ))

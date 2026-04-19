@@ -387,7 +387,7 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
         let row_start = stdr.floor(stdr.num(right_model._line_starts[vi] ?? 0))
         let row_end = stdr.floor(stdr.num(right_model._line_ends[vi] ?? 0))
         let logical_start = stdr.floor(stdr.num(right_model._line_log_starts[vi] ?? 0))
-        let is_nl = stdr.floor(stdr.num(right_model._line_is_nl[vi] ?? 0)) == 1
+        let is_nl = right_model._line_is_nl[vi] ?? false
 
         draw_visual_row(scr, code, total, row_start, row_end, logical_start,
             vi, scroll, max_rows, max_cols, ex, is_nl,

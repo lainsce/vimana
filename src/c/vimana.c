@@ -561,6 +561,7 @@ static void vimana_font_row_bytes(vimana_screen *screen, const uint8_t *bmp,
 struct VimanaScreen {
   SDL_Window *window;
   SDL_Renderer *renderer;
+  SDL_Texture *canvas_texture;
   char *title;
   uint16_t width;
   uint16_t height;
@@ -574,6 +575,7 @@ struct VimanaScreen {
   size_t font_rom_size;
   uint8_t font_size;             /* UF1, UF2, UF3 */
   uint8_t font_glyph_bytes;      /* 8, 32, 72 */
+  bool font_installed_by_app;    /* true once app code uploads custom font data */
   /* Sprite banks: 16 × 64 KB, bank-switched.  Lazy-allocated (NULL until first use). */
   uint8_t *sprite_banks[VIMANA_SPRITE_BANK_COUNT];
   uint8_t active_sprite_bank;                    /* 0–15 */
@@ -600,6 +602,7 @@ struct VimanaScreen {
   bool manual_cursor_pending;    /* app-drawn cursor recorded this frame */
   uint16_t manual_cursor_x;      /* app-drawn cursor x */
   uint16_t manual_cursor_y;      /* app-drawn cursor y */
+  uint32_t *present_pixels;      /* packed ARGB canvas for texture upload */
   uint64_t last_present_hash;    /* last presented frame hash */
   bool frame_changed;            /* true when the last present changed pixels */
 };
@@ -670,6 +673,7 @@ static bool vimana_screen_alloc_font(vimana_screen *screen, unsigned int size) {
   screen->font_rom_size = font_size;
   screen->font_size = (uint8_t)size;
   screen->font_glyph_bytes = (uint8_t)vimana_font_glyph_bytes_for_size(size);
+  screen->font_installed_by_app = false;
   return true;
 }
 
@@ -1735,14 +1739,8 @@ static SDL_HitTestResult vimana_hit_test(SDL_Window *win,
       return SDL_HITTEST_NORMAL;
     if (area->x >= right_hole_x0 && area->x < right_hole_x1)
       return SDL_HITTEST_NORMAL;
-    if (system) {
-      system->pointer_x = area->x / scale;
-      system->pointer_y = area->y;
-      system->pointer_x_raw = area->x;
-      system->pointer_y_raw = area->y;
-      system->tile_x = system->pointer_x / VIMANA_TILE_SIZE;
-      system->tile_y = system->pointer_y / VIMANA_TILE_SIZE;
-    }
+    vimana_update_pointer(system, screen, (unsigned int)area->x,
+                          (unsigned int)area->y);
     return SDL_HITTEST_DRAGGABLE;
   }
   return SDL_HITTEST_NORMAL;
@@ -1839,6 +1837,20 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
   }
 #endif
 
+  screen->canvas_texture = SDL_CreateTexture(
+      screen->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
+      screen->width, screen->canvas_height);
+  if (screen->canvas_texture) {
+    size_t pixel_count = (size_t)screen->width * (size_t)screen->canvas_height;
+    screen->present_pixels =
+        pixel_count > 0 ? (uint32_t *)malloc(pixel_count * sizeof(uint32_t))
+                        : NULL;
+    if (pixel_count > 0 && !screen->present_pixels) {
+      SDL_DestroyTexture(screen->canvas_texture);
+      screen->canvas_texture = NULL;
+    }
+  }
+
   SDL_SetWindowHitTest(screen->window, vimana_hit_test, screen);
 
   vimana_screen_clear(screen, 0);
@@ -1884,6 +1896,7 @@ void vimana_screen_set_font(vimana_screen *screen, unsigned int code,
     bmp[i * 2] = (uint8_t)((glyph[i] >> 8) & 0xFFu);
     bmp[i * 2 + 1] = (uint8_t)(glyph[i] & 0xFFu);
   }
+  screen->font_installed_by_app = true;
 }
 
 void vimana_screen_set_font_width(vimana_screen *screen, unsigned int code,
@@ -1892,6 +1905,7 @@ void vimana_screen_set_font_width(vimana_screen *screen, unsigned int code,
     return;
   vimana_rom_font_widths(screen)[code] =
       (uint8_t)(width > 0 && width <= 255 ? width : VIMANA_TILE_SIZE);
+  screen->font_installed_by_app = true;
 }
 
 void vimana_screen_set_font_size(vimana_screen *screen, unsigned int size) {
@@ -1899,8 +1913,9 @@ void vimana_screen_set_font_size(vimana_screen *screen, unsigned int size) {
     return;
   if (size < 1 || size > 3)
     size = 1;
-  if ((unsigned int)screen->font_size != size &&
-      !vimana_screen_alloc_font(screen, size))
+  if ((unsigned int)screen->font_size == size)
+    return;
+  if (!vimana_screen_alloc_font(screen, size))
     return;
   vimana_screen_reset_font(screen);
 }
@@ -2232,19 +2247,7 @@ void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
                            unsigned int fg, unsigned int bg) {
   if (!screen || !rows)
     return;
-  const unsigned int scratch_addr =
-      VIMANA_SPRITE_BANK_SIZE - VIMANA_SPRITE_1BPP_BYTES;
-  uint8_t *bank = vimana_sprite_bank(screen, screen->active_sprite_bank);
-  if (!bank) {
-    vimana_screen_draw_sprite_1bpp(screen, x, y, rows, fg, bg);
-    return;
-  }
-  uint8_t saved[VIMANA_SPRITE_1BPP_BYTES];
-  memcpy(saved, bank + scratch_addr, sizeof(saved));
-  vimana_screen_set_sprite(screen, scratch_addr, rows, 0,
-                           VIMANA_SPRITE_1BPP_BYTES);
-  vimana_screen_draw_sprite_1bpp_addr(screen, x, y, scratch_addr, fg, bg);
-  memcpy(bank + scratch_addr, saved, sizeof(saved));
+  vimana_screen_draw_sprite_1bpp(screen, x, y, rows, fg, bg);
 }
 
 void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
@@ -2357,37 +2360,49 @@ void vimana_screen_present(vimana_screen *screen) {
 
   int w = screen->width;
   int h = screen->canvas_height;
-  uint32_t bg_rgb = screen->base_colors[0];
-  SDL_SetRenderDrawColor(screen->renderer,
-                         (uint8_t)((bg_rgb >> 16) & 0xFF),
-                         (uint8_t)((bg_rgb >> 8) & 0xFF),
-                         (uint8_t)(bg_rgb & 0xFF), 255);
-  SDL_RenderClear(screen->renderer);
-  uint32_t current_rgb = UINT32_MAX;
-  for (int py = 0; py < h; py++) {
-    const uint8_t *src = screen->layers + py * screen->width_mar;
-    int run_start = 0;
-    while (run_start < w) {
-      uint8_t slot = src[run_start];
-      int run_end = run_start + 1;
-      while (run_end < w && src[run_end] == slot)
-        run_end++;
-      uint32_t rgb = screen->palette[slot];
-      if (rgb != current_rgb) {
-        SDL_SetRenderDrawColor(screen->renderer,
-                               (uint8_t)((rgb >> 16) & 0xFF),
-                               (uint8_t)((rgb >> 8) & 0xFF),
-                               (uint8_t)(rgb & 0xFF), 255);
-        current_rgb = rgb;
+  if (screen->canvas_texture && screen->present_pixels) {
+    for (int py = 0; py < h; py++) {
+      const uint8_t *src = screen->layers + py * screen->width_mar;
+      uint32_t *dst = screen->present_pixels + (size_t)py * (size_t)w;
+      for (int px = 0; px < w; px++)
+        dst[px] = screen->palette[src[px]];
+    }
+    SDL_UpdateTexture(screen->canvas_texture, NULL, screen->present_pixels,
+                      (int)(sizeof(uint32_t) * (size_t)w));
+    SDL_FRect dst = {0.0f, 0.0f, (float)(w * screen->scale),
+                     (float)(h * screen->scale)};
+    SDL_RenderTexture(screen->renderer, screen->canvas_texture, NULL, &dst);
+  } else {
+    uint32_t bg_rgb = screen->base_colors[0];
+    SDL_SetRenderDrawColor(screen->renderer,
+                           (uint8_t)((bg_rgb >> 16) & 0xFF),
+                           (uint8_t)((bg_rgb >> 8) & 0xFF),
+                           (uint8_t)(bg_rgb & 0xFF), 255);
+    SDL_RenderClear(screen->renderer);
+    uint32_t current_rgb = UINT32_MAX;
+    for (int py = 0; py < h; py++) {
+      const uint8_t *src = screen->layers + py * screen->width_mar;
+      int run_start = 0;
+      while (run_start < w) {
+        uint8_t slot = src[run_start];
+        int run_end = run_start + 1;
+        while (run_end < w && src[run_end] == slot)
+          run_end++;
+        uint32_t rgb = screen->palette[slot];
+        if (rgb != current_rgb) {
+          SDL_SetRenderDrawColor(screen->renderer,
+                                 (uint8_t)((rgb >> 16) & 0xFF),
+                                 (uint8_t)((rgb >> 8) & 0xFF),
+                                 (uint8_t)(rgb & 0xFF), 255);
+          current_rgb = rgb;
+        }
+        SDL_FRect rect = {(float)(run_start * screen->scale),
+                          (float)(py * screen->scale),
+                          (float)((run_end - run_start) * screen->scale),
+                          (float)screen->scale};
+        SDL_RenderFillRect(screen->renderer, &rect);
+        run_start = run_end;
       }
-      SDL_FRect rect = {
-        (float)(run_start * screen->scale),
-        (float)(py * screen->scale),
-        (float)((run_end - run_start) * screen->scale),
-        (float)screen->scale
-      };
-      SDL_RenderFillRect(screen->renderer, &rect);
-      run_start = run_end;
     }
   }
 
@@ -2461,10 +2476,13 @@ void vimana_screen_show_cursor(vimana_screen *screen) {
 void vimana_screen_free(vimana_screen *screen) {
   if (!screen)
     return;
+  if (screen->canvas_texture)
+    SDL_DestroyTexture(screen->canvas_texture);
   if (screen->renderer)
     SDL_DestroyRenderer(screen->renderer);
   if (screen->window)
     SDL_DestroyWindow(screen->window);
+  free(screen->present_pixels);
   free(screen->font_rom);
   for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
     free(screen->sprite_banks[i]);
@@ -2477,6 +2495,9 @@ size_t vimana_screen_ram_usage(vimana_screen *screen) {
   size_t total = sizeof(*screen);
   total += screen->font_rom_size;
   total += (size_t)screen->width_mar * (size_t)screen->height_mar;
+  if (screen->present_pixels)
+    total += (size_t)screen->width * (size_t)screen->canvas_height *
+             sizeof(uint32_t);
   if (screen->title)
     total += strlen(screen->title) + 1;
   for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
