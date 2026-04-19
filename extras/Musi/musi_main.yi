@@ -233,43 +233,45 @@ bring musi_assets
     let mx = dev.pointer_x()
     let my = dev.pointer_y()
 
-    -- Controls bar (only when playing)
-    if musi_model.playing && in_rect(mx, my, 0, musi_model.CTRL_BG_Y * 8, musi_model.WIN_W, 48)
+    -- Controls bar (clickable even when not playing - repeat/shuffle are settings)
+    if in_rect(mx, my, 0, musi_model.CTRL_BG_Y * 8, musi_model.WIN_W, 48)
         if in_rect(mx, my, musi_model.CTRL_REPEAT_X * 8, musi_model.CTRL_Y * 8, 24, 16)
             musi_model.toggle_repeat()
-            <-
-        if in_rect(mx, my, musi_model.CTRL_VOLDN_X * 8, musi_model.CTRL_Y * 8, 24, 16)
-            musi_model.change_volume(-1)
-            musi_player.send_volume(sys)
-            <-
-        if in_rect(mx, my, musi_model.CTRL_PREV_X * 8, musi_model.CTRL_Y * 8, 24, 16)
-            skip_prev(sys, scr)
-            <-
-        if in_rect(mx, my, musi_model.CTRL_PLAY_X * 8, musi_model.CTRL_Y * 8, 32, 16)
-            musi_player.toggle_pause(sys)
-            <-
-        if in_rect(mx, my, musi_model.CTRL_NEXT_X * 8, musi_model.CTRL_Y * 8, 24, 16)
-            skip_next(sys, scr)
-            <-
-        if in_rect(mx, my, musi_model.CTRL_VOLUP_X * 8, musi_model.CTRL_Y * 8, 24, 16)
-            musi_model.change_volume(1)
-            musi_player.send_volume(sys)
+            musi_player.send_loop(sys)
             <-
         if in_rect(mx, my, musi_model.CTRL_SHUF_X * 8, musi_model.CTRL_Y * 8, 24, 16)
             musi_model.toggle_shuffle()
             if musi_model.shuffle
                 musi_model.build_shuffle(stdr.len(musi_model.tracks), sys.ticks())
             <-
+        if musi_model.playing
+            if in_rect(mx, my, musi_model.CTRL_VOLDN_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+                musi_model.change_volume(-1)
+                musi_player.send_volume(sys)
+                <-
+            if in_rect(mx, my, musi_model.CTRL_PREV_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+                skip_prev(sys, scr)
+                <-
+            if in_rect(mx, my, musi_model.CTRL_PLAY_X * 8, musi_model.CTRL_Y * 8, 32, 16)
+                musi_player.toggle_pause(sys)
+                <-
+            if in_rect(mx, my, musi_model.CTRL_NEXT_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+                skip_next(sys, scr)
+                <-
+            if in_rect(mx, my, musi_model.CTRL_VOLUP_X * 8, musi_model.CTRL_Y * 8, 24, 16)
+                musi_model.change_volume(1)
+                musi_player.send_volume(sys)
+                <-
         <-
 
     -- Progress bar seek (drag: seek every frame while button held)
-    if musi_model.playing && in_rect(mx, my, musi_model.PROG_X * 8, musi_model.PROG_Y * 8 - 4, musi_model.PROG_W, 16) && dev.mouse_down(vimana.mouse_left)
+    if musi_model.playing && in_rect(mx, my, musi_model.PROG_X * 8, musi_model.PROG_Y * 8 - 4, musi_model.PROG_W * 8, 16) && dev.mouse_down(vimana.mouse_left)
         let offset     = mx - musi_model.PROG_X * 8
         if offset < 0
             offset = 0
         let total_secs = musi_model.sec_from + musi_model.sec_to
         if total_secs > 0
-            let target = stdr.floor(offset * total_secs / musi_model.PROG_W)
+            let target = stdr.floor(offset * total_secs / (musi_model.PROG_W * 8))
             musi_player.send_jump(sys, target)
         <-
 

@@ -222,10 +222,11 @@ def VOL6_ICN = [
         scr.sprite(0x81)
     scr.set_addr(0x40)
     scr.sprite(0x81)
-    -- Elapsed fill: draw fill-icn at x = fi+PROG_X for fi in 0..fp-2
+    -- Elapsed fill: draw fill sprite for each 8-pixel chunk
     let ?fi = 0
-    for (; fi < fp - 1; fi += 1)
-        scr.set_x(fi + musi_model.PROG_X + 7)
+    let max_fill = stdr.floor(fp / 8)
+    for (; fi < max_fill; fi += 1)
+        scr.set_x(fi * 8 + musi_model.PROG_X * 8)
         scr.set_addr(0x60)
         scr.sprite(0x0A)
         scr.sprite(0x0A)

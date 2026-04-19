@@ -21,7 +21,7 @@ def CTRL_BG_Y = 9
 def CTRL_Y    = 10
 def PROG_Y    = 15
 def PROG_X    = 1
-def PROG_W    = 239
+def PROG_W    = 30
 
 -- Directory list start Y (pixel-addressed)
 def DIR_Y_IDLE = 17

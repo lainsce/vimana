@@ -94,6 +94,15 @@ bring musi_model
     sys.proc_write(musi_model.proc, "VOLUME " + str(pct) + "\n")
 ;
 
+:: send_loop(sys = vimana.system) (( -- ))
+    if musi_model.proc == 0
+        <-
+    if musi_model.repeat
+        sys.proc_write(musi_model.proc, "loop on\n")
+    else
+        sys.proc_write(musi_model.proc, "loop off\n")
+;
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Response handlers
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -122,7 +131,7 @@ bring musi_model
     let total = sf + sr
     let ?prog = 0
     if total > 0
-        prog = stdr.floor(sf * musi_model.PROG_W / total)
+        prog = stdr.floor(sf * musi_model.PROG_W * 8 / total)
     musi_model.set_frame(sf, sr, prog)
 ;
 

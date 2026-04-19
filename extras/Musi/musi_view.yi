@@ -82,7 +82,7 @@ bring musi_assets
     musi_assets.draw_shuffle(scr, musi_model.CTRL_SHUF_X * 8,  ctrl_y, musi_model.shuffle, musi_model.C_FG, musi_model.C_BG)
 
     -- Progress bar (CHR sprites from m291.tal)
-    musi_assets.draw_progress(scr, musi_model.sec_prog / 8)
+    musi_assets.draw_progress(scr, musi_model.sec_prog)
 
     -- Timestamps
     let ts_left  = musi_model.fmt_secs(musi_model.sec_from)
@@ -171,5 +171,14 @@ bring musi_assets
 :: draw_all(scr = vimana.screen) (( -- ))
     if musi_model.playing
         draw_player(scr)
+    else
+        draw_controls_idle(scr)
     draw_dir(scr)
+;
+
+: draw_controls_idle(scr = vimana.screen) (( -- ))
+    fill(scr, 0, musi_model.CTRL_BG_Y * 8, musi_model.WIN_W, 48, musi_model.C_BG)
+    let ctrl_y = musi_model.CTRL_Y * 8
+    musi_assets.draw_repeat(scr, musi_model.CTRL_REPEAT_X * 8, ctrl_y, musi_model.repeat,  musi_model.C_FG, musi_model.C_BG)
+    musi_assets.draw_shuffle(scr, musi_model.CTRL_SHUF_X * 8,  ctrl_y, musi_model.shuffle, musi_model.C_FG, musi_model.C_BG)
 ;
