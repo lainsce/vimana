@@ -32,6 +32,18 @@ def TITLEBAR_EDGE_Y = 14
 def HEADER_DBLCLICK_MS = 400
 def HEADER_DBLCLICK_DIST = 8
 def SYNC_MS = 500
+def KEY_RETURN = 40
+def KEY_ESCAPE = 41
+def KEY_BACKSPACE = 42
+def KEY_LEFT = 80
+def KEY_RIGHT = 79
+def KEY_DELETE = 76
+def KEY_C = 6
+def KEY_V = 25
+def KEY_LGUI = 227
+def KEY_RGUI = 231
+def KEY_LCTRL = 224
+def KEY_RCTRL = 228
 
 def ?close_button_active = false
 def ?titlebar_capture = false
@@ -44,15 +56,39 @@ def ?header_click_y = 0
 def ?has_loaded_history = false
 def ?state = 1
 def ?last_sync = 0
+def ?last_mouse_x = -1
+def ?last_mouse_y = -1
+
+: is_digits(text = string) (( bool ))
+    let n = stdr.len(text)
+    if n == 0
+        <- false
+    for (let ?i = 0; i < n; i += 1)
+        let code = stdr.char_code(stdr.char_at(text, i))
+        if code < 48 || code > 57
+            <- false
+    <- true
+;
 
 : parse_server_input(text = string) (( [any] ))
     let raw = stdr.trim(text)
+    let scheme = stdr.index_of(raw, "://")
+    if scheme >= 0
+        raw = stdr.slice(raw, scheme + 3, stdr.len(raw))
+
+    let slash = stdr.index_of(raw, "/")
+    if slash >= 0
+        raw = stdr.slice(raw, 0, slash)
+
     let ?host = raw
     let ?port = "44322"
     let split = stdr.last_index_of(raw, ":")
-    if split > 0 && split < stdr.len(raw) - 1
-        host = stdr.trim(stdr.slice(raw, 0, split))
-        port = stdr.trim(stdr.slice(raw, split + 1, stdr.len(raw)))
+    if split > 0
+        let maybe_host = stdr.trim(stdr.slice(raw, 0, split))
+        let maybe_port = stdr.trim(stdr.slice(raw, split + 1, stdr.len(raw)))
+        if is_digits(maybe_port)
+            host = maybe_host
+            port = maybe_port
 
     if stdr.len(host) == 0
         host = "127.0.0.1"
@@ -81,14 +117,14 @@ def ?last_sync = 0
 : toggle_titlebar_shade(scr = vimana.screen) (( -- ))
     if titlebar_shaded
         titlebar_shaded = false
-        scr.resize(scr.width(), titlebar_saved_height)
+        nanovine_model.set_dirty()
         <-
 
     if scr.height() > TITLEBAR_SHADE_H
         titlebar_saved_height = scr.height()
 
     titlebar_shaded = true
-    scr.resize(scr.width(), TITLEBAR_SHADE_H)
+    nanovine_model.set_dirty()
 ;
 
 : draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
@@ -123,14 +159,18 @@ def ?last_sync = 0
 : update_close_button(dev = vimana.device, sys = vimana.system) (( -- ))
     let hover = in_close_button(dev)
     if dev.mouse_pressed(vimana.mouse_left) && hover
-        close_button_active = true
+        if !close_button_active
+            close_button_active = true
+            nanovine_model.set_dirty()
         <-
 
     if !dev.mouse_down(vimana.mouse_left)
         if close_button_active && hover
             nanovine_net.shutdown(sys)
             sys.quit()
-        close_button_active = false
+        if close_button_active
+            close_button_active = false
+            nanovine_model.set_dirty()
 ;
 
 : update_titlebar(dev = vimana.device, sys = vimana.system, scr = vimana.screen) (( bool ))
@@ -139,7 +179,9 @@ def ?last_sync = 0
 
     let hover = in_titlebar(dev)
     if dev.mouse_pressed(vimana.mouse_left) && hover
-        titlebar_capture = true
+        if !titlebar_capture
+            titlebar_capture = true
+            nanovine_model.set_dirty()
         if !in_close_button(dev)
             let now = sys.ticks()
             let dx = dev.pointer_x() - header_click_x
@@ -153,7 +195,9 @@ def ?last_sync = 0
                 header_click_x = dev.pointer_x()
                 header_click_y = dev.pointer_y()
     elif !dev.mouse_down(vimana.mouse_left)
-        titlebar_capture = false
+        if titlebar_capture
+            titlebar_capture = false
+            nanovine_model.set_dirty()
 
     update_close_button(dev, sys)
     <- titlebar_capture || (hover && !dev.mouse_down(vimana.mouse_left))
@@ -181,14 +225,118 @@ def ?last_sync = 0
             if is_printable(ch)
                 nanovine_model.append_input(ch)
 
-    if dev.key_pressed(42)
+    if dev.key_pressed(KEY_BACKSPACE)
         nanovine_model.backspace_input()
 
-    if dev.key_pressed(41)
+    if dev.key_pressed(KEY_ESCAPE)
         nanovine_model.clear_input()
 ;
 
+: paste_input_text(text = string) (( -- ))
+    let n = stdr.len(text)
+    for (let ?i = 0; i < n; i += 1)
+        let ch = stdr.char_at(text, i)
+        if is_printable(ch)
+            nanovine_model.append_input(ch)
+        elif ch == "\n" || ch == "\r" || ch == "\t"
+            nanovine_model.append_input(" ")
+;
+
+: run_chat_input(sys = vimana.system, input = string) (( -- ))
+    if stdr.len(input) == 0
+        <-
+
+    if stdr.starts_with(input, "/nick ")
+        let nick = stdr.trim(stdr.slice(input, 6, stdr.len(input)))
+        if stdr.len(nick) > 0
+            nanovine_model.set_username(nick)
+        <-
+
+    if input == "/nick"
+        <-
+
+    if stdr.starts_with(input, "/me ")
+        let body = stdr.trim(stdr.slice(input, 4, stdr.len(input)))
+        if stdr.len(body) > 0
+            nanovine_net.send_emote(sys, body)
+        <-
+
+    if input == "/me"
+        <-
+
+    if stdr.starts_with(input, "/send ")
+        let body = stdr.trim(stdr.slice(input, 6, stdr.len(input)))
+        if stdr.len(body) > 0
+            nanovine_net.send_raw(sys, body)
+        <-
+
+    if input == "/send"
+        <-
+
+    if input == "/quit"
+        nanovine_net.shutdown(sys)
+        sys.quit()
+        <-
+
+    nanovine_net.send_message(sys, input)
+;
+
+: handle_chat_shortcuts(dev = vimana.device, sys = vimana.system) (( bool ))
+    let shortcut = dev.key_down(KEY_LGUI) || dev.key_down(KEY_RGUI) || dev.key_down(KEY_LCTRL) || dev.key_down(KEY_RCTRL)
+    if !shortcut
+        <- false
+
+    if dev.key_pressed(KEY_C)
+        let text = nanovine_view.selected_text()
+        if stdr.len(text) > 0
+            sys.set_clipboard_text(text)
+        <- true
+
+    if dev.key_pressed(KEY_V)
+        paste_input_text(sys.clipboard_text())
+        <- true
+
+    <- false
+;
+
+: update_chat_mouse(dev = vimana.device, sys = vimana.system, scr = vimana.screen, titlebar_busy = bool) (( -- ))
+    if titlebar_busy || in_titlebar(dev)
+        nanovine_view.end_selection()
+        <-
+
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+
+    if dev.mouse_pressed(vimana.mouse_left)
+        if !nanovine_view.open_url_at(sys, mx, my)
+            nanovine_view.begin_selection(mx, my)
+            nanovine_model.set_dirty()
+    elif dev.mouse_down(vimana.mouse_left)
+        nanovine_view.drag_selection(mx, my)
+        nanovine_model.set_dirty()
+    else
+        nanovine_view.end_selection()
+
+    if dev.mouse_pressed(vimana.mouse_right)
+        if my >= scr.height() - 56
+            paste_input_text(sys.clipboard_text())
+        else
+            let url = nanovine_view.url_at_point(mx, my)
+            if stdr.len(url) > 0
+                nanovine_view.open_url_at(sys, mx, my)
+            else
+                nanovine_view.begin_selection(mx, my)
+                let text = nanovine_view.selected_text()
+                if stdr.len(text) > 0
+                    sys.set_clipboard_text(text)
+                nanovine_view.end_selection()
+                nanovine_model.set_dirty()
+;
+
 : handle_key_chat(dev = vimana.device, sys = vimana.system) (( -- ))
+    if handle_chat_shortcuts(dev, sys)
+        <-
+
     let txt = dev.text_input()
     if stdr.len(txt) > 0
         for (let ?i = 0; i < stdr.len(txt); i += 1)
@@ -196,25 +344,28 @@ def ?last_sync = 0
             if is_printable(ch)
                 nanovine_model.append_input(ch)
 
-    if dev.key_pressed(42)
+    if dev.key_pressed(KEY_BACKSPACE)
         nanovine_model.backspace_input()
 
-    if dev.key_pressed(43)
+    if dev.key_pressed(KEY_LEFT)
         nanovine_model.move_cursor_left()
 
-    if dev.key_pressed(44)
+    if dev.key_pressed(KEY_RIGHT)
         nanovine_model.move_cursor_right()
 
-    if dev.key_pressed(45)
+    if dev.key_pressed(KEY_DELETE)
         nanovine_model.delete_input()
 
-    if dev.key_pressed(40)
+    if dev.key_pressed(KEY_RETURN)
         let input = nanovine_model.get_input()
         if stdr.len(input) > 0
-            nanovine_net.send_message(sys, input)
+            run_chat_input(sys, input)
             nanovine_model.clear_input()
-    if dev.key_pressed(41)
-        nanovine_model.clear_input()
+    if dev.key_pressed(KEY_ESCAPE)
+        if nanovine_view.has_selection()
+            nanovine_view.clear_selection()
+        else
+            nanovine_model.clear_input()
 ;
 
 : draw_titlebar(scr = vimana.screen) (( -- ))
@@ -269,6 +420,12 @@ def ?last_sync = 0
     sys.run(scr, () => {
         dev.poll()
         let now = sys.ticks()
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        if mx != last_mouse_x || my != last_mouse_y
+            last_mouse_x = mx
+            last_mouse_y = my
+            nanovine_model.set_dirty()
         let titlebar_busy = update_titlebar(dev, sys, scr)
 
         if state == 1
@@ -301,15 +458,19 @@ def ?last_sync = 0
         elif state == 3
             handle_key_chat(dev, sys)
             nanovine_net.tick(sys, now)
+            nanovine_view.tick(sys)
+            update_chat_mouse(dev, sys, scr, titlebar_busy)
 
             if nanovine_model.is_connected()
                 if !has_loaded_history
-                    nanovine_net.request_last(sys, 16, now)
-                    has_loaded_history = true
-                    last_sync = now
+                    if !nanovine_net.has_pending_send() && !nanovine_net.is_syncing()
+                        nanovine_net.request_last(sys, 16, now)
+                        has_loaded_history = true
+                        last_sync = now
                 elif now - last_sync > SYNC_MS
-                    nanovine_net.request_skip(sys, now)
-                    last_sync = now
+                    if !nanovine_net.has_pending_send() && !nanovine_net.is_syncing()
+                        nanovine_net.request_skip(sys, now)
+                        last_sync = now
 
         if nanovine_model.is_dirty()
             if state == 1
@@ -320,17 +481,14 @@ def ?last_sync = 0
                 nanovine_view.update_cursorblink(sys)
                 nanovine_view.draw_all(scr)
 
+            draw_titlebar(scr)
+            scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+            scr.present()
             nanovine_model.clear_dirty()
         else
             if state == 3
                 nanovine_view.update_cursorblink(sys)
-
-        draw_titlebar(scr)
-
-        let mx = dev.pointer_x()
-        let my = dev.pointer_y()
-        scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
-        scr.present()
     })
+    nanovine_view.shutdown(sys)
     nanovine_net.shutdown(sys)
 ;

@@ -25,10 +25,10 @@ def CLOSE_DOWN_ICN = [
 ]
 
 -- Titlebar sprites placed above FOLD_B end (0x023F)
-def CURSOR_ADDR = 0x120
-def CLOSE_ADDR = 0x138
-def CLOSE_DOWN_ADDR = 0x148
-def BG_ADDR = 0x168
+def CURSOR_ADDR = 0x7E0
+def CLOSE_ADDR = 0x8E0
+def CLOSE_DOWN_ADDR = 0x9E0
+def BG_ADDR = 0xAE0
 def TITLEBAR_H = 16
 def TITLEBAR_SHADE_H = 17
 def TITLEBAR_EDGE_Y = 14
@@ -61,12 +61,8 @@ def ?header_click_y = 0
 : toggle_titlebar_shade(scr = vimana.screen) (( -- ))
     if titlebar_shaded
         titlebar_shaded = false
-        scr.resize(scr.width(), titlebar_saved_height)
         <-
-    if scr.height() > TITLEBAR_SHADE_H
-        titlebar_saved_height = scr.height()
     titlebar_shaded = true
-    scr.resize(scr.width(), TITLEBAR_SHADE_H)
 ;
 
 : draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
@@ -183,16 +179,18 @@ def ?header_click_y = 0
         dev.poll()
 
         let titlebar_busy = update_titlebar(dev, sys, scr)
-        cal_input.on_key(dev, sys, fsys, scr, dt)
-        cal_input.on_text(dev)
-        if !titlebar_busy
-            cal_input.on_mouse(dev, sys, fsys, scr)
 
         scr.clear(vimana.color_bg)
-        cal_view.draw_all(scr)
+        if !titlebar_shaded
+            cal_input.on_key(dev, sys, fsys, scr, dt)
+            cal_input.on_text(dev)
+            if !titlebar_busy
+                cal_input.on_mouse(dev, sys, fsys, scr)
 
-        if cal_model.consume_dirty()
             cal_view.draw_all(scr)
+
+            if cal_model.consume_dirty()
+                cal_view.draw_all(scr)
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)

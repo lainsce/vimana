@@ -207,7 +207,6 @@ def ?screen_h = 0
     let wanted_h = luxor_model.desired_screen_h()
     if wanted_h != screen_h
         screen_h = wanted_h
-        scr.resize(luxor_model.SCR_W, screen_h)
         luxor_model.set_dirty()
 ;
 
@@ -262,12 +261,8 @@ def ?header_click_y = 0
 : toggle_titlebar_shade(scr = vimana.screen) (( -- ))
     if titlebar_shaded
         titlebar_shaded = false
-        scr.resize(scr.width(), titlebar_saved_height)
         <-
-    if scr.height() > TITLEBAR_SHADE_H
-        titlebar_saved_height = scr.height()
     titlebar_shaded = true
-    scr.resize(scr.width(), TITLEBAR_SHADE_H)
 ;
 
 : draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
@@ -344,7 +339,7 @@ def ?header_click_y = 0
     luxor_model.init()
 
     let sys = vimana.system()
-    screen_h = luxor_model.desired_screen_h()
+    screen_h = luxor_model.SCR_H
     let scr = vimana.screen("Luxor", luxor_model.SCR_W, screen_h, 1)
     scr.set_cursor(CURSOR_ICN)
     scr.hide_cursor()
@@ -365,15 +360,17 @@ def ?header_click_y = 0
         dev.poll()
 
         let titlebar_busy = update_titlebar(dev, sys, scr)
-        if !titlebar_busy
-            on_mouse(dev)
-        on_key(dev, sys, fsys, scr)
-        on_text(dev)
-        on_scroll(dev)
         sync_screen_size(scr)
 
         luxor_file.update_title(scr)
-        luxor_view.draw_all(scr)
+        scr.clear(vimana.color_bg)
+        if !titlebar_shaded
+            if !titlebar_busy
+                on_mouse(dev)
+            on_key(dev, sys, fsys, scr)
+            on_text(dev)
+            on_scroll(dev)
+            luxor_view.draw_all(scr)
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)

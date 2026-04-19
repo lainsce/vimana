@@ -5,22 +5,29 @@ bring vimana
 bring nanovine_model
 
 def LINE_H = 16
-def MSG_STEP_Y = 16
 def TITLEBAR_H = 17
+def MAX_WRAP_LINES = 2
 
 def ?cursorblink_timer = 0
 def ?cursorblink_on = true
+
+def ?row_hits = []: [any]
+def ?url_hits = []: [any]
+def ?sel_anchor = -1
+def ?sel_focus = -1
+def ?sel_drag = false
+def ?url_open_proc = 0
 
 : char_width(ch = string) (( num ))
     let code = stdr.char_code(ch)
     if code == 32: <- 4
     elif code == 33: <- 5
-    elif code == 34: <- 5
+    elif code == 34: <- 6
     elif code == 35: <- 9
     elif code == 36: <- 7
     elif code == 37: <- 9
     elif code == 38: <- 9
-    elif code == 39: <- 3
+    elif code == 39: <- 4
     elif code == 40: <- 5
     elif code == 41: <- 5
     elif code == 42: <- 8
@@ -28,7 +35,7 @@ def ?cursorblink_on = true
     elif code == 44: <- 4
     elif code == 45: <- 7
     elif code == 46: <- 3
-    elif code == 47: <- 7
+    elif code == 47: <- 8
     elif code == 48: <- 8
     elif code == 49: <- 8
     elif code == 50: <- 8
@@ -73,11 +80,11 @@ def ?cursorblink_on = true
     elif code == 89: <- 7
     elif code == 90: <- 7
     elif code == 91: <- 6
-    elif code == 92: <- 7
+    elif code == 92: <- 8
     elif code == 93: <- 6
     elif code == 94: <- 4
     elif code == 95: <- 8
-    elif code == 96: <- 1
+    elif code == 96: <- 5
     elif code == 97: <- 8
     elif code == 98: <- 8
     elif code == 99: <- 7
@@ -87,7 +94,7 @@ def ?cursorblink_on = true
     elif code == 103: <- 7
     elif code == 104: <- 7
     elif code == 105: <- 4
-    elif code == 106: <- 6
+    elif code == 106: <- 7
     elif code == 107: <- 6
     elif code == 108: <- 4
     elif code == 109: <- 11
@@ -95,7 +102,7 @@ def ?cursorblink_on = true
     elif code == 111: <- 7
     elif code == 112: <- 8
     elif code == 113: <- 7
-    elif code == 114: <- 6
+    elif code == 114: <- 7
     elif code == 115: <- 7
     elif code == 116: <- 6
     elif code == 117: <- 8
@@ -111,133 +118,446 @@ def ?cursorblink_on = true
     else: <- 8
 ;
 
-: draw_fill(scr = vimana.screen, x = num, y = num, w = num, h = num, c = num) (( -- ))
-    for (let ?iy = 0; iy < h; iy += 1)
-        for (let ?ix = 0; ix < w; ix += 1)
-            scr.set_x((x + ix) * 8).set_y((y + iy) * 8).pixel(c)
+: push_row_hit(idx = num, y = num, h = num) (( -- ))
+    if idx < 0 || h <= 0
+        <-
+    stdr.push(row_hits, [idx, y, y + h])
+;
+
+: push_url_hit(x0 = num, y0 = num, x1 = num, y1 = num, url = string) (( -- ))
+    if x1 <= x0 || y1 <= y0 || stdr.len(url) == 0
+        <-
+    stdr.push(url_hits, [x0, y0, x1, y1, url])
+;
+
+: clear_hits() (( -- ))
+    row_hits = []: [any]
+    url_hits = []: [any]
+;
+
+: hit_row(px = num, py = num) (( num ))
+    let total = stdr.len(row_hits)
+    for (let ?i = 0; i < total; i += 1)
+        let row = row_hits[i] ?? ([]: [any])
+        let idx = stdr.num(row[0] ?? -1)
+        let y0 = stdr.num(row[1] ?? -1)
+        let y1 = stdr.num(row[2] ?? -1)
+        if py >= y0 && py < y1
+            <- idx
+    <- -1
+;
+
+:: url_at_point(px = num, py = num) (( string ))
+    let total = stdr.len(url_hits)
+    if total <= 0
+        <- ""
+    for (let ?i = total - 1; i >= 0; i -= 1)
+        let row = url_hits[i] ?? ([]: [any])
+        let x0 = stdr.num(row[0] ?? -1)
+        let y0 = stdr.num(row[1] ?? -1)
+        let x1 = stdr.num(row[2] ?? -1)
+        let y1 = stdr.num(row[3] ?? -1)
+        if px >= x0 && px < x1 && py >= y0 && py < y1
+            <- stdr.str(row[4] ?? "")
+    <- ""
+;
+
+: has_selection_idx(idx = num) (( bool ))
+    if sel_anchor < 0 || sel_focus < 0 || idx < 0
+        <- false
+    let a = sel_anchor
+    let b = sel_focus
+    if a > b
+        let tmp = a
+        a = b
+        b = tmp
+    <- idx >= a && idx <= b
+;
+
+: shell_quote(text = string) (( string ))
+    let ?parts = []: [any]
+    stdr.push(parts, "'")
+    for (let ?i = 0; i < stdr.len(text); i += 1)
+        let ch = stdr.char_at(text, i)
+        if ch == "'" || stdr.char_code(ch) < 32
+            <- ""
+        stdr.push(parts, ch)
+    stdr.push(parts, "'")
+    <- stdr.join(parts)
+;
+
+: message_prefix_end(msg = string) (( num ))
+    let split = stdr.index_of(msg, ": ")
+    if split > 0
+        <- split
+    <- -1
+;
+
+: url_len_at(msg = string, start = num) (( num ))
+    let tail = stdr.slice(msg, start, stdr.len(msg))
+    if !stdr.starts_with(tail, "http://") && !stdr.starts_with(tail, "https://")
+        <- 0
+    let ?i = start
+    let n = stdr.len(msg)
+    for (; i < n; i += 1)
+        let ch = stdr.char_at(msg, i)
+        let code = stdr.char_code(ch)
+        if code <= 32 || ch == "\"" || ch == "<" || ch == ">"
+            break
+    <- i - start
+;
+
+: sixel_end(msg = string, start = num) (( num ))
+    let n = stdr.len(msg)
+    for (let ?i = start; i < n; i += 1)
+        if stdr.char_at(msg, i) == ")"
+            <- i
+    <- n
+;
+
+: sixel_dims(data = string) (( [any] ))
+    let ?x = 0
+    let ?y = 0
+    let ?max_x = 0
+    let ?max_y = 0
+    let n = stdr.len(data)
+    for (let ?i = 0; i < n; i += 1)
+        let ch = stdr.char_at(data, i)
+        if ch == "-"
+            y = y + 6
+            x = 0
+            if y > max_y
+                max_y = y
+        elif ch == "$"
+            x = 0
+        else
+            let code = stdr.char_code(ch)
+            if code >= 63 && code <= 126
+                x = x + 1
+                if x > max_x
+                    max_x = x
+    <- [max_x, max_y + 6]
+;
+
+: draw_sixel(scr = vimana.screen, data = string, x0 = num, y0 = num, fg = num) (( -- ))
+    let ?x = 0
+    let ?y = 0
+    let n = stdr.len(data)
+    for (let ?i = 0; i < n; i += 1)
+        let ch = stdr.char_at(data, i)
+        if ch == "-"
+            y = y + 6
+            x = 0
+        elif ch == "$"
+            x = 0
+        else
+            let code = stdr.char_code(ch)
+            if code >= 63 && code <= 126
+                let bits = code - 63
+                let ?mask = 1
+                for (let ?bit = 0; bit < 6; bit += 1)
+                    if ((bits / mask) % 2) == 1
+                        scr.set_x(x0 + x).set_y(y0 + y + bit).pixel(fg)
+                    mask = mask * 2
+                x = x + 1
+;
+
+: draw_ellipsis(scr = vimana.screen, x = num, y = num, fg = num, bg = num) (( -- ))
+    scr.put_text(x, y, ".", fg, bg)
+    scr.put_text(x + char_width("."), y, ".", fg, bg)
+    scr.put_text(x + char_width(".") + char_width("."), y, ".", fg, bg)
+;
+
+: render_message(scr = vimana.screen, msg = string, x = num, y = num, max_px = num, base_fg = num, bg = num, msg_idx = num, draw = bool) (( num ))
+    let uname = nanovine_model.get_username()
+    let nick_end = message_prefix_end(msg)
+    let ?emote_end = -1
+    if nick_end < 0 && stdr.len(uname) > 0 && stdr.starts_with(msg, uname + " ")
+        emote_end = stdr.len(uname)
+
+    let ?cursor_x = 0
+    let ?line = 0
+    let ?used_px_h = LINE_H
+    let ?used_lines = 1
+    let ?truncated = false
+    let n = stdr.len(msg)
+    let ?i = 0
+    for (; i < n && !truncated; )
+        let ch = stdr.char_at(msg, i)
+        if ch == "\\" && i + 1 < n && stdr.char_at(msg, i + 1) == "("
+            let close = sixel_end(msg, i + 2)
+            let sixel = stdr.slice(msg, i + 2, close)
+            let dims = sixel_dims(sixel)
+            let sw = stdr.num(dims[0] ?? 0)
+            let sh = stdr.num(dims[1] ?? LINE_H)
+            if sh <= 0
+                sh = LINE_H
+            if sw > 0
+                if cursor_x > 0 && cursor_x + sw > max_px
+                    if line + 1 < MAX_WRAP_LINES && sh <= LINE_H
+                        line = line + 1
+                        cursor_x = 0
+                    else
+                        truncated = true
+                if !truncated
+                    let span_h = line * LINE_H + sh
+                    if span_h > used_px_h
+                        used_px_h = span_h
+                    if draw
+                        draw_sixel(scr, sixel, x + cursor_x, y + line * LINE_H, base_fg)
+                    cursor_x = cursor_x + sw
+                    let lines_now = stdr.floor((used_px_h + LINE_H - 1) / LINE_H)
+                    if lines_now > used_lines
+                        used_lines = lines_now
+            i = close
+            if i < n && stdr.char_at(msg, i) == ")"
+                i = i + 1
+        else
+            let url_len = url_len_at(msg, i)
+            if url_len > 0
+                let url = stdr.slice(msg, i, i + url_len)
+                let ?piece_x = x + cursor_x
+                let ?piece_cursor = cursor_x
+                let ?piece_line = line
+                let ?ui = 0
+                for (; ui < url_len && !truncated; ui += 1)
+                    let uch = stdr.char_at(url, ui)
+                    let uw = char_width(uch)
+                    if cursor_x + uw > max_px
+                        if draw && cursor_x > piece_cursor
+                            push_url_hit(piece_x, y + piece_line * LINE_H, x + cursor_x, y + piece_line * LINE_H + LINE_H, url)
+                        if line + 1 < MAX_WRAP_LINES
+                            line = line + 1
+                            cursor_x = 0
+                            piece_line = line
+                            piece_x = x
+                            piece_cursor = 0
+                        else
+                            truncated = true
+                    if !truncated
+                        if draw
+                            scr.put_text(x + cursor_x, y + line * LINE_H, uch, vimana.color_3, bg)
+                        cursor_x = cursor_x + uw
+                        if line + 1 > used_lines
+                            used_lines = line + 1
+                if draw && !truncated && cursor_x > piece_cursor
+                    push_url_hit(piece_x, y + piece_line * LINE_H, x + cursor_x, y + piece_line * LINE_H + LINE_H, url)
+                i = i + url_len
+            else
+                let cw = char_width(ch)
+                if cursor_x + cw > max_px
+                    if line + 1 < MAX_WRAP_LINES
+                        line = line + 1
+                        cursor_x = 0
+                    else
+                        truncated = true
+                if !truncated
+                    let ?fg = base_fg
+                    if (nick_end > 0 && i < nick_end) || (emote_end > 0 && i < emote_end)
+                        fg = vimana.color_2
+                    if draw
+                        scr.put_text(x + cursor_x, y + line * LINE_H, ch, fg, bg)
+                    cursor_x = cursor_x + cw
+                    if line + 1 > used_lines
+                        used_lines = line + 1
+                i = i + 1
+
+    if truncated && draw
+        let ex = x + cursor_x
+        let ey = y + line * LINE_H
+        if ex + char_width(".") * 3 > x + max_px
+            ex = x + max_px - char_width(".") * 3
+        draw_ellipsis(scr, ex, ey, base_fg, bg)
+
+    let lines_from_px = stdr.floor((used_px_h + LINE_H - 1) / LINE_H)
+    if lines_from_px > used_lines
+        used_lines = lines_from_px
+    if used_lines < 1
+        used_lines = 1
+    if used_lines > MAX_WRAP_LINES
+        used_lines = MAX_WRAP_LINES
+    if draw
+        push_row_hit(msg_idx, y, used_lines * LINE_H)
+    <- used_lines * LINE_H
 ;
 
 :: update_cursorblink(sys = vimana.system) (( -- ))
-    let now = sys.ticks()
-    if now - cursorblink_timer > 400
-        cursorblink_timer = now
-        cursorblink_on = !cursorblink_on
-        nanovine_model.set_dirty()
+    cursorblink_timer = sys.ticks()
+    cursorblink_on = true
+;
+
+:: clear_selection() (( -- ))
+    sel_anchor = -1
+    sel_focus = -1
+    sel_drag = false
+;
+
+:: begin_selection(px = num, py = num) (( -- ))
+    let row = hit_row(px, py)
+    if row >= 0
+        sel_anchor = row
+        sel_focus = row
+        sel_drag = true
+    else
+        clear_selection()
+;
+
+:: drag_selection(px = num, py = num) (( -- ))
+    if !sel_drag
+        <-
+    let row = hit_row(px, py)
+    if row >= 0
+        sel_focus = row
+;
+
+:: end_selection() (( -- ))
+    sel_drag = false
+;
+
+:: has_selection() (( bool ))
+    <- sel_anchor >= 0 && sel_focus >= 0
+;
+
+:: selected_text() (( string ))
+    if !has_selection()
+        <- ""
+    let messages = nanovine_model.get_messages()
+    let ?a = sel_anchor
+    let ?b = sel_focus
+    if a > b
+        let tmp = a
+        a = b
+        b = tmp
+    let ?parts = []: [any]
+    for (let ?i = a; i <= b; i += 1)
+        stdr.push(parts, stdr.str(messages[i] ?? ""))
+        if i < b
+            stdr.push(parts, "\n")
+    <- stdr.join(parts)
+;
+
+:: open_url_at(sys = vimana.system, px = num, py = num) (( bool ))
+    let url = url_at_point(px, py)
+    if stdr.len(url) == 0
+        <- false
+    sys.set_clipboard_text(url)
+    let quoted = shell_quote(url)
+    if stdr.len(quoted) > 0
+        if url_open_proc != 0 && !sys.proc_running(url_open_proc)
+            sys.proc_free(url_open_proc)
+            url_open_proc = 0
+        let proc = sys.spawn("open " + quoted + " >/dev/null 2>&1 &")
+        if proc != 0
+            if url_open_proc != 0
+                sys.proc_free(url_open_proc)
+            url_open_proc = proc
+    <- true
+;
+
+:: tick(sys = vimana.system) (( -- ))
+    if url_open_proc != 0 && !sys.proc_running(url_open_proc)
+        sys.proc_free(url_open_proc)
+        url_open_proc = 0
+;
+
+:: shutdown(sys = vimana.system) (( -- ))
+    if url_open_proc != 0
+        sys.proc_free(url_open_proc)
+        url_open_proc = 0
 ;
 
 :: draw_all(scr = vimana.screen) (( -- ))
     scr.clear(vimana.color_bg)
+    clear_hits()
 
-    -- Get message count early
     let messages = nanovine_model.get_messages()
     let total = stdr.len(messages)
+    let max_px = scr.width() - 24
+    let left_x = 8
 
-    -- Status bar: server/host on left, message count on right of it, username far right
-    let status = nanovine_model.get_host() + ":" + nanovine_model.get_port()
+    let ?history_top = nanovine_model.MSG_Y
+    let motd = nanovine_model.get_motd()
+    if stdr.len(motd) > 0
+        let motd_h = render_message(scr, motd, left_x, history_top, max_px, vimana.color_3, vimana.color_bg, -1, true)
+        history_top = history_top + motd_h + 8
+
+    let bottom = scr.height() - 64
+    let ?available = bottom - history_top
+    let ?heights = []: [any]
+    for (let ?i = 0; i < total; i += 1)
+        stdr.push(heights, render_message(scr, stdr.str(messages[i] ?? ""), left_x, 0, max_px, vimana.color_fg, vimana.color_bg, i, false))
+
+    let ?start = total
+    let ?used = 0
+    if total > 0
+        for (let ?i = total - 1; i >= 0; i -= 1)
+            let h = stdr.num(heights[i] ?? LINE_H)
+            if used + h > available
+                break
+            used = used + h
+            start = i
+
+    let ?msg_y = bottom - used
+    if msg_y < history_top
+        msg_y = history_top
+
+    if total == 0
+        let empty = "(no messages loaded)"
+        if !nanovine_model.is_connected()
+            empty = "(disconnected: no history fetched)"
+        scr.put_text(left_x, history_top, empty, vimana.color_3, vimana.color_bg)
+    else
+        for (let ?i = start; i < total; i += 1)
+            let msg = stdr.str(messages[i] ?? "")
+            let bg = vimana.color_bg
+            if has_selection_idx(i)
+                bg = vimana.color_8
+            let h = stdr.num(heights[i] ?? LINE_H)
+            render_message(scr, msg, left_x, msg_y, max_px, vimana.color_fg, bg, i, true)
+            msg_y = msg_y + h
+
+    let ?status = ""
     if nanovine_model.is_connected()
         status = "[online] " + status
     else
         status = "[inactive] " + status
     scr.put_text(8, scr.height() - 24, status, vimana.color_3, vimana.color_bg)
 
-    -- Compute status text width in pixels
     let ?status_w = 0
-    let ?si = 0
-    for (; si < stdr.len(status); si += 1)
+    for (let ?si = 0; si < stdr.len(status); si += 1)
         status_w = status_w + char_width(stdr.char_at(status, si))
 
-    -- Messages count to the right of status
     let msg_label = "messages: " + stdr.str(total)
-    let msg_label_x = 8 + status_w + 32
-    let msg_label_y = scr.height() - 24
-    let ?mpx = 0
-    for (; mpx < stdr.len(msg_label); )
-        let mch = stdr.char_at(msg_label, mpx)
-        scr.put_text(msg_label_x, msg_label_y, mch, vimana.color_3, vimana.color_bg)
+    let ?msg_label_x = 8 + status_w + 32
+    for (let ?mi = 0; mi < stdr.len(msg_label); mi += 1)
+        let mch = stdr.char_at(msg_label, mi)
+        scr.put_text(msg_label_x, scr.height() - 24, mch, vimana.color_3, vimana.color_bg)
         msg_label_x = msg_label_x + char_width(mch)
-        mpx = mpx + 1
 
     let uname = nanovine_model.get_username()
     scr.put_text(720, scr.height() - 24, uname, vimana.color_2, vimana.color_bg)
 
-    -- Input line
     let input = nanovine_model.get_input()
     let cursor = nanovine_model.get_cursor_pos()
     let base_py = scr.height() - 42
-    let px = 8
+    let ?px = 8
     scr.put_text(px, base_py, "> ", vimana.color_fg, vimana.color_bg)
     px = px + char_width(">")
     px = px + char_width(" ")
     let in_len = stdr.len(input)
-    let ?ti = 0
-    for (; ti < in_len; ti += 1)
+    for (let ?ti = 0; ti < in_len; ti += 1)
         let ch = stdr.char_at(input, ti)
         scr.put_text(px, base_py, ch, vimana.color_fg, vimana.color_bg)
         px = px + char_width(ch)
 
     if cursorblink_on
-        let cursor_px = 8
-        cursor_px = cursor_px + char_width(">")
-        cursor_px = cursor_px + char_width(" ")
-        let ?i = 0
-        for (; i < cursor && i < in_len; i += 1)
+        let ?cursor_px = 8 + char_width(">") + char_width(" ")
+        for (let ?i = 0; i < cursor && i < in_len; i += 1)
             cursor_px = cursor_px + char_width(stdr.char_at(input, i))
-        let cw_px = char_width(" ")
+        let ?cw_px = char_width(" ")
         if cursor < in_len
             cw_px = char_width(stdr.char_at(input, cursor))
-        let ?dy = 0
-        for (; dy < 16; dy += 1)
-            let ?dx = 0
-            for (; dx < cw_px; dx += 1)
+        for (let ?dy = 0; dy < 16; dy += 1)
+            for (let ?dx = 0; dx < cw_px; dx += 1)
                 scr.set_x(cursor_px + dx).set_y(base_py + dy).pixel(vimana.color_2)
-
-    -- Messages
-    let top = nanovine_model.MSG_Y
-    let bottom = scr.height() - 64
-    let top_tile = stdr.floor(top / 8)
-    let ?rows = stdr.floor((bottom - (top + MSG_STEP_Y)) / MSG_STEP_Y)
-    if rows <= 0
-        nanovine_model.set_view_lines(0)
-        <-
-    nanovine_model.set_view_lines(rows)
-
-    if total == 0
-        let empty = "(no messages loaded)"
-        if !nanovine_model.is_connected()
-            empty = "(disconnected: no history fetched)"
-        let empty_px = 1 * 8
-        let empty_py = top_tile * 8
-        let ?ei = 0
-        for (; ei < stdr.len(empty); ei += 1)
-            let ech = stdr.char_at(empty, ei)
-            scr.put_text(empty_px, empty_py, ech, vimana.color_3, vimana.color_bg)
-            empty_px = empty_px + char_width(ech)
-        <-
-
-    -- Render visible message lines, stepping by 2 tiles (16px) per row
-    let ?shown = total
-    if shown > rows
-        shown = rows
-    let start = total - shown
-    let ?mi = 0
-    for (; mi < shown; mi += 1)
-        let idx = start + mi
-        let msg = stdr.str(messages[idx] ?? "")
-        let msg_px = 1 * 8
-        let msg_py = (top_tile + mi * 2) * 8
-        let max_px = scr.width() - 16
-        let ?ci = 0
-        for (; ci < stdr.len(msg); ci += 1)
-            let ch = stdr.char_at(msg, ci)
-            let ch_w = char_width(ch)
-            if msg_px + ch_w > max_px
-                let suffix = "..."
-                let ?si = 0
-                for (; si < 3; si += 1)
-                    let sch = stdr.char_at(suffix, si)
-                    scr.put_text(msg_px, msg_py, sch, vimana.color_fg, vimana.color_bg)
-                    msg_px = msg_px + char_width(sch)
-                break
-            scr.put_text(msg_px, msg_py, ch, vimana.color_fg, vimana.color_bg)
-            msg_px = msg_px + ch_w
 ;

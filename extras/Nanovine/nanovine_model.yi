@@ -23,6 +23,7 @@ def ?last_msg   = -1
 def ?input_buf  = ""
 def ?input_pos  = 0
 def ?username   = ""
+def ?motd       = ""
 def ?dirty      = true
 
 def ?view_scroll = 0
@@ -43,7 +44,7 @@ def C_DIM = 3
 ;
 
 :: clear_dirty() (( -- ))
-    -- disabled
+    dirty = false
 ;
 
 :: is_dirty() (( bool ))
@@ -56,6 +57,12 @@ def C_DIM = 3
 
 :: set_username(name = string) (( -- ))
     username = name
+    set_dirty()
+;
+
+:: set_motd(text = string) (( -- ))
+    motd = text
+    set_dirty()
 ;
 
 :: add_message(msg = string) (( -- ))
@@ -192,4 +199,8 @@ def C_DIM = 3
 
 :: get_username() (( string ))
     <- username
+;
+
+:: get_motd() (( string ))
+    <- motd
 ;

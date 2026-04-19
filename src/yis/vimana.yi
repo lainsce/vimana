@@ -101,7 +101,6 @@ def paddle_count = 2
 
 : __vimana_screen(title = string, width = num, height = num, scale = num) (( screen )) { }
 : __vimana_screen_clear(scr = screen, bg = num) (( -- )) { }
-: __vimana_screen_resize(scr = screen, width = num, height = num) (( -- )) { }
 : __vimana_screen_set_palette(scr = screen, slot = num, color = string) (( -- )) { }
 : __vimana_screen_set_font_glyph(scr = screen, code = num, icn = any) (( -- )) { }
 : __vimana_screen_set_font_chr(scr = screen, code = num, chr = any) (( -- )) { }
@@ -327,11 +326,6 @@ pub :: screen(title = string, width = num, height = num, scale = num) (( screen 
 pub ,: screen
     :: clear(this, bg = num) (( screen ))
         __vimana_screen_clear(this, bg)
-        <- this
-    ;
-
-    :: resize(this, width = num, height = num) (( screen ))
-        __vimana_screen_resize(this, width, height)
         <- this
     ;
 

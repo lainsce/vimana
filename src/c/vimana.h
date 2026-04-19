@@ -67,24 +67,24 @@ extern "C" {
 /* ── ROM layout ───────────────────────────────────────────────────────── */
 /*  Fixed-address sections: Font → Sprite bank window → General GFX data.  */
 /*  Data written here is persistent (no eviction).                         */
-#define VIMANA_FONT_SIZE         0x10000  /* 64 KB font (always allocated) */
-#define VIMANA_GLYPH_COUNT       0x250    /* U+0000–U+024F (592 glyphs)    */
+#define VIMANA_FONT_SIZE         0x7000   /* 28 KB font ROM                */
+#define VIMANA_GLYPH_COUNT       0x100    /* 256 byte-addressed glyphs     */
 #define VIMANA_SPRITE_BANK_COUNT 0x10     /* 16 sprite banks               */
 #define VIMANA_SPRITE_BANK_SIZE  0x10000  /* 64 KB per sprite bank         */
 #define VIMANA_GFX_SIZE          0x60000  /* 384 KB general graphical data */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-/* Font ROM internal layout (within the 64 KB font section):               */
+/* Font ROM internal layout:                                               */
 /*   0x0000  16 B      Header (magic, format, height, glyph_width, count)  */
-/*   0x0010  592 B     Width table  (1 byte per glyph)                     */
-/*   0x0260  42624 B   1bpp bitmap  (592 × 72 bytes)                       */
-/*   0xA8E0  18944 B   UF2 tileset  (592 × 32 bytes)                       */
-/*   0xF860  ~1952 B   Reserved                                            */
+/*   0x0010  256 B     Width table  (1 byte per glyph)                     */
+/*   0x0110  18432 B   1bpp bitmap  (256 × 72 bytes)                       */
+/*   0x4910  8192 B    UF2 tileset  (256 × 32 bytes)                       */
+/*   0x6910  ~1776 B   Reserved                                            */
 #define VIMANA_FONT_HDR_OFF      0x0000 /* font header: 16 B               */
 #define VIMANA_FONT_HDR_SIZE     16     /* (magic, format, height, etc)    */
-#define VIMANA_FONT_WIDTH_OFF    0x0010 /* width table: 592 B              */
-#define VIMANA_FONT_BMP_OFF      0x0260 /* 1bpp bitmap: 42624 B            */
-#define VIMANA_FONT_UF2_OFF      0xA8E0 /* UF2 tileset: 18944 B            */
+#define VIMANA_FONT_WIDTH_OFF    0x0010 /* width table: 256 B              */
+#define VIMANA_FONT_BMP_OFF      0x0110 /* 1bpp bitmap: 18432 B            */
+#define VIMANA_FONT_UF2_OFF      0x4910 /* UF2 tileset: 8192 B             */
 /* ─────────────────────────────────────────────────────────────────────── */
 
 typedef struct VimanaSystem vimana_system;
@@ -137,8 +137,6 @@ size_t vimana_system_ram_usage(vimana_system *system);
 vimana_screen *vimana_screen_new(const char *title, unsigned int width,
                                  unsigned int height, unsigned int scale);
 void vimana_screen_clear(vimana_screen *screen, unsigned int bg);
-void vimana_screen_resize(vimana_screen *screen, unsigned int width,
-                          unsigned int height);
 void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
                                const char *hex);
 void vimana_screen_set_font_glyph(vimana_screen *screen, unsigned int code,

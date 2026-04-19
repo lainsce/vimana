@@ -97,12 +97,8 @@ def ?header_click_y = 0
 : toggle_titlebar_shade(scr = vimana.screen) (( -- ))
     if titlebar_shaded
         titlebar_shaded = false
-        scr.resize(scr.width(), titlebar_saved_height)
         <-
-    if scr.height() > TITLEBAR_SHADE_H
-        titlebar_saved_height = scr.height()
     titlebar_shaded = true
-    scr.resize(scr.width(), TITLEBAR_SHADE_H)
 ;
 
 : draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
@@ -205,16 +201,18 @@ def ?header_click_y = 0
     sys.run(scr, () => {
         dev.poll()
         let titlebar_busy = update_titlebar(dev, sys, scr)
-        if !titlebar_busy
-            on_mouse(sys, dev)
-        on_key(sys, dev)
         mine_logic.timer_tick()
 
         scr.clear(vimana.color_bg)
-        mine_view.draw_all(scr)
+        if !titlebar_shaded
+            if !titlebar_busy
+                on_mouse(sys, dev)
+            on_key(sys, dev)
 
-        if mine_model.is_dirty()
             mine_view.draw_all(scr)
+
+            if mine_model.is_dirty()
+                mine_view.draw_all(scr)
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)

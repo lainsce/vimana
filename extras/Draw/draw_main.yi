@@ -77,12 +77,8 @@ def ?header_click_y = 0
 : toggle_titlebar_shade(scr = vimana.screen) (( -- ))
     if titlebar_shaded
         titlebar_shaded = false
-        scr.resize(scr.width(), titlebar_saved_height)
         <-
-    if scr.height() > TITLEBAR_SHADE_H
-        titlebar_saved_height = scr.height()
     titlebar_shaded = true
-    scr.resize(scr.width(), TITLEBAR_SHADE_H)
 ;
 
 : in_close_button(dev = vimana.device) (( bool ))
@@ -507,13 +503,15 @@ def BG_ADDR = 0xFF60
     sys.run(scr, () => {
         dev.poll()
         let titlebar_busy = update_titlebar(dev, sys, scr)
-        if !titlebar_busy
-            on_mouse(scr, dev, fsys)
-        on_key(scr, dev, fsys)
+        scr.clear(0)
+        if !titlebar_shaded
+            if !titlebar_busy
+                on_mouse(scr, dev, fsys)
+            on_key(scr, dev, fsys)
 
-        draw_view.draw_canvas_all(scr)
-        draw_panel.draw(scr)
-        draw_menu.draw(scr)
+            draw_view.draw_canvas_all(scr)
+            draw_panel.draw(scr)
+            draw_menu.draw(scr)
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)

@@ -629,12 +629,6 @@ static void __vimana_screen_clear(YisVal scrv, YisVal bgv) {
   vimana_screen_clear(screen, (unsigned int)yis_as_int(bgv));
 }
 
-static void __vimana_screen_resize(YisVal scrv, YisVal widthv, YisVal heightv) {
-  vimana_screen *screen =
-      vimana_screen_from_val(scrv, "vimana.screen.resize expects screen");
-  vimana_screen_resize(screen, (int)yis_as_int(widthv), (int)yis_as_int(heightv));
-}
-
 static void __vimana_screen_set_palette(YisVal scrv, YisVal slotv,
                                         YisVal colorv) {
   vimana_screen *screen =

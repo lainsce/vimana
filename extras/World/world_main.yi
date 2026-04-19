@@ -64,12 +64,8 @@ def ?header_click_y = 0
 : toggle_titlebar_shade(scr = vimana.screen) (( -- ))
     if titlebar_shaded
         titlebar_shaded = false
-        scr.resize(scr.width(), titlebar_saved_height)
         <-
-    if scr.height() > TITLEBAR_SHADE_H
-        titlebar_saved_height = scr.height()
     titlebar_shaded = true
-    scr.resize(scr.width(), TITLEBAR_SHADE_H)
 ;
 
 : draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
@@ -183,17 +179,19 @@ def ?header_click_y = 0
 
         -- Input
         let titlebar_busy = update_titlebar(dev, sys, scr)
-        if !titlebar_busy
-            world_input.on_mouse(dev, sys, fsys, scr)
-        world_input.on_key(dev, sys, fsys, scr)
-        world_input.on_scroll(dev)
 
         -- Render only when state changed
         scr.clear(vimana.color_bg)
-        world_view.draw_all(scr)
+        if !titlebar_shaded
+            if !titlebar_busy
+                world_input.on_mouse(dev, sys, fsys, scr)
+            world_input.on_key(dev, sys, fsys, scr)
+            world_input.on_scroll(dev)
 
-        if world_model.consume_dirty()
             world_view.draw_all(scr)
+
+            if world_model.consume_dirty()
+                world_view.draw_all(scr)
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)

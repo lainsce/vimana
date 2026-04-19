@@ -96,12 +96,8 @@ def ?header_click_y = 0
 : toggle_titlebar_shade(scr = vimana.screen) (( -- ))
     if titlebar_shaded
         titlebar_shaded = false
-        scr.resize(scr.width(), titlebar_saved_height)
         <-
-    if scr.height() > TITLEBAR_SHADE_H
-        titlebar_saved_height = scr.height()
     titlebar_shaded = true
-    scr.resize(scr.width(), TITLEBAR_SHADE_H)
 ;
 
 : draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
@@ -218,125 +214,127 @@ def ?header_click_y = 0
 
         let titlebar_busy = update_titlebar(dev, sys, scr)
 
-        -- Mouse handling
         let mx = dev.pointer_x()
         let my = dev.pointer_y()
-        let gx = stdr.floor((mx - 16) / 8)
-        let gy = stdr.floor((my - 16) / 16)
-        if !titlebar_busy && dev.mouse_pressed(vimana.mouse_left)
-            -- Click: move cursor, start potential drag
-            if gx >= 0 && gx < orca_grid.GRID_W && gy >= 0 && gy < orca_grid.GRID_H
-                orca_model.clear_sel()
-                orca_model.set_cursor_pos(gx, gy)
-                mouse_dragging = true
-        elif !titlebar_busy && dev.mouse_down(vimana.mouse_left)
-            -- Drag: extend selection
-            if mouse_dragging
+        scr.clear(vimana.color_bg)
+        if !titlebar_shaded
+            -- Mouse handling
+            let gx = stdr.floor((mx - 16) / 8)
+            let gy = stdr.floor((my - 16) / 16)
+            if !titlebar_busy && dev.mouse_pressed(vimana.mouse_left)
+                -- Click: move cursor, start potential drag
                 if gx >= 0 && gx < orca_grid.GRID_W && gy >= 0 && gy < orca_grid.GRID_H
-                    if gx != orca_model.cursor_x || gy != orca_model.cursor_y
-                        if !orca_model.has_sel()
-                            orca_model.start_sel()
-                        orca_model.set_cursor_pos(gx, gy)
-        else
-            mouse_dragging = false
-
-        let cmd = dev.key_down(KEY_LGUI)
-        let shift = dev.key_down(KEY_LSHIFT)
-
-        -- Cmd+key shortcuts
-        if cmd
-            if dev.key_pressed(KEY_S)
-                if shift
-                    orca_file.save_as(fsys, scr)
-                else
-                    orca_file.save(fsys, scr)
-            elif dev.key_pressed(KEY_O)
-                orca_file.open(fsys, scr)
-            elif dev.key_pressed(KEY_N)
-                orca_grid.clear_all()
-                orca_model.set_file_path("")
-                orca_model.set_frame(0)
-                orca_model.set_dirty(true)
-            elif dev.key_pressed(KEY_C)
-                orca_model.copy_sel()
-            elif dev.key_pressed(KEY_X)
-                orca_model.cut_sel()
-            elif dev.key_pressed(KEY_V)
-                orca_model.paste_clip()
-        else
-            -- Arrow keys
-            if dev.key_pressed(KEY_RIGHT)
-                if shift && !orca_model.has_sel()
-                    orca_model.start_sel()
-                orca_model.move_cursor(1, 0)
-            elif dev.key_pressed(KEY_LEFT)
-                if shift && !orca_model.has_sel()
-                    orca_model.start_sel()
-                orca_model.move_cursor(-1, 0)
-            elif dev.key_pressed(KEY_DOWN)
-                if shift && !orca_model.has_sel()
-                    orca_model.start_sel()
-                orca_model.move_cursor(0, 1)
-            elif dev.key_pressed(KEY_UP)
-                if shift && !orca_model.has_sel()
-                    orca_model.start_sel()
-                orca_model.move_cursor(0, -1)
-
-            -- Clear selection on non-shift arrow
-            if !shift
-                if dev.key_pressed(KEY_RIGHT) || dev.key_pressed(KEY_LEFT) || dev.key_pressed(KEY_DOWN) || dev.key_pressed(KEY_UP)
                     orca_model.clear_sel()
+                    orca_model.set_cursor_pos(gx, gy)
+                    mouse_dragging = true
+            elif !titlebar_busy && dev.mouse_down(vimana.mouse_left)
+                -- Drag: extend selection
+                if mouse_dragging
+                    if gx >= 0 && gx < orca_grid.GRID_W && gy >= 0 && gy < orca_grid.GRID_H
+                        if gx != orca_model.cursor_x || gy != orca_model.cursor_y
+                            if !orca_model.has_sel()
+                                orca_model.start_sel()
+                            orca_model.set_cursor_pos(gx, gy)
+            else
+                mouse_dragging = false
 
-            -- Space = play/pause
-            if dev.key_pressed(KEY_SPACE)
-                orca_model.toggle_play(sys)
+            let cmd = dev.key_down(KEY_LGUI)
+            let shift = dev.key_down(KEY_LSHIFT)
 
-            -- Backspace/Delete = clear cell
-            if dev.key_pressed(KEY_BACKSPACE) || dev.key_pressed(KEY_DELETE)
-                orca_model.delete_at_cursor()
+            -- Cmd+key shortcuts
+            if cmd
+                if dev.key_pressed(KEY_S)
+                    if shift
+                        orca_file.save_as(fsys, scr)
+                    else
+                        orca_file.save(fsys, scr)
+                elif dev.key_pressed(KEY_O)
+                    orca_file.open(fsys, scr)
+                elif dev.key_pressed(KEY_N)
+                    orca_grid.clear_all()
+                    orca_model.set_file_path("")
+                    orca_model.set_frame(0)
+                    orca_model.set_dirty(true)
+                elif dev.key_pressed(KEY_C)
+                    orca_model.copy_sel()
+                elif dev.key_pressed(KEY_X)
+                    orca_model.cut_sel()
+                elif dev.key_pressed(KEY_V)
+                    orca_model.paste_clip()
+            else
+                -- Arrow keys
+                if dev.key_pressed(KEY_RIGHT)
+                    if shift && !orca_model.has_sel()
+                        orca_model.start_sel()
+                    orca_model.move_cursor(1, 0)
+                elif dev.key_pressed(KEY_LEFT)
+                    if shift && !orca_model.has_sel()
+                        orca_model.start_sel()
+                    orca_model.move_cursor(-1, 0)
+                elif dev.key_pressed(KEY_DOWN)
+                    if shift && !orca_model.has_sel()
+                        orca_model.start_sel()
+                    orca_model.move_cursor(0, 1)
+                elif dev.key_pressed(KEY_UP)
+                    if shift && !orca_model.has_sel()
+                        orca_model.start_sel()
+                    orca_model.move_cursor(0, -1)
 
-            -- Escape = deselect + stop
-            if dev.key_pressed(KEY_ESCAPE)
-                orca_model.clear_sel()
-                if orca_model.playing
+                -- Clear selection on non-shift arrow
+                if !shift
+                    if dev.key_pressed(KEY_RIGHT) || dev.key_pressed(KEY_LEFT) || dev.key_pressed(KEY_DOWN) || dev.key_pressed(KEY_UP)
+                        orca_model.clear_sel()
+
+                -- Space = play/pause
+                if dev.key_pressed(KEY_SPACE)
                     orca_model.toggle_play(sys)
 
-            -- [ / ] = bpm (shift = ±1, plain = ±10)
-            if dev.key_pressed(KEY_LBRACKET)
-                if shift
-                    orca_model.dec_bpm_fine()
-                else
-                    orca_model.dec_bpm()
-            if dev.key_pressed(KEY_RBRACKET)
-                if shift
-                    orca_model.inc_bpm_fine()
-                else
-                    orca_model.inc_bpm()
+                -- Backspace/Delete = clear cell
+                if dev.key_pressed(KEY_BACKSPACE) || dev.key_pressed(KEY_DELETE)
+                    orca_model.delete_at_cursor()
 
-            -- Text input for typing characters into grid
-            let typed = dev.text_input()
-            for (let ?ti = 0; ti < stdr.len(typed); ti += 1)
-                let ch = stdr.char_at(typed, ti)
-                let code = stdr.char_code(ch)
-                let valid = false
-                if code >= 65 && code <= 90
-                    valid = true
-                if code >= 97 && code <= 122
-                    valid = true
-                if code >= 48 && code <= 57
-                    valid = true
-                if ch == "." || ch == "*" || ch == "#" || ch == "=" || ch == ":" || ch == ";"
-                    valid = true
-                if valid
-                    orca_model.type_at_cursor(ch)
+                -- Escape = deselect + stop
+                if dev.key_pressed(KEY_ESCAPE)
+                    orca_model.clear_sel()
+                    if orca_model.playing
+                        orca_model.toggle_play(sys)
 
-        -- Clear screen every frame to avoid cursor trails
-        scr.clear(vimana.color_bg)
-        orca_view.draw(scr)
+                -- [ / ] = bpm (shift = ±1, plain = ±10)
+                if dev.key_pressed(KEY_LBRACKET)
+                    if shift
+                        orca_model.dec_bpm_fine()
+                    else
+                        orca_model.dec_bpm()
+                if dev.key_pressed(KEY_RBRACKET)
+                    if shift
+                        orca_model.inc_bpm_fine()
+                    else
+                        orca_model.inc_bpm()
 
-        -- Render when dirty
-        if orca_model.dirty
+                -- Text input for typing characters into grid
+                let typed = dev.text_input()
+                for (let ?ti = 0; ti < stdr.len(typed); ti += 1)
+                    let ch = stdr.char_at(typed, ti)
+                    let code = stdr.char_code(ch)
+                    let valid = false
+                    if code >= 65 && code <= 90
+                        valid = true
+                    if code >= 97 && code <= 122
+                        valid = true
+                    if code >= 48 && code <= 57
+                        valid = true
+                    if ch == "." || ch == "*" || ch == "#" || ch == "=" || ch == ":" || ch == ";"
+                        valid = true
+                    if valid
+                        orca_model.type_at_cursor(ch)
+
             orca_view.draw(scr)
+
+            -- Render when dirty
+            if orca_model.dirty
+                orca_view.draw(scr)
+        else
+            mouse_dragging = false
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)

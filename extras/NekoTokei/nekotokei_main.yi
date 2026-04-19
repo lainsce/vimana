@@ -56,12 +56,8 @@ def ?header_click_y = 0
 : toggle_titlebar_shade(scr = vimana.screen) (( -- ))
     if titlebar_shaded
         titlebar_shaded = false
-        scr.resize(scr.width(), titlebar_saved_height)
         <-
-    if scr.height() > TITLEBAR_SHADE_H
-        titlebar_saved_height = scr.height()
     titlebar_shaded = true
-    scr.resize(scr.width(), TITLEBAR_SHADE_H)
 ;
 
 : draw_titlebar_text(scr = vimana.screen, title = string) (( -- ))
@@ -154,9 +150,10 @@ def ?header_click_y = 0
         update_titlebar(dev, sys, scr)
 
         scr.clear(vimana.color_bg)
-        nekotokei_view.draw(scr, dt, nekotokei_model.tick)
+        if !titlebar_shaded
+            nekotokei_view.draw(scr, dt, nekotokei_model.tick)
 
-        if nekotokei_model.step(dt)
+        if nekotokei_model.step(dt) && !titlebar_shaded
             nekotokei_view.draw(scr, dt, nekotokei_model.tick)
 
         -- Draw titlebar BG
