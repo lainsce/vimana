@@ -36,6 +36,10 @@ def ?titlebar_saved_height = 0
 def ?header_click_time = 0
 def ?header_click_x = 0
 def ?header_click_y = 0
+def ?last_mx = -1
+def ?last_my = -1
+def ?last_close_button_state = false
+def ?last_titlebar_shaded = false
 
 : redraw_titlebar_span(scr = vimana.screen, x = num, w = num) (( -- ))
     if w <= 0
@@ -148,12 +152,25 @@ def ?header_click_y = 0
     sys.run(scr, () => {
         dev.poll()
         update_titlebar(dev, sys, scr)
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let ?needs_redraw = mx != last_mx || my != last_my ||
+            close_button_active != last_close_button_state ||
+            titlebar_shaded != last_titlebar_shaded
+
+        if nekotokei_model.step(dt)
+            needs_redraw = true
+
+        if !needs_redraw
+            <-
+
+        last_mx = mx
+        last_my = my
+        last_close_button_state = close_button_active
+        last_titlebar_shaded = titlebar_shaded
 
         scr.clear(vimana.color_bg)
         if !titlebar_shaded
-            nekotokei_view.draw(scr, dt, nekotokei_model.tick)
-
-        if nekotokei_model.step(dt) && !titlebar_shaded
             nekotokei_view.draw(scr, dt, nekotokei_model.tick)
 
         -- Draw titlebar BG
@@ -167,8 +184,6 @@ def ?header_click_y = 0
         scr.set_auto(0x00)
 
         -- Draw cursor every frame
-        let mx = dev.pointer_x()
-        let my = dev.pointer_y()
         scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
         scr.present()
     })

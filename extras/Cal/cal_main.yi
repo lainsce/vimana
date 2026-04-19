@@ -41,6 +41,10 @@ def ?titlebar_saved_height = 0
 def ?header_click_time = 0
 def ?header_click_x = 0
 def ?header_click_y = 0
+def ?last_mx = -1
+def ?last_my = -1
+def ?last_close_button_state = false
+def ?last_titlebar_shaded = false
 
 : redraw_titlebar_span(scr = vimana.screen, x = num, w = num) (( -- ))
     if w <= 0
@@ -179,18 +183,31 @@ def ?header_click_y = 0
         dev.poll()
 
         let titlebar_busy = update_titlebar(dev, sys, scr)
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let ?needs_redraw = mx != last_mx || my != last_my ||
+            close_button_active != last_close_button_state ||
+            titlebar_shaded != last_titlebar_shaded
 
-        scr.clear(vimana.color_bg)
         if !titlebar_shaded
             cal_input.on_key(dev, sys, fsys, scr, dt)
             cal_input.on_text(dev)
             if !titlebar_busy
                 cal_input.on_mouse(dev, sys, fsys, scr)
-
-            cal_view.draw_all(scr)
-
             if cal_model.consume_dirty()
-                cal_view.draw_all(scr)
+                needs_redraw = true
+
+        if !needs_redraw
+            <-
+
+        last_mx = mx
+        last_my = my
+        last_close_button_state = close_button_active
+        last_titlebar_shaded = titlebar_shaded
+
+        scr.clear(vimana.color_bg)
+        if !titlebar_shaded
+            cal_view.draw_all(scr)
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)
@@ -203,8 +220,6 @@ def ?header_click_y = 0
         scr.set_auto(0x00)
 
         -- Draw cursor every frame
-        let mx = dev.pointer_x()
-        let my = dev.pointer_y()
         scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
         scr.present()
     })

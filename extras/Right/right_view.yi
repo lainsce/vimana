@@ -170,16 +170,16 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
 : draw_scrollbar(scr = vimana.screen) (( -- ))
     let bar_x = 4
     let bar_y = right_model.CONTENT_Y + 4
-    let bar_h = scr.height() - bar_y
+    let bar_h = scr.height() - bar_y - 4
 
     -- Halftone background
-    draw_icn_col(scr, bar_x, bar_y, bar_h - 8, ICN_HALFTONE, right_model.C_FG, right_model.C_BG)
+    draw_icn_col(scr, bar_x, bar_y, bar_h, ICN_HALFTONE, right_model.C_FG, right_model.C_BG)
 
     -- Thumb
     let total = right_model.get_vline_count()
     let visible = right_model.visible_lines()
     if total <= visible
-        draw_icn_col(scr, bar_x, bar_y, bar_h - 4, ICN_SOLID, right_model.C_FG, right_model.C_BG)
+        draw_icn_col(scr, bar_x, bar_y, bar_h, ICN_SOLID, right_model.C_FG, right_model.C_BG)
         <-
 
     let thumb_tiles = stdr.floor(bar_h * visible / total)

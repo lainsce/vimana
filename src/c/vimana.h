@@ -58,16 +58,17 @@ extern "C" {
 
 /* ── Font metrics ─────────────────────────────────────────────────────── */
 #define VIMANA_GLYPH_HEIGHT       16       /* max glyph height (px)        */
-#define VIMANA_UF2_BYTES          32       /* 2 tiles × 16 B (2bpp planar) */
+#define VIMANA_UF1_BYTES           8       /* 1 tile  × 8 B  (8x8  1bpp)   */
+#define VIMANA_UF2_BYTES          32       /* 4 tiles × 8 B  (16x16 1bpp)  */
+#define VIMANA_UF3_BYTES          72       /* 9 tiles × 8 B  (24x24 1bpp)  */
 #define VIMANA_FONT_ROW_BYTES      3       /* max 24px wide = 3 bytes/row  */
 #define VIMANA_FONT_MAX_HEIGHT    24       /* max height (px) for UF3      */
-#define VIMANA_FONT_GLYPH_BYTES   (24 * 3) /* 72                           */
+#define VIMANA_FONT_GLYPH_BYTES   VIMANA_UF3_BYTES
 /* ─────────────────────────────────────────────────────────────────────── */
 
 /* ── ROM layout ───────────────────────────────────────────────────────── */
 /*  Fixed-address sections: Font → Sprite bank window → General GFX data.  */
 /*  Data written here is persistent (no eviction).                         */
-#define VIMANA_FONT_SIZE         0x4910   /* 18.3 KB font ROM              */
 #define VIMANA_GLYPH_COUNT       0x100    /* 256 byte-addressed glyphs     */
 #define VIMANA_SPRITE_BANK_COUNT 0x10     /* 16 sprite banks               */
 #define VIMANA_SPRITE_BANK_SIZE  0x10000  /* 64 KB per sprite bank         */
@@ -77,7 +78,7 @@ extern "C" {
 /* Font ROM internal layout:                                               */
 /*   0x0000  16 B      Header (magic, format, height, glyph_width, count)  */
 /*   0x0010  256 B     Width table  (1 byte per glyph)                     */
-/*   0x0110  18432 B   1bpp bitmap  (256 × 72 bytes)                       */
+/*   0x0110  N B       Glyph data in compact UFX tile order                */
 #define VIMANA_FONT_HDR_OFF      0x0000 /* font header: 16 B               */
 #define VIMANA_FONT_HDR_SIZE     16     /* (magic, format, height, etc)    */
 #define VIMANA_FONT_WIDTH_OFF    0x0010 /* width table: 256 B              */
@@ -136,10 +137,8 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width,
 void vimana_screen_clear(vimana_screen *screen, unsigned int bg);
 void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
                                const char *hex);
-void vimana_screen_set_font_glyph(vimana_screen *screen, unsigned int code,
-                                  const uint16_t rows[16]);
-void vimana_screen_set_font_chr(vimana_screen *screen, unsigned int code,
-                                const uint8_t *chr, unsigned int len);
+void vimana_screen_set_font(vimana_screen *screen, unsigned int code,
+                            const uint16_t *glyph, unsigned int len);
 void vimana_screen_set_font_width(vimana_screen *screen, unsigned int code,
                                   unsigned int width);
 void vimana_screen_set_font_size(vimana_screen *screen, unsigned int size);
@@ -183,6 +182,7 @@ unsigned int vimana_screen_height(vimana_screen *screen);
 unsigned int vimana_screen_scale(vimana_screen *screen);
 size_t vimana_screen_ram_usage(vimana_screen *screen);
 void vimana_screen_free(vimana_screen *screen);
+static uint8_t vimana_controller_bits(vimana_system *system);
 
 /* ── Device API ─────────────────────────────────────────────────────────── */
 void vimana_device_poll(vimana_system *system);

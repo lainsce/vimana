@@ -66,6 +66,10 @@ def ?titlebar_saved_height = 0
 def ?header_click_time = 0
 def ?header_click_x = 0
 def ?header_click_y = 0
+def ?last_mx = -1
+def ?last_my = -1
+def ?last_close_button_state = false
+def ?last_titlebar_shaded = false
 
 : draw_titlebar_decor(scr = vimana.screen) (( -- ))
     scr.set_auto(0x00).set_x(scr.width() - 1).set_y(TITLEBAR_EDGE_Y)
@@ -503,12 +507,28 @@ def BG_ADDR = 0xFF60
     sys.run(scr, () => {
         dev.poll()
         let titlebar_busy = update_titlebar(dev, sys, scr)
-        scr.clear(0)
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let ?needs_redraw = mx != last_mx || my != last_my ||
+            close_button_active != last_close_button_state ||
+            titlebar_shaded != last_titlebar_shaded
         if !titlebar_shaded
             if !titlebar_busy
                 on_mouse(scr, dev, fsys)
             on_key(scr, dev, fsys)
+            if draw_canvas.is_dirty()
+                needs_redraw = true
 
+        if !needs_redraw
+            <-
+
+        last_mx = mx
+        last_my = my
+        last_close_button_state = close_button_active
+        last_titlebar_shaded = titlebar_shaded
+
+        scr.clear(0)
+        if !titlebar_shaded
             draw_view.draw_canvas_all(scr)
             draw_panel.draw(scr)
             draw_menu.draw(scr)
@@ -523,8 +543,6 @@ def BG_ADDR = 0xFF60
         draw_close_button(scr)
         scr.set_auto(0x00)
 
-        let mx = dev.pointer_x()
-        let my = dev.pointer_y()
         scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
         scr.present()
     })

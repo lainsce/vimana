@@ -186,20 +186,6 @@ static void vimana_icn_rows_from_val(YisVal value, uint16_t rows[8],
     rows[i] = vimana_icn_short_from_val(arr->items[i]);
 }
 
-static void vimana_uf2_rows_from_val(YisVal value, uint16_t rows[16],
-                                      const char *what) {
-  for (int i = 0; i < 16; i++)
-    rows[i] = 0;
-  if (value.tag != EVT_ARR)
-    yis_trap(what);
-  YisArr *arr = (YisArr *)value.as.p;
-  if (!arr)
-    return;
-  size_t limit = arr->len < 16 ? arr->len : 16;
-  for (size_t i = 0; i < limit; i++)
-    rows[i] = vimana_icn_short_from_val(arr->items[i]);
-}
-
 static void vimana_icn_byte_rows_from_val(YisVal value, uint8_t rows[8],
                                           const char *what) {
   uint16_t word_rows[8] = {0};
@@ -640,32 +626,22 @@ static void __vimana_screen_set_palette(YisVal scrv, YisVal slotv,
     yis_release_val(YV_STR(tmp));
 }
 
-static void __vimana_screen_set_font_glyph(YisVal scrv, YisVal codev,
-                                           YisVal icnv) {
+static void __vimana_screen_set_font(YisVal scrv, YisVal codev,
+                                     YisVal glyphv) {
   vimana_screen *screen = vimana_screen_from_val(
-      scrv, "vimana.screen.set_font_glyph expects screen");
-  uint16_t rows[16] = {0};
-  vimana_uf2_rows_from_val(
-      icnv, rows,
-      "vimana.screen.set_font_glyph expects 16 hex-short rows (UF2)");
-  vimana_screen_set_font_glyph(screen, (unsigned int)yis_as_int(codev), rows);
-}
-
-static void __vimana_screen_set_font_chr(YisVal scrv, YisVal codev,
-                                         YisVal chrv) {
-  vimana_screen *screen = vimana_screen_from_val(
-      scrv, "vimana.screen.set_font_chr expects screen");
-  uint8_t bytes[72] = {0}; /* max 24 rows × 3 bytes/row for UF3 */
-  if (chrv.tag != EVT_ARR)
-    yis_trap("vimana.screen.set_font_chr expects byte array");
-  YisArr *arr = (YisArr *)chrv.as.p;
+      scrv, "vimana.screen.set_font expects screen");
+  uint16_t words[36] = {0}; /* max 9 tiles × 4 words for UF3 */
+  if (glyphv.tag != EVT_ARR)
+    yis_trap("vimana.screen.set_font expects UFX word array");
+  YisArr *arr = (YisArr *)glyphv.as.p;
   unsigned int len = 0;
   if (arr) {
-    len = (unsigned int)(arr->len < 72 ? arr->len : 72);
+    len = (unsigned int)(arr->len < 36 ? arr->len : 36);
     for (unsigned int i = 0; i < len; i++)
-      bytes[i] = vimana_byte_from_val(arr->items[i]);
+      words[i] = (uint16_t)((uint64_t)yis_as_int(arr->items[i]) & 0xFFFFu);
   }
-  vimana_screen_set_font_chr(screen, (unsigned int)yis_as_int(codev), bytes, len);
+  vimana_screen_set_font(screen, (unsigned int)yis_as_int(codev), words,
+                         len);
 }
 
 static void __vimana_screen_set_font_width(YisVal scrv, YisVal codev,

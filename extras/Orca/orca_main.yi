@@ -76,6 +76,10 @@ def ?titlebar_saved_height = 0
 def ?header_click_time = 0
 def ?header_click_x = 0
 def ?header_click_y = 0
+def ?last_mx = -1
+def ?last_my = -1
+def ?last_close_button_state = false
+def ?last_titlebar_shaded = false
 
 : redraw_titlebar_span(scr = vimana.screen, x = num, w = num) (( -- ))
     if w <= 0
@@ -216,7 +220,9 @@ def ?header_click_y = 0
 
         let mx = dev.pointer_x()
         let my = dev.pointer_y()
-        scr.clear(vimana.color_bg)
+        let ?needs_redraw = mx != last_mx || my != last_my ||
+            close_button_active != last_close_button_state ||
+            titlebar_shaded != last_titlebar_shaded
         if !titlebar_shaded
             -- Mouse handling
             let gx = stdr.floor((mx - 16) / 8)
@@ -328,11 +334,8 @@ def ?header_click_y = 0
                     if valid
                         orca_model.type_at_cursor(ch)
 
-            orca_view.draw(scr)
-
-            -- Render when dirty
             if orca_model.dirty
-                orca_view.draw(scr)
+                needs_redraw = true
         else
             mouse_dragging = false
 
@@ -344,6 +347,19 @@ def ?header_click_y = 0
                 tick_acc = tick_acc - tick_interval
                 orca_sim.tick(sys)
                 orca_model.tick_frame()
+                needs_redraw = true
+
+        if !needs_redraw
+            <-
+
+        last_mx = mx
+        last_my = my
+        last_close_button_state = close_button_active
+        last_titlebar_shaded = titlebar_shaded
+
+        scr.clear(vimana.color_bg)
+        if !titlebar_shaded
+            orca_view.draw(scr)
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)
