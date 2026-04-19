@@ -91,8 +91,8 @@ def CAT_W = [4, 4, 4, 4, 7]    -- width per label in tiles (for hit test)
     let tx = stdr.floor(mx / 8)
     let ty = stdr.floor(my / 8)
 
-    -- Click on title bar row (ty 0 or 1)
-    if ty <= 1
+    -- Click on title bar row (ty 2-4 - the 16px titlebar at Y=18)
+    if ty >= 2 && ty <= 4
         -- Check which category was clicked
         for (let ?c = 0; c < CAT_COUNT; c = c + 1)
             if tx >= CAT_X[c] && tx < CAT_X[c] + CAT_W[c]
@@ -113,7 +113,7 @@ def CAT_W = [4, 4, 4, 4, 7]    -- width per label in tiles (for hit test)
         let cat_x = CAT_X[active_cat]
         let drop_w = 12   -- dropdown width in tiles
         if tx >= cat_x && tx < cat_x + drop_w
-            let item_row = stdr.floor((ty - 2) / 2)
+            let item_row = stdr.floor((ty - 5) / 2)
             let count = item_count(active_cat)
             if item_row >= 0 && item_row < count
                 let action = active_cat * 10 + item_row
@@ -132,7 +132,7 @@ def CAT_W = [4, 4, 4, 4, 7]    -- width per label in tiles (for hit test)
     let ty = stdr.floor(my / 8)
 
     -- Hovering over title bar: switch category
-    if ty <= 1
+    if ty >= 2 && ty <= 4
         for (let ?c = 0; c < CAT_COUNT; c = c + 1)
             if tx >= CAT_X[c] && tx < CAT_X[c] + CAT_W[c]
                 if active_cat != c
@@ -146,7 +146,7 @@ def CAT_W = [4, 4, 4, 4, 7]    -- width per label in tiles (for hit test)
     let cat_x = CAT_X[active_cat]
     let drop_w = 12
     if tx >= cat_x && tx < cat_x + drop_w
-        let item_row = stdr.floor((ty - 2) / 2)
+        let item_row = stdr.floor((ty - 5) / 2)
         let count = item_count(active_cat)
         if item_row >= 0 && item_row < count
             if hover_item != item_row
@@ -173,7 +173,7 @@ def HILIGHT = 3
         if c == active_cat
             fg = BG
             bg = FG
-        scr.put_text(px, 24, label, fg, bg)
+        scr.put_text(px, 17, label, fg, bg)
 
     -- Draw dropdown if open
     if active_cat < 0 { <- }
@@ -181,17 +181,17 @@ def HILIGHT = 3
     let drop_w = 12
     let count = item_count(active_cat)
 
-    -- Draw dropdown background below the titlebar.
+    -- Draw dropdown background below the titlebar (starting at row 5, after the 16px titlebar)
     let fill = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
     for (let ?r = 0; r < count * 2; r = r + 1)
         for (let ?c = 0; c < drop_w; c = c + 1)
-            scr.put_icn((cat_x + c) * 8, (3 + r) * 8, fill, BG, BG)
+            scr.put_icn((cat_x + c) * 8, (5 + r) * 8, fill, BG, BG)
 
     -- Draw item labels (each item spans 2 tile rows = 16px)
     for (let ?r = 0; r < count; r = r + 1)
         let label = item_label(active_cat, r)
         let px = (cat_x + 1) * 8
-        let py_tile = 3 + r * 2
+        let py_tile = 5 + r * 2
         let ?fg = FG
         let ?bg = BG
         if r == hover_item
@@ -206,8 +206,8 @@ def HILIGHT = 3
     -- Draw dropdown border (1px)
     let lx = cat_x * 8 - 1
     let rx = (cat_x + drop_w) * 8
-    let top_y = 3 * 8 - 1
-    let bot_y = (3 + count * 2) * 8
+    let top_y = 5 * 8 - 1
+    let bot_y = (5 + count * 2) * 8
     let border = FG + 64
     for (let ?px = lx; px <= rx; px = px + 1)
         scr.set_x(px).set_y(top_y).pixel(border)

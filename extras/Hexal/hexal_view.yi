@@ -10,6 +10,7 @@ bring hexal_browser
 : draw_all(scr = vimana.screen) (( -- ))
     if !hexal_model.dirty
         <-
+    scr.clear(vimana.color_bg)
     hexal_model.clear_dirty()
 
     draw_separator(scr)

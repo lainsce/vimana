@@ -8,7 +8,7 @@ bring draw_tools
 bring draw_view
 
 -- Titlebar offset (must match draw_view.yi)
-def Y_OFFSET = 2
+def Y_OFFSET = 0
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Panel layout
@@ -33,9 +33,9 @@ def SIZE_ROWS = 4
 -- ─────────────────────────────────────────────────────────────────────────────
 
 def ?panel_tx = 1       -- panel tile x position
-def ?panel_ty = 7 + Y_OFFSET       -- panel tile y position (below 2-row green bar + 1 gap)
+def ?panel_ty = 8       -- panel tile y position (below 2-row green bar + 1 gap)
 def ?panel_px = 8       -- panel pixel x (tx * 8)
-def ?panel_py = 24 + Y_OFFSET * 8      -- panel pixel y (ty * 8)
+def ?panel_py = 40 + Y_OFFSET * 8      -- panel pixel y (ty * 8)
 def ?drag_ox = 0
 def ?drag_oy = 0
 def ?panel_dragging = false

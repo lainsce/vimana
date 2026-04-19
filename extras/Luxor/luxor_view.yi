@@ -268,6 +268,7 @@ bring luxor_model
     if !luxor_model.dirty
         <-
 
+    scr.clear(vimana.color_bg)
     draw_header(scr)
     draw_editor(scr)
     draw_collection(scr)

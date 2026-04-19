@@ -61,16 +61,32 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
     let cty = draw_canvas.CANVAS_TY
     let cwt = draw_canvas.CANVAS_WT
     let cht = draw_canvas.CANVAS_HT
-    -- Rows 0-1: solid green strip (filename bar, 16px for 8x16 fonts)
-    for (let ?ty = 2; ty <= 3; ty = ty + 1)
+    -- Rows 0-1: dark (Y=0-16)
+    for (let ?ty = 0; ty < 2; ty = ty + 1)
+        for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
+            scr.put_icn(tx * 8, ty * 8, BG_FILL_ICN, BG, BG)
+    -- Cover rows 0-1 (Y=0-16) with BG
+    for (let ?px = 0; px < scr_wt * 8; px = px + 1)
+        for (let ?py = 0; py < 17; py = py + 1)
+            scr.set_x(px).set_y(py).pixel(BG)
+    -- Skip Y=17 (nothing drawn)
+    -- Titlebar: rows 2-4 with green fill (Y=18-33)
+    for (let ?ty = 2; ty < 5; ty = ty + 1)
         for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
             scr.put_icn(tx * 8, ty * 8, BG_FILL_ICN, UI, UI)
-
-    -- Rows 2+: hash outside canvas
+    -- Cover bottom part of titlebar to end at Y=33 (Y=33-40)
+    for (let ?px = 0; px < scr_wt * 8; px = px + 1)
+        for (let ?py = 33; py < 40; py = py + 1)
+            scr.set_x(px).set_y(py).pixel(BG)
+    -- Rows 4+: hash outside canvas (Y=32+)
     for (let ?ty = 4; ty < scr_ht; ty = ty + 1)
         for (let ?tx = 0; tx < scr_wt; tx = tx + 1)
             if tx < ctx || tx >= ctx + draw_canvas.CANVAS_WT || ty < cty|| ty >= cty + draw_canvas.CANVAS_HT
                 scr.put_icn(tx * 8, ty * 8, HASH_ICN, UI, BG)
+    -- Cover top of row 4 hash to start at Y=34 (Y=32-34)
+    for (let ?px = 0; px < scr_wt * 8; px = px + 1)
+        for (let ?py = 32; py < 34; py = py + 1)
+            scr.set_x(px).set_y(py).pixel(BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -145,7 +161,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
 : draw_size_label(scr = vimana.screen) (( -- ))
     let w = draw_canvas.CANVAS_WT
     let h = draw_canvas.CANVAS_HT
-    draw_font.draw_size(scr, 672, 24, w, h, FG, UI)
+    draw_font.draw_size(scr, 672, 17, w, h, FG, UI)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -156,7 +172,7 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
     let ?name = draw_file.get_display_name()
     if draw_canvas.filestate_changed()
         name = name + " *"
-    scr.put_text(272, 24, name, FG, UI)
+    scr.put_text(272, 17, name, FG, UI)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────

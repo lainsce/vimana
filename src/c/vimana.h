@@ -67,7 +67,7 @@ extern "C" {
 /* ── ROM layout ───────────────────────────────────────────────────────── */
 /*  Fixed-address sections: Font → Sprite bank window → General GFX data.  */
 /*  Data written here is persistent (no eviction).                         */
-#define VIMANA_FONT_SIZE         0x7000   /* 28 KB font ROM                */
+#define VIMANA_FONT_SIZE         0x4910   /* 18.3 KB font ROM              */
 #define VIMANA_GLYPH_COUNT       0x100    /* 256 byte-addressed glyphs     */
 #define VIMANA_SPRITE_BANK_COUNT 0x10     /* 16 sprite banks               */
 #define VIMANA_SPRITE_BANK_SIZE  0x10000  /* 64 KB per sprite bank         */
@@ -78,13 +78,10 @@ extern "C" {
 /*   0x0000  16 B      Header (magic, format, height, glyph_width, count)  */
 /*   0x0010  256 B     Width table  (1 byte per glyph)                     */
 /*   0x0110  18432 B   1bpp bitmap  (256 × 72 bytes)                       */
-/*   0x4910  8192 B    UF2 tileset  (256 × 32 bytes)                       */
-/*   0x6910  ~1776 B   Reserved                                            */
 #define VIMANA_FONT_HDR_OFF      0x0000 /* font header: 16 B               */
 #define VIMANA_FONT_HDR_SIZE     16     /* (magic, format, height, etc)    */
 #define VIMANA_FONT_WIDTH_OFF    0x0010 /* width table: 256 B              */
 #define VIMANA_FONT_BMP_OFF      0x0110 /* 1bpp bitmap: 18432 B            */
-#define VIMANA_FONT_UF2_OFF      0x4910 /* UF2 tileset: 8192 B             */
 /* ─────────────────────────────────────────────────────────────────────── */
 
 typedef struct VimanaSystem vimana_system;

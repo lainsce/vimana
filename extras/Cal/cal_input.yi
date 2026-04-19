@@ -59,11 +59,13 @@ bring cal_events
 ;
 
 -- Input mode key handling
--- Finish input: save if text present, cancel if empty (matches original /<done>)
+-- Finish input: save event (or delete if empty)
 : done_input(sys = vimana.system, fsys = vimana.file) (( -- ))
     let text = cal_model.finish_input()
     if stdr.len(text) > 0
         cal_events.set_event(sys, fsys, cal_model.sel_day, text)
+    else
+        cal_events.delete_event(sys, fsys, cal_model.sel_day)
 ;
 
 : on_key_input(dev = vimana.device, sys = vimana.system, fsys = vimana.file) (( -- ))
@@ -86,7 +88,7 @@ bring cal_events
         cal_model.start_input(next_ev)
         <-
 
-    if dev.key_pressed(cal_model.KEY_BACKSPACE)
+    if dev.key_down(cal_model.KEY_BACKSPACE)
         let buf = cal_model.input_buf
         let n = stdr.len(buf)
         if n > 0

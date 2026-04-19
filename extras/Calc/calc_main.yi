@@ -98,26 +98,26 @@ def ?press_id = -1
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : on_key(sys = vimana.system, dev = vimana.device) (( -- ))
-    -- Number keys
-    if dev.key_pressed(30)
+    -- Number keys (key_down for repeat)
+    if dev.key_down(30)
         append_with_tone(sys, 1)
-    elif dev.key_pressed(31)
+    elif dev.key_down(31)
         append_with_tone(sys, 2)
-    elif dev.key_pressed(32)
+    elif dev.key_down(32)
         append_with_tone(sys, 3)
-    elif dev.key_pressed(33)
+    elif dev.key_down(33)
         append_with_tone(sys, 4)
-    elif dev.key_pressed(34)
+    elif dev.key_down(34)
         append_with_tone(sys, 5)
-    elif dev.key_pressed(35)
+    elif dev.key_down(35)
         append_with_tone(sys, 6)
-    elif dev.key_pressed(36)
+    elif dev.key_down(36)
         append_with_tone(sys, 7)
-    elif dev.key_pressed(37)
+    elif dev.key_down(37)
         append_with_tone(sys, 8)
-    elif dev.key_pressed(38)
+    elif dev.key_down(38)
         append_with_tone(sys, 9)
-    elif dev.key_pressed(39)
+    elif dev.key_down(39)
         append_with_tone(sys, 0)
 
     -- Hex digits via text input
@@ -167,7 +167,7 @@ def ?press_id = -1
     if dev.key_pressed(40) || dev.key_pressed(44)
         calc_ops.input_eval()
     -- Backspace → erase
-    elif dev.key_pressed(42)
+    elif dev.key_down(42)
         calc_ops.input_erase()
     -- Escape → clear
     elif dev.key_pressed(41)

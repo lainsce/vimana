@@ -336,6 +336,15 @@ def ?header_click_y = 0
         else
             mouse_dragging = false
 
+        -- Simulation tick (FPS-independent using accumulator)
+        if orca_model.playing
+            tick_acc = tick_acc + 1.0
+            let tick_interval = 900.0 / orca_model.bpm
+            if tick_acc >= tick_interval
+                tick_acc = tick_acc - tick_interval
+                orca_sim.tick(sys)
+                orca_model.tick_frame()
+
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)
         for (let ?i = 0; i < scr.width() / 8; i += 1)

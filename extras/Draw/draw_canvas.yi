@@ -12,7 +12,7 @@ def ?CANVAS_HT = 41      -- height in tiles (mutable for resize)
 def ?CANVAS_WP = 77 * 8  -- width in pixels (WT * 8)
 def ?CANVAS_HP = 41 * 8  -- height in pixels (HT * 8)
 def ?CANVAS_TX = 6       -- screen tile x offset (fixed)
-def ?CANVAS_TY = 5       -- screen tile y offset (fixed)
+def ?CANVAS_TY = 5       -- screen tile y offset (after 17px titlebar + hash)
 def ?CANVAS_PX = 6 * 8   -- screen pixel x offset (TX * 8)
 def ?CANVAS_PY = 5 * 8   -- screen pixel y offset (TY * 8)
 

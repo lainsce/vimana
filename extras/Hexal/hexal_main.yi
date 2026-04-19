@@ -341,7 +341,6 @@ def ?header_click_y = 0
     sys.run(scr, () => {
         dev.poll()
         let titlebar_busy = update_titlebar(dev, sys, scr)
-        scr.clear(vimana.color_bg)
         if !titlebar_shaded
             if !titlebar_busy
                 on_mouse(dev, fsys, scr)

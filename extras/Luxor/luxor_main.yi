@@ -363,7 +363,6 @@ def ?header_click_y = 0
         sync_screen_size(scr)
 
         luxor_file.update_title(scr)
-        scr.clear(vimana.color_bg)
         if !titlebar_shaded
             if !titlebar_busy
                 on_mouse(dev)
