@@ -74,24 +74,32 @@ def ? dirty = true
     if !fsys.exists(path)
         <-
     let bytes = fsys.read_bytes(path)
-    if stdr.len(bytes) < 14
+    if stdr.len(bytes) < 6
         <-
-    if bytes[4] != 32 || bytes[9] != 32
-        <-
-    for (let ?i = 0; i < 4; i += 1)
-        nib_r[i] = stdr.floor(bytes[i] / 17)
-        nib_g[i] = stdr.floor(bytes[5 + i] / 17)
-        nib_b[i] = stdr.floor(bytes[10 + i] / 17)
+    nib_r[0] = stdr.floor(bytes[0] / 16)
+    nib_r[1] = bytes[0] % 16
+    nib_r[2] = stdr.floor(bytes[1] / 16)
+    nib_r[3] = bytes[1] % 16
+    nib_g[0] = stdr.floor(bytes[2] / 16)
+    nib_g[1] = bytes[2] % 16
+    nib_g[2] = stdr.floor(bytes[3] / 16)
+    nib_g[3] = bytes[3] % 16
+    nib_b[0] = stdr.floor(bytes[4] / 16)
+    nib_b[1] = bytes[4] % 16
+    nib_b[2] = stdr.floor(bytes[5] / 16)
+    nib_b[3] = bytes[5] % 16
     dirty = true
 ;
 
 :: save(sys = vimana.system, fsys = vimana.file) (( -- ))
     let path = sys.home_dir() + "/.theme"
-    let bytes = [0, 0, 0, 0, 32, 0, 0, 0, 0, 32, 0, 0, 0, 0]
-    for (let ?i = 0; i < 4; i += 1)
-        bytes[i] = nib_r[i] * 17
-        bytes[5 + i] = nib_g[i] * 17
-        bytes[10 + i] = nib_b[i] * 17
+    let bytes = [0, 0, 0, 0, 0, 0]
+    bytes[0] = nib_r[0] * 16 + nib_r[1]
+    bytes[1] = nib_r[2] * 16 + nib_r[3]
+    bytes[2] = nib_g[0] * 16 + nib_g[1]
+    bytes[3] = nib_g[2] * 16 + nib_g[3]
+    bytes[4] = nib_b[0] * 16 + nib_b[1]
+    bytes[5] = nib_b[2] * 16 + nib_b[3]
     fsys.write_bytes(path, bytes)
 ;
 

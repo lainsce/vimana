@@ -2,7 +2,8 @@ cask nanovine_font
 
 bring vimana
 
--- Nanotalk uses a UF2 proportional font in native UFX word order.
+-- Nanotalk uses a UF2 proportional font
+-- in native UFX word order.
 
 :: install(scr = vimana.screen) (( vimana.screen ))
     scr.set_font_size(2)
