@@ -2078,59 +2078,6 @@ void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl) {
   }
 }
 
-void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
-                       const char *glyph, unsigned int fg, unsigned int bg) {
-  if (!screen || !screen->layers || !screen->font_rom)
-    return;
-  if (x >= (unsigned int)screen->width || y >= (unsigned int)screen->canvas_height)
-    return;
-  unsigned int ch = (unsigned char)((glyph && glyph[0]) ? glyph[0] : ' ');
-  if (ch >= VIMANA_GLYPH_COUNT)
-    ch = ' ';
-  const uint8_t *bmp = vimana_rom_font_bitmap(screen, ch);
-  const uint8_t *widths = vimana_rom_font_widths(screen);
-  unsigned int bg_slot = bg & 0xFF;
-  unsigned int fg_slot = fg & 0xFF;
-  unsigned int gh = screen->font_height;
-  unsigned int gw = widths[ch];
-  if (gw == 0)
-    gw = screen->font_glyph_width;
-  for (unsigned int row = 0; row < gh; row++) {
-    unsigned int py = y + row;
-    if (py >= (unsigned int)screen->canvas_height)
-      continue;
-    uint8_t row_data[3];
-    vimana_font_row_bytes(screen, bmp, row, row_data);
-
-    /* Limit the background pass to the actual ink extents of this row,
-       so spaces and trailing empty columns don't wipe what is behind the
-       text. */
-    unsigned int first_hit = gw;
-    unsigned int last_hit = 0;
-    for (unsigned int col = 0; col < gw; col++) {
-      uint8_t mask = (uint8_t)(0x80u >> (col & 7));
-      if (row_data[col >> 3] & mask) {
-        if (first_hit == gw)
-          first_hit = col;
-        last_hit = col;
-      }
-    }
-    if (first_hit == gw)
-      continue;
-
-    for (unsigned int col = first_hit; col <= last_hit; col++) {
-      unsigned int px = x + col;
-      if (px >= (unsigned int)screen->width)
-        continue;
-      uint8_t mask = (uint8_t)(0x80u >> (col & 7));
-      uint8_t hit = (row_data[col >> 3] & mask) ? 1u : 0u;
-      uint8_t slot = hit ? (uint8_t)fg_slot : (uint8_t)bg_slot;
-      screen->layers[py * screen->width_mar + px] =
-          (uint8_t)((slot << 4) | slot);
-    }
-  }
-}
-
 static bool vimana_screen_glyph_bounds(vimana_screen *screen, unsigned int ch,
                                        unsigned int *min_col,
                                        unsigned int *max_col,

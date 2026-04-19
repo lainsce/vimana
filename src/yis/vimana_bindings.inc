@@ -716,20 +716,6 @@ static void __vimana_screen_set_auto(YisVal scrv, YisVal autov) {
   vimana_screen_set_auto(screen, (unsigned int)yis_as_int(autov));
 }
 
-static void __vimana_screen_put(YisVal scrv, YisVal xv, YisVal yv,
-                                YisVal glyphv, YisVal fgv, YisVal bgv) {
-  vimana_screen *screen =
-      vimana_screen_from_val(scrv, "vimana.screen.put expects screen");
-  YisStr *tmp = NULL;
-  const char *glyph = vimana_required_cstr(glyphv, &tmp);
-  vimana_screen_put(screen, (unsigned int)yis_as_int(xv),
-                    (unsigned int)yis_as_int(yv), glyph,
-                    (unsigned int)yis_as_int(fgv),
-                    (unsigned int)yis_as_int(bgv));
-  if (tmp)
-    yis_release_val(YV_STR(tmp));
-}
-
 static void __vimana_screen_put_icn(YisVal scrv, YisVal xv, YisVal yv,
                                     YisVal icnv, YisVal fgv, YisVal bgv) {
   vimana_screen *screen =

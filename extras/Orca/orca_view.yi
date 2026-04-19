@@ -77,25 +77,25 @@ def MARGIN_Y = 24
             if ch == "*"
                 -- * to the right of T: gray (inactive) or white bg (active) as drum beat
                 if orca_grid.is_highlighted(x, y)
-                    scr.put(px, py, "*", COLOR_BG, COLOR_FG)
+                    scr.put_text(px, py, "*", COLOR_BG, COLOR_FG)
                 else
-                    scr.put(px, py, "*", COLOR_OUTPUT, COLOR_BANG)
+                    scr.put_text(px, py, "*", COLOR_OUTPUT, COLOR_BANG)
             elif ch == "."
                 if bg != COLOR_BG
-                    scr.put(px, py, ".", fg, bg)
+                    scr.put_text(px, py, ".", fg, bg)
                 elif x % 16 == 0 && y % 8 == 0
-                    scr.put(px, py, "+", COLOR_OUTPUT, COLOR_BG)
+                    scr.put_text(px, py, "+", COLOR_OUTPUT, COLOR_BG)
             elif is_data
                 -- Data cell: color already set in fg (dim or cyan for east inputs)
                 if bg != COLOR_BG
-                    scr.put(px, py, ch, fg, bg)
+                    scr.put_text(px, py, ch, fg, bg)
                 else
-                    scr.put(px, py, ch, fg, COLOR_BG)
+                    scr.put_text(px, py, ch, fg, COLOR_BG)
             else
                 if bg != COLOR_BG
-                    scr.put(px, py, ch, fg, bg)
+                    scr.put_text(px, py, ch, fg, bg)
                 else
-                    scr.put(px, py, ch, fg, COLOR_BG)
+                    scr.put_text(px, py, ch, fg, COLOR_BG)
 
     -- Status bar below grid
     let bar_y = MARGIN_Y + orca_grid.GRID_H * CELL_H + 8
@@ -121,9 +121,9 @@ def MARGIN_Y = 24
         beat_glyph = stdr.char_from_code(0x09)
     let ?bpm_glyph = stdr.char_from_code(0x0F)
     let left = bpm_str + " " + fname
-    scr.put(MARGIN_X, bar_y, beat_glyph, COLOR_DATA, COLOR_BG)
+    scr.put_text(MARGIN_X, bar_y, beat_glyph, COLOR_DATA, COLOR_BG)
     scr.put_text(MARGIN_X + CELL_W, bar_y, pos_str, COLOR_FG, COLOR_BG)
-    scr.put(MARGIN_X + 7 * CELL_W, bar_y, bpm_glyph, COLOR_DATA, COLOR_BG)
+    scr.put_text(MARGIN_X + 7 * CELL_W, bar_y, bpm_glyph, COLOR_DATA, COLOR_BG)
     scr.put_text(MARGIN_X + 8 * CELL_W, bar_y, left, COLOR_FG, COLOR_BG)
 
     -- 5. Voice volume bars (right-aligned, one bar per synth voice)
@@ -140,7 +140,7 @@ def MARGIN_Y = 24
         let ?col = COLOR_FG
         if vol > 0
             col = COLOR_BANG
-        scr.put(vol_x + ch * CELL_W, bar_y, glyph, col, COLOR_BG)
+        scr.put_text(vol_x + ch * CELL_W, bar_y, glyph, col, COLOR_BG)
 
     orca_model.set_dirty(false)
 ;

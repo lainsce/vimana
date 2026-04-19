@@ -115,7 +115,6 @@ def paddle_count = 2
 : __vimana_screen_sprite_bank(scr = screen) (( num )) { }
 : __vimana_screen_set_gfx(scr = screen, addr = num, data = any) (( -- )) { }
 : __vimana_screen_gfx(scr = screen, addr = num) (( num )) { }
-: __vimana_screen_put(scr = screen, x = num, y = num, glyph = string, fg = num, bg = num) (( -- )) { }
 : __vimana_screen_put_icn(scr = screen, x = num, y = num, icn = any, fg = num, bg = num) (( -- )) { }
 : __vimana_screen_put_text(scr = screen, x = num, y = num, text = string, fg = num, bg = num) (( -- )) { }
 : __vimana_screen_sprite(scr = screen, ctrl = num) (( -- )) { }
@@ -391,11 +390,6 @@ pub ,: screen
     ;
 
     :: gfx(this, addr = num) (( num )) <- __vimana_screen_gfx(this, addr) ;
-
-    :: put(this, x = num, y = num, glyph = string, fg = num, bg = num) (( screen ))
-        __vimana_screen_put(this, x, y, glyph, fg, bg)
-        <- this
-    ;
 
     :: put_icn(this, x = num, y = num, icn = any, fg = num, bg = num) (( screen ))
         __vimana_screen_put_icn(this, x, y, icn, fg, bg)

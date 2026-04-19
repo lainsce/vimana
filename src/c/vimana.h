@@ -160,8 +160,6 @@ const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr);
 void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl);
 /* Pixel-addressed: x/y = port value, auto-increments ±1 pixel. */
 void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl);
-void vimana_screen_put(vimana_screen *screen, unsigned int x, unsigned int y,
-                       const char *glyph, unsigned int fg, unsigned int bg);
 void vimana_screen_put_icn(vimana_screen *screen, unsigned int x,
                            unsigned int y, const uint8_t rows[8],
                            unsigned int fg, unsigned int bg);
