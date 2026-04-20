@@ -74,18 +74,6 @@ def OPC_DN = [
 def DPAD = [0x0000, 0x0000, 0x5555, 0x6AA9, 0x6AA9, 0x1AA4, 0x0690, 0x0140]
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Load all 2bpp sprites into sprite memory
--- ─────────────────────────────────────────────────────────────────────────────
-
-:: load_sprites(scr = vimana.screen) (( -- ))
-    scr.set_sprite(CHROME_UP, UP, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_DN, DN, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_UP, OPC_UP, vimana.sprite_2bpp)
-    scr.set_sprite(CHROME_OPC_DN, OPC_DN, vimana.sprite_2bpp)
-    scr.set_sprite(DPAD_ADDR, DPAD, vimana.sprite_2bpp)
-;
-
--- ─────────────────────────────────────────────────────────────────────────────
 -- Misc 1bpp icons (8x8, used for pixel-level drawing)
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -105,6 +93,9 @@ def SLASH_B = [0x1830, 0x3060, 0x6000, 0x0000]
 
 def DOT_T   = [0x0000, 0x0000, 0x0000, 0x0000]
 def DOT_B   = [0x0000, 0x0018, 0x1800, 0x0000]
+
+def FILL_ADDR = 0x1200
+def DOTTED_ADDR = 0x1208
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Digit font (16x16 = 4 tiles per digit)
@@ -204,4 +195,17 @@ def DOT_B   = [0x0000, 0x0018, 0x1800, 0x0000]
     if n == 3
         <- [0x003C, 0x6666, 0x6666, 0x6C00]
     <- [0x0000, 0x0000, 0x0000, 0x0000]
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Load all 2bpp sprites into sprite memory
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: load_sprites(scr = vimana.screen) (( -- ))
+    scr.set_sprite(CHROME_UP, UP, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_DN, DN, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_UP, OPC_UP, vimana.sprite_2bpp)
+    scr.set_sprite(CHROME_OPC_DN, OPC_DN, vimana.sprite_2bpp)
+    scr.set_sprite(DPAD_ADDR, DPAD, vimana.sprite_2bpp)
+    scr.set_sprite(FILL_ADDR, FILL, vimana.sprite_1bpp)
 ;

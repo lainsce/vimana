@@ -314,7 +314,8 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
 : draw_display_bg(scr = vimana.screen) (( -- ))
     for (let ?ty = 2; ty < 18; ty += 1)
         for (let ?tx = 0; tx < 29; tx += 1)
-            scr.put_icn(tx*8, ty*8, calc_icons.FILL, calc_model.C_FG, calc_model.C_BG)
+            scr.set_auto(0x16).set_addr(calc_icons.FILL_ADDR).set_x(tx*8).set_y(ty*8).sprite(0x85)
+    scr.set_auto(0x00)
 ;
 
 --| Separator |--
@@ -387,8 +388,8 @@ def NUMPAD_TX = [8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17, 8, 11, 14, 17]
 :: draw_all(scr = vimana.screen, press_id = num) (( -- ))
     draw_display_bg(scr)
     draw_stack(scr)
-    draw_sep(scr)
     draw_input(scr)
+    draw_sep(scr)
     draw_binary(scr)
     draw_modes(scr)
     draw_buttons(scr, press_id)

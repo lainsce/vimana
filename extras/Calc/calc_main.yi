@@ -322,20 +322,14 @@ def ?last_titlebar_shaded = false
     let scr = vimana.screen("Calc", calc_model.WIN_W, calc_model.WIN_H, 1)
     scr.set_cursor(CURSOR_CHR)
     scr.hide_cursor()
-    calc_icons.load_sprites(scr)
-    -- Upload titlebar sprites AFTER game sprites to avoid overlap
     scr.set_sprite(CURSOR_ADDR, CURSOR_CHR, 1)
     scr.set_sprite(BG_ADDR, BG_CHR, 1)
     scr.set_sprite(CLOSE_ADDR, CLOSE_ICN, 1)
     scr.set_sprite(CLOSE_DOWN_ADDR, CLOSE_DOWN_ICN, 1)
+
+    calc_icons.load_sprites(scr)
     scr.set_drag_region(16)
     titlebar_saved_height = scr.height()
-    let fsys = sys.file()
-    if !fsys.exists(sys.home_dir() + "/.theme")
-        scr.set_palette(vimana.color_bg, "#ffffff")
-           .set_palette(vimana.color_fg, "#000000")
-           .set_palette(vimana.color_2,  "#aaeebb")
-           .set_palette(vimana.color_3,  "#88cc99")
 
     let dev = sys.device()
 
