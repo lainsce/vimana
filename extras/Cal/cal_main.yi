@@ -9,7 +9,12 @@ bring cal_events
 bring cal_view
 bring cal_input
 
-def CURSOR_ICN = [0x4060, 0x7078, 0x7c70, 0x5808]
+def CURSOR_CHR = [
+    0x0000, 0x0000, 0x0814, 0x1417, 0x0000, 0x0000, 0x0008, 0x0808,
+	0x0000, 0x0000, 0x0000, 0x00c0, 0x0000, 0x0000, 0x0000, 0x0000,
+	0x1010, 0x2010, 0x1008, 0x0700, 0x0f0f, 0x1f0f, 0x0f07, 0x0000,
+	0x2010, 0x1010, 0x2020, 0xc000, 0xc0e0, 0xe0e0, 0xc0c0, 0x0000
+]
 def BG_CHR = [
     0x0000, 0x00ff, 0x00ff, 0x00ff, 0xffff, 0xff00, 0xff00, 0xff00,
     0x00ff, 0x00ff, 0x00ff, 0x0000, 0xff00, 0xff00, 0xff00, 0xffff,
@@ -149,7 +154,7 @@ def ?last_titlebar_shaded = false
 -> ()
     let sys  = vimana.system()
     let scr  = vimana.screen("Cal", cal_model.WIN_W, cal_model.WIN_H, 1)
-    scr.set_cursor(CURSOR_ICN)
+    scr.set_cursor(CURSOR_CHR)
     scr.hide_cursor()
     let fsys = sys.file()
     let dev  = sys.device()
@@ -165,7 +170,7 @@ def ?last_titlebar_shaded = false
     -- Font (installs FOLD sprites at 0x0000-0x023F)
     cal_font.install(scr)
     -- Upload titlebar sprites AFTER font to avoid overlap
-    scr.set_sprite(CURSOR_ADDR, CURSOR_ICN, 0)
+    scr.set_sprite(CURSOR_ADDR, CURSOR_CHR, 1)
     scr.set_sprite(BG_ADDR, BG_CHR, 1)
     scr.set_sprite(CLOSE_ADDR, CLOSE_ICN, 1)
     scr.set_sprite(CLOSE_DOWN_ADDR, CLOSE_DOWN_ICN, 1)
@@ -220,7 +225,9 @@ def ?last_titlebar_shaded = false
         scr.set_auto(0x00)
 
         -- Draw cursor every frame
-        scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+        scr.set_auto(0x16).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+        scr.set_auto(0x16).set_addr(CURSOR_ADDR + 0x20).set_x(mx).set_y(my+8).sprite(0x85)
+        scr.set_auto(0x00)
         scr.present()
     })
 ;

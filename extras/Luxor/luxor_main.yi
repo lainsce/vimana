@@ -210,7 +210,12 @@ def ?screen_h = 0
         luxor_model.set_dirty()
 ;
 
-def CURSOR_ICN = [0x4060, 0x7078, 0x7c70, 0x5808]
+def CURSOR_CHR = [
+    0x0000, 0x0000, 0x0814, 0x1417, 0x0000, 0x0000, 0x0008, 0x0808,
+	0x0000, 0x0000, 0x0000, 0x00c0, 0x0000, 0x0000, 0x0000, 0x0000,
+	0x1010, 0x2010, 0x1008, 0x0700, 0x0f0f, 0x1f0f, 0x0f07, 0x0000,
+	0x2010, 0x1010, 0x2020, 0xc000, 0xc0e0, 0xe0e0, 0xc0c0, 0x0000
+]
 def BG_CHR = [
     0x0000, 0x00ff, 0x00ff, 0x00ff, 0xffff, 0xff00, 0xff00, 0xff00,
     0x00ff, 0x00ff, 0x00ff, 0x0000, 0xff00, 0xff00, 0xff00, 0xffff,
@@ -225,10 +230,10 @@ def CLOSE_DOWN_ICN = [
     0x0000, 0x00f7, 0x1057, 0x9017, 0xf017, 0x9057, 0x10f7, 0x0000
 ]
 
-def CURSOR_ADDR = 0x120
-def CLOSE_ADDR = 0x138
-def CLOSE_DOWN_ADDR = 0x148
-def BG_ADDR = 0x168
+def CURSOR_ADDR = 0x7E0
+def CLOSE_ADDR = 0x8E0
+def CLOSE_DOWN_ADDR = 0x9E0
+def BG_ADDR = 0xAE0
 def TITLEBAR_H = 16
 def TITLEBAR_SHADE_H = 17
 def TITLEBAR_EDGE_Y = 14
@@ -241,6 +246,10 @@ def ?titlebar_saved_height = 0
 def ?header_click_time = 0
 def ?header_click_x = 0
 def ?header_click_y = 0
+def ?last_mx = -1
+def ?last_my = -1
+def ?last_close_button_state = false
+def ?last_titlebar_shaded = false
 
 : redraw_titlebar_span(scr = vimana.screen, x = num, w = num) (( -- ))
     if w <= 0
@@ -341,14 +350,14 @@ def ?header_click_y = 0
     let sys = vimana.system()
     screen_h = luxor_model.SCR_H
     let scr = vimana.screen("Luxor", luxor_model.SCR_W, screen_h, 1)
-    scr.set_cursor(CURSOR_ICN)
+    scr.set_cursor(CURSOR_CHR)
     scr.hide_cursor()
     let dev = sys.device()
     let fsys = sys.file()
 
     luxor_font.install(scr)
     -- Upload cursor AFTER loading sprites so it doesn't get overwritten
-    scr.set_sprite(CURSOR_ADDR, CURSOR_ICN, 0)
+    scr.set_sprite(CURSOR_ADDR, CURSOR_CHR, 1)
     scr.set_sprite(BG_ADDR, BG_CHR, 1)
     scr.set_sprite(CLOSE_ADDR, CLOSE_ICN, 1)
     scr.set_sprite(CLOSE_DOWN_ADDR, CLOSE_DOWN_ICN, 1)
@@ -360,6 +369,12 @@ def ?header_click_y = 0
         dev.poll()
 
         let titlebar_busy = update_titlebar(dev, sys, scr)
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        let ?needs_redraw = mx != last_mx || my != last_my ||
+            close_button_active != last_close_button_state ||
+            titlebar_shaded != last_titlebar_shaded
+
         sync_screen_size(scr)
 
         luxor_file.update_title(scr)
@@ -370,6 +385,14 @@ def ?header_click_y = 0
             on_text(dev)
             on_scroll(dev)
             luxor_view.draw_all(scr)
+
+        if !needs_redraw
+            <-
+
+        last_mx = mx
+        last_my = my
+        last_close_button_state = close_button_active
+        last_titlebar_shaded = titlebar_shaded
 
         -- Draw titlebar BG
         scr.set_auto(0x25).set_x(0).set_y(0)
@@ -382,9 +405,9 @@ def ?header_click_y = 0
         scr.set_auto(0x00)
 
         -- Draw cursor every frame
-        let mx = dev.pointer_x()
-        let my = dev.pointer_y()
-        scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+        scr.set_auto(0x16).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+        scr.set_auto(0x16).set_addr(CURSOR_ADDR + 0x20).set_x(mx).set_y(my+8).sprite(0x85)
+        scr.set_auto(0x00)
         scr.present()
     })
 ;
