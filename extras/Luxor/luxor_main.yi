@@ -371,17 +371,26 @@ def ?last_titlebar_shaded = false
         let titlebar_busy = update_titlebar(dev, sys, scr)
         let mx = dev.pointer_x()
         let my = dev.pointer_y()
+        let ?needs_redraw = mx != last_mx || my != last_my ||
+            close_button_active != last_close_button_state ||
+            titlebar_shaded != last_titlebar_shaded
 
         sync_screen_size(scr)
 
         luxor_file.update_title(scr)
-        if !titlebar_shaded
             if !titlebar_busy
                 on_mouse(dev)
             on_key(dev, sys, fsys, scr)
             on_text(dev)
             on_scroll(dev)
+            scr.clear(vimana.color_bg)
             luxor_view.draw_all(scr)
+
+        if !needs_redraw
+            <-
+
+        scr.clear(vimana.color_bg)
+        luxor_view.draw_all(scr)
 
         last_mx = mx
         last_my = my

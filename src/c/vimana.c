@@ -2043,11 +2043,13 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
     screen->manual_cursor_pending = true;
     screen->manual_cursor_x = (uint16_t)x;
     screen->manual_cursor_y = (uint16_t)y;
+    /* When we capture a manual cursor draw, we need to advance ALL ports exactly as if the sprite had actually drawn, otherwise the auto-increment state is left trailing at the cursor position */
+    rA += addr_incr * (rML + 1);
     screen->port_addr = (uint16_t)rA;
     if (rMX)
-      screen->port_x += flipx ? -VIMANA_TILE_SIZE : VIMANA_TILE_SIZE;
+      screen->port_x += (flipx ? -VIMANA_TILE_SIZE : VIMANA_TILE_SIZE) * (rML + 1);
     if (rMY)
-      screen->port_y += flipy ? -VIMANA_TILE_SIZE : VIMANA_TILE_SIZE;
+      screen->port_y += (flipy ? -VIMANA_TILE_SIZE : VIMANA_TILE_SIZE) * (rML + 1);
     return;
   }
 
