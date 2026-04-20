@@ -51,21 +51,21 @@ bring casu_model
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Sync tile data from the spritesheet into Vimana's sprite memory.
--- Uploads plane0 and plane1 as mode-0 (1bpp raw bytes) to consecutive slots.
+-- Uploads full 2bpp tile (8 words) in one call like Musi.
 -- ─────────────────────────────────────────────────────────────────────────────
 : sync_tile(scr = vimana.screen, tile_idx = num) (( -- ))
     let off  = tile_idx * 16
     let addr = tile_idx * 16
-    let p0 = [casu_model.sheet[off],   casu_model.sheet[off+1],
-              casu_model.sheet[off+2],  casu_model.sheet[off+3],
-              casu_model.sheet[off+4],  casu_model.sheet[off+5],
-              casu_model.sheet[off+6],  casu_model.sheet[off+7]]
-    let p1 = [casu_model.sheet[off+8],  casu_model.sheet[off+9],
-              casu_model.sheet[off+10], casu_model.sheet[off+11],
-              casu_model.sheet[off+12], casu_model.sheet[off+13],
-              casu_model.sheet[off+14], casu_model.sheet[off+15]]
-    scr.set_sprite(addr,     p0, 0)
-    scr.set_sprite(addr + 8, p1, 0)
+    -- convert 16 bytes to 8 words (little-endian pairs)
+    let w0 = casu_model.sheet[off] + casu_model.sheet[off+1] * 256
+    let w1 = casu_model.sheet[off+2] + casu_model.sheet[off+3] * 256
+    let w2 = casu_model.sheet[off+4] + casu_model.sheet[off+5] * 256
+    let w3 = casu_model.sheet[off+6] + casu_model.sheet[off+7] * 256
+    let w4 = casu_model.sheet[off+8] + casu_model.sheet[off+9] * 256
+    let w5 = casu_model.sheet[off+10] + casu_model.sheet[off+11] * 256
+    let w6 = casu_model.sheet[off+12] + casu_model.sheet[off+13] * 256
+    let w7 = casu_model.sheet[off+14] + casu_model.sheet[off+15] * 256
+    scr.set_sprite(addr, [w0, w1, w2, w3, w4, w5, w6, w7], 1)
 ;
 
 -- Sync all 256 tiles to sprite memory.

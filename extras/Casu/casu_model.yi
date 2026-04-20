@@ -98,10 +98,10 @@ def POW2 = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80]
 -- Mutable state
 def ?sheet    = []: [any]
 def ?ntab     = []: [any]
-def ?depth    = 1        -- 1 = 1bpp, 2 = 2bpp
+def ?depth    = 2        -- 1 = 1bpp, 2 = 2bpp
 def ?color    = 1        -- drawing color (0-3)
-def ?blend    = 129    -- blend byte (0x81: 2bpp bg layer blend=1)
-def ?ratio    = 50     -- preview animation ratio (0x32: 3 rows × 2 cols)
+def ?blend    = 0x85     -- blend byte (0x81: 2bpp bg layer blend=1)
+def ?ratio    = 0x32     -- preview animation ratio (0x32: 3 rows × 2 cols)
 def ?tool     = 1        -- TOOL_SELECTOR
 def ?focus    = 0        -- current tile address (byte offset in sheet)
 def ?zoom_on  = false

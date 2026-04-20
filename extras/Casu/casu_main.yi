@@ -156,8 +156,8 @@ bring casu_file
     let ry = stdr.floor((sy - casu_model.BLEND_Y * 8) / 8)
     let blend_idx = ry * 4 + rx
     if blend_idx >= 0 && blend_idx < 16
-        -- Set blend mode: keep upper bits (0xB0 mask), replace lower nibble
-        let new_blend = stdr.floor(casu_model.blend / 176) * 176 + blend_idx
+        -- Keep upper bits (0xB0), replace lower nibble with index
+        let new_blend = (0x81 % 0xB0) + blend_idx
         casu_model.set_blend(new_blend)
     elif ry >= 4
         -- Bottom row: arrow area

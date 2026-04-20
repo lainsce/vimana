@@ -127,7 +127,7 @@ def C_WH   = 3   -- bright / selected (white)
         scr.set_y((casu_model.TILEVIEW_Y + casu_model.sel_y1 + r)*8)
         scr.set_addr(sel_base + r * row_stride)
         scr.sprite(0x84)   -- 2bpp bg-layer blend=4 (highlight)
-    scr.set_auto(1)
+    scr.set_auto(0)
 
     -- Selection size label: WxH as 2-digit hex below selection (nasu style)
     -- Only shown when not at bottom row and selection is at least 2 tiles wide
@@ -191,27 +191,29 @@ def C_WH   = 3   -- bright / selected (white)
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Nametableview: 16×16 grid using nametable tile references
+-- Nasu style (casu.tal lines 233-241 write, 710-726 draw)
+-- ntab entry: 3 bytes at tile_idx*3: [tile_lo, tile_hi, blend]
+-- Stores tile index as 2 bytes (STA2), blend as 1 byte (STA)
 -- ─────────────────────────────────────────────────────────────────────────────
 : draw_nametable(scr = vimana.screen) (( -- ))
-    fill(scr, casu_model.NTAB_X * 8, casu_model.NTAB_Y * 8,
-         casu_model.NTAB_W, casu_model.NTAB_H, C_BG)
+    let start_x = casu_model.NTAB_X * 8
+    let start_y = casu_model.NTAB_Y * 8
+    scr.set_auto(0)
     for (let ?ty = 0; ty < 16; ty += 1)
+        let py = start_y + ty * 8
+        scr.set_y(py)
         for (let ?tx = 0; tx < 16; tx += 1)
-            let entry_base = (ty * 16 + tx) * 3
-            let tile_lo = casu_model.ntab[entry_base]
-            let tile_hi = casu_model.ntab[entry_base + 1]
-            let blend   = casu_model.ntab[entry_base + 2]
-            -- skip empty entries (all zeros = no tile placed)
-            if blend == 0
-            else
-                let tile_idx = tile_hi * 256 + tile_lo
-                if tile_idx < 256
-                    scr.set_auto(0)
-                    scr.set_x((casu_model.NTAB_X + tx)*8)
-                    scr.set_y((casu_model.NTAB_Y + ty)*8)
-                    scr.set_addr(tile_idx * 16)
-                    scr.sprite(blend)
-;
+            let px = start_x + tx * 8
+            let tile_idx = ty * 16 + tx
+            let entry = tile_idx * 3
+            let blend_val = casu_model.ntab[entry + 2]
+            scr.set_x(px)
+            if blend_val != 0
+                let tile_addr = casu_model.ntab[entry] + casu_model.ntab[entry + 1] * 256
+                if tile_addr < 256
+                    scr.set_addr(tile_addr * 16)
+                    scr.sprite(blend_val)
+    ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Zoomview: focused tile at 4× magnification using bigpixel-icn (nasu style)
@@ -248,30 +250,31 @@ def C_WH   = 3   -- bright / selected (white)
 -- Preview: tiled preview of focused tile (nasu style, 31×47 panel)
 -- ─────────────────────────────────────────────────────────────────────────────
 : draw_preview(scr = vimana.screen) (( -- ))
-    fill(scr, casu_model.PREVIEW_X * 8, casu_model.PREVIEW_Y * 8,
-         casu_model.PREVIEW_W, casu_model.PREVIEW_H, C_BG)
-
-    -- ratio lower nibble = x-count (cols), upper nibble = y-count (rows)
     let ratio_x = casu_model.ratio % 16
-    let ratio_y = stdr.floor(casu_model.ratio / 16)
-    let ?addr   = casu_model.focus
-    let tile_step = casu_model.depth * 8
+    let ratio_y = casu_model.ratio / 16
+    let base = casu_model.focus
+    let px_start = casu_model.PREVIEW_X * 8
+    let py_start = casu_model.PREVIEW_Y * 8
 
-    scr.set_auto(0)
+    -- draw each tile individually with explicit position
+    let addr = base
     for (let ?row = 0; row < 4; row += 1)
         for (let ?col = 0; col < 4; col += 1)
+            let px = px_start + col * 8
+            let py = py_start + row * 8
             if col < ratio_x && row < ratio_y
-                scr.set_x((casu_model.PREVIEW_X + col)*8)
-                scr.set_y((casu_model.PREVIEW_Y + row)*8)
-                scr.set_addr(addr)
-                scr.sprite(casu_model.blend)
-                addr = addr + tile_step
+                -- draw tile
+                scr.set_addr(addr).set_x(px).set_y(py).set_auto(0).sprite(0x85)
             else
-                scr.put_icn((casu_model.PREVIEW_X + col) * 8, (casu_model.PREVIEW_Y + row) * 8, casu_icons.ICN_HALF, C_FG, C_BG)
+                -- draw halftone placeholder
+                scr.set_auto(0).set_x(px).set_y(py)
+                scr.put_icn(px, py, casu_icons.ICN_HALF, C_FG, C_BG)
+            addr = addr + 16
 
-    -- Ratio label at bottom
-    let label_y = casu_model.PREVIEW_Y * 8 + casu_model.PREVIEW_H - 8
-    scr.put_text(casu_model.PREVIEW_X * 8, label_y, to_hex2(casu_model.ratio), C_WH, C_BG)
+    -- Ratio label
+    scr.set_auto(0)
+    let label_y = py_start + casu_model.PREVIEW_H - 8
+    scr.put_text(px_start, label_y, to_hex2(casu_model.ratio), C_WH, C_BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -317,39 +320,40 @@ def C_WH   = 3   -- bright / selected (white)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Blendview: 4×4 grid of focused tile drawn with 16 blend modes (nasu style)
+-- Blendview: 4×4 grid of focused tile drawn with 16 blend modes
+-- Uses fixed base blend 0x81, varies cell index (i) for each mode
 -- ─────────────────────────────────────────────────────────────────────────────
 : draw_blendview(scr = vimana.screen) (( -- ))
-    fill(scr, casu_model.BLEND_X * 8, casu_model.BLEND_Y * 8,
-         casu_model.BLEND_W, casu_model.BLEND_H, C_BG)
+    let base = casu_model.focus
+    let px_start = casu_model.BLEND_X * 8
+    let py_start = casu_model.BLEND_Y * 8
 
-    -- 4×4 grid: 16 blend modes
-    scr.set_auto(0)
+    -- draw each cell with fixed 0x81 + i
     for (let ?i = 0; i < 16; i += 1)
-        let cx = casu_model.BLEND_X + (i % 4)
-        let cy = casu_model.BLEND_Y + stdr.floor(i / 4)
-        -- background: fill with bg color first
-        fill(scr, cx * 8, cy * 8, 8, 8, C_BG)
-        -- draw the focused tile with blend mode i (upper nibble = 0xb0 mask)
-        scr.set_x(cx*8)
-        scr.set_y(cy*8)
-        scr.set_addr(casu_model.focus)
-        scr.sprite((casu_model.blend % 0xB0) + i)
+        let col = i % 4
+        let row = stdr.floor(i / 4)
+        let px = px_start + col * 8
+        let py = py_start + row * 8
+        -- bg
+        scr.set_addr(0).set_x(px).set_y(py).set_auto(0).sprite(0x84)
+        -- tile with fixed blend base
+        scr.set_addr(base).sprite(0x81 + i)
 
     -- Direction arrows at bottom of blendview
+    scr.set_auto(0)
     let arrow_y = (casu_model.BLEND_Y + casu_model.BLEND_H / 8 - 1) * 8
-    -- vertical blend direction arrow
+    let blend_upper = casu_model.blend % 0xB0
     let ?ver_icn = casu_icons.ICN_ARROW_U
-    if (casu_model.blend % 64) >= 32
+    if blend_upper >= 32
         ver_icn = casu_icons.ICN_ARROW_D
     scr.put_icn((casu_model.BLEND_X + 2) * 8, arrow_y, ver_icn, C_HL, C_BG)
-    -- horizontal blend direction arrow
     let ?hor_icn = casu_icons.ICN_ARROW_L
-    if (casu_model.blend % 32) >= 16
+    if blend_upper >= 16
         hor_icn = casu_icons.ICN_ARROW_R
     scr.put_icn((casu_model.BLEND_X + 3) * 8, arrow_y, hor_icn, C_HL, C_BG)
-    -- Blend byte hex label
-    scr.put_text(casu_model.BLEND_X * 8, arrow_y * 8, to_hex2(casu_model.blend), C_WH, C_BG)
+    -- Blend byte hex label at arrow_y/8
+    let label_y = arrow_y
+    scr.put_text(casu_model.BLEND_X * 8, label_y, to_hex2(casu_model.blend), C_WH, C_BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
