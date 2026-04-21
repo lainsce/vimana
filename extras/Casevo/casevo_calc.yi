@@ -75,30 +75,39 @@ bring casevo_model
 ;
 
 -- Check if a cell value looks like a formula (starts with col letter + digit + contains ':')
+-- Also accepts leading '=' like "=A1:A8+"
 :: is_formula(text = string) (( bool ))
     let n = stdr.len(text)
     if n < 5
         <- false
-    let first = stdr.char_at(text, 0)
+    let ?start = 0
+    if stdr.char_at(text, 0) == "="
+        start = 1
+    if start + 4 > n
+        <- false
+    let first = stdr.char_at(text, start)
     if parse_col(first) < 0
         <- false
-    -- Must contain ':'
-    for (let ?i = 0; i < n; i += 1)
+    for (let ?i = start; i < n; i += 1)
         if stdr.char_at(text, i) == ":"
             <- true
     <- false
 ;
 
 -- Parse a full formula: "A0:B2+" returns [ax, ay, bx, by, operator_char]
+-- Also handles leading "=" like "=A0:B2+"
 -- Returns empty array on failure
 : parse_formula(text = string) (( [any] ))
-    let ref1 = parse_cell_ref(text, 0)
+    let n = stdr.len(text)
+    let ?start = 0
+    if stdr.char_at(text, 0) == "="
+        start = 1
+    let ref1 = parse_cell_ref(text, start)
     let ax = num(ref1[0] ?? -1)
     let ay = num(ref1[1] ?? -1)
-    let pos1 = num(ref1[2] ?? 0)
+    let pos1 = num(ref1[2] ?? start)
     if ax < 0
         <- []
-    let n = stdr.len(text)
     if pos1 >= n || stdr.char_at(text, pos1) != ":"
         <- []
     let ref2 = parse_cell_ref(text, pos1 + 1)

@@ -138,7 +138,11 @@ def arrow_bot = [0xE0, 0xC0, 0x80, 0, 0, 0, 0, 0]
     let is_active = col == casevo_model.active_col() && row == casevo_model.active_row()
 
     -- Fill background + frame border in one pass
+    -- Use C_ACCENT for formula cells (unless selected)
+    let cell_text = casevo_model.get_cell(col, row)
     let ?bg = casevo_model.C_BG
+    if casevo_calc.is_formula(cell_text)
+        bg = casevo_model.C_ACCENT
     if selected
         bg = casevo_model.C_SEL
     draw_framed_cell(scr, x, y, bg)
