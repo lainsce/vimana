@@ -18,6 +18,12 @@ def ?sel_focus = -1
 def ?sel_drag = false
 def ?url_open_proc = 0
 
+def DASH_ICN = [ 
+    0xaa00, 0x0000, 0x0000, 0x0000,
+    0xee00, 0x0000, 0x0000, 0x0000
+]
+def DASH_ADDR = 0xBE0
+
 : char_width(ch = string) (( num ))
     let code = stdr.char_code(ch)
     if code == 32: <- 4
@@ -537,6 +543,11 @@ def ?url_open_proc = 0
         let mch = stdr.char_at(msg_label, mi)
         scr.put_text(msg_label_x, scr.height() - 24, mch, vimana.color_3, vimana.color_bg)
         msg_label_x = msg_label_x + char_width(mch)
+
+    scr.set_sprite(DASH_ADDR, DASH_ICN, 0)
+    for (let ?di = 0; di < scr.width(); di = di + 4) 
+        scr.set_auto(0x00).set_addr(DASH_ADDR).set_x(di).set_y(scr.height() - 48).sprite(0x85)
+    scr.set_auto(0x00)
 
     let uname = nanovine_model.get_username()
     scr.put_text(720, scr.height() - 24, uname, vimana.color_2, vimana.color_bg)

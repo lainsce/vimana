@@ -8,8 +8,8 @@ def MSG_Y    = 24
 def INPUT_Y  = 335
 def INPUT_H  = 24
 
-def MAX_MSGS = 64
-def MAX_MSG_LEN = 128
+def MAX_MSGS = 32
+def MAX_MSG_LEN = 64
 
 def LINE_H   = 16
 def MSG_STEP_Y = 16

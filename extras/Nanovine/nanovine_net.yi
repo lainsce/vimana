@@ -4,8 +4,8 @@ bring stdr
 bring vimana
 bring nanovine_model
 
-def MAX_STORE_MSGS = 512
-def MAX_STORE_CHARS = 65536
+def MAX_STORE_MSGS = 128
+def MAX_STORE_CHARS = 16384
 
 def ?store_messages = []: [any]
 def ?store_total = 0
