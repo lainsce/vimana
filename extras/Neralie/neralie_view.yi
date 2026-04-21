@@ -1,0 +1,142 @@
+cask neralie_view
+
+bring stdr
+bring vimana
+bring neralie_model
+
+: clamp(v = num, lo = num, hi = num) (( num ))
+    if v < lo <- lo
+    if v > hi <- hi
+    <- v
+;
+
+: draw_hline(scr = vimana.screen, x1 = num, x2 = num, y = num, color = num) (( -- ))
+    if y < 0 || x2 <= x1
+        <-
+    for (let ?x = x1; x <= x2; x += 1)
+        scr.set_x(x)
+        scr.set_y(y)
+        scr.pixel(color)
+;
+
+: draw_vline(scr = vimana.screen, y1 = num, y2 = num, x = num, color = num) (( -- ))
+    if x < 0 || y2 <= y1
+        <-
+    for (let ?y = y1; y <= y2; y += 1)
+        scr.set_x(x)
+        scr.set_y(y)
+        scr.pixel(color)
+;
+
+-- Dotted vertical line: first dot at y1+spacing, then every `spacing` pixels.
+-- Matches the original Uxn <draw-line> with spacing=4 behaviour.
+: draw_vline_dotted(scr = vimana.screen, y1 = num, y2 = num, x = num, spacing = num, color = num) (( -- ))
+    if x < 0 || y2 <= y1
+        <-
+    for (let ?y = y1 + spacing; y < y2; y += spacing)
+        scr.set_x(x)
+        scr.set_y(y)
+        scr.pixel(color)
+;
+
+-- Draw the proportional Neralie clock visualization.
+-- The frame is divided by alternating horizontal and vertical lines,
+-- each placed at a proportion of its remaining dimension equal to
+-- the corresponding digit of the current Neralie time.
+: draw_clock(scr = vimana.screen) (( -- ))
+    let pad = neralie_model.PADDING
+    let ?rx = pad
+    let ?ry = pad + 16
+    let ?rw = neralie_model.WIN_W - pad * 2
+    let ?rh = neralie_model.WIN_H - pad * 2 - 16 - 20
+
+    let n0123 = neralie_model.n0123()
+    let n4    = neralie_model.n4()
+    let n5    = neralie_model.n5()
+
+    -- Six accumulated values used for proportional cuts, following the
+    -- same (number % 1000) * 10 + next_digit pattern as the original Uxn code.
+    let v0 = n0123
+    let v1 = (n0123 % 1000) * 10 + n4
+    let v2 = (v1 % 1000) * 10 + n5
+    let v3 = (v2 % 1000) * 10 + neralie_model.n6()
+    let v4 = (v3 % 1000) * 10
+    let v5 = (v4 % 1000) * 10
+
+    -- Alternating H/V cuts: H=0, V=1, H=2, V=3, H=4, V=5
+    -- cut = floor(dimension * v / 10000), clamped to [0, dimension-1]
+    -- Labels go in the consumed (already-cut-off) band, placed after updating the rect.
+
+    -- Cut 0: H — label in left window margin, aligned with the cut line
+    let ?cut = clamp(stdr.floor(rh * v0 / 10000), 0, rh - 1)
+    if cut > 0
+        draw_hline(scr, rx, rx + rw, ry + cut, vimana.color_fg)
+    ry += cut
+    rh -= cut
+    scr.put_text(8, ry - 4, str(stdr.floor(v0 / 1000)), vimana.color_fg, vimana.color_bg)
+
+    -- Cut 1: V — label in top window margin, aligned with the cut line
+    cut = clamp(stdr.floor(rw * v1 / 10000), 0, rw - 1)
+    if cut > 0
+        draw_vline(scr, ry, ry + rh, rx + cut, vimana.color_2)
+    rx += cut
+    rw -= cut
+    -- Dotted extension of the V cut upward from the frame top to the H cut line
+    draw_vline_dotted(scr, pad + 16 - 3, ry, rx, 4, vimana.color_fg)
+    scr.put_text(rx - 4, 24, str(stdr.floor(v1 / 1000)), vimana.color_2, vimana.color_bg)
+
+    -- Cut 2: H — label in right window margin, aligned with the cut line
+    cut = clamp(stdr.floor(rh * v2 / 10000), 0, rh - 1)
+    if cut > 0
+        draw_hline(scr, rx, rx + rw, ry + cut, vimana.color_fg)
+    ry += cut
+    rh -= cut
+    scr.put_text(neralie_model.WIN_W - 16, ry - 4, str(stdr.floor(v2 / 1000)), vimana.color_fg, vimana.color_bg)
+
+    -- Cut 3: V (no label)
+    cut = clamp(stdr.floor(rw * v3 / 10000), 0, rw - 1)
+    if cut > 0
+        draw_vline(scr, ry, ry + rh, rx + cut, vimana.color_2)
+    rx += cut
+    rw -= cut
+
+    -- Cut 4: H (no label)
+    cut = clamp(stdr.floor(rh * v4 / 10000), 0, rh - 1)
+    if cut > 0
+        draw_hline(scr, rx, rx + rw, ry + cut, vimana.color_fg)
+    ry += cut
+    rh -= cut
+
+    -- Cut 5: V (no label)
+    cut = clamp(stdr.floor(rw * v5 / 10000), 0, rw - 1)
+    if cut > 0
+        draw_vline(scr, ry, ry + rh, rx + cut, vimana.color_2)
+;
+
+: draw_frame(scr = vimana.screen) (( -- ))
+    let pad = neralie_model.PADDING
+    let x1 = pad
+    let y1 = pad + 16
+    let x2 = neralie_model.WIN_W - pad - 1
+    let y2 = neralie_model.WIN_H - pad - 20
+
+    draw_hline(scr, x1, x2, y1, vimana.color_fg)
+    draw_hline(scr, x1, x2, y2, vimana.color_fg)
+    draw_vline(scr, y1, y2, x1, vimana.color_fg)
+    draw_vline(scr, y1, y2, x2, vimana.color_fg)
+;
+
+:: draw(scr = vimana.screen) (( -- ))
+    scr.clear(vimana.color_bg)
+    draw_frame(scr)
+    draw_clock(scr)
+
+    -- Arvelie date (bottom-left)
+    let bx = neralie_model.PADDING
+    let by = neralie_model.WIN_H - 24
+    scr.put_text(bx, by, neralie_model.arvelie_text(), vimana.color_fg, vimana.color_bg)
+
+    -- Neralie time (bottom-right)
+    let tx = neralie_model.WIN_W - neralie_model.PADDING - 8 * 7
+    scr.put_text(tx, by, neralie_model.neralie_text(), vimana.color_3, vimana.color_bg)
+;

@@ -1,0 +1,143 @@
+cask neralie_model
+
+bring stdr
+bring vimana
+
+def WIN_W = 208
+def WIN_H = 224
+
+def PADDING = 20
+
+def ?last_second = -1
+def ?last_day = -1
+def ?n0123_v = 0
+def ?n4_v = 0
+def ?n5_v = 0
+def ?n6_v = 0
+def ?arvelie_text_v = "00A00"
+def ?neralie_text_v = "000:000"
+def ?dirty = true
+
+: arvelie_letter(idx = num) (( string ))
+    if idx == 0  <- "A"
+    if idx == 1  <- "B"
+    if idx == 2  <- "C"
+    if idx == 3  <- "D"
+    if idx == 4  <- "E"
+    if idx == 5  <- "F"
+    if idx == 6  <- "G"
+    if idx == 7  <- "H"
+    if idx == 8  <- "I"
+    if idx == 9  <- "J"
+    if idx == 10 <- "K"
+    if idx == 11 <- "L"
+    if idx == 12 <- "M"
+    if idx == 13 <- "N"
+    if idx == 14 <- "O"
+    if idx == 15 <- "P"
+    if idx == 16 <- "Q"
+    if idx == 17 <- "R"
+    if idx == 18 <- "S"
+    if idx == 19 <- "T"
+    if idx == 20 <- "U"
+    if idx == 21 <- "V"
+    if idx == 22 <- "W"
+    if idx == 23 <- "X"
+    if idx == 24 <- "Y"
+    if idx == 25 <- "Z"
+    <- "+"
+;
+
+: pad2(v = num) (( string ))
+    if v < 10
+        <- "0" + str(v)
+    <- str(v)
+;
+
+: refresh(dt = vimana.datetime) (( -- ))
+    let hour   = dt.hour()
+    let minute = dt.minute()
+    let second = dt.second()
+    let year   = dt.year()
+    let doty   = dt.yday()
+
+    -- Neralie time: n0123 uses same fixed-point multipliers as the original Uxn code
+    -- hour*416 + minute*6 gives a value in 0..~9984 (≈10000 units/day)
+    n0123_v = hour * 416 + minute * 6
+
+    -- n4 and n5 are sub-second digits derived from a finer accumulator
+    let acc = hour * 66 + minute * 94 + second * 11
+    n4_v = stdr.floor(acc / 10) % 10
+    n5_v = acc % 10
+
+    -- Build Neralie text: NNN:NNN
+    let d0 = stdr.floor(n0123_v / 1000)
+    let d1 = stdr.floor(n0123_v / 100) % 10
+    let d2 = stdr.floor(n0123_v / 10) % 10
+    let d3 = n0123_v % 10
+    neralie_text_v = str(d0) + str(d1) + str(d2) + ":" + str(d3) + str(n4_v) + str(n5_v)
+
+    -- Arvelie date: years since 1993, then letter+day-in-period
+    let year_off = year - 1993
+    let yr_tens  = stdr.floor(year_off / 10) % 10
+    let yr_units = year_off % 10
+    let letter   = arvelie_letter(stdr.floor(doty / 14))
+    let period   = doty % 14
+    arvelie_text_v = str(yr_tens) + str(yr_units) + letter + pad2(period)
+;
+
+-- Compute n6: sub-second digit (0-9) using the same formula as the original Uxn code.
+-- The original uses fps interpolation; here we substitute elapsed ms within the second.
+-- total = 288*h + 192*m + 248*s + sub, where sub ≈ 78 * (ms/1000).
+-- n6 = floor((total % 432) * 23 / 1000)  matches the Uxn #01b0 modf … #0017 MUL2 #03e8 DIV2.
+: compute_n6(dt = vimana.datetime, ticks = num) (( num ))
+    let ms  = ticks % 1000
+    let sub = stdr.floor(78 * ms / 1000)
+    let total = 288 * dt.hour() + 192 * dt.minute() + 248 * dt.second() + sub
+    <- stdr.floor((total % 432) * 23 / 1000)
+;
+
+:: load_palette(scr = vimana.screen) (( -- ))
+    scr.set_palette(0, "#000000")
+    scr.set_palette(1, "#ffffff")
+    scr.set_palette(2, "#33eebb")
+    scr.set_palette(3, "#dd3322")
+;
+
+:: init(dt = vimana.datetime, ticks = num) (( -- ))
+    refresh(dt)
+    n6_v        = compute_n6(dt, ticks)
+    last_second = dt.second()
+    last_day    = dt.day()
+    dirty = true
+;
+
+-- Returns true whenever any displayed value changed.
+-- Checks seconds for n0123/n4/n5 and ticks for the sub-second n6.
+:: step(dt = vimana.datetime, ticks = num) (( bool ))
+    let sec     = dt.second()
+    let day     = dt.day()
+    let new_n6  = compute_n6(dt, ticks)
+
+    if sec != last_second || day != last_day
+        refresh(dt)
+        last_second = sec
+        last_day    = day
+        dirty = true
+
+    if new_n6 != n6_v
+        n6_v  = new_n6
+        dirty = true
+
+    let ?out = dirty
+    dirty = false
+    <- out
+;
+
+:: n0123() (( num )) <- n0123_v ;
+:: n4()    (( num )) <- n4_v    ;
+:: n5()    (( num )) <- n5_v    ;
+:: n6()    (( num )) <- n6_v    ;
+
+:: neralie_text() (( string )) <- neralie_text_v ;
+:: arvelie_text() (( string )) <- arvelie_text_v ;
