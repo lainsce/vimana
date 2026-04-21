@@ -13,7 +13,7 @@ bring neralie_model
 : draw_hline(scr = vimana.screen, x1 = num, x2 = num, y = num, color = num) (( -- ))
     if y < 0 || x2 <= x1
         <-
-    for (let ?x = x1; x <= x2; x += 1)
+    for (let ?x = x1; x < x2; x += 1)
         scr.set_x(x)
         scr.set_y(y)
         scr.pixel(color)

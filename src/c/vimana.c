@@ -130,9 +130,11 @@ struct VimanaSystem {
   uint32_t voice_clock;    /* monotonic counter for age tracking */
   float *mix_buffer;       /* pre-allocated audio mix buffer */
   int mix_buffer_cap;      /* capacity in samples */
-  bool mix_buffer_heap;    /* true once mix_buffer moves off the inline tail */
   bool audio_locked;       /* true while inside begin/end audio batch */
   bool audio_needs_resume; /* deferred resume until end_audio */
+  bool text_input_requested;
+  bool text_input_active;
+  bool gamepad_initialized;
   SDL_Gamepad *gamepad;    /* primary opened gamepad, if any */
   SDL_JoystickID gamepad_id;
 };
@@ -304,14 +306,8 @@ static void SDLCALL vimana_audio_stream_cb(void *userdata,
   /* Grow pre-allocated buffer if needed */
   if (sample_count > system->mix_buffer_cap) {
     float *grown = NULL;
-    if (system->mix_buffer_heap) {
-      grown = (float *)realloc(system->mix_buffer,
-                               (size_t)sample_count * sizeof(float));
-    } else {
-      grown = (float *)malloc((size_t)sample_count * sizeof(float));
-      if (grown)
-        system->mix_buffer_heap = true;
-    }
+    grown = (float *)realloc(system->mix_buffer,
+                             (size_t)sample_count * sizeof(float));
     if (!grown)
       return;
     system->mix_buffer = grown;
@@ -502,8 +498,10 @@ static void vimana_filter_init(VimanaFilter *f) {
 }
 
 static void vimana_system_init_audio(vimana_system *system) {
-  if (!system)
+  if (!system || system->audio_stream)
     return;
+  if (!SDL_WasInit(SDL_INIT_AUDIO))
+    (void)SDL_Init(SDL_INIT_AUDIO);
   SDL_AudioSpec spec;
   SDL_zero(spec);
   spec.freq = VIMANA_AUDIO_SAMPLE_RATE;
@@ -525,15 +523,25 @@ static void vimana_system_init_audio(vimana_system *system) {
     vimana_voice_init(&system->voices[i]);
   vimana_filter_init(&system->filter);
 
-  /* The initial mix buffer lives in the system's inline tail storage. */
   if (!system->mix_buffer) {
+    float *mix_buffer = (float *)calloc(2048u, sizeof(float));
+    if (!mix_buffer) {
+      SDL_DestroyAudioStream(system->audio_stream);
+      system->audio_stream = NULL;
+      return;
+    }
+    system->mix_buffer = mix_buffer;
     system->mix_buffer_cap = 2048;
-    system->mix_buffer =
-        (float *)calloc((size_t)system->mix_buffer_cap, sizeof(float));
-    system->mix_buffer_heap = true;
   }
 
   (void)SDL_ResumeAudioStreamDevice(system->audio_stream);
+}
+
+static bool vimana_system_ensure_audio(vimana_system *system) {
+  if (!system)
+    return false;
+  vimana_system_init_audio(system);
+  return system->audio_stream != NULL;
 }
 
 static inline bool vimana_bit_get(const uint64_t *bits, int idx) {
@@ -552,8 +560,11 @@ static inline void vimana_bit_clr(uint64_t *bits, int idx) {
 static inline uint8_t *vimana_rom_font_widths(vimana_screen *s);
 static inline uint8_t *vimana_rom_font_bitmap(vimana_screen *s, unsigned int code);
 static inline uint8_t *vimana_sprite_bank(vimana_screen *s, unsigned int bank);
-static inline uint8_t *vimana_ensure_sprite_bank(vimana_screen *s, unsigned int bank);
-static inline uint8_t *vimana_active_sprite_bank(vimana_screen *s);
+static inline uint8_t vimana_sprite_read(vimana_screen *s, unsigned int bank,
+                                         unsigned int addr);
+static uint8_t *vimana_ensure_sprite_bank_capacity(vimana_screen *s,
+                                                   unsigned int bank,
+                                                   size_t needed);
 static bool vimana_screen_alloc_font(vimana_screen *screen, unsigned int size);
 static void vimana_font_row_bytes(vimana_screen *screen, const uint8_t *bmp,
                                   unsigned int row, uint8_t out[3]);
@@ -568,7 +579,7 @@ struct VimanaScreen {
   uint8_t scale;
   uint16_t width_mar;   /* layer buffer width */
   uint16_t height_mar;  /* layer buffer height */
-  uint32_t base_colors[16]; /* ARGB palette, slots 0-15 (BG,FG,CLR2..CLR15) */
+  uint32_t base_colors[16]; /* RGB palette, slots 0-15 (BG,FG,CLR2..CLR15) */
   uint32_t palette[256];    /* expanded 256-entry composite (8-bit layer index) */
   /* Font ROM: compact UFX storage sized to the active font. */
   uint8_t *font_rom;
@@ -576,8 +587,10 @@ struct VimanaScreen {
   uint8_t font_size;             /* UF1, UF2, UF3 */
   uint8_t font_glyph_bytes;      /* 8, 32, 72 */
   bool font_installed_by_app;    /* true once app code uploads custom font data */
-  /* Sprite banks: 16 × 64 KB, bank-switched.  Lazy-allocated (NULL until first use). */
+  bool font_rom_owned;           /* shared default font is copy-on-write */
+  /* Sprite banks: 16 × 64 KB address space, grown in small pages on demand. */
   uint8_t *sprite_banks[VIMANA_SPRITE_BANK_COUNT];
+  size_t sprite_bank_sizes[VIMANA_SPRITE_BANK_COUNT];
   uint8_t active_sprite_bank;                    /* 0–15 */
   /* RAM-class state */
   uint16_t port_x;
@@ -602,9 +615,12 @@ struct VimanaScreen {
   bool manual_cursor_pending;    /* app-drawn cursor recorded this frame */
   uint16_t manual_cursor_x;      /* app-drawn cursor x */
   uint16_t manual_cursor_y;      /* app-drawn cursor y */
-  uint32_t *present_pixels;      /* packed ARGB canvas for texture upload */
-  uint64_t last_present_hash;    /* last presented frame hash */
   bool frame_changed;            /* true when the last present changed pixels */
+  bool dirty;
+  int dirty_x1;
+  int dirty_y1;
+  int dirty_x2;
+  int dirty_y2;
 };
 
 /* ── ROM accessor implementations (need complete struct definition) ───── */
@@ -621,15 +637,33 @@ static inline uint8_t *vimana_sprite_bank(vimana_screen *s, unsigned int bank) {
     return NULL;
   return s->sprite_banks[bank];
 }
-static inline uint8_t *vimana_ensure_sprite_bank(vimana_screen *s, unsigned int bank) {
+static inline uint8_t vimana_sprite_read(vimana_screen *s, unsigned int bank,
+                                         unsigned int addr) {
+  if (!s || bank >= VIMANA_SPRITE_BANK_COUNT ||
+      addr >= s->sprite_bank_sizes[bank])
+    return 0;
+  return s->sprite_banks[bank][addr];
+}
+static uint8_t *vimana_ensure_sprite_bank_capacity(vimana_screen *s,
+                                                   unsigned int bank,
+                                                   size_t needed) {
   if (bank >= VIMANA_SPRITE_BANK_COUNT)
     return NULL;
-  if (!s->sprite_banks[bank])
-    s->sprite_banks[bank] = (uint8_t *)calloc(VIMANA_SPRITE_BANK_SIZE, 1);
+  if (needed > VIMANA_SPRITE_BANK_SIZE)
+    needed = VIMANA_SPRITE_BANK_SIZE;
+  if (needed <= s->sprite_bank_sizes[bank])
+    return s->sprite_banks[bank];
+  size_t new_size = (needed + 0x0FFFu) & ~(size_t)0x0FFFu;
+  if (new_size > VIMANA_SPRITE_BANK_SIZE)
+    new_size = VIMANA_SPRITE_BANK_SIZE;
+  uint8_t *grown = (uint8_t *)realloc(s->sprite_banks[bank], new_size);
+  if (!grown)
+    return NULL;
+  memset(grown + s->sprite_bank_sizes[bank], 0,
+         new_size - s->sprite_bank_sizes[bank]);
+  s->sprite_banks[bank] = grown;
+  s->sprite_bank_sizes[bank] = new_size;
   return s->sprite_banks[bank];
-}
-static inline uint8_t *vimana_active_sprite_bank(vimana_screen *s) {
-  return vimana_ensure_sprite_bank(s, s->active_sprite_bank);
 }
 
 static unsigned int vimana_font_glyph_bytes_for_size(unsigned int size) {
@@ -659,21 +693,58 @@ static size_t vimana_font_storage_size_for_size(unsigned int size) {
          (size_t)VIMANA_GLYPH_COUNT * vimana_font_glyph_bytes_for_size(size);
 }
 
+static uint8_t *vimana_default_font_rom(unsigned int size, size_t *out_size) {
+  static uint8_t *roms[3];
+  if (size < 1 || size > 3)
+    size = 1;
+  size_t font_size = vimana_font_storage_size_for_size(size);
+  if (out_size)
+    *out_size = font_size;
+  unsigned int idx = size - 1;
+  if (!roms[idx]) {
+    uint8_t *rom = (uint8_t *)calloc(font_size, 1);
+    if (!rom)
+      return NULL;
+    uint8_t *widths = rom + VIMANA_FONT_WIDTH_OFF;
+    unsigned int width = vimana_font_default_width_for_size(size);
+    for (unsigned int i = 0; i < VIMANA_GLYPH_COUNT; i++)
+      widths[i] = (uint8_t)width;
+    roms[idx] = rom;
+  }
+  return roms[idx];
+}
+
 static bool vimana_screen_alloc_font(vimana_screen *screen, unsigned int size) {
   if (!screen)
     return false;
   if (size < 1 || size > 3)
     size = 1;
-  size_t font_size = vimana_font_storage_size_for_size(size);
-  uint8_t *font_rom = (uint8_t *)calloc(font_size, 1);
+  size_t font_size = 0;
+  uint8_t *font_rom = vimana_default_font_rom(size, &font_size);
   if (!font_rom)
     return false;
-  free(screen->font_rom);
+  if (screen->font_rom_owned)
+    free(screen->font_rom);
   screen->font_rom = font_rom;
   screen->font_rom_size = font_size;
   screen->font_size = (uint8_t)size;
   screen->font_glyph_bytes = (uint8_t)vimana_font_glyph_bytes_for_size(size);
   screen->font_installed_by_app = false;
+  screen->font_rom_owned = false;
+  return true;
+}
+
+static bool vimana_screen_ensure_font_owned(vimana_screen *screen) {
+  if (!screen || !screen->font_rom)
+    return false;
+  if (screen->font_rom_owned)
+    return true;
+  uint8_t *font_rom = (uint8_t *)malloc(screen->font_rom_size);
+  if (!font_rom)
+    return false;
+  memcpy(font_rom, screen->font_rom, screen->font_rom_size);
+  screen->font_rom = font_rom;
+  screen->font_rom_owned = true;
   return true;
 }
 
@@ -708,15 +779,6 @@ static void vimana_font_row_bytes(vimana_screen *screen, const uint8_t *bmp,
   out[0] = bmp[row];
 }
 
-static uint64_t vimana_fnv1a64(const void *data, size_t len, uint64_t hash) {
-  const uint8_t *bytes = (const uint8_t *)data;
-  for (size_t i = 0; i < len; i++) {
-    hash ^= (uint64_t)bytes[i];
-    hash *= 1099511628211ULL;
-  }
-  return hash;
-}
-
 static bool vimana_system_has_active_input(vimana_system *system) {
   if (!system)
     return false;
@@ -729,17 +791,51 @@ static bool vimana_system_has_active_input(vimana_system *system) {
 }
 
 static bool vimana_is_manual_cursor_draw(vimana_screen *screen,
-                                         const uint8_t *bank,
+                                         unsigned int bank,
                                          unsigned int addr,
                                          unsigned int ctrl,
                                          unsigned int repeat) {
-  if (!screen || !bank)
+  if (!screen)
     return false;
   if (ctrl != 0x85 || repeat != 0)
     return false;
   if (addr + VIMANA_TILE_SIZE > VIMANA_SPRITE_BANK_SIZE)
     return false;
-  return memcmp(bank + addr, screen->cursor_icn, VIMANA_TILE_SIZE) == 0;
+  for (unsigned int i = 0; i < VIMANA_TILE_SIZE; i++)
+    if (vimana_sprite_read(screen, bank, addr + i) != screen->cursor_icn[i])
+      return false;
+  return true;
+}
+
+static void vimana_screen_mark_dirty(vimana_screen *screen, int x1, int y1,
+                                     int x2, int y2) {
+  if (!screen || x2 <= x1 || y2 <= y1)
+    return;
+  if (x1 < 0) x1 = 0;
+  if (y1 < 0) y1 = 0;
+  if (x2 > (int)screen->width) x2 = (int)screen->width;
+  if (y2 > (int)screen->canvas_height) y2 = (int)screen->canvas_height;
+  if (x2 <= x1 || y2 <= y1)
+    return;
+  if (!screen->dirty) {
+    screen->dirty = true;
+    screen->dirty_x1 = x1;
+    screen->dirty_y1 = y1;
+    screen->dirty_x2 = x2;
+    screen->dirty_y2 = y2;
+    return;
+  }
+  if (x1 < screen->dirty_x1) screen->dirty_x1 = x1;
+  if (y1 < screen->dirty_y1) screen->dirty_y1 = y1;
+  if (x2 > screen->dirty_x2) screen->dirty_x2 = x2;
+  if (y2 > screen->dirty_y2) screen->dirty_y2 = y2;
+}
+
+static void vimana_screen_mark_all_dirty(vimana_screen *screen) {
+  if (!screen)
+    return;
+  vimana_screen_mark_dirty(screen, 0, 0, (int)screen->width,
+                           (int)screen->canvas_height);
 }
 
 static void vimana_draw_manual_cursor_overlay(vimana_screen *screen) {
@@ -778,6 +874,9 @@ static void vimana_screen_draw_sprite_1bpp(vimana_screen *screen,
   if (x >= (unsigned int)screen->width ||
       y >= (unsigned int)screen->canvas_height)
     return;
+  vimana_screen_mark_dirty(screen, (int)x, (int)y,
+                           (int)x + VIMANA_TILE_SIZE,
+                           (int)y + VIMANA_TILE_SIZE);
   unsigned int bg_slot = bg & 0xF;
   unsigned int fg_slot = fg & 0xF;
   for (unsigned int row = 0; row < VIMANA_TILE_SIZE; row++) {
@@ -801,7 +900,7 @@ static void vimana_screen_draw_sprite_1bpp(vimana_screen *screen,
 static uint32_t vimana_parse_hex_color(const char *hex) {
   unsigned int r = 0, g = 0, b = 0;
   if (!hex)
-    return 0xFF101418u;
+    return 0x101418u;
   const char *h = hex;
   if (*h == '#')
     h++;
@@ -814,7 +913,7 @@ static uint32_t vimana_parse_hex_color(const char *hex) {
   } else if (len >= 6) {
     sscanf(h, "%2x%2x%2x", &r, &g, &b);
   }
-  return 0xFF000000u | (uint32_t)(r << 16) | (uint32_t)(g << 8) | (uint32_t)b;
+  return (uint32_t)(r << 16) | (uint32_t)(g << 8) | (uint32_t)b;
 }
 
 static void vimana_colorize(vimana_screen *screen) {
@@ -828,27 +927,28 @@ static void vimana_colorize(vimana_screen *screen) {
     unsigned int slot = fg_slot ? fg_slot : bg_slot;
     screen->palette[i] = screen->base_colors[slot];
   }
+  vimana_screen_mark_all_dirty(screen);
 }
 
 static void vimana_screen_reset_palette(vimana_screen *screen) {
   if (!screen)
     return;
-  screen->base_colors[0]  = 0xFFFFFFFFu; /* BG   */
-  screen->base_colors[1]  = 0xFF000000u; /* FG   */
-  screen->base_colors[2]  = 0xFF77DDCCu; /* CLR2 */
-  screen->base_colors[3]  = 0xFFFFBB22u; /* CLR3 */
-  screen->base_colors[4]  = 0xFFFF4444u; /* CLR4 */
-  screen->base_colors[5]  = 0xFF44AA44u; /* CLR5 */
-  screen->base_colors[6]  = 0xFF4488FFu; /* CLR6 */
-  screen->base_colors[7]  = 0xFFAA44AAu; /* CLR7 */
-  screen->base_colors[8]  = 0xFF888888u; /* CLR8 */
-  screen->base_colors[9]  = 0xFF666666u; /* CLR9 */
-  screen->base_colors[10] = 0xFFBBBB44u; /* CLR10 */
-  screen->base_colors[11] = 0xFF44BBBBu; /* CLR11 */
-  screen->base_colors[12] = 0xFF8844BBu; /* CLR12 */
-  screen->base_colors[13] = 0xFFBB4488u; /* CLR13 */
-  screen->base_colors[14] = 0xFF44BB88u; /* CLR14 */
-  screen->base_colors[15] = 0xFFBB8844u; /* CLR15 */
+  screen->base_colors[0]  = 0xFFFFFFu; /* BG   */
+  screen->base_colors[1]  = 0x000000u; /* FG   */
+  screen->base_colors[2]  = 0x77DDCCu; /* CLR2 */
+  screen->base_colors[3]  = 0xFFBB22u; /* CLR3 */
+  screen->base_colors[4]  = 0xFF4444u; /* CLR4 */
+  screen->base_colors[5]  = 0x44AA44u; /* CLR5 */
+  screen->base_colors[6]  = 0x4488FFu; /* CLR6 */
+  screen->base_colors[7]  = 0xAA44AAu; /* CLR7 */
+  screen->base_colors[8]  = 0x888888u; /* CLR8 */
+  screen->base_colors[9]  = 0x666666u; /* CLR9 */
+  screen->base_colors[10] = 0xBBBB44u; /* CLR10 */
+  screen->base_colors[11] = 0x44BBBBu; /* CLR11 */
+  screen->base_colors[12] = 0x8844BBu; /* CLR12 */
+  screen->base_colors[13] = 0xBB4488u; /* CLR13 */
+  screen->base_colors[14] = 0x44BB88u; /* CLR14 */
+  screen->base_colors[15] = 0xBB8844u; /* CLR15 */
   vimana_colorize(screen);
 }
 
@@ -884,7 +984,7 @@ static void vimana_screen_load_theme(vimana_screen *screen) {
   b[3] = buf[5] & 0x0F;
   for (int i = 0; i < 4; i++)
     screen->base_colors[i] =
-        0xFF000000u | ((uint32_t)r[i] * 17 << 16) | ((uint32_t)g[i] * 17 << 8) |
+        ((uint32_t)r[i] * 17 << 16) | ((uint32_t)g[i] * 17 << 8) |
         (uint32_t)b[i] * 17;
   if (screen->theme_swap_fg_bg) {
     uint32_t tmp = screen->base_colors[0];
@@ -900,6 +1000,9 @@ static void vimana_screen_load_theme(vimana_screen *screen) {
 static void vimana_screen_poll_theme(vimana_screen *screen) {
   if (!screen)
     return;
+  if (++screen->theme_poll_counter < 30)
+    return;
+  screen->theme_poll_counter = 0;
   const char *home = getenv("HOME");
   if (!home)
     return;
@@ -915,17 +1018,12 @@ static void vimana_screen_poll_theme(vimana_screen *screen) {
 }
 
 static void vimana_screen_reset_font(vimana_screen *screen) {
-  if (!screen || !screen->font_rom)
+  if (!screen)
     return;
-  /* Clear font region */
-  memset(screen->font_rom, 0, screen->font_rom_size);
-  /* Initialize width table: default glyph width for all entries */
-  uint8_t *widths = vimana_rom_font_widths(screen);
-  unsigned int width = vimana_font_default_width_for_size(screen->font_size);
-  for (unsigned int i = 0; i < VIMANA_GLYPH_COUNT; i++)
-    widths[i] = (uint8_t)width;
+  (void)vimana_screen_alloc_font(screen, screen->font_size);
   screen->font_height = (uint8_t)vimana_font_height_for_size(screen->font_size);
-  screen->font_glyph_width = (uint8_t)width;
+  screen->font_glyph_width =
+      (uint8_t)vimana_font_default_width_for_size(screen->font_size);
 }
 
 static void vimana_screen_reset_ports(vimana_screen *screen) {
@@ -951,7 +1049,9 @@ static void vimana_screen_store_sprite_bytes(vimana_screen *screen,
                                              size_t len) {
   if (!screen || !sprite || len == 0)
     return;
-  uint8_t *bank = vimana_active_sprite_bank(screen);
+  size_t needed = (size_t)addr + len;
+  uint8_t *bank = vimana_ensure_sprite_bank_capacity(
+      screen, screen->active_sprite_bank, needed);
   if (!bank)
     return;
   size_t max_len = VIMANA_SPRITE_BANK_SIZE - (size_t)addr;
@@ -1130,6 +1230,17 @@ static void vimana_system_open_gamepad(vimana_system *system,
     system->gamepad_id = SDL_GetGamepadID(system->gamepad);
 }
 
+static void vimana_system_open_first_gamepad(vimana_system *system);
+
+static void vimana_system_ensure_gamepad(vimana_system *system) {
+  if (!system || system->gamepad_initialized)
+    return;
+  if (!SDL_WasInit(SDL_INIT_GAMEPAD))
+    (void)SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+  system->gamepad_initialized = true;
+  vimana_system_open_first_gamepad(system);
+}
+
 static void vimana_system_open_first_gamepad(vimana_system *system) {
   if (!system || system->gamepad || !SDL_WasInit(SDL_INIT_GAMEPAD))
     return;
@@ -1277,30 +1388,20 @@ static void vimana_pump_events(vimana_system *system, vimana_screen *screen) {
 
 vimana_system *vimana_system_new(void) {
   if (!SDL_WasInit(SDL_INIT_VIDEO)) {
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO))
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
       return NULL;
   } else {
     if (!SDL_WasInit(SDL_INIT_EVENTS))
       (void)SDL_Init(SDL_INIT_EVENTS);
-    if (!SDL_WasInit(SDL_INIT_AUDIO))
-      (void)SDL_Init(SDL_INIT_AUDIO);
   }
-  if (!SDL_WasInit(SDL_INIT_GAMEPAD))
-    (void)SDL_InitSubSystem(SDL_INIT_GAMEPAD);
-  size_t mix_bytes = (size_t)2048 * sizeof(float);
-  vimana_system *system =
-      (vimana_system *)calloc(1, sizeof(vimana_system) + mix_bytes);
+  vimana_system *system = (vimana_system *)calloc(1, sizeof(vimana_system));
   if (!system)
     return NULL;
-  system->mix_buffer = (float *)((uint8_t *)system + sizeof(vimana_system));
-  system->mix_buffer_cap = 2048;
-  system->mix_buffer_heap = false;
+  system->master_volume = 15;
   system->pointer_x = -1;
   system->pointer_y = -1;
   system->tile_x = -1;
   system->tile_y = -1;
-  vimana_system_init_audio(system);
-  vimana_system_open_first_gamepad(system);
   return system;
 }
 
@@ -1370,7 +1471,10 @@ static inline void vimana_audio_unlock(vimana_system *s) {
 }
 
 void vimana_system_begin_audio(vimana_system *system) {
-  if (!system || !system->audio_stream)
+  if (!system)
+    return;
+  vimana_system_init_audio(system);
+  if (!system->audio_stream)
     return;
   if (!system->audio_locked) {
     (void)SDL_LockAudioStream(system->audio_stream);
@@ -1407,7 +1511,7 @@ static int vimana_alloc_voice(vimana_system *system) {
 
 void vimana_system_play_tone(vimana_system *system, int pitch,
                              int duration_ms, int volume) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (pitch < 0)
     return;
@@ -1452,7 +1556,7 @@ void vimana_system_play_tone(vimana_system *system, int pitch,
 
 void vimana_system_set_voice(vimana_system *system, int channel,
                              int waveform) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
@@ -1466,7 +1570,7 @@ void vimana_system_set_voice(vimana_system *system, int channel,
 void vimana_system_set_envelope(vimana_system *system, int channel,
                                 int attack, int decay, int sustain,
                                 int release) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
@@ -1485,7 +1589,7 @@ void vimana_system_set_envelope(vimana_system *system, int channel,
 
 void vimana_system_set_pulse_width(vimana_system *system, int channel,
                                    int width) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
@@ -1497,7 +1601,7 @@ void vimana_system_set_pulse_width(vimana_system *system, int channel,
 
 void vimana_system_play_voice(vimana_system *system, int channel,
                               int pitch, int volume) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
@@ -1528,7 +1632,7 @@ void vimana_system_play_voice(vimana_system *system, int channel,
 }
 
 void vimana_system_stop_voice(vimana_system *system, int channel) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
@@ -1543,7 +1647,7 @@ void vimana_system_stop_voice(vimana_system *system, int channel) {
 
 void vimana_system_set_frequency(vimana_system *system, int channel,
                                  int freq16) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
@@ -1556,7 +1660,7 @@ void vimana_system_set_frequency(vimana_system *system, int channel,
 }
 
 void vimana_system_set_sync(vimana_system *system, int channel, int enable) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (!((channel >= 0 && channel < 3) || (channel >= 4 && channel < 7)))
     return; /* sync for tone voices 0–2 and 4–6 */
@@ -1567,7 +1671,7 @@ void vimana_system_set_sync(vimana_system *system, int channel, int enable) {
 
 void vimana_system_set_ring_mod(vimana_system *system, int channel,
                                 int enable) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (!((channel >= 0 && channel < 3) || (channel >= 4 && channel < 7)))
     return; /* ring mod for tone voices 0–2 and 4–6 */
@@ -1578,7 +1682,7 @@ void vimana_system_set_ring_mod(vimana_system *system, int channel,
 
 void vimana_system_set_filter(vimana_system *system, int cutoff,
                               int resonance, int mode) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (cutoff < 0) cutoff = 0; else if (cutoff > 2047) cutoff = 2047;
   if (resonance < 0) resonance = 0; else if (resonance > 15) resonance = 15;
@@ -1592,7 +1696,7 @@ void vimana_system_set_filter(vimana_system *system, int cutoff,
 
 void vimana_system_set_filter_route(vimana_system *system, int channel,
                                     int enable) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (channel < 0 || channel >= VIMANA_VOICE_COUNT)
     return;
@@ -1602,7 +1706,7 @@ void vimana_system_set_filter_route(vimana_system *system, int channel,
 }
 
 void vimana_system_set_master_volume(vimana_system *system, int volume) {
-  if (!system || !system->audio_stream)
+  if (!vimana_system_ensure_audio(system))
     return;
   if (volume < 0) volume = 0; else if (volume > 15) volume = 15;
   vimana_audio_lock(system);
@@ -1634,7 +1738,6 @@ void vimana_system_run(vimana_system *system, vimana_screen *screen,
   system->quit = false;
   system->running = true;
   screen->system = system;
-  SDL_StartTextInput(screen->window);
   const uint64_t freq = SDL_GetPerformanceFrequency();
   const uint64_t frame_ns = freq / 60; /* 60 fps cap */
   uint64_t last = SDL_GetPerformanceCounter();
@@ -1643,6 +1746,10 @@ void vimana_system_run(vimana_system *system, vimana_screen *screen,
     vimana_autorelease_push();
 #endif
     vimana_reset_pressed(system);
+    if (system->text_input_requested && !system->text_input_active) {
+      SDL_StartTextInput(screen->window);
+      system->text_input_active = true;
+    }
     vimana_pump_events(system, screen);
     vimana_screen_poll_theme(screen);
     if (frame)
@@ -1661,16 +1768,16 @@ void vimana_system_run(vimana_system *system, vimana_screen *screen,
     uint64_t elapsed = now - last;
     if (elapsed < frame_ns) {
       uint64_t remain = frame_ns - elapsed;
-      uint32_t ms = (uint32_t)((remain * 1000) / freq);
+      uint32_t ms = (uint32_t)((remain * 1000 + freq - 1) / freq);
       if (ms > 0)
         SDL_Delay(ms);
-      /* Spin the remainder for precision */
-      while (SDL_GetPerformanceCounter() - last < frame_ns)
-        ;
     }
     last = SDL_GetPerformanceCounter();
   }
-  SDL_StopTextInput(screen->window);
+  if (system->text_input_active) {
+    SDL_StopTextInput(screen->window);
+    system->text_input_active = false;
+  }
   system->running = false;
 }
 
@@ -1682,8 +1789,7 @@ void vimana_system_free(vimana_system *system) {
     SDL_PauseAudioStreamDevice(system->audio_stream);
     SDL_DestroyAudioStream(system->audio_stream);
   }
-  if (system->mix_buffer_heap)
-    free(system->mix_buffer);
+  free(system->mix_buffer);
   free(system);
 }
 
@@ -1753,7 +1859,7 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
   memcpy(screen->title, window_title, title_len);
   screen_tail += title_len;
   screen->layers = screen_tail;
-  /* Sprite banks are lazy-allocated on first use (calloc'd in vimana_ensure_sprite_bank). */
+  /* Sprite banks grow in small pages on first write. */
 
   screen->width = width;
   screen->height = height;
@@ -1771,8 +1877,8 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
   screen->manual_cursor_pending = false;
   screen->manual_cursor_x = 0;
   screen->manual_cursor_y = 0;
-  screen->last_present_hash = 0;
   screen->frame_changed = true;
+  screen->dirty = false;
   screen->system = NULL;
   if (!vimana_screen_alloc_font(screen, 1)) {
     free(screen);
@@ -1789,7 +1895,8 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
                        screen->canvas_height * scale,
                        SDL_WINDOW_BORDERLESS);
   if (!screen->window) {
-    free(screen->font_rom);
+    if (screen->font_rom_owned)
+      free(screen->font_rom);
     free(screen);
     return NULL;
   }
@@ -1804,7 +1911,8 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
   screen->renderer = SDL_CreateRenderer(screen->window, NULL);
   if (!screen->renderer) {
     SDL_DestroyWindow(screen->window);
-    free(screen->font_rom);
+    if (screen->font_rom_owned)
+      free(screen->font_rom);
     free(screen);
     return NULL;
   }
@@ -1825,19 +1933,10 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
 #endif
 
   screen->canvas_texture = SDL_CreateTexture(
-      screen->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
+      screen->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING,
       screen->width, screen->canvas_height);
   if (screen->canvas_texture) {
-    size_t pixel_count = (size_t)screen->width * (size_t)screen->canvas_height;
-    screen->present_pixels =
-        pixel_count > 0 ? (uint32_t *)malloc(pixel_count * sizeof(uint32_t))
-                        : NULL;
-    if (pixel_count > 0 && !screen->present_pixels) {
-      SDL_DestroyTexture(screen->canvas_texture);
-      screen->canvas_texture = NULL;
-    } else {
-      SDL_SetTextureScaleMode(screen->canvas_texture, SDL_SCALEMODE_NEAREST);
-    }
+    SDL_SetTextureScaleMode(screen->canvas_texture, SDL_SCALEMODE_NEAREST);
   }
 
   SDL_SetWindowHitTest(screen->window, vimana_hit_test, screen);
@@ -1853,6 +1952,7 @@ void vimana_screen_clear(vimana_screen *screen, unsigned int bg) {
   size_t total =
       (size_t)screen->width_mar * (size_t)screen->height_mar;
   memset(screen->layers, (int)bg_val, total);
+  vimana_screen_mark_all_dirty(screen);
 }
 
 void vimana_screen_set_palette(vimana_screen *screen, unsigned int slot,
@@ -1877,6 +1977,8 @@ void vimana_screen_set_font(vimana_screen *screen, unsigned int code,
     return;
   if (code >= VIMANA_GLYPH_COUNT)
     return;
+  if (!vimana_screen_ensure_font_owned(screen))
+    return;
   unsigned int max_words = screen->font_glyph_bytes / 2;
   unsigned int n = len < max_words ? len : max_words;
   uint8_t *bmp = vimana_rom_font_bitmap(screen, code);
@@ -1891,6 +1993,8 @@ void vimana_screen_set_font(vimana_screen *screen, unsigned int code,
 void vimana_screen_set_font_width(vimana_screen *screen, unsigned int code,
                                   unsigned int width) {
   if (!screen || !screen->font_rom || code >= VIMANA_GLYPH_COUNT)
+    return;
+  if (!vimana_screen_ensure_font_owned(screen))
     return;
   vimana_rom_font_widths(screen)[code] =
       (uint8_t)(width > 0 && width <= 255 ? width : VIMANA_TILE_SIZE);
@@ -1973,12 +2077,14 @@ void vimana_screen_set_gfx(vimana_screen *screen, unsigned int addr,
                             const uint8_t *data, unsigned int len) {
   if (!screen || !data)
     return;
+  addr = vimana_screen_addr_clamp(screen, addr);
   /* Upload to sprite bank 0 (for use with sprite() command) */
-  uint8_t *bank = vimana_ensure_sprite_bank(screen, 0);
-  if (!bank)
-    return;
   if (addr + len > VIMANA_SPRITE_BANK_SIZE)
     len = VIMANA_SPRITE_BANK_SIZE - addr;
+  uint8_t *bank = vimana_ensure_sprite_bank_capacity(
+      screen, 0, (size_t)addr + (size_t)len);
+  if (!bank)
+    return;
   memcpy(bank + addr, data, (size_t)len);
 }
 
@@ -1987,7 +2093,7 @@ const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr) {
     return NULL;
   /* Read from sprite bank 0 (where set_gfx writes to) */
   uint8_t *bank = vimana_sprite_bank(screen, 0);
-  if (!bank || addr >= VIMANA_SPRITE_BANK_SIZE)
+  if (!bank || addr >= screen->sprite_bank_sizes[0])
     return NULL;
   return bank + addr;
 }
@@ -1995,8 +2101,8 @@ const uint8_t *vimana_screen_gfx(vimana_screen *screen, unsigned int addr) {
 void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
   if (!screen || !screen->layers)
     return;
-  const uint8_t *bank = vimana_sprite_bank(screen, screen->active_sprite_bank);
-  if (!bank)
+  unsigned int bank = screen->active_sprite_bank;
+  if (!vimana_sprite_bank(screen, bank))
     return;
   const unsigned int rMX = screen->port_auto & 0x1;
   const unsigned int rMY = screen->port_auto & 0x2;
@@ -2043,6 +2149,8 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
   }
 
   for (unsigned int i = 0; i <= rML; i++, x += dx, y += dy, rA += addr_incr) {
+    vimana_screen_mark_dirty(screen, x, y, x + VIMANA_TILE_SIZE,
+                             y + VIMANA_TILE_SIZE);
     for (unsigned int j = 0; j < 8; j++) {
       int sy = y + (int)j;
       if (sy < 0 || sy >= screen_h)
@@ -2051,17 +2159,21 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
       const unsigned int a1 = rA + sr;
       const unsigned int a2 = rA + sr + 8;
       const uint8_t ch1 =
-          (a1 < VIMANA_SPRITE_BANK_SIZE) ? bank[a1] : 0;
+          (a1 < VIMANA_SPRITE_BANK_SIZE) ? vimana_sprite_read(screen, bank, a1) : 0;
       const uint8_t ch2 =
           ((is_2bpp || is_3bpp || is_4bpp) && a2 < VIMANA_SPRITE_BANK_SIZE)
-              ? bank[a2]
+              ? vimana_sprite_read(screen, bank, a2)
               : 0;
       const unsigned int a3 = rA + sr + 16;
       const uint8_t ch3 =
-          ((is_3bpp || is_4bpp) && a3 < VIMANA_SPRITE_BANK_SIZE) ? bank[a3] : 0;
+          ((is_3bpp || is_4bpp) && a3 < VIMANA_SPRITE_BANK_SIZE)
+              ? vimana_sprite_read(screen, bank, a3)
+              : 0;
       const unsigned int a4 = rA + sr + 24;
       const uint8_t ch4 =
-          (is_4bpp && a4 < VIMANA_SPRITE_BANK_SIZE) ? bank[a4] : 0;
+          (is_4bpp && a4 < VIMANA_SPRITE_BANK_SIZE)
+              ? vimana_sprite_read(screen, bank, a4)
+              : 0;
       for (unsigned int k = 0, row = row_start; k < 8;
            k++, row += row_delta) {
          int sx = x + (int)k;
@@ -2123,6 +2235,7 @@ void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl) {
       x2 = (unsigned int)screen->width;
     if (y2 > (unsigned int)screen->canvas_height)
       y2 = (unsigned int)screen->canvas_height;
+    vimana_screen_mark_dirty(screen, (int)x1, (int)y1, (int)x2, (int)y2);
     for (unsigned int fy = y1; fy < y2; fy++) {
       uint8_t *row = screen->layers + fy * screen->width_mar;
       for (unsigned int fx = x1; fx < x2; fx++)
@@ -2136,68 +2249,14 @@ void vimana_screen_pixel(vimana_screen *screen, unsigned int ctrl) {
         py < (unsigned int)screen->canvas_height) {
       unsigned int idx = py * (unsigned int)screen->width_mar + px;
       screen->layers[idx] = (screen->layers[idx] & layer_mask) | color;
+      vimana_screen_mark_dirty(screen, (int)px, (int)py, (int)px + 1,
+                               (int)py + 1);
     }
     if (screen->port_auto & 0x01)
       screen->port_x++;
     if (screen->port_auto & 0x02)
       screen->port_y++;
   }
-}
-
-static bool vimana_screen_glyph_bounds(vimana_screen *screen, unsigned int ch,
-                                       unsigned int *min_col,
-                                       unsigned int *max_col,
-                                       unsigned int *min_row,
-                                       unsigned int *max_row) {
-  if (!screen || !screen->font_rom || ch >= VIMANA_GLYPH_COUNT)
-    return false;
-  const uint8_t *bmp = vimana_rom_font_bitmap(screen, ch);
-  const uint8_t *widths = vimana_rom_font_widths(screen);
-  unsigned int gh = screen->font_height;
-  unsigned int gw = widths[ch];
-  if (gw == 0)
-    gw = screen->font_glyph_width;
-
-  bool any = false;
-  unsigned int left = gw;
-  unsigned int right = 0;
-  unsigned int top = gh;
-  unsigned int bottom = 0;
-
-  for (unsigned int row = 0; row < gh; row++) {
-    uint8_t row_data[3];
-    vimana_font_row_bytes(screen, bmp, row, row_data);
-    for (unsigned int col = 0; col < gw; col++) {
-      uint8_t mask = (uint8_t)(0x80u >> (col & 7));
-      if (!(row_data[col >> 3] & mask))
-        continue;
-      if (!any) {
-        left = right = col;
-        top = bottom = row;
-        any = true;
-      } else {
-        if (col < left)
-          left = col;
-        if (col > right)
-          right = col;
-        if (row < top)
-          top = row;
-        if (row > bottom)
-          bottom = row;
-      }
-    }
-  }
-  if (!any)
-    return false;
-  if (min_col)
-    *min_col = left;
-  if (max_col)
-    *max_col = right;
-  if (min_row)
-    *min_row = top;
-  if (max_row)
-    *max_row = bottom;
-  return true;
 }
 
 static void vimana_screen_put_glyph_fg(vimana_screen *screen, unsigned int x,
@@ -2215,6 +2274,8 @@ static void vimana_screen_put_glyph_fg(vimana_screen *screen, unsigned int x,
   unsigned int gw = widths[ch];
   if (gw == 0)
     gw = screen->font_glyph_width;
+  vimana_screen_mark_dirty(screen, (int)x, (int)y, (int)(x + gw),
+                           (int)(y + gh));
 
   for (unsigned int row = 0; row < gh; row++) {
     unsigned int py = y + row;
@@ -2249,15 +2310,11 @@ void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
   if (x >= (unsigned int)screen->width || y >= (unsigned int)screen->canvas_height)
     return;
   const uint8_t *widths = vimana_rom_font_widths(screen);
-  bool any_ink = false;
   bool any_char = false;
-  unsigned int ink_top = 0;
-  unsigned int ink_bottom = 0;
   unsigned int cx = x;
 
   for (int i = 0; text[i] != 0; i++) {
     unsigned int ch = (unsigned char)text[i];
-    unsigned int glyph_left, glyph_right, glyph_top, glyph_bottom;
     unsigned int advance;
     if (ch >= VIMANA_GLYPH_COUNT)
       ch = ' ';
@@ -2266,21 +2323,6 @@ void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
       advance = screen->font_glyph_width;
     if (advance > 0)
       any_char = true;
-    if (vimana_screen_glyph_bounds(screen, ch, &glyph_left, &glyph_right,
-                                   &glyph_top, &glyph_bottom)) {
-      unsigned int top = y + glyph_top;
-      unsigned int bottom = y + glyph_bottom;
-      if (!any_ink) {
-        ink_top = top;
-        ink_bottom = bottom;
-        any_ink = true;
-      } else {
-        if (top < ink_top)
-          ink_top = top;
-        if (bottom > ink_bottom)
-          ink_bottom = bottom;
-      }
-    }
     cx += advance;
   }
 
@@ -2291,16 +2333,12 @@ void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
     unsigned int right = cx - 1;
     unsigned int top = y;
     unsigned int bottom = y + screen->font_height - 1;
-    if (any_ink) {
-      left = left > 0 ? left - 1 : 0;
-      right = right + 1;
-      top = ink_top > 0 ? ink_top - 1 : 0;
-      bottom = ink_bottom + 1;
-    }
     if (right >= (unsigned int)screen->width)
       right = (unsigned int)screen->width - 1;
     if (bottom >= (unsigned int)screen->canvas_height)
       bottom = (unsigned int)screen->canvas_height - 1;
+    vimana_screen_mark_dirty(screen, (int)left, (int)top,
+                             (int)right + 1, (int)bottom + 1);
     for (unsigned int py = top; py <= bottom; py++) {
       uint8_t *dst = screen->layers + py * screen->width_mar + left;
       for (unsigned int px = left; px <= right; px++)
@@ -2325,41 +2363,37 @@ void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
 void vimana_screen_present(vimana_screen *screen) {
   if (!screen || !screen->renderer || !screen->layers)
     return;
-  uint64_t frame_hash = 1469598103934665603ULL;
-  frame_hash = vimana_fnv1a64(screen->layers,
-                              (size_t)screen->width_mar *
-                                  (size_t)screen->canvas_height,
-                              frame_hash);
-  frame_hash = vimana_fnv1a64(screen->base_colors, sizeof(screen->base_colors),
-                              frame_hash);
-  frame_hash = vimana_fnv1a64(&screen->manual_cursor_pending,
-                              sizeof(screen->manual_cursor_pending),
-                              frame_hash);
-  if (screen->manual_cursor_pending) {
-    frame_hash = vimana_fnv1a64(&screen->manual_cursor_x,
-                                sizeof(screen->manual_cursor_x), frame_hash);
-    frame_hash = vimana_fnv1a64(&screen->manual_cursor_y,
-                                sizeof(screen->manual_cursor_y), frame_hash);
-  }
-  if (frame_hash == screen->last_present_hash) {
+  if (!screen->dirty && !screen->manual_cursor_pending) {
     screen->frame_changed = false;
-    screen->manual_cursor_pending = false;
     return;
   }
-  screen->last_present_hash = frame_hash;
   screen->frame_changed = true;
 
   int w = screen->width;
   int h = screen->canvas_height;
-  if (screen->canvas_texture && screen->present_pixels) {
-    for (int py = 0; py < h; py++) {
-      const uint8_t *src = screen->layers + py * screen->width_mar;
-      uint32_t *dst = screen->present_pixels + (size_t)py * (size_t)w;
-      for (int px = 0; px < w; px++)
-        dst[px] = screen->palette[src[px]];
+  if (screen->canvas_texture) {
+    if (screen->dirty) {
+      SDL_Rect rect = {
+        screen->dirty_x1,
+        screen->dirty_y1,
+        screen->dirty_x2 - screen->dirty_x1,
+        screen->dirty_y2 - screen->dirty_y1
+      };
+      void *pixels = NULL;
+      int pitch = 0;
+      if (SDL_LockTexture(screen->canvas_texture, &rect, &pixels, &pitch)) {
+        for (int py = 0; py < rect.h; py++) {
+          const uint8_t *src = screen->layers +
+              (size_t)(rect.y + py) * screen->width_mar + rect.x;
+          uint32_t *dst = (uint32_t *)((uint8_t *)pixels +
+              (size_t)py * (size_t)pitch);
+          for (int px = 0; px < rect.w; px++)
+            dst[px] = screen->palette[src[px]];
+        }
+        SDL_UnlockTexture(screen->canvas_texture);
+        screen->dirty = false;
+      }
     }
-    SDL_UpdateTexture(screen->canvas_texture, NULL, screen->present_pixels,
-                      (int)(sizeof(uint32_t) * (size_t)w));
     SDL_FRect dst = {0.0f, 0.0f, (float)(w * screen->scale),
                      (float)(h * screen->scale)};
     SDL_RenderTexture(screen->renderer, screen->canvas_texture, NULL, &dst);
@@ -2395,6 +2429,7 @@ void vimana_screen_present(vimana_screen *screen) {
         run_start = run_end;
       }
     }
+    screen->dirty = false;
   }
 
   /* 1px window border using stripe color */
@@ -2488,8 +2523,8 @@ void vimana_screen_free(vimana_screen *screen) {
     SDL_DestroyRenderer(screen->renderer);
   if (screen->window)
     SDL_DestroyWindow(screen->window);
-  free(screen->present_pixels);
-  free(screen->font_rom);
+  if (screen->font_rom_owned)
+    free(screen->font_rom);
   for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
     free(screen->sprite_banks[i]);
   free(screen);
@@ -2499,16 +2534,14 @@ size_t vimana_screen_ram_usage(vimana_screen *screen) {
   if (!screen)
     return 0;
   size_t total = sizeof(*screen);
-  total += screen->font_rom_size;
+  if (screen->font_rom_owned)
+    total += screen->font_rom_size;
   total += (size_t)screen->width_mar * (size_t)screen->height_mar;
-  if (screen->present_pixels)
-    total += (size_t)screen->width * (size_t)screen->canvas_height *
-             sizeof(uint32_t);
   if (screen->title)
     total += strlen(screen->title) + 1;
   for (int i = 0; i < VIMANA_SPRITE_BANK_COUNT; i++)
     if (screen->sprite_banks[i])
-      total += VIMANA_SPRITE_BANK_SIZE;
+      total += screen->sprite_bank_sizes[i];
   return total;
 }
 
@@ -2517,10 +2550,12 @@ size_t vimana_screen_ram_usage(vimana_screen *screen) {
 void vimana_device_poll(vimana_system *system) { (void)system; }
 
 unsigned int vimana_device_controller(vimana_system *system) {
+  vimana_system_ensure_gamepad(system);
   return vimana_controller_bits(system);
 }
 
 bool vimana_device_controller_down(vimana_system *system, unsigned int mask) {
+  vimana_system_ensure_gamepad(system);
   uint8_t bits = vimana_controller_bits(system);
   return ((unsigned int)bits & mask) != 0;
 }
@@ -2529,6 +2564,7 @@ bool vimana_device_controller_pressed(vimana_system *system,
                                       unsigned int mask) {
   if (!system)
     return false;
+  vimana_system_ensure_gamepad(system);
   return ((unsigned int)system->controller_pressed & mask) != 0;
 }
 
@@ -2581,7 +2617,10 @@ int vimana_device_wheel_y(vimana_system *system) {
 }
 
 const char *vimana_device_text_input(vimana_system *system) {
-  return system ? system->text_input : "";
+  if (!system)
+    return "";
+  system->text_input_requested = true;
+  return system->text_input;
 }
 
 /* ── Console API ────────────────────────────────────────────────────────── */

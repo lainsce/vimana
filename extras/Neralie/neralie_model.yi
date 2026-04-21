@@ -10,6 +10,7 @@ def PADDING = 20
 
 def ?last_second = -1
 def ?last_day = -1
+def ?second_tick_base = -1
 def ?n0123_v = 0
 def ?n4_v = 0
 def ?n5_v = 0
@@ -54,21 +55,21 @@ def ?dirty = true
     <- str(v)
 ;
 
-: refresh(dt = vimana.datetime) (( -- ))
-    let hour   = dt.hour()
-    let minute = dt.minute()
-    let second = dt.second()
-    let year   = dt.year()
-    let doty   = dt.yday()
+: refresh(dt = vimana.datetime, now = num, sub_ms = num) (( -- ))
+    let hour   = dt.hour_at(now)
+    let minute = dt.minute_at(now)
+    let second = dt.second_at(now)
+    let year   = dt.year_at(now)
+    let doty   = dt.yday_at(now)
 
-    -- Neralie time: n0123 uses same fixed-point multipliers as the original Uxn code
-    -- hour*416 + minute*6 gives a value in 0..~9984 (≈10000 units/day)
-    n0123_v = hour * 416 + minute * 6
+    let second_of_day = hour * 3600 + minute * 60 + second
+    let ms_of_day = second_of_day * 1000 + sub_ms
+    let neralie = stdr.floor(ms_of_day * 10000000 / 86400000)
 
-    -- n4 and n5 are sub-second digits derived from a finer accumulator
-    let acc = hour * 66 + minute * 94 + second * 11
-    n4_v = stdr.floor(acc / 10) % 10
-    n5_v = acc % 10
+    n0123_v = stdr.floor(neralie / 1000)
+    n4_v = stdr.floor(neralie / 100) % 10
+    n5_v = stdr.floor(neralie / 10) % 10
+    n6_v = neralie % 10
 
     -- Build Neralie text: NNN:NNN
     let d0 = stdr.floor(n0123_v / 1000)
@@ -86,17 +87,6 @@ def ?dirty = true
     arvelie_text_v = str(yr_tens) + str(yr_units) + letter + pad2(period)
 ;
 
--- Compute n6: sub-second digit (0-9) using the same formula as the original Uxn code.
--- The original uses fps interpolation; here we substitute elapsed ms within the second.
--- total = 288*h + 192*m + 248*s + sub, where sub ≈ 78 * (ms/1000).
--- n6 = floor((total % 432) * 23 / 1000)  matches the Uxn #01b0 modf … #0017 MUL2 #03e8 DIV2.
-: compute_n6(dt = vimana.datetime, ticks = num) (( num ))
-    let ms  = ticks % 1000
-    let sub = stdr.floor(78 * ms / 1000)
-    let total = 288 * dt.hour() + 192 * dt.minute() + 248 * dt.second() + sub
-    <- stdr.floor((total % 432) * 23 / 1000)
-;
-
 :: load_palette(scr = vimana.screen) (( -- ))
     scr.set_palette(0, "#000000")
     scr.set_palette(1, "#ffffff")
@@ -105,29 +95,42 @@ def ?dirty = true
 ;
 
 :: init(dt = vimana.datetime, ticks = num) (( -- ))
-    refresh(dt)
-    n6_v        = compute_n6(dt, ticks)
-    last_second = dt.second()
-    last_day    = dt.day()
+    let now = dt.now()
+    refresh(dt, now, 0)
+    last_second    = dt.second_at(now)
+    last_day      = dt.day_at(now)
+    second_tick_base = ticks
     dirty = true
 ;
 
 -- Returns true whenever any displayed value changed.
--- Checks seconds for n0123/n4/n5 and ticks for the sub-second n6.
+-- Ticks drive sub-second Neralie progress, so the clock does not replay per second.
 :: step(dt = vimana.datetime, ticks = num) (( bool ))
-    let sec     = dt.second()
-    let day     = dt.day()
-    let new_n6  = compute_n6(dt, ticks)
+    let now    = dt.now()
+    let sec   = dt.second_at(now)
+    let day   = dt.day_at(now)
 
-    if sec != last_second || day != last_day
-        refresh(dt)
-        last_second = sec
-        last_day    = day
+    if second_tick_base < 0 || sec != last_second || day != last_day
+        second_tick_base = ticks
+
+    let ?sub_ms = ticks - second_tick_base
+    if sub_ms < 0
+        sub_ms = 0
+    if sub_ms > 999
+        sub_ms = 999
+
+    let old_n0123 = n0123_v
+    let old_n4 = n4_v
+    let old_n5 = n5_v
+    let old_n6 = n6_v
+
+    refresh(dt, now, sub_ms)
+
+    if n0123_v != old_n0123 || n4_v != old_n4 || n5_v != old_n5 || n6_v != old_n6
         dirty = true
 
-    if new_n6 != n6_v
-        n6_v  = new_n6
-        dirty = true
+    last_second = sec
+    last_day = day
 
     let ?out = dirty
     dirty = false

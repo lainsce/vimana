@@ -175,21 +175,22 @@ def ?last_titlebar_shaded    = false
             close_button_active != last_close_button_state ||
             titlebar_shaded != last_titlebar_shaded
 
-        if neralie_model.step(dt, sys.ticks())
+        if neralie_model.step(sys.datetime(), sys.ticks())
             needs_redraw = true
-
-        if !needs_redraw
-            <-
 
         last_mx = mx
         last_my = my
         last_close_button_state = close_button_active
         last_titlebar_shaded    = titlebar_shaded
 
+        if !needs_redraw
+            <-
+
         if !titlebar_shaded
             neralie_view.draw(scr)
         else
             scr.clear(vimana.color_bg)
+            neralie_view.draw(scr)
 
         -- Titlebar background
         scr.set_auto(0x25).set_x(0).set_y(0)
