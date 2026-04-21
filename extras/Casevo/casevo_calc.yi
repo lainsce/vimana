@@ -12,6 +12,7 @@ bring casevo_model
 --   Operators: + (sum), - (subtract), * (multiply), / (divide),
 --              = (equal), ! (not equal), > (greater), < (less), # (count)
 --   Concatenation: if operator is absent or not numeric, concat cell text.
+--   Optional leading '=' is allowed: "=A1:A8+" is valid.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- Parse a column letter A-H, returns -1 if invalid
@@ -141,6 +142,8 @@ bring casevo_model
     let ?first = true
     for (let ?r = ay; r <= by; r += 1)
         for (let ?c = ax; c <= bx; c += 1)
+            if c < 0 || c >= casevo_model.COLS || r < 0 || r >= casevo_model.ROWS
+                continue
             let v = cell_num(c, r)
             if first
                 result = v
@@ -162,6 +165,8 @@ bring casevo_model
     let ?count = 0
     for (let ?r = ay; r <= by; r += 1)
         for (let ?c = ax; c <= bx; c += 1)
+            if c < 0 || c >= casevo_model.COLS || r < 0 || r >= casevo_model.ROWS
+                continue
             let text = casevo_model.get_cell(c, r)
             if text != ""
                 count = count + 1
@@ -173,6 +178,8 @@ bring casevo_model
     let ?parts = []: [any]
     for (let ?r = ay; r <= by; r += 1)
         for (let ?c = ax; c <= bx; c += 1)
+            if c < 0 || c >= casevo_model.COLS || r < 0 || r >= casevo_model.ROWS
+                continue
             let text = casevo_model.get_cell(c, r)
             if text != ""
                 stdr.push(parts, text)
@@ -180,27 +187,33 @@ bring casevo_model
 ;
 
 -- Evaluate comparison formulas (return 1 or 0)
+-- Iterates over the entire range, comparing each cell to the first cell
 : eval_compare(ax = num, ay = num, bx = num, by = num, op = string) (( num ))
-    -- Compare first two cells in range
-    let v1 = cell_num(ax, ay)
-    let v2 = cell_num(bx, by)
-    if op == "="
-        if v1 == v2
-            <- 1
-        <- 0
+    let ?first = true
+    let ?base = 0
+    for (let ?r = ay; r <= by; r += 1)
+        for (let ?c = ax; c <= bx; c += 1)
+            if c < 0 || c >= casevo_model.COLS || r < 0 || r >= casevo_model.ROWS
+                continue
+            let v = cell_num(c, r)
+            if first
+                base = v
+                first = false
+            elif op == "="
+                if v != base
+                    <- 0
+            elif op == "!"
+                if v != base
+                    <- 1
+            elif op == ">"
+                if v <= base
+                    <- 0
+            elif op == "<"
+                if v >= base
+                    <- 0
     if op == "!"
-        if v1 != v2
-            <- 1
         <- 0
-    if op == ">"
-        if v1 > v2
-            <- 1
-        <- 0
-    if op == "<"
-        if v1 < v2
-            <- 1
-        <- 0
-    <- 0
+    <- 1
 ;
 
 -- Evaluate a cell's display value. If it's a formula, compute the result.
