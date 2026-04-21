@@ -178,6 +178,7 @@ unsigned int vimana_screen_auto(vimana_screen *screen);
 unsigned int vimana_screen_width(vimana_screen *screen);
 unsigned int vimana_screen_height(vimana_screen *screen);
 unsigned int vimana_screen_scale(vimana_screen *screen);
+void vimana_screen_set_scale(vimana_screen *screen, unsigned int scale);
 size_t vimana_screen_ram_usage(vimana_screen *screen);
 void vimana_screen_free(vimana_screen *screen);
 static uint8_t vimana_controller_bits(vimana_system *system);

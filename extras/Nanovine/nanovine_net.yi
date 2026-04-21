@@ -149,10 +149,12 @@ def ?pending_send_acks = 0
             break
         let head = stdr.str(store_messages[0] ?? "")
         let ?next = []: [any]
+        store_total = 0
         for (let ?i = 1; i < total; i += 1)
-            stdr.push(next, stdr.str(store_messages[i] ?? ""))
+            let line = stdr.str(store_messages[i] ?? "")
+            stdr.push(next, line)
+            store_total = store_total + stdr.len(line)
         store_messages = next
-        store_total = store_total - stdr.len(head)
     if store_total < 0
         store_total = 0
 ;

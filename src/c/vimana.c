@@ -798,22 +798,6 @@ static void vimana_screen_draw_sprite_1bpp(vimana_screen *screen,
   }
 }
 
-static void vimana_screen_draw_sprite_1bpp_addr(vimana_screen *screen,
-                                                unsigned int x,
-                                                unsigned int y,
-                                                unsigned int addr,
-                                                unsigned int fg,
-                                                unsigned int bg) {
-  if (!screen)
-    return;
-  if (addr + VIMANA_SPRITE_1BPP_BYTES > VIMANA_SPRITE_BANK_SIZE)
-    return;
-  const uint8_t *bank = vimana_sprite_bank(screen, screen->active_sprite_bank);
-  if (!bank)
-    return;
-  vimana_screen_draw_sprite_1bpp(screen, x, y, bank + addr, fg, bg);
-}
-
 static uint32_t vimana_parse_hex_color(const char *hex) {
   unsigned int r = 0, g = 0, b = 0;
   if (!hex)
@@ -1724,13 +1708,13 @@ static SDL_HitTestResult vimana_hit_test(SDL_Window *win,
 
   int drag_h_px = 0;
   if (screen->drag_region_height > 0)
-    drag_h_px = screen->drag_region_height * scale;
+    drag_h_px = (int)((int64_t)screen->drag_region_height * scale);
 
   if (drag_h_px > 0 && area->y < drag_h_px) {
-    int close_x0 = 8 * scale;
-    int close_x1 = 24 * scale;
-    int right_hole_x0 = ((int)screen->width - 24) * scale;
-    int right_hole_x1 = ((int)screen->width - 8) * scale;
+    int close_x0 = (int)((int64_t)8 * scale);
+    int close_x1 = (int)((int64_t)24 * scale);
+    int right_hole_x0 = (int)(((int64_t)screen->width - 24) * scale);
+    int right_hole_x1 = (int)(((int64_t)screen->width - 8) * scale);
     if (right_hole_x0 < 0)
       right_hole_x0 = 0;
     if (right_hole_x1 < 0)
@@ -1825,6 +1809,9 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
     return NULL;
   }
 
+  /* Disable texture filtering for sharp nearest-neighbor scaling */
+  SDL_SetDefaultTextureScaleMode(screen->renderer, SDL_SCALEMODE_PIXELART);
+
 #ifdef __APPLE__
   /* Reduce Metal drawable pool from 3 to 2 to save one full back buffer. */
   {
@@ -1848,6 +1835,8 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
     if (pixel_count > 0 && !screen->present_pixels) {
       SDL_DestroyTexture(screen->canvas_texture);
       screen->canvas_texture = NULL;
+    } else {
+      SDL_SetTextureScaleMode(screen->canvas_texture, SDL_SCALEMODE_NEAREST);
     }
   }
 
@@ -2454,6 +2443,21 @@ unsigned int vimana_screen_height(vimana_screen *screen) {
 
 unsigned int vimana_screen_scale(vimana_screen *screen) {
   return screen ? screen->scale : 0;
+}
+
+void vimana_screen_set_scale(vimana_screen *screen, unsigned int scale) {
+  if (!screen)
+    return;
+  if (scale < 1)
+    scale = 1;
+  screen->scale = scale;
+
+  // Resize window to match new scale
+  if (screen->window) {
+    int win_w = (int)((int64_t)screen->width * scale);
+    int win_h = (int)((int64_t)screen->canvas_height * scale);
+    SDL_SetWindowSize(screen->window, win_w, win_h);
+  }
 }
 
 void vimana_screen_set_cursor(vimana_screen *screen, const uint8_t rows[8]) {

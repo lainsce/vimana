@@ -464,6 +464,10 @@ def ?url_open_proc = 0
     if url_open_proc != 0
         sys.proc_free(url_open_proc)
         url_open_proc = 0
+    clear_hits()
+    clear_selection()
+    cursorblink_timer = 0
+    cursorblink_on = true
 ;
 
 :: draw_all(scr = vimana.screen) (( -- ))
