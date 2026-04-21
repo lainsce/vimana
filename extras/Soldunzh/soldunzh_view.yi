@@ -1,0 +1,325 @@
+cask soldunzh_view
+
+bring stdr
+bring vimana
+
+bring soldunzh_model
+bring soldunzh_assets
+
+: card_sprite_addr(card) (( num ))
+    if card < 0
+        <- soldunzh_assets.CARD_EMPTY_ADDR
+    if soldunzh_model.is_joker(card)
+        <- soldunzh_assets.CARD_JOKER_ADDR
+    let suit = soldunzh_model.suit(card)
+    let r = soldunzh_model.rank(card)
+    if suit == 0
+        <- soldunzh_assets.CARD_HEART_ADDR
+    if suit == 1
+        <- soldunzh_assets.CARD_DIAMOND_ADDR
+    if suit == 2
+        <- soldunzh_assets.CARD_CLUB_ADDR
+    <- soldunzh_assets.CARD_SPADE_ADDR
+;
+
+: card_color(t) (( num ))
+    if t == soldunzh_model.POTION || t == soldunzh_model.SHIELD
+        <- vimana.color_2
+    if t == soldunzh_model.MONSTER
+        <- vimana.color_3
+    <- vimana.color_fg
+;
+
+: shield_name(r) (( str ))
+    if r == 0  <- "TARGE"
+    if r == 1  <- "BUCKLER"
+    if r == 2  <- "ROUND SHIELD"
+    if r == 3  <- "HEATER"
+    if r == 4  <- "SCUTUM"
+    if r == 5  <- "PAVISE"
+    if r == 6  <- "ASPIS"
+    if r == 7  <- "WAR SHIELD"
+    if r == 8  <- "TOWER SHIELD"
+    if r == 9  <- "AEGIS"
+    if r == 10 <- "DRAGON SHIELD"
+    if r == 11 <- "HERALD SHIELD"
+    <- "KITE SHIELD"
+;
+
+: potion_name(r) (( str ))
+    if r == 0  <- "TINCTURE"
+    if r == 1  <- "PILL"
+    if r == 2  <- "SALVE"
+    if r == 3  <- "DRAUGHT"
+    if r == 4  <- "CORDIAL"
+    if r == 5  <- "TONIC"
+    if r == 6  <- "ELIXIR"
+    if r == 7  <- "PHILTRE"
+    if r == 8  <- "REMEDY"
+    if r == 9  <- "CURATIVE"
+    if r == 10 <- "RESTORATIVE"
+    if r == 11 <- "ANTIDOTE"
+    <- "PANACEA"
+;
+
+: monster_name(r) (( str ))
+    if r == 0  <- "DEMON"
+    if r == 1  <- "BAT"
+    if r == 2  <- "GOBLIN"
+    if r == 3  <- "SKELETON"
+    if r == 4  <- "ORC"
+    if r == 5  <- "GHOUL"
+    if r == 6  <- "TROLL"
+    if r == 7  <- "OGRE"
+    if r == 8  <- "WEREWOLF"
+    if r == 9  <- "VAMPIRE"
+    if r == 10 <- "WRAITH"
+    if r == 11 <- "LICH"
+    <- "HIGH PRIEST"
+;
+
+: card_name(card) (( str ))
+    if soldunzh_model.is_joker(card)
+        if card == 52 <- "SOLDUNZH"
+        <- "SOLDUNZH'S TWIN"
+    let t = soldunzh_model.card_type(card)
+    let r = soldunzh_model.rank(card)
+    if t == soldunzh_model.SHIELD  <- shield_name(r)
+    if t == soldunzh_model.POTION  <- potion_name(r)
+    <- monster_name(r)
+;
+
+: is_face_card(card) (( bool ))
+    if soldunzh_model.is_joker(card) <- true
+    let r = soldunzh_model.rank(card)
+    <- r == 0 || r == 10 || r == 11 || r == 12
+;
+
+: face_figure_addr(card) (( num ))
+    if soldunzh_model.is_joker(card) <- soldunzh_assets.SOL_FIG_ADDR
+    let r = soldunzh_model.rank(card)
+    if r == 0  <- soldunzh_assets.ACE_FIG_ADDR
+    if r == 10 <- soldunzh_assets.JACK_FIG_ADDR
+    if r == 11 <- soldunzh_assets.QUEEN_FIG_ADDR
+    <- soldunzh_assets.KING_FIG_ADDR
+;
+
+:: draw_card(scr = vimana.screen, idx, card, x, y) (( -- ))
+    let ?frame_addr = soldunzh_assets.CARD_FRAME_ADDR
+    if card >= 0 && is_face_card(card)
+        frame_addr = soldunzh_assets.CARD_FACE_FRAME_ADDR
+    -- set_auto 0x66 = auto-X (bit1) + auto-addr (bit2) + repeat-6 (bits4-7),
+    -- drawing all 7 tiles in one sprite() call per row.
+    scr.set_auto(0x66)
+    for (let ?row = 0; row < 10; row += 1)
+        scr.set_x(x).set_y(y + row * 8)
+        scr.set_addr(frame_addr + row * 56)
+        scr.sprite(0x01)
+    scr.set_auto(0)
+
+    if card >= 0
+        let addr = card_sprite_addr(card)
+        scr.set_auto(0x00).set_addr(addr).set_x(x + 4).set_y(y + 4)
+        scr.sprite(0x85)
+        
+        if is_face_card(card)
+            -- Central figure sprite (8×24, 3 tiles tall, transparent blend)
+            let fig_addr = face_figure_addr(card)
+            let t2 = soldunzh_model.card_type(card)
+            let fig_ctrl = card_color(t2)
+            scr.set_auto(0x04).set_addr(fig_addr)
+            scr.set_x(x + 23).set_y(y + 26).sprite(fig_ctrl)
+            scr.set_y(y + 34).sprite(fig_ctrl)
+            scr.set_y(y + 42).sprite(fig_ctrl)
+        else
+            -- Dotted inner face rectangle (numbered cards only)
+            scr.set_auto(0)
+            for (let ?i = 14; i < soldunzh_model.CARD_W - 14; i += 2)
+                scr.set_x(x + i).set_y(y + 16).pixel(0x01)
+            for (let ?i = 14; i < soldunzh_model.CARD_W - 14; i += 2)
+                scr.set_x(x + i).set_y(y + soldunzh_model.CARD_H - 19).pixel(0x01)
+            for (let ?i = 17; i < soldunzh_model.CARD_H - 19; i += 2)
+                scr.set_x(x + 13).set_y(y + i).pixel(0x01)
+            for (let ?i = 17; i < soldunzh_model.CARD_H - 19; i += 2)
+                scr.set_x(x + soldunzh_model.CARD_W - 14).set_y(y + i).pixel(0x01)
+
+        let t = soldunzh_model.card_type(card)
+        let col = card_color(t)
+
+        if t == soldunzh_model.SOLDUNZH
+            scr.put_text(x + 5, y + 16, "S", col, vimana.color_bg)
+        else
+            let r = soldunzh_model.rank(card) + 1
+            let rank_str = ""
+            if r == 1
+                rank_str = "A"
+            if r >= 2 && r <= 10
+                rank_str = stdr.str(r)
+            if r == 11
+                rank_str = "J"
+            if r == 12
+                rank_str = "Q"
+            if r == 13
+                rank_str = "K"
+            scr.put_text(x + 4, y + 16, rank_str, col, vimana.color_bg)
+
+        if t == soldunzh_model.SOLDUNZH
+            scr.put_text(x + soldunzh_model.CARD_W - 4 - 1 * 8, y + soldunzh_model.CARD_H - 26, "S", col, vimana.color_bg)
+        else
+            let r = soldunzh_model.rank(card) + 1
+            let rank_str = ""
+            if r == 1
+                rank_str = "A"
+            if r >= 2 && r <= 10
+                rank_str = stdr.str(r)
+            if r == 11
+                rank_str = "J"
+            if r == 12
+                rank_str = "Q"
+            if r == 13
+                rank_str = "K"
+            scr.put_text(x + soldunzh_model.CARD_W - 4 - stdr.len(rank_str) * 8, y + soldunzh_model.CARD_H - 26, rank_str, col, vimana.color_bg)
+
+        scr.set_auto(0x00).set_addr(addr).set_x(x + soldunzh_model.CARD_W - 4 - 1 * 8).set_y(y + soldunzh_model.CARD_H - 16)
+        scr.sprite(0x85)
+;
+
+:: draw_card_labels(scr = vimana.screen, hovered = num) (( -- ))
+    if hovered >= 0 && hovered < stdr.len(soldunzh_model.room)
+        let c = soldunzh_model.room[hovered]
+        if c >= 0
+            let name = card_name(c)
+            let tw = stdr.len(name) * 8
+            let cx = soldunzh_model.CARD_START_X + hovered * (soldunzh_model.CARD_W + 4) + soldunzh_model.CARD_W / 2
+            let ?lx = cx - tw / 2
+            if lx + tw > soldunzh_model.SCR_W - 8
+                lx = soldunzh_model.SCR_W - 8 - tw
+            if lx < 8
+                lx = 8
+            let t = soldunzh_model.card_type(c)
+            let col = card_color(t)
+            scr.put_text(lx, 48, name, col, vimana.color_bg)
+;
+
+:: draw_info(scr = vimana.screen) (( -- ))
+    scr.put_text(8, 25, "HP ", vimana.color_2, vimana.color_bg)
+    scr.put_text(32, 25, stdr.str(soldunzh_model.player_hp), vimana.color_2, vimana.color_bg)
+    scr.put_text(48, 25, "/", vimana.color_2, vimana.color_bg)
+    scr.put_text(56, 25, stdr.str(soldunzh_model.player_max_hp), vimana.color_2, vimana.color_bg)
+    
+    if soldunzh_model.last_drank_potion
+        scr.put_text(72, 25, "*", vimana.color_fg, vimana.color_bg)
+
+    if soldunzh_model.equipped_shield >= 0
+        scr.put_text(80, 25, "MP ", vimana.color_3, vimana.color_bg)
+        let sv = soldunzh_model.shield_value
+        scr.put_text(104, 25, stdr.str(sv), vimana.color_3, vimana.color_bg)
+;
+
+:: draw_room(scr = vimana.screen) (( -- ))
+    for (let ?i = 0; i < 4; i += 1)
+        let x = soldunzh_model.CARD_START_X + i * (soldunzh_model.CARD_W + 4)
+        let c = -1
+        if i < stdr.len(soldunzh_model.room)
+            c = soldunzh_model.room[i]
+        draw_card(scr, i, c, x, soldunzh_model.CARD_START_Y)
+;
+
+:: draw_game_over(scr = vimana.screen) (( -- ))
+    scr.clear(0x00)
+    scr.put_text(96, 100, "GAME OVER", vimana.color_2, vimana.color_bg)
+    scr.put_text(96, 116, "R TO RESTART", vimana.color_fg, vimana.color_bg)
+;
+
+:: draw_victory(scr = vimana.screen) (( -- ))
+    scr.clear(0x00)
+    scr.put_text(96, 100, "VICTORY!", vimana.color_3, vimana.color_bg)
+    scr.put_text(96, 116, "R TO RESTART", vimana.color_fg, vimana.color_bg)
+;
+
+:: draw_escape_info(scr = vimana.screen) (( -- ))
+    if soldunzh_model.can_escape()
+        scr.put_text(168, 25, "(E) ESCAPE", vimana.color_3, vimana.color_bg)
+    else
+        scr.put_text(168, 25, "(E) ESCAPE", vimana.color_2, vimana.color_bg)
+;
+
+:: draw_hover(scr = vimana.screen, hovered = num) (( -- ))
+    scr.set_auto(1).set_x(0).set_y(soldunzh_model.CARD_START_Y + soldunzh_model.CARD_H + 24)
+    for (let ?i = 0; i < soldunzh_model.SCR_W; i += 1)
+        scr.pixel(0x01)
+
+    let bar_y = soldunzh_model.CARD_START_Y + soldunzh_model.CARD_H + 32
+    let bar_y2 = bar_y + 16
+    let bar_y3 = bar_y2 + 16
+
+    if hovered >= 0
+        let cx = soldunzh_model.CARD_START_X + hovered * (soldunzh_model.CARD_W + 4) + soldunzh_model.CARD_W / 2
+        let cy = soldunzh_model.CARD_START_Y - 14
+        scr.set_auto(0)
+        scr.set_x(cx - 2).set_y(cy).pixel(0x01)
+        scr.set_x(cx + 2).set_y(cy).pixel(0x01)
+        scr.set_x(cx - 1).set_y(cy + 1).pixel(0x01)
+        scr.set_x(cx + 1).set_y(cy + 1).pixel(0x01)
+        scr.set_x(cx).set_y(cy + 2).pixel(0x01)
+
+        if hovered < stdr.len(soldunzh_model.room)
+            let c = soldunzh_model.room[hovered]
+            if c < 0
+                scr.put_text(8, bar_y, "THIS SLOT HOLDS NAUGHT.", vimana.color_fg, vimana.color_bg)
+            else
+                let t = soldunzh_model.card_type(c)
+                let col = card_color(t)
+                let v = soldunzh_model.card_display_value(c)
+                if t == soldunzh_model.POTION
+                    if soldunzh_model.last_drank_potion
+                        scr.put_text(8, bar_y, "THOU ART POTION-SICK!", vimana.color_2, vimana.color_bg)
+                        scr.put_text(8, bar_y2, "THOU CANST NOT DRINK AGAIN.", vimana.color_fg, vimana.color_bg)
+                    else
+                        scr.put_text(8, bar_y, card_name(c), col, vimana.color_bg)
+                        scr.put_text(8, bar_y2, "IT WILL RESTORE HP:", vimana.color_fg, vimana.color_bg)
+                        scr.put_text(168, bar_y2, stdr.str(v), col, vimana.color_bg)
+                if t == soldunzh_model.SHIELD
+                    scr.put_text(8, bar_y, card_name(c), col, vimana.color_bg)
+                    scr.put_text(8, bar_y2, "IT WILL BLOCK THINE HURT:", vimana.color_fg, vimana.color_bg)
+                    scr.put_text(216, bar_y2, stdr.str(v), col, vimana.color_bg)
+                if t == soldunzh_model.MONSTER
+                    scr.put_text(8, bar_y, card_name(c), col, vimana.color_bg)
+                    scr.put_text(8, bar_y2, "IT SHALL DEAL THEE HURT:", vimana.color_fg, vimana.color_bg)
+                    scr.put_text(208, bar_y2, stdr.str(v), col, vimana.color_bg)
+                if t == soldunzh_model.SOLDUNZH
+                    if c == 52
+                        scr.put_text(8, bar_y, "SOLDUNZH DESCENDS!", col, vimana.color_bg)
+                        scr.put_text(8, bar_y2, "THE HORROR FLYING EYE!", vimana.color_fg, vimana.color_bg)
+                        scr.put_text(8, bar_y3, "IT SHALL DEAL THEE HURT: 21", vimana.color_fg, vimana.color_bg)
+                    else
+                        scr.put_text(8, bar_y, "SOLDUNZH'S TWIN DESCENDS!", col, vimana.color_bg)
+                        scr.put_text(8, bar_y2, "THE OTHER FLYING EYE!", vimana.color_fg, vimana.color_bg)
+                        scr.put_text(8, bar_y3, "IT SHALL DEAL THEE HURT: 21", vimana.color_fg, vimana.color_bg)
+    else
+        let msg = soldunzh_model.last_msg
+        if msg == soldunzh_model.MSG_SHIELD_BROKE
+            scr.put_text(8, bar_y, "THY SHIELD HATH SHATTERED!", vimana.color_3, vimana.color_bg)
+        if msg == soldunzh_model.MSG_DRANK_POTION
+            scr.put_text(8, bar_y, "THOU HAST DRUNK THE DRAUGHT.", vimana.color_2, vimana.color_bg)
+        if msg == soldunzh_model.MSG_EQUIPPED_SHIELD
+            scr.put_text(8, bar_y, "THOU DOST EQUIP THE SHIELD.", vimana.color_fg, vimana.color_bg)
+        if msg == soldunzh_model.MSG_ATTACKED
+            scr.put_text(8, bar_y, "THOU DOST STRIKE THE CREATURE!", vimana.color_fg, vimana.color_bg)
+        if msg == soldunzh_model.MSG_SHIELD_ABSORBED
+            scr.put_text(8, bar_y, "THY SHIELD DEFLECTS THE BLOW!", vimana.color_3, vimana.color_bg)
+;
+
+:: draw(scr = vimana.screen, hovered = num) (( -- ))
+    scr.clear(0x00)
+    draw_info(scr)
+    draw_card_labels(scr, hovered)
+    draw_room(scr)
+    draw_escape_info(scr)
+    draw_hover(scr, hovered)
+    if soldunzh_model.game_over
+        if soldunzh_model.victory
+            draw_victory(scr)
+        else
+            draw_game_over(scr)
+;

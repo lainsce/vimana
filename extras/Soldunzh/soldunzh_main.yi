@@ -1,0 +1,104 @@
+cask main
+
+bring stdr
+bring vimana
+
+bring soldunzh_model
+bring soldunzh_view
+bring soldunzh_font
+bring soldunzh_assets
+
+: in_card(mx, my, idx) (( bool ))
+    let cx = soldunzh_model.get_card_x(idx)
+    let cy = soldunzh_model.CARD_START_Y
+    <- mx >= cx && mx < cx + soldunzh_model.CARD_W && my >= cy && my < cy + soldunzh_model.CARD_H
+;
+
+: use_card(cidx) (( -- ))
+    if soldunzh_model.game_over
+        <-
+    let c = soldunzh_model.room[cidx]
+    if c >= 0
+        let t = soldunzh_model.card_type(c)
+        if t == soldunzh_model.POTION
+            soldunzh_model.use_potion(cidx)
+        if t == soldunzh_model.SHIELD
+            soldunzh_model.use_shield(cidx)
+        if t == soldunzh_model.MONSTER || t == soldunzh_model.SOLDUNZH
+            soldunzh_model.attack_monster(cidx)
+;
+
+: handle_action(key, now) (( -- ))
+    if key == soldunzh_model.KEY_1
+        use_card(0)
+    if key == soldunzh_model.KEY_2
+        use_card(1)
+    if key == soldunzh_model.KEY_3
+        use_card(2)
+    if key == soldunzh_model.KEY_4
+        use_card(3)
+    if (key == soldunzh_model.KEY_E)
+        soldunzh_model.escape_room()
+    if key == soldunzh_model.KEY_X
+        soldunzh_model.init_game(0, now)
+    if key == soldunzh_model.KEY_N
+        soldunzh_model.init_game(1, now)
+    if key == soldunzh_model.KEY_H
+        soldunzh_model.init_game(2, now)
+    if key == soldunzh_model.KEY_R
+        soldunzh_model.init_game(soldunzh_model.difficulty, now)
+;
+
+-> ()
+    let sys = vimana.system()
+    let scr = vimana.screen("Soldunzh", soldunzh_model.SCR_W, soldunzh_model.SCR_H, 2)
+    soldunzh_model.init_game(0, sys.ticks())
+    soldunzh_font.load(scr)
+    soldunzh_assets.load(scr)
+    scr.set_cursor(soldunzh_assets.CURSOR_PTR)
+    scr.hide_cursor()
+    scr.set_drag_region(16)
+
+    let dev = sys.device()
+
+    sys.run(scr, () => {
+        dev.poll()
+        let now = sys.ticks()
+
+        if dev.key_pressed(soldunzh_model.KEY_ESCAPE)
+            sys.quit()
+
+        if dev.key_pressed(soldunzh_model.KEY_1)
+            handle_action(soldunzh_model.KEY_1, now)
+        if dev.key_pressed(soldunzh_model.KEY_2)
+            handle_action(soldunzh_model.KEY_2, now)
+        if dev.key_pressed(soldunzh_model.KEY_3)
+            handle_action(soldunzh_model.KEY_3, now)
+        if dev.key_pressed(soldunzh_model.KEY_4)
+            handle_action(soldunzh_model.KEY_4, now)
+        if dev.key_pressed(soldunzh_model.KEY_E)
+            handle_action(soldunzh_model.KEY_E, now)
+        if dev.key_pressed(soldunzh_model.KEY_N)
+            handle_action(soldunzh_model.KEY_N, now)
+        if dev.key_pressed(soldunzh_model.KEY_H)
+            handle_action(soldunzh_model.KEY_H, now)
+        if dev.key_pressed(soldunzh_model.KEY_R)
+            handle_action(soldunzh_model.KEY_R, now)
+
+        let pressed = dev.mouse_pressed(vimana.mouse_left)
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        if pressed
+            for (let ?i = 0; i < 4; i += 1)
+                if in_card(mx, my, i)
+                    use_card(i)
+
+        let ?hovered_card = -1
+        for (let ?i = 0; i < 4; i += 1)
+            if in_card(mx, my, i)
+                hovered_card = i
+        soldunzh_view.draw(scr, hovered_card)
+        scr.set_auto(0x00).set_addr(soldunzh_assets.CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+        scr.present()
+    })
+;

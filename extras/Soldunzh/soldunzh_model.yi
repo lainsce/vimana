@@ -1,0 +1,329 @@
+cask soldunzh_model
+
+bring stdr
+
+def SUIT_HEARTS = 0
+def SUIT_DIAMONDS = 1
+def SUIT_CLUBS = 2
+def SUIT_SPADES = 3
+
+def SHIELD = 0
+def POTION = 1
+def MONSTER = 2
+def SOLDUNZH = 3
+
+def MSG_NONE = 0
+def MSG_SHIELD_BROKE = 1
+def MSG_DRANK_POTION = 2
+def MSG_EQUIPPED_SHIELD = 3
+def MSG_ATTACKED = 4
+def MSG_SHIELD_ABSORBED = 5
+
+def KEY_1 = 30
+def KEY_2 = 31
+def KEY_3 = 32
+def KEY_4 = 33
+def KEY_E = 8
+def KEY_N = 17
+def KEY_H = 11
+def KEY_R = 21
+def KEY_X = 88
+def KEY_ESCAPE = 41
+
+def CARD_W = 56
+def CARD_H = 80
+def CARD_START_X = 8
+def CARD_START_Y = 80
+
+def SCR_W = 256
+def SCR_H = 240
+
+def ?rng_state = 12345
+
+def ?deck = []: [any]
+def ?room = []: [any]
+def ?discard = []: [any]
+def ?player_hp = 21
+def ?player_max_hp = 21
+def ?equipped_shield = -1
+def ?shield_value = 0
+def ?last_drank_potion = false
+def ?escaped_last_room = false
+def ?game_over = false
+def ?victory = false
+def ?room_cleared = false
+def ?difficulty = 0
+def ?last_msg = 0
+
+: srand(seed) (( -- ))
+    rng_state = seed
+;
+: rand() (( num ))
+    rng_state = (rng_state * 1103515245 + 12345) % 2147483648
+    <- rng_state
+;
+: rand_range(lo, hi) (( num ))
+    <- lo + rand() % (hi - lo + 1)
+;
+
+: array_remove(arr, idx) (([any]))
+    let result = []: [any]
+    for (let ?i = 0; i < stdr.len(arr); i += 1)
+        if i != idx
+            stdr.push(result, arr[i])
+    <- result
+;
+
+: suit(s) (( num ))
+    <- stdr.floor(s / 13)
+;
+: rank(s) (( num ))
+    <- s % 13
+;
+
+: card_value(s) (( num ))
+    let r = rank(s)
+    if r == 0
+        <- 1
+    if r >= 10
+        <- 10 + r
+    <- r + 1
+;
+: monster_value(s) (( num ))
+    let r = rank(s)
+    if r == 0
+        <- 17
+    if r == 10
+        <- 11
+    if r == 11
+        <- 13
+    if r == 12
+        <- 15
+    <- r + 1
+;
+
+: is_heart(s) (( bool ))
+    <- suit(s) == SUIT_HEARTS
+;
+: is_diamond(s) (( bool ))
+    <- suit(s) == SUIT_DIAMONDS
+;
+: is_club(s) (( bool ))
+    <- suit(s) == SUIT_CLUBS
+;
+: is_spade(s) (( bool ))
+    <- suit(s) == SUIT_SPADES
+;
+: is_joker(s) (( bool ))
+    <- s >= 52
+;
+
+: card_type(s) (( num ))
+    if is_joker(s)
+        <- SOLDUNZH
+    if is_heart(s)
+        <- POTION
+    if is_diamond(s)
+        <- SHIELD
+    <- MONSTER
+;
+: card_display_value(s) (( num ))
+    let t = card_type(s)
+    if t == SOLDUNZH
+        <- 21
+    if t == MONSTER
+        <- monster_value(s)
+    if t == POTION
+        <- card_value(s)
+    <- card_value(s)
+;
+
+: room_monsters() (([any]))
+    let ms = []: [any]
+    for (let ?i = 0; i < stdr.len(room); i += 1)
+        let c = room[i]
+        if c >= 0 && card_type(c) == MONSTER
+            stdr.push(ms, i)
+    <- ms
+;
+
+: room_has_monsters() (( bool ))
+    <- stdr.len(room_monsters()) > 0
+;
+
+: can_escape() (( bool ))
+    if difficulty == 0
+        <- !room_has_monsters() || escaped_last_room
+    if difficulty == 1
+        <- escaped_last_room
+    <- !room_has_monsters()
+;
+
+: draw_cards(n) (( -- ))
+    for (let ?i = 0; i < n; i += 1)
+        if stdr.len(deck) == 0
+            if stdr.len(discard) > 0
+                deck = discard
+                discard = []: [any]
+        if stdr.len(deck) == 0
+            <-
+        let idx = rand_range(0, stdr.len(deck) - 1)
+        let c = deck[idx]
+        deck = array_remove(deck, idx)
+        stdr.push(room, c)
+;
+
+: reshuffle() (( -- ))
+    if stdr.len(discard) > 0
+        deck = discard
+        discard = []: [any]
+;
+
+: start_new_room() (( -- ))
+    escaped_last_room = room_cleared
+    room_cleared = false
+    last_msg = MSG_NONE
+    room = []: [any]
+    if stdr.len(deck) < 4
+        reshuffle()
+    if stdr.len(deck) >= 4
+        draw_cards(4)
+    if stdr.len(deck) == 0 && stdr.len(room) == 0
+        victory = true
+        game_over = true
+;
+
+: use_potion(card_idx) (( bool ))
+    let c = room[card_idx]
+    if card_type(c) != POTION
+        <- false
+    if last_drank_potion
+        <- false
+    let val = card_value(c)
+    if player_hp < player_max_hp
+        player_hp = player_hp + val
+        if player_hp > player_max_hp
+            player_hp = player_max_hp
+    last_drank_potion = true
+    last_msg = MSG_DRANK_POTION
+    room[card_idx] = -1
+    stdr.push(discard, c)
+    check_room_cleared()
+    <- true
+;
+
+: use_shield(card_idx) (( bool ))
+    let c = room[card_idx]
+    if card_type(c) != SHIELD
+        <- false
+    let val = card_value(c)
+    equipped_shield = card_idx
+    shield_value = val
+    last_msg = MSG_EQUIPPED_SHIELD
+    room[card_idx] = -1
+    stdr.push(discard, c)
+    last_drank_potion = false
+    check_room_cleared()
+    <- true
+;
+
+: attack_monster(card_idx) (( bool ))
+    let c = room[card_idx]
+    if card_type(c) != MONSTER && card_type(c) != SOLDUNZH
+        <- false
+    let mval = card_display_value(c)
+    let damage = mval
+    last_msg = MSG_ATTACKED
+    if equipped_shield >= 0
+        let sval = shield_value
+        if mval < sval
+            damage = sval - mval
+            equipped_shield = -1
+            shield_value = 0
+            last_msg = MSG_SHIELD_BROKE
+        else
+            damage = 0
+            last_msg = MSG_SHIELD_ABSORBED
+    player_hp = player_hp - damage
+    last_drank_potion = false
+    if player_hp <= 0
+        player_hp = 0
+        game_over = true
+    room[card_idx] = -1
+    stdr.push(discard, c)
+    check_room_cleared()
+    <- true
+;
+
+: fold_card(card_idx) (( bool ))
+    let c = room[card_idx]
+    if c < 0
+        <- false
+    if card_type(c) == SHIELD
+        let val = card_value(c)
+        equipped_shield = card_idx
+        shield_value = val
+    room[card_idx] = -1
+    stdr.push(discard, c)
+    last_drank_potion = false
+    check_room_cleared()
+    <- true
+;
+
+: check_room_cleared() (( -- ))
+    let all_gone = true
+    for (let ?i = 0; i < stdr.len(room); i += 1)
+        if room[i] >= 0
+            all_gone = false
+    if all_gone
+        start_new_room()
+;
+
+: escape_room() (( bool ))
+    if !can_escape()
+        <- false
+    for (let ?i = 0; i < stdr.len(room); i += 1)
+        if room[i] >= 0
+            let c = room[i]
+            stdr.push(deck, c)
+            room[i] = -1
+    escaped_last_room = true
+    room_cleared = true
+    start_new_room()
+    <- true
+;
+
+: init_game(diff, seed) (( -- ))
+    if seed > 0
+        srand(seed)
+    difficulty = diff
+    deck = []: [any]
+    for (let ?i = 0; i < 54; i += 1)
+        stdr.push(deck, i)
+    let shuffled = []: [any]
+    for (let ?i = 0; i < 54; i += 1)
+        if stdr.len(deck) == 0
+            <-
+        let idx = rand_range(0, stdr.len(deck) - 1)
+        let c = deck[idx]
+        deck = array_remove(deck, idx)
+        stdr.push(shuffled, c)
+    deck = shuffled
+    room = []: [any]
+    discard = []: [any]
+    player_hp = 21
+    player_max_hp = 21
+    equipped_shield = -1
+    shield_value = 0
+    last_drank_potion = false
+    escaped_last_room = false
+    game_over = false
+    victory = false
+    room_cleared = false
+    last_msg = MSG_NONE
+    start_new_room()
+;
+
+: get_card_x(idx) (( num ))
+    <- CARD_START_X + idx * (CARD_W + 4)
+;
