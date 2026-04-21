@@ -17,8 +17,10 @@ def ?hist_lines     = []: [any]
 def ?hist_total     = 0
 def ?hist_replace   = false
 def ?hist_motd      = ""
+def ?poll_last      = 0
 
 def ?pending_send_acks = 0
+def ?pending_poll_acks = 0
 
 
 : safe_name_part(text = string) (( string ))
@@ -96,15 +98,28 @@ def ?pending_send_acks = 0
     <- (out, total)
 ;
 
-: append_log_line(line = string) (( bool ))
-    let path = log_path()
-    let raw_any = stdr.read_text_file(path)
-    let ?blob = ""
-    if !stdr.is_null(raw_any)
-        blob = stdr.str(raw_any)
+def ?log_buf = ""
+def ?log_buf_len = 0
 
-    blob = blob + line + "\n"
-    <- stdr.write_text_file(path, blob)
+: flush_log() (( -- ))
+    if log_buf_len > 0
+        let path = log_path()
+        let raw_any = stdr.read_text_file(path)
+        let ?existing = ""
+        if !stdr.is_null(raw_any)
+            existing = stdr.str(raw_any)
+        let ?combined = existing + log_buf
+        stdr.write_text_file(path, combined)
+        log_buf = ""
+        log_buf_len = 0
+;
+
+: append_log_line(line = string) (( bool ))
+    log_buf = log_buf + line + "\n"
+    log_buf_len = log_buf_len + stdr.len(line) + 1
+    if log_buf_len >= 1024
+        flush_log()
+    <- true
 ;
 
 : write_log_lines(lines = [any]) (( bool ))
@@ -266,11 +281,19 @@ def ?pending_send_acks = 0
 ;
 
 : append_live_line(line = string) (( -- ))
+    if is_numeric_line(line) && stdr.len(line) >= 4
+        <- ()
     store_append(line)
     append_log_line(line)
     nanovine_model.add_message(line)
     if !has_nick(line) && !is_local_emote(line) && stdr.len(nanovine_model.get_motd()) == 0
         nanovine_model.set_motd(line)
+;
+
+: should_log_line(line = string) (( bool ))
+    if is_numeric_line(line) && stdr.len(line) >= 4
+        <- false
+    <- true
 ;
 
 : send_full(sys = vimana.system, body = string, echo = string) (( -- ))
@@ -299,13 +322,16 @@ def ?pending_send_acks = 0
     hist_replace = false
     hist_motd = ""
     pending_send_acks = 0
+    pending_poll_acks = 0
+    poll_last = 0
+    log_buf = ""
+    log_buf_len = 0
     nanovine_model.clear_messages()
     nanovine_model.set_last_msg(-1)
     nanovine_model.set_motd("")
 ;
 
 :: connect(sys = vimana.system) (( bool ))
-    load_store()
     let host = nanovine_model.get_host()
     let port = nanovine_model.get_port()
     let cmd = "nc " + host + " " + port
@@ -315,6 +341,12 @@ def ?pending_send_acks = 0
     hist_state = 0
     hist_remaining = 0
     pending_send_acks = 0
+    pending_poll_acks = 0
+    log_buf = ""
+    log_buf_len = 0
+    poll_last = 0
+    sys.proc_write(proc, "LAST 20\n")
+    begin_history(true)
     <- true
 ;
 
@@ -329,6 +361,7 @@ def ?pending_send_acks = 0
 
 :: shutdown(sys = vimana.system) (( -- ))
     disconnect(sys)
+    flush_log()
     reset_chat_state()
 ;
 
@@ -396,15 +429,25 @@ def ?pending_send_acks = 0
         disconnect(sys)
         <-
 
+    if now - poll_last > 1000
+        if hist_state == 0 && pending_send_acks == 0 && pending_poll_acks == 0
+            sys.proc_write(proc, "POLL 0\n")
+            pending_poll_acks = pending_poll_acks + 1
+            poll_last = now
+
     if hist_state == 0
         for (;;)
             let line = sys.proc_read_line(proc)
             if stdr.len(line) == 0
                 break
-            if pending_send_acks > 0 && is_numeric_line(line)
-                pending_send_acks = pending_send_acks - 1
-                nanovine_model.set_last_msg(stdr.num(line))
-            else
+            if is_numeric_line(line)
+                if pending_poll_acks > 0
+                    pending_poll_acks = pending_poll_acks - 1
+                    poll_last = now
+                elif pending_send_acks > 0
+                    pending_send_acks = pending_send_acks - 1
+                    nanovine_model.set_last_msg(stdr.num(line))
+            else if should_log_line(line)
                 append_live_line(line)
                 nanovine_model.set_last_msg(nanovine_model.get_last_msg() + 1)
 

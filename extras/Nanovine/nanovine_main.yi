@@ -36,7 +36,6 @@ def TITLEBAR_SHADE_H = 17
 def TITLEBAR_EDGE_Y = 14
 def HEADER_DBLCLICK_MS = 400
 def HEADER_DBLCLICK_DIST = 8
-def SYNC_MS = 500
 def KEY_RETURN = 40
 def KEY_ESCAPE = 41
 def KEY_BACKSPACE = 42
@@ -58,49 +57,22 @@ def ?header_click_time = 0
 def ?header_click_x = 0
 def ?header_click_y = 0
 
-def ?has_loaded_history = false
 def ?state = 1
-def ?last_sync = 0
 def ?last_mouse_x = -1
 def ?last_mouse_y = -1
 
-: is_digits(text = string) (( bool ))
-    let n = stdr.len(text)
-    if n == 0
-        <- false
-    for (let ?i = 0; i < n; i += 1)
-        let code = stdr.char_code(stdr.char_at(text, i))
-        if code < 48 || code > 57
-            <- false
-    <- true
-;
 
-: parse_server_input(text = string) (( [any] ))
+: parse_server_input(text = string) (( string ))
     let raw = stdr.trim(text)
     let scheme = stdr.index_of(raw, "://")
     if scheme >= 0
         raw = stdr.slice(raw, scheme + 3, stdr.len(raw))
-
     let slash = stdr.index_of(raw, "/")
     if slash >= 0
         raw = stdr.slice(raw, 0, slash)
-
-    let ?host = raw
-    let ?port = "44322"
-    let split = stdr.last_index_of(raw, ":")
-    if split > 0
-        let maybe_host = stdr.trim(stdr.slice(raw, 0, split))
-        let maybe_port = stdr.trim(stdr.slice(raw, split + 1, stdr.len(raw)))
-        if is_digits(maybe_port)
-            host = maybe_host
-            port = maybe_port
-
-    if stdr.len(host) == 0
-        host = "127.0.0.1"
-    if stdr.len(port) == 0
-        port = "44322"
-
-    <- [host, port]
+    if stdr.len(raw) == 0
+        raw = "127.0.0.1"
+    <- raw
 ;
 
 : redraw_titlebar_span(scr = vimana.screen, x = num, w = num) (( -- ))
@@ -388,11 +360,12 @@ def ?last_mouse_y = -1
     scr.clear(vimana.color_bg)
 
     let input = nanovine_model.get_input()
-    let server = nanovine_model.get_host() + ":" + nanovine_model.get_port()
+    let ?display = nanovine_model.get_host()
     if stdr.len(input) > 0
-        server = input
+        display = input
 
-    scr.put_text(32, (nanovine_model.INPUT_Y / 8) * 8, "SERVER? > " + server, vimana.color_fg, vimana.color_bg)
+    let base_y = (nanovine_model.INPUT_Y / 8) * 8
+    scr.put_text(32, base_y, "SERVER? > " + display, vimana.color_fg, vimana.color_bg)
 ;
 
 : draw_username_screen(scr = vimana.screen) (( -- ))
@@ -437,9 +410,8 @@ def ?last_mouse_y = -1
             handle_key_text(dev)
 
             if dev.key_pressed(46) || dev.key_pressed(40)
-                let parsed = parse_server_input(nanovine_model.get_input())
-                nanovine_model.set_host(stdr.str(parsed[0] ?? "127.0.0.1"))
-                nanovine_model.set_port(stdr.str(parsed[1] ?? "44322"))
+                nanovine_model.set_host(parse_server_input(nanovine_model.get_input()))
+                nanovine_model.set_port("44322")
                 nanovine_model.clear_input()
                 state = 2
 
@@ -456,8 +428,6 @@ def ?last_mouse_y = -1
                 nanovine_net.reset_chat_state()
                 nanovine_net.connect(sys)
 
-                has_loaded_history = false
-                last_sync = 0
                 state = 3
 
         elif state == 3
@@ -465,17 +435,6 @@ def ?last_mouse_y = -1
             nanovine_net.tick(sys, now)
             nanovine_view.tick(sys)
             update_chat_mouse(dev, sys, scr, titlebar_busy)
-
-            if nanovine_model.is_connected()
-                if !has_loaded_history
-                    if !nanovine_net.has_pending_send() && !nanovine_net.is_syncing()
-                        nanovine_net.request_last(sys, 16, now)
-                        has_loaded_history = true
-                        last_sync = now
-                elif now - last_sync > SYNC_MS
-                    if !nanovine_net.has_pending_send() && !nanovine_net.is_syncing()
-                        nanovine_net.request_skip(sys, now)
-                        last_sync = now
 
         if nanovine_model.is_dirty()
             if state == 1

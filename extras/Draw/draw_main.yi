@@ -70,6 +70,8 @@ def ?last_mx = -1
 def ?last_my = -1
 def ?last_close_button_state = false
 def ?last_titlebar_shaded = false
+def ?idle_skip = 0       -- frames to skip when idle
+def ?IDLE_SKIP = 10     -- skip this many frames between polls
 
 : draw_titlebar_decor(scr = vimana.screen) (( -- ))
     scr.set_auto(0x00).set_x(scr.width() - 1).set_y(TITLEBAR_EDGE_Y)
@@ -510,6 +512,11 @@ def BG_ADDR = 0xFF80
     let fsys = sys.file()
 
     sys.run(scr, () => {
+        idle_skip = idle_skip + 1
+        if idle_skip >= IDLE_SKIP
+            idle_skip = 0
+        else
+            <-
         dev.poll()
         let titlebar_busy = update_titlebar(dev, sys, scr)
         let mx = dev.pointer_x()
@@ -517,9 +524,8 @@ def BG_ADDR = 0xFF80
         let ?needs_redraw = mx != last_mx || my != last_my ||
             close_button_active != last_close_button_state ||
             titlebar_shaded != last_titlebar_shaded
-        if !titlebar_shaded
-            if !titlebar_busy
-                on_mouse(scr, dev, fsys)
+        if needs_redraw && !titlebar_shaded
+            on_mouse(scr, dev, fsys)
             on_key(scr, dev, fsys)
             if draw_canvas.is_dirty()
                 needs_redraw = true

@@ -20,6 +20,7 @@ def COL_GUIDE = 51
 def WRAP_COL = 80
 def STATUS_H = 0
 def RESIZE_ZONE = 8
+def MAX_SEARCH_MATCHES = 255
 def ?screen_w = 1360
 def ?screen_h = 716
 def ?sidebar_visible = true
@@ -89,6 +90,7 @@ def ?scroll_y = 0
 def ?current_outline = []: [any]
 def ?outline_selected = -1
 def ?outline_scroll = 0
+def ?outline_rev = -1
 def ?file_path = ""
 def ?dirty = false
 def ?highlight_on = false
@@ -100,6 +102,7 @@ def ?_line_starts = []: [num]
 def ?_line_ends = []: [num]
 def ?_line_log_starts = []: [num]
 def ?_line_is_nl = []: [bool]
+def ?_line_rev = -1
 
 --| Directory listing |--
 def ?dir_listing_active = false
@@ -137,6 +140,7 @@ def ?search_active = false
 def ?search_query = ""
 def ?search_matches = []: [any]
 def ?search_index = -1
+def Max_SEARCH_MATCHES = 256
 
 --| Helpers |--
 
@@ -393,6 +397,9 @@ def ?search_index = -1
 ;
 
 :: build_line_map() (( -- ))
+    if text_rev == _line_rev
+        <-  -- cached
+    _line_rev = text_rev
     _line_starts = []: [num]
     _line_ends = []: [num]
     _line_log_starts = []: [num]
@@ -430,7 +437,6 @@ def ?search_index = -1
         stdr.push(_line_log_starts, logical_start)
         stdr.push(_line_is_nl, false)
     else
-        -- Keep an addressable row for EOF caret on empty docs, wrapped lines, and trailing newlines.
         stdr.push(_line_starts, total)
         stdr.push(_line_ends, total)
         stdr.push(_line_log_starts, logical_start)
@@ -497,12 +503,16 @@ def ?search_index = -1
 ;
 
 :: rebuild_outline() (( -- ))
+    if text_rev == outline_rev
+        <-  -- cached
+    outline_rev = text_rev
     current_outline = outline_parser.parse_outline(editor_text)
     let n = stdr.len(current_outline)
     if n <= 0
         outline_selected = -1
     elif outline_selected >= n
         outline_selected = n - 1
+    outline_scroll = 0
 ;
 
 --| Editing |--
@@ -876,10 +886,14 @@ def ?search_index = -1
     if qlen == 0
         <-
     let total = stdr.len(editor_text)
+    let count = 0
     for (let ?i = 0; i <= total - qlen; i += 1)
+        if count >= MAX_SEARCH_MATCHES
+            break
         let chunk = stdr.slice(editor_text, i, i + qlen)
         if chunk == search_query
             stdr.push(search_matches, i)
+            count += 1
     if stdr.len(search_matches) > 0
         search_index = 0
         jump_to_match()

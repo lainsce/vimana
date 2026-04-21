@@ -262,7 +262,7 @@ def DASH_ADDR = 0xBE0
                 let bits = code - 63
                 let ?mask = 1
                 for (let ?bit = 0; bit < 6; bit += 1)
-                    if ((bits / mask) % 2) == 1
+                    if stdr.floor(bits / mask) % 2 == 1
                         scr.set_x(x0 + x).set_y(y0 + y + bit).pixel(fg)
                     mask = mask * 2
                 x = x + 1

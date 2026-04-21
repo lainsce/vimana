@@ -43,6 +43,7 @@ def GUIDE = 3   -- guide overlay color
 
 def HASH_ICN = [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]
 def BG_FILL_ICN = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+def TILE_BUF = [0, 0, 0, 0, 0, 0, 0, 0]
 
 -- Frame glyphs (1px border edges + corners)
 def FR_TL = [0xFF, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]  -- top-left corner
@@ -94,10 +95,25 @@ def FR_BR = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]  -- bottom-right co
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : draw_canvas_tiles(scr = vimana.screen) (( -- ))
+    let stride = draw_canvas.STRIDE_WT * 8
+    let ctxt = draw_canvas.CANVAS_TX
+    let cty = draw_canvas.CANVAS_TY
+    let ctw = draw_canvas.CANVAS_WT
     for (let ?ty = 0; ty < draw_canvas.CANVAS_HT; ty = ty + 1)
-        for (let ?tx = 0; tx < draw_canvas.CANVAS_WT; tx = tx + 1)
-            let data = draw_canvas.read_tile(scr, tx, ty)
-            scr.put_icn((draw_canvas.CANVAS_TX + tx) * 8, (draw_canvas.CANVAS_TY + ty) * 8, data, FG, BG)
+        let row = ty * stride
+        let sy = (cty + ty) * 8
+        for (let ?tx = 0; tx < ctw; tx = tx + 1)
+            let addr = row + tx * 8
+            let sx = (ctxt + tx) * 8
+            TILE_BUF[0] = scr.gfx(addr)
+            TILE_BUF[1] = scr.gfx(addr + 1)
+            TILE_BUF[2] = scr.gfx(addr + 2)
+            TILE_BUF[3] = scr.gfx(addr + 3)
+            TILE_BUF[4] = scr.gfx(addr + 4)
+            TILE_BUF[5] = scr.gfx(addr + 5)
+            TILE_BUF[6] = scr.gfx(addr + 6)
+            TILE_BUF[7] = scr.gfx(addr + 7)
+            scr.put_icn(sx, sy, TILE_BUF, FG, BG)
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -258,6 +274,8 @@ def RESIZER_ICN = [0x7C, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0x7C, 0x00]
 def GRID_H_ICN = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF]
 def GRID_V_ICN = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]
 def GRID_HV_ICN = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]
+def POW2 = [128, 64, 32, 16, 8, 4, 2, 1]
+def FILL_ICN = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
 
 : draw_zoom_view(scr = vimana.screen) (( -- ))
     let zx = draw_zoom.get_x()
@@ -266,11 +284,6 @@ def GRID_HV_ICN = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]
     let cth = draw_canvas.CANVAS_HT
     let ctx = draw_canvas.CANVAS_TX
     let cty = draw_canvas.CANVAS_TY
-    let pow2 = [128, 64, 32, 16, 8, 4, 2, 1]
-    let fill = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
-    let grid_h = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF]
-    let grid_v = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]
-    let grid_hv = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]
 
     for (let ?ty = 0; ty < cth; ty = ty + 1)
         let py = zy + ty
@@ -287,13 +300,13 @@ def GRID_HV_ICN = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF]
                 let addr = (tty * draw_canvas.STRIDE_WT + ttx) * 8 + row
                 let byte = scr.gfx(addr)
                 let col = px % 8
-                let pixel = stdr.floor(byte / pow2[col]) % 2
+                let pixel = stdr.floor(byte / POW2[col]) % 2
                 let on_h = (py + 1) % 8 == 0
                 let on_v = (px + 1) % 8 == 0
-                let ?icn = fill
-                if on_h && on_v { icn = grid_hv }
-                if on_h && !on_v { icn = grid_h }
-                if !on_h && on_v { icn = grid_v }
+                let ?icn = FILL_ICN
+                if on_h && on_v { icn = GRID_HV_ICN }
+                if on_h && !on_v { icn = GRID_H_ICN }
+                if !on_h && on_v { icn = GRID_V_ICN }
                 let ?fg = BG
                 let ?bg = BG
                 if pixel == 1 { fg = FG; bg = FG }

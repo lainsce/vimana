@@ -437,13 +437,25 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
         let colors = right_syntax.highlight_line(full_logical)
         let color_offset = row_start - logical_start
         let clen = stdr.len(line_text)
+        if clen == 0
+            <- 
+        -- Run-length grouping: find runs of same color
+        let ?run_start = 0
+        let ?run_color = right_model.C_FG
         for (let ?ci = 0; ci < clen; ci += 1)
-            let cfx = ex + ci * right_model.FONT_W
-            let ?cc = right_model.C_FG
             let cidx = color_offset + ci
+            let ?cc = right_model.C_FG
             if cidx < stdr.len(colors)
-                cc = num(colors[cidx] ?? 1)
-            scr.put_text(cfx, y, stdr.slice(line_text, ci, ci + 1), cc, right_model.C_BG)
+                cc = stdr.num(colors[cidx] ?? 1)
+            let at_end = ci == clen - 1
+            if cc != run_color || at_end
+                let run_len = ci - run_start + (at_end ? 1 : 0)
+                if run_len > 0
+                    let run_text = stdr.slice(line_text, run_start, run_start + run_len)
+                    let rx = ex + run_start * right_model.FONT_W
+                    scr.put_text(rx, y, run_text, run_color, right_model.C_BG)
+                run_start = ci + 1
+                run_color = cc
     else
         let fg = right_syntax.line_color(raw_line)
         scr.put_text(ex, y, line_text, fg, right_model.C_BG)
@@ -451,18 +463,25 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
     -- Indent dots: only on first visual row of a logical line
     if is_first_visual && right_model.show_tabs
         let tab_str = stdr.char_from_code(right_model.GLYPH_TAB)
-        let line_len = stdr.len(raw_line)
+        let raw_line_len = stdr.len(raw_line)
         let ?indent = 0
-        for (let ?ti = 0; ti < line_len; ti += 1)
+        for (let ?ti = 0; ti < raw_line_len; ti += 1)
             if stdr.slice(raw_line, ti, ti + 1) == " "
                 indent += 1
             else
-                ti = line_len
-        for (let ?ti = 0; ti < indent / 4; ti += 1)
-            let tcol = ti * 4
-            if tcol < max_cols
-                let tx = ex + tcol * right_model.FONT_W
-                scr.put_text(tx, y, tab_str, right_model.C_SEL, right_model.C_BG)
+                ti = raw_line_len
+        let idents = stdr.floor(indent / 4)
+        if idents > 0 && idents <= max_cols / 4
+            let ?indent_text = ""
+            for (let ?d = 0; d < idents; d += 1)
+                indent_text = indent_text + tab_str
+            scr.put_text(ex, y, indent_text, right_model.C_SEL, right_model.C_BG)
+        elif idents > 0
+            let max_dots = stdr.floor(max_cols / 4)
+            let ?indent_text = ""
+            for (let ?d = 0; d < max_dots; d += 1)
+                indent_text = indent_text + tab_str
+            scr.put_text(ex, y, indent_text, right_model.C_SEL, right_model.C_BG)
 
     -- Linebreak mark: only on actual newline (not wrap)
     if is_nl && right_model.show_line_endings

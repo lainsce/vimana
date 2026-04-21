@@ -123,12 +123,15 @@ def ?canvas_y2 = 0
 
 :: read_tile(scr = vimana.screen, tx = num, ty = num) (( [num] ))
     let addr = (ty * STRIDE_WT + tx) * 8
-    <- [
-        scr.gfx(addr),     scr.gfx(addr + 1),
-        scr.gfx(addr + 2), scr.gfx(addr + 3),
-        scr.gfx(addr + 4), scr.gfx(addr + 5),
-        scr.gfx(addr + 6), scr.gfx(addr + 7)
-    ]
+    let ?d0 = scr.gfx(addr)
+    let ?d1 = scr.gfx(addr + 1)
+    let ?d2 = scr.gfx(addr + 2)
+    let ?d3 = scr.gfx(addr + 3)
+    let ?d4 = scr.gfx(addr + 4)
+    let ?d5 = scr.gfx(addr + 5)
+    let ?d6 = scr.gfx(addr + 6)
+    let ?d7 = scr.gfx(addr + 7)
+    <- [d0, d1, d2, d3, d4, d5, d6, d7]
 ;
 
 -- ─────────────────────────────────────────────────────────────────────────────

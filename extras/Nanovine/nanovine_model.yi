@@ -9,12 +9,12 @@ def INPUT_Y  = 335
 def INPUT_H  = 24
 
 def MAX_MSGS = 32
-def MAX_MSG_LEN = 64
+def MAX_MSG_LEN = 128 -- SMS length
 
 def LINE_H   = 16
 def MSG_STEP_Y = 16
 
-def ?host       = "0.0.0.0"
+def ?host       = "127.0.0.1"
 def ?port       = "44322"
 def ?proc       = 0
 def ?connected  = false
