@@ -68,6 +68,46 @@ static Val V_ARR_NEW(void) {
     Val v; v.type=VT_ARR; v.arr=malloc(sizeof(Arr));
     v.arr->items=NULL; v.arr->len=0; v.arr->cap=0; v.arr->ref=1; return v;
 }
+static Val val_clone(Val v);
+static void val_release(Val v);
+
+static Val val_clone(Val v) {
+    switch(v.type) {
+    case VT_STR: return V_STR_COPY(v.str.s,v.str.len);
+    case VT_ARR: if(v.arr) v.arr->ref++; return v;
+    case VT_FUNC: {
+        Val r; r.type=VT_FUNC; r.fn.func_idx=v.fn.func_idx; r.fn.ncaptures=v.fn.ncaptures;
+        r.fn.captures=NULL;
+        if (v.fn.ncaptures>0) {
+            r.fn.captures=malloc(sizeof(Val)*(size_t)v.fn.ncaptures);
+            for(int i=0;i<v.fn.ncaptures;i++) r.fn.captures[i]=val_clone(v.fn.captures[i]);
+        }
+        return r;
+    }
+    default: return v;
+    }
+}
+
+static void val_release(Val v) {
+    switch(v.type) {
+    case VT_STR:
+        free(v.str.s);
+        break;
+    case VT_ARR:
+        if(v.arr&&--v.arr->ref<=0) {
+            for(int i=0;i<v.arr->len;i++) val_release(v.arr->items[i]);
+            free(v.arr->items);
+            free(v.arr);
+        }
+        break;
+    case VT_FUNC:
+        for(int i=0;v.fn.captures&&i<v.fn.ncaptures;i++) val_release(v.fn.captures[i]);
+        free(v.fn.captures);
+        break;
+    default:
+        break;
+    }
+}
 
 static bool val_truthy(Val v) {
     switch(v.type){
@@ -230,9 +270,11 @@ static ROM *rom_load(const char *path) {
 #define FRAME_SIZE   256
 
 typedef struct {
+    int     func_idx;
     Val    *locals;   /* parameter + local slots */
     int     nlocs;
     uint8_t *code;
+    int     code_sz;
     int     pc;
 } Frame;
 
@@ -240,21 +282,47 @@ typedef struct {
     ROM    *rom;
     int     argc;
     char  **argv;
-    Val     stack[STACK_SIZE]; int sp;
-    Frame   frames[128];       int fp;
+    Val     wst[STACK_SIZE]; int wsp;
+    Frame   rst[FRAME_SIZE]; int rsp;
 } VM;
 
 typedef struct { VM *vm; Val frame; } FrameCtx;
 
-static Val vm_pop(VM *vm) {
-    if (vm->sp<=0){fprintf(stderr,"stack underflow\n");return V_NULL;}
-    return vm->stack[--vm->sp];
+static Val wpop(VM *vm) {
+    if (vm->wsp<=0){fprintf(stderr,"working stack underflow\n");return V_NULL;}
+    Val v=vm->wst[--vm->wsp];
+    vm->wst[vm->wsp]=V_NULL;
+    return v;
 }
-static void vm_push(VM *vm, Val v) {
-    if (vm->sp>=STACK_SIZE){fprintf(stderr,"stack overflow\n");exit(1);}
-    vm->stack[vm->sp++]=v;
+static void wpush(VM *vm, Val v) {
+    if (vm->wsp>=STACK_SIZE){fprintf(stderr,"working stack overflow\n");exit(1);}
+    vm->wst[vm->wsp++]=v;
 }
-static Val vm_peek(VM *vm) { return vm->stack[vm->sp-1]; }
+static Val wpeek(VM *vm) { return vm->wsp>0?vm->wst[vm->wsp-1]:V_NULL; }
+
+static void frame_release(Frame *f) {
+    if (!f) return;
+    for(int i=0;f->locals&&i<f->nlocs;i++) val_release(f->locals[i]);
+    free(f->locals);
+    memset(f,0,sizeof(*f));
+}
+
+static bool rpush_frame(VM *vm, int func_idx, Val *args, int argc, bool clone_args) {
+    if (func_idx<0||func_idx>=vm->rom->nfuncs) { fprintf(stderr,"bad func %d\n",func_idx); return false; }
+    if (vm->rsp>=FRAME_SIZE) { fprintf(stderr,"return stack overflow\n"); exit(1); }
+    RFunc *fn=&vm->rom->funcs[func_idx];
+    Frame *f=&vm->rst[vm->rsp++];
+    memset(f,0,sizeof(*f));
+    f->func_idx=func_idx;
+    f->nlocs=fn->arity+fn->nlocals;
+    f->locals=calloc((size_t)f->nlocs,sizeof(Val));
+    for(int i=0;i<argc&&i<fn->arity;i++) f->locals[i]=clone_args?val_clone(args[i]):args[i];
+    if(!clone_args) for(int i=fn->arity;i<argc;i++) val_release(args[i]);
+    f->code=fn->code;
+    f->code_sz=fn->code_sz;
+    f->pc=0;
+    return true;
+}
 
 /* Forward declaration for recursive calls */
 static Val vm_call(VM *vm, int func_idx, Val *args, int argc);
@@ -265,7 +333,8 @@ static void vimana_frame_bridge(vimana_system *system, vimana_screen *screen, vo
     (void)system; (void)screen;
     FrameCtx *ctx=(FrameCtx *)user;
     if (!ctx||ctx->frame.type!=VT_FUNC) return;
-    (void)vm_call(ctx->vm,ctx->frame.fn.func_idx,ctx->frame.fn.captures,ctx->frame.fn.ncaptures);
+    Val r=vm_call(ctx->vm,ctx->frame.fn.func_idx,ctx->frame.fn.captures,ctx->frame.fn.ncaptures);
+    val_release(r);
 }
 
 static bool obj_is(Val v, ObjKind kind) {
@@ -557,7 +626,7 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     Val self=args[0];
     if (self.type!=VT_OBJ) {
         fprintf(stderr,"warning: method '%s' on non-object (argc=%d)\n",m,argc);
-        return self;
+        return val_clone(self);
     }
 
     vimana_system *sys=obj_system(self);
@@ -567,66 +636,68 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     switch(id) {
     case VMT_RUN: {
         vimana_screen *s=(argc>1&&obj_is(args[1],OBJ_SCREEN))?(vimana_screen *)args[1].obj.ptr:NULL;
-        FrameCtx ctx={vm,argc>2?args[2]:V_NULL};
-        vimana_system_run(sys,s,vimana_frame_bridge,&ctx); return self;
+        FrameCtx ctx={vm,argc>2?val_clone(args[2]):V_NULL};
+        vimana_system_run(sys,s,vimana_frame_bridge,&ctx);
+        val_release(ctx.frame);
+        return val_clone(self);
     }
-    case VMT_QUIT: vimana_system_quit(sys); return self;
+    case VMT_QUIT: vimana_system_quit(sys); return val_clone(self);
     case VMT_FILE: return V_OBJ(OBJ_FILE,sys);
     case VMT_DEVICE: return V_OBJ(OBJ_DEVICE,sys);
     case VMT_DATETIME: return V_OBJ(OBJ_DATETIME,sys);
     case VMT_CONSOLE: return V_OBJ(OBJ_CONSOLE,sys);
     case VMT_TICKS: return V_INT(vimana_system_ticks(sys));
-    case VMT_SLEEP: if(argc>1)vimana_system_sleep(sys,val_to_i64(args[1])); return self;
+    case VMT_SLEEP: if(argc>1)vimana_system_sleep(sys,val_to_i64(args[1])); return val_clone(self);
     case VMT_CLIPBOARD_TEXT: { char *s=vimana_system_clipboard_text(sys); Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
     case VMT_SET_CLIPBOARD_TEXT: { char b[4096]; return V_BOOL(argc>1&&vimana_system_set_clipboard_text(sys,val_cstr(args[1],b,sizeof(b)))); }
     case VMT_HOME_DIR: { char *s=vimana_system_home_dir(sys); Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
-    case VMT_PLAY_TONE: if(argc>3)vimana_system_play_tone(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
-    case VMT_SET_VOICE: if(argc>2)vimana_system_set_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMT_SET_ENVELOPE: if(argc>5)vimana_system_set_envelope(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3]),(int)val_to_i64(args[4]),(int)val_to_i64(args[5])); return self;
-    case VMT_SET_PULSE_WIDTH: if(argc>2)vimana_system_set_pulse_width(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMT_PLAY_VOICE: if(argc>3)vimana_system_play_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
-    case VMT_STOP_VOICE: if(argc>1)vimana_system_stop_voice(sys,(int)val_to_i64(args[1])); return self;
-    case VMT_SET_FREQUENCY: if(argc>2)vimana_system_set_frequency(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMT_SET_SYNC: if(argc>2)vimana_system_set_sync(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMT_SET_RING_MOD: if(argc>2)vimana_system_set_ring_mod(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMT_SET_FILTER: if(argc>3)vimana_system_set_filter(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
-    case VMT_SET_FILTER_ROUTE: if(argc>2)vimana_system_set_filter_route(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMT_SET_MASTER_VOLUME: if(argc>1)vimana_system_set_master_volume(sys,(int)val_to_i64(args[1])); return self;
-    case VMT_BEGIN_AUDIO: vimana_system_begin_audio(sys); return self;
-    case VMT_END_AUDIO: vimana_system_end_audio(sys); return self;
-    case VMT_SET_PADDLE: if(argc>2)vimana_system_set_paddle(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
+    case VMT_PLAY_TONE: if(argc>3)vimana_system_play_tone(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return val_clone(self);
+    case VMT_SET_VOICE: if(argc>2)vimana_system_set_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
+    case VMT_SET_ENVELOPE: if(argc>5)vimana_system_set_envelope(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3]),(int)val_to_i64(args[4]),(int)val_to_i64(args[5])); return val_clone(self);
+    case VMT_SET_PULSE_WIDTH: if(argc>2)vimana_system_set_pulse_width(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
+    case VMT_PLAY_VOICE: if(argc>3)vimana_system_play_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return val_clone(self);
+    case VMT_STOP_VOICE: if(argc>1)vimana_system_stop_voice(sys,(int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_SET_FREQUENCY: if(argc>2)vimana_system_set_frequency(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
+    case VMT_SET_SYNC: if(argc>2)vimana_system_set_sync(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
+    case VMT_SET_RING_MOD: if(argc>2)vimana_system_set_ring_mod(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
+    case VMT_SET_FILTER: if(argc>3)vimana_system_set_filter(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return val_clone(self);
+    case VMT_SET_FILTER_ROUTE: if(argc>2)vimana_system_set_filter_route(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
+    case VMT_SET_MASTER_VOLUME: if(argc>1)vimana_system_set_master_volume(sys,(int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_BEGIN_AUDIO: vimana_system_begin_audio(sys); return val_clone(self);
+    case VMT_END_AUDIO: vimana_system_end_audio(sys); return val_clone(self);
+    case VMT_SET_PADDLE: if(argc>2)vimana_system_set_paddle(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
     case VMT_PADDLE: return argc>1?V_INT(vimana_system_get_paddle(sys,(int)val_to_i64(args[1]))):V_INT(0);
     case VMT_SPAWN: { char b[4096]; return argc>1?V_OBJ(OBJ_PROCESS,vimana_process_spawn(sys,val_cstr(args[1],b,sizeof(b)))):V_NULL; }
     case VMT_PROC_WRITE: { char b[4096]; return V_BOOL(argc>2&&obj_is(args[1],OBJ_PROCESS)&&vimana_process_write((vimana_process *)args[1].obj.ptr,val_cstr(args[2],b,sizeof(b)))); }
     case VMT_PROC_READ_LINE: { char *s=(argc>1&&obj_is(args[1],OBJ_PROCESS))?vimana_process_read_line((vimana_process *)args[1].obj.ptr):NULL; Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
     case VMT_PROC_RUNNING: return V_BOOL(argc>1&&obj_is(args[1],OBJ_PROCESS)&&vimana_process_running((vimana_process *)args[1].obj.ptr));
-    case VMT_PROC_KILL: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_kill((vimana_process *)args[1].obj.ptr); return self;
-    case VMT_PROC_FREE: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_free((vimana_process *)args[1].obj.ptr); return self;
+    case VMT_PROC_KILL: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_kill((vimana_process *)args[1].obj.ptr); return val_clone(self);
+    case VMT_PROC_FREE: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_free((vimana_process *)args[1].obj.ptr); return val_clone(self);
 
-    case VMT_CLEAR: vimana_screen_clear(scr,argc>1?(unsigned int)val_to_i64(args[1]):0); return self;
-    case VMT_SET_PALETTE: { char b[64]; if(argc>2)vimana_screen_set_palette(scr,(unsigned int)val_to_i64(args[1]),val_cstr(args[2],b,sizeof(b))); return self; }
-    case VMT_SET_FONT: { uint16_t data[256]; int n=argc>2?val_u16_array(args[2],data,256):0; if(argc>2)vimana_screen_set_font(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return self; }
-    case VMT_SET_FONT_WIDTH: if(argc>2)vimana_screen_set_font_width(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2])); return self;
-    case VMT_SET_FONT_SIZE: if(argc>1)vimana_screen_set_font_size(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMT_SET_THEME_SWAP: if(argc>1)vimana_screen_set_theme_swap(scr,val_truthy(args[1])); return self;
-    case VMT_SET_SPRITE: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; unsigned int mode=argc>3?(unsigned int)val_to_i64(args[3]):0; if(argc>2)vimana_screen_set_sprite(scr,(unsigned int)val_to_i64(args[1]),data,mode,(size_t)n); return self; }
-    case VMT_SET_GFX: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; if(argc>2)vimana_screen_set_gfx(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return self; }
+    case VMT_CLEAR: vimana_screen_clear(scr,argc>1?(unsigned int)val_to_i64(args[1]):0); return val_clone(self);
+    case VMT_SET_PALETTE: { char b[64]; if(argc>2)vimana_screen_set_palette(scr,(unsigned int)val_to_i64(args[1]),val_cstr(args[2],b,sizeof(b))); return val_clone(self); }
+    case VMT_SET_FONT: { uint16_t data[256]; int n=argc>2?val_u16_array(args[2],data,256):0; if(argc>2)vimana_screen_set_font(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return val_clone(self); }
+    case VMT_SET_FONT_WIDTH: if(argc>2)vimana_screen_set_font_width(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2])); return val_clone(self);
+    case VMT_SET_FONT_SIZE: if(argc>1)vimana_screen_set_font_size(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_SET_THEME_SWAP: if(argc>1)vimana_screen_set_theme_swap(scr,val_truthy(args[1])); return val_clone(self);
+    case VMT_SET_SPRITE: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; unsigned int mode=argc>3?(unsigned int)val_to_i64(args[3]):0; if(argc>2)vimana_screen_set_sprite(scr,(unsigned int)val_to_i64(args[1]),data,mode,(size_t)n); return val_clone(self); }
+    case VMT_SET_GFX: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; if(argc>2)vimana_screen_set_gfx(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return val_clone(self); }
     case VMT_GFX: { const uint8_t *p=argc>1?vimana_screen_gfx(scr,(unsigned int)val_to_i64(args[1])):NULL; return V_INT(p?*p:0); }
-    case VMT_SET_X: if(argc>1)vimana_screen_set_x(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMT_SET_Y: if(argc>1)vimana_screen_set_y(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMT_SET_ADDR: if(argc>1)vimana_screen_set_addr(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMT_SET_AUTO: if(argc>1)vimana_screen_set_auto(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMT_SET_SPRITE_BANK: if(argc>1)vimana_screen_set_sprite_bank(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_SET_X: if(argc>1)vimana_screen_set_x(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_SET_Y: if(argc>1)vimana_screen_set_y(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_SET_ADDR: if(argc>1)vimana_screen_set_addr(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_SET_AUTO: if(argc>1)vimana_screen_set_auto(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_SET_SPRITE_BANK: if(argc>1)vimana_screen_set_sprite_bank(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
     case VMT_SPRITE_BANK: return V_INT(vimana_screen_sprite_bank(scr));
-    case VMT_SPRITE: if(argc>1)vimana_screen_sprite(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMT_PIXEL: if(argc>1)vimana_screen_pixel(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMT_PUT_TEXT: { char text[1024]; if(argc>5)vimana_screen_put_text(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),val_cstr(args[3],text,sizeof(text)),(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5])); return self; }
-    case VMT_PUT_ICN: { uint8_t data[8]; if(argc>5){val_byte_array(args[3],data,8); vimana_screen_put_icn(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),data,(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5]));} return self; }
-    case VMT_PRESENT: vimana_screen_present(scr); return self;
-    case VMT_SET_DRAG_REGION: if(argc>1)vimana_screen_set_drag_region(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMT_SET_CURSOR: { uint8_t data[8]; if(argc>1){val_byte_array(args[1],data,8); vimana_screen_set_cursor(scr,data);} return self; }
-    case VMT_HIDE_CURSOR: vimana_screen_hide_cursor(scr); return self;
-    case VMT_SHOW_CURSOR: vimana_screen_show_cursor(scr); return self;
+    case VMT_SPRITE: if(argc>1)vimana_screen_sprite(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_PIXEL: if(argc>1)vimana_screen_pixel(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_PUT_TEXT: { char text[1024]; if(argc>5)vimana_screen_put_text(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),val_cstr(args[3],text,sizeof(text)),(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5])); return val_clone(self); }
+    case VMT_PUT_ICN: { uint8_t data[8]; if(argc>5){val_byte_array(args[3],data,8); vimana_screen_put_icn(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),data,(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5]));} return val_clone(self); }
+    case VMT_PRESENT: vimana_screen_present(scr); return val_clone(self);
+    case VMT_SET_DRAG_REGION: if(argc>1)vimana_screen_set_drag_region(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_SET_CURSOR: { uint8_t data[8]; if(argc>1){val_byte_array(args[1],data,8); vimana_screen_set_cursor(scr,data);} return val_clone(self); }
+    case VMT_HIDE_CURSOR: vimana_screen_hide_cursor(scr); return val_clone(self);
+    case VMT_SHOW_CURSOR: vimana_screen_show_cursor(scr); return val_clone(self);
     case VMT_X: return V_INT(vimana_screen_x(scr));
     case VMT_Y: return V_INT(vimana_screen_y(scr));
     case VMT_ADDR: return V_INT(vimana_screen_addr(scr));
@@ -645,7 +716,7 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     case VMT_LIST: { char path[1024]; int count=0; char **items=argc>1?vimana_file_list(sys,val_cstr(args[1],path,sizeof(path)),&count):NULL; Val r=items?strings_to_array(items,count):V_ARR_NEW(); if(items)vimana_file_list_free(items,count); return r; }
     case VMT_IS_DIR: { char path[1024]; return V_BOOL(argc>1&&vimana_file_is_dir(sys,val_cstr(args[1],path,sizeof(path)))); }
 
-    case VMT_POLL: vimana_device_poll(sys); return self;
+    case VMT_POLL: vimana_device_poll(sys); return val_clone(self);
     case VMT_CONTROLLER: return V_INT(vimana_device_controller(sys));
     case VMT_CONTROLLER_DOWN: return V_BOOL(argc>1&&vimana_device_controller_down(sys,(unsigned int)val_to_i64(args[1])));
     case VMT_CONTROLLER_PRESSED: return V_BOOL(argc>1&&vimana_device_controller_pressed(sys,(unsigned int)val_to_i64(args[1])));
@@ -684,16 +755,16 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     case VMT_PENDING: return V_BOOL(vimana_console_pending(sys));
     case VMT_INPUT: return V_INT(vimana_console_input(sys));
     case VMT_TYPE: return V_INT(vimana_console_type(sys));
-    case VMT_NEXT: vimana_console_next(sys); return self;
+    case VMT_NEXT: vimana_console_next(sys); return val_clone(self);
     case VMT_PUSH: return V_BOOL(argc>2&&vimana_console_push(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])));
-    case VMT_STDOUT: if(argc>1)vimana_console_stdout(sys,(int)val_to_i64(args[1])); return self;
-    case VMT_STDERR: if(argc>1)vimana_console_stderr(sys,(int)val_to_i64(args[1])); return self;
-    case VMT_STDERR_HEX: if(argc>1)vimana_console_stderr_hex(sys,(int)val_to_i64(args[1])); return self;
+    case VMT_STDOUT: if(argc>1)vimana_console_stdout(sys,(int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_STDERR: if(argc>1)vimana_console_stderr(sys,(int)val_to_i64(args[1])); return val_clone(self);
+    case VMT_STDERR_HEX: if(argc>1)vimana_console_stderr_hex(sys,(int)val_to_i64(args[1])); return val_clone(self);
     case VMT_NONE: break;
     }
 
     fprintf(stderr,"warning: unhandled method '%s' on object %d (argc=%d)\n",m,self.obj.kind,argc);
-    return self;
+    return val_clone(self);
 }
 
 static Val builtin(VM *vm, const char *name, Val *args, int argc) {
@@ -764,21 +835,24 @@ static Val builtin(VM *vm, const char *name, Val *args, int argc) {
         return V_ARR_NEW();
     }
     if (!strcmp(name,"stdr.push")||!strcmp(name,"push")) {
-        if (argc>=2&&args[0].type==VT_ARR) { arr_push(args[0].arr,args[1]); return args[0]; }
+        if (argc>=2&&args[0].type==VT_ARR) { arr_push(args[0].arr,val_clone(args[1])); return val_clone(args[0]); }
         return V_NULL;
     }
     if (!strcmp(name,"stdr.at")||!strcmp(name,"at")) {
         if (argc<2) return V_NULL;
         Val a=args[0]; int i=(int)val_to_i64(args[1]);
-        if (a.type==VT_ARR) return i>=0&&i<a.arr->len?a.arr->items[i]:V_NULL;
+        if (a.type==VT_ARR) return i>=0&&i<a.arr->len?val_clone(a.arr->items[i]):V_NULL;
         if (a.type==VT_STR) return i>=0&&i<a.str.len?V_STR_COPY(a.str.s+i,1):V_NULL;
         return V_NULL;
     }
     if (!strcmp(name,"stdr.set")||!strcmp(name,"set")) {
         if (argc>=3&&args[0].type==VT_ARR) {
             int i=(int)val_to_i64(args[1]);
-            if(i>=0&&i<args[0].arr->len) args[0].arr->items[i]=args[2];
-            return args[0];
+            if(i>=0&&i<args[0].arr->len) {
+                val_release(args[0].arr->items[i]);
+                args[0].arr->items[i]=val_clone(args[2]);
+            }
+            return val_clone(args[0]);
         }
         return V_NULL;
     }
@@ -807,7 +881,7 @@ static Val builtin(VM *vm, const char *name, Val *args, int argc) {
         return out;
     }
     if (!strcmp(name,"stdr.str_concat")||!strcmp(name,"str_concat")) {
-        return argc>=2?val_add(args[0],args[1]):(argc==1?args[0]:V_STR_CSTR(""));
+        return argc>=2?val_add(args[0],args[1]):(argc==1?val_clone(args[0]):V_STR_CSTR(""));
     }
     if (!strcmp(name,"stdr.str")||!strcmp(name,"str")) {
         char buf[256]; val_to_str(argc?args[0]:V_NULL,buf,256); return V_STR_CSTR(buf);
@@ -906,13 +980,13 @@ static Val builtin(VM *vm, const char *name, Val *args, int argc) {
         return V_INT(tmv->tm_mday);
     }
     if (!strcmp(name,"stdr.open_file_dialog")||!strcmp(name,"open_file_dialog"))
-        return prompt_path_dialog("open_file",argc>0?args[0]:V_STR_CSTR(""),argc>1?args[1]:V_STR_CSTR(""));
+        return prompt_path_dialog("open_file",argc>0?args[0]:V_NULL,argc>1?args[1]:V_NULL);
     if (!strcmp(name,"stdr.save_file_dialog")||!strcmp(name,"save_file_dialog"))
-        return prompt_path_dialog("save_file",argc>0?args[0]:V_STR_CSTR(""),argc>1?args[1]:V_STR_CSTR(""));
+        return prompt_path_dialog("save_file",argc>0?args[0]:V_NULL,argc>1?args[1]:V_NULL);
     if (!strcmp(name,"math.sqrt")||!strcmp(name,"sqrt")) { if(argc)return V_FLT(sqrt(val_to_f64(args[0]))); return V_FLT(0); }
     if (!strcmp(name,"math.abs")||!strcmp(name,"abs"))   { if(argc)return V_FLT(fabs(val_to_f64(args[0]))); return V_FLT(0); }
-    if (!strcmp(name,"math.min")||!strcmp(name,"min"))   { if(argc>=2)return val_lt(args[0],args[1])?args[0]:args[1]; return V_NULL; }
-    if (!strcmp(name,"math.max")||!strcmp(name,"max"))   { if(argc>=2)return val_lt(args[0],args[1])?args[1]:args[0]; return V_NULL; }
+    if (!strcmp(name,"math.min")||!strcmp(name,"min"))   { if(argc>=2)return val_clone(val_lt(args[0],args[1])?args[0]:args[1]); return V_NULL; }
+    if (!strcmp(name,"math.max")||!strcmp(name,"max"))   { if(argc>=2)return val_clone(val_lt(args[0],args[1])?args[1]:args[0]); return V_NULL; }
     if (!strcmp(name,"math.sin")||!strcmp(name,"sin"))   { if(argc)return V_FLT(sin(val_to_f64(args[0]))); return V_FLT(0); }
     if (!strcmp(name,"math.cos")||!strcmp(name,"cos"))   { if(argc)return V_FLT(cos(val_to_f64(args[0]))); return V_FLT(0); }
     if (!strncmp(name,"vimana.",7)) return builtin_vimana(name,args,argc);
@@ -923,26 +997,35 @@ static Val builtin(VM *vm, const char *name, Val *args, int argc) {
 
 /* ═════════════════════════════ Execution loop ═══════════════════════ */
 
-static Val vm_exec(VM *vm, int func_idx, Val *args, int argc) {
+static void release_vals(Val *vals, int n) {
+    for(int i=0;i<n;i++) val_release(vals[i]);
+}
+
+static void wdrop_to(VM *vm, int depth) {
+    while(vm->wsp>depth) val_release(wpop(vm));
+}
+
+static Val vm_run(VM *vm, int base_rsp) {
     ROM *r=vm->rom;
-    RFunc *fn=&r->funcs[func_idx];
-    int nlocs=fn->arity+fn->nlocals;
-    Val *locals=calloc((size_t)nlocs,sizeof(Val));
-    for(int i=0;i<argc&&i<fn->arity;i++) locals[i]=args[i];
-    uint8_t *code=fn->code;
-    int pc=0;
-    Val ret=V_NULL;
 
-#define PUSH(v) vm_push(vm,(v))
-#define POP()   vm_pop(vm)
-#define PEEK()  vm_peek(vm)
+#define PUSH(v) wpush(vm,(v))
+#define POP()   wpop(vm)
+#define PEEK()  wpeek(vm)
 
-    while(1){
-        uint8_t op=code[pc++];
+    while(vm->rsp>base_rsp){
+        Frame *fr=&vm->rst[vm->rsp-1];
+        uint8_t *code=fr->code;
+        uint8_t op=code[fr->pc++];
         switch(op){
-        case OP_BRK: goto done;
+        case OP_BRK: {
+            frame_release(fr);
+            vm->rsp--;
+            if (vm->rsp<=base_rsp) return V_NULL;
+            PUSH(V_NULL);
+            break;
+        }
          case OP_LIT: {
-             uint16_t ci=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2;
+             uint16_t ci=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2;
              RCon *k=&r->consts[ci];
              switch(k->type){
              case YCON_INT:  PUSH(V_INT(k->ival)); break;
@@ -953,88 +1036,104 @@ static Val vm_exec(VM *vm, int func_idx, Val *args, int argc) {
              }
              break;
          }
-        case OP_LDA: { uint16_t s=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; PUSH(s<nlocs?locals[s]:V_NULL); break; }
-        case OP_STA: { uint16_t s=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; if(s<nlocs)locals[s]=POP(); else POP(); break; }
-        case OP_LDZ:{ uint16_t g=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; PUSH(g<r->nglobals?r->glob_vals[g]:V_NULL); break; }
-        case OP_STZ:{ uint16_t g=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; if(g<r->nglobals)r->glob_vals[g]=POP(); else POP(); break; }
-        case OP_POP:   POP(); break;
-        case OP_DUP: { Val v=PEEK(); PUSH(v); break; }
-        case OP_NIP: { Val b=POP(); POP(); PUSH(b); break; }
+        case OP_LDA: { uint16_t s=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2; PUSH(s<fr->nlocs?val_clone(fr->locals[s]):V_NULL); break; }
+        case OP_STA: { uint16_t s=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2; Val v=POP(); if(s<fr->nlocs){val_release(fr->locals[s]);fr->locals[s]=v;} else val_release(v); break; }
+        case OP_LDZ:{ uint16_t g=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2; PUSH(g<r->nglobals?val_clone(r->glob_vals[g]):V_NULL); break; }
+        case OP_STZ:{ uint16_t g=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2; Val v=POP(); if(g<r->nglobals){val_release(r->glob_vals[g]);r->glob_vals[g]=v;} else val_release(v); break; }
+        case OP_POP:   val_release(POP()); break;
+        case OP_DUP: { Val v=PEEK(); PUSH(val_clone(v)); break; }
+        case OP_NIP: { Val b=POP(),a=POP(); val_release(a); PUSH(b); break; }
         /* Arithmetic */
-        case OP_ADD: { Val b=POP(),a=POP(); PUSH(val_add(a,b)); break; }
-        case OP_SUB: { Val b=POP(),a=POP(); PUSH(val_sub(a,b)); break; }
-        case OP_MUL: { Val b=POP(),a=POP(); PUSH(val_mul(a,b)); break; }
-        case OP_DIV: { Val b=POP(),a=POP(); PUSH(val_div(a,b)); break; }
+        case OP_ADD: { Val b=POP(),a=POP(); Val v=val_add(a,b); val_release(a); val_release(b); PUSH(v); break; }
+        case OP_SUB: { Val b=POP(),a=POP(); Val v=val_sub(a,b); val_release(a); val_release(b); PUSH(v); break; }
+        case OP_MUL: { Val b=POP(),a=POP(); Val v=val_mul(a,b); val_release(a); val_release(b); PUSH(v); break; }
+        case OP_DIV: { Val b=POP(),a=POP(); Val v=val_div(a,b); val_release(a); val_release(b); PUSH(v); break; }
 
         /* Comparison */
-        case OP_EQU:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_eq(a,b))); break; }
-        case OP_NEQ: { Val b=POP(),a=POP(); PUSH(V_BOOL(!val_eq(a,b))); break; }
+        case OP_EQU:  { Val b=POP(),a=POP(); bool v=val_eq(a,b); val_release(a); val_release(b); PUSH(V_BOOL(v)); break; }
+        case OP_NEQ: { Val b=POP(),a=POP(); bool v=!val_eq(a,b); val_release(a); val_release(b); PUSH(V_BOOL(v)); break; }
 
-        case OP_LTH:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_lt(a,b))); break; }
-        case OP_GTH:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_lt(b,a))); break; }
+        case OP_LTH:  { Val b=POP(),a=POP(); bool v=val_lt(a,b); val_release(a); val_release(b); PUSH(V_BOOL(v)); break; }
+        case OP_GTH:  { Val b=POP(),a=POP(); bool v=val_lt(b,a); val_release(a); val_release(b); PUSH(V_BOOL(v)); break; }
         /* Logical */
-        case OP_AND: { Val b=POP(),a=POP(); PUSH(V_BOOL(val_truthy(a)&&val_truthy(b))); break; }
-        case OP_ORA:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_truthy(a)||val_truthy(b))); break; }
-        case OP_EOR: { Val b=POP(),a=POP(); PUSH(V_INT(val_to_i64(a) ^ val_to_i64(b))); break; }
-        case OP_NOT: { Val a=POP(); PUSH(V_BOOL(!val_truthy(a))); break; }
+        case OP_AND: { Val b=POP(),a=POP(); bool v=val_truthy(a)&&val_truthy(b); val_release(a); val_release(b); PUSH(V_BOOL(v)); break; }
+        case OP_ORA:  { Val b=POP(),a=POP(); bool v=val_truthy(a)||val_truthy(b); val_release(a); val_release(b); PUSH(V_BOOL(v)); break; }
+        case OP_EOR: { Val b=POP(),a=POP(); int64_t v=val_to_i64(a)^val_to_i64(b); val_release(a); val_release(b); PUSH(V_INT(v)); break; }
+        case OP_NOT: { Val a=POP(); bool v=!val_truthy(a); val_release(a); PUSH(V_BOOL(v)); break; }
         /* Jumps */
-        case OP_JMP: { int32_t off;memcpy(&off,code+pc,4);pc+=4; pc+=off; break; }
-        case OP_JCN: { int32_t off;memcpy(&off,code+pc,4);pc+=4; if(val_truthy(POP())) pc+=off; break; }
+        case OP_JMP: { int32_t off;memcpy(&off,code+fr->pc,4);fr->pc+=4; fr->pc+=off; break; }
+        case OP_JCN: { int32_t off;memcpy(&off,code+fr->pc,4);fr->pc+=4; Val c=POP(); bool v=val_truthy(c); val_release(c); if(v) fr->pc+=off; break; }
         /* Function calls */
         case OP_FUN: {
-            uint16_t fi=(uint16_t)(code[pc]|(code[pc+1]<<8)); uint8_t argc2=code[pc+2]; pc+=3;
+            uint16_t fi=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); uint8_t argc2=code[fr->pc+2]; fr->pc+=3;
             Val *cargs=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
             for(int i=argc2-1;i>=0;i--) cargs[i]=POP();
-            PUSH(vm_exec(vm,fi,cargs,argc2));
+            if(!rpush_frame(vm,fi,cargs,argc2,false)) release_vals(cargs,argc2);
             break;
         }
         case OP_DEI: {
-            uint16_t ei=(uint16_t)(code[pc]|(code[pc+1]<<8)); uint8_t argc2=code[pc+2]; pc+=3;
+            uint16_t ei=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); uint8_t argc2=code[fr->pc+2]; fr->pc+=3;
             const char *ename = (ei<r->nexts) ? r->consts[r->exts[ei].name_idx].sval : "?";
             Val *cargs=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
             for(int i=argc2-1;i>=0;i--) cargs[i]=POP();
-            PUSH(builtin(vm,ename,cargs,argc2));
+            Val out=builtin(vm,ename,cargs,argc2);
+            release_vals(cargs,argc2);
+            PUSH(out);
             break;
         }
         case OP_DEO: {
-            uint16_t ei=(uint16_t)(code[pc]|(code[pc+1]<<8)); uint8_t argc2=code[pc+2]; pc+=3;
+            uint16_t ei=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); uint8_t argc2=code[fr->pc+2]; fr->pc+=3;
             const char *ename = (ei<r->nexts) ? r->consts[r->exts[ei].name_idx].sval : "?";
             Val *cargs=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
             for(int i=argc2-1;i>=0;i--) cargs[i]=POP();
-            (void)builtin(vm,ename,cargs,argc2);
+            Val out=builtin(vm,ename,cargs,argc2);
+            val_release(out);
+            release_vals(cargs,argc2);
             break;
         }
         case OP_CLO: {
-            uint16_t fi=(uint16_t)(code[pc]|(code[pc+1]<<8)); uint8_t argc2=code[pc+2]; pc+=3;
+            uint16_t fi=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); uint8_t argc2=code[fr->pc+2]; fr->pc+=3;
             Val *caps=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
             for(int i=argc2-1;i>=0;i--) caps[i]=POP();
             PUSH(V_FUNC(fi,caps,argc2));
             break;
         }
-        case OP_RET:     ret=POP(); goto done;
+        case OP_RET: {
+            Val ret=POP();
+            frame_release(fr);
+            vm->rsp--;
+            if (vm->rsp<=base_rsp) return ret;
+            PUSH(ret);
+            break;
+        }
         /* Stack ops */
         case OP_SWP: { Val b=POP(),a=POP(); PUSH(b); PUSH(a); break; }
-        case OP_OVR: { Val b=POP(),a=PEEK(); PUSH(b); PUSH(a); break; }
+        case OP_OVR: { Val b=POP(),a=val_clone(PEEK()); PUSH(b); PUSH(a); break; }
         case OP_ROT: { Val c=POP(),b=POP(),a=POP(); PUSH(b); PUSH(c); PUSH(a); break; }
         case OP_SFT: {
             Val b=POP(),a=POP();
             int64_t s=val_to_i64(b);
             int sh=(int)((s<0?-s:s)&63);
             PUSH(s<0?V_INT(val_to_i64(a)>>sh):V_INT(val_to_i64(a)<<sh));
+            val_release(a); val_release(b);
             break;
         }
         default:
-            fprintf(stderr,"unknown opcode 0x%02X at pc=%d in func %d\n",op,pc-1,func_idx);
-            goto done;
+            fprintf(stderr,"unknown opcode 0x%02X at pc=%d in func %d\n",op,fr->pc-1,fr->func_idx);
+            while(vm->rsp>base_rsp) frame_release(&vm->rst[--vm->rsp]);
+            return V_NULL;
         }
     }
-done:
-    free(locals); return ret;
+    return V_NULL;
 }
 
 static Val vm_call(VM *vm, int func_idx, Val *args, int argc) {
-    if (func_idx<0||func_idx>=vm->rom->nfuncs) { fprintf(stderr,"bad func %d\n",func_idx); return V_NULL; }
-    return vm_exec(vm,func_idx,args,argc);
+    int base_wsp=vm->wsp;
+    int base_rsp=vm->rsp;
+    if(!rpush_frame(vm,func_idx,args,argc,true)) return V_NULL;
+    Val ret=vm_run(vm,base_rsp);
+    wdrop_to(vm,base_wsp);
+    return ret;
 }
 
 /* ══════════════════════════════════ Main ═══════════════════════════ */
@@ -1055,11 +1154,13 @@ int main(int argc, char **argv) {
         }
     }
     /* Run global initialiser (always func 0) */
-    vm_call(vm,0,NULL,0);
+    Val init_ret=vm_call(vm,0,NULL,0);
+    val_release(init_ret);
     /* Run entry point */
     if (r->entry_func>=0&&r->entry_func<r->nfuncs) {
         if (verbose) fprintf(stderr,"Running entry: %s\n",r->consts[r->funcs[r->entry_func].name_idx].sval);
-        vm_call(vm,r->entry_func,NULL,0);
+        Val entry_ret=vm_call(vm,r->entry_func,NULL,0);
+        val_release(entry_ret);
     } else {
         fprintf(stderr,"No entry point found.\n");
     }
