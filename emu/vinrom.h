@@ -2,7 +2,7 @@
  *
  * Binary layout (little-endian):
  *
- *  Header (28 bytes):
+ *  Header (128 bytes):
  *    u32 magic         = 0x564D4941 ('VIMANA')
  *    u16 version       = 1
  *    u16 flags         = 0
@@ -42,58 +42,42 @@
 #define YROM_VERSION  1
 
 /* Constant pool types */
-#define YCON_INT   0
-#define YCON_FLT   1
-#define YCON_STR   2
-#define YCON_BOOL  3
-#define YCON_NULL  4
+#define YCON_INT   0  /* 8-byte signed integer */
+#define YCON_FLT   1  /* 8-byte IEEE 754 float */
+#define YCON_STR   2  /* String: u32 length + bytes (no NUL) */
+#define YCON_BOOL  3  /* Boolean: u8 (0 or 1) */
+#define YCON_NULL  4  /* Null: no data */
 
 /* Opcodes — 1 byte; operands follow inline */
-#define OP_HALT    0x00
-#define OP_CONST   0x01  /* u16 const_idx                  */
-#define OP_NULL    0x02
-#define OP_TRUE    0x03
-#define OP_FALSE   0x04
-#define OP_LDLOC   0x05  /* u16 slot                       */
-#define OP_STLOC   0x06  /* u16 slot                       */
-#define OP_LDGLOB  0x07  /* u16 global_idx                 */
-#define OP_STGLOB  0x08  /* u16 global_idx                 */
-#define OP_POP     0x09
-#define OP_DUP     0x0A
-#define OP_ADD     0x10
-#define OP_SUB     0x11
-#define OP_MUL     0x12
-#define OP_DIV     0x13
-#define OP_MOD     0x14
-#define OP_NEG     0x15
-#define OP_EQ      0x20
-#define OP_NEQ     0x21
-#define OP_LT      0x22
-#define OP_LE      0x23
-#define OP_GT      0x24
-#define OP_GE      0x25
-#define OP_AND     0x30
-#define OP_OR      0x31
-#define OP_NOT     0x32
-#define OP_BAND    0x33
-#define OP_BOR     0x34
-#define OP_SHL     0x35
-#define OP_SHR     0x36
-#define OP_ISNULL  0x37  /* push bool: TOS == null          */
-#define OP_JMP     0x40  /* i32 offset from end of instr   */
-#define OP_JF      0x41  /* i32 offset; jump if TOS falsy  */
-#define OP_CALL    0x50  /* u16 func_idx, u8 argc          */
-#define OP_CEXT    0x51  /* u16 ext_idx,  u8 argc          */
-#define OP_RET     0x52
-#define OP_RETNULL 0x53
-#define OP_CLOSURE 0x54  /* u16 func_idx, u8 capture_count */
-#define OP_NEWARR  0x60
-#define OP_APUSH   0x61  /* ( arr val -- arr )             */
-#define OP_AGET    0x62  /* ( arr idx -- val )             */
-#define OP_ASET    0x63  /* ( arr idx val -- arr )         */
-#define OP_ALEN    0x64  /* ( arr -- len )                 */
-#define OP_STRCAT  0x70
-#define OP_FLOOR   0x80
-#define OP_TOSTR   0x81
-#define OP_TOINT   0x82
-#define OP_TOFLT   0x83
+#define OP_BRK     0x00  /* ( -- )                          */
+#define OP_LIT     0x01  /* u16 const_idx                   */
+#define OP_LDA     0x02  /* u16 slot; local variable        */
+#define OP_STA     0x03  /* u16 slot; local variable        */
+#define OP_LDZ     0x04  /* u16 global_idx; global variable */
+#define OP_STZ     0x05  /* u16 global_idx; global variable */
+#define OP_POP     0x06  /* ( val -- )                      */
+#define OP_DUP     0x07  /* ( val -- val val )              */
+#define OP_NIP     0x08  /* ( val1 val2 -- val2 )           */
+#define OP_ADD     0x09  /* ( val1 val2 -- val1 + val2 )    */
+#define OP_SUB     0x0A  /* ( val1 val2 -- val1 - val2 )    */
+#define OP_MUL     0x0B  /* ( val1 val2 -- val1 * val2 )    */
+#define OP_DIV     0x0C  /* ( val1 val2 -- val1 / val2 )    */
+#define OP_EQU     0x0D  /* ( val1 val2 -- val1 == val2 )   */
+#define OP_NEQ     0x0E  /* ( val1 val2 -- val1 != val2 )   */
+#define OP_LTH     0x0F  /* ( val1 val2 -- val1 < val2 )    */
+#define OP_GTH     0x10  /* ( val1 val2 -- val1 > val2 )    */
+#define OP_NOT     0x11  /* ( val -- !val )                 */
+#define OP_AND     0x12  /* ( val1 val2 -- val1 && val2 )   */
+#define OP_ORA     0x13  /* ( val1 val2 -- val1 || val2 )   */
+#define OP_EOR     0x14  /* ( val1 val2 -- val1 ^ val2 )    */
+#define OP_JMP     0x15  /* i32 offset; jump                 */
+#define OP_FUN     0x16  /* u16 func_idx, u8 argc           */
+#define OP_DEI     0x17  /* u16 ext_idx,  u8 argc           */
+#define OP_RET     0x18  /* ( val -- )                      */
+#define OP_SWP     0x19  /* ( val1 val2 -- val2 val1 )      */
+#define OP_OVR     0x1A  /* ( val1 val2 -- val1 val2 val1 ) */
+#define OP_ROT     0x1B  /* ( val1 val2 val3 -- val2 val3 val1 ) */
+#define OP_SFT     0x1C  /* ( val shift -- shifted )        */
+#define OP_JCN     0x1D  /* ( bool -- ) i32 offset; jump if true */
+#define OP_CLO     0x1E  /* u16 func_idx, u8 n_captures     */
+#define OP_DEO     0x1F  /* u16 ext_idx,  u8 argc; discard result */

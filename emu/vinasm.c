@@ -8,8 +8,8 @@
  *           arithmetic, comparison, logical, bitwise,
  *           array literals/indexing, module-qualified calls, ??
  *
- *  External modules (stdr, math, vimana) are compiled as OP_CEXT.
- *  User modules listed on the command line become OP_CALL.
+ *  External modules (stdr, math, vimana) are compiled as OP_DEI.
+ *  User modules listed on the command line become OP_FUN.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -224,6 +224,14 @@ static int add_str(Cmp *c, const char *s) {
     for(int i=0;i<c->nconsts;i++) if(c->consts[i].type==YCON_STR&&!strcmp(c->consts[i].sval,s)) return i;
     Con *k=&c->consts[c->nconsts]; k->type=YCON_STR; k->sval=strdup(s); k->slen=(int)strlen(s); return c->nconsts++;
 }
+static int add_bool(Cmp *c, int v) {
+    for(int i=0;i<c->nconsts;i++) if(c->consts[i].type==YCON_BOOL&&c->consts[i].ival==v) return i;
+    Con *k=&c->consts[c->nconsts]; k->type=YCON_BOOL; k->ival=v; return c->nconsts++;
+}
+static int add_null(Cmp *c) {
+    for(int i=0;i<c->nconsts;i++) if(c->consts[i].type==YCON_NULL) return i;
+    Con *k=&c->consts[c->nconsts]; k->type=YCON_NULL; return c->nconsts++;
+}
 
 static Func *cf(Cmp *c) { return &c->funcs[c->cur_func]; }
 static void reserve_code(Cmp *c, int need) {
@@ -249,6 +257,13 @@ static void emit_i32(Cmp *c, int32_t v) {
 }
 static int emit_jmp(Cmp *c, uint8_t op) {
     emit1(c,op); int pos=cf(c)->code_sz; emit_i32(c,0); return pos;
+}
+static int emit_jmp_true(Cmp *c) {
+    return emit_jmp(c,OP_JMP);
+}
+static int emit_jmp_false(Cmp *c) {
+    emit1(c,OP_NOT);
+    return emit_jmp(c,OP_JCN);
 }
 static void patch_jmp(Cmp *c, int pos) {
     int32_t off=(int32_t)(cf(c)->code_sz-(pos+4));
@@ -292,7 +307,7 @@ static bool is_ext_mod(Cmp *c, const char *m) {
 }
 static void emit_call(Cmp *c, const char *fn, int argc) {
     int fi=find_func(c,fn);
-    emit1(c,OP_CALL);
+    emit1(c,OP_FUN);
     if (fi>=0) emit_u16(c,(uint16_t)fi);
     else {
         Patch *p=&c->patches[c->npatches++];
@@ -353,19 +368,19 @@ static void skip_type_ann(Cmp *c) {
 /* Emit load/store for a named lvalue */
 static void emit_load(Cmp *c, const char *base, const char *full) {
     int sl=find_local(c,base);
-    if (sl>=0&&!strchr(full,'.')) { emit2(c,OP_LDLOC,(uint16_t)sl); return; }
+    if (sl>=0&&!strchr(full,'.')) { emit2(c,OP_LDA,(uint16_t)sl); return; }
     char q[256]; if(!strchr(full,'.')) snprintf(q,255,"%s.%s",c->cur_mod,full); else strncpy(q,full,255);
     int gi=find_global(c,q); if(gi<0) gi=find_global(c,full);
-    if (gi>=0) { emit2(c,OP_LDGLOB,(uint16_t)gi); return; }
+    if (gi>=0) { emit2(c,OP_LDZ,(uint16_t)gi); return; }
     /* Treat as 0-arg external (module constant like vimana.color_fg) */
-    int ei=find_or_add_ext(c,q); emit1(c,OP_CEXT); emit_u16(c,(uint16_t)ei); emit1(c,0);
+    int ei=find_or_add_ext(c,q); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,0);
 }
 static void emit_store(Cmp *c, const char *base, const char *full) {
     int sl=find_local(c,base);
-    if (sl>=0&&!strchr(full,'.')) { emit2(c,OP_STLOC,(uint16_t)sl); return; }
+    if (sl>=0&&!strchr(full,'.')) { emit2(c,OP_STA,(uint16_t)sl); return; }
     char q[256]; if(!strchr(full,'.')) snprintf(q,255,"%s.%s",c->cur_mod,full); else strncpy(q,full,255);
     int gi=find_global(c,q); if(gi<0) gi=find_global(c,full);
-    if (gi>=0) { emit2(c,OP_STGLOB,(uint16_t)gi); return; }
+    if (gi>=0) { emit2(c,OP_STZ,(uint16_t)gi); return; }
     fprintf(stderr,"warning: store to unknown var '%s'\n",full); emit1(c,OP_POP);
 }
 
@@ -387,7 +402,15 @@ static void compile_lambda(Cmp *c);
 static void emit_chain_call(Cmp *c, const char *mname, int argc) {
     char chain_name[128]; snprintf(chain_name,127,"__chain__.%s",mname);
     int ei=find_or_add_ext(c,chain_name);
-    emit1(c,OP_CEXT); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)(argc+1));
+    emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)(argc+1));
+}
+static void emit_ext_call(Cmp *c, const char *name, int argc) {
+    int ei=find_or_add_ext(c,name);
+    emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
+}
+static void emit_ext_output(Cmp *c, const char *name, int argc) {
+    int ei=find_or_add_ext(c,name);
+    emit1(c,OP_DEO); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
 }
 
 static bool paren_has_top_comma(Cmp *c) {
@@ -407,27 +430,27 @@ static bool paren_has_top_comma(Cmp *c) {
 static void parse_primary(Cmp *c) {
     Tok t=peek(c);
     switch(t.kind) {
-    case T_INT:    consume(c); emit2(c,OP_CONST,(uint16_t)add_int(c,t.ival)); return;
-    case T_FLOAT:  consume(c); emit2(c,OP_CONST,(uint16_t)add_flt(c,t.fval)); return;
-    case T_STRING: consume(c); emit2(c,OP_CONST,(uint16_t)add_str(c,t.str)); return;
-    case KW_TRUE:  consume(c); emit1(c,OP_TRUE);  return;
-    case KW_FALSE: consume(c); emit1(c,OP_FALSE); return;
-    case KW_NULL:  consume(c); emit1(c,OP_NULL);  return;
+    case T_INT:    consume(c); emit2(c,OP_LIT,(uint16_t)add_int(c,t.ival)); return;
+    case T_FLOAT:  consume(c); emit2(c,OP_LIT,(uint16_t)add_flt(c,t.fval)); return;
+    case T_STRING: consume(c); emit2(c,OP_LIT,(uint16_t)add_str(c,t.str)); return;
+    case KW_TRUE:  consume(c); emit2(c,OP_LIT,(uint16_t)add_bool(c,1));  return;
+    case KW_FALSE: consume(c); emit2(c,OP_LIT,(uint16_t)add_bool(c,0)); return;
+    case KW_NULL:  consume(c); emit2(c,OP_LIT,(uint16_t)add_null(c));  return;
     case KW_IF: {
         consume(c);
         parse_expr(c);
-        int jf=emit_jmp(c,OP_JF);
+        int jf=emit_jmp_false(c);
         expect(c,T_LBRACE,"expected '{' in if expression");
         parse_expr(c);
         expect(c,T_RBRACE,"expected '}' in if expression");
-        int end=emit_jmp(c,OP_JMP);
+        int end=emit_jmp_true(c);
         patch_jmp(c,jf);
         if (eat(c,KW_ELSE)) {
             expect(c,T_LBRACE,"expected '{' in else expression");
             parse_expr(c);
             expect(c,T_RBRACE,"expected '}' in else expression");
         } else {
-            emit1(c,OP_NULL);
+            emit2(c,OP_LIT, add_null(c));
         }
         patch_jmp(c,end);
         return;
@@ -436,23 +459,23 @@ static void parse_primary(Cmp *c) {
         consume(c);
         if (eat(c,T_RPAREN)) {
             if (eat(c,T_ASSIGN)&&eat(c,T_GT)) compile_lambda(c);
-            else emit1(c,OP_NULL);
+            else emit2(c,OP_LIT, add_null(c));
             return;
         }
         if (paren_has_top_comma(c)) {
-            emit1(c,OP_NEWARR);
+            emit_ext_call(c,"stdr.array",0);
             do {
                 parse_expr(c);
-                emit1(c,OP_APUSH);
+                emit_ext_call(c,"stdr.push",2);
             } while(eat(c,T_COMMA));
             expect(c,T_RPAREN,"expected ')'");
             return;
         }
         parse_expr(c); expect(c,T_RPAREN,"expected ')'"); return;
     case T_LBRACKET:
-        consume(c); emit1(c,OP_NEWARR);
+        consume(c); emit_ext_call(c,"stdr.array",0);
         while (!check(c,T_RBRACKET)&&!check(c,T_EOF)) {
-            parse_expr(c); emit1(c,OP_APUSH);
+            parse_expr(c); emit_ext_call(c,"stdr.push",2);
             eat(c,T_COMMA);
         }
         int close_line=c->lex.cur.line;
@@ -490,19 +513,19 @@ static void parse_primary(Cmp *c) {
                 const char *mname=strrchr(full,'.')+1;
                 emit_chain_call(c,mname,argc);
             } else if (!strcmp(full,"len")||!strcmp(full,"stdr.len")) {
-                int ei=find_or_add_ext(c,"stdr.len"); emit1(c,OP_CEXT); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
+                int ei=find_or_add_ext(c,"stdr.len"); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
             } else if (!strcmp(full,"str")||!strcmp(full,"stdr.str")) {
-                (void)argc; emit1(c,OP_TOSTR); return;
+                int ei=find_or_add_ext(c,"stdr.str"); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
             } else if (!strcmp(full,"num")||!strcmp(full,"stdr.num")) {
-                (void)argc; emit1(c,OP_TOINT); return;
+                int ei=find_or_add_ext(c,"stdr.num"); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
             } else if (!strcmp(full,"push")||!strcmp(full,"stdr.push")) {
-                int ei=find_or_add_ext(c,"stdr.push"); emit1(c,OP_CEXT); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
+                int ei=find_or_add_ext(c,"stdr.push"); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
             } else if (!strcmp(full,"floor")||!strcmp(full,"stdr.floor")) {
-                int ei=find_or_add_ext(c,"stdr.floor"); emit1(c,OP_CEXT); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
+                int ei=find_or_add_ext(c,"stdr.floor"); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
             } else if (!strcmp(full,"is_null")||!strcmp(full,"stdr.is_null")) {
-                int ei=find_or_add_ext(c,"stdr.is_null"); emit1(c,OP_CEXT); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
+                int ei=find_or_add_ext(c,"stdr.is_null"); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
             } else if (strchr(full,'.') && is_ext_mod(c,base)) {
-                int ei=find_or_add_ext(c,full); emit1(c,OP_CEXT); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
+                int ei=find_or_add_ext(c,full); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
             } else {
                 char q[256];
                 if (!strchr(full,'.')) snprintf(q,255,"%s.%s",c->cur_mod,full);
@@ -515,7 +538,7 @@ static void parse_primary(Cmp *c) {
 postfix:
         /* Postfix index: arr[idx] */
         while (check(c,T_LBRACKET)) {
-            consume(c); parse_expr(c); expect(c,T_RBRACKET,"expected ']'"); emit1(c,OP_AGET);
+            consume(c); parse_expr(c); expect(c,T_RBRACKET,"expected ']'"); emit_ext_call(c,"stdr.at",2);
         }
         /* Method chaining on return value: .method(args)... */
         while (check(c,T_DOT)) {
@@ -524,7 +547,7 @@ postfix:
             char mname[64]; strncpy(mname,consume(c).str,63);
             if (!check(c,T_LPAREN)) {
                 /* field access on object — not supported, drop value */
-                emit1(c,OP_POP); emit1(c,OP_NULL); break;
+                emit1(c,OP_POP); emit2(c,OP_LIT, add_null(c)); break;
             }
             consume(c);
             /* Push extra args; first arg (receiver) already on stack */
@@ -532,36 +555,35 @@ postfix:
             char chain_name[128]; snprintf(chain_name,127,"__chain__.%s",mname);
             int extra=parse_args(c); expect(c,T_RPAREN,"expected ')'");
             int ei=find_or_add_ext(c,chain_name);
-            emit1(c,OP_CEXT); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)(extra+1));
+            emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)(extra+1));
         }
         return;
     }
     default:
         fprintf(stderr,"unexpected token kind=%d line=%d\n",t.kind,t.line);
-        consume(c); emit1(c,OP_NULL);
+        consume(c); emit2(c,OP_LIT, add_null(c));
     }
 }
 
 static void parse_unary(Cmp *c) {
     if(eat(c,T_BANG)){parse_unary(c);emit1(c,OP_NOT);return;}
-    if(eat(c,T_MINUS)){parse_unary(c);emit1(c,OP_NEG);return;}
-    if(eat(c,T_HASH)){parse_unary(c);emit1(c,OP_ALEN);return;}
+    if(eat(c,T_MINUS)){ emit2(c,OP_LIT, add_int(c,0)); parse_unary(c); emit1(c,OP_SUB); return;}
+    if(eat(c,T_HASH)){parse_unary(c);int ei=find_or_add_ext(c,"stdr.len");emit1(c,OP_DEI);emit_u16(c,(uint16_t)ei);emit1(c,1);return;}
     parse_primary(c);
 }
-static void parse_mul(Cmp *c){parse_unary(c);for(;;){if(eat(c,T_STAR)){parse_unary(c);emit1(c,OP_MUL);}else if(eat(c,T_SLASH)){parse_unary(c);emit1(c,OP_DIV);}else if(eat(c,T_PERCENT)){parse_unary(c);emit1(c,OP_MOD);}else break;}}
+static void emit_mod(Cmp *c){emit1(c,OP_OVR);emit1(c,OP_OVR);emit1(c,OP_DIV);emit1(c,OP_MUL);emit1(c,OP_SUB);}
+static void parse_mul(Cmp *c){parse_unary(c);for(;;){if(eat(c,T_STAR)){parse_unary(c);emit1(c,OP_MUL);}else if(eat(c,T_SLASH)){parse_unary(c);emit1(c,OP_DIV);}else if(eat(c,T_PERCENT)){parse_unary(c);emit_mod(c);}else break;}}
 static void parse_add(Cmp *c){parse_mul(c);for(;;){if(eat(c,T_PLUS)){parse_mul(c);emit1(c,OP_ADD);}else if(eat(c,T_MINUS)){parse_mul(c);emit1(c,OP_SUB);}else break;}}
-static void parse_shift(Cmp *c){parse_add(c);for(;;){if(eat(c,T_SHL)){parse_add(c);emit1(c,OP_SHL);}else if(eat(c,T_SHR)){parse_add(c);emit1(c,OP_SHR);}else break;}}
-static void parse_bitand(Cmp *c){parse_shift(c);while(eat(c,T_AMP)){parse_shift(c);emit1(c,OP_BAND);}}
-static void parse_bitor(Cmp *c){parse_bitand(c);while(eat(c,T_PIPE)){parse_bitand(c);emit1(c,OP_BOR);}}
-static void parse_cmp(Cmp *c){parse_bitor(c);for(;;){if(eat(c,T_EQ2)){parse_bitor(c);emit1(c,OP_EQ);}else if(eat(c,T_NEQ)){parse_bitor(c);emit1(c,OP_NEQ);}else if(eat(c,T_LT)){parse_bitor(c);emit1(c,OP_LT);}else if(eat(c,T_LE)){parse_bitor(c);emit1(c,OP_LE);}else if(eat(c,T_GT)){parse_bitor(c);emit1(c,OP_GT);}else if(eat(c,T_GE)){parse_bitor(c);emit1(c,OP_GE);}else break;}}
+static void parse_shift(Cmp *c){parse_add(c);for(;;){if(eat(c,T_SHL)){parse_add(c);emit1(c,OP_SFT);}else if(eat(c,T_SHR)){parse_add(c);emit2(c,OP_LIT,add_int(c,0));emit1(c,OP_SWP);emit1(c,OP_SUB);emit1(c,OP_SFT);}else break;}}
+static void parse_cmp(Cmp *c){parse_shift(c);for(;;){if(eat(c,T_EQ2)){parse_shift(c);emit1(c,OP_EQU);}else if(eat(c,T_NEQ)){parse_shift(c);emit1(c,OP_NEQ);}else if(eat(c,T_LT)){parse_shift(c);emit1(c,OP_LTH);}else if(eat(c,T_LE)){parse_shift(c);emit1(c,OP_GTH);emit1(c,OP_NOT);}else if(eat(c,T_GT)){parse_shift(c);emit1(c,OP_GTH);}else if(eat(c,T_GE)){parse_shift(c);emit1(c,OP_LTH);emit1(c,OP_NOT);}else break;}}
 static void parse_and(Cmp *c){parse_cmp(c);while(eat(c,T_AMPAMP)){parse_cmp(c);emit1(c,OP_AND);}}
-static void parse_or(Cmp *c) {parse_and(c);while(eat(c,T_PIPEPIPE)){parse_and(c);emit1(c,OP_OR);}}
+static void parse_or(Cmp *c) {parse_and(c);while(eat(c,T_PIPEPIPE)){parse_and(c);emit1(c,OP_ORA);}}
 static void parse_expr(Cmp *c) {
     parse_or(c);
     if (eat(c,T_QMARK)) {
-        int jf=emit_jmp(c,OP_JF);
+        int jf=emit_jmp_false(c);
         parse_expr(c);
-        int end=emit_jmp(c,OP_JMP);
+        int end=emit_jmp_true(c);
         expect(c,T_COLON,"expected ':' in ternary");
         patch_jmp(c,jf);
         parse_expr(c);
@@ -570,8 +592,10 @@ static void parse_expr(Cmp *c) {
     }
     /* Null coalesce: a ?? b */
     if (eat(c,T_QMQM)) {
-        emit1(c,OP_DUP); emit1(c,OP_ISNULL);
-        int done=emit_jmp(c,OP_JF);
+        emit1(c,OP_DUP); emit2(c,OP_LIT, add_null(c)); emit1(c,OP_EQU);
+        int rhs=emit_jmp(c,OP_JCN);
+        int done=emit_jmp_true(c);
+        patch_jmp(c,rhs);
         emit1(c,OP_POP); parse_expr(c);
         patch_jmp(c,done);
     }
@@ -602,14 +626,14 @@ static void parse_assign_stmt(Cmp *c) {
         consume(c); parse_expr(c); expect(c,T_RBRACKET,"expected ']'");
         expect(c,T_ASSIGN,"expected '=' for array element assign");
         parse_expr(c);
-        emit1(c,OP_ASET); emit1(c,OP_POP);
+        emit_ext_output(c,"stdr.set",3);
     } else {
         TK op=peek(c).kind; consume(c);
         if (op!=T_ASSIGN) emit_load(c,base,full);
         parse_expr(c);
         switch(op){case T_PLUSEQ:emit1(c,OP_ADD);break;case T_MINUSEQ:emit1(c,OP_SUB);break;
             case T_STAREQ:emit1(c,OP_MUL);break;case T_SLASHEQ:emit1(c,OP_DIV);break;
-            case T_PERCENTEQ:emit1(c,OP_MOD);break;default:break;}
+            case T_PERCENTEQ:emit_mod(c);break;default:break;}
         emit_store(c,base,full);
     }
 }
@@ -637,17 +661,18 @@ static void parse_stmt(Cmp *c) {
         consume(c);
         if (!check(c,T_EOF)&&!check(c,T_SEMI)&&!check(c,T_RBRACE)&&c->lex.cur.line==la_line) {
             if (line_has_top_comma(c)) {
-                emit1(c,OP_NEWARR);
+                emit_ext_call(c,"stdr.array",0);
                 do {
                     parse_expr(c);
-                    emit1(c,OP_APUSH);
+                    emit_ext_call(c,"stdr.push",2);
                 } while(eat(c,T_COMMA));
             } else {
                 parse_expr(c);
             }
             emit1(c,OP_RET);
         } else {
-            emit1(c,OP_RETNULL);
+            emit2(c,OP_LIT, add_null(c));
+            emit1(c,OP_RET); /* empty return */
         }
         return;
     }
@@ -657,25 +682,25 @@ static void parse_stmt(Cmp *c) {
         char nm[64]; strncpy(nm,consume(c).str,63);
         int sl=declare_local(c,nm);
         expect(c,T_ASSIGN,"expected '=' in let");
-        parse_expr(c); emit2(c,OP_STLOC,(uint16_t)sl);
+        parse_expr(c); emit2(c,OP_STA,(uint16_t)sl);
         return;
     }
     if (t.kind==KW_IF) {
         int header_col=t.col;
         consume(c); parse_expr(c);
-        int jf=emit_jmp(c,OP_JF);
+        int jf=emit_jmp_false(c);
         parse_control_body(c,header_col);
         if ((check(c,KW_ELIF)||check(c,KW_ELSE))&&c->lex.cur.col==header_col) {
             int ends[256], nends=0;
-            ends[nends++]=emit_jmp(c,OP_JMP);
+            ends[nends++]=emit_jmp_true(c);
             patch_jmp(c,jf);
             while (check(c,KW_ELIF)&&c->lex.cur.col==header_col) {
                 int ec=peek(c).col; consume(c); parse_expr(c);
                 (void)ec;
-                int jf2=emit_jmp(c,OP_JF);
+                int jf2=emit_jmp_false(c);
                 parse_control_body(c,header_col);
                 if (nends>=256) die(c,"too many elif branches");
-                ends[nends++]=emit_jmp(c,OP_JMP);
+                ends[nends++]=emit_jmp_true(c);
                 patch_jmp(c,jf2);
             }
             if (check(c,KW_ELSE)&&c->lex.cur.col==header_col) {
@@ -703,18 +728,18 @@ static void parse_stmt(Cmp *c) {
             char ivar[64]; strncpy(ivar,consume(c).str,63);
             expect(c,KW_IN,"expected 'in'");
             parse_expr(c); expect(c,T_RPAREN,"expected ')'");
-            int arr_sl=declare_local(c,"__for_arr__"); emit2(c,OP_STLOC,(uint16_t)arr_sl);
-            emit2(c,OP_CONST,(uint16_t)add_int(c,0));
-            int idx_sl=declare_local(c,"__for_idx__"); emit2(c,OP_STLOC,(uint16_t)idx_sl);
-            int item_sl=declare_local(c,ivar); emit1(c,OP_NULL); emit2(c,OP_STLOC,(uint16_t)item_sl);
+            int arr_sl=declare_local(c,"__for_arr__"); emit2(c,OP_STA,(uint16_t)arr_sl);
+            emit2(c,OP_LIT,(uint16_t)add_int(c,0));
+            int idx_sl=declare_local(c,"__for_idx__"); emit2(c,OP_STA,(uint16_t)idx_sl);
+            int item_sl=declare_local(c,ivar); emit2(c,OP_LIT, add_null(c)); emit2(c,OP_STA,(uint16_t)item_sl);
             int cond=cf(c)->code_sz;
-            emit2(c,OP_LDLOC,(uint16_t)idx_sl); emit2(c,OP_LDLOC,(uint16_t)arr_sl); emit1(c,OP_ALEN); emit1(c,OP_LT);
-            int jend=emit_jmp(c,OP_JF);
-            emit2(c,OP_LDLOC,(uint16_t)arr_sl); emit2(c,OP_LDLOC,(uint16_t)idx_sl); emit1(c,OP_AGET); emit2(c,OP_STLOC,(uint16_t)item_sl);
+            emit2(c,OP_LDA,(uint16_t)idx_sl); emit2(c,OP_LDA,(uint16_t)arr_sl); emit1(c,OP_DEI); emit_u16(c, find_or_add_ext(c,"stdr.len")); emit1(c,1); emit1(c,OP_LTH);
+            int jend=emit_jmp_false(c);
+            emit2(c,OP_LDA,(uint16_t)arr_sl); emit2(c,OP_LDA,(uint16_t)idx_sl); emit_ext_call(c,"stdr.at",2); emit2(c,OP_STA,(uint16_t)item_sl);
             parse_block(c,header_col,false);
             int cont_here=cf(c)->code_sz;
             for(int i=0;i<lp->nconts;i++) patch_jmp_to(c,lp->conts[i],cont_here);
-            emit2(c,OP_LDLOC,(uint16_t)idx_sl); emit2(c,OP_CONST,(uint16_t)add_int(c,1)); emit1(c,OP_ADD); emit2(c,OP_STLOC,(uint16_t)idx_sl);
+            emit2(c,OP_LDA,(uint16_t)idx_sl); emit2(c,OP_LIT,(uint16_t)add_int(c,1)); emit1(c,OP_ADD); emit2(c,OP_STA,(uint16_t)idx_sl);
             emit1(c,OP_JMP); emit_i32(c,(int32_t)(cond-(cf(c)->code_sz+4)));
             patch_jmp(c,jend);
         } else {
@@ -724,7 +749,7 @@ static void parse_stmt(Cmp *c) {
                 char nm[64]; strncpy(nm,consume(c).str,63);
                 int sl=declare_local(c,nm);
                 expect(c,T_ASSIGN,"expected '=' in for init");
-                parse_expr(c); emit2(c,OP_STLOC,(uint16_t)sl);
+                parse_expr(c); emit2(c,OP_STA,(uint16_t)sl);
             } else if (!check(c,T_SEMI)) {
                 parse_expr(c); emit1(c,OP_POP);
             }
@@ -733,7 +758,7 @@ static void parse_stmt(Cmp *c) {
             int jend=-1;
             if (!check(c,T_SEMI)) {
                 parse_expr(c); /* condition */
-                jend=emit_jmp(c,OP_JF);
+                jend=emit_jmp_false(c);
             }
             expect(c,T_SEMI,"expected ';' in for");
             /* Save lex at step start; skip past ')' */
@@ -762,14 +787,14 @@ static void parse_stmt(Cmp *c) {
         consume(c);
         if (!c->nloops) die(c,"break outside loop");
         Loop *lp=&c->loops[c->nloops-1];
-        lp->breaks[lp->nbreaks++]=emit_jmp(c,OP_JMP);
+        lp->breaks[lp->nbreaks++]=emit_jmp_true(c);
         return;
     }
     if (t.kind==KW_CONTINUE) {
         consume(c);
         if (!c->nloops) die(c,"continue outside loop");
         Loop *lp=&c->loops[c->nloops-1];
-        lp->conts[lp->nconts++]=emit_jmp(c,OP_JMP);
+        lp->conts[lp->nconts++]=emit_jmp_true(c);
         return;
     }
     if (check(c,T_IDENT) && peek_is_assign(c)) { parse_assign_stmt(c); return; }
@@ -810,11 +835,11 @@ static void compile_lambda(Cmp *c) {
     expect(c,T_LBRACE,"expected '{' in lambda");
     parse_block(c,0,false);
     expect(c,T_RBRACE,"expected '}' in lambda");
-    emit1(c,OP_RETNULL);
+    emit2(c,OP_LIT, add_null(c)); emit1(c,OP_RET);
     c->cur_func=sv;
 
-    for(int i=0;i<captures;i++) emit2(c,OP_LDLOC,(uint16_t)i);
-    emit1(c,OP_CLOSURE);
+    for(int i=0;i<captures;i++) emit2(c,OP_LDA,(uint16_t)i);
+    emit1(c,OP_CLO);
     emit_u16(c,(uint16_t)fi);
     emit1(c,(uint8_t)captures);
 }
@@ -860,7 +885,7 @@ static void compile_func(Cmp *c, const char *fullname, bool is_entry) {
     parse_block(c,0,true); /* stop at ';' */
     if (c->funcs[fi].arity==0&&c->funcs[fi].code_sz==0)
         fprintf(stderr,"warning: empty function '%s'\n",fullname);
-    emit1(c,OP_RETNULL);
+    emit2(c,OP_LIT, add_null(c)); emit1(c,OP_RET);
     if (is_entry) c->entry_func=fi;
     c->cur_func=sv;
 }
@@ -886,7 +911,7 @@ static void parse_top(Cmp *c) {
             if (gi<0) gi=declare_global(c,nm);
             if (eat(c,T_ASSIGN)) {
                 int sv=c->cur_func; c->cur_func=c->init_func;
-                parse_expr(c); emit2(c,OP_STGLOB,(uint16_t)gi);
+                parse_expr(c); emit2(c,OP_STZ,(uint16_t)gi);
                 c->cur_func=sv;
             }
             continue;
@@ -1104,7 +1129,7 @@ int main(int argc, char **argv) {
         if (c->funcs[n].code_sz==0)
             fprintf(stderr,"warning: declared but not compiled '%s'\n",c->funcs[n].fullname);
     /* Finish init function */
-    int sv=c->cur_func; c->cur_func=c->init_func; emit1(c,OP_RETNULL); c->cur_func=sv;
+    int sv=c->cur_func; c->cur_func=c->init_func; emit2(c,OP_LIT, add_null(c)); emit1(c,OP_RET); c->cur_func=sv;
     resolve_patches(c);
     FILE *f=fopen(out,"wb"); if(!f){fprintf(stderr,"cannot write '%s'\n",out);return 1;}
     write_rom(c,f); fclose(f);

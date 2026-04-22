@@ -137,7 +137,6 @@ static Val val_div(Val a,Val b){
     int64_t ib=val_to_i64(b); if(ib==0){fprintf(stderr,"div by zero\n");return V_INT(0);}
     return V_INT(val_to_i64(a)/ib);
 }
-static Val val_mod(Val a,Val b){int64_t ib=val_to_i64(b);return ib?V_INT(val_to_i64(a)%ib):V_INT(0);}
 static bool val_lt(Val a,Val b){
     if(a.type==VT_STR&&b.type==VT_STR)return strcmp(a.str.s,b.str.s)<0;
     return val_to_f64(a)<val_to_f64(b);
@@ -296,8 +295,21 @@ static int val_u16_array(Val v, uint16_t *out, int max) {
 
 static int val_byte_array(Val v, uint8_t *out, int max) {
     if (v.type!=VT_ARR) return 0;
+    int arr_len=v.arr->len;
+    if (arr_len==0) return 0;
+    int all_small=1;
+    for(int i=0;i<arr_len;i++) {
+        int64_t val=val_to_i64(v.arr->items[i]);
+        if (val>=0x100) { all_small=0; }
+    }
+    if (all_small) {
+        int n=0;
+        for(int i=0;i<arr_len && n<max; i++)
+            out[n++]=(uint8_t)val_to_i64(v.arr->items[i]);
+        return n;
+    }
     int n=0;
-    for(int i=0;i<v.arr->len&&n<max;i++) {
+    for(int i=0;i<arr_len&&n<max;i++) {
         uint16_t word=(uint16_t)val_to_i64(v.arr->items[i]);
         if (n<max) out[n++]=(uint8_t)(word>>8);
         if (n<max) out[n++]=(uint8_t)(word&0xff);
@@ -748,8 +760,26 @@ static Val builtin(VM *vm, const char *name, Val *args, int argc) {
         if (v.type==VT_ARR) return V_INT(v.arr->len);
         return V_INT(0);
     }
+    if (!strcmp(name,"stdr.array")||!strcmp(name,"array")) {
+        return V_ARR_NEW();
+    }
     if (!strcmp(name,"stdr.push")||!strcmp(name,"push")) {
         if (argc>=2&&args[0].type==VT_ARR) { arr_push(args[0].arr,args[1]); return args[0]; }
+        return V_NULL;
+    }
+    if (!strcmp(name,"stdr.at")||!strcmp(name,"at")) {
+        if (argc<2) return V_NULL;
+        Val a=args[0]; int i=(int)val_to_i64(args[1]);
+        if (a.type==VT_ARR) return i>=0&&i<a.arr->len?a.arr->items[i]:V_NULL;
+        if (a.type==VT_STR) return i>=0&&i<a.str.len?V_STR_COPY(a.str.s+i,1):V_NULL;
+        return V_NULL;
+    }
+    if (!strcmp(name,"stdr.set")||!strcmp(name,"set")) {
+        if (argc>=3&&args[0].type==VT_ARR) {
+            int i=(int)val_to_i64(args[1]);
+            if(i>=0&&i<args[0].arr->len) args[0].arr->items[i]=args[2];
+            return args[0];
+        }
         return V_NULL;
     }
     if (!strcmp(name,"stdr.floor")||!strcmp(name,"math.floor")||!strcmp(name,"floor")) {
@@ -910,64 +940,55 @@ static Val vm_exec(VM *vm, int func_idx, Val *args, int argc) {
     while(1){
         uint8_t op=code[pc++];
         switch(op){
-        case OP_HALT: goto done;
-        case OP_CONST: {
-            uint16_t ci=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2;
-            RCon *k=&r->consts[ci];
-            switch(k->type){
-            case YCON_INT:  PUSH(V_INT(k->ival)); break;
-            case YCON_FLT:  PUSH(V_FLT(k->fval)); break;
-            case YCON_STR:  PUSH(V_STR_COPY(k->sval,k->slen)); break;
-            case YCON_BOOL: PUSH(V_BOOL(k->ival!=0)); break;
-            case YCON_NULL: PUSH(V_NULL); break;
-            }
-            break;
-        }
-        case OP_NULL:  PUSH(V_NULL);  break;
-        case OP_TRUE:  PUSH(V_TRUE);  break;
-        case OP_FALSE: PUSH(V_FALSE); break;
-        case OP_LDLOC: { uint16_t s=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; PUSH(s<nlocs?locals[s]:V_NULL); break; }
-        case OP_STLOC: { uint16_t s=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; if(s<nlocs)locals[s]=POP(); else POP(); break; }
-        case OP_LDGLOB:{ uint16_t g=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; PUSH(g<r->nglobals?r->glob_vals[g]:V_NULL); break; }
-        case OP_STGLOB:{ uint16_t g=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; if(g<r->nglobals)r->glob_vals[g]=POP(); else POP(); break; }
+        case OP_BRK: goto done;
+         case OP_LIT: {
+             uint16_t ci=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2;
+             RCon *k=&r->consts[ci];
+             switch(k->type){
+             case YCON_INT:  PUSH(V_INT(k->ival)); break;
+             case YCON_FLT:  PUSH(V_FLT(k->fval)); break;
+             case YCON_STR:  PUSH(V_STR_CSTR(k->sval)); break;
+             case YCON_BOOL: PUSH(V_BOOL(k->ival)); break;
+             case YCON_NULL: PUSH(V_NULL); break;
+             }
+             break;
+         }
+        case OP_LDA: { uint16_t s=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; PUSH(s<nlocs?locals[s]:V_NULL); break; }
+        case OP_STA: { uint16_t s=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; if(s<nlocs)locals[s]=POP(); else POP(); break; }
+        case OP_LDZ:{ uint16_t g=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; PUSH(g<r->nglobals?r->glob_vals[g]:V_NULL); break; }
+        case OP_STZ:{ uint16_t g=(uint16_t)(code[pc]|(code[pc+1]<<8)); pc+=2; if(g<r->nglobals)r->glob_vals[g]=POP(); else POP(); break; }
         case OP_POP:   POP(); break;
         case OP_DUP: { Val v=PEEK(); PUSH(v); break; }
+        case OP_NIP: { Val b=POP(); POP(); PUSH(b); break; }
         /* Arithmetic */
         case OP_ADD: { Val b=POP(),a=POP(); PUSH(val_add(a,b)); break; }
         case OP_SUB: { Val b=POP(),a=POP(); PUSH(val_sub(a,b)); break; }
         case OP_MUL: { Val b=POP(),a=POP(); PUSH(val_mul(a,b)); break; }
         case OP_DIV: { Val b=POP(),a=POP(); PUSH(val_div(a,b)); break; }
-        case OP_MOD: { Val b=POP(),a=POP(); PUSH(val_mod(a,b)); break; }
-        case OP_NEG: { Val a=POP(); PUSH(a.type==VT_FLT?V_FLT(-a.f):V_INT(-val_to_i64(a))); break; }
+
         /* Comparison */
-        case OP_EQ:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_eq(a,b))); break; }
+        case OP_EQU:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_eq(a,b))); break; }
         case OP_NEQ: { Val b=POP(),a=POP(); PUSH(V_BOOL(!val_eq(a,b))); break; }
-        case OP_LT:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_lt(a,b))); break; }
-        case OP_LE:  { Val b=POP(),a=POP(); PUSH(V_BOOL(!val_lt(b,a))); break; }
-        case OP_GT:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_lt(b,a))); break; }
-        case OP_GE:  { Val b=POP(),a=POP(); PUSH(V_BOOL(!val_lt(a,b))); break; }
+
+        case OP_LTH:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_lt(a,b))); break; }
+        case OP_GTH:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_lt(b,a))); break; }
         /* Logical */
         case OP_AND: { Val b=POP(),a=POP(); PUSH(V_BOOL(val_truthy(a)&&val_truthy(b))); break; }
-        case OP_OR:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_truthy(a)||val_truthy(b))); break; }
+        case OP_ORA:  { Val b=POP(),a=POP(); PUSH(V_BOOL(val_truthy(a)||val_truthy(b))); break; }
+        case OP_EOR: { Val b=POP(),a=POP(); PUSH(V_INT(val_to_i64(a) ^ val_to_i64(b))); break; }
         case OP_NOT: { Val a=POP(); PUSH(V_BOOL(!val_truthy(a))); break; }
-        /* Bitwise */
-        case OP_BAND: { Val b=POP(),a=POP(); PUSH(V_INT(val_to_i64(a)&val_to_i64(b))); break; }
-        case OP_BOR:  { Val b=POP(),a=POP(); PUSH(V_INT(val_to_i64(a)|val_to_i64(b))); break; }
-        case OP_SHL:  { Val b=POP(),a=POP(); PUSH(V_INT(val_to_i64(a)<<(val_to_i64(b)&63))); break; }
-        case OP_SHR:  { Val b=POP(),a=POP(); PUSH(V_INT(val_to_i64(a)>>(val_to_i64(b)&63))); break; }
-        case OP_ISNULL: { Val a=POP(); PUSH(V_BOOL(val_isnull(a))); break; }
         /* Jumps */
         case OP_JMP: { int32_t off;memcpy(&off,code+pc,4);pc+=4; pc+=off; break; }
-        case OP_JF:  { int32_t off;memcpy(&off,code+pc,4);pc+=4; if(!val_truthy(POP()))pc+=off; break; }
+        case OP_JCN: { int32_t off;memcpy(&off,code+pc,4);pc+=4; if(val_truthy(POP())) pc+=off; break; }
         /* Function calls */
-        case OP_CALL: {
+        case OP_FUN: {
             uint16_t fi=(uint16_t)(code[pc]|(code[pc+1]<<8)); uint8_t argc2=code[pc+2]; pc+=3;
             Val *cargs=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
             for(int i=argc2-1;i>=0;i--) cargs[i]=POP();
             PUSH(vm_exec(vm,fi,cargs,argc2));
             break;
         }
-        case OP_CEXT: {
+        case OP_DEI: {
             uint16_t ei=(uint16_t)(code[pc]|(code[pc+1]<<8)); uint8_t argc2=code[pc+2]; pc+=3;
             const char *ename = (ei<r->nexts) ? r->consts[r->exts[ei].name_idx].sval : "?";
             Val *cargs=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
@@ -975,7 +996,15 @@ static Val vm_exec(VM *vm, int func_idx, Val *args, int argc) {
             PUSH(builtin(vm,ename,cargs,argc2));
             break;
         }
-        case OP_CLOSURE: {
+        case OP_DEO: {
+            uint16_t ei=(uint16_t)(code[pc]|(code[pc+1]<<8)); uint8_t argc2=code[pc+2]; pc+=3;
+            const char *ename = (ei<r->nexts) ? r->consts[r->exts[ei].name_idx].sval : "?";
+            Val *cargs=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
+            for(int i=argc2-1;i>=0;i--) cargs[i]=POP();
+            (void)builtin(vm,ename,cargs,argc2);
+            break;
+        }
+        case OP_CLO: {
             uint16_t fi=(uint16_t)(code[pc]|(code[pc+1]<<8)); uint8_t argc2=code[pc+2]; pc+=3;
             Val *caps=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
             for(int i=argc2-1;i>=0;i--) caps[i]=POP();
@@ -983,27 +1012,17 @@ static Val vm_exec(VM *vm, int func_idx, Val *args, int argc) {
             break;
         }
         case OP_RET:     ret=POP(); goto done;
-        case OP_RETNULL: ret=V_NULL; goto done;
-        /* Array ops */
-        case OP_NEWARR: PUSH(V_ARR_NEW()); break;
-        case OP_APUSH:  { Val v=POP(),a=PEEK(); if(a.type==VT_ARR)arr_push(a.arr,v); break; }
-        case OP_AGET:   { Val idx=POP(),a=POP();
-            if(a.type==VT_ARR){int i=(int)val_to_i64(idx);PUSH(i>=0&&i<a.arr->len?a.arr->items[i]:V_NULL);}
-            else if(a.type==VT_STR){int i=(int)val_to_i64(idx);PUSH(i>=0&&i<a.str.len?V_STR_COPY(a.str.s+i,1):V_NULL);}
-            else PUSH(V_NULL); break; }
-        case OP_ASET:   { Val v=POP(),idx=POP(),a=POP();
-            if(a.type==VT_ARR){int i=(int)val_to_i64(idx);if(i>=0&&i<a.arr->len)a.arr->items[i]=v;}
-            PUSH(a); break; }
-        case OP_ALEN:   { Val a=POP();
-            if(a.type==VT_ARR)PUSH(V_INT(a.arr->len));
-            else if(a.type==VT_STR)PUSH(V_INT(a.str.len));
-            else PUSH(V_INT(0)); break; }
-        /* String / misc */
-        case OP_STRCAT: { Val b=POP(),a=POP(); PUSH(val_add(a,b)); break; }
-        case OP_FLOOR:  { Val a=POP(); PUSH(V_INT((int64_t)floor(val_to_f64(a)))); break; }
-        case OP_TOSTR:  { Val a=POP(); char buf[256]; val_to_str(a,buf,256); PUSH(V_STR_CSTR(buf)); break; }
-        case OP_TOINT:  { Val a=POP(); PUSH(V_INT(val_to_i64(a))); break; }
-        case OP_TOFLT:  { Val a=POP(); PUSH(V_FLT(val_to_f64(a))); break; }
+        /* Stack ops */
+        case OP_SWP: { Val b=POP(),a=POP(); PUSH(b); PUSH(a); break; }
+        case OP_OVR: { Val b=POP(),a=PEEK(); PUSH(b); PUSH(a); break; }
+        case OP_ROT: { Val c=POP(),b=POP(),a=POP(); PUSH(b); PUSH(c); PUSH(a); break; }
+        case OP_SFT: {
+            Val b=POP(),a=POP();
+            int64_t s=val_to_i64(b);
+            int sh=(int)((s<0?-s:s)&63);
+            PUSH(s<0?V_INT(val_to_i64(a)>>sh):V_INT(val_to_i64(a)<<sh));
+            break;
+        }
         default:
             fprintf(stderr,"unknown opcode 0x%02X at pc=%d in func %d\n",op,pc-1,func_idx);
             goto done;
