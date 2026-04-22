@@ -438,109 +438,109 @@ static Val builtin_vimana(const char *name, Val *args, int argc) {
 }
 
 typedef enum {
-    VMETH_NONE=0,
-    VMETH_RUN, VMETH_QUIT, VMETH_FILE, VMETH_DEVICE, VMETH_DATETIME,
-    VMETH_CONSOLE, VMETH_TICKS, VMETH_SLEEP, VMETH_CLIPBOARD_TEXT,
-    VMETH_SET_CLIPBOARD_TEXT, VMETH_HOME_DIR, VMETH_PLAY_TONE,
-    VMETH_SET_VOICE, VMETH_SET_ENVELOPE, VMETH_SET_PULSE_WIDTH,
-    VMETH_PLAY_VOICE, VMETH_STOP_VOICE, VMETH_SET_FREQUENCY,
-    VMETH_SET_SYNC, VMETH_SET_RING_MOD, VMETH_SET_FILTER,
-    VMETH_SET_FILTER_ROUTE, VMETH_SET_MASTER_VOLUME, VMETH_BEGIN_AUDIO,
-    VMETH_END_AUDIO, VMETH_SET_PADDLE, VMETH_PADDLE, VMETH_SPAWN,
-    VMETH_PROC_WRITE, VMETH_PROC_READ_LINE, VMETH_PROC_RUNNING,
-    VMETH_PROC_KILL, VMETH_PROC_FREE,
-    VMETH_CLEAR, VMETH_SET_PALETTE, VMETH_SET_FONT, VMETH_SET_FONT_WIDTH,
-    VMETH_SET_FONT_SIZE, VMETH_SET_THEME_SWAP, VMETH_SET_SPRITE,
-    VMETH_SET_GFX, VMETH_GFX, VMETH_SET_X, VMETH_SET_Y, VMETH_SET_ADDR,
-    VMETH_SET_AUTO, VMETH_SET_SPRITE_BANK, VMETH_SPRITE_BANK,
-    VMETH_SPRITE, VMETH_PIXEL, VMETH_PUT_TEXT, VMETH_PUT_ICN,
-    VMETH_PRESENT, VMETH_SET_DRAG_REGION, VMETH_SET_CURSOR,
-    VMETH_HIDE_CURSOR, VMETH_SHOW_CURSOR, VMETH_X, VMETH_Y, VMETH_ADDR,
-    VMETH_AUTO, VMETH_WIDTH, VMETH_HEIGHT, VMETH_SCALE,
-    VMETH_EXISTS, VMETH_READ_BYTES, VMETH_READ_TEXT, VMETH_WRITE_BYTES,
-    VMETH_WRITE_TEXT, VMETH_REMOVE, VMETH_RENAME, VMETH_LIST, VMETH_IS_DIR,
-    VMETH_POLL, VMETH_CONTROLLER, VMETH_CONTROLLER_DOWN,
-    VMETH_CONTROLLER_PRESSED, VMETH_KEY_DOWN, VMETH_KEY_PRESSED,
-    VMETH_MOUSE_DOWN, VMETH_MOUSE_PRESSED, VMETH_POINTER_X, VMETH_POINTER_Y,
-    VMETH_TILE_X, VMETH_TILE_Y, VMETH_WHEEL_X, VMETH_WHEEL_Y,
-    VMETH_TEXT_INPUT,
-    VMETH_NOW, VMETH_YEAR, VMETH_MONTH, VMETH_DAY, VMETH_HOUR,
-    VMETH_MINUTE, VMETH_SECOND, VMETH_WEEKDAY, VMETH_YDAY, VMETH_DST,
-    VMETH_YEAR_AT, VMETH_MONTH_AT, VMETH_DAY_AT, VMETH_HOUR_AT,
-    VMETH_MINUTE_AT, VMETH_SECOND_AT, VMETH_WEEKDAY_AT, VMETH_YDAY_AT,
-    VMETH_DST_AT,
-    VMETH_PENDING, VMETH_INPUT, VMETH_TYPE, VMETH_NEXT, VMETH_PUSH,
-    VMETH_STDOUT, VMETH_STDERR, VMETH_STDERR_HEX
+    VMT_NONE=0,
+    VMT_RUN, VMT_QUIT, VMT_FILE, VMT_DEVICE, VMT_DATETIME,
+    VMT_CONSOLE, VMT_TICKS, VMT_SLEEP, VMT_CLIPBOARD_TEXT,
+    VMT_SET_CLIPBOARD_TEXT, VMT_HOME_DIR, VMT_PLAY_TONE,
+    VMT_SET_VOICE, VMT_SET_ENVELOPE, VMT_SET_PULSE_WIDTH,
+    VMT_PLAY_VOICE, VMT_STOP_VOICE, VMT_SET_FREQUENCY,
+    VMT_SET_SYNC, VMT_SET_RING_MOD, VMT_SET_FILTER,
+    VMT_SET_FILTER_ROUTE, VMT_SET_MASTER_VOLUME, VMT_BEGIN_AUDIO,
+    VMT_END_AUDIO, VMT_SET_PADDLE, VMT_PADDLE, VMT_SPAWN,
+    VMT_PROC_WRITE, VMT_PROC_READ_LINE, VMT_PROC_RUNNING,
+    VMT_PROC_KILL, VMT_PROC_FREE,
+    VMT_CLEAR, VMT_SET_PALETTE, VMT_SET_FONT, VMT_SET_FONT_WIDTH,
+    VMT_SET_FONT_SIZE, VMT_SET_THEME_SWAP, VMT_SET_SPRITE,
+    VMT_SET_GFX, VMT_GFX, VMT_SET_X, VMT_SET_Y, VMT_SET_ADDR,
+    VMT_SET_AUTO, VMT_SET_SPRITE_BANK, VMT_SPRITE_BANK,
+    VMT_SPRITE, VMT_PIXEL, VMT_PUT_TEXT, VMT_PUT_ICN,
+    VMT_PRESENT, VMT_SET_DRAG_REGION, VMT_SET_CURSOR,
+    VMT_HIDE_CURSOR, VMT_SHOW_CURSOR, VMT_X, VMT_Y, VMT_ADDR,
+    VMT_AUTO, VMT_WIDTH, VMT_HEIGHT, VMT_SCALE,
+    VMT_EXISTS, VMT_READ_BYTES, VMT_READ_TEXT, VMT_WRITE_BYTES,
+    VMT_WRITE_TEXT, VMT_REMOVE, VMT_RENAME, VMT_LIST, VMT_IS_DIR,
+    VMT_POLL, VMT_CONTROLLER, VMT_CONTROLLER_DOWN,
+    VMT_CONTROLLER_PRESSED, VMT_KEY_DOWN, VMT_KEY_PRESSED,
+    VMT_MOUSE_DOWN, VMT_MOUSE_PRESSED, VMT_POINTER_X, VMT_POINTER_Y,
+    VMT_TILE_X, VMT_TILE_Y, VMT_WHEEL_X, VMT_WHEEL_Y,
+    VMT_TEXT_INPUT,
+    VMT_NOW, VMT_YEAR, VMT_MONTH, VMT_DAY, VMT_HOUR,
+    VMT_MINUTE, VMT_SECOND, VMT_WEEKDAY, VMT_YDAY, VMT_DST,
+    VMT_YEAR_AT, VMT_MONTH_AT, VMT_DAY_AT, VMT_HOUR_AT,
+    VMT_MINUTE_AT, VMT_SECOND_AT, VMT_WEEKDAY_AT, VMT_YDAY_AT,
+    VMT_DST_AT,
+    VMT_PENDING, VMT_INPUT, VMT_TYPE, VMT_NEXT, VMT_PUSH,
+    VMT_STDOUT, VMT_STDERR, VMT_STDERR_HEX
 } VimanaMethodId;
 
 typedef struct { ObjKind kind; const char *name; VimanaMethodId id; } VimanaMethod;
 
 static const VimanaMethod VIMANA_METHODS[] = {
-    {OBJ_SYSTEM,"run",VMETH_RUN},{OBJ_SYSTEM,"quit",VMETH_QUIT},
-    {OBJ_SYSTEM,"file",VMETH_FILE},{OBJ_SYSTEM,"device",VMETH_DEVICE},
-    {OBJ_SYSTEM,"datetime",VMETH_DATETIME},{OBJ_SYSTEM,"console",VMETH_CONSOLE},
-    {OBJ_SYSTEM,"ticks",VMETH_TICKS},{OBJ_SYSTEM,"sleep",VMETH_SLEEP},
-    {OBJ_SYSTEM,"clipboard_text",VMETH_CLIPBOARD_TEXT},
-    {OBJ_SYSTEM,"set_clipboard_text",VMETH_SET_CLIPBOARD_TEXT},
-    {OBJ_SYSTEM,"home_dir",VMETH_HOME_DIR},{OBJ_SYSTEM,"play_tone",VMETH_PLAY_TONE},
-    {OBJ_SYSTEM,"set_voice",VMETH_SET_VOICE},{OBJ_SYSTEM,"set_envelope",VMETH_SET_ENVELOPE},
-    {OBJ_SYSTEM,"set_pulse_width",VMETH_SET_PULSE_WIDTH},
-    {OBJ_SYSTEM,"play_voice",VMETH_PLAY_VOICE},{OBJ_SYSTEM,"stop_voice",VMETH_STOP_VOICE},
-    {OBJ_SYSTEM,"set_frequency",VMETH_SET_FREQUENCY},{OBJ_SYSTEM,"set_sync",VMETH_SET_SYNC},
-    {OBJ_SYSTEM,"set_ring_mod",VMETH_SET_RING_MOD},{OBJ_SYSTEM,"set_filter",VMETH_SET_FILTER},
-    {OBJ_SYSTEM,"set_filter_route",VMETH_SET_FILTER_ROUTE},
-    {OBJ_SYSTEM,"set_master_volume",VMETH_SET_MASTER_VOLUME},
-    {OBJ_SYSTEM,"begin_audio",VMETH_BEGIN_AUDIO},{OBJ_SYSTEM,"end_audio",VMETH_END_AUDIO},
-    {OBJ_SYSTEM,"set_paddle",VMETH_SET_PADDLE},{OBJ_SYSTEM,"paddle",VMETH_PADDLE},
-    {OBJ_SYSTEM,"spawn",VMETH_SPAWN},{OBJ_SYSTEM,"proc_write",VMETH_PROC_WRITE},
-    {OBJ_SYSTEM,"proc_read_line",VMETH_PROC_READ_LINE},
-    {OBJ_SYSTEM,"proc_running",VMETH_PROC_RUNNING},{OBJ_SYSTEM,"proc_kill",VMETH_PROC_KILL},
-    {OBJ_SYSTEM,"proc_free",VMETH_PROC_FREE},
-    {OBJ_SCREEN,"clear",VMETH_CLEAR},{OBJ_SCREEN,"set_palette",VMETH_SET_PALETTE},
-    {OBJ_SCREEN,"set_font",VMETH_SET_FONT},{OBJ_SCREEN,"set_font_width",VMETH_SET_FONT_WIDTH},
-    {OBJ_SCREEN,"set_font_size",VMETH_SET_FONT_SIZE},
-    {OBJ_SCREEN,"set_theme_swap",VMETH_SET_THEME_SWAP},
-    {OBJ_SCREEN,"set_sprite",VMETH_SET_SPRITE},{OBJ_SCREEN,"set_gfx",VMETH_SET_GFX},
-    {OBJ_SCREEN,"gfx",VMETH_GFX},{OBJ_SCREEN,"set_x",VMETH_SET_X},
-    {OBJ_SCREEN,"set_y",VMETH_SET_Y},{OBJ_SCREEN,"set_addr",VMETH_SET_ADDR},
-    {OBJ_SCREEN,"set_auto",VMETH_SET_AUTO},{OBJ_SCREEN,"set_sprite_bank",VMETH_SET_SPRITE_BANK},
-    {OBJ_SCREEN,"sprite_bank",VMETH_SPRITE_BANK},{OBJ_SCREEN,"sprite",VMETH_SPRITE},
-    {OBJ_SCREEN,"pixel",VMETH_PIXEL},{OBJ_SCREEN,"put_text",VMETH_PUT_TEXT},
-    {OBJ_SCREEN,"put_icn",VMETH_PUT_ICN},{OBJ_SCREEN,"present",VMETH_PRESENT},
-    {OBJ_SCREEN,"set_drag_region",VMETH_SET_DRAG_REGION},
-    {OBJ_SCREEN,"set_cursor",VMETH_SET_CURSOR},{OBJ_SCREEN,"hide_cursor",VMETH_HIDE_CURSOR},
-    {OBJ_SCREEN,"show_cursor",VMETH_SHOW_CURSOR},{OBJ_SCREEN,"x",VMETH_X},
-    {OBJ_SCREEN,"y",VMETH_Y},{OBJ_SCREEN,"addr",VMETH_ADDR},
-    {OBJ_SCREEN,"auto",VMETH_AUTO},{OBJ_SCREEN,"width",VMETH_WIDTH},
-    {OBJ_SCREEN,"height",VMETH_HEIGHT},{OBJ_SCREEN,"scale",VMETH_SCALE},
-    {OBJ_FILE,"exists",VMETH_EXISTS},{OBJ_FILE,"read_bytes",VMETH_READ_BYTES},
-    {OBJ_FILE,"read_text",VMETH_READ_TEXT},{OBJ_FILE,"write_bytes",VMETH_WRITE_BYTES},
-    {OBJ_FILE,"write_text",VMETH_WRITE_TEXT},{OBJ_FILE,"remove",VMETH_REMOVE},
-    {OBJ_FILE,"rename",VMETH_RENAME},{OBJ_FILE,"list",VMETH_LIST},
-    {OBJ_FILE,"is_dir",VMETH_IS_DIR},
-    {OBJ_DEVICE,"poll",VMETH_POLL},{OBJ_DEVICE,"controller",VMETH_CONTROLLER},
-    {OBJ_DEVICE,"controller_down",VMETH_CONTROLLER_DOWN},
-    {OBJ_DEVICE,"controller_pressed",VMETH_CONTROLLER_PRESSED},
-    {OBJ_DEVICE,"key_down",VMETH_KEY_DOWN},{OBJ_DEVICE,"key_pressed",VMETH_KEY_PRESSED},
-    {OBJ_DEVICE,"mouse_down",VMETH_MOUSE_DOWN},{OBJ_DEVICE,"mouse_pressed",VMETH_MOUSE_PRESSED},
-    {OBJ_DEVICE,"pointer_x",VMETH_POINTER_X},{OBJ_DEVICE,"pointer_y",VMETH_POINTER_Y},
-    {OBJ_DEVICE,"tile_x",VMETH_TILE_X},{OBJ_DEVICE,"tile_y",VMETH_TILE_Y},
-    {OBJ_DEVICE,"wheel_x",VMETH_WHEEL_X},{OBJ_DEVICE,"wheel_y",VMETH_WHEEL_Y},
-    {OBJ_DEVICE,"text_input",VMETH_TEXT_INPUT},
-    {OBJ_DATETIME,"now",VMETH_NOW},{OBJ_DATETIME,"year",VMETH_YEAR},
-    {OBJ_DATETIME,"month",VMETH_MONTH},{OBJ_DATETIME,"day",VMETH_DAY},
-    {OBJ_DATETIME,"hour",VMETH_HOUR},{OBJ_DATETIME,"minute",VMETH_MINUTE},
-    {OBJ_DATETIME,"second",VMETH_SECOND},{OBJ_DATETIME,"weekday",VMETH_WEEKDAY},
-    {OBJ_DATETIME,"yday",VMETH_YDAY},{OBJ_DATETIME,"dst",VMETH_DST},
-    {OBJ_DATETIME,"year_at",VMETH_YEAR_AT},{OBJ_DATETIME,"month_at",VMETH_MONTH_AT},
-    {OBJ_DATETIME,"day_at",VMETH_DAY_AT},{OBJ_DATETIME,"hour_at",VMETH_HOUR_AT},
-    {OBJ_DATETIME,"minute_at",VMETH_MINUTE_AT},{OBJ_DATETIME,"second_at",VMETH_SECOND_AT},
-    {OBJ_DATETIME,"weekday_at",VMETH_WEEKDAY_AT},{OBJ_DATETIME,"yday_at",VMETH_YDAY_AT},
-    {OBJ_DATETIME,"dst_at",VMETH_DST_AT},
-    {OBJ_CONSOLE,"pending",VMETH_PENDING},{OBJ_CONSOLE,"input",VMETH_INPUT},
-    {OBJ_CONSOLE,"type",VMETH_TYPE},{OBJ_CONSOLE,"next",VMETH_NEXT},
-    {OBJ_CONSOLE,"push",VMETH_PUSH},{OBJ_CONSOLE,"stdout",VMETH_STDOUT},
-    {OBJ_CONSOLE,"stderr",VMETH_STDERR},{OBJ_CONSOLE,"stderr_hex",VMETH_STDERR_HEX},
+    {OBJ_SYSTEM,"run",VMT_RUN},{OBJ_SYSTEM,"quit",VMT_QUIT},
+    {OBJ_SYSTEM,"file",VMT_FILE},{OBJ_SYSTEM,"device",VMT_DEVICE},
+    {OBJ_SYSTEM,"datetime",VMT_DATETIME},{OBJ_SYSTEM,"console",VMT_CONSOLE},
+    {OBJ_SYSTEM,"ticks",VMT_TICKS},{OBJ_SYSTEM,"sleep",VMT_SLEEP},
+    {OBJ_SYSTEM,"clipboard_text",VMT_CLIPBOARD_TEXT},
+    {OBJ_SYSTEM,"set_clipboard_text",VMT_SET_CLIPBOARD_TEXT},
+    {OBJ_SYSTEM,"home_dir",VMT_HOME_DIR},{OBJ_SYSTEM,"play_tone",VMT_PLAY_TONE},
+    {OBJ_SYSTEM,"set_voice",VMT_SET_VOICE},{OBJ_SYSTEM,"set_envelope",VMT_SET_ENVELOPE},
+    {OBJ_SYSTEM,"set_pulse_width",VMT_SET_PULSE_WIDTH},
+    {OBJ_SYSTEM,"play_voice",VMT_PLAY_VOICE},{OBJ_SYSTEM,"stop_voice",VMT_STOP_VOICE},
+    {OBJ_SYSTEM,"set_frequency",VMT_SET_FREQUENCY},{OBJ_SYSTEM,"set_sync",VMT_SET_SYNC},
+    {OBJ_SYSTEM,"set_ring_mod",VMT_SET_RING_MOD},{OBJ_SYSTEM,"set_filter",VMT_SET_FILTER},
+    {OBJ_SYSTEM,"set_filter_route",VMT_SET_FILTER_ROUTE},
+    {OBJ_SYSTEM,"set_master_volume",VMT_SET_MASTER_VOLUME},
+    {OBJ_SYSTEM,"begin_audio",VMT_BEGIN_AUDIO},{OBJ_SYSTEM,"end_audio",VMT_END_AUDIO},
+    {OBJ_SYSTEM,"set_paddle",VMT_SET_PADDLE},{OBJ_SYSTEM,"paddle",VMT_PADDLE},
+    {OBJ_SYSTEM,"spawn",VMT_SPAWN},{OBJ_SYSTEM,"proc_write",VMT_PROC_WRITE},
+    {OBJ_SYSTEM,"proc_read_line",VMT_PROC_READ_LINE},
+    {OBJ_SYSTEM,"proc_running",VMT_PROC_RUNNING},{OBJ_SYSTEM,"proc_kill",VMT_PROC_KILL},
+    {OBJ_SYSTEM,"proc_free",VMT_PROC_FREE},
+    {OBJ_SCREEN,"clear",VMT_CLEAR},{OBJ_SCREEN,"set_palette",VMT_SET_PALETTE},
+    {OBJ_SCREEN,"set_font",VMT_SET_FONT},{OBJ_SCREEN,"set_font_width",VMT_SET_FONT_WIDTH},
+    {OBJ_SCREEN,"set_font_size",VMT_SET_FONT_SIZE},
+    {OBJ_SCREEN,"set_theme_swap",VMT_SET_THEME_SWAP},
+    {OBJ_SCREEN,"set_sprite",VMT_SET_SPRITE},{OBJ_SCREEN,"set_gfx",VMT_SET_GFX},
+    {OBJ_SCREEN,"gfx",VMT_GFX},{OBJ_SCREEN,"set_x",VMT_SET_X},
+    {OBJ_SCREEN,"set_y",VMT_SET_Y},{OBJ_SCREEN,"set_addr",VMT_SET_ADDR},
+    {OBJ_SCREEN,"set_auto",VMT_SET_AUTO},{OBJ_SCREEN,"set_sprite_bank",VMT_SET_SPRITE_BANK},
+    {OBJ_SCREEN,"sprite_bank",VMT_SPRITE_BANK},{OBJ_SCREEN,"sprite",VMT_SPRITE},
+    {OBJ_SCREEN,"pixel",VMT_PIXEL},{OBJ_SCREEN,"put_text",VMT_PUT_TEXT},
+    {OBJ_SCREEN,"put_icn",VMT_PUT_ICN},{OBJ_SCREEN,"present",VMT_PRESENT},
+    {OBJ_SCREEN,"set_drag_region",VMT_SET_DRAG_REGION},
+    {OBJ_SCREEN,"set_cursor",VMT_SET_CURSOR},{OBJ_SCREEN,"hide_cursor",VMT_HIDE_CURSOR},
+    {OBJ_SCREEN,"show_cursor",VMT_SHOW_CURSOR},{OBJ_SCREEN,"x",VMT_X},
+    {OBJ_SCREEN,"y",VMT_Y},{OBJ_SCREEN,"addr",VMT_ADDR},
+    {OBJ_SCREEN,"auto",VMT_AUTO},{OBJ_SCREEN,"width",VMT_WIDTH},
+    {OBJ_SCREEN,"height",VMT_HEIGHT},{OBJ_SCREEN,"scale",VMT_SCALE},
+    {OBJ_FILE,"exists",VMT_EXISTS},{OBJ_FILE,"read_bytes",VMT_READ_BYTES},
+    {OBJ_FILE,"read_text",VMT_READ_TEXT},{OBJ_FILE,"write_bytes",VMT_WRITE_BYTES},
+    {OBJ_FILE,"write_text",VMT_WRITE_TEXT},{OBJ_FILE,"remove",VMT_REMOVE},
+    {OBJ_FILE,"rename",VMT_RENAME},{OBJ_FILE,"list",VMT_LIST},
+    {OBJ_FILE,"is_dir",VMT_IS_DIR},
+    {OBJ_DEVICE,"poll",VMT_POLL},{OBJ_DEVICE,"controller",VMT_CONTROLLER},
+    {OBJ_DEVICE,"controller_down",VMT_CONTROLLER_DOWN},
+    {OBJ_DEVICE,"controller_pressed",VMT_CONTROLLER_PRESSED},
+    {OBJ_DEVICE,"key_down",VMT_KEY_DOWN},{OBJ_DEVICE,"key_pressed",VMT_KEY_PRESSED},
+    {OBJ_DEVICE,"mouse_down",VMT_MOUSE_DOWN},{OBJ_DEVICE,"mouse_pressed",VMT_MOUSE_PRESSED},
+    {OBJ_DEVICE,"pointer_x",VMT_POINTER_X},{OBJ_DEVICE,"pointer_y",VMT_POINTER_Y},
+    {OBJ_DEVICE,"tile_x",VMT_TILE_X},{OBJ_DEVICE,"tile_y",VMT_TILE_Y},
+    {OBJ_DEVICE,"wheel_x",VMT_WHEEL_X},{OBJ_DEVICE,"wheel_y",VMT_WHEEL_Y},
+    {OBJ_DEVICE,"text_input",VMT_TEXT_INPUT},
+    {OBJ_DATETIME,"now",VMT_NOW},{OBJ_DATETIME,"year",VMT_YEAR},
+    {OBJ_DATETIME,"month",VMT_MONTH},{OBJ_DATETIME,"day",VMT_DAY},
+    {OBJ_DATETIME,"hour",VMT_HOUR},{OBJ_DATETIME,"minute",VMT_MINUTE},
+    {OBJ_DATETIME,"second",VMT_SECOND},{OBJ_DATETIME,"weekday",VMT_WEEKDAY},
+    {OBJ_DATETIME,"yday",VMT_YDAY},{OBJ_DATETIME,"dst",VMT_DST},
+    {OBJ_DATETIME,"year_at",VMT_YEAR_AT},{OBJ_DATETIME,"month_at",VMT_MONTH_AT},
+    {OBJ_DATETIME,"day_at",VMT_DAY_AT},{OBJ_DATETIME,"hour_at",VMT_HOUR_AT},
+    {OBJ_DATETIME,"minute_at",VMT_MINUTE_AT},{OBJ_DATETIME,"second_at",VMT_SECOND_AT},
+    {OBJ_DATETIME,"weekday_at",VMT_WEEKDAY_AT},{OBJ_DATETIME,"yday_at",VMT_YDAY_AT},
+    {OBJ_DATETIME,"dst_at",VMT_DST_AT},
+    {OBJ_CONSOLE,"pending",VMT_PENDING},{OBJ_CONSOLE,"input",VMT_INPUT},
+    {OBJ_CONSOLE,"type",VMT_TYPE},{OBJ_CONSOLE,"next",VMT_NEXT},
+    {OBJ_CONSOLE,"push",VMT_PUSH},{OBJ_CONSOLE,"stdout",VMT_STDOUT},
+    {OBJ_CONSOLE,"stderr",VMT_STDERR},{OBJ_CONSOLE,"stderr_hex",VMT_STDERR_HEX},
 };
 
 static VimanaMethodId vimana_method_id(ObjKind kind, const char *name) {
@@ -548,7 +548,7 @@ static VimanaMethodId vimana_method_id(ObjKind kind, const char *name) {
     for(size_t i=0;i<n;i++)
         if(VIMANA_METHODS[i].kind==kind&&!strcmp(VIMANA_METHODS[i].name,name))
             return VIMANA_METHODS[i].id;
-    return VMETH_NONE;
+    return VMT_NONE;
 }
 
 static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
@@ -565,131 +565,131 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     VimanaMethodId id=vimana_method_id(self.obj.kind,m);
 
     switch(id) {
-    case VMETH_RUN: {
+    case VMT_RUN: {
         vimana_screen *s=(argc>1&&obj_is(args[1],OBJ_SCREEN))?(vimana_screen *)args[1].obj.ptr:NULL;
         FrameCtx ctx={vm,argc>2?args[2]:V_NULL};
         vimana_system_run(sys,s,vimana_frame_bridge,&ctx); return self;
     }
-    case VMETH_QUIT: vimana_system_quit(sys); return self;
-    case VMETH_FILE: return V_OBJ(OBJ_FILE,sys);
-    case VMETH_DEVICE: return V_OBJ(OBJ_DEVICE,sys);
-    case VMETH_DATETIME: return V_OBJ(OBJ_DATETIME,sys);
-    case VMETH_CONSOLE: return V_OBJ(OBJ_CONSOLE,sys);
-    case VMETH_TICKS: return V_INT(vimana_system_ticks(sys));
-    case VMETH_SLEEP: if(argc>1)vimana_system_sleep(sys,val_to_i64(args[1])); return self;
-    case VMETH_CLIPBOARD_TEXT: { char *s=vimana_system_clipboard_text(sys); Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
-    case VMETH_SET_CLIPBOARD_TEXT: { char b[4096]; return V_BOOL(argc>1&&vimana_system_set_clipboard_text(sys,val_cstr(args[1],b,sizeof(b)))); }
-    case VMETH_HOME_DIR: { char *s=vimana_system_home_dir(sys); Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
-    case VMETH_PLAY_TONE: if(argc>3)vimana_system_play_tone(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
-    case VMETH_SET_VOICE: if(argc>2)vimana_system_set_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMETH_SET_ENVELOPE: if(argc>5)vimana_system_set_envelope(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3]),(int)val_to_i64(args[4]),(int)val_to_i64(args[5])); return self;
-    case VMETH_SET_PULSE_WIDTH: if(argc>2)vimana_system_set_pulse_width(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMETH_PLAY_VOICE: if(argc>3)vimana_system_play_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
-    case VMETH_STOP_VOICE: if(argc>1)vimana_system_stop_voice(sys,(int)val_to_i64(args[1])); return self;
-    case VMETH_SET_FREQUENCY: if(argc>2)vimana_system_set_frequency(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMETH_SET_SYNC: if(argc>2)vimana_system_set_sync(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMETH_SET_RING_MOD: if(argc>2)vimana_system_set_ring_mod(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMETH_SET_FILTER: if(argc>3)vimana_system_set_filter(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
-    case VMETH_SET_FILTER_ROUTE: if(argc>2)vimana_system_set_filter_route(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMETH_SET_MASTER_VOLUME: if(argc>1)vimana_system_set_master_volume(sys,(int)val_to_i64(args[1])); return self;
-    case VMETH_BEGIN_AUDIO: vimana_system_begin_audio(sys); return self;
-    case VMETH_END_AUDIO: vimana_system_end_audio(sys); return self;
-    case VMETH_SET_PADDLE: if(argc>2)vimana_system_set_paddle(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
-    case VMETH_PADDLE: return argc>1?V_INT(vimana_system_get_paddle(sys,(int)val_to_i64(args[1]))):V_INT(0);
-    case VMETH_SPAWN: { char b[4096]; return argc>1?V_OBJ(OBJ_PROCESS,vimana_process_spawn(sys,val_cstr(args[1],b,sizeof(b)))):V_NULL; }
-    case VMETH_PROC_WRITE: { char b[4096]; return V_BOOL(argc>2&&obj_is(args[1],OBJ_PROCESS)&&vimana_process_write((vimana_process *)args[1].obj.ptr,val_cstr(args[2],b,sizeof(b)))); }
-    case VMETH_PROC_READ_LINE: { char *s=(argc>1&&obj_is(args[1],OBJ_PROCESS))?vimana_process_read_line((vimana_process *)args[1].obj.ptr):NULL; Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
-    case VMETH_PROC_RUNNING: return V_BOOL(argc>1&&obj_is(args[1],OBJ_PROCESS)&&vimana_process_running((vimana_process *)args[1].obj.ptr));
-    case VMETH_PROC_KILL: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_kill((vimana_process *)args[1].obj.ptr); return self;
-    case VMETH_PROC_FREE: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_free((vimana_process *)args[1].obj.ptr); return self;
+    case VMT_QUIT: vimana_system_quit(sys); return self;
+    case VMT_FILE: return V_OBJ(OBJ_FILE,sys);
+    case VMT_DEVICE: return V_OBJ(OBJ_DEVICE,sys);
+    case VMT_DATETIME: return V_OBJ(OBJ_DATETIME,sys);
+    case VMT_CONSOLE: return V_OBJ(OBJ_CONSOLE,sys);
+    case VMT_TICKS: return V_INT(vimana_system_ticks(sys));
+    case VMT_SLEEP: if(argc>1)vimana_system_sleep(sys,val_to_i64(args[1])); return self;
+    case VMT_CLIPBOARD_TEXT: { char *s=vimana_system_clipboard_text(sys); Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
+    case VMT_SET_CLIPBOARD_TEXT: { char b[4096]; return V_BOOL(argc>1&&vimana_system_set_clipboard_text(sys,val_cstr(args[1],b,sizeof(b)))); }
+    case VMT_HOME_DIR: { char *s=vimana_system_home_dir(sys); Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
+    case VMT_PLAY_TONE: if(argc>3)vimana_system_play_tone(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
+    case VMT_SET_VOICE: if(argc>2)vimana_system_set_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
+    case VMT_SET_ENVELOPE: if(argc>5)vimana_system_set_envelope(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3]),(int)val_to_i64(args[4]),(int)val_to_i64(args[5])); return self;
+    case VMT_SET_PULSE_WIDTH: if(argc>2)vimana_system_set_pulse_width(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
+    case VMT_PLAY_VOICE: if(argc>3)vimana_system_play_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
+    case VMT_STOP_VOICE: if(argc>1)vimana_system_stop_voice(sys,(int)val_to_i64(args[1])); return self;
+    case VMT_SET_FREQUENCY: if(argc>2)vimana_system_set_frequency(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
+    case VMT_SET_SYNC: if(argc>2)vimana_system_set_sync(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
+    case VMT_SET_RING_MOD: if(argc>2)vimana_system_set_ring_mod(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
+    case VMT_SET_FILTER: if(argc>3)vimana_system_set_filter(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return self;
+    case VMT_SET_FILTER_ROUTE: if(argc>2)vimana_system_set_filter_route(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
+    case VMT_SET_MASTER_VOLUME: if(argc>1)vimana_system_set_master_volume(sys,(int)val_to_i64(args[1])); return self;
+    case VMT_BEGIN_AUDIO: vimana_system_begin_audio(sys); return self;
+    case VMT_END_AUDIO: vimana_system_end_audio(sys); return self;
+    case VMT_SET_PADDLE: if(argc>2)vimana_system_set_paddle(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return self;
+    case VMT_PADDLE: return argc>1?V_INT(vimana_system_get_paddle(sys,(int)val_to_i64(args[1]))):V_INT(0);
+    case VMT_SPAWN: { char b[4096]; return argc>1?V_OBJ(OBJ_PROCESS,vimana_process_spawn(sys,val_cstr(args[1],b,sizeof(b)))):V_NULL; }
+    case VMT_PROC_WRITE: { char b[4096]; return V_BOOL(argc>2&&obj_is(args[1],OBJ_PROCESS)&&vimana_process_write((vimana_process *)args[1].obj.ptr,val_cstr(args[2],b,sizeof(b)))); }
+    case VMT_PROC_READ_LINE: { char *s=(argc>1&&obj_is(args[1],OBJ_PROCESS))?vimana_process_read_line((vimana_process *)args[1].obj.ptr):NULL; Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
+    case VMT_PROC_RUNNING: return V_BOOL(argc>1&&obj_is(args[1],OBJ_PROCESS)&&vimana_process_running((vimana_process *)args[1].obj.ptr));
+    case VMT_PROC_KILL: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_kill((vimana_process *)args[1].obj.ptr); return self;
+    case VMT_PROC_FREE: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_free((vimana_process *)args[1].obj.ptr); return self;
 
-    case VMETH_CLEAR: vimana_screen_clear(scr,argc>1?(unsigned int)val_to_i64(args[1]):0); return self;
-    case VMETH_SET_PALETTE: { char b[64]; if(argc>2)vimana_screen_set_palette(scr,(unsigned int)val_to_i64(args[1]),val_cstr(args[2],b,sizeof(b))); return self; }
-    case VMETH_SET_FONT: { uint16_t data[256]; int n=argc>2?val_u16_array(args[2],data,256):0; if(argc>2)vimana_screen_set_font(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return self; }
-    case VMETH_SET_FONT_WIDTH: if(argc>2)vimana_screen_set_font_width(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2])); return self;
-    case VMETH_SET_FONT_SIZE: if(argc>1)vimana_screen_set_font_size(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_SET_THEME_SWAP: if(argc>1)vimana_screen_set_theme_swap(scr,val_truthy(args[1])); return self;
-    case VMETH_SET_SPRITE: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; unsigned int mode=argc>3?(unsigned int)val_to_i64(args[3]):0; if(argc>2)vimana_screen_set_sprite(scr,(unsigned int)val_to_i64(args[1]),data,mode,(size_t)n); return self; }
-    case VMETH_SET_GFX: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; if(argc>2)vimana_screen_set_gfx(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return self; }
-    case VMETH_GFX: { const uint8_t *p=argc>1?vimana_screen_gfx(scr,(unsigned int)val_to_i64(args[1])):NULL; return V_INT(p?*p:0); }
-    case VMETH_SET_X: if(argc>1)vimana_screen_set_x(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_SET_Y: if(argc>1)vimana_screen_set_y(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_SET_ADDR: if(argc>1)vimana_screen_set_addr(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_SET_AUTO: if(argc>1)vimana_screen_set_auto(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_SET_SPRITE_BANK: if(argc>1)vimana_screen_set_sprite_bank(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_SPRITE_BANK: return V_INT(vimana_screen_sprite_bank(scr));
-    case VMETH_SPRITE: if(argc>1)vimana_screen_sprite(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_PIXEL: if(argc>1)vimana_screen_pixel(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_PUT_TEXT: { char text[1024]; if(argc>5)vimana_screen_put_text(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),val_cstr(args[3],text,sizeof(text)),(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5])); return self; }
-    case VMETH_PUT_ICN: { uint8_t data[8]; if(argc>5){val_byte_array(args[3],data,8); vimana_screen_put_icn(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),data,(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5]));} return self; }
-    case VMETH_PRESENT: vimana_screen_present(scr); return self;
-    case VMETH_SET_DRAG_REGION: if(argc>1)vimana_screen_set_drag_region(scr,(unsigned int)val_to_i64(args[1])); return self;
-    case VMETH_SET_CURSOR: { uint8_t data[8]; if(argc>1){val_byte_array(args[1],data,8); vimana_screen_set_cursor(scr,data);} return self; }
-    case VMETH_HIDE_CURSOR: vimana_screen_hide_cursor(scr); return self;
-    case VMETH_SHOW_CURSOR: vimana_screen_show_cursor(scr); return self;
-    case VMETH_X: return V_INT(vimana_screen_x(scr));
-    case VMETH_Y: return V_INT(vimana_screen_y(scr));
-    case VMETH_ADDR: return V_INT(vimana_screen_addr(scr));
-    case VMETH_AUTO: return V_INT(vimana_screen_auto(scr));
-    case VMETH_WIDTH: return V_INT(vimana_screen_width(scr));
-    case VMETH_HEIGHT: return V_INT(vimana_screen_height(scr));
-    case VMETH_SCALE: return V_INT(vimana_screen_scale(scr));
+    case VMT_CLEAR: vimana_screen_clear(scr,argc>1?(unsigned int)val_to_i64(args[1]):0); return self;
+    case VMT_SET_PALETTE: { char b[64]; if(argc>2)vimana_screen_set_palette(scr,(unsigned int)val_to_i64(args[1]),val_cstr(args[2],b,sizeof(b))); return self; }
+    case VMT_SET_FONT: { uint16_t data[256]; int n=argc>2?val_u16_array(args[2],data,256):0; if(argc>2)vimana_screen_set_font(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return self; }
+    case VMT_SET_FONT_WIDTH: if(argc>2)vimana_screen_set_font_width(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2])); return self;
+    case VMT_SET_FONT_SIZE: if(argc>1)vimana_screen_set_font_size(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_SET_THEME_SWAP: if(argc>1)vimana_screen_set_theme_swap(scr,val_truthy(args[1])); return self;
+    case VMT_SET_SPRITE: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; unsigned int mode=argc>3?(unsigned int)val_to_i64(args[3]):0; if(argc>2)vimana_screen_set_sprite(scr,(unsigned int)val_to_i64(args[1]),data,mode,(size_t)n); return self; }
+    case VMT_SET_GFX: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; if(argc>2)vimana_screen_set_gfx(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return self; }
+    case VMT_GFX: { const uint8_t *p=argc>1?vimana_screen_gfx(scr,(unsigned int)val_to_i64(args[1])):NULL; return V_INT(p?*p:0); }
+    case VMT_SET_X: if(argc>1)vimana_screen_set_x(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_SET_Y: if(argc>1)vimana_screen_set_y(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_SET_ADDR: if(argc>1)vimana_screen_set_addr(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_SET_AUTO: if(argc>1)vimana_screen_set_auto(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_SET_SPRITE_BANK: if(argc>1)vimana_screen_set_sprite_bank(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_SPRITE_BANK: return V_INT(vimana_screen_sprite_bank(scr));
+    case VMT_SPRITE: if(argc>1)vimana_screen_sprite(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_PIXEL: if(argc>1)vimana_screen_pixel(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_PUT_TEXT: { char text[1024]; if(argc>5)vimana_screen_put_text(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),val_cstr(args[3],text,sizeof(text)),(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5])); return self; }
+    case VMT_PUT_ICN: { uint8_t data[8]; if(argc>5){val_byte_array(args[3],data,8); vimana_screen_put_icn(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),data,(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5]));} return self; }
+    case VMT_PRESENT: vimana_screen_present(scr); return self;
+    case VMT_SET_DRAG_REGION: if(argc>1)vimana_screen_set_drag_region(scr,(unsigned int)val_to_i64(args[1])); return self;
+    case VMT_SET_CURSOR: { uint8_t data[8]; if(argc>1){val_byte_array(args[1],data,8); vimana_screen_set_cursor(scr,data);} return self; }
+    case VMT_HIDE_CURSOR: vimana_screen_hide_cursor(scr); return self;
+    case VMT_SHOW_CURSOR: vimana_screen_show_cursor(scr); return self;
+    case VMT_X: return V_INT(vimana_screen_x(scr));
+    case VMT_Y: return V_INT(vimana_screen_y(scr));
+    case VMT_ADDR: return V_INT(vimana_screen_addr(scr));
+    case VMT_AUTO: return V_INT(vimana_screen_auto(scr));
+    case VMT_WIDTH: return V_INT(vimana_screen_width(scr));
+    case VMT_HEIGHT: return V_INT(vimana_screen_height(scr));
+    case VMT_SCALE: return V_INT(vimana_screen_scale(scr));
 
-    case VMETH_EXISTS: { char path[1024]; return V_BOOL(argc>1&&vimana_file_exists(sys,val_cstr(args[1],path,sizeof(path)))); }
-    case VMETH_READ_BYTES: { char path[1024]; size_t n=0; unsigned char *bytes=argc>1?vimana_file_read_bytes(sys,val_cstr(args[1],path,sizeof(path)),&n):NULL; Val r=bytes?bytes_to_array(bytes,n):V_ARR_NEW(); free(bytes); return r; }
-    case VMETH_READ_TEXT: { char path[1024]; char *s=argc>1?vimana_file_read_text(sys,val_cstr(args[1],path,sizeof(path))):NULL; Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
-    case VMETH_WRITE_BYTES: { char path[1024]; uint8_t data[65536]; int n=argc>2?val_byte_array(args[2],data,65536):0; return V_BOOL(argc>2&&vimana_file_write_bytes(sys,val_cstr(args[1],path,sizeof(path)),data,(size_t)n)); }
-    case VMETH_WRITE_TEXT: { char path[1024], text[4096]; return V_BOOL(argc>2&&vimana_file_write_text(sys,val_cstr(args[1],path,sizeof(path)),val_cstr(args[2],text,sizeof(text)))); }
-    case VMETH_REMOVE: { char path[1024]; return V_BOOL(argc>1&&vimana_file_remove(sys,val_cstr(args[1],path,sizeof(path)))); }
-    case VMETH_RENAME: { char path[1024], to[1024]; return V_BOOL(argc>2&&vimana_file_rename(sys,val_cstr(args[1],path,sizeof(path)),val_cstr(args[2],to,sizeof(to)))); }
-    case VMETH_LIST: { char path[1024]; int count=0; char **items=argc>1?vimana_file_list(sys,val_cstr(args[1],path,sizeof(path)),&count):NULL; Val r=items?strings_to_array(items,count):V_ARR_NEW(); if(items)vimana_file_list_free(items,count); return r; }
-    case VMETH_IS_DIR: { char path[1024]; return V_BOOL(argc>1&&vimana_file_is_dir(sys,val_cstr(args[1],path,sizeof(path)))); }
+    case VMT_EXISTS: { char path[1024]; return V_BOOL(argc>1&&vimana_file_exists(sys,val_cstr(args[1],path,sizeof(path)))); }
+    case VMT_READ_BYTES: { char path[1024]; size_t n=0; unsigned char *bytes=argc>1?vimana_file_read_bytes(sys,val_cstr(args[1],path,sizeof(path)),&n):NULL; Val r=bytes?bytes_to_array(bytes,n):V_ARR_NEW(); free(bytes); return r; }
+    case VMT_READ_TEXT: { char path[1024]; char *s=argc>1?vimana_file_read_text(sys,val_cstr(args[1],path,sizeof(path))):NULL; Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
+    case VMT_WRITE_BYTES: { char path[1024]; uint8_t data[65536]; int n=argc>2?val_byte_array(args[2],data,65536):0; return V_BOOL(argc>2&&vimana_file_write_bytes(sys,val_cstr(args[1],path,sizeof(path)),data,(size_t)n)); }
+    case VMT_WRITE_TEXT: { char path[1024], text[4096]; return V_BOOL(argc>2&&vimana_file_write_text(sys,val_cstr(args[1],path,sizeof(path)),val_cstr(args[2],text,sizeof(text)))); }
+    case VMT_REMOVE: { char path[1024]; return V_BOOL(argc>1&&vimana_file_remove(sys,val_cstr(args[1],path,sizeof(path)))); }
+    case VMT_RENAME: { char path[1024], to[1024]; return V_BOOL(argc>2&&vimana_file_rename(sys,val_cstr(args[1],path,sizeof(path)),val_cstr(args[2],to,sizeof(to)))); }
+    case VMT_LIST: { char path[1024]; int count=0; char **items=argc>1?vimana_file_list(sys,val_cstr(args[1],path,sizeof(path)),&count):NULL; Val r=items?strings_to_array(items,count):V_ARR_NEW(); if(items)vimana_file_list_free(items,count); return r; }
+    case VMT_IS_DIR: { char path[1024]; return V_BOOL(argc>1&&vimana_file_is_dir(sys,val_cstr(args[1],path,sizeof(path)))); }
 
-    case VMETH_POLL: vimana_device_poll(sys); return self;
-    case VMETH_CONTROLLER: return V_INT(vimana_device_controller(sys));
-    case VMETH_CONTROLLER_DOWN: return V_BOOL(argc>1&&vimana_device_controller_down(sys,(unsigned int)val_to_i64(args[1])));
-    case VMETH_CONTROLLER_PRESSED: return V_BOOL(argc>1&&vimana_device_controller_pressed(sys,(unsigned int)val_to_i64(args[1])));
-    case VMETH_KEY_DOWN: return V_BOOL(argc>1&&vimana_device_key_down(sys,(int)val_to_i64(args[1])));
-    case VMETH_KEY_PRESSED: return V_BOOL(argc>1&&vimana_device_key_pressed(sys,(int)val_to_i64(args[1])));
-    case VMETH_MOUSE_DOWN: return V_BOOL(argc>1&&vimana_device_mouse_down(sys,(int)val_to_i64(args[1])));
-    case VMETH_MOUSE_PRESSED: return V_BOOL(argc>1&&vimana_device_mouse_pressed(sys,(int)val_to_i64(args[1])));
-    case VMETH_POINTER_X: return V_INT(vimana_device_pointer_x(sys));
-    case VMETH_POINTER_Y: return V_INT(vimana_device_pointer_y(sys));
-    case VMETH_TILE_X: return V_INT(vimana_device_tile_x(sys));
-    case VMETH_TILE_Y: return V_INT(vimana_device_tile_y(sys));
-    case VMETH_WHEEL_X: return V_INT(vimana_device_wheel_x(sys));
-    case VMETH_WHEEL_Y: return V_INT(vimana_device_wheel_y(sys));
-    case VMETH_TEXT_INPUT: return V_STR_CSTR(vimana_device_text_input(sys));
+    case VMT_POLL: vimana_device_poll(sys); return self;
+    case VMT_CONTROLLER: return V_INT(vimana_device_controller(sys));
+    case VMT_CONTROLLER_DOWN: return V_BOOL(argc>1&&vimana_device_controller_down(sys,(unsigned int)val_to_i64(args[1])));
+    case VMT_CONTROLLER_PRESSED: return V_BOOL(argc>1&&vimana_device_controller_pressed(sys,(unsigned int)val_to_i64(args[1])));
+    case VMT_KEY_DOWN: return V_BOOL(argc>1&&vimana_device_key_down(sys,(int)val_to_i64(args[1])));
+    case VMT_KEY_PRESSED: return V_BOOL(argc>1&&vimana_device_key_pressed(sys,(int)val_to_i64(args[1])));
+    case VMT_MOUSE_DOWN: return V_BOOL(argc>1&&vimana_device_mouse_down(sys,(int)val_to_i64(args[1])));
+    case VMT_MOUSE_PRESSED: return V_BOOL(argc>1&&vimana_device_mouse_pressed(sys,(int)val_to_i64(args[1])));
+    case VMT_POINTER_X: return V_INT(vimana_device_pointer_x(sys));
+    case VMT_POINTER_Y: return V_INT(vimana_device_pointer_y(sys));
+    case VMT_TILE_X: return V_INT(vimana_device_tile_x(sys));
+    case VMT_TILE_Y: return V_INT(vimana_device_tile_y(sys));
+    case VMT_WHEEL_X: return V_INT(vimana_device_wheel_x(sys));
+    case VMT_WHEEL_Y: return V_INT(vimana_device_wheel_y(sys));
+    case VMT_TEXT_INPUT: return V_STR_CSTR(vimana_device_text_input(sys));
 
-    case VMETH_NOW: return V_INT(vimana_datetime_now(sys));
-    case VMETH_YEAR: return V_INT(vimana_datetime_year(sys));
-    case VMETH_MONTH: return V_INT(vimana_datetime_month(sys));
-    case VMETH_DAY: return V_INT(vimana_datetime_day(sys));
-    case VMETH_HOUR: return V_INT(vimana_datetime_hour(sys));
-    case VMETH_MINUTE: return V_INT(vimana_datetime_minute(sys));
-    case VMETH_SECOND: return V_INT(vimana_datetime_second(sys));
-    case VMETH_WEEKDAY: return V_INT(vimana_datetime_weekday(sys));
-    case VMETH_YDAY: return V_INT(vimana_datetime_yday(sys));
-    case VMETH_DST: return V_INT(vimana_datetime_dst(sys));
-    case VMETH_YEAR_AT: return argc>1?V_INT(vimana_datetime_year_at(sys,val_to_i64(args[1]))):V_INT(0);
-    case VMETH_MONTH_AT: return argc>1?V_INT(vimana_datetime_month_at(sys,val_to_i64(args[1]))):V_INT(0);
-    case VMETH_DAY_AT: return argc>1?V_INT(vimana_datetime_day_at(sys,val_to_i64(args[1]))):V_INT(0);
-    case VMETH_HOUR_AT: return argc>1?V_INT(vimana_datetime_hour_at(sys,val_to_i64(args[1]))):V_INT(0);
-    case VMETH_MINUTE_AT: return argc>1?V_INT(vimana_datetime_minute_at(sys,val_to_i64(args[1]))):V_INT(0);
-    case VMETH_SECOND_AT: return argc>1?V_INT(vimana_datetime_second_at(sys,val_to_i64(args[1]))):V_INT(0);
-    case VMETH_WEEKDAY_AT: return argc>1?V_INT(vimana_datetime_weekday_at(sys,val_to_i64(args[1]))):V_INT(0);
-    case VMETH_YDAY_AT: return argc>1?V_INT(vimana_datetime_yday_at(sys,val_to_i64(args[1]))):V_INT(0);
-    case VMETH_DST_AT: return argc>1?V_INT(vimana_datetime_dst_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_NOW: return V_INT(vimana_datetime_now(sys));
+    case VMT_YEAR: return V_INT(vimana_datetime_year(sys));
+    case VMT_MONTH: return V_INT(vimana_datetime_month(sys));
+    case VMT_DAY: return V_INT(vimana_datetime_day(sys));
+    case VMT_HOUR: return V_INT(vimana_datetime_hour(sys));
+    case VMT_MINUTE: return V_INT(vimana_datetime_minute(sys));
+    case VMT_SECOND: return V_INT(vimana_datetime_second(sys));
+    case VMT_WEEKDAY: return V_INT(vimana_datetime_weekday(sys));
+    case VMT_YDAY: return V_INT(vimana_datetime_yday(sys));
+    case VMT_DST: return V_INT(vimana_datetime_dst(sys));
+    case VMT_YEAR_AT: return argc>1?V_INT(vimana_datetime_year_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_MONTH_AT: return argc>1?V_INT(vimana_datetime_month_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_DAY_AT: return argc>1?V_INT(vimana_datetime_day_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_HOUR_AT: return argc>1?V_INT(vimana_datetime_hour_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_MINUTE_AT: return argc>1?V_INT(vimana_datetime_minute_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_SECOND_AT: return argc>1?V_INT(vimana_datetime_second_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_WEEKDAY_AT: return argc>1?V_INT(vimana_datetime_weekday_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_YDAY_AT: return argc>1?V_INT(vimana_datetime_yday_at(sys,val_to_i64(args[1]))):V_INT(0);
+    case VMT_DST_AT: return argc>1?V_INT(vimana_datetime_dst_at(sys,val_to_i64(args[1]))):V_INT(0);
 
-    case VMETH_PENDING: return V_BOOL(vimana_console_pending(sys));
-    case VMETH_INPUT: return V_INT(vimana_console_input(sys));
-    case VMETH_TYPE: return V_INT(vimana_console_type(sys));
-    case VMETH_NEXT: vimana_console_next(sys); return self;
-    case VMETH_PUSH: return V_BOOL(argc>2&&vimana_console_push(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])));
-    case VMETH_STDOUT: if(argc>1)vimana_console_stdout(sys,(int)val_to_i64(args[1])); return self;
-    case VMETH_STDERR: if(argc>1)vimana_console_stderr(sys,(int)val_to_i64(args[1])); return self;
-    case VMETH_STDERR_HEX: if(argc>1)vimana_console_stderr_hex(sys,(int)val_to_i64(args[1])); return self;
-    case VMETH_NONE: break;
+    case VMT_PENDING: return V_BOOL(vimana_console_pending(sys));
+    case VMT_INPUT: return V_INT(vimana_console_input(sys));
+    case VMT_TYPE: return V_INT(vimana_console_type(sys));
+    case VMT_NEXT: vimana_console_next(sys); return self;
+    case VMT_PUSH: return V_BOOL(argc>2&&vimana_console_push(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])));
+    case VMT_STDOUT: if(argc>1)vimana_console_stdout(sys,(int)val_to_i64(args[1])); return self;
+    case VMT_STDERR: if(argc>1)vimana_console_stderr(sys,(int)val_to_i64(args[1])); return self;
+    case VMT_STDERR_HEX: if(argc>1)vimana_console_stderr_hex(sys,(int)val_to_i64(args[1])); return self;
+    case VMT_NONE: break;
     }
 
     fprintf(stderr,"warning: unhandled method '%s' on object %d (argc=%d)\n",m,self.obj.kind,argc);
