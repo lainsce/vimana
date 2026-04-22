@@ -6,7 +6,7 @@ bring outline_parser
 --| Layout |--
 def DEFAULT_W = 1360
 def DEFAULT_H = 716
-def FONT_W = 16
+def FONT_W = 13
 def FONT_H = 24
 def SCROLLBAR_W = 12
 def SCROLLBAR_X = 4
@@ -106,11 +106,13 @@ def ?_line_rev = -1
 
 --| Directory listing |--
 def ?dir_listing_active = false
+def ?dir_path = ""
 def ?dir_entries = []: [any]
 def ?dir_selected = -1
 def ?dir_scroll = 0
 
-:: open_dir_listing(entries = [any]) (( -- ))
+:: open_dir_listing(path = string, entries = [any]) (( -- ))
+    dir_path = path
     dir_entries = entries
     dir_listing_active = true
     dir_selected = -1
@@ -119,6 +121,7 @@ def ?dir_scroll = 0
 
 :: close_dir_listing() (( -- ))
     dir_listing_active = false
+    dir_path = ""
     dir_entries = []: [any]
     dir_selected = -1
     dir_scroll = 0
@@ -523,7 +526,7 @@ def Max_SEARCH_MATCHES = 256
     let b = stdr.floor(stdr.num(pair[1] ?? 0))
     let prefix = stdr.slice(editor_text, 0, a)
     let suffix = stdr.slice(editor_text, b, stdr.len(editor_text))
-    editor_text = "$$prefix$$$$chunk$$$$suffix$$"
+    editor_text = prefix + chunk + suffix
     bump_text_rev()
     let pos = a + stdr.len(chunk)
     caret = pos
@@ -542,7 +545,7 @@ def Max_SEARCH_MATCHES = 256
     let b = stdr.floor(stdr.num(pair[1] ?? 0))
     let prefix = stdr.slice(editor_text, 0, a)
     let suffix = stdr.slice(editor_text, b, stdr.len(editor_text))
-    editor_text = "$$prefix$$$$suffix$$"
+    editor_text = prefix + suffix
     bump_text_rev()
     caret = a
     sel_start = a
@@ -560,7 +563,7 @@ def Max_SEARCH_MATCHES = 256
         <-
     let prefix = stdr.slice(editor_text, 0, caret - 1)
     let suffix = stdr.slice(editor_text, caret, stdr.len(editor_text))
-    editor_text = "$$prefix$$$$suffix$$"
+    editor_text = prefix + suffix
     bump_text_rev()
     caret -= 1
     sel_start = caret
@@ -579,7 +582,7 @@ def Max_SEARCH_MATCHES = 256
         <-
     let prefix = stdr.slice(editor_text, 0, caret)
     let suffix = stdr.slice(editor_text, caret + 1, total)
-    editor_text = "$$prefix$$$$suffix$$"
+    editor_text = prefix + suffix
     bump_text_rev()
     sel_start = caret
     sel_end = caret

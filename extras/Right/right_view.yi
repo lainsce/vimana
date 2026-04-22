@@ -263,7 +263,7 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
             if idx == right_model.dir_selected
                 fill(scr, right_model.SIDEBAR_X, y,
                     right_model.sidebar_width, right_model.ROW_H, right_model.C_ACCENT)
-                scr.put_text(sx, y, label, right_model.C_BG, right_model.C_ACCENT)
+                scr.put_text(sx, y, label, right_model.C_FG, right_model.C_ACCENT)
             else
                 scr.put_text(sx, y, label, right_model.C_FG, right_model.C_BG)
             if truncated
@@ -283,9 +283,9 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
             break
         let y = right_model.CONTENT_Y + i * right_model.ROW_H
         let item = right_model.current_outline[idx]
-        let kind = str(item["type"] ?? "")
+        let kind = str(item[2] ?? "")
         let prefix = type_prefix(kind)
-        let raw_label = str(item["label"] ?? "")
+        let raw_label = str(item[0] ?? "")
         let is_section = kind == "section"
 
         if is_section
@@ -298,14 +298,14 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
             if idx == right_model.outline_selected
                 fill(scr, right_model.SIDEBAR_X, y,
                     sx + text_w - right_model.SIDEBAR_X, right_model.ROW_H, right_model.C_ACCENT)
-                scr.put_text(sx, y, sec_label, right_model.C_BG, right_model.C_ACCENT)
+                scr.put_text(sx, y, sec_label, right_model.C_FG, right_model.C_ACCENT)
                 if truncated
                     draw_truncation_dither(scr, sx + text_w - right_model.FONT_W, y, right_model.C_ACCENT)
                 scr.put_text(sx + text_w, y, arrow_str, right_model.C_ACCENT, right_model.C_BG)
             else
                 fill(scr, right_model.SIDEBAR_X, y,
                     sx + text_w - right_model.SIDEBAR_X, right_model.ROW_H, right_model.C_FG)
-                scr.put_text(sx, y, sec_label, right_model.C_BG, right_model.C_FG)
+                scr.put_text(sx, y, sec_label, right_model.C_SEL, right_model.C_FG)
                 if truncated
                     draw_truncation_dither(scr, sx + text_w - right_model.FONT_W, y, right_model.C_FG)
                 scr.put_text(sx + text_w, y, arrow_str, right_model.C_FG, right_model.C_BG)
@@ -320,7 +320,7 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
             if idx == right_model.outline_selected
                 fill(scr, right_model.SIDEBAR_X, y,
                     sx + text_w - right_model.SIDEBAR_X, right_model.ROW_H, right_model.C_ACCENT)
-                scr.put_text(sx, y, display, right_model.C_BG, right_model.C_ACCENT)
+                scr.put_text(sx, y, display, right_model.C_FG, right_model.C_ACCENT)
                 if truncated
                     draw_truncation_dither(scr, sx + text_w - right_model.FONT_W, y, right_model.C_BG)
                 scr.put_text(sx + text_w, y, arrow_str, right_model.C_ACCENT, right_model.C_BG)
@@ -424,7 +424,7 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
     let is_first_visual = row_start == logical_start
 
     -- Syntax highlighting: get colors for the full logical line
-    if !right_model.highlight_on
+    if right_model.highlight_on
         -- Find end of logical line for correct highlighting
         let ?logical_end = row_start
         for (let ?k = row_start; k < total; k += 1)
@@ -442,23 +442,28 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
         -- Run-length grouping: find runs of same color
         let ?run_start = 0
         let ?run_color = right_model.C_FG
-        for (let ?ci = 0; ci < clen; ci += 1)
-            let cidx = color_offset + ci
-            let ?cc = right_model.C_FG
-            if cidx < stdr.len(colors)
-                cc = stdr.num(colors[cidx] ?? 1)
-            let at_end = ci == clen - 1
+        if clen > 0
+            let cidx0 = color_offset
+            if cidx0 < stdr.len(colors)
+                run_color = stdr.num(colors[cidx0] ?? 1)
+        for (let ?ci = 1; ci <= clen; ci += 1)
+            let at_end = ci >= clen
+            let ?cc = run_color
+            if !at_end
+                let cidx = color_offset + ci
+                cc = right_model.C_FG
+                if cidx < stdr.len(colors)
+                    cc = stdr.num(colors[cidx] ?? 1)
             if cc != run_color || at_end
-                let run_len = ci - run_start + (at_end ? 1 : 0)
+                let run_len = ci - run_start
                 if run_len > 0
                     let run_text = stdr.slice(line_text, run_start, run_start + run_len)
                     let rx = ex + run_start * right_model.FONT_W
                     scr.put_text(rx, y, run_text, run_color, right_model.C_BG)
-                run_start = ci + 1
+                run_start = ci
                 run_color = cc
     else
-        let fg = right_syntax.line_color(raw_line)
-        scr.put_text(ex, y, line_text, fg, right_model.C_BG)
+        scr.put_text(ex, y, line_text, right_model.C_FG, right_model.C_BG)
 
     -- Indent dots: only on first visual row of a logical line
     if is_first_visual && right_model.show_tabs
@@ -536,7 +541,7 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
             if local_right > local_left
                 let sel_text = stdr.slice(code, left, left + local_right - local_left)
                 let sx = ex + local_left * right_model.FONT_W
-                scr.put_text(sx, y, sel_text, right_model.C_BG, right_model.C_SEL)
+                scr.put_text(sx, y, sel_text, right_model.C_FG, right_model.C_SEL)
 ;
 
 --| Search overlay |--
@@ -562,7 +567,7 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
     elif stdr.len(right_model.search_query) > 0
         label = label + "  [no match]"
 
-    scr.put_text(sx + 8, sy, label, right_model.C_BG, right_model.C_FG)
+    scr.put_text(sx + 8, sy, label, right_model.C_SEL, right_model.C_FG)
 
     -- Blinking cursor for search input
     let qx = sx + 8 + (6 + stdr.len(right_model.search_query)) * right_model.FONT_W
@@ -599,7 +604,7 @@ def ICN_CARET    = [0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0]
     let pw = label_len * right_model.FONT_W + 8
     let ph = right_model.ROW_H
     fill(scr, px, py, pw, ph, right_model.C_ACCENT)
-    scr.put_text(px + 4, py, label, right_model.C_BG, right_model.C_ACCENT)
+    scr.put_text(px + 4, py, label, right_model.C_FG, right_model.C_ACCENT)
 ;
 
 --| Autocomplete popup |--

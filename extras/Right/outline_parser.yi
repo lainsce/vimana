@@ -25,11 +25,7 @@ bring stdr
 ;
 
 : add_item(items = [any], label = string, line = num, kind = string) (( -- ))
-    let ?item = []: [string => any]
-    item["label"] = label
-    item["line"] = line
-    item["type"] = kind
-    stdr.push(items, item)
+    stdr.push(items, [label, line, kind])
 ;
 
 :: parse_outline(code = string) (( [any] ))

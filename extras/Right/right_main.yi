@@ -123,6 +123,7 @@ def ?header_click_y = 0
 
 : save_file(fsys = vimana.file, scr = vimana.screen) (( -- ))
     if stdr.len(right_model.file_path) == 0
+        rename_file(fsys, scr)
         <-
     fsys.write_text(right_model.file_path, right_model.editor_text)
     right_model.set_dirty(false)
@@ -141,24 +142,35 @@ def ?header_click_y = 0
 ;
 
 : open_file(fsys = vimana.file, scr = vimana.screen) (( -- ))
-    let picked = stdr.open_file_dialog("Open file", "yi")
-    if is_null(picked)
-        <-
-    let path = str(picked)
-    if stdr.len(path) == 0
-        <-
-    right_model.set_file_path(path)
-    load_file(fsys, scr)
+    open_dir_listing(fsys)
+;
+
+: path_from_selection() (( string ))
+    let ?name = right_model.selected_text()
+    if stdr.len(name) == 0
+        name = right_model.word_before_caret()
+    if stdr.len(name) == 0
+        <- ""
+    if stdr.starts_with(name, "bring ")
+        name = stdr.slice(name, 6, stdr.len(name))
+    if !stdr.ends_with(name, ".yi")
+        name = name + ".yi"
+    if stdr.starts_with(name, "/")
+        <- name
+    let ?dir = stdr.dirname(right_model.file_path)
+    if stdr.len(dir) == 0
+        dir = stdr.getcwd()
+    <- join_path(dir, name)
+;
+
+: join_path(dir = string, name = string) (( string ))
+    if dir == "/"
+        <- "/" + name
+    <- dir + "/" + name
 ;
 
 : rename_file(fsys = vimana.file, scr = vimana.screen) (( -- ))
-    let ?default_name = "Untitled.yi"
-    if stdr.len(right_model.file_path) > 0
-        default_name = stdr.basename(right_model.file_path)
-    let picked = stdr.save_file_dialog("Rename / Save As", default_name, "yi")
-    if is_null(picked)
-        <-
-    let path = str(picked)
+    let path = path_from_selection()
     if stdr.len(path) == 0
         <-
     right_model.set_file_path(path)
@@ -168,22 +180,7 @@ def ?header_click_y = 0
 --| Open from selection |--
 
 : open_from_selection(fsys = vimana.file, scr = vimana.screen) (( -- ))
-    let ?name = right_model.selected_text()
-    if stdr.len(name) == 0
-        name = right_model.word_before_caret()
-    if stdr.len(name) == 0
-        <-
-    -- Strip "bring " prefix
-    if stdr.starts_with(name, "bring ")
-        name = stdr.slice(name, 6, stdr.len(name))
-    -- Add .yi extension if missing
-    if !stdr.ends_with(name, ".yi")
-        name = name + ".yi"
-    -- Resolve directory
-    let ?dir = stdr.dirname(right_model.file_path)
-    if stdr.len(dir) == 0
-        dir = stdr.getcwd()
-    let path = dir + "/" + name
+    let path = path_from_selection()
     if fsys.exists(path)
         right_model.set_file_path(path)
         load_file(fsys, scr)
@@ -198,8 +195,16 @@ def ?header_click_y = 0
     let ?dir = stdr.dirname(right_model.file_path)
     if stdr.len(dir) == 0
         dir = stdr.getcwd()
+    show_dir_listing(fsys, dir)
+;
+
+: show_dir_listing(fsys = vimana.file, dir = string) (( -- ))
     let entries = fsys.list(dir)
-    right_model.open_dir_listing(entries)
+    let ?shown = []: [any]
+    stdr.push(shown, "..")
+    for (let ?i = 0; i < stdr.len(entries); i += 1)
+        stdr.push(shown, entries[i])
+    right_model.open_dir_listing(dir, shown)
 ;
 
 : exec_action(action = string, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
@@ -363,21 +368,25 @@ def ?header_click_y = 0
             let row = stdr.floor((my - right_model.CONTENT_Y) / right_model.ROW_H) + right_model.dir_scroll
             if row >= 0 && row < stdr.len(right_model.dir_entries)
                 let entry = str(right_model.dir_entries[row] ?? "")
-                let ?dir = stdr.dirname(right_model.file_path)
-                if stdr.len(dir) == 0
-                    dir = stdr.getcwd()
-                let path = dir + "/" + entry
+                let ?path = join_path(right_model.dir_path, entry)
+                if entry == ".."
+                    path = stdr.dirname(right_model.dir_path)
+                    if stdr.len(path) == 0
+                        path = "/"
                 if fsys.exists(path)
-                    right_model.set_file_path(path)
-                    load_file(fsys, scr)
-                    right_model.close_dir_listing()
+                    if fsys.is_dir(path)
+                        show_dir_listing(fsys, path)
+                    else
+                        right_model.set_file_path(path)
+                        load_file(fsys, scr)
+                        right_model.close_dir_listing()
             <-
         -- Outline click
         let idx = right_model.outline_index_from_click(my)
         if idx >= 0
             right_model.set_outline_selected(idx)
             let item = right_model.current_outline[idx]
-            let line_any = item["line"] ?? 0
+            let line_any = item[1] ?? 0
             let pos = right_model.line_to_char_pos(right_model.editor_text, line_any)
             right_model.set_caret(pos)
             right_model.set_selection(pos, pos)
@@ -681,8 +690,18 @@ def BG_ADDR = 0xAE0
 
     -- Load initial file if provided
     right_model.set_file_path("")
-    right_model.rebuild_outline()
-    update_title(scr)
+    let ?loaded = false
+    let args = stdr.args()
+    for (let ?i = 0; i < len(args); i += 1)
+        let path = str(args[i] ?? "")
+        if stdr.len(path) > 0 && fsys.exists(path) && !fsys.is_dir(path)
+            right_model.set_file_path(path)
+            load_file(fsys, scr)
+            loaded = true
+            i = len(args)
+    if !loaded
+        right_model.rebuild_outline()
+        update_title(scr)
 
     sys.run(scr, () => {
         dev.poll()

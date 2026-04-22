@@ -5,7 +5,7 @@ bring vimana
 bring pad_model
 bring pad_font
 
---| Frame-skip: snapshot previous state |--
+--| Frameskip |--
 def ?_ps_text_rev = -1
 def ?_ps_caret = -1
 def ?_ps_sel_s = -1
@@ -35,7 +35,7 @@ def ?_ps_corner = -1
     _ps_corner = pad_model.corner_state
 ;
 
---| Cursor: 1px vertical line |--
+--| Caret |--
 
 : draw_cursor(scr = vimana.screen, cx = num, cy = num) (( -- ))
     for (let ?row = 0; row < pad_model.LINE_H; row += 1)
@@ -44,7 +44,7 @@ def ?_ps_corner = -1
         scr.pixel(pad_model.C_FG)
 ;
 
---| Text content with proportional wrapping, selection, and cursor |--
+--| Text content |--
 
 : draw_content(scr = vimana.screen) (( -- ))
     let code = pad_model.text()
@@ -91,7 +91,7 @@ def ?_ps_corner = -1
         draw_cursor(scr, px, py)
 ;
 
---| Corner dog-ear graphic (2bpp tiles) |--
+--| Corner dog-ear |--
 
 : draw_corner(scr = vimana.screen) (( -- ))
     let base_addr = pad_font.get_fold_addr(pad_model.corner_state)
@@ -102,7 +102,7 @@ def ?_ps_corner = -1
     scr.set_auto(0)
 ;
 
---| Footer: bottom bar and page number |--
+--| Footer |--
 
 : draw_footer(scr = vimana.screen) (( -- ))
     -- Bottom bar tiles at y=192 (tile_y=24), after corner (tx>=3)
@@ -115,7 +115,7 @@ def ?_ps_corner = -1
     scr.put_text(108, pad_model.FOOTER_Y + 2, label, pad_model.C_FG, pad_model.C_BG)
 ;
 
---| Main draw entry |--
+--| Main |--
 
 :: draw_all(scr = vimana.screen) (( -- ))
     draw_content(scr)

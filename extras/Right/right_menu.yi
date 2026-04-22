@@ -150,7 +150,7 @@ def INSERT_COUNT = 3
         if idx == 2
             <- "Save"
         if idx == 3
-            <- "Rename"
+            <- "Save As"
         if idx == 4
             <- "Exit"
     if cat == CAT_EDIT
