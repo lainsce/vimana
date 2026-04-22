@@ -87,13 +87,6 @@ def ?dirty = true
     arvelie_text_v = str(yr_tens) + str(yr_units) + letter + pad2(period)
 ;
 
-:: load_palette(scr = vimana.screen) (( -- ))
-    scr.set_palette(0, "#000000")
-    scr.set_palette(1, "#ffffff")
-    scr.set_palette(2, "#33eebb")
-    scr.set_palette(3, "#dd3322")
-;
-
 :: init(dt = vimana.datetime, ticks = num) (( -- ))
     let now = dt.now()
     refresh(dt, now, 0)

@@ -226,9 +226,9 @@ def ?last_titlebar_shaded = false
             let gx = stdr.floor((mx - 16) / 8)
             let gy = stdr.floor((my - 16) / 16)
             if !titlebar_busy && dev.mouse_pressed(vimana.mouse_left)
+                orca_model.clear_sel()
                 -- Click: move cursor, start potential drag
                 if gx >= 0 && gx < orca_grid.GRID_W && gy >= 0 && gy < orca_grid.GRID_H
-                    orca_model.clear_sel()
                     orca_model.set_cursor_pos(gx, gy)
                     mouse_dragging = true
             elif !titlebar_busy && dev.mouse_down(vimana.mouse_left)
@@ -332,8 +332,6 @@ def ?last_titlebar_shaded = false
                     if valid
                         orca_model.type_at_cursor(ch)
 
-            if orca_model.dirty
-                orca_view.draw(scr)
         else
             mouse_dragging = false
 

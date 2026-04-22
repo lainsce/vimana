@@ -59,6 +59,7 @@ def ?folders      = []: [any]
 def ?tracks       = []: [any]
 def ?track_titles = []: [any]
 def ?path       = "./"
+def ?root_path  = "./"
 def ?sel        = 0
 def ?scroll     = 0
 def ?playing    = false
@@ -82,12 +83,13 @@ def ?title_scroll   = 0
 def ?shuffle_order  = []: [any]
 def ?shuffle_pos    = 0
 def ?shuffle_seed   = 1
+def ?dirty          = true
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Computed helpers
 -- ─────────────────────────────────────────────────────────────────────────────
 :: has_dotdot() (( bool ))
-    <- path != "./"
+    <- path != root_path
 ;
 
 :: row_count() (( num ))
@@ -98,9 +100,7 @@ def ?shuffle_seed   = 1
 ;
 
 :: dir_y() (( num ))
-    if playing
-        <- DIR_Y_PLAY
-    <- DIR_Y_IDLE
+    <- DIR_Y_PLAY
 ;
 
 :: fit_height() (( num ))
@@ -187,15 +187,27 @@ def ?shuffle_seed   = 1
 -- State setters (Yis does not allow cross-module def? assignment)
 -- ─────────────────────────────────────────────────────────────────────────────
 
+:: clear_dirty() (( -- ))
+    dirty = false
+;
+
+:: is_dirty() (( bool ))
+    <- dirty
+;
+
 : set_proc(p = num) (( -- ))
     proc = p
 ;
 
 : set_playing(b = bool) (( -- ))
+    if playing != b
+        dirty = true
     playing = b
 ;
 
 : set_paused(b = bool) (( -- ))
+    if paused != b
+        dirty = true
     paused = b
 ;
 
@@ -204,20 +216,28 @@ def ?shuffle_seed   = 1
 ;
 
 : set_frame(sf = num, sr = num, sp = num) (( -- ))
+    if sec_from != sf || sec_to != sr || sec_prog != sp
+        dirty = true
     sec_from = sf
     sec_to   = sr
     sec_prog = sp
 ;
 
 : set_title(s = string) (( -- ))
+    if title != s
+        dirty = true
     title = s
 ;
 
 : set_artist(s = string) (( -- ))
+    if artist != s
+        dirty = true
     artist = s
 ;
 
 : set_album(s = string) (( -- ))
+    if album != s
+        dirty = true
     album = s
 ;
 
@@ -227,6 +247,7 @@ def ?shuffle_seed   = 1
     track_titles = []: [any]
     sel          = 0
     scroll       = 0
+    dirty        = true
 ;
 
 :: push_track_title(s = string) (( -- ))
@@ -242,7 +263,13 @@ def ?shuffle_seed   = 1
 ;
 
 : set_path(p = string) (( -- ))
+    if path != p
+        dirty = true
     path = p
+;
+
+:: set_root_path(p = string) (( -- ))
+    root_path = p
 ;
 
 : init_track(idx = num, title_str = string) (( -- ))
@@ -256,25 +283,36 @@ def ?shuffle_seed   = 1
     track_ended  = false
     title_scroll = 0
     frame_count  = 0
+    dirty        = true
 ;
 
 : add_sel(delta = num) (( -- ))
+    let old = sel
     sel += delta
     clamp_sel()
+    if sel != old
+        dirty = true
 ;
 
 : scroll_for_sel() (( -- ))
+    let old = scroll
     if sel < scroll
         scroll = sel
     elif sel >= scroll + MAX_ROWS
         scroll = sel - MAX_ROWS + 1
+    if scroll != old
+        dirty = true
 ;
 
 : scroll_by(delta = num) (( -- ))
+    let old = scroll
     scroll -= delta
+    if scroll != old
+        dirty = true
 ;
 
 : clamp_scroll() (( -- ))
+    let old = scroll
     let total      = row_count()
     let max_scroll = total - MAX_ROWS
     if max_scroll < 0
@@ -283,14 +321,18 @@ def ?shuffle_seed   = 1
         scroll = 0
     if scroll > max_scroll
         scroll = max_scroll
+    if scroll != old
+        dirty = true
 ;
 
 : toggle_repeat() (( -- ))
     repeat = !repeat
+    dirty = true
 ;
 
 : toggle_shuffle() (( -- ))
     shuffle = !shuffle
+    dirty = true
 ;
 
 -- Build a shuffled permutation of 0..n-1 using Fisher-Yates
@@ -331,11 +373,14 @@ def ?shuffle_seed   = 1
 ;
 
 : change_volume(delta = num) (( -- ))
+    let old = volume
     volume += delta
     if volume < 0
         volume = 0
     if volume > 5
         volume = 5
+    if volume != old
+        dirty = true
 ;
 
 -- Common prefix length; 0 if < 3 items or prefix <= 3 chars
@@ -379,4 +424,5 @@ def ?shuffle_seed   = 1
     title_scroll += 1
     if title_scroll >= tlen
         title_scroll = 0
+    dirty = true
 ;

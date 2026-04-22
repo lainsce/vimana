@@ -47,7 +47,7 @@ def TAIL_R_TX = 7
     for (let ?row = 0; row < 2; row += 1)
         for (let ?col = 0; col < 6; col += 1)
             let idx = base + row * 6 + col
-            scr.put_icn((EYES_TX + col) * 8, (EYES_TY + row) * 8, nekotokei_data.eyes(idx)), 0, CAT_COLOR)
+            scr.put_icn((EYES_TX + col) * 8, (EYES_TY + row) * 8, nekotokei_data.eyes(idx), 0, CAT_COLOR)
 ;
 
 : draw_tail(scr = vimana.screen, tick = num) (( -- ))
@@ -69,7 +69,7 @@ def TAIL_R_TX = 7
     for (let ?row = 0; row < 4; row += 1)
         for (let ?col = 0; col < 4; col += 1)
             let body_idx = row * 8 + (col + 2)
-            scr.put_icn((FILL_TX + col) * 8, (FILL_TY + row) * 8, nekotokei_data.body(body_idx)), CAT_COLOR, 0)
+            scr.put_icn((FILL_TX + col) * 8, (FILL_TY + row) * 8, nekotokei_data.body(body_idx), CAT_COLOR, 0)
 ;
 
 : draw_line(scr = vimana.screen, x0 = num, y0 = num, x1 = num, y1 = num, color = num) (( -- ))

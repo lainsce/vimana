@@ -779,6 +779,8 @@ static void vimana_font_row_bytes(vimana_screen *screen, const uint8_t *bmp,
   out[0] = bmp[row];
 }
 
+static uint8_t vimana_controller_bits(vimana_system *system);
+
 static bool vimana_system_has_active_input(vimana_system *system) {
   if (!system)
     return false;

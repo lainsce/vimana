@@ -181,7 +181,6 @@ unsigned int vimana_screen_scale(vimana_screen *screen);
 void vimana_screen_set_scale(vimana_screen *screen, unsigned int scale);
 size_t vimana_screen_ram_usage(vimana_screen *screen);
 void vimana_screen_free(vimana_screen *screen);
-static uint8_t vimana_controller_bits(vimana_system *system);
 
 /* ── Device API ─────────────────────────────────────────────────────────── */
 void vimana_device_poll(vimana_system *system);

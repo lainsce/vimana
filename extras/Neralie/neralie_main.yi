@@ -145,7 +145,6 @@ def ?last_titlebar_shaded    = false
     let dev = sys.device()
     let dt  = sys.datetime()
 
-    neralie_model.load_palette(scr)
     neralie_assets.setup(scr)
     scr.set_sprite(CURSOR_ADDR, CURSOR_ICN, 0)
     scr.set_sprite(BG_ADDR, BG_CHR, 1)

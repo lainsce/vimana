@@ -20,7 +20,6 @@ def ?hist_motd      = ""
 def ?poll_last      = 0
 
 def ?pending_send_acks = 0
-def ?pending_poll_acks = 0
 
 
 : safe_name_part(text = string) (( string ))
@@ -132,14 +131,22 @@ def ?log_buf_len = 0
 ;
 
 : is_numeric_line(line = string) (( bool ))
-    let n = stdr.len(line)
+    let t = stdr.trim(line)
+    let n = stdr.len(t)
     if n == 0
         <- false
     for (let ?i = 0; i < n; i += 1)
-        let c = stdr.char_code(stdr.char_at(line, i))
+        let c = stdr.char_code(stdr.char_at(t, i))
         if c < 48 || c > 57
             <- false
     <- true
+;
+
+: is_protocol_num(line = string) (( bool ))
+    let t = stdr.trim(line)
+    if stdr.starts_with(t, "-")
+        <- is_numeric_line(stdr.slice(t, 1, stdr.len(t)))
+    <- is_numeric_line(t)
 ;
 
 : has_nick(line = string) (( bool ))
@@ -281,7 +288,7 @@ def ?log_buf_len = 0
 ;
 
 : append_live_line(line = string) (( -- ))
-    if is_numeric_line(line) && stdr.len(line) >= 4
+    if is_protocol_num(line)
         <- ()
     store_append(line)
     append_log_line(line)
@@ -291,7 +298,7 @@ def ?log_buf_len = 0
 ;
 
 : should_log_line(line = string) (( bool ))
-    if is_numeric_line(line) && stdr.len(line) >= 4
+    if is_protocol_num(line)
         <- false
     <- true
 ;
@@ -322,7 +329,6 @@ def ?log_buf_len = 0
     hist_replace = false
     hist_motd = ""
     pending_send_acks = 0
-    pending_poll_acks = 0
     poll_last = 0
     log_buf = ""
     log_buf_len = 0
@@ -341,12 +347,11 @@ def ?log_buf_len = 0
     hist_state = 0
     hist_remaining = 0
     pending_send_acks = 0
-    pending_poll_acks = 0
     log_buf = ""
     log_buf_len = 0
     poll_last = 0
-    sys.proc_write(proc, "LAST 20\n")
     begin_history(true)
+    sys.proc_write(proc, "LAST 20\n")
     <- true
 ;
 
@@ -386,16 +391,16 @@ def ?log_buf_len = 0
     if hist_state != 0 || nanovine_model.get_proc() == 0
         <-
     let ?proc = nanovine_model.get_proc()
-    sys.proc_write(proc, "HIST\n")
     begin_history(true)
+    sys.proc_write(proc, "HIST\n")
 ;
 
 :: request_last(sys = vimana.system, count = num, now = num) (( -- ))
     if hist_state != 0 || nanovine_model.get_proc() == 0
         <-
     let ?proc = nanovine_model.get_proc()
-    sys.proc_write(proc, "LAST " + stdr.str(count) + "\n")
     begin_history(true)
+    sys.proc_write(proc, "LAST " + stdr.str(count) + "\n")
 ;
 
 :: request_skip(sys = vimana.system, now = num) (( -- ))
@@ -404,11 +409,11 @@ def ?log_buf_len = 0
     let ?proc = nanovine_model.get_proc()
     let last = nanovine_model.get_last_msg()
     if last < 0
-        sys.proc_write(proc, "HIST\n")
         begin_history(true)
+        sys.proc_write(proc, "HIST\n")
     else
-        sys.proc_write(proc, "SKIP " + stdr.str(last) + "\n")
         begin_history(false)
+        sys.proc_write(proc, "SKIP " + stdr.str(last) + "\n")
     <-
 ;
 
@@ -429,33 +434,40 @@ def ?log_buf_len = 0
         disconnect(sys)
         <-
 
-    if now - poll_last > 1000
-        if hist_state == 0 && pending_send_acks == 0 && pending_poll_acks == 0
-            sys.proc_write(proc, "POLL 0\n")
-            pending_poll_acks = pending_poll_acks + 1
+    if now - poll_last > 4000
+        if hist_state == 0 && pending_send_acks == 0
+            begin_history(true)
+            sys.proc_write(proc, "LAST 20\n")
             poll_last = now
 
     if hist_state == 0
         for (;;)
-            let line = sys.proc_read_line(proc)
+            let line_any = sys.proc_read_line(proc)
+            if stdr.is_null(line_any)
+                break
+            let line = stdr.str(line_any)
             if stdr.len(line) == 0
                 break
-            if is_numeric_line(line)
-                if pending_poll_acks > 0
-                    pending_poll_acks = pending_poll_acks - 1
-                    poll_last = now
-                elif pending_send_acks > 0
+            if is_protocol_num(line)
+                if pending_send_acks > 0
                     pending_send_acks = pending_send_acks - 1
-                    nanovine_model.set_last_msg(stdr.num(line))
+                    nanovine_model.set_last_msg(stdr.num(stdr.trim(line)))
+                    begin_history(true)
+                    sys.proc_write(proc, "LAST 20\n")
+                    poll_last = now
+                    <-
             else if should_log_line(line)
                 append_live_line(line)
                 nanovine_model.set_last_msg(nanovine_model.get_last_msg() + 1)
 
     elif hist_state == 1
-        let count_line = sys.proc_read_line(proc)
+        let count_any = sys.proc_read_line(proc)
+        if stdr.is_null(count_any)
+            <-
+        let count_line = stdr.str(count_any)
         if stdr.len(count_line) == 0
             <-
-        hist_remaining = stdr.num(count_line)
+        hist_remaining = stdr.num(stdr.trim(count_line))
         hist_state = 2
         if hist_remaining == 0
             hist_state = 3
@@ -463,22 +475,25 @@ def ?log_buf_len = 0
 
     elif hist_state == 2
         for (; hist_remaining > 0; )
-            let line = sys.proc_read_line(proc)
+            let line_any = sys.proc_read_line(proc)
+            if stdr.is_null(line_any)
+                <-
+            let line = stdr.str(line_any)
             if stdr.len(line) == 0
                 <-
-            if pending_send_acks > 0 && is_numeric_line(line)
-                pending_send_acks = pending_send_acks - 1
-                nanovine_model.set_last_msg(stdr.num(line))
-            else
-                hist_append(line)
-                hist_remaining = hist_remaining - 1
+            hist_append(line)
+            hist_remaining = hist_remaining - 1
         hist_state = 3
         <-
 
     elif hist_state == 3
-        let final_line = sys.proc_read_line(proc)
+        let final_any = sys.proc_read_line(proc)
+        if stdr.is_null(final_any)
+            <-
+        let final_line = stdr.str(final_any)
         if stdr.len(final_line) == 0
             <-
-        finalize_history(stdr.num(final_line))
+        finalize_history(stdr.num(stdr.trim(final_line)))
+        poll_last = now
         <-
 ;
