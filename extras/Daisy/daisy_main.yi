@@ -16,7 +16,6 @@ def PROG_MEM = 42717
 def MAX_INPUT = 256
 def MAX_GOSUB = 64
 def MAX_PICT_PIXELS = 166000
-
 def C_BG = 0
 def C_FG = 1
 def C_FRAME = 2
@@ -26,21 +25,22 @@ def KEY_RETURN = 40
 def KEY_BACKSPACE = 42
 def KEY_ESCAPE = 41
 
-def CURSOR_ICN = [0x4060, 0x7078, 0x7c70, 0x5808]
+def CURSOR_ICN = [
+    0x4060, 0x7078, 0x7c70, 0x5808
+]
 def BLOCK_CURSOR = [
-    0xaa55, 0xaa55, 0xaa55, 0xaa55,
-    0x0000, 0x0000, 0x0000, 0x0000,
-    0x0000, 0x0000, 0x0000, 0x0000,
-    0x0000, 0x0000, 0x0000, 0x0000
+    0xaa55, 0xaa55, 0xaa55, 0xaa55
 ]
 def DIAMOND_FONT = [
-    0x0000, 0x0018, 0x3c7e, 0xffff,
-    0xffff, 0x7e3c, 0x1800, 0x0000,
-    0xffff, 0x7e3c, 0x1800, 0x0000,
-    0x0000, 0x0018, 0x3c7e, 0xffff,
+    0x1038, 0x7cfe, 0x7c38, 0x1000
 ]
 def DIAMOND_GLYPH = 95
 def CURSOR_GLYPH = 127
+
+def DAISY_ADDR = 0x120
+def DAISY_SPRITE = [
+    0xf08c, 0x8281, 0x4347, 0x2f1f, 0x0070, 0x7c7e, 0x3c38, 0x1000
+]
 
 def ?line_nums = []: [any]
 def ?line_src = []: [any]
@@ -64,7 +64,6 @@ def ?pic_c = []: [any]
 def ?expr_text = ""
 def ?expr_pos = 0
 def ?rng_seed = 1
-def ?palette = ["#ffeebb", "#000000", "#ddaa11", "#66aa33"]: [any]
 def ?parse_depth = 0
 
 : is_space(ch = string) (( bool ))
@@ -381,7 +380,7 @@ def ?parse_depth = 0
 : prompt() (( string ))
     if waiting_input
         <- "? " + input_buf
-    <- "> " + input_buf
+    <- input_buf
 ;
 
 : program_bytes() (( num ))
@@ -398,10 +397,23 @@ def ?parse_depth = 0
     <- free
 ;
 
+: draw_daisy_sprite(scr = vimana.screen) (( -- ))
+    scr.set_x(WIN_W - FRAME - 32).set_y(FRAME + 8).set_addr(DAISY_ADDR).sprite(0x85)
+    scr.set_x(WIN_W - FRAME - 24).set_y(FRAME + 8).set_addr(DAISY_ADDR).sprite(0x85)
+    scr.set_x(WIN_W - FRAME - 16).set_y(FRAME + 8).set_addr(DAISY_ADDR).sprite(0x85)
+    scr.set_x(WIN_W - FRAME - 32).set_y(FRAME + 16).set_addr(DAISY_ADDR).sprite(0x85)
+    scr.set_x(WIN_W - FRAME - 24).set_y(FRAME + 16).set_addr(DAISY_ADDR).sprite(0x85)
+    scr.set_x(WIN_W - FRAME - 16).set_y(FRAME + 16).set_addr(DAISY_ADDR).sprite(0x85)
+    scr.set_x(WIN_W - FRAME - 32).set_y(FRAME + 24).set_addr(DAISY_ADDR).sprite(0x85)
+    scr.set_x(WIN_W - FRAME - 24).set_y(FRAME + 24).set_addr(DAISY_ADDR).sprite(0x85)
+    scr.set_x(WIN_W - FRAME - 16).set_y(FRAME + 24).set_addr(DAISY_ADDR).sprite(0x85)
+;
+
 : banner() (( -- ))
     let diamond = stdr.char_from_code(DIAMOND_GLYPH)
-    push_out("DAISY BASIC.")
-    push_out("TYPE \"HELP\" FOR INFO. " + diamond + " " + str(PROG_MEM) + " BYTES FREE.")
+    push_out("DAISY BASIC")
+    push_out("TYPE \"HELP\" FOR INFO " + diamond + " " + str(PROG_MEM) + " BYTES FREE")
+    push_out("READY.")
 ;
 
 : line_index(n = num) (( num ))
@@ -449,6 +461,28 @@ def ?parse_depth = 0
     let ?i = 0
     let ?v = 0
     let ?found = false
+    if i + 1 < stdr.len(s) && stdr.char_at(s, i) == "0" && upper_ch(stdr.char_at(s, i + 1)) == "X"
+        i += 2
+        for (; i < stdr.len(s); i += 1)
+            let d = hex_digit(stdr.char_at(s, i))
+            if d < 0
+                break
+            v = v * 16 + d
+            found = true
+        if !found
+            <- [-1, 0]
+        <- [v, i]
+    if i < stdr.len(s) && stdr.char_at(s, i) == "$"
+        i += 1
+        for (; i < stdr.len(s); i += 1)
+            let d = hex_digit(stdr.char_at(s, i))
+            if d < 0
+                break
+            v = v * 16 + d
+            found = true
+        if !found
+            <- [-1, 0]
+        <- [v, i]
     for (; i < stdr.len(s); i += 1)
         let ch = stdr.char_at(s, i)
         if !is_digit(ch)
@@ -650,7 +684,7 @@ def ?parse_depth = 0
         n = n % 16
     if n < 10
         <- stdr.char_from_code(48 + n)
-    <- stdr.char_from_code(87 + n)
+    <- stdr.char_from_code(55 + n)
 ;
 
 : word_nib(word = num, slot = num) (( num ))
@@ -664,21 +698,34 @@ def ?parse_depth = 0
 ;
 
 : color_from_words(rword = num, gword = num, bword = num, slot = num) (( string ))
-    let r = hex_char(word_nib(rword, slot))
-    let g = hex_char(word_nib(gword, slot))
-    let b = hex_char(word_nib(bword, slot))
-    <- "#" + r + r + g + g + b + b
+    let HEX = "0123456789ABCDEF"
+    let r = stdr.substring_len(HEX, word_nib(rword, slot), 1)
+    let g = stdr.substring_len(HEX, word_nib(gword, slot), 1)
+    let b = stdr.substring_len(HEX, word_nib(bword, slot), 1)
+    <- stdr.str_concat("#",
+       stdr.str_concat(r,
+       stdr.str_concat(r,
+       stdr.str_concat(g,
+       stdr.str_concat(g,
+       stdr.str_concat(b, b))))))
+;
+
+: word16(v = num) (( num ))
+    v = v % 65536
+    if v < 0
+        v += 65536
+    <- v
+;
+
+: apply_color_slot(scr = vimana.screen, slot = num, rword = num, gword = num, bword = num) (( -- ))
+    scr.set_palette(slot, color_from_words(rword, gword, bword, slot))
 ;
 
 : apply_color_words(scr = vimana.screen, rword = num, gword = num, bword = num) (( -- ))
-    scr.set_palette(0, color_from_words(rword, gword, bword, 0))
-    scr.set_palette(1, color_from_words(rword, gword, bword, 1))
-    scr.set_palette(2, color_from_words(rword, gword, bword, 2))
-    scr.set_palette(3, color_from_words(rword, gword, bword, 3))
-    palette[0] = color_from_words(rword, gword, bword, 0)
-    palette[1] = color_from_words(rword, gword, bword, 1)
-    palette[2] = color_from_words(rword, gword, bword, 2)
-    palette[3] = color_from_words(rword, gword, bword, 3)
+    apply_color_slot(scr, 0, rword, gword, bword)
+    apply_color_slot(scr, 1, rword, gword, bword)
+    apply_color_slot(scr, 2, rword, gword, bword)
+    apply_color_slot(scr, 3, rword, gword, bword)
 ;
 
 : apply_default_palette(scr = vimana.screen) (( -- ))
@@ -686,10 +733,6 @@ def ?parse_depth = 0
     scr.set_palette(1, "#000000")
     scr.set_palette(2, "#ddaa11")
     scr.set_palette(3, "#66aa33")
-    palette[0] = "#ffeebb"
-    palette[1] = "#000000"
-    palette[2] = "#ddaa11"
-    palette[3] = "#66aa33"
 ;
 
 : split_args(s = string) (( [any] ))
@@ -702,30 +745,38 @@ def ?parse_depth = 0
     <- items
 ;
 
-: split_color_args(s = string) (( [any] ))
-    let ?items = []: [any]
-    let ?start = 0
-    for (let ?i = 0; i <= stdr.len(s); i += 1)
-        if i == stdr.len(s) || stdr.char_at(s, i) == "," || is_space(stdr.char_at(s, i))
-            let item = trim(stdr.slice(s, start, i))
-            if item != ""
-                stdr.push(items, item)
-            start = i + 1
-    <- items
-;
-
 : do_color(arg = string, scr = vimana.screen) (( -- ))
     let t = trim(arg)
     if t == ""
         apply_default_palette(scr)
         push_out("OK")
         <-
-    let parts = split_color_args(t)
-    if stdr.len(parts) == 3
-        apply_color_words(scr,
-            eval_num(str(parts[0] ?? "0")),
-            eval_num(str(parts[1] ?? "0")),
-            eval_num(str(parts[2] ?? "0")))
+    let ?w1 = ""
+    let ?w2 = ""
+    let ?w3 = ""
+    let ?count = 0
+    let ?start = 0
+    for (let ?i = 0; i <= stdr.len(t); i += 1)
+        let ?at_end = i == stdr.len(t)
+        let ?ch = ""
+        if !at_end
+            ch = stdr.char_at(t, i)
+        if at_end || ch == "," || is_space(ch)
+            let item = trim(stdr.slice(t, start, i))
+            if item != ""
+                if count == 0
+                    w1 = item
+                elif count == 1
+                    w2 = item
+                elif count == 2
+                    w3 = item
+                count += 1
+            start = i + 1
+    if count == 3
+        let rword = word16(eval_num(w1))
+        let gword = word16(eval_num(w2))
+        let bword = word16(eval_num(w3))
+        apply_color_words(scr, rword, gword, bword)
         push_out("OK")
         <-
     let ?comma = -1
@@ -746,7 +797,6 @@ def ?parse_depth = 0
                 valid = false
         if valid
             scr.set_palette(slot, color)
-            palette[slot] = color
             push_out("OK")
         else
             push_out("?COLOR")
@@ -895,9 +945,9 @@ def ?parse_depth = 0
     if tok == "REM"
         <-
     if tok == "HELP"
-        push_out("RUN LIST CLEAR INPUT LET IF PRINT")
-        push_out("GOTO GOSUB RETURN END COLOR CLS")
-        push_out("DRAW MODE POKE PICT SAVE LOAD MAKE")
+        push_out("RUN\tLIST\tCLEAR\tINPUT\tLET\tIF\tPRINT")
+        push_out("GOTO\tGOSUB\tRETURN\tEND\tCOLOR\tCLS")
+        push_out("DRAW\tMODE\tPOKE\tPICT\tSAVE\tLOAD\tMAKE")
         <-
     if tok == "RUN"
         run_start()
@@ -1034,7 +1084,7 @@ def ?parse_depth = 0
     if line == ""
         input_buf = ""
         <-
-    push_out("> " + line)
+    push_out(line)
     let parsed = parse_leading_number(line)
     let n = num(parsed[0] ?? -1)
     let pos = num(parsed[1] ?? 0)
@@ -1111,6 +1161,7 @@ def ?parse_depth = 0
     daisy_font.install(scr)
     scr.set_font(DIAMOND_GLYPH, DIAMOND_FONT)
     scr.set_font(CURSOR_GLYPH, BLOCK_CURSOR)
+    scr.set_sprite(DAISY_ADDR, DAISY_SPRITE, vimana.sprite_2bpp)
     scr.set_drag_region(24)
     apply_default_palette(scr)
     let dev = sys.device()
@@ -1126,6 +1177,7 @@ def ?parse_depth = 0
         if running && !waiting_input
             run_one(sys, fsys, scr)
         draw_frame(scr)
+        draw_daisy_sprite(scr)
         draw_pictures(scr)
         draw_console(scr)
         scr.present()

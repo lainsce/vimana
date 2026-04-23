@@ -653,6 +653,176 @@ static VimanaMethodId vimana_method_id(ObjKind kind, const char *name) {
     return VMT_NONE;
 }
 
+static Val helper_set_clipboard_text(vimana_system *sys, Val *args, int argc) {
+    char b[4096];
+    return V_BOOL(argc > 1 &&
+                  vimana_system_set_clipboard_text(sys, val_cstr(args[1], b, sizeof(b))));
+}
+
+static Val helper_spawn(vimana_system *sys, Val *args, int argc) {
+    char b[4096];
+    return argc > 1 ? V_OBJ(OBJ_PROCESS, vimana_process_spawn(sys, val_cstr(args[1], b, sizeof(b)))) : V_NULL;
+}
+
+static Val helper_proc_write(Val *args, int argc) {
+    char b[4096];
+    return V_BOOL(argc > 2 && obj_is(args[1], OBJ_PROCESS) &&
+                  vimana_process_write((vimana_process *)args[1].obj.ptr,
+                                       val_cstr(args[2], b, sizeof(b))));
+}
+
+static Val helper_set_palette(vimana_screen *scr, Val *args, int argc, Val self) {
+    char b[64];
+    if (argc > 2)
+        vimana_screen_set_palette(scr, (unsigned int)val_to_i64(args[1]),
+                                  val_cstr(args[2], b, sizeof(b)));
+    return val_clone(self);
+}
+
+static Val helper_set_font(vimana_screen *scr, Val *args, int argc, Val self) {
+    uint16_t data[256];
+    int n = argc > 2 ? val_u16_array(args[2], data, 256) : 0;
+    if (argc > 2)
+        vimana_screen_set_font(scr, (unsigned int)val_to_i64(args[1]), data,
+                               (unsigned int)n);
+    return val_clone(self);
+}
+
+static Val helper_set_sprite(vimana_screen *scr, Val *args, int argc, Val self) {
+    uint8_t *data = (uint8_t *)malloc(4096);
+    if (!data)
+        return val_clone(self);
+    int n = argc > 2 ? val_byte_array(args[2], data, 4096) : 0;
+    unsigned int mode = argc > 3 ? (unsigned int)val_to_i64(args[3]) : 0;
+    if (argc > 2)
+        vimana_screen_set_sprite(scr, (unsigned int)val_to_i64(args[1]), data,
+                                 mode, (size_t)n);
+    free(data);
+    return val_clone(self);
+}
+
+static Val helper_set_gfx(vimana_screen *scr, Val *args, int argc, Val self) {
+    uint8_t *data = (uint8_t *)malloc(4096);
+    if (!data)
+        return val_clone(self);
+    int n = argc > 2 ? val_byte_array(args[2], data, 4096) : 0;
+    if (argc > 2)
+        vimana_screen_set_gfx(scr, (unsigned int)val_to_i64(args[1]), data,
+                              (unsigned int)n);
+    free(data);
+    return val_clone(self);
+}
+
+static Val helper_put_text(vimana_screen *scr, Val *args, int argc, Val self) {
+    char text[1024];
+    if (argc > 5)
+        vimana_screen_put_text(scr, (unsigned int)val_to_i64(args[1]),
+                               (unsigned int)val_to_i64(args[2]),
+                               val_cstr(args[3], text, sizeof(text)),
+                               (unsigned int)val_to_i64(args[4]),
+                               (unsigned int)val_to_i64(args[5]));
+    return val_clone(self);
+}
+
+static Val helper_put_icn(vimana_screen *scr, Val *args, int argc, Val self) {
+    uint8_t data[8];
+    if (argc > 5) {
+        val_byte_array(args[3], data, 8);
+        vimana_screen_put_icn(scr, (unsigned int)val_to_i64(args[1]),
+                              (unsigned int)val_to_i64(args[2]), data,
+                              (unsigned int)val_to_i64(args[4]),
+                              (unsigned int)val_to_i64(args[5]));
+    }
+    return val_clone(self);
+}
+
+static Val helper_set_cursor(vimana_screen *scr, Val *args, int argc, Val self) {
+    uint8_t data[8];
+    if (argc > 1) {
+        val_byte_array(args[1], data, 8);
+        vimana_screen_set_cursor(scr, data);
+    }
+    return val_clone(self);
+}
+
+static Val helper_exists(vimana_system *sys, Val *args, int argc) {
+    char path[1024];
+    return V_BOOL(argc > 1 &&
+                  vimana_file_exists(sys, val_cstr(args[1], path, sizeof(path))));
+}
+
+static Val helper_read_bytes(vimana_system *sys, Val *args, int argc) {
+    char path[1024];
+    size_t n = 0;
+    unsigned char *bytes = argc > 1
+        ? vimana_file_read_bytes(sys, val_cstr(args[1], path, sizeof(path)), &n)
+        : NULL;
+    Val r = bytes ? bytes_to_array(bytes, n) : V_ARR_NEW();
+    free(bytes);
+    return r;
+}
+
+static Val helper_read_text(vimana_system *sys, Val *args, int argc) {
+    char path[1024];
+    char *s = argc > 1
+        ? vimana_file_read_text(sys, val_cstr(args[1], path, sizeof(path)))
+        : NULL;
+    Val r = s ? V_STR_CSTR(s) : V_STR_CSTR("");
+    free(s);
+    return r;
+}
+
+static Val helper_write_bytes(vimana_system *sys, Val *args, int argc) {
+    char path[1024];
+    uint8_t *data = (uint8_t *)malloc(65536);
+    if (!data)
+        return V_FALSE;
+    int n = argc > 2 ? val_byte_array(args[2], data, 65536) : 0;
+    bool ok = argc > 2 &&
+              vimana_file_write_bytes(sys, val_cstr(args[1], path, sizeof(path)),
+                                      data, (size_t)n);
+    free(data);
+    return V_BOOL(ok);
+}
+
+static Val helper_write_text(vimana_system *sys, Val *args, int argc) {
+    char path[1024], text[4096];
+    return V_BOOL(argc > 2 &&
+                  vimana_file_write_text(sys, val_cstr(args[1], path, sizeof(path)),
+                                         val_cstr(args[2], text, sizeof(text))));
+}
+
+static Val helper_remove(vimana_system *sys, Val *args, int argc) {
+    char path[1024];
+    return V_BOOL(argc > 1 &&
+                  vimana_file_remove(sys, val_cstr(args[1], path, sizeof(path))));
+}
+
+static Val helper_rename(vimana_system *sys, Val *args, int argc) {
+    char path[1024], to[1024];
+    return V_BOOL(argc > 2 &&
+                  vimana_file_rename(sys, val_cstr(args[1], path, sizeof(path)),
+                                     val_cstr(args[2], to, sizeof(to))));
+}
+
+static Val helper_list(vimana_system *sys, Val *args, int argc) {
+    char path[1024];
+    int count = 0;
+    char **items = argc > 1
+        ? vimana_file_list(sys, val_cstr(args[1], path, sizeof(path)), &count)
+        : NULL;
+    Val r = items ? strings_to_array(items, count) : V_ARR_NEW();
+    if (items)
+        vimana_file_list_free(items, count);
+    return r;
+}
+
+static Val helper_is_dir(vimana_system *sys, Val *args, int argc) {
+    char path[1024];
+    return V_BOOL(argc > 1 &&
+                  vimana_file_is_dir(sys, val_cstr(args[1], path, sizeof(path))));
+}
+
 static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     if (argc<=0) return V_NULL;
     const char *m=name+10;
@@ -684,7 +854,7 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     case VMT_TICKS: return V_INT(vimana_system_ticks(sys));
     case VMT_SLEEP: if(argc>1)vimana_system_sleep(sys,val_to_i64(args[1])); return val_clone(self);
     case VMT_CLIPBOARD_TEXT: { char *s=vimana_system_clipboard_text(sys); Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
-    case VMT_SET_CLIPBOARD_TEXT: { char b[4096]; return V_BOOL(argc>1&&vimana_system_set_clipboard_text(sys,val_cstr(args[1],b,sizeof(b)))); }
+    case VMT_SET_CLIPBOARD_TEXT: return helper_set_clipboard_text(sys, args, argc);
     case VMT_HOME_DIR: { char *s=vimana_system_home_dir(sys); Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
     case VMT_PLAY_TONE: if(argc>3)vimana_system_play_tone(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2]),(int)val_to_i64(args[3])); return val_clone(self);
     case VMT_SET_VOICE: if(argc>2)vimana_system_set_voice(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
@@ -702,21 +872,21 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     case VMT_END_AUDIO: vimana_system_end_audio(sys); return val_clone(self);
     case VMT_SET_PADDLE: if(argc>2)vimana_system_set_paddle(sys,(int)val_to_i64(args[1]),(int)val_to_i64(args[2])); return val_clone(self);
     case VMT_PADDLE: return argc>1?V_INT(vimana_system_get_paddle(sys,(int)val_to_i64(args[1]))):V_INT(0);
-    case VMT_SPAWN: { char b[4096]; return argc>1?V_OBJ(OBJ_PROCESS,vimana_process_spawn(sys,val_cstr(args[1],b,sizeof(b)))):V_NULL; }
-    case VMT_PROC_WRITE: { char b[4096]; return V_BOOL(argc>2&&obj_is(args[1],OBJ_PROCESS)&&vimana_process_write((vimana_process *)args[1].obj.ptr,val_cstr(args[2],b,sizeof(b)))); }
+    case VMT_SPAWN: return helper_spawn(sys, args, argc);
+    case VMT_PROC_WRITE: return helper_proc_write(args, argc);
     case VMT_PROC_READ_LINE: { char *s=(argc>1&&obj_is(args[1],OBJ_PROCESS))?vimana_process_read_line((vimana_process *)args[1].obj.ptr):NULL; Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
     case VMT_PROC_RUNNING: return V_BOOL(argc>1&&obj_is(args[1],OBJ_PROCESS)&&vimana_process_running((vimana_process *)args[1].obj.ptr));
     case VMT_PROC_KILL: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_kill((vimana_process *)args[1].obj.ptr); return val_clone(self);
     case VMT_PROC_FREE: if(argc>1&&obj_is(args[1],OBJ_PROCESS))vimana_process_free((vimana_process *)args[1].obj.ptr); return val_clone(self);
 
     case VMT_CLEAR: vimana_screen_clear(scr,argc>1?(unsigned int)val_to_i64(args[1]):0); return val_clone(self);
-    case VMT_SET_PALETTE: { char b[64]; if(argc>2)vimana_screen_set_palette(scr,(unsigned int)val_to_i64(args[1]),val_cstr(args[2],b,sizeof(b))); return val_clone(self); }
-    case VMT_SET_FONT: { uint16_t data[256]; int n=argc>2?val_u16_array(args[2],data,256):0; if(argc>2)vimana_screen_set_font(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return val_clone(self); }
+    case VMT_SET_PALETTE: return helper_set_palette(scr, args, argc, self);
+    case VMT_SET_FONT: return helper_set_font(scr, args, argc, self);
     case VMT_SET_FONT_WIDTH: if(argc>2)vimana_screen_set_font_width(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2])); return val_clone(self);
     case VMT_SET_FONT_SIZE: if(argc>1)vimana_screen_set_font_size(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
     case VMT_SET_THEME_SWAP: if(argc>1)vimana_screen_set_theme_swap(scr,val_truthy(args[1])); return val_clone(self);
-    case VMT_SET_SPRITE: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; unsigned int mode=argc>3?(unsigned int)val_to_i64(args[3]):0; if(argc>2)vimana_screen_set_sprite(scr,(unsigned int)val_to_i64(args[1]),data,mode,(size_t)n); return val_clone(self); }
-    case VMT_SET_GFX: { uint8_t data[4096]; int n=argc>2?val_byte_array(args[2],data,4096):0; if(argc>2)vimana_screen_set_gfx(scr,(unsigned int)val_to_i64(args[1]),data,(unsigned int)n); return val_clone(self); }
+    case VMT_SET_SPRITE: return helper_set_sprite(scr, args, argc, self);
+    case VMT_SET_GFX: return helper_set_gfx(scr, args, argc, self);
     case VMT_GFX: { const uint8_t *p=argc>1?vimana_screen_gfx(scr,(unsigned int)val_to_i64(args[1])):NULL; return V_INT(p?*p:0); }
     case VMT_SET_X: if(argc>1)vimana_screen_set_x(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
     case VMT_SET_Y: if(argc>1)vimana_screen_set_y(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
@@ -726,11 +896,11 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     case VMT_SPRITE_BANK: return V_INT(vimana_screen_sprite_bank(scr));
     case VMT_SPRITE: if(argc>1)vimana_screen_sprite(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
     case VMT_PIXEL: if(argc>1)vimana_screen_pixel(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
-    case VMT_PUT_TEXT: { char text[1024]; if(argc>5)vimana_screen_put_text(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),val_cstr(args[3],text,sizeof(text)),(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5])); return val_clone(self); }
-    case VMT_PUT_ICN: { uint8_t data[8]; if(argc>5){val_byte_array(args[3],data,8); vimana_screen_put_icn(scr,(unsigned int)val_to_i64(args[1]),(unsigned int)val_to_i64(args[2]),data,(unsigned int)val_to_i64(args[4]),(unsigned int)val_to_i64(args[5]));} return val_clone(self); }
+    case VMT_PUT_TEXT: return helper_put_text(scr, args, argc, self);
+    case VMT_PUT_ICN: return helper_put_icn(scr, args, argc, self);
     case VMT_PRESENT: vimana_screen_present(scr); return val_clone(self);
     case VMT_SET_DRAG_REGION: if(argc>1)vimana_screen_set_drag_region(scr,(unsigned int)val_to_i64(args[1])); return val_clone(self);
-    case VMT_SET_CURSOR: { uint8_t data[8]; if(argc>1){val_byte_array(args[1],data,8); vimana_screen_set_cursor(scr,data);} return val_clone(self); }
+    case VMT_SET_CURSOR: return helper_set_cursor(scr, args, argc, self);
     case VMT_HIDE_CURSOR: vimana_screen_hide_cursor(scr); return val_clone(self);
     case VMT_SHOW_CURSOR: vimana_screen_show_cursor(scr); return val_clone(self);
     case VMT_X: return V_INT(vimana_screen_x(scr));
@@ -741,15 +911,15 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     case VMT_HEIGHT: return V_INT(vimana_screen_height(scr));
     case VMT_SCALE: return V_INT(vimana_screen_scale(scr));
 
-    case VMT_EXISTS: { char path[1024]; return V_BOOL(argc>1&&vimana_file_exists(sys,val_cstr(args[1],path,sizeof(path)))); }
-    case VMT_READ_BYTES: { char path[1024]; size_t n=0; unsigned char *bytes=argc>1?vimana_file_read_bytes(sys,val_cstr(args[1],path,sizeof(path)),&n):NULL; Val r=bytes?bytes_to_array(bytes,n):V_ARR_NEW(); free(bytes); return r; }
-    case VMT_READ_TEXT: { char path[1024]; char *s=argc>1?vimana_file_read_text(sys,val_cstr(args[1],path,sizeof(path))):NULL; Val r=s?V_STR_CSTR(s):V_STR_CSTR(""); free(s); return r; }
-    case VMT_WRITE_BYTES: { char path[1024]; uint8_t data[65536]; int n=argc>2?val_byte_array(args[2],data,65536):0; return V_BOOL(argc>2&&vimana_file_write_bytes(sys,val_cstr(args[1],path,sizeof(path)),data,(size_t)n)); }
-    case VMT_WRITE_TEXT: { char path[1024], text[4096]; return V_BOOL(argc>2&&vimana_file_write_text(sys,val_cstr(args[1],path,sizeof(path)),val_cstr(args[2],text,sizeof(text)))); }
-    case VMT_REMOVE: { char path[1024]; return V_BOOL(argc>1&&vimana_file_remove(sys,val_cstr(args[1],path,sizeof(path)))); }
-    case VMT_RENAME: { char path[1024], to[1024]; return V_BOOL(argc>2&&vimana_file_rename(sys,val_cstr(args[1],path,sizeof(path)),val_cstr(args[2],to,sizeof(to)))); }
-    case VMT_LIST: { char path[1024]; int count=0; char **items=argc>1?vimana_file_list(sys,val_cstr(args[1],path,sizeof(path)),&count):NULL; Val r=items?strings_to_array(items,count):V_ARR_NEW(); if(items)vimana_file_list_free(items,count); return r; }
-    case VMT_IS_DIR: { char path[1024]; return V_BOOL(argc>1&&vimana_file_is_dir(sys,val_cstr(args[1],path,sizeof(path)))); }
+    case VMT_EXISTS: return helper_exists(sys, args, argc);
+    case VMT_READ_BYTES: return helper_read_bytes(sys, args, argc);
+    case VMT_READ_TEXT: return helper_read_text(sys, args, argc);
+    case VMT_WRITE_BYTES: return helper_write_bytes(sys, args, argc);
+    case VMT_WRITE_TEXT: return helper_write_text(sys, args, argc);
+    case VMT_REMOVE: return helper_remove(sys, args, argc);
+    case VMT_RENAME: return helper_rename(sys, args, argc);
+    case VMT_LIST: return helper_list(sys, args, argc);
+    case VMT_IS_DIR: return helper_is_dir(sys, args, argc);
 
     case VMT_POLL: vimana_device_poll(sys); return val_clone(self);
     case VMT_CONTROLLER: return V_INT(vimana_device_controller(sys));
