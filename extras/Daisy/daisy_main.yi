@@ -1,0 +1,1133 @@
+cask main
+
+bring stdr
+bring vimana
+bring daisy_font
+
+def WIN_W = 542
+def WIN_H = 384
+def FRAME = 24
+def TEXT_X = 32
+def TEXT_Y = 32
+def COLS = 41
+def ROWS = 21
+def LINE_H = 16
+def PROG_MEM = 42717
+def MAX_INPUT = 256
+def MAX_GOSUB = 64
+def MAX_PICT_PIXELS = 166000
+
+def C_BG = 0
+def C_FG = 1
+def C_FRAME = 2
+def C_ACCENT = 3
+
+def KEY_RETURN = 40
+def KEY_BACKSPACE = 42
+def KEY_ESCAPE = 41
+
+def CURSOR_ICN = [0x4060, 0x7078, 0x7c70, 0x5808]
+def BLOCK_CURSOR = [
+    0xaa55, 0xaa55, 0xaa55, 0xaa55,
+    0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000
+]
+def DIAMOND_FONT = [
+    0x0000, 0x0018, 0x3c7e, 0xffff,
+    0xffff, 0x7e3c, 0x1800, 0x0000,
+    0xffff, 0x7e3c, 0x1800, 0x0000,
+    0x0000, 0x0018, 0x3c7e, 0xffff,
+]
+def DIAMOND_GLYPH = 95
+def CURSOR_GLYPH = 127
+
+def ?line_nums = []: [any]
+def ?line_src = []: [any]
+def ?vars = []: [any]
+def ?out_lines = []: [any]
+def ?input_buf = ""
+def ?running = false
+def ?pc = 0
+def ?pc_changed = false
+def ?waiting_input = false
+def ?input_vars = []: [any]
+def ?input_pos = 0
+def ?gosub_stack = []: [any]
+def ?gosub_sp = 0
+def ?draw_x = FRAME
+def ?draw_y = FRAME
+def ?draw_mode = 0x01
+def ?pic_x = []: [any]
+def ?pic_y = []: [any]
+def ?pic_c = []: [any]
+def ?expr_text = ""
+def ?expr_pos = 0
+def ?rng_seed = 1
+def ?palette = ["#ffeebb", "#000000", "#ddaa11", "#66aa33"]: [any]
+def ?parse_depth = 0
+
+: is_space(ch = string) (( bool ))
+    <- ch == " " || ch == "\t"
+;
+
+: is_digit(ch = string) (( bool ))
+    let c = stdr.char_code(ch)
+    <- c >= 48 && c <= 57
+;
+
+: hex_digit(ch = string) (( num ))
+    let c = stdr.char_code(upper_ch(ch))
+    if c >= 48 && c <= 57
+        <- c - 48
+    if c >= 65 && c <= 70
+        <- c - 55
+    <- -1
+;
+
+: is_alpha(ch = string) (( bool ))
+    let c = stdr.char_code(ch)
+    <- (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+;
+
+: upper_ch(ch = string) (( string ))
+    let c = stdr.char_code(ch)
+    if c >= 97 && c <= 122
+        <- stdr.char_from_code(c - 32)
+    <- ch
+;
+
+: upper(s = string) (( string ))
+    let ?out = ""
+    for (let ?i = 0; i < stdr.len(s); i += 1)
+        out += upper_ch(stdr.char_at(s, i))
+    <- out
+;
+
+: trim_left(s = string) (( string ))
+    let ?i = 0
+    for (; i < stdr.len(s); i += 1)
+        if !is_space(stdr.char_at(s, i))
+            break
+    <- stdr.slice(s, i, stdr.len(s))
+;
+
+: trim_right(s = string) (( string ))
+    let ?n = stdr.len(s)
+    for (; n > 0; n -= 1)
+        if !is_space(stdr.char_at(s, n - 1))
+            break
+    <- stdr.slice(s, 0, n)
+;
+
+: trim(s = string) (( string ))
+    <- trim_right(trim_left(s))
+;
+
+: starts_with(s = string, p = string) (( bool ))
+    if stdr.len(s) < stdr.len(p)
+        <- false
+    <- stdr.slice(s, 0, stdr.len(p)) == p
+;
+
+: clamp(v = num, lo = num, hi = num) (( num ))
+    if v < lo
+        <- lo
+    if v > hi
+        <- hi
+    <- v
+;
+
+: skip_spaces() (( -- ))
+    for (; expr_pos < stdr.len(expr_text); expr_pos += 1)
+        if !is_space(stdr.char_at(expr_text, expr_pos))
+            break
+;
+
+: parse_number() (( num ))
+    skip_spaces()
+    let ?sign = 1
+    if expr_pos < stdr.len(expr_text) && stdr.char_at(expr_text, expr_pos) == "-"
+        sign = -1
+        expr_pos += 1
+    if expr_pos + 1 < stdr.len(expr_text) && stdr.char_at(expr_text, expr_pos) == "0" && upper_ch(stdr.char_at(expr_text, expr_pos + 1)) == "X"
+        expr_pos += 2
+        let ?hv = 0
+        for (; expr_pos < stdr.len(expr_text); expr_pos += 1)
+            let d = hex_digit(stdr.char_at(expr_text, expr_pos))
+            if d < 0
+                break
+            hv = hv * 16 + d
+        <- hv * sign
+    if expr_pos < stdr.len(expr_text) && stdr.char_at(expr_text, expr_pos) == "$"
+        expr_pos += 1
+        let ?hv = 0
+        for (; expr_pos < stdr.len(expr_text); expr_pos += 1)
+            let d = hex_digit(stdr.char_at(expr_text, expr_pos))
+            if d < 0
+                break
+            hv = hv * 16 + d
+        <- hv * sign
+    let ?v = 0
+    for (; expr_pos < stdr.len(expr_text); expr_pos += 1)
+        let ch = stdr.char_at(expr_text, expr_pos)
+        if !is_digit(ch)
+            break
+        v = v * 10 + num(ch)
+    <- v * sign
+;
+
+: var_index(ch = string) (( num ))
+    let c = stdr.char_code(upper_ch(ch))
+    if c < 65 || c > 90
+        <- -1
+    <- c - 65
+;
+
+: get_var(ch = string) (( num ))
+    let idx = var_index(ch)
+    if idx < 0
+        <- 0
+    <- num(vars[idx] ?? 0)
+;
+
+: get_var_at(idx = num) (( num ))
+    if idx < 0 || idx >= 26
+        <- 0
+    <- num(vars[idx] ?? 0)
+;
+
+: rand16() (( num ))
+    rng_seed = (rng_seed * 75 + 74) % 65537
+    <- rng_seed % 65536
+;
+
+: set_var_at(idx = num, v = num) (( -- ))
+    if idx >= 0 && idx < 26
+        vars[idx] = v
+;
+
+: set_var(ch = string, v = num) (( -- ))
+    let idx = var_index(ch)
+    if idx >= 0
+        vars[idx] = v
+;
+
+: glyph_code(n = num) (( num ))
+    if n >= 1 && n <= 31
+        <- n + 95
+    <- n
+;
+
+: parse_var_ref() (( num ))
+    if expr_pos >= stdr.len(expr_text)
+        <- 0
+    let name = stdr.char_at(expr_text, expr_pos)
+    if upper_ch(name) == "R"
+        expr_pos += 1
+        <- rand16()
+    let base = var_index(name)
+    expr_pos += 1
+    if expr_pos < stdr.len(expr_text) && stdr.char_at(expr_text, expr_pos) == "."
+        expr_pos += 1
+        base += parse_factor()
+    <- get_var_at(base)
+;
+
+: parse_factor() (( num ))
+    skip_spaces()
+    if expr_pos >= stdr.len(expr_text)
+        <- 0
+    let ch = stdr.char_at(expr_text, expr_pos)
+    if ch == "("
+        if parse_depth >= 100
+            expr_pos = stdr.len(expr_text)
+            <- 0
+        parse_depth += 1
+        expr_pos += 1
+        let v = parse_logic()
+        parse_depth -= 1
+        skip_spaces()
+        if expr_pos < stdr.len(expr_text) && stdr.char_at(expr_text, expr_pos) == ")"
+            expr_pos += 1
+        <- v
+    if is_alpha(ch)
+        <- parse_var_ref()
+    <- parse_number()
+;
+
+: bit_and(a = num, b = num) (( num ))
+    let ?out = 0
+    let ?bit = 1
+    let ?aa = a
+    let ?bb = b
+    for (; bit <= 32768;)
+        if aa % 2 == 1 && bb % 2 == 1
+            out += bit
+        aa = stdr.floor(aa / 2)
+        bb = stdr.floor(bb / 2)
+        bit += bit
+    <- out
+;
+
+: parse_term() (( num ))
+    let ?v = parse_factor()
+    for (;;)
+        skip_spaces()
+        if expr_pos >= stdr.len(expr_text)
+            break
+        let op = stdr.char_at(expr_text, expr_pos)
+        if op != "*" && op != "/" && op != "%"
+            break
+        expr_pos += 1
+        let r = parse_factor()
+        if op == "*"
+            v = v * r
+        elif r != 0
+            if op == "/"
+                v = stdr.floor(v / r)
+            else
+                v = v % r
+    <- v
+;
+
+: parse_expr() (( num ))
+    let ?v = parse_term()
+    for (;;)
+        skip_spaces()
+        if expr_pos >= stdr.len(expr_text)
+            break
+        let op = stdr.char_at(expr_text, expr_pos)
+        if op != "+" && op != "-"
+            break
+        expr_pos += 1
+        let r = parse_term()
+        if op == "+"
+            v = v + r
+        else
+            v = v - r
+    <- v
+;
+
+: parse_compare() (( num ))
+    let left = parse_expr()
+    skip_spaces()
+    if expr_pos >= stdr.len(expr_text)
+        <- left
+    let op = stdr.char_at(expr_text, expr_pos)
+    if op != "=" && op != "<" && op != ">"
+        <- left
+    expr_pos += 1
+    let ?op2 = ""
+    if expr_pos < stdr.len(expr_text)
+        let ch = stdr.char_at(expr_text, expr_pos)
+        if ch == "=" || ch == ">"
+            op2 = ch
+            expr_pos += 1
+    let right = parse_expr()
+    if op == "="
+        if left == right <- 1
+        <- 0
+    if op == "<" && op2 == ">"
+        if left != right <- 1
+        <- 0
+    if op == "<" && op2 == "="
+        if left <= right <- 1
+        <- 0
+    if op == ">" && op2 == "="
+        if left >= right <- 1
+        <- 0
+    if op == "<"
+        if left < right <- 1
+        <- 0
+    if left > right <- 1
+    <- 0
+;
+
+: parse_logic() (( num ))
+    let ?v = parse_compare()
+    for (;;)
+        skip_spaces()
+        if expr_pos >= stdr.len(expr_text) || stdr.char_at(expr_text, expr_pos) != "&"
+            break
+        expr_pos += 1
+        v = bit_and(v, parse_compare())
+    <- v
+;
+
+: eval_num(s = string) (( num ))
+    expr_text = s
+    expr_pos = 0
+    parse_depth = 0
+    <- parse_logic()
+;
+
+: push_out(s = string) (( -- ))
+    let ?line = s
+    if line == ""
+        stdr.push(out_lines, "")
+        <-
+    for (; stdr.len(line) > COLS;)
+        stdr.push(out_lines, stdr.slice(line, 0, COLS))
+        line = stdr.slice(line, COLS, stdr.len(line))
+    stdr.push(out_lines, line)
+    if stdr.len(out_lines) > ROWS
+        let ?next = []: [any]
+        for (let ?i = stdr.len(out_lines) - ROWS; i < stdr.len(out_lines); i += 1)
+            stdr.push(next, out_lines[i] ?? "")
+        out_lines = next
+;
+
+: prompt() (( string ))
+    if waiting_input
+        <- "? " + input_buf
+    <- "> " + input_buf
+;
+
+: program_bytes() (( num ))
+    let ?total = 0
+    for (let ?i = 0; i < stdr.len(line_nums); i += 1)
+        total += stdr.len(str(line_nums[i] ?? 0)) + 1 + stdr.len(str(line_src[i] ?? "")) + 1
+    <- total
+;
+
+: bytes_free() (( num ))
+    let free = PROG_MEM - program_bytes()
+    if free < 0
+        <- 0
+    <- free
+;
+
+: banner() (( -- ))
+    let diamond = stdr.char_from_code(DIAMOND_GLYPH)
+    push_out("DAISY BASIC.")
+    push_out("TYPE \"HELP\" FOR INFO. " + diamond + " " + str(PROG_MEM) + " BYTES FREE.")
+;
+
+: line_index(n = num) (( num ))
+    for (let ?i = 0; i < stdr.len(line_nums); i += 1)
+        if num(line_nums[i] ?? -1) == n
+            <- i
+    <- -1
+;
+
+: insert_line(n = num, src = string) (( -- ))
+    let old = line_index(n)
+    if old >= 0
+        if trim(src) == ""
+            let ?new_nums = []: [any]
+            let ?new_src = []: [any]
+            for (let ?i = 0; i < stdr.len(line_nums); i += 1)
+                if i != old
+                    stdr.push(new_nums, line_nums[i] ?? 0)
+                    stdr.push(new_src, line_src[i] ?? "")
+            line_nums = new_nums
+            line_src = new_src
+        else
+            line_src[old] = src
+        <-
+    if trim(src) == ""
+        <-
+    let ?new_nums2 = []: [any]
+    let ?new_src2 = []: [any]
+    let ?added = false
+    for (let ?j = 0; j < stdr.len(line_nums); j += 1)
+        if !added && n < num(line_nums[j] ?? 0)
+            stdr.push(new_nums2, n)
+            stdr.push(new_src2, src)
+            added = true
+        stdr.push(new_nums2, line_nums[j] ?? 0)
+        stdr.push(new_src2, line_src[j] ?? "")
+    if !added
+        stdr.push(new_nums2, n)
+        stdr.push(new_src2, src)
+    line_nums = new_nums2
+    line_src = new_src2
+;
+
+: parse_leading_number(s = string) (( [any] ))
+    let ?i = 0
+    let ?v = 0
+    let ?found = false
+    for (; i < stdr.len(s); i += 1)
+        let ch = stdr.char_at(s, i)
+        if !is_digit(ch)
+            break
+        v = v * 10 + num(ch)
+        found = true
+    if !found
+        <- [-1, 0]
+    <- [v, i]
+;
+
+: list_program(arg = string) (( -- ))
+    let t = trim(arg)
+    if t != ""
+        let n = eval_num(t)
+        let idx = line_index(n)
+        if idx >= 0
+            push_out(str(line_nums[idx] ?? 0) + " " + str(line_src[idx] ?? ""))
+        <-
+    for (let ?i = 0; i < stdr.len(line_nums); i += 1)
+        push_out(str(line_nums[i] ?? 0) + " " + str(line_src[i] ?? ""))
+;
+
+: program_text() (( string ))
+    let ?out = ""
+    for (let ?i = 0; i < stdr.len(line_nums); i += 1)
+        out += str(line_nums[i] ?? 0) + " " + str(line_src[i] ?? "") + "\n"
+    <- out
+;
+
+: load_program_text(text = string) (( -- ))
+    line_nums = []: [any]
+    line_src = []: [any]
+    let ?start = 0
+    for (let ?i = 0; i <= stdr.len(text); i += 1)
+        if i == stdr.len(text) || stdr.char_at(text, i) == "\n"
+            let row = trim_right(stdr.slice(text, start, i))
+            let parsed = parse_leading_number(row)
+            let n = num(parsed[0] ?? -1)
+            let pos = num(parsed[1] ?? 0)
+            if n >= 0
+                insert_line(n, trim_left(stdr.slice(row, pos, stdr.len(row))))
+            start = i + 1
+;
+
+: first_token(s = string) (( string ))
+    let t = trim_left(s)
+    for (let ?i = 0; i < stdr.len(t); i += 1)
+        if is_space(stdr.char_at(t, i))
+            <- upper(stdr.slice(t, 0, i))
+    <- upper(t)
+;
+
+: after_token(s = string) (( string ))
+    let t = trim_left(s)
+    for (let ?i = 0; i < stdr.len(t); i += 1)
+        if is_space(stdr.char_at(t, i))
+            <- trim_left(stdr.slice(t, i, stdr.len(t)))
+    <- ""
+;
+
+: split_vars(s = string) (( [any] ))
+    let ?arr = []: [any]
+    let ?start = 0
+    for (let ?i = 0; i <= stdr.len(s); i += 1)
+        if i == stdr.len(s) || stdr.char_at(s, i) == ","
+            let item = trim(stdr.slice(s, start, i))
+            if stdr.len(item) > 0
+                stdr.push(arr, upper_ch(stdr.char_at(item, 0)))
+            start = i + 1
+    <- arr
+;
+
+: find_word(s = string, word = string) (( num ))
+    let u = upper(s)
+    let w = upper(word)
+    for (let ?i = 0; i <= stdr.len(u) - stdr.len(w); i += 1)
+        if stdr.slice(u, i, i + stdr.len(w)) == w
+            <- i
+    <- -1
+;
+
+: ref_index(name = string) (( num ))
+    let t = trim(name)
+    if t == ""
+        <- -1
+    let idx = var_index(stdr.char_at(t, 0))
+    let ?dot = -1
+    for (let ?i = 1; i < stdr.len(t); i += 1)
+        if stdr.char_at(t, i) == "."
+            dot = i
+            break
+    if dot >= 0
+        idx += eval_num(stdr.slice(t, dot + 1, stdr.len(t)))
+    <- idx
+;
+
+: do_assignment(part = string) (( bool ))
+    let ?sep = -1
+    for (let ?i = 0; i < stdr.len(part); i += 1)
+        let ch = stdr.char_at(part, i)
+        if ch == ":" || ch == "="
+            sep = i
+            break
+    if sep <= 0
+        <- false
+    let idx = ref_index(stdr.slice(part, 0, sep))
+    if idx < 0
+        <- false
+    set_var_at(idx, eval_num(stdr.slice(part, sep + 1, stdr.len(part))))
+    <- true
+;
+
+: do_let(arg = string) (( bool ))
+    let ?start = 0
+    let ?ok = true
+    let ?idxs = []: [any]
+    let ?vals = []: [any]
+    for (let ?i = 0; i <= stdr.len(arg); i += 1)
+        if i == stdr.len(arg) || stdr.char_at(arg, i) == ","
+            let part = trim(stdr.slice(arg, start, i))
+            if part != ""
+                let ?sep = -1
+                for (let ?j = 0; j < stdr.len(part); j += 1)
+                    let ch = stdr.char_at(part, j)
+                    if ch == ":" || ch == "="
+                        sep = j
+                        break
+                if sep <= 0
+                    ok = false
+                else
+                    let idx = ref_index(stdr.slice(part, 0, sep))
+                    if idx < 0
+                        ok = false
+                    else
+                        stdr.push(idxs, idx)
+                        stdr.push(vals, eval_num(stdr.slice(part, sep + 1, stdr.len(part))))
+            start = i + 1
+    if ok
+        for (let ?k = 0; k < stdr.len(idxs); k += 1)
+            set_var_at(num(idxs[k] ?? -1), num(vals[k] ?? 0))
+    <- ok
+;
+
+: print_arg(arg = string) (( -- ))
+    let ?out = ""
+    let ?i = 0
+    for (; i < stdr.len(arg);)
+        let ch = stdr.char_at(arg, i)
+        if is_space(ch) || ch == "," || ch == ";"
+            i += 1
+        elif ch == "\""
+            let ?j = i + 1
+            for (; j < stdr.len(arg); j += 1)
+                if stdr.char_at(arg, j) == "\""
+                    break
+            out += stdr.slice(arg, i + 1, j)
+            i = j + 1
+        elif ch == "#"
+            let ?j2 = i + 1
+            for (; j2 < stdr.len(arg); j2 += 1)
+                let next = stdr.char_at(arg, j2)
+                if next == "#" || next == "\"" || next == "," || next == ";"
+                    break
+            let code = eval_num(stdr.slice(arg, i + 1, j2))
+            if code <= 0
+                out += " "
+            elif code > 127
+                out += "?"
+            else
+                out += stdr.char_from_code(glyph_code(code))
+            i = j2
+        else
+            let ?j3 = i
+            for (; j3 < stdr.len(arg); j3 += 1)
+                let next2 = stdr.char_at(arg, j3)
+                if next2 == "#" || next2 == "\"" || next2 == "," || next2 == ";"
+                    break
+            out += str(eval_num(stdr.slice(arg, i, j3)))
+            i = j3
+    push_out(out)
+;
+
+: hex_color_name(s = string) (( string ))
+    let u = upper(trim(s))
+    if u == "WHITE" <- "#ffeebb"
+    if u == "BLACK" <- "#000000"
+    if u == "GOLD" <- "#ddaa11"
+    if u == "LIGHTGOLD" <- "#ffcc33"
+    if u == "GREEN" <- "#66aa33"
+    if u == "LIGHTGREEN" <- "#66aa33"
+    <- trim(s)
+;
+
+: hex_char(n = num) (( string ))
+    if n < 0
+        n = 0
+    if n > 15
+        n = n % 16
+    if n < 10
+        <- stdr.char_from_code(48 + n)
+    <- stdr.char_from_code(87 + n)
+;
+
+: word_nib(word = num, slot = num) (( num ))
+    if slot == 0
+        <- stdr.floor(word / 0x1000) % 16
+    if slot == 1
+        <- stdr.floor(word / 0x100) % 16
+    if slot == 2
+        <- stdr.floor(word / 16) % 16
+    <- word % 16
+;
+
+: color_from_words(rword = num, gword = num, bword = num, slot = num) (( string ))
+    let r = hex_char(word_nib(rword, slot))
+    let g = hex_char(word_nib(gword, slot))
+    let b = hex_char(word_nib(bword, slot))
+    <- "#" + r + r + g + g + b + b
+;
+
+: apply_color_words(scr = vimana.screen, rword = num, gword = num, bword = num) (( -- ))
+    scr.set_palette(0, color_from_words(rword, gword, bword, 0))
+    scr.set_palette(1, color_from_words(rword, gword, bword, 1))
+    scr.set_palette(2, color_from_words(rword, gword, bword, 2))
+    scr.set_palette(3, color_from_words(rword, gword, bword, 3))
+    palette[0] = color_from_words(rword, gword, bword, 0)
+    palette[1] = color_from_words(rword, gword, bword, 1)
+    palette[2] = color_from_words(rword, gword, bword, 2)
+    palette[3] = color_from_words(rword, gword, bword, 3)
+;
+
+: apply_default_palette(scr = vimana.screen) (( -- ))
+    scr.set_palette(0, "#ffeebb")
+    scr.set_palette(1, "#000000")
+    scr.set_palette(2, "#ddaa11")
+    scr.set_palette(3, "#66aa33")
+    palette[0] = "#ffeebb"
+    palette[1] = "#000000"
+    palette[2] = "#ddaa11"
+    palette[3] = "#66aa33"
+;
+
+: split_args(s = string) (( [any] ))
+    let ?items = []: [any]
+    let ?start = 0
+    for (let ?i = 0; i <= stdr.len(s); i += 1)
+        if i == stdr.len(s) || stdr.char_at(s, i) == ","
+            stdr.push(items, trim(stdr.slice(s, start, i)))
+            start = i + 1
+    <- items
+;
+
+: split_color_args(s = string) (( [any] ))
+    let ?items = []: [any]
+    let ?start = 0
+    for (let ?i = 0; i <= stdr.len(s); i += 1)
+        if i == stdr.len(s) || stdr.char_at(s, i) == "," || is_space(stdr.char_at(s, i))
+            let item = trim(stdr.slice(s, start, i))
+            if item != ""
+                stdr.push(items, item)
+            start = i + 1
+    <- items
+;
+
+: do_color(arg = string, scr = vimana.screen) (( -- ))
+    let t = trim(arg)
+    if t == ""
+        apply_default_palette(scr)
+        push_out("OK")
+        <-
+    let parts = split_color_args(t)
+    if stdr.len(parts) == 3
+        apply_color_words(scr,
+            eval_num(str(parts[0] ?? "0")),
+            eval_num(str(parts[1] ?? "0")),
+            eval_num(str(parts[2] ?? "0")))
+        push_out("OK")
+        <-
+    let ?comma = -1
+    for (let ?i = 0; i < stdr.len(t); i += 1)
+        if stdr.char_at(t, i) == ","
+            comma = i
+            break
+    if comma < 0
+        push_out("?COLOR")
+        <-
+    let slot = eval_num(stdr.slice(t, 0, comma))
+    let color = hex_color_name(stdr.slice(t, comma + 1, stdr.len(t)))
+    if slot >= 0 && slot <= 3 && starts_with(color, "#") && stdr.len(color) == 7
+        let ?valid = true
+        for (let ?j = 1; j < 7; j += 1)
+            let c = stdr.char_code(stdr.char_at(color, j))
+            if !( (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102) )
+                valid = false
+        if valid
+            scr.set_palette(slot, color)
+            palette[slot] = color
+            push_out("OK")
+        else
+            push_out("?COLOR")
+    else
+        push_out("?COLOR")
+;
+
+: do_poke(arg = string, scr = vimana.screen) (( -- ))
+    let ?items = []: [any]
+    let ?start = 0
+    for (let ?i = 0; i <= stdr.len(arg); i += 1)
+        if i == stdr.len(arg) || stdr.char_at(arg, i) == ","
+            stdr.push(items, eval_num(stdr.slice(arg, start, i)))
+            start = i + 1
+    if stdr.len(items) < 5
+        push_out("?POKE")
+        <-
+    let code = glyph_code(num(items[0] ?? 0))
+    if code < 32 || code >= 127
+        push_out("?POKE")
+        <-
+    let ?glyph = []: [any]
+    for (let ?j = 1; j < stdr.len(items); j += 1)
+        stdr.push(glyph, num(items[j] ?? 0))
+    for (; stdr.len(glyph) < 16;)
+        stdr.push(glyph, 0)
+    scr.set_font(code, glyph)
+    push_out("OK")
+;
+
+: do_pict(arg = string, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let path = trim(arg)
+    if path == ""
+        push_out("?PICT")
+        <-
+    let bytes = fsys.read_bytes(path)
+    if stdr.len(bytes) == 0
+        push_out("?PICT FILE")
+        <-
+    let ?x = draw_x
+    let ?y = draw_y
+    for (let ?i = 0; i < stdr.len(bytes); i += 1)
+        let b = num(bytes[i] ?? 0)
+        for (let ?bit = 0; bit < 8; bit += 1)
+            let ?mask = 128
+            for (let ?m = 0; m < bit; m += 1)
+                mask = stdr.floor(mask / 2)
+            if stdr.floor(b / mask) % 2 == 1 && x >= FRAME && x < WIN_W - FRAME && y >= FRAME && y < WIN_H - FRAME
+                if stdr.len(pic_x) >= MAX_PICT_PIXELS
+                    push_out("?PICT MEM")
+                    <-
+                stdr.push(pic_x, x)
+                stdr.push(pic_y, y)
+                stdr.push(pic_c, draw_mode)
+            x += 1
+            if x >= WIN_W - FRAME
+                x = FRAME
+                y += 1
+        if y >= WIN_H - FRAME
+            break
+    push_out("OK")
+;
+
+: save_program(fsys = vimana.file) (( -- ))
+    fsys.write_text("example.bas", program_text())
+    push_out("SAVED example.bas")
+;
+
+: load_program(fsys = vimana.file) (( -- ))
+    if !fsys.exists("example.bas")
+        push_out("?LOAD FILE")
+        <-
+    load_program_text(fsys.read_text("example.bas"))
+    push_out("LOADED example.bas")
+;
+
+: yi_quote(s = string) (( string ))
+    let ?out = "\""
+    for (let ?i = 0; i < stdr.len(s); i += 1)
+        let ch = stdr.char_at(s, i)
+        if ch == "\""
+            out += "\\\""
+        elif ch == "\\"
+            out += "\\\\"
+        else
+            out += ch
+    <- out + "\""
+;
+
+: make_rom(sys = vimana.system, fsys = vimana.file) (( -- ))
+    save_program(fsys)
+    let ?src = "cask main\n\nbring vimana\n\n-> ()\n"
+    src += "    let sys = vimana.system()\n"
+    src += "    let scr = vimana.screen(\"Daisy Program\", 368, 448, 1)\n"
+    src += "    scr.set_palette(0, \"#ffeebb\").set_palette(1, \"#000000\").set_palette(2, \"#ddaa11\").set_palette(3, \"#66aa33\")\n"
+    src += "    sys.run(scr, () => {\n"
+    src += "        scr.clear(0)\n"
+    src += "        scr.put_text(32, 32, \"DAISY PROGRAM\", 1, 0)\n"
+    let ?y = 56
+    for (let ?i = 0; i < stdr.len(line_nums) && y < 420; i += 1)
+        let row = str(line_nums[i] ?? 0) + " " + str(line_src[i] ?? "")
+        src += "        scr.put_text(32, " + str(y) + ", " + yi_quote(row) + ", 1, 0)\n"
+        y += 16
+    src += "        scr.present()\n"
+    src += "    })\n"
+    src += ";\n"
+    fsys.write_text("daisy_rom.yi", src)
+    sys.spawn("vinasm -o daisy.rom daisy_rom.yi >/tmp/daisy_make.log 2>&1")
+    push_out("MAKE daisy.rom")
+;
+
+: goto_line(n = num) (( -- ))
+    let idx = line_index(n)
+    if idx < 0
+        push_out("?LINE " + str(n))
+        running = false
+        <-
+    pc = idx
+    pc_changed = true
+;
+
+: run_start() (( -- ))
+    if stdr.len(line_nums) == 0
+        push_out("OK")
+        <-
+    running = true
+    waiting_input = false
+    pc = 0
+    gosub_sp = 0
+;
+
+: run_stop(msg = string) (( -- ))
+    running = false
+    waiting_input = false
+    if msg != ""
+        push_out(msg)
+;
+
+: exec_stmt(stmt = string, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let s = trim(stmt)
+    if s == ""
+        <-
+    let tok = first_token(s)
+    let arg = after_token(s)
+
+    if tok == "REM"
+        <-
+    if tok == "HELP"
+        push_out("RUN LIST CLEAR INPUT LET IF PRINT")
+        push_out("GOTO GOSUB RETURN END COLOR CLS")
+        push_out("DRAW MODE POKE PICT SAVE LOAD MAKE")
+        <-
+    if tok == "RUN"
+        run_start()
+        <-
+    if tok == "LIST"
+        list_program(arg)
+        <-
+    if tok == "CLEAR"
+        line_nums = []: [any]
+        line_src = []: [any]
+        run_stop("OK")
+        <-
+    if tok == "INPUT"
+        input_vars = split_vars(arg)
+        input_pos = 0
+        if stdr.len(input_vars) == 0
+            run_stop("?INPUT")
+        else
+            waiting_input = true
+            input_buf = ""
+        <-
+    if tok == "LET"
+        if !do_let(arg)
+            run_stop("?LET")
+        <-
+    if tok == "IF"
+        expr_text = arg
+        expr_pos = 0
+        let ok = parse_logic()
+        let ?rest = trim(stdr.slice(arg, expr_pos, stdr.len(arg)))
+        if starts_with(upper(rest), "THEN ")
+            rest = trim(stdr.slice(rest, 4, stdr.len(rest)))
+        elif upper(rest) == "THEN"
+            rest = ""
+        if ok != 0 && rest != ""
+            exec_stmt(rest, sys, fsys, scr)
+        <-
+    if tok == "PRINT"
+        print_arg(arg)
+        <-
+    if tok == "GOTO"
+        goto_line(eval_num(arg))
+        <-
+    if tok == "GOSUB"
+        if gosub_sp >= MAX_GOSUB
+            run_stop("?GOSUB")
+            <-
+        gosub_stack[gosub_sp] = pc + 1
+        gosub_sp += 1
+        goto_line(eval_num(arg))
+        <-
+    if tok == "RETURN"
+        if gosub_sp <= 0
+            run_stop("?RETURN")
+            <-
+        gosub_sp -= 1
+        pc = num(gosub_stack[gosub_sp] ?? pc + 1)
+        pc_changed = true
+        <-
+    if tok == "END"
+        run_stop("OK")
+        <-
+    if tok == "COLOR"
+        do_color(arg, scr)
+        <-
+    if tok == "CLS"
+        out_lines = []: [any]
+        pic_x = []: [any]
+        pic_y = []: [any]
+        pic_c = []: [any]
+        <-
+    if tok == "DRAW"
+        let ?comma = -1
+        for (let ?i = 0; i < stdr.len(arg); i += 1)
+            if stdr.char_at(arg, i) == ","
+                comma = i
+                break
+        if comma < 0
+            draw_x = clamp(eval_num(arg), FRAME, WIN_W - FRAME - 1)
+        else
+            draw_x = clamp(eval_num(stdr.slice(arg, 0, comma)), FRAME, WIN_W - FRAME - 1)
+            draw_y = clamp(eval_num(stdr.slice(arg, comma + 1, stdr.len(arg))), FRAME, WIN_H - FRAME - 1)
+        <-
+    if tok == "MODE"
+        draw_mode = eval_num(arg)
+        <-
+    if tok == "POKE"
+        do_poke(arg, scr)
+        <-
+    if tok == "PICT"
+        do_pict(arg, fsys, scr)
+        <-
+    if tok == "SAVE"
+        save_program(fsys)
+        <-
+    if tok == "LOAD"
+        load_program(fsys)
+        <-
+    if tok == "MAKE"
+        make_rom(sys, fsys)
+        <-
+
+    if do_assignment(s)
+        <-
+    else
+        run_stop("?" + tok)
+;
+
+: run_one(sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if !running || waiting_input
+        <-
+    if pc >= stdr.len(line_nums)
+        run_stop("?NO END")
+        <-
+    pc_changed = false
+    exec_stmt(str(line_src[pc] ?? ""), sys, fsys, scr)
+    if running && !waiting_input && !pc_changed
+        pc += 1
+;
+
+: enter_input_line(sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    let line = trim(input_buf)
+    push_out("? " + line)
+    if waiting_input
+        let vname = str(input_vars[input_pos] ?? "")
+        set_var(vname, eval_num(line))
+        input_pos += 1
+        input_buf = ""
+        if input_pos >= stdr.len(input_vars)
+            waiting_input = false
+            if running
+                pc += 1
+        <-
+    if line == ""
+        input_buf = ""
+        <-
+    push_out("> " + line)
+    let parsed = parse_leading_number(line)
+    let n = num(parsed[0] ?? -1)
+    let pos = num(parsed[1] ?? 0)
+    if n >= 0
+        insert_line(n, trim_left(stdr.slice(line, pos, stdr.len(line))))
+        if program_bytes() > PROG_MEM
+            push_out("?MEMORY")
+        else
+            push_out(str(bytes_free()) + " BYTES FREE")
+    else
+        exec_stmt(line, sys, fsys, scr)
+    input_buf = ""
+;
+
+: handle_keys(dev = vimana.device, sys = vimana.system, fsys = vimana.file, scr = vimana.screen) (( -- ))
+    if dev.key_pressed(KEY_ESCAPE)
+        sys.quit()
+        <-
+    if dev.key_pressed(KEY_BACKSPACE)
+        if stdr.len(input_buf) > 0
+            input_buf = stdr.slice(input_buf, 0, stdr.len(input_buf) - 1)
+    if dev.key_pressed(KEY_RETURN)
+        enter_input_line(sys, fsys, scr)
+        <-
+    let typed = dev.text_input()
+    if stdr.len(typed) > 0 && stdr.len(input_buf) < MAX_INPUT
+        let room = MAX_INPUT - stdr.len(input_buf)
+        if stdr.len(typed) > room
+            typed = stdr.slice(typed, 0, room)
+        input_buf += typed
+;
+
+: draw_frame(scr = vimana.screen) (( -- ))
+    scr.clear(C_BG)
+    for (let ?y = 0; y < FRAME; y += 1)
+        for (let ?x = 0; x < WIN_W; x += 1)
+            scr.set_x(x).set_y(y).pixel(C_FRAME)
+    for (let ?y2 = WIN_H - FRAME; y2 < WIN_H; y2 += 1)
+        for (let ?x2 = 0; x2 < WIN_W; x2 += 1)
+            scr.set_x(x2).set_y(y2).pixel(C_FRAME)
+    for (let ?y3 = FRAME; y3 < WIN_H - FRAME; y3 += 1)
+        for (let ?x3 = 0; x3 < FRAME; x3 += 1)
+            scr.set_x(x3).set_y(y3).pixel(C_FRAME)
+    for (let ?y4 = FRAME; y4 < WIN_H - FRAME; y4 += 1)
+        for (let ?x4 = WIN_W - FRAME; x4 < WIN_W; x4 += 1)
+            scr.set_x(x4).set_y(y4).pixel(C_FRAME)
+;
+
+: draw_pictures(scr = vimana.screen) (( -- ))
+    for (let ?i = 0; i < stdr.len(pic_x); i += 1)
+        scr.set_x(num(pic_x[i] ?? 0)).set_y(num(pic_y[i] ?? 0)).pixel(num(pic_c[i] ?? C_FG))
+;
+
+: draw_console(scr = vimana.screen) (( -- ))
+    let max_output = ROWS - 1
+    let ?start = stdr.len(out_lines) - max_output
+    if start < 0
+        start = 0
+    let ?row = 0
+    for (let ?i = start; i < stdr.len(out_lines); i += 1)
+        if row >= max_output
+            break
+        scr.put_text(TEXT_X, TEXT_Y + row * LINE_H, str(out_lines[i] ?? ""), C_FG, C_BG)
+        row += 1
+    let p = prompt()
+    scr.put_text(TEXT_X, TEXT_Y + row * LINE_H, p + stdr.char_from_code(CURSOR_GLYPH), C_FG, C_BG)
+;
+
+-> ()
+    let sys = vimana.system()
+    let scr = vimana.screen("Daisy", WIN_W, WIN_H, 1)
+    scr.hide_cursor()
+    scr.set_cursor(CURSOR_ICN)
+    daisy_font.install(scr)
+    scr.set_font(DIAMOND_GLYPH, DIAMOND_FONT)
+    scr.set_font(CURSOR_GLYPH, BLOCK_CURSOR)
+    scr.set_drag_region(24)
+    apply_default_palette(scr)
+    let dev = sys.device()
+    let fsys = sys.file()
+    rng_seed = sys.ticks() % 65537
+    if rng_seed <= 0
+        rng_seed = 1
+    banner()
+
+    sys.run(scr, () => {
+        dev.poll()
+        handle_keys(dev, sys, fsys, scr)
+        if running && !waiting_input
+            run_one(sys, fsys, scr)
+        draw_frame(scr)
+        draw_pictures(scr)
+        draw_console(scr)
+        scr.present()
+    })
+;

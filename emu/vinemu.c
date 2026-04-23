@@ -226,7 +226,11 @@ static double   rf64(const uint8_t *b,int *p){double v;memcpy(&v,b+*p,8);(*p)+=8
 static ROM *rom_load(const char *path) {
     FILE *f=fopen(path,"rb"); if(!f){fprintf(stderr,"cannot open '%s'\n",path);return NULL;}
     fseek(f,0,SEEK_END); long fsz=ftell(f); rewind(f);
-    uint8_t *buf=malloc((size_t)fsz); (void)fread(buf,1,(size_t)fsz,f); fclose(f);
+    if (fsz < 16 || fsz > 10000000) { fprintf(stderr,"ROM file size invalid: %ld\n",fsz); fclose(f); return NULL; }
+    uint8_t *buf=malloc((size_t)fsz);
+    if (!buf) { fprintf(stderr,"cannot allocate buffer for ROM\n"); fclose(f); return NULL; }
+    size_t nread = fread(buf,1,(size_t)fsz,f); fclose(f);
+    if (nread != (size_t)fsz) { fprintf(stderr,"failed to read ROM file\n"); free(buf); return NULL; }
     int p=0;
     uint32_t magic=ru32(buf,&p); if(magic!=YROM_MAGIC){fprintf(stderr,"bad magic\n");return NULL;}
     uint16_t ver=ru16(buf,&p); (void)ver; ru16(buf,&p); /* flags */
@@ -234,33 +238,62 @@ static ROM *rom_load(const char *path) {
     r->nconsts=(int)ru32(buf,&p); r->nfuncs=(int)ru32(buf,&p);
     r->nglobals=(int)ru32(buf,&p); r->nexts=(int)ru32(buf,&p);
     r->entry_func=(int)(int32_t)ru32(buf,&p);
+    if (r->nconsts < 0 || r->nconsts > 100000 ||
+        r->nfuncs < 0 || r->nfuncs > 10000 ||
+        r->nglobals < 0 || r->nglobals > 10000 ||
+        r->nexts < 0 || r->nexts > 1000) {
+        fprintf(stderr,"ROM has invalid sizes\n");
+        free(buf); free(r); return NULL;
+    }
     r->consts=calloc((size_t)r->nconsts,sizeof(RCon));
     r->funcs=calloc((size_t)r->nfuncs,sizeof(RFunc));
     r->globals=calloc((size_t)r->nglobals,sizeof(RGlob));
     r->exts=calloc((size_t)r->nexts,sizeof(RExt));
     r->glob_vals=calloc((size_t)r->nglobals,sizeof(Val));
+    if (!r->consts || !r->funcs || !r->globals || !r->exts || !r->glob_vals) {
+        fprintf(stderr,"out of memory loading ROM\n");
+        free(r->consts); free(r->funcs); free(r->globals); free(r->exts); free(r->glob_vals);
+        free(buf); free(r); return NULL;
+    }
     /* constants */
     for(int i=0;i<r->nconsts;i++){
+        if (p >= fsz) { fprintf(stderr,"ROM truncated at const %d\n",i); free(buf); return NULL; }
         RCon *k=&r->consts[i]; k->type=ru8(buf,&p);
         switch(k->type){
         case YCON_INT:k->ival=ri64(buf,&p);break;
         case YCON_FLT:k->fval=rf64(buf,&p);break;
-        case YCON_STR:k->slen=(int)ru32(buf,&p);k->sval=malloc((size_t)k->slen+1);memcpy(k->sval,buf+p,(size_t)k->slen);k->sval[k->slen]=0;p+=k->slen;break;
+        case YCON_STR:{
+            k->slen=(int)ru32(buf,&p);
+            if (k->slen < 0 || k->slen > 1000000) { fprintf(stderr,"string len invalid at const %d\n",i); free(buf); return NULL; }
+            if (p + k->slen > fsz) { fprintf(stderr,"ROM string too long at const %d\n",i); free(buf); return NULL; }
+            k->sval=malloc((size_t)k->slen+1);
+            if (!k->sval) { fprintf(stderr,"out of memory for string\n"); free(buf); return NULL; }
+            memcpy(k->sval,buf+p,(size_t)k->slen);k->sval[k->slen]=0;p+=k->slen;
+            break;
+        }
         case YCON_BOOL:k->ival=ru8(buf,&p);break;
         case YCON_NULL:break;
         }
     }
     /* globals */
+    if (p + r->nglobals * 8 > fsz) { fprintf(stderr,"ROM truncated at globals\n"); free(buf); return NULL; }
     for(int i=0;i<r->nglobals;i++){r->globals[i].name_idx=(int)ru32(buf,&p);r->globals[i].init_idx=(int)(int32_t)ru32(buf,&p);}
     /* exts */
+    if (p + r->nexts * 4 > fsz) { fprintf(stderr,"ROM truncated at exts\n"); free(buf); return NULL; }
     for(int i=0;i<r->nexts;i++) r->exts[i].name_idx=(int)ru32(buf,&p);
     /* functions */
     for(int i=0;i<r->nfuncs;i++){
+        if (p + 12 > fsz) { fprintf(stderr,"ROM truncated at func %d\n",i); free(buf); return NULL; }
         RFunc *fn=&r->funcs[i];
         fn->name_idx=(int)ru32(buf,&p); fn->arity=(int)ru16(buf,&p); fn->nlocals=(int)ru16(buf,&p);
-        fn->code_sz=(int)ru32(buf,&p); fn->code=malloc((size_t)fn->code_sz);
+        fn->code_sz=(int)ru32(buf,&p);
+        if (fn->code_sz < 0 || fn->code_sz > 1000000) { fprintf(stderr,"func code_sz invalid at %d\n",i); free(buf); return NULL; }
+        if (p + fn->code_sz > fsz) { fprintf(stderr,"ROM code too long at func %d\n",i); free(buf); return NULL; }
+        fn->code=malloc((size_t)fn->code_sz);
+        if (!fn->code) { fprintf(stderr,"out of memory for func code\n"); free(buf); return NULL; }
         memcpy(fn->code,buf+p,(size_t)fn->code_sz); p+=fn->code_sz;
     }
+    if (p != fsz) { fprintf(stderr,"ROM extra data or truncated\n"); free(buf); return NULL; }
     free(buf); return r;
 }
 
@@ -632,6 +665,8 @@ static Val builtin_chain(VM *vm, const char *name, Val *args, int argc) {
     vimana_system *sys=obj_system(self);
     vimana_screen *scr=obj_is(self,OBJ_SCREEN)?(vimana_screen *)self.obj.ptr:NULL;
     VimanaMethodId id=vimana_method_id(self.obj.kind,m);
+    if (!sys && id != VMT_NONE && self.obj.kind != OBJ_SCREEN) return V_NULL;
+    if (!scr && id != VMT_NONE && self.obj.kind == OBJ_SCREEN) return V_NULL;
 
     switch(id) {
     case VMT_RUN: {
@@ -1025,17 +1060,18 @@ static Val vm_run(VM *vm, int base_rsp) {
             break;
         }
          case OP_LIT: {
-             uint16_t ci=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2;
-             RCon *k=&r->consts[ci];
-             switch(k->type){
-             case YCON_INT:  PUSH(V_INT(k->ival)); break;
-             case YCON_FLT:  PUSH(V_FLT(k->fval)); break;
-             case YCON_STR:  PUSH(V_STR_CSTR(k->sval)); break;
-             case YCON_BOOL: PUSH(V_BOOL(k->ival)); break;
-             case YCON_NULL: PUSH(V_NULL); break;
-             }
-             break;
-         }
+              uint16_t ci=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2;
+              if (ci >= r->nconsts) { fprintf(stderr,"bad const index %d\n",ci); exit(1); }
+              RCon *k=&r->consts[ci];
+              switch(k->type){
+              case YCON_INT:  PUSH(V_INT(k->ival)); break;
+              case YCON_FLT:  PUSH(V_FLT(k->fval)); break;
+              case YCON_STR:  PUSH(V_STR_CSTR(k->sval)); break;
+              case YCON_BOOL: PUSH(V_BOOL(k->ival)); break;
+              case YCON_NULL: PUSH(V_NULL); break;
+              }
+              break;
+          }
         case OP_LDA: { uint16_t s=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2; PUSH(s<fr->nlocs?val_clone(fr->locals[s]):V_NULL); break; }
         case OP_STA: { uint16_t s=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2; Val v=POP(); if(s<fr->nlocs){val_release(fr->locals[s]);fr->locals[s]=v;} else val_release(v); break; }
         case OP_LDZ:{ uint16_t g=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); fr->pc+=2; PUSH(g<r->nglobals?val_clone(r->glob_vals[g]):V_NULL); break; }
@@ -1073,7 +1109,8 @@ static Val vm_run(VM *vm, int base_rsp) {
         }
         case OP_DEI: {
             uint16_t ei=(uint16_t)(code[fr->pc]|(code[fr->pc+1]<<8)); uint8_t argc2=code[fr->pc+2]; fr->pc+=3;
-            const char *ename = (ei<r->nexts) ? r->consts[r->exts[ei].name_idx].sval : "?";
+            if (ei >= r->nexts) { fprintf(stderr,"bad ext index %d\n",ei); exit(1); }
+            const char *ename = r->consts[r->exts[ei].name_idx].sval;
             Val *cargs=argc2?alloca(sizeof(Val)*(size_t)argc2):NULL;
             for(int i=argc2-1;i>=0;i--) cargs[i]=POP();
             Val out=builtin(vm,ename,cargs,argc2);
