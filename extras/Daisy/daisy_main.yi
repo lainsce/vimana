@@ -25,6 +25,7 @@ def KEY_RETURN = 40
 def KEY_BACKSPACE = 42
 def KEY_ESCAPE = 41
 
+def CURSOR_ADDR = 0x0000
 def CURSOR_ICN = [
     0x4060, 0x7078, 0x7c70, 0x5808
 ]
@@ -38,9 +39,25 @@ def DIAMOND_GLYPH = 95
 def CURSOR_GLYPH = 127
 
 def DAISY_ADDR = 0x120
-def DAISY_SPRITE = [
-    0xf08c, 0x8281, 0x4347, 0x2f1f, 0x0070, 0x7c7e, 0x3c38, 0x1000
-]
+def DAISY_TL_ADDR = DAISY_ADDR + 0x00
+def DAISY_TM_ADDR = DAISY_ADDR + 0x10
+def DAISY_TR_ADDR = DAISY_ADDR + 0x20
+def DAISY_ML_ADDR = DAISY_ADDR + 0x30
+def DAISY_MM_ADDR = DAISY_ADDR + 0x40
+def DAISY_MR_ADDR = DAISY_ADDR + 0x50
+def DAISY_BL_ADDR = DAISY_ADDR + 0x60
+def DAISY_BM_ADDR = DAISY_ADDR + 0x70
+def DAISY_BR_ADDR = DAISY_ADDR + 0x80
+
+def DAISY_TL = [0x0000, 0x071f, 0x3f7e, 0x7c38, 0x0000, 0x030f, 0x173c, 0x3810]
+def DAISY_TM = [0x183c, 0x7eff, 0xff7e, 0x3c18, 0x0018, 0x2442, 0x4224, 0x1800]
+def DAISY_TR = [0x0000, 0xe0f8, 0xfc7e, 0x3e1c, 0x0000, 0xc0f0, 0xe83c, 0x1c08]
+def DAISY_ML = [0x0070, 0xfcfe, 0xfefc, 0x7000, 0x0020, 0x8898, 0x9888, 0x2000]
+def DAISY_MM = [0x003c, 0x7e7e, 0x7e7e, 0x3c00, 0x0018, 0x2424, 0x2418, 0x0000]
+def DAISY_MR = [0x000e, 0x3f7f, 0x7f3f, 0x0e00, 0x0004, 0x1119, 0x1911, 0x0400]
+def DAISY_BL = [0x387c, 0x7e3f, 0x1f07, 0x0000, 0x101c, 0x3c17, 0x0f03, 0x0000]
+def DAISY_BM = [0x183c, 0x7eff, 0xff7e, 0x3c18, 0x0000, 0x1824, 0x2418, 0x0000]
+def DAISY_BR = [0x1c3e, 0x7efc, 0xf8e0, 0x0000, 0x081c, 0x3ce8, 0xf0c0, 0x0000]
 
 def ?line_nums = []: [any]
 def ?line_src = []: [any]
@@ -398,15 +415,17 @@ def ?parse_depth = 0
 ;
 
 : draw_daisy_sprite(scr = vimana.screen) (( -- ))
-    scr.set_x(WIN_W - FRAME - 32).set_y(FRAME + 8).set_addr(DAISY_ADDR).sprite(0x85)
-    scr.set_x(WIN_W - FRAME - 24).set_y(FRAME + 8).set_addr(DAISY_ADDR).sprite(0x85)
-    scr.set_x(WIN_W - FRAME - 16).set_y(FRAME + 8).set_addr(DAISY_ADDR).sprite(0x85)
-    scr.set_x(WIN_W - FRAME - 32).set_y(FRAME + 16).set_addr(DAISY_ADDR).sprite(0x85)
-    scr.set_x(WIN_W - FRAME - 24).set_y(FRAME + 16).set_addr(DAISY_ADDR).sprite(0x85)
-    scr.set_x(WIN_W - FRAME - 16).set_y(FRAME + 16).set_addr(DAISY_ADDR).sprite(0x85)
-    scr.set_x(WIN_W - FRAME - 32).set_y(FRAME + 24).set_addr(DAISY_ADDR).sprite(0x85)
-    scr.set_x(WIN_W - FRAME - 24).set_y(FRAME + 24).set_addr(DAISY_ADDR).sprite(0x85)
-    scr.set_x(WIN_W - FRAME - 16).set_y(FRAME + 24).set_addr(DAISY_ADDR).sprite(0x85)
+    let x = WIN_W - FRAME - 32
+    let y = FRAME + 8
+    scr.set_x(x).set_y(y).set_addr(DAISY_TL_ADDR).sprite(0x85)
+    scr.set_x(x + 8).set_y(y).set_addr(DAISY_TM_ADDR).sprite(0x85)
+    scr.set_x(x + 16).set_y(y).set_addr(DAISY_TR_ADDR).sprite(0x85)
+    scr.set_x(x).set_y(y + 8).set_addr(DAISY_ML_ADDR).sprite(0x85)
+    scr.set_x(x + 8).set_y(y + 8).set_addr(DAISY_MM_ADDR).sprite(0x85)
+    scr.set_x(x + 16).set_y(y + 8).set_addr(DAISY_MR_ADDR).sprite(0x85)
+    scr.set_x(x).set_y(y + 16).set_addr(DAISY_BL_ADDR).sprite(0x85)
+    scr.set_x(x + 8).set_y(y + 16).set_addr(DAISY_BM_ADDR).sprite(0x85)
+    scr.set_x(x + 16).set_y(y + 16).set_addr(DAISY_BR_ADDR).sprite(0x85)
 ;
 
 : banner() (( -- ))
@@ -1161,7 +1180,16 @@ def ?parse_depth = 0
     daisy_font.install(scr)
     scr.set_font(DIAMOND_GLYPH, DIAMOND_FONT)
     scr.set_font(CURSOR_GLYPH, BLOCK_CURSOR)
-    scr.set_sprite(DAISY_ADDR, DAISY_SPRITE, vimana.sprite_2bpp)
+    scr.set_sprite(CURSOR_ADDR, CURSOR_ICN, vimana.sprite_1bpp)
+    scr.set_sprite(DAISY_TL_ADDR, DAISY_TL, vimana.sprite_2bpp)
+    scr.set_sprite(DAISY_TM_ADDR, DAISY_TM, vimana.sprite_2bpp)
+    scr.set_sprite(DAISY_TR_ADDR, DAISY_TR, vimana.sprite_2bpp)
+    scr.set_sprite(DAISY_ML_ADDR, DAISY_ML, vimana.sprite_2bpp)
+    scr.set_sprite(DAISY_MM_ADDR, DAISY_MM, vimana.sprite_2bpp)
+    scr.set_sprite(DAISY_MR_ADDR, DAISY_MR, vimana.sprite_2bpp)
+    scr.set_sprite(DAISY_BL_ADDR, DAISY_BL, vimana.sprite_2bpp)
+    scr.set_sprite(DAISY_BM_ADDR, DAISY_BM, vimana.sprite_2bpp)
+    scr.set_sprite(DAISY_BR_ADDR, DAISY_BR, vimana.sprite_2bpp)
     scr.set_drag_region(24)
     apply_default_palette(scr)
     let dev = sys.device()
@@ -1180,6 +1208,12 @@ def ?parse_depth = 0
         draw_daisy_sprite(scr)
         draw_pictures(scr)
         draw_console(scr)
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+
         scr.present()
     })
 ;
