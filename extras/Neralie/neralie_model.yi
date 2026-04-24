@@ -7,6 +7,7 @@ def WIN_W = 208
 def WIN_H = 224
 
 def PADDING = 20
+def ARVELIE_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 def ?last_second = -1
 def ?last_day = -1
@@ -20,32 +21,8 @@ def ?neralie_text_v = "000:000"
 def ?dirty = true
 
 : arvelie_letter(idx = num) (( string ))
-    if idx == 0  <- "A"
-    if idx == 1  <- "B"
-    if idx == 2  <- "C"
-    if idx == 3  <- "D"
-    if idx == 4  <- "E"
-    if idx == 5  <- "F"
-    if idx == 6  <- "G"
-    if idx == 7  <- "H"
-    if idx == 8  <- "I"
-    if idx == 9  <- "J"
-    if idx == 10 <- "K"
-    if idx == 11 <- "L"
-    if idx == 12 <- "M"
-    if idx == 13 <- "N"
-    if idx == 14 <- "O"
-    if idx == 15 <- "P"
-    if idx == 16 <- "Q"
-    if idx == 17 <- "R"
-    if idx == 18 <- "S"
-    if idx == 19 <- "T"
-    if idx == 20 <- "U"
-    if idx == 21 <- "V"
-    if idx == 22 <- "W"
-    if idx == 23 <- "X"
-    if idx == 24 <- "Y"
-    if idx == 25 <- "Z"
+    if idx >= 0 && idx < 26
+        <- stdr.char_at(ARVELIE_LETTERS, idx)
     <- "+"
 ;
 

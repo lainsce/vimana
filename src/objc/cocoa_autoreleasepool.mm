@@ -21,6 +21,16 @@ extern void objc_autoreleasePoolPop(void* pool);
 
 static void* g_frame_pool = NULL;
 
+void* vimana_app_autorelease_push(void) {
+    return objc_autoreleasePoolPush();
+}
+
+void vimana_app_autorelease_pop(void* pool) {
+    if (pool) {
+        objc_autoreleasePoolPop(pool);
+    }
+}
+
 // Call before begin_frame to create a pool that catches all Metal objects
 // created during the draw phase (SDL_RenderFillRect, SDL_RenderGeometry, etc.)
 void vimana_autorelease_push(void) {

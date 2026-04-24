@@ -19,6 +19,7 @@
  *      STR:  u32 len, then len bytes (no NUL)
  *      BOOL: u8
  *      NULL: (no data)
+ *      WORDS: u32 count, then count little-endian u16 words
  *
  *  Global table  (nglobals × 8 bytes):
  *    u32 name_idx      (const pool index)
@@ -47,6 +48,7 @@
 #define YCON_STR   2  /* String: u32 length + bytes (no NUL) */
 #define YCON_BOOL  3  /* Boolean: u8 (0 or 1) */
 #define YCON_NULL  4  /* Null: no data */
+#define YCON_WORDS 5  /* Packed u16 array: u32 count + u16 words */
 
 /* Opcodes — 1 byte; operands follow inline */
 #define OP_BRK     0x00  /* ( -- )                          */

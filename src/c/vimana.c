@@ -8,6 +8,7 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -239,7 +240,10 @@ static inline float vimana_voice_sample(VimanaVoice *v, int sr) {
     break;
   }
   /* Apply SID-style RMS normalization gain */
-  return s * vimana_wave_gain[v->waveform];
+  int waveform = v->waveform;
+  if (waveform < 0 || waveform > VIMANA_WAVE_PSG)
+    waveform = VIMANA_WAVE_PULSE;
+  return s * vimana_wave_gain[waveform];
 }
 
 /* ── ADSR envelope tick (called once per sample per voice) ──────────── */
@@ -1051,13 +1055,17 @@ static void vimana_screen_store_sprite_bytes(vimana_screen *screen,
                                              size_t len) {
   if (!screen || !sprite || len == 0)
     return;
+  addr = vimana_screen_addr_clamp(screen, addr);
+  size_t max_len = VIMANA_SPRITE_BANK_SIZE - (size_t)addr;
+  if (len > max_len)
+    len = max_len;
+  if (len == 0)
+    return;
   size_t needed = (size_t)addr + len;
   uint8_t *bank = vimana_ensure_sprite_bank_capacity(
       screen, screen->active_sprite_bank, needed);
   if (!bank)
     return;
-  size_t max_len = VIMANA_SPRITE_BANK_SIZE - (size_t)addr;
-  if (len > max_len) len = max_len;
   memcpy(bank + addr, sprite, len);
 }
 
@@ -1846,11 +1854,24 @@ vimana_screen *vimana_screen_new(const char *title, unsigned int width, unsigned
     height = 1;
   if (scale < 1)
     scale = 1;
+  if (width > UINT16_MAX)
+    width = UINT16_MAX;
+  if (height > UINT16_MAX)
+    height = UINT16_MAX;
+  if (scale > UINT8_MAX)
+    scale = UINT8_MAX;
 
   const char *window_title = title ? title : "vimana";
   size_t title_len = strlen(window_title) + 1;
+  if ((size_t)height != 0 && (size_t)width > SIZE_MAX / (size_t)height)
+    return NULL;
   size_t layers_bytes = (size_t)width * (size_t)height;
-  size_t screen_bytes = sizeof(vimana_screen) + title_len + layers_bytes;
+  if (title_len > SIZE_MAX - sizeof(vimana_screen))
+    return NULL;
+  size_t base_bytes = sizeof(vimana_screen) + title_len;
+  if (layers_bytes > SIZE_MAX - base_bytes)
+    return NULL;
+  size_t screen_bytes = base_bytes + layers_bytes;
   vimana_screen *screen = (vimana_screen *)calloc(1, screen_bytes);
   if (!screen)
     return NULL;
@@ -2081,8 +2102,11 @@ void vimana_screen_set_gfx(vimana_screen *screen, unsigned int addr,
     return;
   addr = vimana_screen_addr_clamp(screen, addr);
   /* Upload to sprite bank 0 (for use with sprite() command) */
-  if (addr + len > VIMANA_SPRITE_BANK_SIZE)
-    len = VIMANA_SPRITE_BANK_SIZE - addr;
+  size_t max_len = VIMANA_SPRITE_BANK_SIZE - (size_t)addr;
+  if ((size_t)len > max_len)
+    len = (unsigned int)max_len;
+  if (len == 0)
+    return;
   uint8_t *bank = vimana_ensure_sprite_bank_capacity(
       screen, 0, (size_t)addr + (size_t)len);
   if (!bank)
@@ -2185,16 +2209,18 @@ void vimana_screen_sprite(vimana_screen *screen, unsigned int ctrl) {
          const uint8_t raw_color =
              (uint8_t)((!!(ch1 & bit)) | ((!!(ch2 & bit)) << 1) |
                        ((!!(ch3 & bit)) << 2) | ((!!(ch4 & bit)) << 3));
-         const uint8_t color_idx = raw_color & 0x3;  /* only 2 bits used (uxn2-compatible) */
+         const uint8_t wide_color = is_3bpp || is_4bpp;
+         const uint8_t color_idx =
+             wide_color ? (raw_color & 0x0F) : (raw_color & 0x03);
          if (opaque_mask || color_idx) {
-           uint8_t slot_val = blend_lut[blend][layer_is_fg ? 1 : 0][color_idx];
+           uint8_t slot_val =
+               wide_color ? color_idx
+                          : blend_lut[blend][layer_is_fg ? 1 : 0][color_idx];
            uint8_t *d = screen->layers + (size_t)sy * stride + (size_t)sx;
            if (layer_is_fg) {
-             /* FG: slot_val = fg_idx << 2; extract and write to high nibble */
-             uint8_t fg_idx = slot_val >> 2;
+             uint8_t fg_idx = wide_color ? slot_val : (slot_val >> 2);
              *d = (uint8_t)((*d & 0x0F) | (fg_idx << 4));
            } else {
-             /* BG: slot_val = bg_idx (0-3); write to low nibble */
              *d = (uint8_t)((*d & 0xF0) | (slot_val & 0x0F));
            }
          }
@@ -2487,9 +2513,11 @@ void vimana_screen_set_scale(vimana_screen *screen, unsigned int scale) {
     return;
   if (scale < 1)
     scale = 1;
+  if (scale > UINT8_MAX)
+    scale = UINT8_MAX;
   screen->scale = scale;
 
-  // Resize window to match new scale
+  /* Resize window to match new scale. */
   if (screen->window) {
     int win_w = (int)((int64_t)screen->width * scale);
     int win_h = (int)((int64_t)screen->canvas_height * scale);
@@ -2904,6 +2932,8 @@ bool vimana_file_write_bytes(vimana_system *system, const char *path,
   (void)system;
   if (!path || !path[0])
     return false;
+  if (size > 0 && !bytes)
+    return false;
   FILE *fp = fopen(path, "wb");
   if (!fp)
     return false;
@@ -3019,10 +3049,15 @@ vimana_process *vimana_process_spawn(vimana_system *system, const char *cmd) {
   if (!cmd || !cmd[0])
     return NULL;
 
-  int pipe_in[2];   /* parent→child stdin */
-  int pipe_out[2];  /* child stdout→parent */
-  if (pipe(pipe_in) != 0 || pipe(pipe_out) != 0)
+  int pipe_in[2] = {-1, -1};   /* parent writes child stdin */
+  int pipe_out[2] = {-1, -1};  /* parent reads child stdout */
+  if (pipe(pipe_in) != 0)
     return NULL;
+  if (pipe(pipe_out) != 0) {
+    close(pipe_in[0]);
+    close(pipe_in[1]);
+    return NULL;
+  }
 
   pid_t pid = fork();
   if (pid < 0) {
@@ -3060,7 +3095,9 @@ vimana_process *vimana_process_spawn(vimana_system *system, const char *cmd) {
   if (!proc) {
     close(pipe_in[1]);
     close(pipe_out[0]);
-    kill(pid, SIGTERM);
+    kill(pid, SIGKILL);
+    int status;
+    waitpid(pid, &status, 0);
     return NULL;
   }
   proc->pid = pid;
@@ -3074,55 +3111,71 @@ bool vimana_process_write(vimana_process *proc, const char *text) {
   if (!proc || proc->stdin_fd < 0 || !text)
     return false;
   size_t len = strlen(text);
-  ssize_t written = write(proc->stdin_fd, text, len);
-  return written == (ssize_t)len;
+  size_t done = 0;
+  while (done < len) {
+    ssize_t written = write(proc->stdin_fd, text + done, len - done);
+    if (written < 0) {
+      if (errno == EINTR)
+        continue;
+      return false;
+    }
+    if (written == 0)
+      return false;
+    done += (size_t)written;
+  }
+  return true;
+}
+
+static char *vimana_process_take_line(vimana_process *proc, int len,
+                                      int skip) {
+  if (!proc || len < 0 || skip < len || len > proc->line_len ||
+      skip > proc->line_len)
+    return NULL;
+  char *line = (char *)malloc((size_t)len + 1);
+  if (!line)
+    return NULL;
+  memcpy(line, proc->line_buf, (size_t)len);
+  line[len] = '\0';
+  int rest = proc->line_len - skip;
+  if (rest > 0)
+    memmove(proc->line_buf, proc->line_buf + skip, (size_t)rest);
+  proc->line_len = rest;
+  return line;
+}
+
+static char *vimana_process_extract_line(vimana_process *proc) {
+  if (!proc)
+    return NULL;
+  for (int i = 0; i < proc->line_len; i++) {
+    if (proc->line_buf[i] == '\n')
+      return vimana_process_take_line(proc, i, i + 1);
+  }
+  return NULL;
 }
 
 char *vimana_process_read_line(vimana_process *proc) {
   if (!proc || proc->stdout_fd < 0)
     return NULL;
 
-  /* check if we already have a complete line buffered */
-  for (int i = 0; i < proc->line_len; i++) {
-    if (proc->line_buf[i] == '\n') {
-      char *line = (char *)malloc((size_t)(i + 1));
-      if (!line)
-        return NULL;
-      memcpy(line, proc->line_buf, (size_t)i);
-      line[i] = '\0';
-      /* shift remaining data */
-      int rest = proc->line_len - i - 1;
-      if (rest > 0)
-        memmove(proc->line_buf, proc->line_buf + i + 1, (size_t)rest);
-      proc->line_len = rest;
-      return line;
-    }
-  }
+  char *line = vimana_process_extract_line(proc);
+  if (line)
+    return line;
 
   /* try to read more (non-blocking) */
   int space = VIMANA_PROC_LINE_CAP - proc->line_len - 1;
   if (space <= 0)
-    return NULL;
+    return vimana_process_take_line(proc, proc->line_len, proc->line_len);
   ssize_t n = read(proc->stdout_fd, proc->line_buf + proc->line_len,
                    (size_t)space);
   if (n > 0) {
     proc->line_len += (int)n;
-    /* check again for newline */
-    for (int i = 0; i < proc->line_len; i++) {
-      if (proc->line_buf[i] == '\n') {
-        char *line = (char *)malloc((size_t)(i + 1));
-        if (!line)
-          return NULL;
-        memcpy(line, proc->line_buf, (size_t)i);
-        line[i] = '\0';
-        int rest = proc->line_len - i - 1;
-        if (rest > 0)
-          memmove(proc->line_buf, proc->line_buf + i + 1, (size_t)rest);
-        proc->line_len = rest;
-        return line;
-      }
-    }
+    return vimana_process_extract_line(proc);
   }
+  if (n == 0 && proc->line_len > 0)
+    return vimana_process_take_line(proc, proc->line_len, proc->line_len);
+  if (n < 0 && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK &&
+      proc->line_len > 0)
+    return vimana_process_take_line(proc, proc->line_len, proc->line_len);
   return NULL;
 }
 

@@ -12,6 +12,8 @@ def DATE_X = CENTER_X - 40
 def DATE_Y = CENTER_Y - 120
 def TIME_X = CENTER_X - 32
 def TIME_Y = CENTER_Y + 108
+def WEEKDAY_NAMES = "SunMonTueWedThuFriSat"
+def MONTH_NAMES = "JanFebMarAprMayJunJulAugSepOctNovDec"
 
 def ?last_second = -1
 def ?last_day = -1
@@ -32,29 +34,14 @@ def ?dirty = true
 ;
 
 : weekday_name(v = num) (( string ))
-    if v == 0 <- "Sun"
-    if v == 1 <- "Mon"
-    if v == 2 <- "Tue"
-    if v == 3 <- "Wed"
-    if v == 4 <- "Thu"
-    if v == 5 <- "Fri"
-    if v == 6 <- "Sat"
+    if v >= 0 && v <= 6
+        <- stdr.substring_len(WEEKDAY_NAMES, v * 3, 3)
     <- "???"
 ;
 
 : month_name(v = num) (( string ))
-    if v == 1 <- "Jan"
-    if v == 2 <- "Feb"
-    if v == 3 <- "Mar"
-    if v == 4 <- "Apr"
-    if v == 5 <- "May"
-    if v == 6 <- "Jun"
-    if v == 7 <- "Jul"
-    if v == 8 <- "Aug"
-    if v == 9 <- "Sep"
-    if v == 10 <- "Oct"
-    if v == 11 <- "Nov"
-    if v == 12 <- "Dec"
+    if v >= 1 && v <= 12
+        <- stdr.substring_len(MONTH_NAMES, (v - 1) * 3, 3)
     <- "???"
 ;
 

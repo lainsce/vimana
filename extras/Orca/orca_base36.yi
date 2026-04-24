@@ -4,8 +4,6 @@ bring stdr
 
 -- Base-36 value from single character: '.' = 0, '0'-'9' = 0-9, 'A'-'Z' / 'a'-'z' = 10-35
 :: b36_val(ch = string) (( num ))
-    if stdr.len(ch) == 0
-        <- 0
     let c = stdr.char_code(ch)
     if c >= 48 && c <= 57
         <- c - 48
@@ -39,22 +37,16 @@ bring stdr
 ;
 
 :: is_upper(ch = string) (( bool ))
-    if stdr.len(ch) == 0
-        <- false
     let c = stdr.char_code(ch)
     <- c >= 65 && c <= 90
 ;
 
 :: is_lower(ch = string) (( bool ))
-    if stdr.len(ch) == 0
-        <- false
     let c = stdr.char_code(ch)
     <- c >= 97 && c <= 122
 ;
 
 :: is_digit(ch = string) (( bool ))
-    if stdr.len(ch) == 0
-        <- false
     let c = stdr.char_code(ch)
     <- c >= 48 && c <= 57
 ;

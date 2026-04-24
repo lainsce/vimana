@@ -3,6 +3,8 @@ cask calc_ops
 bring stdr
 bring calc_model
 
+def HEX_DIGITS = "0123456789ABCDEF"
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Math helpers
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -28,6 +30,7 @@ bring calc_model
     let ?result = 0
     let ?pa = stdr.floor(a) % 0x10000
     let ?pb = stdr.floor(b) % 0x10000
+    let ?pw = 1
     if pa < 0
         pa = pa + 0x10000
     if pb < 0
@@ -38,12 +41,10 @@ bring calc_model
         let bb = stdr.floor(pb / 2)
         let rb = pb - bb * 2
         if ra == 1 && rb == 1
-            let ?pw = 1
-            for (let ?j = 0; j < bit; j += 1)
-                pw = pw * 2
             result = result + pw
         pa = ba
         pb = bb
+        pw = pw * 2
     <- result
 ;
 
@@ -52,6 +53,7 @@ bring calc_model
     let ?result = 0
     let ?pa = stdr.floor(a) % 0x10000
     let ?pb = stdr.floor(b) % 0x10000
+    let ?pw = 1
     if pa < 0
         pa = pa + 0x10000
     if pb < 0
@@ -62,12 +64,10 @@ bring calc_model
         let bb = stdr.floor(pb / 2)
         let rb = pb - bb * 2
         if ra == 1 || rb == 1
-            let ?pw = 1
-            for (let ?j = 0; j < bit; j += 1)
-                pw = pw * 2
             result = result + pw
         pa = ba
         pb = bb
+        pw = pw * 2
     <- result
 ;
 
@@ -86,13 +86,8 @@ bring calc_model
 -- ─────────────────────────────────────────────────────────────────────────────
 
 : hex_digit(n = num) (( string ))
-    if n < 10
-        <- str(n)
-    if n == 10 <- "A"
-    if n == 11 <- "B"
-    if n == 12 <- "C"
-    if n == 13 <- "D"
-    if n == 14 <- "E"
+    if n >= 0 && n < 16
+        <- stdr.char_at(HEX_DIGITS, n)
     <- "F"
 ;
 

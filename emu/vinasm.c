@@ -167,8 +167,9 @@ again:
 #define MAX_PATCHES 16384
 #define MAX_LOCALS   256
 #define MAX_LOOPS     64
+#define MAX_CONST_ALIASES 8192
 
-typedef struct { uint8_t type; int64_t ival; double fval; char *sval; int slen; } Con;
+typedef struct { uint8_t type; int64_t ival; double fval; char *sval; int slen; uint16_t *words; int wlen; } Con;
 typedef struct { int name_idx, init_idx; } Glob;
 typedef struct { int name_idx; } Ext;
 typedef struct {
@@ -181,6 +182,7 @@ typedef struct {
 } Func;
 typedef struct { char name[128]; int func_idx, off; } Patch;
 typedef struct { int breaks[64], nbreaks, conts[64], nconts; } Loop;
+typedef struct { char name[128]; int const_idx; } ConstAlias;
 
 typedef struct {
     Con    consts[MAX_CONSTS]; int nconsts;
@@ -188,6 +190,7 @@ typedef struct {
     Glob   globals[MAX_GLOBALS]; int nglobals;
     Ext    exts[MAX_EXTS];     int nexts;
     Patch  patches[MAX_PATCHES]; int npatches;
+    ConstAlias const_aliases[MAX_CONST_ALIASES]; int nconst_aliases;
     int    entry_func, init_func, cur_func;
     int    lambda_id;
     Loop   loops[MAX_LOOPS];   int nloops;
@@ -202,6 +205,10 @@ static void die(Cmp *c, const char *msg) {
     fprintf(stderr,"error line %d col %d: %s (near '%s')\n",c->lex.cur.line,c->lex.cur.col,msg,c->lex.cur.str);
     exit(1);
 }
+static void copy_cstr(char *dst, size_t dstsz, const char *src) {
+    if (!dst || dstsz==0) return;
+    snprintf(dst,dstsz,"%s",src?src:"");
+}
 static Tok peek(Cmp *c)       { return c->lex.cur; }
 static Tok consume(Cmp *c)    { Tok t=c->lex.cur; lex_step(&c->lex); return t; }
 static bool check(Cmp *c, TK k) { return c->lex.cur.kind==k; }
@@ -214,23 +221,48 @@ static void expect(Cmp *c, TK k, const char *w) { if(!eat(c,k)) die(c,w); }
 
 static int add_int(Cmp *c, int64_t v) {
     for(int i=0;i<c->nconsts;i++) if(c->consts[i].type==YCON_INT&&c->consts[i].ival==v) return i;
+    if (c->nconsts>=MAX_CONSTS) die(c,"too many constants");
     Con *k=&c->consts[c->nconsts]; k->type=YCON_INT; k->ival=v; return c->nconsts++;
 }
 static int add_flt(Cmp *c, double v) {
     for(int i=0;i<c->nconsts;i++) if(c->consts[i].type==YCON_FLT&&c->consts[i].fval==v) return i;
+    if (c->nconsts>=MAX_CONSTS) die(c,"too many constants");
     Con *k=&c->consts[c->nconsts]; k->type=YCON_FLT; k->fval=v; return c->nconsts++;
 }
 static int add_str(Cmp *c, const char *s) {
     for(int i=0;i<c->nconsts;i++) if(c->consts[i].type==YCON_STR&&!strcmp(c->consts[i].sval,s)) return i;
-    Con *k=&c->consts[c->nconsts]; k->type=YCON_STR; k->sval=strdup(s); k->slen=(int)strlen(s); return c->nconsts++;
+    if (c->nconsts>=MAX_CONSTS) die(c,"too many constants");
+    Con *k=&c->consts[c->nconsts]; k->type=YCON_STR; k->sval=strdup(s); k->slen=(int)strlen(s);
+    if (!k->sval) die(c,"out of memory for string constant");
+    return c->nconsts++;
 }
 static int add_bool(Cmp *c, int v) {
     for(int i=0;i<c->nconsts;i++) if(c->consts[i].type==YCON_BOOL&&c->consts[i].ival==v) return i;
+    if (c->nconsts>=MAX_CONSTS) die(c,"too many constants");
     Con *k=&c->consts[c->nconsts]; k->type=YCON_BOOL; k->ival=v; return c->nconsts++;
 }
 static int add_null(Cmp *c) {
     for(int i=0;i<c->nconsts;i++) if(c->consts[i].type==YCON_NULL) return i;
+    if (c->nconsts>=MAX_CONSTS) die(c,"too many constants");
     Con *k=&c->consts[c->nconsts]; k->type=YCON_NULL; return c->nconsts++;
+}
+static int add_words(Cmp *c, const uint16_t *words, int len) {
+    for(int i=0;i<c->nconsts;i++)
+        if(c->consts[i].type==YCON_WORDS&&c->consts[i].wlen==len&&
+           !memcmp(c->consts[i].words,words,sizeof(uint16_t)*(size_t)len)) return i;
+    if (c->nconsts>=MAX_CONSTS) die(c,"too many constants");
+    Con *k=&c->consts[c->nconsts];
+    k->type=YCON_WORDS;
+    k->wlen=len;
+    k->words=malloc(sizeof(uint16_t)*(size_t)len);
+    if (!k->words) die(c,"out of memory for word array");
+    memcpy(k->words,words,sizeof(uint16_t)*(size_t)len);
+    return c->nconsts++;
+}
+static int find_str_const(Cmp *c, const char *s) {
+    for(int i=0;i<c->nconsts;i++)
+        if(c->consts[i].type==YCON_STR&&!strcmp(c->consts[i].sval,s)) return i;
+    return -1;
 }
 
 static Func *cf(Cmp *c) { return &c->funcs[c->cur_func]; }
@@ -238,7 +270,10 @@ static void reserve_code(Cmp *c, int need) {
     Func *f=cf(c);
     if (need<=f->code_cap) return;
     int cap=f->code_cap?f->code_cap:256;
-    while (cap<need) cap*=2;
+    while (cap<need) {
+        if (cap>INT_MAX/2) die(c,"function bytecode too large");
+        cap*=2;
+    }
     uint8_t *code=realloc(f->code,(size_t)cap);
     if (!code) die(c,"out of memory for function bytecode");
     f->code=code;
@@ -282,19 +317,50 @@ static int find_local(Cmp *c, const char *n) {
     return -1;
 }
 static int declare_local(Cmp *c, const char *n) {
-    Func *f=cf(c); int s=f->arity+f->nlocals; strncpy(f->locals[s],n,63); f->nlocals++; return s;
+    Func *f=cf(c);
+    int s=f->arity+f->nlocals;
+    if (s>=MAX_LOCALS) die(c,"too many locals");
+    copy_cstr(f->locals[s],sizeof(f->locals[s]),n);
+    f->nlocals++;
+    return s;
 }
 static int find_global(Cmp *c, const char *n) {
-    int ni=add_str(c,n);
+    int ni=find_str_const(c,n);
+    if (ni<0) return -1;
     for(int i=0;i<c->nglobals;i++) if(c->globals[i].name_idx==ni) return i;
     return -1;
 }
 static int declare_global(Cmp *c, const char *n) {
+    if (c->nglobals>=MAX_GLOBALS) die(c,"too many globals");
     int i=c->nglobals++; c->globals[i].name_idx=add_str(c,n); c->globals[i].init_idx=-1; return i;
+}
+static int find_const_alias(Cmp *c, const char *n) {
+    for(int i=0;i<c->nconst_aliases;i++)
+        if(!strcmp(c->const_aliases[i].name,n)) return c->const_aliases[i].const_idx;
+    return -1;
+}
+static void set_const_alias(Cmp *c, const char *n, int const_idx) {
+    int i;
+    for(i=0;i<c->nconst_aliases;i++)
+        if(!strcmp(c->const_aliases[i].name,n)) {
+            c->const_aliases[i].const_idx=const_idx;
+            return;
+        }
+    if (c->nconst_aliases>=MAX_CONST_ALIASES) die(c,"too many const aliases");
+    i=c->nconst_aliases++;
+    copy_cstr(c->const_aliases[i].name,sizeof(c->const_aliases[i].name),n);
+    c->const_aliases[i].const_idx=const_idx;
+}
+static bool emit_const_alias(Cmp *c, const char *n) {
+    int ci=find_const_alias(c,n);
+    if (ci<0) return false;
+    emit2(c,OP_LIT,(uint16_t)ci);
+    return true;
 }
 static int find_or_add_ext(Cmp *c, const char *n) {
     int ni=add_str(c,n);
     for(int i=0;i<c->nexts;i++) if(c->exts[i].name_idx==ni) return i;
+    if (c->nexts>=MAX_EXTS) die(c,"too many externals");
     int i=c->nexts++; c->exts[i].name_idx=ni; return i;
 }
 static int find_func(Cmp *c, const char *n) {
@@ -310,8 +376,9 @@ static void emit_call(Cmp *c, const char *fn, int argc) {
     emit1(c,OP_FUN);
     if (fi>=0) emit_u16(c,(uint16_t)fi);
     else {
+        if (c->npatches>=MAX_PATCHES) die(c,"too many function patches");
         Patch *p=&c->patches[c->npatches++];
-        strncpy(p->name,fn,127); p->func_idx=c->cur_func; p->off=cf(c)->code_sz;
+        copy_cstr(p->name,sizeof(p->name),fn); p->func_idx=c->cur_func; p->off=cf(c)->code_sz;
         emit_u16(c,0xFFFF);
     }
     emit1(c,(uint8_t)argc);
@@ -369,16 +436,27 @@ static void skip_type_ann(Cmp *c) {
 static void emit_load(Cmp *c, const char *base, const char *full) {
     int sl=find_local(c,base);
     if (sl>=0&&!strchr(full,'.')) { emit2(c,OP_LDA,(uint16_t)sl); return; }
-    char q[256]; if(!strchr(full,'.')) snprintf(q,255,"%s.%s",c->cur_mod,full); else strncpy(q,full,255);
+    char q[256]; if(!strchr(full,'.')) snprintf(q,sizeof(q),"%s.%s",c->cur_mod,full); else copy_cstr(q,sizeof(q),full);
+    if (emit_const_alias(c,q) || emit_const_alias(c,full)) return;
     int gi=find_global(c,q); if(gi<0) gi=find_global(c,full);
     if (gi>=0) { emit2(c,OP_LDZ,(uint16_t)gi); return; }
-    /* Treat as 0-arg external (module constant like vimana.color_fg) */
-    int ei=find_or_add_ext(c,q); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,0);
+    if (strchr(q,'.')) {
+        char mod[64];
+        copy_cstr(mod,sizeof(mod),q);
+        char *dot=strchr(mod,'.');
+        if (dot) *dot=0;
+        if (is_ext_mod(c,mod)) {
+            int ei=find_or_add_ext(c,q); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,0);
+            return;
+        }
+    }
+    fprintf(stderr,"warning: unknown var '%s'\n",full);
+    emit2(c,OP_LIT,add_null(c));
 }
 static void emit_store(Cmp *c, const char *base, const char *full) {
     int sl=find_local(c,base);
     if (sl>=0&&!strchr(full,'.')) { emit2(c,OP_STA,(uint16_t)sl); return; }
-    char q[256]; if(!strchr(full,'.')) snprintf(q,255,"%s.%s",c->cur_mod,full); else strncpy(q,full,255);
+    char q[256]; if(!strchr(full,'.')) snprintf(q,sizeof(q),"%s.%s",c->cur_mod,full); else copy_cstr(q,sizeof(q),full);
     int gi=find_global(c,q); if(gi<0) gi=find_global(c,full);
     if (gi>=0) { emit2(c,OP_STZ,(uint16_t)gi); return; }
     fprintf(stderr,"warning: store to unknown var '%s'\n",full); emit1(c,OP_POP);
@@ -400,7 +478,7 @@ static int parse_args(Cmp *c) {
 static void compile_lambda(Cmp *c);
 
 static void emit_chain_call(Cmp *c, const char *mname, int argc) {
-    char chain_name[128]; snprintf(chain_name,127,"__chain__.%s",mname);
+    char chain_name[128]; snprintf(chain_name,sizeof(chain_name),"__chain__.%s",mname);
     int ei=find_or_add_ext(c,chain_name);
     emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)(argc+1));
 }
@@ -423,6 +501,101 @@ static bool paren_has_top_comma(Cmp *c) {
         else if (check(c,T_RPAREN)||check(c,T_RBRACKET)||check(c,T_RBRACE)) depth--;
         consume(c);
     }
+    c->lex=sv;
+    return false;
+}
+
+static bool try_word_array_literal(Cmp *c) {
+    Lex sv=c->lex;
+    if (!eat(c,T_LBRACKET)) return false;
+
+    uint16_t *words=NULL;
+    int len=0, cap=0;
+    bool ok=true;
+    while (!check(c,T_RBRACKET)&&!check(c,T_EOF)) {
+        if (!check(c,T_INT)||c->lex.cur.ival<0||c->lex.cur.ival>0xFFFF) { ok=false; break; }
+        if (len>=cap) {
+            int ncap=cap?cap*2:64;
+            uint16_t *next=realloc(words,sizeof(uint16_t)*(size_t)ncap);
+            if (!next) { free(words); die(c,"out of memory for word array"); }
+            words=next;
+            cap=ncap;
+        }
+        words[len++]=(uint16_t)c->lex.cur.ival;
+        consume(c);
+        if (check(c,T_COMMA)) {
+            consume(c);
+            continue;
+        }
+        if (!check(c,T_RBRACKET)) { ok=false; break; }
+    }
+
+    int close_line=c->lex.cur.line;
+    if (!ok || !eat(c,T_RBRACKET) || len<8) {
+        free(words);
+        c->lex=sv;
+        return false;
+    }
+
+    emit2(c,OP_LIT,(uint16_t)add_words(c,words,len));
+    free(words);
+    if (check(c,T_COLON)&&c->lex.cur.line==close_line) { consume(c); skip_type_ann(c); }
+    return true;
+}
+
+static bool try_const_initializer(Cmp *c, int *const_idx) {
+    Lex sv=c->lex;
+    bool neg=false;
+    if (eat(c,T_MINUS)) neg=true;
+
+    if (check(c,T_INT)) {
+        Tok t=consume(c);
+        *const_idx=add_int(c,neg?-t.ival:t.ival);
+        return true;
+    }
+    if (check(c,T_FLOAT)) {
+        Tok t=consume(c);
+        *const_idx=add_flt(c,neg?-t.fval:t.fval);
+        return true;
+    }
+    if (neg) { c->lex=sv; return false; }
+    if (check(c,T_STRING)) {
+        Tok t=consume(c);
+        *const_idx=add_str(c,t.str);
+        return true;
+    }
+    if (eat(c,KW_TRUE)) { *const_idx=add_bool(c,1); return true; }
+    if (eat(c,KW_FALSE)) { *const_idx=add_bool(c,0); return true; }
+    if (eat(c,KW_NULL)) { *const_idx=add_null(c); return true; }
+
+    if (eat(c,T_LBRACKET)) {
+        uint16_t *words=NULL;
+        int len=0, cap=0;
+        bool ok=true;
+        while (!check(c,T_RBRACKET)&&!check(c,T_EOF)) {
+            if (!check(c,T_INT)||c->lex.cur.ival<0||c->lex.cur.ival>0xFFFF) { ok=false; break; }
+            if (len>=cap) {
+                int ncap=cap?cap*2:64;
+                uint16_t *next=realloc(words,sizeof(uint16_t)*(size_t)ncap);
+                if (!next) { free(words); die(c,"out of memory for word array"); }
+                words=next;
+                cap=ncap;
+            }
+            words[len++]=(uint16_t)c->lex.cur.ival;
+            consume(c);
+            if (check(c,T_COMMA)) { consume(c); continue; }
+            if (!check(c,T_RBRACKET)) { ok=false; break; }
+        }
+        int close_line=c->lex.cur.line;
+        if (ok && eat(c,T_RBRACKET) && len>0) {
+            *const_idx=add_words(c,words,len);
+            free(words);
+            if (check(c,T_COLON)&&c->lex.cur.line==close_line) { consume(c); skip_type_ann(c); }
+            return true;
+        }
+        free(words);
+    }
+
     c->lex=sv;
     return false;
 }
@@ -473,6 +646,7 @@ static void parse_primary(Cmp *c) {
         }
         parse_expr(c); expect(c,T_RPAREN,"expected ')'"); return;
     case T_LBRACKET:
+        if (try_word_array_literal(c)) return;
         consume(c); emit_ext_call(c,"stdr.array",0);
         while (!check(c,T_RBRACKET)&&!check(c,T_EOF)) {
             parse_expr(c); emit_ext_call(c,"stdr.push",2);
@@ -485,7 +659,7 @@ static void parse_primary(Cmp *c) {
     case T_IDENT: {
         consume(c);
         char base[64], full[256];
-        strncpy(base,t.str,63); strncpy(full,t.str,255);
+        copy_cstr(base,sizeof(base),t.str); copy_cstr(full,sizeof(full),t.str);
         int base_local=find_local(c,base);
         /* Collect dotted chain: name.member.member */
         while (check(c,T_DOT)) {
@@ -498,10 +672,10 @@ static void parse_primary(Cmp *c) {
                 int argc=parse_args(c);
                 expect(c,T_RPAREN,"expected ')'");
                 emit_chain_call(c,m.str,argc);
-                strncpy(full,base,255);
+                copy_cstr(full,sizeof(full),base);
                 goto postfix;
             }
-            char tmp[256]; snprintf(tmp,255,"%s.%s",full,m.str); strncpy(full,tmp,255);
+            char tmp[256]; snprintf(tmp,sizeof(tmp),"%s.%s",full,m.str); copy_cstr(full,sizeof(full),tmp);
         }
         if (check(c,T_LPAREN)) {
             bool is_method=strchr(full,'.')&&base_local>=0;
@@ -528,8 +702,8 @@ static void parse_primary(Cmp *c) {
                 int ei=find_or_add_ext(c,full); emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)argc);
             } else {
                 char q[256];
-                if (!strchr(full,'.')) snprintf(q,255,"%s.%s",c->cur_mod,full);
-                else strncpy(q,full,255);
+                if (!strchr(full,'.')) snprintf(q,sizeof(q),"%s.%s",c->cur_mod,full);
+                else copy_cstr(q,sizeof(q),full);
                 emit_call(c,q,argc);
             }
         } else {
@@ -544,7 +718,7 @@ postfix:
         while (check(c,T_DOT)) {
             Lex sv=c->lex; consume(c);
             if (!check(c,T_IDENT)) { c->lex=sv; break; }
-            char mname[64]; strncpy(mname,consume(c).str,63);
+            char mname[64]; copy_cstr(mname,sizeof(mname),consume(c).str);
             if (!check(c,T_LPAREN)) {
                 /* field access on object — not supported, drop value */
                 emit1(c,OP_POP); emit2(c,OP_LIT, add_null(c)); break;
@@ -552,7 +726,7 @@ postfix:
             consume(c);
             /* Push extra args; first arg (receiver) already on stack */
             /* Build ext name as _chain.method so VM can dispatch */
-            char chain_name[128]; snprintf(chain_name,127,"__chain__.%s",mname);
+            char chain_name[128]; snprintf(chain_name,sizeof(chain_name),"__chain__.%s",mname);
             int extra=parse_args(c); expect(c,T_RPAREN,"expected ')'");
             int ei=find_or_add_ext(c,chain_name);
             emit1(c,OP_DEI); emit_u16(c,(uint16_t)ei); emit1(c,(uint8_t)(extra+1));
@@ -618,8 +792,8 @@ static bool peek_is_assign(Cmp *c) {
 
 static void parse_assign_stmt(Cmp *c) {
     char base[64], full[256];
-    Tok t=consume(c); strncpy(base,t.str,63); strncpy(full,t.str,255);
-    while(check(c,T_DOT)){Lex sv=c->lex;consume(c);if(!check(c,T_IDENT)){c->lex=sv;break;}Tok m=consume(c);char tmp[256];snprintf(tmp,255,"%s.%s",full,m.str);strncpy(full,tmp,255);}
+    Tok t=consume(c); copy_cstr(base,sizeof(base),t.str); copy_cstr(full,sizeof(full),t.str);
+    while(check(c,T_DOT)){Lex sv=c->lex;consume(c);if(!check(c,T_IDENT)){c->lex=sv;break;}Tok m=consume(c);char tmp[256];snprintf(tmp,sizeof(tmp),"%s.%s",full,m.str);copy_cstr(full,sizeof(full),tmp);}
     if (check(c,T_LBRACKET)) {
         /* arr[idx] = val */
         emit_load(c,base,full);
@@ -679,7 +853,7 @@ static void parse_stmt(Cmp *c) {
     if (t.kind==KW_LET||t.kind==KW_CONST) {
         consume(c); eat(c,T_QMARK);
         if (!check(c,T_IDENT)) die(c,"expected name after let");
-        char nm[64]; strncpy(nm,consume(c).str,63);
+        char nm[64]; copy_cstr(nm,sizeof(nm),consume(c).str);
         int sl=declare_local(c,nm);
         expect(c,T_ASSIGN,"expected '=' in let");
         parse_expr(c); emit2(c,OP_STA,(uint16_t)sl);
@@ -725,7 +899,7 @@ static void parse_stmt(Cmp *c) {
         }
         if (is_foreach) {
             consume(c); eat(c,T_QMARK);
-            char ivar[64]; strncpy(ivar,consume(c).str,63);
+            char ivar[64]; copy_cstr(ivar,sizeof(ivar),consume(c).str);
             expect(c,KW_IN,"expected 'in'");
             parse_expr(c); expect(c,T_RPAREN,"expected ')'");
             int arr_sl=declare_local(c,"__for_arr__"); emit2(c,OP_STA,(uint16_t)arr_sl);
@@ -746,7 +920,7 @@ static void parse_stmt(Cmp *c) {
             /* C-style for: (init; cond; step) */
             if (check(c,KW_LET)||check(c,KW_CONST)) {
                 consume(c); eat(c,T_QMARK);
-                char nm[64]; strncpy(nm,consume(c).str,63);
+                char nm[64]; copy_cstr(nm,sizeof(nm),consume(c).str);
                 int sl=declare_local(c,nm);
                 expect(c,T_ASSIGN,"expected '=' in for init");
                 parse_expr(c); emit2(c,OP_STA,(uint16_t)sl);
@@ -787,6 +961,7 @@ static void parse_stmt(Cmp *c) {
         consume(c);
         if (!c->nloops) die(c,"break outside loop");
         Loop *lp=&c->loops[c->nloops-1];
+        if (lp->nbreaks>=64) die(c,"too many breaks in loop");
         lp->breaks[lp->nbreaks++]=emit_jmp_true(c);
         return;
     }
@@ -794,6 +969,7 @@ static void parse_stmt(Cmp *c) {
         consume(c);
         if (!c->nloops) die(c,"continue outside loop");
         Loop *lp=&c->loops[c->nloops-1];
+        if (lp->nconts>=64) die(c,"too many continues in loop");
         lp->conts[lp->nconts++]=emit_jmp_true(c);
         return;
     }
@@ -826,10 +1002,10 @@ static void parse_block(Cmp *c, int until_col, bool stop_at_semi) {
 static void compile_lambda(Cmp *c) {
     Func *outer=cf(c);
     int captures=outer->arity+outer->nlocals;
-    char name[128]; snprintf(name,127,"%s.__lambda_%d",c->cur_mod,c->lambda_id++);
+    char name[128]; snprintf(name,sizeof(name),"%s.__lambda_%d",c->cur_mod,c->lambda_id++);
     int fi=new_func(c,name,captures);
     Func *lf=&c->funcs[fi];
-    for(int i=0;i<captures;i++) strncpy(lf->locals[i],outer->locals[i],63);
+    for(int i=0;i<captures;i++) copy_cstr(lf->locals[i],sizeof(lf->locals[i]),outer->locals[i]);
 
     int sv=c->cur_func; c->cur_func=fi;
     expect(c,T_LBRACE,"expected '{' in lambda");
@@ -847,9 +1023,10 @@ static void compile_lambda(Cmp *c) {
 /* ════════════════════════════ Declaration parser ════════════════════ */
 
 static int new_func(Cmp *c, const char *fullname, int arity) {
+    if (c->nfuncs>=MAX_FUNCS) die(c,"too many functions");
     int idx=c->nfuncs++;
     Func *f=&c->funcs[idx]; memset(f,0,sizeof(*f));
-    strncpy(f->fullname,fullname,127); f->name_idx=add_str(c,fullname); f->arity=arity;
+    copy_cstr(f->fullname,sizeof(f->fullname),fullname); f->name_idx=add_str(c,fullname); f->arity=arity;
     return idx;
 }
 
@@ -860,7 +1037,7 @@ static int begin_func(Cmp *c, const char *fullname) {
     int name_idx=f->name_idx;
     free(f->code);
     memset(f,0,sizeof(*f));
-    strncpy(f->fullname,fullname,127);
+    copy_cstr(f->fullname,sizeof(f->fullname),fullname);
     f->name_idx=name_idx;
     return idx;
 }
@@ -870,7 +1047,8 @@ static void parse_params(Cmp *c, int fi) {
     do {
         eat(c,T_QMARK);
         if (!check(c,T_IDENT)) break;
-        Tok nm=consume(c); strncpy(f->locals[f->arity],nm.str,63); f->arity++;
+        if (f->arity>=MAX_LOCALS) die(c,"too many parameters");
+        Tok nm=consume(c); copy_cstr(f->locals[f->arity],sizeof(f->locals[f->arity]),nm.str); f->arity++;
         if (eat(c,T_ASSIGN)) skip_type_ann(c); /* optional type hint */
     } while(eat(c,T_COMMA));
 }
@@ -894,38 +1072,48 @@ static void parse_top(Cmp *c) {
     while (!check(c,T_EOF)) {
         eat(c,KW_PUB);
         Tok t=peek(c);
-        if (t.kind==KW_CASK) { consume(c); if(check(c,T_IDENT)) strncpy(c->cur_mod,consume(c).str,63); continue; }
+        if (t.kind==KW_CASK) { consume(c); if(check(c,T_IDENT)) copy_cstr(c->cur_mod,sizeof(c->cur_mod),consume(c).str); continue; }
         if (t.kind==KW_BRING) {
             consume(c);
-            char mn[64]; strncpy(mn,check(c,T_IDENT)?peek(c).str:"",63); consume(c);
+            char mn[64]; copy_cstr(mn,sizeof(mn),check(c,T_IDENT)?peek(c).str:""); consume(c);
             while(eat(c,T_DOT)){if(check(c,T_IDENT))consume(c);}
-            if (!strcmp(mn,"stdr")||!strcmp(mn,"math")||!strcmp(mn,"vimana"))
-                strncpy(c->ext_mods[c->n_ext_mods++],mn,63);
+            if (!strcmp(mn,"stdr")||!strcmp(mn,"math")||!strcmp(mn,"vimana")) {
+                if (c->n_ext_mods<(int)(sizeof(c->ext_mods)/sizeof(c->ext_mods[0])))
+                    copy_cstr(c->ext_mods[c->n_ext_mods++],sizeof(c->ext_mods[0]),mn);
+            }
             continue;
         }
         if (t.kind==KW_DEF||t.kind==KW_CONST) {
-            consume(c); eat(c,T_QMARK);
+            consume(c);
+            bool is_mutable=eat(c,T_QMARK);
             if (!check(c,T_IDENT)) die(c,"expected name");
-            char nm[128]; snprintf(nm,127,"%s.%s",c->cur_mod,consume(c).str);
-            int gi=find_global(c,nm);
-            if (gi<0) gi=declare_global(c,nm);
+            char nm[128]; snprintf(nm,sizeof(nm),"%s.%s",c->cur_mod,consume(c).str);
             if (eat(c,T_ASSIGN)) {
+                int const_idx;
+                if (!is_mutable && try_const_initializer(c,&const_idx)) {
+                    set_const_alias(c,nm,const_idx);
+                    continue;
+                }
+                int gi=find_global(c,nm);
+                if (gi<0) gi=declare_global(c,nm);
                 int sv=c->cur_func; c->cur_func=c->init_func;
                 parse_expr(c); emit2(c,OP_STZ,(uint16_t)gi);
                 c->cur_func=sv;
+            } else if (is_mutable) {
+                if (find_global(c,nm)<0) declare_global(c,nm);
             }
             continue;
         }
         if (t.kind==T_DCOLON||t.kind==T_COLON) {
             consume(c);
             if (!check(c,T_IDENT)) die(c,"expected function name");
-            char fn[128]; snprintf(fn,127,"%s.%s",c->cur_mod,consume(c).str);
+            char fn[128]; snprintf(fn,sizeof(fn),"%s.%s",c->cur_mod,consume(c).str);
             compile_func(c,fn,false);
             continue;
         }
         if (t.kind==T_ARROW) {
             consume(c);
-            char fn[128]; snprintf(fn,127,"%s.__entry__",c->cur_mod);
+            char fn[128]; snprintf(fn,sizeof(fn),"%s.__entry__",c->cur_mod);
             compile_func(c,fn,true);
             continue;
         }
@@ -951,7 +1139,11 @@ static void write_rom(Cmp *c, FILE *f) {
         Con *k=&c->consts[i]; wu8(f,k->type);
         switch(k->type){case YCON_INT:wi64(f,k->ival);break;case YCON_FLT:wf64(f,k->fval);break;
             case YCON_STR:wu32(f,(uint32_t)k->slen);fwrite(k->sval,1,(size_t)k->slen,f);break;
-            case YCON_BOOL:wu8(f,(uint8_t)k->ival);break;case YCON_NULL:break;}
+            case YCON_BOOL:wu8(f,(uint8_t)k->ival);break;case YCON_NULL:break;
+            case YCON_WORDS:
+                wu32(f,(uint32_t)k->wlen);
+                for(int j=0;j<k->wlen;j++) wu16(f,k->words[j]);
+                break;}
     }
     for(int i=0;i<c->nglobals;i++){wu32(f,(uint32_t)c->globals[i].name_idx);wu32(f,c->globals[i].init_idx<0?0xFFFFFFFFu:(uint32_t)c->globals[i].init_idx);}
     for(int i=0;i<c->nexts;i++) wu32(f,(uint32_t)c->exts[i].name_idx);
@@ -966,8 +1158,26 @@ static void write_rom(Cmp *c, FILE *f) {
 
 static char *read_file(const char *path) {
     FILE *f=fopen(path,"r"); if(!f){fprintf(stderr,"cannot open '%s'\n",path);return NULL;}
-    fseek(f,0,SEEK_END); long sz=ftell(f); rewind(f);
-    char *buf=malloc((size_t)sz+2); (void)fread(buf,1,(size_t)sz,f); buf[sz]='\n'; buf[sz+1]=0; fclose(f); return buf;
+    if (fseek(f,0,SEEK_END)!=0) { fprintf(stderr,"cannot seek '%s'\n",path); fclose(f); return NULL; }
+    long sz=ftell(f);
+    if (sz<0 || sz>INT_MAX-2) { fprintf(stderr,"file too large '%s'\n",path); fclose(f); return NULL; }
+    rewind(f);
+    char *buf=malloc((size_t)sz+2);
+    if (!buf) { fprintf(stderr,"out of memory reading '%s'\n",path); fclose(f); return NULL; }
+    size_t nread=sz>0?fread(buf,1,(size_t)sz,f):0;
+    if (nread!=(size_t)sz && ferror(f)) { fprintf(stderr,"cannot read '%s'\n",path); free(buf); fclose(f); return NULL; }
+    buf[nread]='\n'; buf[nread+1]=0;
+    fclose(f);
+    return buf;
+}
+
+static void cmp_free(Cmp *c) {
+    if (!c) return;
+    for(int i=0;i<c->nconsts;i++)
+        if (c->consts[i].type==YCON_STR) free(c->consts[i].sval);
+        else if (c->consts[i].type==YCON_WORDS) free(c->consts[i].words);
+    for(int i=0;i<c->nfuncs;i++) free(c->funcs[i].code);
+    free(c);
 }
 
 static bool is_builtin_module(const char *name) {
@@ -1014,8 +1224,7 @@ static int fileset_add(FileSet *fs, const char *path) {
     if (i>=0) return i;
     if (fs->count>=MAX_INPUT_FILES) { fprintf(stderr,"too many input files\n"); exit(1); }
     i=fs->count++;
-    strncpy(fs->paths[i],path,PATH_MAX-1);
-    fs->paths[i][PATH_MAX-1]=0;
+    copy_cstr(fs->paths[i],sizeof(fs->paths[i]),path);
     fs->state[i]=0;
     return i;
 }
@@ -1038,8 +1247,7 @@ static void collect_file(FileSet *fs, int idx) {
             lex_step(&lex);
             if (lex.cur.kind==T_IDENT) {
                 char module[64];
-                strncpy(module,lex.cur.str,63);
-                module[63]=0;
+                copy_cstr(module,sizeof(module),lex.cur.str);
                 lex_step(&lex);
                 bool dotted=false;
                 while (lex.cur.kind==T_DOT) {
@@ -1068,8 +1276,8 @@ static void compile_file(Cmp *c, const char *path) {
     c->lex=(Lex){.src=src,.line=1};
     lex_step(&c->lex);
     const char *base=strrchr(path,'/'); base=base?base+1:path;
-    char mod[64]; strncpy(mod,base,63); mod[63]=0; char *dot=strrchr(mod,'.'); if(dot)*dot=0;
-    strncpy(c->cur_mod,mod,63);
+    char mod[64]; copy_cstr(mod,sizeof(mod),base); char *dot=strrchr(mod,'.'); if(dot)*dot=0;
+    copy_cstr(c->cur_mod,sizeof(c->cur_mod),mod);
     parse_top(c);
     free(src);
 }
@@ -1078,26 +1286,28 @@ static void predeclare_file(Cmp *c, const char *path) {
     char *src=read_file(path); if(!src) exit(1);
     Lex lex={.src=src,.line=1};
     const char *base=strrchr(path,'/'); base=base?base+1:path;
-    char mod[64]; strncpy(mod,base,63); mod[63]=0; char *dot=strrchr(mod,'.'); if(dot)*dot=0;
+    char mod[64]; copy_cstr(mod,sizeof(mod),base); char *dot=strrchr(mod,'.'); if(dot)*dot=0;
     lex_step(&lex);
     while (lex.cur.kind!=T_EOF) {
         if (lex.cur.col==1&&lex.cur.kind==KW_CASK) {
             lex_step(&lex);
-            if (lex.cur.kind==T_IDENT) { strncpy(mod,lex.cur.str,63); mod[63]=0; }
+            if (lex.cur.kind==T_IDENT) copy_cstr(mod,sizeof(mod),lex.cur.str);
         } else if (lex.cur.col==1&&(lex.cur.kind==KW_DEF||lex.cur.kind==KW_CONST)) {
-            lex_step(&lex); if (lex.cur.kind==T_QMARK) lex_step(&lex);
-            if (lex.cur.kind==T_IDENT) {
-                char nm[128]; snprintf(nm,127,"%s.%s",mod,lex.cur.str);
+            lex_step(&lex);
+            bool is_mutable=false;
+            if (lex.cur.kind==T_QMARK) { is_mutable=true; lex_step(&lex); }
+            if (is_mutable&&lex.cur.kind==T_IDENT) {
+                char nm[128]; snprintf(nm,sizeof(nm),"%s.%s",mod,lex.cur.str);
                 if (find_global(c,nm)<0) declare_global(c,nm);
             }
         } else if (lex.cur.col==1&&(lex.cur.kind==T_COLON||lex.cur.kind==T_DCOLON)) {
             lex_step(&lex);
             if (lex.cur.kind==T_IDENT) {
-                char fn[128]; snprintf(fn,127,"%s.%s",mod,lex.cur.str);
+                char fn[128]; snprintf(fn,sizeof(fn),"%s.%s",mod,lex.cur.str);
                 if (find_func(c,fn)<0) new_func(c,fn,0);
             }
         } else if (lex.cur.col==1&&lex.cur.kind==T_ARROW) {
-            char fn[128]; snprintf(fn,127,"%s.__entry__",mod);
+            char fn[128]; snprintf(fn,sizeof(fn),"%s.__entry__",mod);
             int fi=find_func(c,fn);
             if (fi<0) fi=new_func(c,fn,0);
             c->entry_func=fi;
@@ -1115,10 +1325,11 @@ int main(int argc, char **argv) {
     }
     if (i>=argc){fprintf(stderr,"usage: vinasm [-o out.rom] app_main.yi [file.yi ...]\n");return 1;}
     Cmp *c=calloc(1,sizeof(Cmp));
+    if (!c) { fprintf(stderr,"out of memory\n"); return 1; }
     c->entry_func=0xFFFFFFFFu;
-    strncpy(c->ext_mods[c->n_ext_mods++],"stdr",63);
-    strncpy(c->ext_mods[c->n_ext_mods++],"math",63);
-    strncpy(c->ext_mods[c->n_ext_mods++],"vimana",63);
+    copy_cstr(c->ext_mods[c->n_ext_mods++],sizeof(c->ext_mods[0]),"stdr");
+    copy_cstr(c->ext_mods[c->n_ext_mods++],sizeof(c->ext_mods[0]),"math");
+    copy_cstr(c->ext_mods[c->n_ext_mods++],sizeof(c->ext_mods[0]),"vimana");
     /* func 0 = implicit global initialiser */
     c->init_func=new_func(c,"__init__",0); c->cur_func=c->init_func;
     FileSet fs={0};
@@ -1131,8 +1342,9 @@ int main(int argc, char **argv) {
     /* Finish init function */
     int sv=c->cur_func; c->cur_func=c->init_func; emit2(c,OP_LIT, add_null(c)); emit1(c,OP_RET); c->cur_func=sv;
     resolve_patches(c);
-    FILE *f=fopen(out,"wb"); if(!f){fprintf(stderr,"cannot write '%s'\n",out);return 1;}
+    FILE *f=fopen(out,"wb");
+    if(!f){fprintf(stderr,"cannot write '%s'\n",out);cmp_free(c);return 1;}
     write_rom(c,f); fclose(f);
     fprintf(stderr,"wrote %s  [%d consts  %d funcs  %d globals  %d exts]\n",out,c->nconsts,c->nfuncs,c->nglobals,c->nexts);
-    free(c); return 0;
+    cmp_free(c); return 0;
 }
