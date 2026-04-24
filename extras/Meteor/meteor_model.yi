@@ -1,0 +1,1642 @@
+cask meteor_model
+
+bring stdr
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Layout
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def WIN_W   = 352
+def WIN_H   = 288
+def MAX_W   = 11
+def MAX_H   = 14
+def MAX_CELLS = 154
+def CELL_PX = 16
+def FIELD_Y = 48
+def FIELD_ZONE_X = 56
+def FIELD_ZONE_W = 200
+def PANEL_X = 256
+
+def MINI_PX = 3
+def MINI_X  = 12
+def MINI_Y  = 68
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Tile types
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def EMPTY     = 0
+def NUM_TYPES = 10
+def GARBAGE   = 11
+def SPACE     = 12
+def TIME      = 13
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Scenes
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def SCENE_TITLE     = 0
+def SCENE_PLANET    = 1
+def SCENE_AI_PLANET = 2
+def SCENE_MODE      = 3
+def SCENE_PLAY      = 4
+def SCENE_WIN       = 5
+def SCENE_LOSE      = 6
+def SCENE_ELEMENTS   = 7
+def SCENE_ASTRAL_MAP = 8
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Modes
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def MODE_VS     = 0
+def MODE_100    = 1
+def MODE_1000   = 2
+def MODE_230    = 3
+def MODE_500    = 4
+def MODE_ASTRAL = 5
+
+-- VS sub-modes
+def VS_TIMED = 0
+def VS_LIVES = 1
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Planets (index 0-5)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def P_EALTHAL    = 0
+def P_SASAZI     = 1
+def P_WHALEEN    = 2
+def P_FIEREEM    = 3
+def P_SERNOVA    = 4
+def P_DOORSKY    = 5
+def P_GRAFANT    = 6
+def P_PERILLA    = 7
+def P_GELGEEL    = 8
+def P_RASTARL    = 9
+def P_NEURALI    = 10
+def P_LUALUA     = 11
+def P_ORKAROL    = 12
+def P_HOLONULL   = 13
+def P_TEKHNIS    = 14
+def P_BELLIKO    = 15
+def P_GAUSSLE    = 16
+def P_METTEOR    = 17
+
+def PLANET_W     = [  8,   9,  10,   7,   9,  11,  10,   9,   9,  10,   9,   9,   8,   8,   7,  9,  9, 11]
+def PLANET_GRAV  = [  2,   5,   2,   5,   5,   0,   5,   7,   1,   3,   3,   1,   1,   1,   3,  4,  3,  2]
+def PLANET_ATMO  = [  5,   2,   7,   1,   3,   0,   0,   6,   4,   3,   1,   0,   2,   3,   5,  5,  4,  1]
+
+def PLANET_RT    = [150, 150,  150, 120, 120,   60,  30,  30,  150, 150, 210,   90, 150,  30,  150, 120,  150,  12]
+def PLANET_RATE  = [180, 144,  216, 108, 150,  160, 200, 150,  180, 150, 150,  180, 180, 150,  180, 216,  180, 160]
+def PLANET_GDUR  = [900, 720, 1080, 600, 720, 1200, 900, 540, 1080, 900, 780, 1080, 960, 900, 1000, 999, 1000, 600]
+
+-- Rare metal (Space=12, Time=13) assigned to each planet. Each planet only rains ONE type.
+def PLANET_RARE  = [ 12, 13, 12, 13, 13, 12, 13, 12, 12, 12, 13, 12, 13, 12, 13, 13, 12, 12]
+
+-- `rare metal radix`: 1-in-N chance per rare-clock elapse.
+def RARE_RADIX = 2
+-- `rare metal time`: clock fires every this many frames (30s at 60fps) and
+-- arms the next rain_tiles to roll the rare-metal chance once.
+def RARE_CLOCK_MAX = 1800
+
+def PLANET_NAMES = [
+    "EALTHAL",
+    "SASSAZI",
+    "WHALEEN",
+    "FIEREEM",
+    "SERNOVA",
+    "DOORSKY",
+    "GRAFANT",
+    "PERILLA",
+    "GELGEEL",
+    "RASTARL",
+    "NEURALI",
+    "LUA=LUA",
+    "ORKAROL",
+    "HOLONUL",
+    "TEKHNIS",
+    "BELLIKO",
+    "GAUSSLE",
+    -- "GELADUS"
+    -- "VORVIND"
+    -- "SABONAS"
+    -- "SKYKLUS"
+    -- "RAVVEEN"
+    -- "TRABBOR"
+    -- "IRODUTH"
+    "METTEOR"
+]
+def PLANET_DESC = [
+    "Balanced elements. Its society wars for true peace.",
+    "Arid mesas where Sassazeans live on water droplets.",
+    "Deep sea world where cities dot the floor for life.",
+    "Magma flows and fiery arcs define Fiereem's orb.",
+    "Half-energy Sernovans roam the pulsar crash debris.",
+    "Home of the 6 Wise, who treat Elements like a game.",
+    "Defying physics, Grafants live amidst high gravity.",
+    "Primitive life roams this pebblelike, jungly swamp.",
+    "A stray magma-gelatinous orb drifts along space.",
+    "Solar chimes echo upon this glowing world of light.",
+    "Ravaged circuitry drifts; broken computer thinking.",
+    "Two rogue moons in shared orbit, waltzing in space.",
+    "Spinning rings guard a portal to an unknown reality.",
+    "This orb is a mystery on whether it exists or not.",
+    "Old mine; natives spun fiber to an evolving planet.",
+    "Tiny suburb homes a warring race, old world ruined.",
+    "Industrial world sullied; machines forced to space.",
+    "Fiery forge, burning culprit behind all Elements."
+]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Astral Adventure constants
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Path IDs
+def ASTRAL_GAMMA = 0
+def ASTRAL_BETA  = 1
+def ASTRAL_ALPHA = 2
+
+-- Mission type codes
+def AMISS_WIN      = 0   -- VS win (knockout or timer-based)
+def AMISS_LAUNCH_N = 1   -- launch N meteors total
+def AMISS_CLEAR    = 2   -- clear the screen
+def AMISS_AT_ONCE  = 3   -- launch 30+ in one rocket
+def AMISS_WATER_30 = 4   -- launch 30 Water elements total
+def AMISS_VS3      = 5   -- VS 3 CPU, win
+
+-- Planet sequences per path (planet IDs in order)
+def ASTRAL_GAMMA_SEQ = [3, 6, 14, 10, 15, 5, 17]
+def ASTRAL_BETA_SEQ  = [2, 7, 13, 4, 9, 11, 17]
+def ASTRAL_ALPHA_SEQ = [1, 12, 8, 16, 11, 17]
+def ASTRAL_GAMMA_LEN = 7
+def ASTRAL_BETA_LEN  = 7
+def ASTRAL_ALPHA_LEN = 6
+
+-- Mission type per planet (indexed 0-17 by planet ID)
+-- EALTHAL=WIN, SASSAZI=CLEAR, WHALEEN=WIN, FIEREEM=LAUNCH_N(100),
+-- SERNOVA=LAUNCH_N(50), DOORSKY=VS3, GRAFANT=LAUNCH_N(50),
+-- PERILLA=LAUNCH_N(200), GELGEEL=WIN, RASTARL=WIN, NEURALI=AT_ONCE,
+-- LUALUA=WIN, ORKAROL=WATER_30, HOLONULL=VS3, TEKHNIS=WIN,
+-- BELLIKO=WIN, GAUSSLE=CLEAR, METTEOR=WIN
+def ASTRAL_MISS_TYPE = [
+    0, 2, 0, 1, 1, 5, 1, 1, 0, 0, 3, 0, 4, 5, 0, 0, 2, 0
+]
+-- Launch targets per planet (0 = not applicable)
+def ASTRAL_MISS_TARGET = [
+    0, 0, 0, 100, 50, 0, 50, 200, 0, 0, 30, 0, 30, 0, 0, 0, 0, 0
+]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Phases during gameplay
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def PH_INPUT       = 0
+def PH_MATCH       = 1
+def PH_ROCKET      = 2
+def PH_FALL        = 3
+def PH_ANNIHILATE  = 4
+def PH_FLICK       = 5
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Game state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?scene = 0
+def ?planet = 0
+def ?ai_planet = 0
+def ?mode = 1
+def ?phase = 0
+def ?phase_timer = 0
+
+def ?sel_x = -1
+def ?sel_y = -1
+
+def ?sent = 0
+def ?chain_sent = 0
+def ?sent_flash = 0
+def ?rise_timer = 0
+def ?combo = 0
+def ?match_flash = 0
+def ?max_run = 0
+def ?sound_pending = false
+def ?rocket_pending = false
+def ?flick_pending = false
+def ?clear_pending = false
+def ?game_frames = 0
+def ?received = 0
+def ?speeder = false
+def ?score = 0
+def ?matched_count = 0
+def ?last_cargo = 0
+def ?launch_count = 0
+def ?launch_mode = 0
+def ?launch_target = 0
+def ?launch_count_action = 0
+def ?graf_fuel = false
+def ?graf_fuel_timer = 0
+def ?rare_clock = 0
+def ?rare_pending = false
+def ?vs_submode = 0
+def ?ai_difficulty = 3
+def ?player_lives = 3
+def ?ai_lives = 3
+def ?countdown = 9000
+
+-- Astral Adventure journey state
+def ?astral_path         = 0
+def ?astral_pos          = 0
+def ?astral_at_ealthal   = true
+def ?astral_max_single   = 0
+def ?astral_screen_clear = false
+
+-- Element tracking: session gains and lifetime totals
+-- Order for display:       AIR, FIRE, WATER, SOIL, IRON, ZAP, HERB, DARK, ZOO, GLOW, TIME, SPACE
+-- Corresponding tile IDs:    1,    2,     3,    4,    5,   6,    7,    8,   9,   10,   12,    13
+-- (Tile 11 is Garbage, Time=12, Space=13). Arrays sized 14 to index by tile_id-1.
+def ?elem_session = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+def ?elem_total   = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+def ELEM_ORDER    = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13]
+
+-- Multi-CPU
+def ?cpu_count = 1
+def ?ai_assigns = [-1, -1, -1]
+
+-- Launch modes
+def LM_NORMAL  = 0
+def LM_INSTANT = 1
+def LM_DUD     = 2
+
+-- Flick state
+def ?flick_col  = -1
+def ?flick_tile = 0
+def ?flick_from = 0
+def ?flick_off  = 0
+def ?flick_vel  = 0
+def ?flick_cooldown = 0
+
+def ?rocket_off = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+def ?rocket_vel = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+def ?rocket_col_sent = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+def ?rocket_top = [14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]
+def ?rocket_sent_start = 0
+
+-- Garbage block timers: frames until conversion; dest = element it will become
+def ?garbage_timer = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?garbage_dest = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+
+def SPD_X = 304
+def SPD_Y = 232
+def SPD_W = 32
+def SPD_H = 32
+
+-- Field arrays (MAX_W * MAX_H = 154 elements)
+def ?tiles = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+
+def ?matched = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Dirty flag
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?dirty = true
+
+:: mark_dirty() (( -- ))
+    dirty = true
+;
+
+:: is_dirty() (( bool ))
+    let d = dirty
+    dirty = false
+    <- d
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Accessors
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: field_w() (( num ))
+    <- PLANET_W[planet]
+;
+
+:: field_grav() (( num ))
+    <- PLANET_GRAV[planet]
+;
+
+:: field_atmo() (( num ))
+    <- PLANET_ATMO[planet]
+;
+
+:: get_launch_count() (( num ))
+    <- launch_count
+;
+
+:: inc_launch_count() (( -- ))
+    launch_count = launch_count + 1
+;
+
+:: reset_launch_count() (( -- ))
+    launch_count = 0
+;
+
+:: get_launch_mode() (( num ))
+    <- launch_mode
+;
+
+:: get_launch_target() (( num ))
+    <- launch_target
+;
+
+:: get_launch_count_action() (( num ))
+    <- launch_count_action
+;
+
+:: compute_launch_params(cargo = num) (( -- ))
+    launch_mode = LM_NORMAL
+    launch_target = 20
+    launch_count_action = 1
+
+    -- Grafantz: fuel mechanic
+    if planet == P_GRAFANT
+        if graf_fuel
+            launch_mode = LM_INSTANT
+        else
+            launch_mode = LM_DUD
+        launch_target = 0
+        launch_count_action = 0
+        <-
+
+    -- Doorheaven: always instant
+    if planet == P_DOORSKY
+        launch_mode = LM_INSTANT
+        launch_target = 0
+        launch_count_action = 0
+        <-
+
+    -- Sasazi: conditional on cargo
+    if planet == P_SASAZI
+        if cargo < 7
+            launch_mode = LM_NORMAL
+            launch_target = 20
+            launch_count_action = 0
+            <-
+        let n = launch_count
+        if n == 0
+            launch_target = 4
+        elif n >= 1 && n <= 3
+            launch_target = 2
+        elif n == 4 || n == 5
+            launch_target = 6
+        else
+            launch_mode = LM_DUD
+            launch_target = 0
+            launch_count_action = -1
+            <-
+        launch_count_action = 1
+        <-
+
+    let n = launch_count
+
+    if planet == P_EALTHAL
+        if n == 0
+            launch_target = 5
+        elif n == 1
+            launch_target = 3
+        elif n == 2
+            launch_target = 6
+        elif n == 3
+            launch_target = 11
+        else
+            launch_target = 20
+            launch_count_action = -1
+        <-
+
+    if planet == P_FIEREEM
+        if n == 0
+            launch_target = 3
+        elif n == 1
+            launch_target = 8
+        elif n == 2
+            launch_target = 11
+        else
+            launch_target = 20
+            launch_count_action = -1
+        <-
+
+    if planet == P_WHALEEN
+        if n == 0
+            launch_target = 4
+        elif n == 1
+            launch_target = 6
+        elif n == 2
+            launch_target = 3
+        elif n == 3
+            launch_target = 3
+        elif n == 4
+            launch_target = 9
+        else
+            launch_target = 20
+            launch_count_action = -1
+        <-
+
+    if planet == P_SERNOVA
+        if n == 0
+            launch_target = 12
+        elif n == 1
+            launch_target = 7
+        elif n == 2
+            launch_target = 8
+        elif n == 3
+            launch_target = 12
+        else
+            launch_target = 20
+            launch_count_action = -1
+        <-
+
+    if planet == P_PERILLA
+        if n == 0
+            launch_target = 6
+        elif n == 1
+            launch_target = 9
+        elif n == 2
+            launch_target = 10
+        else
+            launch_target = 20
+            launch_count_action = -1
+        <-
+
+    if planet == P_LUALUA
+        -- Lunar gravity: easy ignitions, floaty launches
+        if n == 0
+            launch_target = 4
+        elif n == 1
+            launch_target = 6
+        elif n == 2
+            launch_target = 8
+        else
+            launch_target = 14
+            launch_count_action = -1
+        <-
+
+    if planet == P_TEKHNIS
+        -- Loom cadence: steady industrial rhythm
+        if n == 0
+            launch_target = 6
+            launch_count_action = 0
+        elif n == 1
+            launch_target = 6
+            launch_count_action = 0
+        elif n == 2
+            launch_target = 6
+            launch_count_action = 0
+        elif n == 3
+            launch_target = 6
+            launch_count_action = 0
+        elif n == 4
+            launch_target = 6
+            launch_count_action = 0
+        else
+            launch_target = 6
+            launch_count_action = 0
+        <-
+
+    if planet == P_BELLIKO
+        -- Volatile war cadence: quick strikes then heavy bombardment
+        if n == 0
+            launch_target = 4
+        elif n == 1
+            launch_target = 4
+        elif n == 2
+            launch_target = 10
+        elif n == 3
+            launch_target = 5
+        elif n == 4
+            launch_target = 14
+        else
+            launch_target = 20
+            launch_count_action = -1
+        <-
+
+    if planet == P_GAUSSLE
+        -- Factory production line: steady rhythmic output with increasing pressure
+        if n == 0
+            launch_target = 5
+        elif n == 1
+            launch_target = 6
+        elif n == 2
+            launch_target = 7
+        elif n == 3
+            launch_target = 9
+        elif n == 4
+            launch_target = 11
+        elif n == 5
+            launch_target = 13
+        else
+            launch_target = 18
+            launch_count_action = -1
+        <-
+
+    if planet == P_METTEOR
+        if n == 0 || n == 2
+            launch_target = 10
+        elif n == 1 || n == 3
+            launch_target = 12
+        else
+            launch_target = 20
+            launch_count_action = -1
+        <-
+
+    if planet == P_GELGEEL
+        if n == 0 || n == 1
+            launch_target = 2
+        elif n == 2 || n == 3
+            launch_target = 3
+        elif n == 4 || n == 5
+            launch_target = 4
+        elif n == 6
+            launch_target = 5
+        else
+            launch_mode = LM_INSTANT
+            launch_target = 0
+            launch_count_action = -1
+        <-
+
+    if planet == P_RASTARL
+        if n == 0
+            launch_target = 8
+        elif n == 1
+            launch_target = 6
+        elif n == 2
+            launch_target = 10
+        elif n == 3
+            launch_target = 8
+        elif n == 4
+            launch_target = 12
+        elif n == 5 || n == 6
+            launch_mode = LM_INSTANT
+            launch_target = 0
+            launch_count_action = 0
+        else
+            launch_target = 20
+            launch_count_action = -1
+        <-
+
+    if planet == P_NEURALI
+        if n == 0
+            launch_target = 10
+        elif n == 1
+            launch_target = 8
+        elif n == 2
+            launch_target = 6
+        elif n == 3
+            launch_target = 12
+        elif n == 4
+            launch_target = 8
+        else
+            launch_mode = LM_INSTANT
+            launch_target = 0
+            launch_count_action = -1
+        <-
+
+    if planet == P_ORKAROL
+        -- Very high ignition: easy targets, 5-7 launches per screen
+        if n == 0
+            launch_target = 3
+        elif n == 1
+            launch_target = 3
+        elif n == 2
+            launch_target = 4
+        elif n == 3
+            launch_target = 4
+        elif n == 4
+            launch_target = 5
+        elif n == 5
+            launch_target = 5
+        elif n == 6
+            launch_target = 6
+        else
+            launch_target = 14
+            launch_count_action = -1
+        <-
+
+    if planet == P_HOLONULL
+        -- Null-void escalation: starts modest, reaches full-clear power by launch 3
+        if n == 0
+            launch_target = 5
+        elif n == 1
+            launch_target = 7
+        elif n == 2
+            launch_target = 10
+        elif n == 3
+            launch_target = 14
+        else
+            launch_target = 18
+            launch_count_action = -1
+        <-
+
+    -- Any per-planet launch target above the field height becomes an
+    -- instant rocket: the stack is too tall to lerp, so it just clears.
+    if launch_target > MAX_H
+        launch_mode = LM_INSTANT
+;
+
+:: has_graf_fuel() (( bool ))
+    <- graf_fuel
+;
+
+:: set_graf_fuel(v = bool) (( -- ))
+    graf_fuel = v
+;
+
+:: set_graf_fuel_timer(v = num) (( -- ))
+    graf_fuel_timer = v
+;
+
+:: tick_graf_fuel() (( -- ))
+    if !graf_fuel
+        <-
+    if graf_fuel_timer > 0
+        graf_fuel_timer = graf_fuel_timer - 1
+        if graf_fuel_timer <= 0
+            graf_fuel = false
+;
+
+:: reset_graf_fuel() (( -- ))
+    graf_fuel = false
+    graf_fuel_timer = 0
+;
+
+-- Rare metal clock: advanced once per frame in process_phase, not affected by
+-- speeder. When it reaches RARE_CLOCK_MAX the next rain_tiles rolls the 1-in-N
+-- chance once, then the clock resets.
+:: tick_rare_clock() (( -- ))
+    rare_clock = rare_clock + 1
+    if rare_clock >= RARE_CLOCK_MAX
+        rare_pending = true
+        rare_clock = 0
+;
+
+:: rare_is_pending() (( bool ))
+    <- rare_pending
+;
+
+:: consume_rare_pending() (( -- ))
+    rare_pending = false
+;
+
+:: reset_rare_clock() (( -- ))
+    rare_clock = 0
+    rare_pending = false
+;
+
+:: get_rare_metal() (( num ))
+    <- PLANET_RARE[planet]
+;
+
+:: is_rare_metal(t = num) (( bool ))
+    <- t == SPACE || t == TIME
+;
+
+-- Annihilation timer: 1s (60f) for width 7, up to 3s (180f) for width 11
+:: annihilate_time() (( num ))
+    <- 60 + (field_w() - 7) * 30
+;
+
+-- Speeder Factor (time shift rate): Geolyte = 6. When speeder is active the
+-- spawn interval is divided by this factor (6x faster spawns).
+:: rise_rate() (( num ))
+    let r = PLANET_RATE[planet]
+    if speeder
+        <- stdr.floor(r / 6)
+    <- r
+;
+
+:: field_x() (( num ))
+    <- FIELD_ZONE_X + stdr.floor((FIELD_ZONE_W - field_w() * CELL_PX) / 2)
+;
+
+:: ai_field_w() (( num ))
+    <- PLANET_W[ai_planet]
+;
+
+:: ai_planet_name() (( string ))
+    <- PLANET_NAMES[ai_planet]
+;
+
+:: ai_rise_rate() (( num ))
+    <- PLANET_RATE[ai_planet]
+;
+
+:: planet_name() (( string ))
+    <- PLANET_NAMES[planet]
+;
+
+:: planet_desc() (( string ))
+    <- PLANET_DESC[planet]
+;
+
+:: target() (( num ))
+    if mode == MODE_100
+        <- 100
+    if mode == MODE_1000
+        <- 1000
+    <- 0
+;
+
+:: mode_name() (( string ))
+    if mode == MODE_VS
+        <- "VS"
+    if mode == MODE_100
+        <- "100-ELEMENT"
+    if mode == MODE_230
+        <- "2:30-TIMED"
+    if mode == MODE_500
+        <- "5:00-TIMED"
+    if mode == MODE_ASTRAL
+        <- "ASTRAL ADV."
+    <- "1000-ELEMENT"
+;
+
+:: get_tile(x = num, y = num) (( num ))
+    <- tiles[y * MAX_W + x]
+;
+
+:: set_tile(x = num, y = num, v = num) (( -- ))
+    tiles[y * MAX_W + x] = v
+;
+
+:: get_matched(x = num, y = num) (( bool ))
+    <- matched[y * MAX_W + x] == 1
+;
+
+:: get_matched_any(x = num, y = num) (( bool ))
+    <- matched[y * MAX_W + x] >= 1
+;
+
+:: get_matched_val(x = num, y = num) (( num ))
+    <- matched[y * MAX_W + x]
+;
+
+:: set_matched(x = num, y = num) (( -- ))
+    matched[y * MAX_W + x] = 1
+;
+
+:: set_matched_stack(x = num, y = num) (( -- ))
+    matched[y * MAX_W + x] = 2
+;
+
+:: clear_matched() (( -- ))
+    for (let ?i = 0; i < MAX_CELLS; i = i + 1)
+        matched[i] = 0
+;
+
+:: clear_selection() (( -- ))
+    sel_x = -1
+    sel_y = -1
+;
+
+:: has_selection() (( bool ))
+    <- sel_x >= 0
+;
+
+:: clear_all() (( -- ))
+    for (let ?i = 0; i < MAX_CELLS; i = i + 1)
+        tiles[i] = 0
+        matched[i] = 0
+        garbage_timer[i] = 0
+        garbage_dest[i] = 0
+    phase = PH_INPUT
+    phase_timer = 0
+    sel_x = -1
+    sel_y = -1
+    sent = 0
+    chain_sent = 0
+    sent_flash = 0
+    rise_timer = 0
+    combo = 0
+    match_flash = 0
+    game_frames = 0
+    received = 0
+    speeder = false
+    score = 0
+    matched_count = 0
+    last_cargo = 0
+    rocket_sent_start = 0
+    for (let ?ri = 0; ri < MAX_W; ri = ri + 1)
+        rocket_off[ri] = 0
+        rocket_vel[ri] = 0
+        rocket_col_sent[ri] = 0
+        rocket_top[ri] = MAX_H
+    clear_all_ais()
+    player_lives = 3
+    countdown = 9000
+    flick_col = -1
+    flick_tile = 0
+    flick_from = 0
+    flick_off = 0
+    flick_vel = 0
+    flick_cooldown = 0
+    -- Sync ai_planet from first assignment for backward compat
+    if ai_assigns[0] >= 0
+        ai_planet = ai_assigns[0]
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- State getters / setters
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: get_scene() (( num )) <- scene ;
+:: set_scene(v = num) (( -- )) scene = v ;
+
+:: get_planet() (( num )) <- planet ;
+:: set_planet(v = num) (( -- )) planet = v ;
+
+:: get_ai_planet() (( num )) <- ai_planet ;
+:: set_ai_planet(v = num) (( -- )) ai_planet = v ;
+
+:: get_mode() (( num )) <- mode ;
+:: set_mode(v = num) (( -- )) mode = v ;
+
+:: get_phase() (( num )) <- phase ;
+:: set_phase(v = num) (( -- )) phase = v ;
+
+:: get_phase_timer() (( num )) <- phase_timer ;
+:: set_phase_timer(v = num) (( -- )) phase_timer = v ;
+:: inc_phase_timer() (( -- )) phase_timer = phase_timer + 1 ;
+
+:: get_sel_x() (( num )) <- sel_x ;
+:: get_sel_y() (( num )) <- sel_y ;
+:: set_sel(x = num, y = num) (( -- ))
+    sel_x = x
+    sel_y = y
+;
+
+:: get_sent() (( num )) <- sent ;
+:: set_sent(v = num) (( -- )) sent = v ;
+:: add_sent(v = num) (( -- ))
+    sent = sent + v
+    chain_sent = chain_sent + v
+;
+
+:: add_elem_session(tile = num, count = num) (( -- ))
+    -- Skip invalid tiles and Garbage (tile 11)
+    if tile < 1 || tile > 13 || tile == 11
+        <-
+    elem_session[tile - 1] = elem_session[tile - 1] + count
+    elem_total[tile - 1] = elem_total[tile - 1] + count
+;
+
+:: clear_elem_session() (( -- ))
+    for (let ?i = 0; i < 14; i = i + 1)
+        elem_session[i] = 0
+;
+
+:: get_elem_session(idx = num) (( num )) <- elem_session[idx] ;
+:: get_elem_total(idx = num) (( num )) <- elem_total[idx] ;
+
+:: save_elem_total() (( -- ))
+    let ?out = ""
+    for (let ?i = 0; i < 14; i = i + 1)
+        if i > 0
+            out = stdr.str_concat(out, " ")
+        out = stdr.str_concat(out, stdr.str(elem_total[i]))
+    stdr.write_text_file(stdr.str_concat(stdr.home_dir(), "/.meteor_totals"), out)
+;
+
+:: load_elem_total() (( -- ))
+    let path = stdr.str_concat(stdr.home_dir(), "/.meteor_totals")
+    if !stdr.file_exists(path)
+        <-
+    let text = stdr.read_text_file(path)
+    if stdr.is_null(text)
+        <-
+    let ?i = 0
+    let ?start = 0
+    let ?idx = 0
+    let n = stdr.len(text)
+    for (; i <= n && idx < 14; i = i + 1)
+        let ch = stdr.slice(text, i, i + 1)
+        if ch == " " || i == n
+            if i > start
+                let tok = stdr.slice(text, start, i)
+                elem_total[idx] = stdr.num(tok)
+                idx = idx + 1
+            start = i + 1
+;
+
+:: get_chain_sent() (( num )) <- chain_sent ;
+:: reset_chain_sent() (( -- )) chain_sent = 0 ;
+
+:: get_sent_flash() (( num )) <- sent_flash ;
+:: set_sent_flash(v = num) (( -- )) sent_flash = v ;
+:: dec_sent_flash() (( -- ))
+    if sent_flash > 0
+        sent_flash = sent_flash - 1
+;
+
+:: get_rise_timer() (( num )) <- rise_timer ;
+:: set_rise_timer(v = num) (( -- )) rise_timer = v ;
+:: inc_rise_timer() (( -- )) rise_timer = rise_timer + 1 ;
+
+:: get_combo() (( num )) <- combo ;
+:: set_combo(v = num) (( -- )) combo = v ;
+:: inc_combo() (( -- )) combo = combo + 1 ;
+
+:: get_match_flash() (( num )) <- match_flash ;
+:: set_match_flash(v = num) (( -- )) match_flash = v ;
+:: get_max_run() (( num )) <- max_run ;
+:: set_max_run(v = num) (( -- )) max_run = v ;
+:: pop_sound() (( bool ))
+    if sound_pending
+        sound_pending = false
+        <- true
+    <- false
+;
+:: set_sound_pending() (( -- )) sound_pending = true ;
+:: pop_rocket() (( bool ))
+    if rocket_pending
+        rocket_pending = false
+        <- true
+    <- false
+;
+:: set_rocket_pending() (( -- )) rocket_pending = true ;
+:: pop_flick() (( bool ))
+    if flick_pending
+        flick_pending = false
+        <- true
+    <- false
+;
+:: set_flick_pending() (( -- )) flick_pending = true ;
+:: pop_clear() (( bool ))
+    if clear_pending
+        clear_pending = false
+        <- true
+    <- false
+;
+:: set_clear_pending() (( -- )) clear_pending = true ;
+:: dec_match_flash() (( -- ))
+    if match_flash > 0
+        match_flash = match_flash - 1
+    if match_flash == 0 && combo > 0
+        combo = 0
+;
+
+:: get_score() (( num )) <- score ;
+:: add_score(v = num) (( -- )) score = score + v ;
+:: get_matched_count() (( num )) <- matched_count ;
+:: set_matched_count(v = num) (( -- )) matched_count = v ;
+:: get_last_cargo() (( num )) <- last_cargo ;
+:: set_last_cargo(v = num) (( -- )) last_cargo = v ;
+
+:: get_game_frames() (( num )) <- game_frames ;
+:: inc_game_frames() (( -- )) game_frames = game_frames + 1 ;
+
+:: get_received() (( num )) <- received ;
+:: add_received(v = num) (( -- )) received = received + v ;
+
+:: get_speeder() (( bool )) <- speeder ;
+:: toggle_speeder() (( -- )) speeder = !speeder ;
+
+:: get_rocket_off(x = num) (( num )) <- rocket_off[x] ;
+:: set_rocket_off(x = num, v = num) (( -- )) rocket_off[x] = v ;
+:: get_rocket_vel(x = num) (( num )) <- rocket_vel[x] ;
+:: set_rocket_vel(x = num, v = num) (( -- )) rocket_vel[x] = v ;
+:: get_rocket_col_sent(x = num) (( num )) <- rocket_col_sent[x] ;
+:: set_rocket_col_sent(x = num, v = num) (( -- )) rocket_col_sent[x] = v ;
+:: get_rocket_top(x = num) (( num )) <- rocket_top[x] ;
+:: set_rocket_top(x = num, v = num) (( -- )) rocket_top[x] = v ;
+:: get_rocket_sent_start() (( num )) <- rocket_sent_start ;
+:: set_rocket_sent_start(v = num) (( -- )) rocket_sent_start = v ;
+
+:: get_garbage_timer(x = num, y = num) (( num )) <- garbage_timer[y * MAX_W + x] ;
+:: set_garbage_timer(x = num, y = num, v = num) (( -- )) garbage_timer[y * MAX_W + x] = v ;
+:: get_garbage_dest(x = num, y = num) (( num )) <- garbage_dest[y * MAX_W + x] ;
+:: set_garbage_dest(x = num, y = num, v = num) (( -- )) garbage_dest[y * MAX_W + x] = v ;
+
+:: place_garbage(x = num, y = num, dest = num) (( -- ))
+    tiles[y * MAX_W + x] = GARBAGE
+    garbage_timer[y * MAX_W + x] = PLANET_RT[planet]
+    garbage_dest[y * MAX_W + x] = dest
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- AI opponent state (up to 3 AIs)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ZERO_FIELD = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_tiles_0 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_tiles_1 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_tiles_2 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+-- Garbage timer and dest metadata for each AI slot (same layout as player garbage_timer/dest)
+def ?ai_gtimer_0 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_gtimer_1 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_gtimer_2 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_gdest_0 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_gdest_1 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_gdest_2 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+def ?ai_sent_arr = [0, 0, 0]
+def ?ai_score_arr = [0, 0, 0]
+def ?ai_rise_timer_arr = [0, 0, 0]
+def ?ai_lives_arr = [3, 3, 3]
+def ?ai_recv_flash_arr  = [0, 0, 0]
+def ?ai_recv_count_arr  = [0, 0, 0]
+def ?ai_launch_flash_arr = [0, 0, 0]
+def ?ai_launch_col_arr  = [0, 0, 0]
+def ?ai_launch_y_arr    = [0, 0, 0]
+def ?ai_launch_len_arr  = [3, 3, 3]
+def ?ai_launch_dir_arr  = [0, 0, 0]
+
+:: get_ai_tile_n(n = num, x = num, y = num) (( num ))
+    let idx = y * MAX_W + x
+    if n == 0
+        <- ai_tiles_0[idx]
+    if n == 1
+        <- ai_tiles_1[idx]
+    <- ai_tiles_2[idx]
+;
+
+:: set_ai_tile_n(n = num, x = num, y = num, v = num) (( -- ))
+    let idx = y * MAX_W + x
+    if n == 0
+        ai_tiles_0[idx] = v
+    elif n == 1
+        ai_tiles_1[idx] = v
+    else
+        ai_tiles_2[idx] = v
+;
+
+:: get_ai_gtimer_n(n = num, x = num, y = num) (( num ))
+    let idx = y * MAX_W + x
+    if n == 0
+        <- ai_gtimer_0[idx]
+    if n == 1
+        <- ai_gtimer_1[idx]
+    <- ai_gtimer_2[idx]
+;
+:: set_ai_gtimer_n(n = num, x = num, y = num, v = num) (( -- ))
+    let idx = y * MAX_W + x
+    if n == 0
+        ai_gtimer_0[idx] = v
+    elif n == 1
+        ai_gtimer_1[idx] = v
+    else
+        ai_gtimer_2[idx] = v
+;
+:: get_ai_gdest_n(n = num, x = num, y = num) (( num ))
+    let idx = y * MAX_W + x
+    if n == 0
+        <- ai_gdest_0[idx]
+    if n == 1
+        <- ai_gdest_1[idx]
+    <- ai_gdest_2[idx]
+;
+:: set_ai_gdest_n(n = num, x = num, y = num, v = num) (( -- ))
+    let idx = y * MAX_W + x
+    if n == 0
+        ai_gdest_0[idx] = v
+    elif n == 1
+        ai_gdest_1[idx] = v
+    else
+        ai_gdest_2[idx] = v
+;
+:: place_ai_garbage_n(n = num, x = num, y = num, dest = num) (( -- ))
+    set_ai_tile_n(n, x, y, GARBAGE)
+    set_ai_gtimer_n(n, x, y, PLANET_RT[ai_assigns[n]])
+    set_ai_gdest_n(n, x, y, dest)
+;
+
+-- Backward-compat wrappers (slot 0)
+:: get_ai_tile(x = num, y = num) (( num ))
+    <- ai_tiles_0[y * MAX_W + x]
+;
+:: set_ai_tile(x = num, y = num, v = num) (( -- ))
+    ai_tiles_0[y * MAX_W + x] = v
+;
+
+:: get_ai_sent_n(n = num) (( num )) <- ai_sent_arr[n] ;
+:: add_ai_sent_n(n = num, v = num) (( -- )) ai_sent_arr[n] = ai_sent_arr[n] + v ;
+:: get_ai_score_n(n = num) (( num )) <- ai_score_arr[n] ;
+:: add_ai_score_n(n = num, v = num) (( -- )) ai_score_arr[n] = ai_score_arr[n] + v ;
+:: get_ai_rise_timer_n(n = num) (( num )) <- ai_rise_timer_arr[n] ;
+:: set_ai_rise_timer_n(n = num, v = num) (( -- )) ai_rise_timer_arr[n] = v ;
+:: inc_ai_rise_timer_n(n = num) (( -- )) ai_rise_timer_arr[n] = ai_rise_timer_arr[n] + 1 ;
+:: get_ai_lives_n(n = num) (( num )) <- ai_lives_arr[n] ;
+:: set_ai_lives_n(n = num, v = num) (( -- )) ai_lives_arr[n] = v ;
+:: dec_ai_lives_n(n = num) (( -- ))
+    if ai_lives_arr[n] > 0
+        ai_lives_arr[n] = ai_lives_arr[n] - 1
+;
+
+:: get_ai_recv_flash_n(n = num) (( num )) <- ai_recv_flash_arr[n] ;
+:: set_ai_recv_flash_n(n = num, v = num) (( -- )) ai_recv_flash_arr[n] = v ;
+:: dec_ai_recv_flash_n(n = num) (( -- ))
+    if ai_recv_flash_arr[n] > 0
+        ai_recv_flash_arr[n] = ai_recv_flash_arr[n] - 1
+;
+:: get_ai_recv_count_n(n = num) (( num )) <- ai_recv_count_arr[n] ;
+:: set_ai_recv_count_n(n = num, v = num) (( -- )) ai_recv_count_arr[n] = v ;
+:: get_ai_launch_flash_n(n = num) (( num )) <- ai_launch_flash_arr[n] ;
+:: set_ai_launch_flash_n(n = num, v = num) (( -- )) ai_launch_flash_arr[n] = v ;
+:: dec_ai_launch_flash_n(n = num) (( -- ))
+    if ai_launch_flash_arr[n] > 0
+        ai_launch_flash_arr[n] = ai_launch_flash_arr[n] - 1
+;
+:: get_ai_launch_col_n(n = num) (( num )) <- ai_launch_col_arr[n] ;
+:: set_ai_launch_col_n(n = num, v = num) (( -- )) ai_launch_col_arr[n] = v ;
+:: get_ai_launch_y_n(n = num) (( num )) <- ai_launch_y_arr[n] ;
+:: set_ai_launch_y_n(n = num, v = num) (( -- )) ai_launch_y_arr[n] = v ;
+:: get_ai_launch_len_n(n = num) (( num )) <- ai_launch_len_arr[n] ;
+:: set_ai_launch_len_n(n = num, v = num) (( -- )) ai_launch_len_arr[n] = v ;
+:: get_ai_launch_dir_n(n = num) (( num )) <- ai_launch_dir_arr[n] ;
+:: set_ai_launch_dir_n(n = num, v = num) (( -- )) ai_launch_dir_arr[n] = v ;
+
+-- Backward-compat scalar wrappers
+:: get_ai_sent() (( num )) <- ai_sent_arr[0] ;
+:: add_ai_sent(v = num) (( -- )) ai_sent_arr[0] = ai_sent_arr[0] + v ;
+:: get_ai_score() (( num )) <- ai_score_arr[0] ;
+:: add_ai_score(v = num) (( -- )) ai_score_arr[0] = ai_score_arr[0] + v ;
+
+:: get_ai_rise_timer() (( num )) <- ai_rise_timer_arr[0] ;
+:: set_ai_rise_timer(v = num) (( -- )) ai_rise_timer_arr[0] = v ;
+:: inc_ai_rise_timer() (( -- )) ai_rise_timer_arr[0] = ai_rise_timer_arr[0] + 1 ;
+
+:: ai_field_w_n(n = num) (( num ))
+    <- PLANET_W[ai_assigns[n]]
+;
+:: ai_rise_rate_n(n = num) (( num ))
+    <- PLANET_RATE[ai_assigns[n]]
+;
+
+:: get_vs_submode() (( num )) <- vs_submode ;
+:: set_vs_submode(v = num) (( -- )) vs_submode = v ;
+:: get_ai_difficulty() (( num )) <- ai_difficulty ;
+:: set_ai_difficulty(v = num) (( -- )) ai_difficulty = v ;
+:: get_player_lives() (( num )) <- player_lives ;
+:: set_player_lives(v = num) (( -- )) player_lives = v ;
+:: dec_player_lives() (( -- )) player_lives = player_lives - 1 ;
+:: get_ai_lives() (( num )) <- ai_lives ;
+:: set_ai_lives(v = num) (( -- )) ai_lives = v ;
+:: dec_ai_lives() (( -- )) ai_lives = ai_lives - 1 ;
+
+:: get_cpu_count() (( num )) <- cpu_count ;
+:: set_cpu_count(v = num) (( -- )) cpu_count = v ;
+:: get_ai_assign(slot = num) (( num )) <- ai_assigns[slot] ;
+:: set_ai_assign(slot = num, p = num) (( -- )) ai_assigns[slot] = p ;
+:: clear_excess_assigns() (( -- ))
+    for (let ?i = cpu_count; i < 3; i = i + 1)
+        ai_assigns[i] = -1
+;
+:: all_ai_assigned() (( bool ))
+    for (let ?i = 0; i < cpu_count; i = i + 1)
+        if ai_assigns[i] < 0
+            <- false
+    <- true
+;
+:: assign_ai_planet(p = num) (( -- ))
+    -- If already assigned, remove it
+    for (let ?i = 0; i < cpu_count; i = i + 1)
+        if ai_assigns[i] == p
+            ai_assigns[i] = -1
+            <- 
+    -- Otherwise assign to lowest open slot
+    for (let ?j = 0; j < cpu_count; j = j + 1)
+        if ai_assigns[j] < 0
+            ai_assigns[j] = p
+            <-
+;
+:: ai_assign_label(p = num) (( num ))
+    -- Returns 1/2/3 if planet p is assigned to a slot, 0 if not
+    for (let ?i = 0; i < 3; i = i + 1)
+        if ai_assigns[i] == p
+            <- i + 1
+    <- 0
+;
+:: get_countdown() (( num )) <- countdown ;
+:: set_countdown(v = num) (( -- )) countdown = v ;
+:: dec_countdown() (( -- ))
+    if countdown > 0
+        countdown = countdown - 1
+;
+
+:: clear_ai_n(n = num) (( -- ))
+    for (let ?i = 0; i < MAX_CELLS; i = i + 1)
+        if n == 0
+            ai_tiles_0[i] = 0
+            ai_gtimer_0[i] = 0
+            ai_gdest_0[i] = 0
+        elif n == 1
+            ai_tiles_1[i] = 0
+            ai_gtimer_1[i] = 0
+            ai_gdest_1[i] = 0
+        else
+            ai_tiles_2[i] = 0
+            ai_gtimer_2[i] = 0
+            ai_gdest_2[i] = 0
+    ai_rise_timer_arr[n] = 0
+;
+
+:: clear_all_ais() (( -- ))
+    for (let ?n = 0; n < 3; n = n + 1)
+        clear_ai_n(n)
+        ai_sent_arr[n] = 0
+        ai_score_arr[n] = 0
+        ai_lives_arr[n] = 3
+;
+
+:: clear_ai() (( -- ))
+    clear_ai_n(0)
+;
+
+:: clear_ai_field() (( -- ))
+    clear_ai_n(0)
+;
+
+:: get_flick_col() (( num )) <- flick_col ;
+:: set_flick_col(v = num) (( -- )) flick_col = v ;
+:: get_flick_tile() (( num )) <- flick_tile ;
+:: set_flick_tile(v = num) (( -- )) flick_tile = v ;
+:: get_flick_from() (( num )) <- flick_from ;
+:: set_flick_from(v = num) (( -- )) flick_from = v ;
+:: get_flick_off() (( num )) <- flick_off ;
+:: set_flick_off(v = num) (( -- )) flick_off = v ;
+:: get_flick_vel() (( num )) <- flick_vel ;
+:: set_flick_vel(v = num) (( -- )) flick_vel = v ;
+:: get_flick_cooldown() (( num )) <- flick_cooldown ;
+:: set_flick_cooldown(v = num) (( -- )) flick_cooldown = v ;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Astral Adventure accessors and helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: get_astral_path() (( num )) <- astral_path ;
+:: set_astral_path(v = num) (( -- )) astral_path = v ;
+
+:: get_astral_pos() (( num )) <- astral_pos ;
+:: set_astral_pos(v = num) (( -- )) astral_pos = v ;
+
+:: get_astral_at_ealthal() (( bool )) <- astral_at_ealthal ;
+:: set_astral_at_ealthal(v = bool) (( -- )) astral_at_ealthal = v ;
+
+:: get_astral_max_single() (( num )) <- astral_max_single ;
+:: set_astral_max_single(v = num) (( -- )) astral_max_single = v ;
+
+:: get_astral_screen_clear() (( bool )) <- astral_screen_clear ;
+:: set_astral_screen_clear(v = bool) (( -- )) astral_screen_clear = v ;
+
+:: reset_astral_mission() (( -- ))
+    astral_max_single = 0
+    astral_screen_clear = false
+;
+
+-- Current planet ID for the active Astral step
+:: astral_planet() (( num ))
+    if astral_at_ealthal
+        <- P_EALTHAL
+    if astral_path == ASTRAL_GAMMA
+        <- ASTRAL_GAMMA_SEQ[astral_pos]
+    if astral_path == ASTRAL_BETA
+        <- ASTRAL_BETA_SEQ[astral_pos]
+    <- ASTRAL_ALPHA_SEQ[astral_pos]
+;
+
+:: astral_path_len() (( num ))
+    if astral_path == ASTRAL_GAMMA
+        <- ASTRAL_GAMMA_LEN
+    if astral_path == ASTRAL_BETA
+        <- ASTRAL_BETA_LEN
+    <- ASTRAL_ALPHA_LEN
+;
+
+-- True if the current step is the path's final boss
+:: astral_is_boss() (( bool ))
+    if astral_at_ealthal
+        <- false
+    <- astral_pos == astral_path_len() - 1
+;
+
+:: astral_mission_type() (( num ))
+    <- ASTRAL_MISS_TYPE[astral_planet()]
+;
+
+:: astral_mission_target() (( num ))
+    <- ASTRAL_MISS_TARGET[astral_planet()]
+;
+
+-- True if current mission involves a VS opponent
+:: astral_is_vs() (( bool ))
+    let mt = ASTRAL_MISS_TYPE[astral_planet()]
+    <- mt == AMISS_WIN || mt == AMISS_VS3
+;
+
+-- CPU count for this mission (1 or 3)
+:: astral_cpu_count() (( num ))
+    let mt = ASTRAL_MISS_TYPE[astral_planet()]
+    if mt == AMISS_VS3
+        <- 3
+    if astral_is_boss() && astral_path == ASTRAL_GAMMA
+        <- 3
+    <- 1
+;
+
+-- AI difficulty for this mission (1–4)
+:: astral_difficulty() (( num ))
+    if astral_is_boss() && astral_path == ASTRAL_GAMMA
+        <- 4
+    if astral_planet() == P_LUALUA
+        <- 2
+    <- 3
+;
+
+:: astral_path_name() (( string ))
+    if astral_path == ASTRAL_GAMMA
+        <- "TRUE PATH"
+    if astral_path == ASTRAL_BETA
+        <- "TWINKLE PATH"
+    <- "TRICKY PATH"
+;
+
+:: astral_planet_name() (( string ))
+    <- PLANET_NAMES[astral_planet()]
+;
+
+:: astral_planet_desc() (( string ))
+    <- PLANET_DESC[astral_planet()]
+;
+
+:: astral_mission_desc() (( string ))
+    let mt = ASTRAL_MISS_TYPE[astral_planet()]
+    let p  = astral_planet()
+    if mt == AMISS_WIN
+        if astral_is_boss() && astral_path == ASTRAL_GAMMA
+            <- "Win vs. True Metteor!"
+        if p == P_EALTHAL || p == P_WHALEEN
+            <- "Win within 2:30!"
+        <- "Win against it!"
+    if mt == AMISS_LAUNCH_N
+        let tgt = ASTRAL_MISS_TARGET[p]
+        if tgt == 100
+            <- "Launch 100 meteors!"
+        if tgt == 200
+            <- "Launch 200 meteors!"
+        <- "Launch 50 meteors!"
+    if mt == AMISS_CLEAR
+        <- "Clear the screen!"
+    if mt == AMISS_AT_ONCE
+        <- "Launch 30 at once!"
+    if mt == AMISS_WATER_30
+        <- "Launch 30 Water!"
+    if mt == AMISS_VS3
+        <- "Win vs. 3 opponents!"
+    <- "???"
+;
+
+-- Advance the journey after a win. Returns true when the journey is complete.
+:: advance_astral() (( bool ))
+    if astral_at_ealthal
+        astral_at_ealthal = false
+        astral_path = ASTRAL_GAMMA
+        astral_pos = 0
+        <- false
+    if astral_is_boss()
+        <- true
+    astral_pos = astral_pos + 1
+    <- false
+;
+
+-- Drop to a lower path after a fail. Returns true on game-over (no lower path).
+:: fail_astral() (( bool ))
+    if astral_at_ealthal
+        astral_at_ealthal = false
+        astral_path = ASTRAL_BETA
+        astral_pos = 0
+        <- false
+    if astral_is_boss()
+        <- true
+    if astral_path == ASTRAL_ALPHA
+        <- true
+    if astral_path == ASTRAL_GAMMA
+        astral_path = ASTRAL_BETA
+        <- false
+    -- On Beta: drop to Alpha at the same index
+    astral_path = ASTRAL_ALPHA
+    <- false
+;
+
+-- Full reset for a new Astral Adventure run
+:: reset_astral() (( -- ))
+    astral_path = ASTRAL_GAMMA
+    astral_pos = 0
+    astral_at_ealthal = true
+    astral_max_single = 0
+    astral_screen_clear = false
+;

@@ -1,0 +1,2827 @@
+cask meteor_sound
+
+bring stdr
+bring vimana
+
+bring meteor_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Triangle sweep over 32 steps (0→peak at 15→back to 0 at 31)
+: sweep32(step = num, lo = num, hi = num) (( num ))
+    let ?t = step
+    if t >= 16
+        t = 31 - t
+    <- lo + t * (hi - lo) / 15
+;
+
+-- Linear sweep over 8 steps
+: sweep8(step = num, lo = num, hi = num) (( num ))
+    <- lo + step * (hi - lo) / 7
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Match SFX — 6-note phrases on voices 0-1, sequenced over frames
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def SFX_LEN = 6
+def SFX_TEMPO = 5
+
+def ?sfx_step = 0
+def ?sfx_frame = 0
+def ?sfx_playing = false
+def ?sfx_oneshot = false
+def ?sfx_tier = 0
+
+-- Ealthal: military bugle staccato — punchy Bb brass stabs
+def HTK_S0_V0 = [58, 0,  62, 0,  58, 0]
+def HTK_S0_V1 = [0,  0,  0,  0,  46, 0]
+def HTK_S1_V0 = [58, 0,  62, 0,  65, 58]
+def HTK_S1_V1 = [46, 0,  50, 0,  53, 46]
+def HTK_S2_V0 = [58, 62, 65, 70, 65, 62]
+def HTK_S2_V1 = [46, 50, 53, 58, 53, 50]
+
+-- Sassazi: twangy hammer-ons — Am slides with Morricone semitone bite
+def SAS_S0_V0 = [57, 0,  60, 0,  64, 0]
+def SAS_S0_V1 = [0,  0,  0,  0,  52, 0]
+def SAS_S1_V0 = [57, 60, 63, 64, 69, 0]
+def SAS_S1_V1 = [45, 0,  51, 52, 57, 0]
+def SAS_S2_V0 = [57, 60, 63, 64, 69, 64]
+def SAS_S2_V1 = [45, 48, 51, 52, 57, 52]
+
+-- Whaleen: ocean cascade — flowing triangle arpeggios, rising then falling
+def WAL_S0_V0 = [60, 64, 67, 72, 67, 64]
+def WAL_S0_V1 = [0,  0,  0,  55, 0,  0]
+def WAL_S1_V0 = [60, 64, 67, 72, 76, 72]
+def WAL_S1_V1 = [48, 0,  55, 60, 64, 0]
+def WAL_S2_V0 = [60, 64, 67, 72, 76, 79]
+def WAL_S2_V1 = [48, 52, 55, 60, 64, 67]
+
+-- Fiereem: power chord stabs — E-minor aggression, octave drops
+def FIR_S0_V0 = [52, 0,  55, 0,  52, 0]
+def FIR_S0_V1 = [0,  0,  0,  40, 0,  0]
+def FIR_S1_V0 = [52, 55, 59, 0,  52, 40]
+def FIR_S1_V1 = [40, 43, 47, 0,  40, 28]
+def FIR_S2_V0 = [52, 55, 59, 64, 59, 52]
+def FIR_S2_V1 = [40, 43, 47, 52, 47, 40]
+
+-- Doorsky: alien chatter blip bloops — erratic high-pitched chirps and bloops
+def DHV_S0_V0 = [80, 0,  72, 0,  80, 0]
+def DHV_S0_V1 = [0,  0,  0,  66, 0,  0]
+def DHV_S1_V0 = [80, 72, 92, 0,  68, 80]
+def DHV_S1_V1 = [0,  66, 0,  78, 0,  90]
+def DHV_S2_V0 = [80, 92, 68, 86, 74, 92]
+def DHV_S2_V1 = [66, 78, 90, 72, 84, 96]
+
+-- Sernova: 50s/60s piano with sustain pedal — warm mids, notes ringing out
+def SRN_S0_V0 = [60, 0,  64, 0,  60, 0]
+def SRN_S0_V1 = [0,  0,  0,  48, 0,  0]
+def SRN_S1_V0 = [60, 0,  64, 67, 0,  60]
+def SRN_S1_V1 = [48, 0,  52, 55, 0,  48]
+def SRN_S2_V0 = [60, 64, 67, 72, 67, 64]
+def SRN_S2_V1 = [48, 52, 55, 60, 55, 52]
+
+-- Grafant: icy Phrygian shards — hollow semitone clusters, crushing pressure
+def GRF_S0_V0 = [61, 0,  60, 0,  61, 0]
+def GRF_S0_V1 = [0,  0,  0,  49, 0,  0]
+def GRF_S1_V0 = [61, 60, 65, 0,  61, 60]
+def GRF_S1_V1 = [49, 48, 53, 0,  49, 48]
+def GRF_S2_V0 = [61, 60, 65, 68, 65, 61]
+def GRF_S2_V1 = [49, 48, 53, 56, 53, 49]
+
+-- Perilla: stone clack + guttural call — thuds with rising chant intervals
+def PRL_S0_V0 = [40, 0,  41, 0,  40, 0]
+def PRL_S0_V1 = [0,  0,  0,  28, 0,  0]
+def PRL_S1_V0 = [40, 41, 40, 0,  45, 40]
+def PRL_S1_V1 = [28, 29, 28, 0,  33, 28]
+def PRL_S2_V0 = [40, 41, 45, 40, 41, 45]
+def PRL_S2_V1 = [28, 29, 33, 28, 29, 33]
+
+-- Metteor: boss strike — aggressive D-minor power stabs
+def MTR_S0_V0 = [62, 0,  65, 0,  62, 0]
+def MTR_S0_V1 = [0,  0,  0,  50, 0,  0]
+def MTR_S1_V0 = [62, 65, 68, 0,  62, 56]
+def MTR_S1_V1 = [50, 53, 56, 0,  50, 44]
+def MTR_S2_V0 = [62, 65, 68, 62, 56, 62]
+def MTR_S2_V1 = [50, 53, 56, 50, 44, 50]
+
+-- Gelgeel: drippy lonely — Dm7 sparse arps, liquid drip tones
+def GEL_S0_V0 = [62, 0,  65, 0,  60, 0]
+def GEL_S0_V1 = [0,  0,  0,  53, 0,  0]
+def GEL_S1_V0 = [62, 0,  65, 69, 0,  60]
+def GEL_S1_V1 = [50, 0,  53, 57, 0,  48]
+def GEL_S2_V0 = [62, 65, 69, 72, 69, 65]
+def GEL_S2_V1 = [50, 53, 57, 60, 57, 53]
+
+-- Rastarl: solar chimes — bright A major bell tones
+def RST_S0_V0 = [69, 0,  73, 0,  76, 0]
+def RST_S0_V1 = [0,  0,  0,  57, 0,  0]
+def RST_S1_V0 = [69, 73, 76, 0,  73, 69]
+def RST_S1_V1 = [57, 61, 64, 0,  61, 57]
+def RST_S2_V0 = [69, 73, 76, 81, 76, 73]
+def RST_S2_V1 = [57, 61, 64, 69, 64, 61]
+
+-- Neurali: rhythmic digital — Cm chromatic stabs, narrow pulse
+def NRL_S0_V0 = [60, 0,  63, 0,  60, 0]
+def NRL_S0_V1 = [0,  0,  0,  48, 0,  0]
+def NRL_S1_V0 = [60, 63, 67, 0,  60, 48]
+def NRL_S1_V1 = [48, 51, 55, 0,  48, 36]
+def NRL_S2_V0 = [60, 63, 67, 72, 67, 63]
+def NRL_S2_V1 = [48, 51, 55, 60, 55, 51]
+
+-- Lua=Lua: ethereal waltz — gentle Eb major triangle arpeggios, moon-y
+def LLA_S0_V0 = [63, 0,  67, 0,  70, 0]
+def LLA_S0_V1 = [0,  0,  0,  55, 0,  0]
+def LLA_S1_V0 = [63, 0,  67, 70, 0,  63]
+def LLA_S1_V1 = [51, 0,  55, 58, 0,  51]
+def LLA_S2_V0 = [63, 67, 70, 75, 70, 67]
+def LLA_S2_V1 = [51, 55, 58, 63, 58, 55]
+
+-- Orkarol: sacred choral — Bb major hymnal
+def ORK_S0_V0 = [70, 0,  74, 0,  77, 0]
+def ORK_S0_V1 = [0,  0,  0,  58, 0,  0]
+def ORK_S1_V0 = [70, 74, 77, 0,  74, 70]
+def ORK_S1_V1 = [58, 62, 65, 0,  62, 58]
+def ORK_S2_V0 = [70, 74, 77, 82, 77, 74]
+def ORK_S2_V1 = [58, 62, 65, 70, 65, 62]
+
+-- Holonull: neon glitch pulses — wide octave leaps, F# tritone glitch interval
+def HOL_S0_V0 = [66, 0,  78, 0,  65, 0]
+def HOL_S0_V1 = [0,  0,  54, 0,  53, 0]
+def HOL_S1_V0 = [66, 78, 65, 77, 60, 72]
+def HOL_S1_V1 = [54, 42, 53, 41, 48, 36]
+def HOL_S2_V0 = [66, 78, 65, 54, 72, 66]
+def HOL_S2_V1 = [42, 54, 41, 66, 60, 54]
+
+-- Tekhnis: industrial loom — narrow pulse clockwork, Am minor mechanical clicks
+def TKS_S0_V0 = [57, 0,  60, 0,  57, 0]
+def TKS_S0_V1 = [0,  0,  0,  45, 0,  0]
+def TKS_S1_V0 = [57, 60, 64, 0,  60, 57]
+def TKS_S1_V1 = [45, 48, 52, 0,  48, 45]
+def TKS_S2_V0 = [57, 60, 64, 67, 64, 60]
+def TKS_S2_V1 = [45, 48, 52, 55, 52, 48]
+
+-- Belliko: war horn fanfare — Dm martial brass, trench drumbeats
+def BLK_S0_V0 = [50, 0,  53, 0,  50, 0]
+def BLK_S0_V1 = [0,  0,  0,  38, 0,  0]
+def BLK_S1_V0 = [50, 53, 57, 0,  50, 46]
+def BLK_S1_V1 = [38, 41, 45, 0,  38, 34]
+def BLK_S2_V0 = [50, 53, 57, 50, 46, 50]
+def BLK_S2_V1 = [38, 41, 45, 38, 34, 38]
+
+-- Gaussle: factory machinery — rhythmic mechanical pulses, Em industrial
+def GSS_S0_V0 = [52, 0,  52, 0,  55, 0]
+def GSS_S0_V1 = [0,  0,  0,  40, 0,  0]
+def GSS_S1_V0 = [52, 55, 52, 0,  52, 40]
+def GSS_S1_V1 = [40, 43, 40, 0,  40, 28]
+def GSS_S2_V0 = [52, 55, 59, 52, 40, 52]
+def GSS_S2_V1 = [40, 43, 47, 40, 28, 40]
+
+-- ── SFX voice setup per planet ──────────────────────────────────────────────
+
+: setup_sfx_voices(sys = vimana.system) (( -- ))
+    let p = meteor_model.get_planet()
+    if p == 0
+        -- Ealthal: punchy military brass — sawtooth stabs
+        sys.set_voice(4, vimana.wave_sawtooth)
+        sys.set_envelope(4, 0, 5, 1, 3)
+        -- V5: warm triangle harmony
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 4, 1, 3)
+    elif p == 1
+        -- Sassazi: twangy narrow pulse — plucky Morricone guitar
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 0, 7, 1, 5)
+        sys.set_pulse_width(4, 50)
+        -- V5: triangle twang complement
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 6, 1, 4)
+    elif p == 2
+        -- Whaleen: flowing triangle — oceanic bell tones
+        sys.set_voice(4, vimana.wave_triangle)
+        sys.set_envelope(4, 1, 9, 4, 8)
+        -- V5: pulse shimmer complement
+        sys.set_voice(5, vimana.wave_pulse)
+        sys.set_envelope(5, 1, 8, 3, 6)
+        sys.set_pulse_width(5, 80)
+    elif p == 3
+        -- Fiereem: aggressive pulse — raw rock crunch
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 0, 6, 2, 4)
+        sys.set_pulse_width(4, 180)
+        -- V5: triangle body complement
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 5, 1, 3)
+    elif p == 4
+        -- Sernova: 50s/60s piano — triangle body, slow release
+        sys.set_voice(4, vimana.wave_triangle)
+        sys.set_envelope(4, 0, 7, 6, 8)
+        -- V5: pulse bossa complement
+        sys.set_voice(5, vimana.wave_pulse)
+        sys.set_envelope(5, 0, 6, 5, 7)
+        sys.set_pulse_width(5, 100)
+    elif p == 5
+        -- Doorsky: alien chatter — buzzy blips
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 0, 3, 0, 2)
+        sys.set_pulse_width(4, 10)
+        -- V5: triangle alien echo
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 2, 0, 1)
+    elif p == 6
+        -- Grafant: hollow icy pulse — Phrygian cold stabs
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 0, 8, 1, 6)
+        sys.set_pulse_width(4, 25)
+        -- V5: triangle ice complement
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 7, 1, 5)
+    elif p == 7
+        -- Perilla: tribal stone — deep nasal pulse
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 0, 5, 0, 3)
+        sys.set_pulse_width(4, 25)
+        -- V5: triangle stone echo
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 4, 0, 2)
+    elif p == 8
+        -- Gelgeel: watery drip — triangle for liquid tone
+        sys.set_voice(4, vimana.wave_triangle)
+        sys.set_envelope(4, 1, 9, 3, 8)
+        -- V5: pulse synth complement
+        sys.set_voice(5, vimana.wave_pulse)
+        sys.set_envelope(5, 1, 8, 2, 6)
+        sys.set_pulse_width(5, 60)
+    elif p == 9
+        -- Rastarl: bright bell chime — triangle shimmer
+        sys.set_voice(4, vimana.wave_triangle)
+        sys.set_envelope(4, 0, 6, 2, 5)
+        -- V5: pulse bell complement
+        sys.set_voice(5, vimana.wave_pulse)
+        sys.set_envelope(5, 0, 5, 1, 4)
+        sys.set_pulse_width(5, 80)
+    elif p == 10
+        -- Neurali: digital stab — narrow pulse
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 0, 4, 1, 3)
+        sys.set_pulse_width(4, 100)
+        -- V5: triangle circuit complement
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 3, 1, 2)
+    elif p == 11
+        -- Lua=Lua: ethereal moon tones — slow swell, long release
+        sys.set_voice(4, vimana.wave_triangle)
+        sys.set_envelope(4, 3, 11, 5, 11)
+        -- V5: pulse moon complement
+        sys.set_voice(5, vimana.wave_pulse)
+        sys.set_envelope(5, 4, 10, 4, 10)
+        sys.set_pulse_width(5, 90)
+    elif p == 12
+        -- Orkarol: sacred — warm organ triangle
+        sys.set_voice(4, vimana.wave_triangle)
+        sys.set_envelope(4, 2, 9, 5, 7)
+        -- V5: pulse organ complement
+        sys.set_voice(5, vimana.wave_pulse)
+        sys.set_envelope(5, 2, 8, 4, 6)
+        sys.set_pulse_width(5, 100)
+    elif p == 13
+        -- Holonull: neon glitch pulses
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 0, 6, 1, 5)
+        sys.set_pulse_width(4, 90)
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 5, 1, 4)
+    elif p == 14
+        -- Tekhnis: industrial loom — narrow pulse clockwork
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 0, 4, 0, 2)
+        sys.set_pulse_width(4, 30)
+        -- V5: triangle clockwork complement
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 3, 0, 2)
+    elif p == 15
+        -- Belliko: war horn — sawtooth martial brass
+        sys.set_voice(4, vimana.wave_sawtooth)
+        sys.set_envelope(4, 0, 6, 2, 5)
+        -- V5: pulse brass complement
+        sys.set_voice(5, vimana.wave_pulse)
+        sys.set_envelope(5, 0, 5, 1, 4)
+        sys.set_pulse_width(5, 120)
+    elif p == 16
+        -- Gaussle: factory machinery — wide pulse hum, longer decay
+        sys.set_voice(4, vimana.wave_pulse)
+        sys.set_envelope(4, 1, 7, 3, 5)
+        sys.set_pulse_width(4, 180)
+        -- V5: sawtooth conveyor grind
+        sys.set_voice(5, vimana.wave_sawtooth)
+        sys.set_envelope(5, 0, 6, 2, 4)
+    elif p == 17
+        -- Metteor: boss fight — aggressive saw
+        sys.set_voice(4, vimana.wave_sawtooth)
+        sys.set_envelope(4, 0, 6, 2, 4)
+        -- V5: triangle boss complement
+        sys.set_voice(5, vimana.wave_triangle)
+        sys.set_envelope(5, 0, 5, 1, 3)
+    -- V6: universal bass voice — percussive triangle
+    sys.set_voice(6, vimana.wave_triangle)
+    sys.set_envelope(6, 0, 3, 0, 2)
+;
+
+-- ── SFX step ────────────────────────────────────────────────────────────────
+
+: sfx_v0_at(idx = num) (( num ))
+    let p = meteor_model.get_planet()
+    if p == 0
+        if sfx_tier == 0
+            <- HTK_S0_V0[idx]
+        if sfx_tier == 1
+            <- HTK_S1_V0[idx]
+        <- HTK_S2_V0[idx]
+    elif p == 1
+        if sfx_tier == 0
+            <- SAS_S0_V0[idx]
+        if sfx_tier == 1
+            <- SAS_S1_V0[idx]
+        <- SAS_S2_V0[idx]
+    elif p == 2
+        if sfx_tier == 0
+            <- WAL_S0_V0[idx]
+        if sfx_tier == 1
+            <- WAL_S1_V0[idx]
+        <- WAL_S2_V0[idx]
+    elif p == 3
+        if sfx_tier == 0
+            <- FIR_S0_V0[idx]
+        if sfx_tier == 1
+            <- FIR_S1_V0[idx]
+        <- FIR_S2_V0[idx]
+    elif p == 4
+        if sfx_tier == 0
+            <- SRN_S0_V0[idx]
+        if sfx_tier == 1
+            <- SRN_S1_V0[idx]
+        <- SRN_S2_V0[idx]
+    elif p == 5
+        if sfx_tier == 0
+            <- DHV_S0_V0[idx]
+        if sfx_tier == 1
+            <- DHV_S1_V0[idx]
+        <- DHV_S2_V0[idx]
+    elif p == 6
+        if sfx_tier == 0
+            <- GRF_S0_V0[idx]
+        if sfx_tier == 1
+            <- GRF_S1_V0[idx]
+        <- GRF_S2_V0[idx]
+    elif p == 7
+        if sfx_tier == 0
+            <- PRL_S0_V0[idx]
+        if sfx_tier == 1
+            <- PRL_S1_V0[idx]
+        <- PRL_S2_V0[idx]
+    elif p == 8
+        if sfx_tier == 0
+            <- GEL_S0_V0[idx]
+        if sfx_tier == 1
+            <- GEL_S1_V0[idx]
+        <- GEL_S2_V0[idx]
+    elif p == 9
+        if sfx_tier == 0
+            <- RST_S0_V0[idx]
+        if sfx_tier == 1
+            <- RST_S1_V0[idx]
+        <- RST_S2_V0[idx]
+    elif p == 10
+        if sfx_tier == 0
+            <- NRL_S0_V0[idx]
+        if sfx_tier == 1
+            <- NRL_S1_V0[idx]
+        <- NRL_S2_V0[idx]
+    elif p == 11
+        if sfx_tier == 0
+            <- LLA_S0_V0[idx]
+        if sfx_tier == 1
+            <- LLA_S1_V0[idx]
+        <- LLA_S2_V0[idx]
+    elif p == 12
+        if sfx_tier == 0
+            <- ORK_S0_V0[idx]
+        if sfx_tier == 1
+            <- ORK_S1_V0[idx]
+        <- ORK_S2_V0[idx]
+    elif p == 13
+        if sfx_tier == 0
+            <- HOL_S0_V0[idx]
+        if sfx_tier == 1
+            <- HOL_S1_V0[idx]
+        <- HOL_S2_V0[idx]
+    elif p == 14
+        if sfx_tier == 0
+            <- TKS_S0_V0[idx]
+        if sfx_tier == 1
+            <- TKS_S1_V0[idx]
+        <- TKS_S2_V0[idx]
+    elif p == 15
+        if sfx_tier == 0
+            <- BLK_S0_V0[idx]
+        if sfx_tier == 1
+            <- BLK_S1_V0[idx]
+        <- BLK_S2_V0[idx]
+    elif p == 16
+        if sfx_tier == 0
+            <- GSS_S0_V0[idx]
+        if sfx_tier == 1
+            <- GSS_S1_V0[idx]
+        <- GSS_S2_V0[idx]
+    elif p == 17
+        if sfx_tier == 0
+            <- MTR_S0_V0[idx]
+        if sfx_tier == 1
+            <- MTR_S1_V0[idx]
+        <- MTR_S2_V0[idx]
+    <- 0
+;
+
+-- sfx_v1_at reinstated — V1 arrays repurposed as V5 harmony
+: sfx_v1_at(idx = num) (( num ))
+    let p = meteor_model.get_planet()
+    if p == 0
+        if sfx_tier == 0
+            <- HTK_S0_V1[idx]
+        if sfx_tier == 1
+            <- HTK_S1_V1[idx]
+        <- HTK_S2_V1[idx]
+    elif p == 1
+        if sfx_tier == 0
+            <- SAS_S0_V1[idx]
+        if sfx_tier == 1
+            <- SAS_S1_V1[idx]
+        <- SAS_S2_V1[idx]
+    elif p == 2
+        if sfx_tier == 0
+            <- WAL_S0_V1[idx]
+        if sfx_tier == 1
+            <- WAL_S1_V1[idx]
+        <- WAL_S2_V1[idx]
+    elif p == 3
+        if sfx_tier == 0
+            <- FIR_S0_V1[idx]
+        if sfx_tier == 1
+            <- FIR_S1_V1[idx]
+        <- FIR_S2_V1[idx]
+    elif p == 4
+        if sfx_tier == 0
+            <- SRN_S0_V1[idx]
+        if sfx_tier == 1
+            <- SRN_S1_V1[idx]
+        <- SRN_S2_V1[idx]
+    elif p == 5
+        if sfx_tier == 0
+            <- DHV_S0_V1[idx]
+        if sfx_tier == 1
+            <- DHV_S1_V1[idx]
+        <- DHV_S2_V1[idx]
+    elif p == 6
+        if sfx_tier == 0
+            <- GRF_S0_V1[idx]
+        if sfx_tier == 1
+            <- GRF_S1_V1[idx]
+        <- GRF_S2_V1[idx]
+    elif p == 7
+        if sfx_tier == 0
+            <- PRL_S0_V1[idx]
+        if sfx_tier == 1
+            <- PRL_S1_V1[idx]
+        <- PRL_S2_V1[idx]
+    elif p == 8
+        if sfx_tier == 0
+            <- GEL_S0_V1[idx]
+        if sfx_tier == 1
+            <- GEL_S1_V1[idx]
+        <- GEL_S2_V1[idx]
+    elif p == 9
+        if sfx_tier == 0
+            <- RST_S0_V1[idx]
+        if sfx_tier == 1
+            <- RST_S1_V1[idx]
+        <- RST_S2_V1[idx]
+    elif p == 10
+        if sfx_tier == 0
+            <- NRL_S0_V1[idx]
+        if sfx_tier == 1
+            <- NRL_S1_V1[idx]
+        <- NRL_S2_V1[idx]
+    elif p == 11
+        if sfx_tier == 0
+            <- LLA_S0_V1[idx]
+        if sfx_tier == 1
+            <- LLA_S1_V1[idx]
+        <- LLA_S2_V1[idx]
+    elif p == 12
+        if sfx_tier == 0
+            <- ORK_S0_V1[idx]
+        if sfx_tier == 1
+            <- ORK_S1_V1[idx]
+        <- ORK_S2_V1[idx]
+    elif p == 13
+        if sfx_tier == 0
+            <- HOL_S0_V1[idx]
+        if sfx_tier == 1
+            <- HOL_S1_V1[idx]
+        <- HOL_S2_V1[idx]
+    elif p == 14
+        if sfx_tier == 0
+            <- TKS_S0_V1[idx]
+        if sfx_tier == 1
+            <- TKS_S1_V1[idx]
+        <- TKS_S2_V1[idx]
+    elif p == 15
+        if sfx_tier == 0
+            <- BLK_S0_V1[idx]
+        if sfx_tier == 1
+            <- BLK_S1_V1[idx]
+        <- BLK_S2_V1[idx]
+    elif p == 16
+        if sfx_tier == 0
+            <- GSS_S0_V1[idx]
+        if sfx_tier == 1
+            <- GSS_S1_V1[idx]
+        <- GSS_S2_V1[idx]
+    elif p == 17
+        if sfx_tier == 0
+            <- MTR_S0_V1[idx]
+        if sfx_tier == 1
+            <- MTR_S1_V1[idx]
+        <- MTR_S2_V1[idx]
+    <- 0
+;
+
+: step_sfx(sys = vimana.system) (( -- ))
+    let n0 = sfx_v0_at(sfx_step)
+    let n1 = sfx_v1_at(sfx_step)
+    let ?vol = 8
+    if sfx_tier == 1
+        vol = 10
+    if sfx_tier >= 2
+        vol = 12
+    if n0 > 0
+        sys.play_voice(4, n0, vol)
+    if n1 > 0
+        sys.play_voice(5, n1, vol - 2)
+    if n0 > 12
+        sys.play_voice(6, n0 - 12, vol - 3)
+;
+
+-- ── SFX public API ──────────────────────────────────────────────────────────
+
+:: play_match(sys = vimana.system, run = num) (( -- ))
+    sfx_oneshot = false
+    sfx_tier = 0
+    if run == 4
+        sfx_tier = 1
+    if run >= 5
+        sfx_tier = 2
+    sfx_step = 0
+    sfx_frame = 0
+    sfx_playing = true
+    sys.begin_audio()
+    setup_sfx_voices(sys)
+    step_sfx(sys)
+    sys.end_audio()
+;
+
+:: play_flick(sys = vimana.system) (( -- ))
+    sfx_oneshot = true
+    sfx_step = 4
+    sfx_frame = 0
+    sfx_playing = true
+    sys.begin_audio()
+    sys.set_voice(4, vimana.wave_triangle)
+    sys.set_envelope(4, 0, 3, 0, 1)
+    sys.play_voice(4, 80, 8)
+    sys.end_audio()
+;
+
+:: play_clear(sys = vimana.system) (( -- ))
+    sfx_oneshot = true
+    sfx_step = 0
+    sfx_frame = 0
+    sfx_playing = true
+    sys.begin_audio()
+    sys.set_voice(4, vimana.wave_triangle)
+    sys.set_envelope(4, 0, 9, 4, 8)
+    sys.set_voice(5, vimana.wave_triangle)
+    sys.set_envelope(5, 0, 9, 4, 8)
+    sys.set_voice(6, vimana.wave_triangle)
+    sys.set_envelope(6, 0, 9, 4, 8)
+    sys.play_voice(4, 72, 12)
+    sys.play_voice(5, 76, 10)
+    sys.play_voice(6, 79, 8)
+    sys.end_audio()
+;
+
+:: tick_sfx(sys = vimana.system) (( -- ))
+    if !sfx_playing
+        <-
+    sfx_frame = sfx_frame + 1
+    if sfx_frame < SFX_TEMPO
+        <-
+    sfx_frame = 0
+    sfx_step = sfx_step + 1
+    if sfx_step >= SFX_LEN
+        sfx_playing = false
+        sfx_oneshot = false
+        sys.begin_audio()
+        sys.stop_voice(4)
+        sys.stop_voice(5)
+        sys.stop_voice(6)
+        sys.set_ring_mod(4, 0)
+        sys.end_audio()
+        <-
+    if !sfx_oneshot
+        step_sfx(sys)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- BG Music — 32-note looping patterns on voices 2-3
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?bg_frame = 0
+def ?bg_step = 0
+def ?bg_playing = false
+
+-- Ealthal: balanced march — E minor bass walk + bugle melody
+-- V2: march bass — Em chord walk (E2, G2, A2, B2, C3)
+def HTK_V2 = [40, 0, 43, 40, 0, 45, 0, 43, 47, 0, 45, 43, 0, 40, 43, 0, 48, 0, 47, 45, 0, 43, 40, 0, 45, 0, 47, 0, 43, 0, 40, 0]
+-- V3: bugle melody — Em pentatonic (E3-B3)
+def HTK_V3 = [52, 0, 0, 55, 52, 0, 54, 0, 55, 57, 0, 0, 55, 52, 0, 0, 55, 0, 57, 59, 0, 57, 55, 0, 52, 54, 0, 55, 52, 0, 0, 0]
+
+-- Fiereem: volcanic riff — E minor power bass + fiery saw stabs
+-- V2: heavy bass riff — E2 power with G2/A2/B2 walks
+def FIR_V2 = [40, 0, 40, 43, 0, 40, 0, 45, 43, 0, 40, 0, 43, 47, 0, 0, 40, 0, 40, 45, 0, 43, 40, 0, 45, 0, 47, 43, 40, 0, 43, 40]
+-- V3: gritty lead — sparse punchy stabs, E3-B3
+def FIR_V3 = [0, 52, 0, 0, 55, 0, 52, 0, 0, 57, 0, 55, 0, 0, 52, 0, 0, 55, 0, 0, 57, 59, 0, 0, 57, 55, 0, 0, 52, 0, 55, 0]
+
+-- Whaleen: ocean tide — C major bass swell + wave-arc melody
+-- V2: rolling bass — C/Am/F/G root motion with passing tones
+def WAL_V2 = [36, 0, 40, 0, 36, 43, 0, 0, 41, 0, 36, 0, 43, 0, 40, 0, 45, 0, 43, 41, 0, 40, 0, 36, 43, 0, 41, 0, 40, 36, 0, 0]
+-- V3: wave melody — C3 pentatonic arcs rising and falling
+def WAL_V3 = [48, 50, 52, 0, 55, 0, 52, 50, 48, 0, 50, 52, 55, 57, 0, 55, 53, 0, 52, 50, 0, 48, 50, 0, 52, 55, 53, 0, 50, 48, 0, 0]
+
+-- Sassazi: desert wind — A minor picked gallop + wailing melody
+-- V2: gallop bass — Am arpeggio with passing D (A2, C3, D3, E3)
+def SAS_V2 = [45, 0, 45, 48, 0, 52, 0, 48, 0, 45, 0, 50, 45, 0, 0, 48, 45, 0, 52, 50, 0, 48, 0, 45, 50, 0, 48, 45, 0, 52, 48, 0]
+-- V3: wailing lead — wide leaps, Am pentatonic (A3-E4)
+def SAS_V3 = [0, 0, 57, 0, 0, 0, 60, 0, 0, 0, 64, 0, 62, 0, 59, 0, 0, 0, 0, 57, 0, 60, 0, 0, 64, 0, 0, 62, 0, 59, 57, 0]
+
+-- Doorsky: vacuum breath — tritone root drones + offset counter-voice
+-- V2: shifting root drone — C2/Db2/F2/Gb2/Eb2 slow modal drift
+def DHV_V2 = [36, 36, 36, 36, 37, 37, 37, 37, 42, 42, 42, 42, 41, 41, 41, 41, 39, 39, 39, 39, 36, 36, 36, 36, 42, 42, 41, 41, 37, 37, 36, 36]
+-- V3: exhale counter — offset tritone answers, wider movement
+def DHV_V3 = [0, 0, 48, 48, 48, 0, 0, 0, 0, 54, 54, 54, 0, 0, 0, 0, 51, 51, 51, 0, 0, 0, 49, 49, 49, 0, 0, 53, 53, 0, 0, 0]
+
+-- Sernova: cosmic bossa — D major syncopated bass + smooth melody
+-- V2: bossa bass — D/F#/G/A syncopated (D2, F#2, G2, A2)
+def SRN_V2 = [38, 0, 0, 45, 0, 38, 0, 43, 0, 0, 42, 0, 38, 0, 45, 0, 38, 0, 43, 0, 0, 45, 0, 42, 38, 0, 0, 43, 0, 45, 38, 0]
+-- V3: bossa melody — D3-A3 smooth lines with syncopation
+def SRN_V3 = [50, 0, 54, 0, 50, 0, 0, 57, 0, 55, 54, 0, 50, 0, 0, 0, 54, 0, 55, 0, 57, 0, 55, 0, 50, 0, 54, 0, 57, 55, 0, 0]
+
+-- Grafant: gravity crush — C Phrygian semitone grind + icy stabs
+-- V2: crushing bass — C2/Db2/B1/Bb1 relentless semitone motion
+def GRF_V2 = [36, 36, 0, 37, 37, 0, 36, 0, 34, 34, 0, 36, 37, 0, 36, 0, 36, 36, 0, 35, 36, 37, 0, 36, 34, 0, 36, 37, 0, 36, 34, 0]
+-- V3: icy stabs — sparse C Phrygian (Db4, F4, Ab4, Eb4, Gb4, C4)
+def GRF_V3 = [0, 0, 61, 0, 0, 0, 65, 0, 0, 68, 0, 0, 0, 63, 0, 0, 0, 60, 0, 0, 66, 0, 0, 0, 61, 0, 0, 65, 0, 63, 60, 0]
+
+-- Perilla: stone ritual — multi-pitch thuds + cave chant melody
+-- V2: stone percussion — E1/G1/A1/B1 polyrhythmic
+def PRL_V2 = [28, 0, 31, 0, 28, 33, 0, 0, 28, 0, 0, 31, 28, 0, 35, 0, 28, 0, 31, 33, 0, 28, 0, 0, 33, 0, 28, 31, 0, 28, 33, 0]
+-- V3: cave chant — E2-A2 droning melody with semitone bends
+def PRL_V3 = [40, 40, 41, 0, 40, 0, 43, 43, 41, 0, 40, 40, 0, 42, 41, 0, 40, 43, 0, 45, 43, 0, 41, 40, 0, 42, 43, 0, 41, 40, 0, 0]
+
+-- Metteor: boss assault — D minor power bass + ominous villain melody
+-- V2: driving bass — D2 power riff with tritone Ab and chromatic motion
+def MTR_V2 = [38, 0, 38, 41, 0, 38, 0, 44, 0, 38, 41, 0, 45, 0, 38, 0, 38, 0, 41, 0, 44, 38, 0, 40, 38, 0, 46, 0, 44, 41, 38, 0]
+-- V3: villain melody — Dm phrases with chromatic descents and tritone pulls
+def MTR_V3 = [50, 0, 53, 0, 56, 0, 53, 50, 0, 0, 49, 50, 0, 44, 0, 0, 53, 0, 57, 0, 58, 56, 0, 53, 50, 0, 0, 49, 44, 0, 50, 0]
+
+-- Gelgeel: electro bounce — Dm synth-pop at 140 BPM, 8th-note grid
+-- V2: punchy synth bass — four-on-the-floor D2 root + syncopated Dm fills
+def GEL_V2 = [38, 0, 38, 41, 38, 0, 45, 38, 38, 0, 41, 0, 38, 45, 0, 38, 38, 0, 38, 41, 0, 38, 45, 0, 38, 41, 38, 0, 45, 0, 38, 0]
+-- V3: plucky lead — bouncy Dm melody with arp runs and off-beat accents
+def GEL_V3 = [0, 62, 65, 0, 69, 0, 65, 62, 0, 69, 0, 67, 65, 0, 62, 0, 65, 0, 69, 72, 0, 69, 67, 0, 65, 0, 67, 0, 69, 65, 62, 0]
+
+-- Rastarl: solar radiance — A major arpeggio bass + bell shimmer melody
+-- V2: bright arp bass — A/C#/E/D/F# root movement
+def RST_V2 = [45, 0, 49, 0, 52, 0, 49, 45, 0, 50, 0, 52, 49, 0, 45, 0, 45, 0, 52, 0, 54, 52, 0, 49, 45, 0, 50, 49, 0, 45, 0, 0]
+-- V3: bell melody — A3-E4 with scalar ornaments
+def RST_V3 = [57, 0, 59, 61, 0, 62, 0, 59, 57, 0, 0, 61, 0, 64, 62, 0, 61, 59, 0, 57, 0, 62, 0, 64, 62, 0, 61, 0, 59, 57, 0, 0]
+
+-- Neurali: circuit pulse — C minor driving bass + digital lead sequence
+-- V2: mechanical bass — Cm/Eb/G/F with restless motion
+def NRL_V2 = [36, 0, 36, 39, 0, 0, 43, 0, 36, 0, 41, 0, 39, 36, 0, 0, 36, 0, 36, 43, 0, 0, 39, 0, 46, 0, 43, 39, 0, 36, 41, 0]
+-- V3: digital sequence — Cm stabs with varied rhythm
+def NRL_V3 = [48, 0, 0, 51, 0, 0, 55, 0, 0, 48, 0, 0, 53, 0, 0, 0, 51, 0, 0, 55, 0, 58, 0, 0, 55, 0, 53, 0, 51, 0, 48, 0]
+
+-- Lua=Lua: lunar waltz — Eb major bass sway + floating moon melody
+-- V2: waltz bass — Eb/Ab/Bb/G/F rocking in 3s
+def LLA_V2 = [39, 0, 0, 44, 0, 0, 46, 0, 0, 43, 0, 0, 44, 0, 0, 41, 0, 0, 39, 0, 0, 46, 0, 0, 44, 0, 43, 0, 0, 39, 0, 0]
+-- V3: moon melody — Eb3-C4 floating arcs
+def LLA_V3 = [55, 0, 58, 0, 0, 56, 0, 53, 0, 55, 0, 0, 58, 0, 60, 0, 0, 58, 56, 0, 0, 53, 55, 0, 58, 0, 0, 51, 0, 55, 53, 0]
+
+-- Orkarol: sacred hymn — Bb major organ pedal + hymn melody
+-- V2: organ pedal — Bb1/Eb2/F2/D2/C2 sustained chord roots
+def ORK_V2 = [34, 34, 34, 34, 39, 39, 39, 39, 41, 41, 41, 41, 38, 38, 38, 38, 34, 34, 34, 39, 39, 39, 41, 41, 36, 36, 38, 38, 34, 34, 34, 0]
+-- V3: hymn melody — Bb2-F3 stepwise chant with breathing room
+def ORK_V3 = [46, 0, 48, 50, 0, 51, 0, 50, 48, 0, 46, 0, 50, 0, 53, 0, 51, 0, 50, 0, 48, 46, 0, 48, 50, 53, 0, 51, 50, 48, 46, 0]
+
+-- Holonull: neon void — glitchy synth pad with warped counterpoint
+-- V2: subpulse bass drift — minor cluster motion with hesitant resolve
+def HOL_V2 = [37, 0, 37, 0, 41, 0, 40, 0, 44, 0, 41, 0, 40, 0, 37, 0, 38, 0, 41, 0, 40, 0, 44, 0, 41, 0, 40, 0, 37, 0, 0, 0]
+-- V3: bright synth lead — echoing neon arpeggios
+def HOL_V3 = [66, 0, 69, 0, 71, 0, 69, 0, 66, 65, 0, 0, 66, 0, 69, 0, 71, 0, 73, 0, 69, 0, 66, 0, 65, 0, 66, 0, 69, 0, 0, 0]
+
+-- Tekhnis: industrial loom — Am minor mechanical cadence, clockwork weaving
+-- V2: loom bass — A1/C2/E2/D2 steady cranking rhythm
+def TKS_V2 = [33, 0, 36, 0, 33, 0, 40, 0, 33, 0, 36, 0, 33, 0, 38, 0, 33, 0, 36, 0, 33, 0, 40, 0, 38, 0, 36, 0, 33, 0, 40, 0]
+-- V3: clockwork lead — narrow pulse mechanical melody Am pentatonic
+def TKS_V3 = [57, 0, 60, 64, 0, 60, 57, 0, 64, 0, 67, 64, 60, 0, 57, 0, 57, 60, 0, 64, 60, 0, 67, 0, 64, 60, 57, 0, 60, 57, 0, 0]
+
+-- Belliko: war march — Dm minor martial cadence, trench-bound
+-- V2: march bass — D2/A2/F2/G2 heavy war tread
+def BLK_V2 = [38, 0, 38, 45, 0, 41, 0, 38, 43, 0, 41, 0, 38, 0, 45, 0, 38, 0, 38, 43, 0, 41, 45, 0, 41, 0, 38, 0, 43, 41, 38, 0]
+-- V3: trench horn — Dm minor bugle cries with semitone bite
+def BLK_V3 = [50, 0, 53, 0, 57, 0, 53, 50, 0, 0, 48, 50, 0, 56, 53, 0, 53, 0, 57, 0, 58, 56, 0, 53, 50, 0, 0, 48, 53, 0, 50, 0]
+
+-- Gaussle: factory production line — Em industrial rhythmic machinery
+-- V2: conveyor bass — E2/B2/G2/A2 steady factory rhythm
+def GSS_V2 = [40, 0, 40, 47, 0, 43, 0, 40, 45, 0, 43, 0, 40, 0, 47, 0, 40, 0, 40, 45, 0, 43, 47, 0, 43, 0, 40, 0, 45, 43, 40, 0]
+-- V3: mechanical whistle — Em factory alarm calls with rhythmic precision
+def GSS_V3 = [52, 0, 55, 0, 59, 0, 55, 52, 0, 0, 50, 52, 0, 58, 55, 0, 55, 0, 59, 0, 60, 58, 0, 55, 52, 0, 0, 50, 55, 0, 52, 0]
+
+-- ── BGM V1 arrays (mid-register arps/counter-melodies) ──────────────────────
+
+-- Ealthal V1: Em arp — E3/G3/A3/B3 steady 8th-note arpeggiation
+def HTK_V1 = [52, 55, 57, 52, 55, 57, 59, 55, 52, 57, 55, 52, 59, 57, 55, 52, 52, 55, 57, 59, 57, 55, 52, 55, 57, 52, 55, 59, 57, 55, 52, 0]
+
+-- Fiereem V1: Em chunky power arp — G2/B2/D3 driving rhythm
+def FIR_V1 = [43, 0, 47, 43, 0, 50, 47, 0, 43, 0, 47, 0, 50, 47, 43, 0, 43, 47, 0, 50, 0, 47, 43, 0, 47, 50, 0, 47, 43, 0, 47, 0]
+
+-- Whaleen V1: C major flowing arp — C3/E3/G3/A3 wave motion
+def WAL_V1 = [48, 52, 55, 57, 55, 52, 48, 52, 55, 57, 60, 57, 55, 52, 48, 0, 48, 52, 55, 57, 55, 52, 48, 52, 55, 0, 52, 48, 55, 52, 48, 0]
+
+-- Sassazi V1: Am tremolo arp — A2/C3/E3 picked tremolo
+def SAS_V1 = [45, 48, 52, 45, 48, 52, 45, 48, 52, 48, 45, 52, 48, 45, 52, 48, 45, 48, 52, 48, 45, 52, 48, 45, 52, 45, 48, 52, 45, 48, 52, 0]
+
+-- Doorsky V1: tritone pad drift — Gb2/C3/Eb3 slow motion
+def DHV_V1 = [42, 42, 42, 42, 48, 48, 48, 48, 51, 51, 51, 51, 48, 48, 48, 48, 42, 42, 42, 48, 48, 48, 51, 51, 48, 48, 42, 42, 48, 48, 42, 42]
+
+-- Sernova V1: D major bossa arp — D3/F#3/A3 syncopated
+def SRN_V1 = [50, 0, 54, 50, 0, 57, 0, 54, 50, 0, 54, 0, 57, 54, 0, 50, 54, 0, 50, 57, 0, 54, 0, 50, 57, 0, 54, 50, 0, 57, 54, 0]
+
+-- Grafant V1: C Phrygian tremolo — C3/Db3/F3/Ab3 icy
+def GRF_V1 = [48, 49, 53, 48, 49, 56, 53, 49, 48, 49, 53, 56, 53, 49, 48, 0, 48, 49, 53, 49, 56, 53, 49, 48, 53, 49, 48, 56, 53, 49, 48, 0]
+
+-- Perilla V1: E minor drone arp — E2/G2/B2 primal
+def PRL_V1 = [40, 43, 47, 40, 43, 47, 40, 43, 47, 43, 40, 47, 43, 40, 0, 40, 43, 47, 40, 43, 40, 47, 43, 40, 47, 40, 43, 47, 40, 43, 40, 0]
+
+-- Gelgeel V1: Dm sequenced arp — D3/F3/A3/C4 rapid dance arp
+def GEL_V1 = [50, 53, 57, 60, 57, 53, 50, 53, 57, 60, 57, 53, 50, 53, 57, 60, 53, 50, 57, 53, 60, 57, 53, 50, 57, 53, 50, 60, 57, 53, 50, 0]
+
+-- Rastarl V1: A major shimmer arp — A3/C#4/E4 bright
+def RST_V1 = [57, 61, 64, 57, 61, 64, 57, 61, 64, 61, 57, 64, 61, 57, 0, 57, 61, 64, 61, 57, 64, 61, 57, 64, 57, 61, 64, 57, 61, 64, 57, 0]
+
+-- Neurali V1: Cm digital arp — C3/Eb3/G3/Bb3 mechanical
+def NRL_V1 = [48, 51, 55, 58, 55, 51, 48, 51, 55, 58, 55, 51, 48, 55, 58, 51, 48, 51, 55, 58, 51, 48, 55, 58, 51, 55, 48, 58, 55, 51, 48, 0]
+
+-- Lua=Lua V1: Eb major gentle arp — Eb3/G3/Bb3 waltz-y
+def LLA_V1 = [51, 0, 55, 0, 58, 0, 55, 0, 51, 0, 58, 0, 55, 0, 51, 0, 55, 0, 58, 0, 51, 0, 55, 0, 58, 0, 55, 0, 51, 0, 58, 0]
+
+-- Orkarol V1: Bb major organ mid — Bb2/D3/F3/Eb3 sustained
+def ORK_V1 = [46, 46, 50, 50, 53, 53, 50, 50, 46, 46, 50, 50, 53, 53, 51, 51, 46, 46, 50, 53, 53, 50, 50, 46, 51, 51, 53, 53, 50, 46, 46, 0]
+
+-- Holonul V1: mid-register shimmer — pulsing counter-arp that floats
+def HOL_V1 = [54, 0, 57, 0, 56, 0, 54, 0, 51, 0, 54, 0, 57, 0, 56, 0, 54, 0, 57, 0, 56, 0, 54, 0, 51, 0, 54, 0, 57, 0, 56, 0]
+
+-- Metteor V1: Dm driving arp — D3/F3/A3/Bb3 relentless
+def MTR_V1 = [50, 53, 57, 50, 53, 58, 57, 53, 50, 53, 57, 58, 57, 53, 50, 53, 50, 57, 53, 58, 57, 50, 53, 57, 50, 58, 53, 57, 50, 53, 57, 0]
+
+-- Tekhnis V1: Am loom arp — A2/C3/E3/D3 mechanical shuttle
+def TKS_V1 = [45, 48, 52, 45, 48, 50, 52, 48, 45, 48, 52, 50, 52, 48, 45, 48, 45, 52, 48, 50, 52, 45, 48, 52, 45, 50, 48, 52, 45, 48, 52, 0]
+
+-- Belliko V1: Dm war arp — D3/F3/A3/G3 driving march
+def BLK_V1 = [50, 53, 57, 50, 53, 55, 57, 53, 50, 53, 57, 55, 57, 53, 50, 53, 50, 57, 53, 55, 57, 50, 53, 57, 50, 55, 53, 57, 50, 53, 57, 0]
+
+-- Gaussle V1: Em factory arp — E3/G3/B3/A3 mechanical production rhythm
+def GSS_V1 = [52, 55, 59, 52, 55, 57, 59, 55, 52, 55, 59, 57, 59, 55, 52, 55, 52, 59, 55, 57, 59, 52, 55, 59, 52, 57, 55, 59, 52, 55, 59, 0]
+
+-- ── BGM V0 arrays (pad / harmony layer) ─────────────────────────────────────
+
+-- Ealthal V0: Em sustained pad — E2/G2/B2 long chords beneath march
+def HTK_V0 = [40, 40, 40, 40, 43, 43, 43, 43, 47, 47, 47, 47, 43, 43, 43, 43, 40, 40, 40, 40, 47, 47, 47, 47, 43, 43, 43, 43, 40, 40, 40, 0]
+
+-- Fiereem V0: Em power pad — E2/G2/B2 heavy sustain, doubled chord tone
+def FIR_V0 = [40, 40, 40, 40, 43, 43, 43, 43, 40, 40, 40, 47, 47, 47, 47, 40, 40, 40, 43, 43, 43, 47, 47, 47, 43, 43, 40, 40, 47, 47, 40, 0]
+
+-- Whaleen V0: C major swell pad — C2/E2/G2/A2 slow tidal chords
+def WAL_V0 = [36, 36, 36, 36, 40, 40, 40, 40, 43, 43, 43, 43, 45, 45, 45, 45, 43, 43, 43, 43, 40, 40, 40, 40, 41, 41, 41, 41, 36, 36, 36, 0]
+
+-- Sassazi V0: Am drone pad — A1/E2/A2 open fifth sustain
+def SAS_V0 = [33, 33, 33, 33, 40, 40, 40, 40, 45, 45, 45, 45, 40, 40, 40, 40, 33, 33, 33, 33, 45, 45, 45, 45, 40, 40, 40, 40, 33, 33, 33, 0]
+
+-- Doorsky V0: tritone dark pad — B1/F2 alternating for maximum tension
+def DHV_V0 = [35, 35, 35, 35, 41, 41, 41, 41, 35, 35, 35, 35, 41, 41, 41, 41, 35, 35, 41, 41, 35, 35, 41, 41, 35, 35, 35, 41, 41, 41, 35, 0]
+
+-- Sernova V0: D major warm pad — D2/A2/F#2 bossa chord bed
+def SRN_V0 = [38, 38, 38, 38, 45, 45, 45, 45, 42, 42, 42, 42, 45, 45, 45, 45, 38, 38, 38, 38, 42, 42, 42, 42, 45, 45, 38, 38, 42, 42, 38, 0]
+
+-- Grafant V0: C Phrygian ice pad — C2/Db2/Ab1 frozen cluster
+def GRF_V0 = [36, 36, 37, 37, 36, 36, 37, 37, 32, 32, 32, 32, 36, 36, 36, 36, 37, 37, 37, 37, 32, 32, 36, 36, 37, 37, 32, 32, 36, 36, 36, 0]
+
+-- Perilla V0: Em cave drone — E1/B1 fifth drone, primal rumble
+def PRL_V0 = [28, 28, 28, 28, 35, 35, 35, 35, 28, 28, 28, 28, 35, 35, 35, 35, 28, 28, 35, 35, 28, 28, 35, 35, 28, 28, 28, 35, 35, 28, 28, 0]
+
+-- Gelgeel V0: Dm synth pad — D2/A2/F2 four-on-the-floor bed
+def GEL_V0 = [38, 38, 38, 45, 38, 38, 41, 38, 38, 38, 45, 45, 38, 38, 41, 38, 38, 38, 45, 38, 38, 41, 38, 38, 45, 38, 38, 41, 38, 38, 38, 0]
+
+-- Rastarl V0: A major bright pad — A2/C#3/E3 warm sustained
+def RST_V0 = [45, 45, 45, 45, 49, 49, 49, 49, 52, 52, 52, 52, 49, 49, 49, 49, 45, 45, 45, 45, 52, 52, 52, 52, 50, 50, 50, 50, 45, 45, 45, 0]
+
+-- Neurali V0: Cm circuit pad — C2/Eb2/G2/Bb1 mechanical sustain
+def NRL_V0 = [36, 36, 36, 36, 39, 39, 39, 39, 43, 43, 43, 43, 34, 34, 34, 34, 36, 36, 36, 39, 39, 39, 43, 43, 34, 34, 36, 36, 39, 39, 36, 0]
+
+-- Lua=Lua V0: Eb major moon pad — Eb2/Bb2/G2 gentle waltz bed
+def LLA_V0 = [39, 39, 39, 46, 46, 46, 43, 43, 43, 39, 39, 39, 46, 46, 46, 44, 44, 44, 39, 39, 39, 46, 46, 46, 43, 43, 44, 44, 39, 39, 39, 0]
+
+-- Orkarol V0: Bb major organ pad — Bb1/F2/D2 cathedral sustain
+def ORK_V0 = [34, 34, 34, 34, 41, 41, 41, 41, 38, 38, 38, 38, 41, 41, 41, 41, 34, 34, 34, 38, 38, 38, 41, 41, 36, 36, 38, 38, 34, 34, 34, 0]
+
+-- Holonul V0: ambient pad — sustained low glitch clusters
+def HOL_V0 = [37, 37, 37, 0, 41, 41, 41, 0, 44, 44, 44, 0, 41, 41, 41, 0, 37, 37, 37, 0, 41, 41, 41, 0, 44, 44, 44, 0, 41, 41, 37, 0]
+
+-- Metteor V0: Dm villain pad — D2/A2/F2/Ab1 dark power chords
+def MTR_V0 = [38, 38, 38, 38, 45, 45, 45, 45, 41, 41, 41, 41, 32, 32, 32, 32, 38, 38, 38, 45, 45, 41, 41, 38, 32, 32, 38, 38, 45, 45, 38, 0]
+
+-- Tekhnis V0: Am loom pad — A1/E2/C2 open fifth drone, steady weaving
+def TKS_V0 = [33, 33, 33, 33, 40, 40, 40, 40, 36, 36, 36, 36, 38, 38, 38, 38, 33, 33, 33, 33, 36, 36, 36, 36, 40, 40, 38, 38, 33, 33, 33, 0]
+
+-- Belliko V0: Dm war pad — D2/A2/F2 dark martial sustain
+def BLK_V0 = [38, 38, 38, 38, 45, 45, 45, 45, 41, 41, 41, 41, 43, 43, 43, 43, 38, 38, 38, 45, 45, 41, 41, 38, 43, 43, 38, 38, 45, 45, 38, 0]
+
+-- Gaussle V0: Em factory pad — E2/B2/G2 industrial drone with steady rhythm
+def GSS_V0 = [40, 40, 40, 40, 47, 47, 47, 47, 43, 43, 43, 43, 45, 45, 45, 45, 40, 40, 40, 47, 47, 43, 43, 40, 45, 45, 40, 40, 47, 47, 40, 0]
+
+-- ── V7 PSG percussion patterns (32 steps) ──────────────────────────────────
+-- Pitch encodes drum type: 30=kick, 48=tom, 65=snare, 80=clap, 95=hat, 0=rest
+
+-- Ealthal: steady march — K.H.S.H. repeating
+def HTK_PERC = [30, 0, 95, 0, 65, 0, 95, 0, 30, 0, 95, 0, 65, 0, 95, 0, 30, 0, 95, 0, 65, 0, 95, 0, 30, 0, 95, 0, 65, 0, 95, 0]
+-- Sassazi: western gallop — K.HH.K.HH.S.H repeating
+def SAS_PERC = [30, 95, 95, 30, 95, 95, 65, 95, 30, 95, 95, 30, 95, 95, 65, 95, 30, 95, 95, 30, 95, 95, 65, 95, 30, 95, 95, 30, 95, 95, 65, 95]
+-- Whaleen: sparse ocean swell — gentle 3-feel
+def WAL_PERC = [30, 0, 0, 95, 0, 0, 65, 0, 0, 95, 0, 0, 30, 0, 0, 0, 30, 0, 0, 95, 0, 0, 65, 0, 0, 95, 0, 0, 0, 0, 0, 0]
+-- Fiereem: aggressive double-kick rock
+def FIR_PERC = [30, 30, 65, 95, 30, 30, 65, 95, 30, 30, 65, 95, 30, 30, 65, 95, 30, 30, 65, 95, 30, 30, 65, 95, 30, 30, 65, 95, 30, 30, 65, 95]
+-- Sernova: bossa nova clave — K.HS.H.S K.S.H.S.
+def SRN_PERC = [30, 0, 95, 65, 0, 95, 0, 65, 30, 0, 65, 0, 95, 0, 65, 0, 30, 0, 95, 65, 0, 95, 0, 65, 30, 0, 65, 0, 95, 0, 65, 0]
+-- Doorsky: eerie deep-space pulses — very sparse
+def DHV_PERC = [30, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 65, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+-- Grafant: icy mechanical clicks — hi-hat focused
+def GRF_PERC = [95, 0, 95, 0, 65, 0, 0, 95, 95, 0, 95, 0, 65, 0, 0, 0, 95, 0, 95, 0, 65, 0, 0, 95, 95, 0, 95, 0, 65, 0, 95, 0]
+-- Perilla: tribal cave drums — deep toms and kicks
+def PRL_PERC = [30, 48, 30, 48, 65, 48, 48, 30, 30, 48, 30, 48, 65, 48, 48, 0, 30, 48, 30, 48, 65, 48, 48, 30, 30, 48, 30, 48, 65, 48, 48, 0]
+-- Gelgeel: electro four-on-floor — K.H.S.H repeating
+def GEL_PERC = [30, 95, 65, 95, 30, 95, 65, 95, 30, 95, 65, 95, 30, 95, 65, 95, 30, 95, 65, 95, 30, 95, 65, 95, 30, 95, 65, 95, 30, 95, 65, 95]
+-- Rastarl: light hi-hat shimmer — .H.H.HS.H repeating
+def RST_PERC = [0, 95, 0, 95, 0, 95, 65, 95, 0, 95, 0, 95, 0, 95, 65, 95, 0, 95, 0, 95, 0, 95, 65, 95, 0, 95, 0, 95, 0, 95, 65, 95]
+-- Neurali: rigid machine pulse — relentless
+def NRL_PERC = [30, 95, 30, 95, 65, 95, 30, 95, 30, 95, 30, 95, 65, 95, 30, 95, 30, 95, 30, 95, 65, 95, 30, 95, 30, 95, 30, 95, 65, 95, 30, 95]
+-- Lua=Lua: dreamy waltz — very sparse, gentle
+def LLA_PERC = [30, 0, 0, 0, 0, 0, 0, 0, 65, 0, 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+-- Orkarol: cathedral ceremonial — solemn and sparse
+def ORK_PERC = [30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65, 0, 0, 0, 0, 0, 0, 0]
+-- Holonul: PSG percussion — filtered hat/clap motion
+def HOL_PERC = [0, 95, 0, 95, 0, 95, 0, 65, 0, 95, 0, 95, 0, 95, 0, 65, 0, 95, 0, 95, 0, 95, 0, 65, 0, 95, 0, 95, 0, 95, 0, 0]
+-- Metteor: boss aggro — relentless double-kick
+def MTR_PERC = [30, 30, 65, 30, 30, 30, 65, 95, 30, 30, 65, 30, 30, 30, 65, 95, 30, 30, 65, 30, 30, 30, 65, 95, 30, 30, 65, 30, 30, 30, 65, 95]
+-- Tekhnis: industrial loom — hi-hat clockwork with punctual kicks and snares
+def TKS_PERC = [30, 95, 95, 95, 65, 95, 95, 95, 30, 95, 95, 95, 65, 95, 95, 95, 30, 95, 95, 95, 65, 95, 95, 95, 30, 95, 95, 95, 65, 95, 95, 95]
+-- Belliko: war march — heavy tom-kick alternation with snare accents
+def BLK_PERC = [30, 0, 48, 0, 30, 0, 65, 0, 30, 0, 48, 0, 30, 65, 65, 0, 30, 0, 48, 0, 30, 0, 65, 0, 30, 0, 48, 0, 30, 65, 65, 0]
+-- Gaussle: factory line — mechanical rhythm with steady kicks and metallic hats
+def GSS_PERC = [30, 95, 0, 95, 65, 95, 0, 95, 30, 95, 0, 95, 65, 95, 0, 95, 30, 95, 0, 95, 65, 95, 0, 95, 30, 95, 0, 95, 65, 95, 0, 95]
+
+-- ── Voice setup per planet ──────────────────────────────────────────────────
+
+: setup_ealthal_bg(sys = vimana.system) (( -- ))
+    -- V0: sustained Em pad — warm bed beneath march
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 4, 10, 8, 7)
+    -- V2: warm triangle bass — round march foundation
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 1, 8, 4, 6)
+    -- V3: bugle melody — pulse with moderate width
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 0, 6, 2, 4)
+    sys.set_pulse_width(3, 100)
+    -- V1: warm triangle arp — steady background
+    sys.set_voice(1, vimana.wave_triangle)
+    sys.set_envelope(1, 1, 6, 3, 5)
+    sys.set_filter(500, 5, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_fiereem_bg(sys = vimana.system) (( -- ))
+    -- V0: heavy Em power pad — sawtooth sustain
+    sys.set_voice(0, vimana.wave_sawtooth)
+    sys.set_envelope(0, 2, 10, 6, 8)
+    -- V2: thick pulse bass — wide width for weight
+    sys.set_voice(2, vimana.wave_pulse)
+    sys.set_envelope(2, 0, 7, 3, 5)
+    sys.set_pulse_width(2, 200)
+    -- V3: gritty sawtooth lead stabs — filtered
+    sys.set_voice(3, vimana.wave_sawtooth)
+    sys.set_envelope(3, 0, 5, 1, 3)
+    -- V1: gritty sawtooth power arp
+    sys.set_voice(1, vimana.wave_sawtooth)
+    sys.set_envelope(1, 0, 5, 2, 3)
+    sys.set_filter(600, 7, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_whaleen_bg(sys = vimana.system) (( -- ))
+    -- V0: tidal C major pad — gentle sustained swell
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 5, 12, 9, 10)
+    -- V2: warm triangle bass, long sustain for rocking swell
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 3, 10, 7, 9)
+    -- V3: triangle melody, gentle attack for flowing feel
+    sys.set_voice(3, vimana.wave_triangle)
+    sys.set_envelope(3, 1, 8, 5, 7)
+    -- V1: flowing triangle arp
+    sys.set_voice(1, vimana.wave_triangle)
+    sys.set_envelope(1, 2, 8, 4, 6)
+    sys.set_filter(400, 5, 2)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_sasazi_bg(sys = vimana.system) (( -- ))
+    -- V0: Am open-fifth drone pad
+    sys.set_voice(0, vimana.wave_pulse)
+    sys.set_envelope(0, 2, 8, 5, 6)
+    sys.set_pulse_width(0, 80)
+    -- V2: narrow pulse for dry picked arpeggio
+    sys.set_voice(2, vimana.wave_pulse)
+    sys.set_envelope(2, 0, 4, 0, 3)
+    sys.set_pulse_width(2, 40)
+    -- V3: slightly wider pulse, longer decay for wailing sustain
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 0, 6, 2, 5)
+    sys.set_pulse_width(3, 60)
+    -- V1: picked tremolo pulse arp
+    sys.set_voice(1, vimana.wave_pulse)
+    sys.set_envelope(1, 0, 4, 1, 3)
+    sys.set_pulse_width(1, 50)
+    sys.set_filter(1000, 5, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_sernova_bg(sys = vimana.system) (( -- ))
+    -- V0: warm D major bossa pad
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 3, 10, 6, 8)
+    -- V2: warm triangle bass — round bossa foundation
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 1, 9, 5, 7)
+    -- V3: smooth pulse melody — mellow bossa lead
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 1, 8, 4, 6)
+    sys.set_pulse_width(3, 120)
+    -- V1: syncopated bossa arp pulse
+    sys.set_voice(1, vimana.wave_pulse)
+    sys.set_envelope(1, 1, 7, 3, 5)
+    sys.set_pulse_width(1, 100)
+    sys.set_filter(500, 5, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_doorsky_bg(sys = vimana.system) (( -- ))
+    -- V0: deep tritone swell pad — maximum sustain
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 12, 14, 13, 10)
+    -- V2: triangle drone — max sustain, very slow attack/release for swell
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 10, 14, 12, 8)
+    -- V3: triangle counter-drone — same long envelope
+    sys.set_voice(3, vimana.wave_triangle)
+    sys.set_envelope(3, 10, 14, 12, 8)
+    -- Heavy lowpass — starts nearly closed, modulation does the breathing
+    -- V1: slow pad triangle drift
+    sys.set_voice(1, vimana.wave_triangle)
+    sys.set_envelope(1, 8, 12, 10, 8)
+    sys.set_filter(80, 12, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_grafant_bg(sys = vimana.system) (( -- ))
+    -- V0: frozen C Phrygian ice pad — narrow pulse cluster
+    sys.set_voice(0, vimana.wave_pulse)
+    sys.set_envelope(0, 3, 12, 8, 10)
+    sys.set_pulse_width(0, 25)
+    -- V2: hollow crushing bass — narrow pulse for thin pressure tone
+    sys.set_voice(2, vimana.wave_pulse)
+    sys.set_envelope(2, 1, 12, 6, 10)
+    sys.set_pulse_width(2, 30)
+    -- V3: icy crystalline stabs — very narrow pulse, hollow and distant
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 0, 10, 2, 8)
+    sys.set_pulse_width(3, 20)
+    -- Bandpass filter: hollow tube resonance, both voices routed
+    -- V1: icy tremolo narrow pulse
+    sys.set_voice(1, vimana.wave_pulse)
+    sys.set_envelope(1, 0, 6, 1, 4)
+    sys.set_pulse_width(1, 20)
+    sys.set_filter(400, 10, 2)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_perilla_bg(sys = vimana.system) (( -- ))
+    -- V0: cave drone pad — deep triangle sustain
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 4, 8, 5, 6)
+    -- V2: stone percussion — triangle for deep thud, instant attack, very short
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 0, 4, 0, 3)
+    -- V3: throat chant — narrow pulse for nasal/guttural quality
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 2, 10, 7, 9)
+    sys.set_pulse_width(3, 25)
+    -- Heavy lowpass: cave acoustics, high resonance for formant-like drone
+    -- V1: primal triangle drone arp
+    sys.set_voice(1, vimana.wave_triangle)
+    sys.set_envelope(1, 0, 5, 2, 3)
+    sys.set_filter(250, 12, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_gelgeel_bg(sys = vimana.system) (( -- ))
+    -- V0: Dm synth pad — pulse bed
+    sys.set_voice(0, vimana.wave_pulse)
+    sys.set_envelope(0, 1, 5, 2, 3)
+    sys.set_pulse_width(0, 100)
+    -- V2: punchy pulse bass — narrow width for nasal synth-bass bite
+    sys.set_voice(2, vimana.wave_pulse)
+    sys.set_envelope(2, 0, 3, 1, 2)
+    sys.set_pulse_width(2, 80)
+    -- V3: plucky sawtooth lead — bright and snappy
+    sys.set_voice(3, vimana.wave_sawtooth)
+    sys.set_envelope(3, 0, 4, 1, 3)
+    -- Bright lowpass: lets the pluck through with some bite
+    -- V1: rapid dance arp pulse
+    sys.set_voice(1, vimana.wave_pulse)
+    sys.set_envelope(1, 0, 3, 1, 2)
+    sys.set_pulse_width(1, 60)
+    sys.set_filter(900, 6, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_rastarl_bg(sys = vimana.system) (( -- ))
+    -- V0: bright A major pad — warm triangle sustain
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 3, 10, 6, 8)
+    -- V2: triangle arpeggio bass — warm and round
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 1, 8, 4, 7)
+    -- V3: bell shimmer — bright triangle lead
+    sys.set_voice(3, vimana.wave_triangle)
+    sys.set_envelope(3, 0, 5, 1, 4)
+    -- V1: bright shimmer triangle arp
+    sys.set_voice(1, vimana.wave_triangle)
+    sys.set_envelope(1, 0, 5, 2, 4)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_neurali_bg(sys = vimana.system) (( -- ))
+    -- V0: Cm circuit pad — pulse sustain
+    sys.set_voice(0, vimana.wave_pulse)
+    sys.set_envelope(0, 2, 8, 4, 5)
+    sys.set_pulse_width(0, 120)
+    -- V2: driving pulse bass — mechanical and tight
+    sys.set_voice(2, vimana.wave_pulse)
+    sys.set_envelope(2, 0, 6, 2, 4)
+    sys.set_pulse_width(2, 140)
+    -- V3: digital sawtooth lead — sharp and buzzy
+    sys.set_voice(3, vimana.wave_sawtooth)
+    sys.set_envelope(3, 0, 5, 2, 3)
+    -- Lowpass: controlled aggression
+    -- V1: mechanical pulse arp
+    sys.set_voice(1, vimana.wave_pulse)
+    sys.set_envelope(1, 0, 4, 1, 3)
+    sys.set_pulse_width(1, 90)
+    sys.set_filter(600, 7, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_lualua_bg(sys = vimana.system) (( -- ))
+    -- V0: Eb major moon pad — gentle triangle sustain
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 4, 12, 8, 10)
+    -- V2: warm triangle bass — slow attack, long sustain for waltz sway
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 2, 12, 7, 10)
+    -- V3: ethereal triangle melody — gentle dreamy floating
+    sys.set_voice(3, vimana.wave_triangle)
+    sys.set_envelope(3, 1, 10, 5, 8)
+    -- Bandpass filter: soft moonlight timbre
+    -- V1: gentle triangle waltz arp
+    sys.set_voice(1, vimana.wave_triangle)
+    sys.set_envelope(1, 2, 9, 4, 7)
+    sys.set_filter(350, 6, 2)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_orkarol_bg(sys = vimana.system) (( -- ))
+    -- V0: Bb major organ pad — deep cathedral sustain
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 5, 14, 10, 12)
+    -- V2: triangle organ pedal — deep, sustained, resonant
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 3, 12, 8, 11)
+    -- V3: triangle choir melody — warm, flowing, sacred
+    sys.set_voice(3, vimana.wave_triangle)
+    sys.set_envelope(3, 2, 11, 7, 9)
+    -- Lowpass filter: warm cathedral
+    -- V1: organ mid triangle
+    sys.set_voice(1, vimana.wave_triangle)
+    sys.set_envelope(1, 3, 10, 6, 8)
+    sys.set_filter(350, 5, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_holonull_bg(sys = vimana.system) (( -- ))
+    -- V0: neon void ambient pad — glitchy sustained clusters
+    sys.set_voice(0, vimana.wave_pulse)
+    sys.set_envelope(0, 1, 10, 5, 8)
+    sys.set_pulse_width(0, 150)
+    -- V2: subpulse bass — deep minor cluster motion
+    sys.set_voice(2, vimana.wave_pulse)
+    sys.set_envelope(2, 0, 8, 3, 6)
+    sys.set_pulse_width(2, 120)
+    -- V3: bright neon synth lead — echoing arpeggios
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 0, 6, 2, 4)
+    sys.set_pulse_width(3, 100)
+    -- Bandpass filter: neon void shimmer
+    -- V1: mid-register shimmer — pulsing counter-arp
+    sys.set_voice(1, vimana.wave_pulse)
+    sys.set_envelope(1, 1, 7, 3, 5)
+    sys.set_pulse_width(1, 130)
+    sys.set_filter(1200, 6, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_tekhnis_bg(sys = vimana.system) (( -- ))
+    -- V0: Am open-fifth pad — triangle drone bed
+    sys.set_voice(0, vimana.wave_triangle)
+    sys.set_envelope(0, 3, 10, 7, 8)
+    -- V2: loom bass — triangle with pulse-shaped attack
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 0, 7, 3, 5)
+    -- V3: clockwork lead — narrow pulse mechanical melody
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 0, 5, 1, 3)
+    sys.set_pulse_width(3, 30)
+    -- V1: loom shuttle arp — narrow pulse mid
+    sys.set_voice(1, vimana.wave_pulse)
+    sys.set_envelope(1, 0, 5, 2, 4)
+    sys.set_pulse_width(1, 40)
+    sys.set_filter(550, 6, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_belliko_bg(sys = vimana.system) (( -- ))
+    -- V0: Dm war pad — sawtooth sustain
+    sys.set_voice(0, vimana.wave_sawtooth)
+    sys.set_envelope(0, 2, 10, 6, 8)
+    -- V2: heavy march bass — wide pulse for trench weight
+    sys.set_voice(2, vimana.wave_pulse)
+    sys.set_envelope(2, 0, 8, 4, 6)
+    sys.set_pulse_width(2, 180)
+    -- V3: trench horn lead — sawtooth bugle
+    sys.set_voice(3, vimana.wave_sawtooth)
+    sys.set_envelope(3, 0, 7, 2, 5)
+    -- V1: war arp — gritty sawtooth mid
+    sys.set_voice(1, vimana.wave_sawtooth)
+    sys.set_envelope(1, 0, 6, 2, 4)
+    sys.set_filter(500, 7, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_gaussle_bg(sys = vimana.system) (( -- ))
+    -- V0: Em factory pad — pulse wave mechanical drone
+    sys.set_voice(0, vimana.wave_pulse)
+    sys.set_envelope(0, 2, 9, 5, 7)
+    sys.set_pulse_width(0, 100)
+    -- V2: conveyor bass — triangle for steady rhythm
+    sys.set_voice(2, vimana.wave_triangle)
+    sys.set_envelope(2, 0, 8, 4, 6)
+    -- V3: mechanical whistle lead — narrow pulse alarm
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 0, 6, 2, 4)
+    sys.set_pulse_width(3, 60)
+    -- V1: factory arp — triangle mid-register
+    sys.set_voice(1, vimana.wave_triangle)
+    sys.set_envelope(1, 0, 7, 3, 5)
+    sys.set_filter(600, 6, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+: setup_meteor_bg(sys = vimana.system) (( -- ))
+    -- V0: dark Dm power pad — sawtooth sustain
+    sys.set_voice(0, vimana.wave_sawtooth)
+    sys.set_envelope(0, 2, 9, 5, 7)
+    -- V2: aggressive sawtooth bass — raw harmonics, maximum bite
+    sys.set_voice(2, vimana.wave_sawtooth)
+    sys.set_envelope(2, 0, 7, 3, 5)
+    -- V3: menacing lead — wide pulse for thick, ominous tone
+    sys.set_voice(3, vimana.wave_pulse)
+    sys.set_envelope(3, 0, 8, 4, 6)
+    sys.set_pulse_width(3, 180)
+    -- Lowpass: lets the aggression through but sweeps for drama
+    -- V1: driving sawtooth villain arp
+    sys.set_voice(1, vimana.wave_sawtooth)
+    sys.set_envelope(1, 0, 4, 1, 3)
+    sys.set_filter(700, 8, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    -- V7: PSG percussion
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+;
+
+-- ── Filter & PWM modulation ─────────────────────────────────────────────────────
+
+: modulate_bg(sys = vimana.system) (( -- ))
+    let p = meteor_model.get_planet()
+    if p == 0
+        -- Ealthal: warm march filter + bugle PWM
+        sys.set_filter(sweep32(bg_step, 350, 700), 5, 1)
+        sys.set_pulse_width(3, 80 + sweep32(bg_step, 0, 40))
+    elif p == 1
+        -- Sassazi: dry filter sweep + subtle PWM
+        sys.set_filter(sweep32(bg_step, 700, 1300), 5, 1)
+        sys.set_pulse_width(2, 35 + sweep32(bg_step, 0, 20))
+        sys.set_pulse_width(3, 50 + sweep32(bg_step, 0, 30))
+    elif p == 2
+        -- Whaleen: gentle wave-like filter swell
+        sys.set_filter(sweep32(bg_step, 300, 700), 5, 2)
+    elif p == 3
+        -- Fiereem: filter sweep on lead + PWM on bass
+        sys.set_filter(sweep32(bg_step, 400, 1000), 7, 1)
+        sys.set_pulse_width(2, 180 + sweep32(bg_step, 0, 50))
+    elif p == 4
+        -- Sernova: bossa filter + PWM
+        sys.set_filter(sweep32(bg_step, 350, 700), 5, 1)
+        sys.set_pulse_width(3, 100 + sweep32(bg_step, 0, 40))
+    elif p == 5
+        -- Doorsky: filter opens/closes like breathing through vacuum
+        sys.set_filter(sweep32(bg_step, 60, 500), 12, 1)
+    elif p == 6
+        -- Grafant: glacial bandpass sweep + subtle PWM shimmer
+        sys.set_filter(sweep32(bg_step, 200, 900), 10, 2)
+        sys.set_pulse_width(2, 25 + sweep32(bg_step, 0, 15))
+        sys.set_pulse_width(3, 15 + sweep32(bg_step, 0, 12))
+    elif p == 7
+        -- Perilla: cave filter breathes + chant pulse width wobble
+        sys.set_filter(sweep32(bg_step, 150, 500), 12, 1)
+        sys.set_pulse_width(3, 20 + sweep32(bg_step, 0, 20))
+    elif p == 8
+        -- Gelgeel: energetic filter sweep + bass PWM grit
+        sys.set_filter(sweep32(bg_step, 600, 1200), 6, 1)
+        sys.set_pulse_width(2, 60 + sweep32(bg_step, 0, 40))
+    elif p == 9
+        -- Rastarl: subtle shimmer — no heavy modulation needed
+        sys.set_pulse_width(2, 128)
+    elif p == 10
+        -- Neurali: lowpass sweep + PWM for mechanical pulse
+        sys.set_filter(sweep32(bg_step, 300, 900), 7, 1)
+        sys.set_pulse_width(2, 120 + sweep32(bg_step, 0, 40))
+    elif p == 11
+        -- Lua=Lua: gentle bandpass drift for moonlit shimmer
+        sys.set_filter(sweep32(bg_step, 250, 550), 6, 2)
+    elif p == 12
+        -- Orkarol: warm cathedral filter drift
+        sys.set_filter(sweep32(bg_step, 300, 500), 5, 1)
+    elif p == 13
+        -- Holonull: neon warp shimmer with pulse width breath
+        sys.set_filter(sweep32(bg_step, 300, 650), 6, 2)
+        sys.set_pulse_width(0, 100 + sweep32(bg_step, 0, 40))
+        sys.set_pulse_width(1, 90 + sweep32(bg_step, 0, 30))
+    elif p == 14
+        -- Tekhnis: loom clockwork — narrow pulse width wobble + mechanical filter breath
+        sys.set_filter(sweep32(bg_step, 350, 800), 7, 1)
+        sys.set_pulse_width(3, 25 + sweep32(bg_step, 0, 15))
+        sys.set_pulse_width(1, 35 + sweep32(bg_step, 0, 20))
+    elif p == 15
+        -- Belliko: war march — heavy filter surge + brass lead PWM
+        sys.set_filter(sweep32(bg_step, 300, 900), 8, 1)
+        sys.set_pulse_width(2, 170 + sweep32(bg_step, 0, 40))
+    elif p == 16
+        -- Gaussle: factory breath — mechanical filter + conveyor PWM
+        sys.set_filter(sweep32(bg_step, 500, 1000), 6, 1)
+        sys.set_pulse_width(0, 100 + sweep32(bg_step, 0, 40))
+        sys.set_pulse_width(3, 60 + sweep32(bg_step, 0, 30))
+    elif p == 17
+        -- Metteor: wide filter sweep for dramatic boss intensity + lead PWM throb
+        sys.set_filter(sweep32(bg_step, 400, 1200), 8, 1)
+        sys.set_pulse_width(3, 150 + sweep32(bg_step, 0, 60))
+;
+
+-- ── Step playback per planet ────────────────────────────────────────────────
+
+: step_ealthal(sys = vimana.system) (( -- ))
+    let n0 = HTK_V0[bg_step]
+    let n1 = HTK_V1[bg_step]
+    let n2 = HTK_V2[bg_step]
+    let n3 = HTK_V3[bg_step]
+    let perc = HTK_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 4)
+    if n3 > 0
+        sys.play_voice(3, n3, 3)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_fiereem(sys = vimana.system) (( -- ))
+    let n0 = FIR_V0[bg_step]
+    let n1 = FIR_V1[bg_step]
+    let n2 = FIR_V2[bg_step]
+    let n3 = FIR_V3[bg_step]
+    let perc = FIR_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_whaleen(sys = vimana.system) (( -- ))
+    let n0 = WAL_V0[bg_step]
+    let n1 = WAL_V1[bg_step]
+    let n2 = WAL_V2[bg_step]
+    let n3 = WAL_V3[bg_step]
+    let perc = WAL_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_sasazi(sys = vimana.system) (( -- ))
+    let n0 = SAS_V0[bg_step]
+    let n1 = SAS_V1[bg_step]
+    let n2 = SAS_V2[bg_step]
+    let n3 = SAS_V3[bg_step]
+    let perc = SAS_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_doorsky(sys = vimana.system) (( -- ))
+    let n0 = DHV_V0[bg_step]
+    let n1 = DHV_V1[bg_step]
+    let n2 = DHV_V2[bg_step]
+    let n3 = DHV_V3[bg_step]
+    let perc = DHV_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_sernova(sys = vimana.system) (( -- ))
+    let n0 = SRN_V0[bg_step]
+    let n1 = SRN_V1[bg_step]
+    let n2 = SRN_V2[bg_step]
+    let n3 = SRN_V3[bg_step]
+    let perc = SRN_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 4)
+    if n3 > 0
+        sys.play_voice(3, n3, 3)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_grafant(sys = vimana.system) (( -- ))
+    let n0 = GRF_V0[bg_step]
+    let n1 = GRF_V1[bg_step]
+    let n2 = GRF_V2[bg_step]
+    let n3 = GRF_V3[bg_step]
+    let perc = GRF_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_perilla(sys = vimana.system) (( -- ))
+    let n0 = PRL_V0[bg_step]
+    let n1 = PRL_V1[bg_step]
+    let n2 = PRL_V2[bg_step]
+    let n3 = PRL_V3[bg_step]
+    let perc = PRL_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_gelgeel(sys = vimana.system) (( -- ))
+    let n0 = GEL_V0[bg_step]
+    let n1 = GEL_V1[bg_step]
+    let n2 = GEL_V2[bg_step]
+    let n3 = GEL_V3[bg_step]
+    let perc = GEL_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_rastarl(sys = vimana.system) (( -- ))
+    let n0 = RST_V0[bg_step]
+    let n1 = RST_V1[bg_step]
+    let n2 = RST_V2[bg_step]
+    let n3 = RST_V3[bg_step]
+    let perc = RST_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_neurali(sys = vimana.system) (( -- ))
+    let n0 = NRL_V0[bg_step]
+    let n1 = NRL_V1[bg_step]
+    let n2 = NRL_V2[bg_step]
+    let n3 = NRL_V3[bg_step]
+    let perc = NRL_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_lualua(sys = vimana.system) (( -- ))
+    let n0 = LLA_V0[bg_step]
+    let n1 = LLA_V1[bg_step]
+    let n2 = LLA_V2[bg_step]
+    let n3 = LLA_V3[bg_step]
+    let perc = LLA_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 4)
+    if n3 > 0
+        sys.play_voice(3, n3, 3)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_orkarol(sys = vimana.system) (( -- ))
+    let n0 = ORK_V0[bg_step]
+    let n1 = ORK_V1[bg_step]
+    let n2 = ORK_V2[bg_step]
+    let n3 = ORK_V3[bg_step]
+    let perc = ORK_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 4)
+    if n3 > 0
+        sys.play_voice(3, n3, 3)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_holonull(sys = vimana.system) (( -- ))
+    let n0 = HOL_V0[bg_step]
+    let n1 = HOL_V1[bg_step]
+    let n2 = HOL_V2[bg_step]
+    let n3 = HOL_V3[bg_step]
+    let perc = HOL_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 3)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_tekhnis(sys = vimana.system) (( -- ))
+    let n0 = TKS_V0[bg_step]
+    let n1 = TKS_V1[bg_step]
+    let n2 = TKS_V2[bg_step]
+    let n3 = TKS_V3[bg_step]
+    let perc = TKS_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 4)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_belliko(sys = vimana.system) (( -- ))
+    let n0 = BLK_V0[bg_step]
+    let n1 = BLK_V1[bg_step]
+    let n2 = BLK_V2[bg_step]
+    let n3 = BLK_V3[bg_step]
+    let perc = BLK_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_gaussle(sys = vimana.system) (( -- ))
+    let n0 = GSS_V0[bg_step]
+    let n1 = GSS_V1[bg_step]
+    let n2 = GSS_V2[bg_step]
+    let n3 = GSS_V3[bg_step]
+    let perc = GSS_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: step_meteor(sys = vimana.system) (( -- ))
+    let n0 = MTR_V0[bg_step]
+    let n1 = MTR_V1[bg_step]
+    let n2 = MTR_V2[bg_step]
+    let n3 = MTR_V3[bg_step]
+    let perc = MTR_PERC[bg_step]
+    if n0 > 0
+        sys.play_voice(0, n0, 2)
+    if n1 > 0
+        sys.play_voice(1, n1, 3)
+    if n2 > 0
+        sys.play_voice(2, n2, 5)
+    if n3 > 0
+        sys.play_voice(3, n3, 4)
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+-- ── Tempo & length ──────────────────────────────────────────────────────────
+
+: get_bg_tempo() (( num ))
+    let p = meteor_model.get_planet()
+    if p == 0
+        <- 15
+    elif p == 1
+        <- 15
+    elif p == 2
+        <- 16
+    elif p == 3
+        <- 14
+    elif p == 4
+        <- 15
+    elif p == 5
+        <- 18
+    elif p == 6
+        <- 15
+    elif p == 7
+        <- 15
+    elif p == 8
+        <- 13
+    elif p == 9
+        <- 15
+    elif p == 10
+        <- 14
+    elif p == 11
+        <- 16
+    elif p == 12
+        <- 16
+    elif p == 13
+        <- 20
+    elif p == 14
+        <- 15
+    elif p == 15
+        <- 14
+    elif p == 16
+        <- 15
+    elif p == 17
+        <- 14
+    <- 15
+;
+
+-- ── Public BGM API ──────────────────────────────────────────────────────────
+
+:: start_music(sys = vimana.system) (( -- ))
+    bg_frame = 0
+    bg_step = 0
+    bg_playing = true
+    let p = meteor_model.get_planet()
+    sys.begin_audio()
+    if p == 0
+        setup_ealthal_bg(sys)
+    elif p == 1
+        setup_sasazi_bg(sys)
+    elif p == 2
+        setup_whaleen_bg(sys)
+    elif p == 3
+        setup_fiereem_bg(sys)
+    elif p == 4
+        setup_sernova_bg(sys)
+    elif p == 5
+        setup_doorsky_bg(sys)
+    elif p == 6
+        setup_grafant_bg(sys)
+    elif p == 7
+        setup_perilla_bg(sys)
+    elif p == 8
+        setup_gelgeel_bg(sys)
+    elif p == 9
+        setup_rastarl_bg(sys)
+    elif p == 10
+        setup_neurali_bg(sys)
+    elif p == 11
+        setup_lualua_bg(sys)
+    elif p == 12
+        setup_orkarol_bg(sys)
+    elif p == 13
+        setup_holonull_bg(sys)
+    elif p == 14
+        setup_tekhnis_bg(sys)
+    elif p == 15
+        setup_belliko_bg(sys)
+    elif p == 16
+        setup_gaussle_bg(sys)
+    elif p == 17
+        setup_meteor_bg(sys)
+    sys.end_audio()
+;
+
+:: stop_music(sys = vimana.system) (( -- ))
+    bg_playing = false
+    sys.begin_audio()
+    sys.stop_voice(0)
+    sys.stop_voice(1)
+    sys.stop_voice(2)
+    sys.stop_voice(3)
+    sys.stop_voice(7)
+    sys.set_filter_route(0, 0)
+    sys.set_filter_route(1, 0)
+    sys.set_filter_route(2, 0)
+    sys.set_filter_route(3, 0)
+    sys.end_audio()
+;
+
+:: tick_music(sys = vimana.system) (( -- ))
+    if !bg_playing
+        <-
+    if meteor_model.get_scene() != meteor_model.SCENE_PLAY
+        stop_music(sys)
+        <-
+    bg_frame = bg_frame + 1
+    if bg_frame < get_bg_tempo()
+        <-
+    bg_frame = 0
+    let p = meteor_model.get_planet()
+    sys.begin_audio()
+    if p == 0
+        step_ealthal(sys)
+    elif p == 1
+        step_sasazi(sys)
+    elif p == 2
+        step_whaleen(sys)
+    elif p == 3
+        step_fiereem(sys)
+    elif p == 4
+        step_sernova(sys)
+    elif p == 5
+        step_doorsky(sys)
+    elif p == 6
+        step_grafant(sys)
+    elif p == 7
+        step_perilla(sys)
+    elif p == 8
+        step_gelgeel(sys)
+    elif p == 9
+        step_rastarl(sys)
+    elif p == 10
+        step_neurali(sys)
+    elif p == 11
+        step_lualua(sys)
+    elif p == 12
+        step_orkarol(sys)
+    elif p == 13
+        step_holonull(sys)
+    elif p == 14
+        step_tekhnis(sys)
+    elif p == 15
+        step_belliko(sys)
+    elif p == 16
+        step_gaussle(sys)
+    elif p == 17
+        step_meteor(sys)
+    modulate_bg(sys)
+    sys.end_audio()
+    bg_step = bg_step + 1
+    if bg_step >= 32
+        bg_step = 0
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Win/Lose jingles — 8-note sequences on all 4 voices, play once
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def JIN_LEN = 8
+def JIN_TEMPO = 8
+
+def ?jin_step = 0
+def ?jin_frame = 0
+def ?jin_playing = false
+
+-- Win jingles per planet (v0=melody, v1=harmony, v2=bass, v3=accent)
+-- Ealthal: triumphant brass fanfare — Bb major rising with snare rolls
+def W_HTK_V0 = [58, 62, 65, 70, 70, 72, 74, 77]
+def W_HTK_V1 = [53, 58, 62, 65, 65, 70, 72, 74]
+def W_HTK_V2 = [70, 0,  70, 0,  70, 70, 70, 70]
+def W_HTK_V3 = [0,  70, 0,  70, 0,  70, 70, 70]
+
+-- Sassazi: Morricone yeehaw — Am rising to triumphant A major resolve
+def W_SAS_V0 = [57, 60, 64, 69, 69, 72, 76, 76]
+def W_SAS_V1 = [45, 48, 52, 57, 57, 60, 64, 64]
+def W_SAS_V2 = [45, 0,  48, 0,  45, 52, 57, 57]
+def W_SAS_V3 = [0,  0,  57, 0,  0,  64, 0,  69]
+
+-- Whaleen: ocean swell victory — C major wave cresting upward
+def W_WAL_V0 = [60, 64, 67, 72, 76, 79, 84, 84]
+def W_WAL_V1 = [48, 52, 55, 60, 64, 67, 72, 72]
+def W_WAL_V2 = [36, 0,  43, 0,  36, 43, 48, 48]
+def W_WAL_V3 = [0,  48, 0,  55, 0,  60, 0,  67]
+
+-- Fiereem: rock victory riff — E minor power chord surge
+def W_FIR_V0 = [52, 55, 59, 64, 67, 71, 76, 76]
+def W_FIR_V1 = [40, 43, 47, 52, 55, 59, 64, 64]
+def W_FIR_V2 = [28, 0,  40, 0,  28, 40, 52, 52]
+def W_FIR_V3 = [0,  0,  52, 0,  0,  59, 0,  64]
+
+-- Sernova: bossa celebration — smooth C major ii-V-I with triangle dings
+def W_SRN_V0 = [72, 74, 76, 79, 79, 84, 84, 84]
+def W_SRN_V1 = [60, 62, 64, 67, 67, 72, 72, 72]
+def W_SRN_V2 = [48, 0,  52, 0,  48, 55, 60, 60]
+def W_SRN_V3 = [84, 0,  84, 0,  84, 84, 84, 84]
+
+-- Doorsky: ethereal ascent — tritones resolving into pure octaves
+def W_DHV_V0 = [48, 54, 55, 60, 66, 67, 72, 79]
+def W_DHV_V1 = [42, 48, 49, 54, 60, 62, 67, 72]
+def W_DHV_V2 = [36, 0,  36, 0,  42, 0,  48, 48]
+def W_DHV_V3 = [0,  0,  48, 0,  0,  60, 0,  67]
+
+-- Grafant: glacial breakthrough — Phrygian ice shattering into C major
+def W_GRF_V0 = [49, 48, 53, 60, 61, 65, 72, 72]
+def W_GRF_V1 = [37, 36, 41, 48, 49, 53, 60, 60]
+def W_GRF_V2 = [36, 0,  36, 0,  37, 0,  48, 48]
+def W_GRF_V3 = [0,  0,  48, 0,  0,  56, 0,  60]
+
+-- Perilla: primal triumph — open 5ths and 4ths, tribal chant rising
+def W_PRL_V0 = [40, 45, 40, 47, 52, 52, 57, 57]
+def W_PRL_V1 = [28, 33, 28, 35, 40, 40, 45, 45]
+def W_PRL_V2 = [28, 0,  28, 0,  28, 33, 40, 40]
+def W_PRL_V3 = [0,  0,  40, 0,  0,  45, 0,  52]
+
+-- Metteor: dark triumph — D minor villain defeated, bittersweet with tritone resolve
+def W_MTR_V0 = [62, 65, 68, 62, 65, 70, 74, 74]
+def W_MTR_V1 = [50, 53, 56, 50, 53, 58, 62, 62]
+def W_MTR_V2 = [26, 0,  32, 0,  26, 38, 50, 50]
+def W_MTR_V3 = [0,  0,  56, 0,  0,  62, 0,  68]
+
+-- Tekhnis: loom completion — Am ascending into C major resolution
+def W_TKS_V0 = [57, 60, 64, 67, 67, 72, 76, 76]
+def W_TKS_V1 = [45, 48, 52, 55, 55, 60, 64, 64]
+def W_TKS_V2 = [33, 0,  40, 0,  33, 40, 48, 48]
+def W_TKS_V3 = [0,  0,  57, 0,  0,  64, 0,  67]
+
+-- Belliko: war horn victory — Dm rising to D major triumph
+def W_BLK_V0 = [50, 53, 57, 62, 62, 65, 69, 69]
+def W_BLK_V1 = [38, 41, 45, 50, 50, 53, 57, 57]
+def W_BLK_V2 = [26, 0,  38, 0,  26, 38, 45, 45]
+def W_BLK_V3 = [0,  0,  50, 0,  0,  57, 0,  62]
+
+-- Gaussle: factory triumph — Em rising through industrial layers
+def W_GSS_V0 = [52, 55, 59, 64, 64, 67, 71, 71]
+def W_GSS_V1 = [40, 43, 47, 52, 52, 55, 59, 59]
+def W_GSS_V2 = [28, 0,  40, 0,  28, 40, 47, 47]
+def W_GSS_V3 = [0,  0,  52, 0,  0,  59, 0,  64]
+
+-- Gelgeel: liquid triumph — Dm7 rising through drip layers
+def W_GEL_V0 = [62, 65, 69, 72, 69, 74, 77, 77]
+def W_GEL_V1 = [50, 53, 57, 60, 57, 62, 65, 65]
+def W_GEL_V2 = [38, 0,  50, 0,  38, 50, 53, 53]
+def W_GEL_V3 = [0,  0,  62, 0,  0,  65, 0,  69]
+
+-- Rastarl: solar fanfare — bright A major bursting upward
+def W_RST_V0 = [69, 73, 76, 81, 81, 85, 88, 88]
+def W_RST_V1 = [57, 61, 64, 69, 69, 73, 76, 76]
+def W_RST_V2 = [45, 0,  57, 0,  45, 57, 64, 64]
+def W_RST_V3 = [0,  0,  69, 0,  0,  73, 0,  76]
+
+-- Neurali: digital victory — Cm chromatic surge ascending
+def W_NRL_V0 = [60, 63, 67, 72, 75, 79, 84, 84]
+def W_NRL_V1 = [48, 51, 55, 60, 63, 67, 72, 72]
+def W_NRL_V2 = [36, 0,  48, 0,  36, 48, 60, 60]
+def W_NRL_V3 = [0,  0,  60, 0,  0,  67, 0,  72]
+
+-- Lua=Lua: moonrise triumph — gentle Eb major ascending
+def W_LLA_V0 = [63, 67, 70, 75, 75, 79, 82, 82]
+def W_LLA_V1 = [51, 55, 58, 63, 63, 67, 70, 70]
+def W_LLA_V2 = [39, 0,  51, 0,  39, 51, 58, 58]
+def W_LLA_V3 = [0,  0,  63, 0,  0,  67, 0,  70]
+
+-- Orkarol: sacred triumph — Bb major ascending hymn
+def W_ORK_V0 = [70, 70, 74, 74, 77, 77, 82, 82]
+def W_ORK_V1 = [58, 58, 62, 62, 65, 65, 70, 70]
+def W_ORK_V2 = [46, 46, 50, 50, 53, 53, 58, 58]
+def W_ORK_V3 = [0,  46, 0,  50, 0,  53, 58, 58]
+
+-- Holonull: void revealed — Cm rising into bright neon resolution
+def W_HOL_V0 = [60, 63, 67, 72, 72, 75, 79, 79]
+def W_HOL_V1 = [48, 51, 55, 60, 60, 63, 67, 67]
+def W_HOL_V2 = [37, 0,  43, 0,  37, 43, 48, 48]
+def W_HOL_V3 = [0,  0,  60, 0,  0,  67, 0,  72]
+
+-- Lose jingles per planet (descending / sad / minor)
+-- Ealthal: snare roll that cuts off — drum dismissed
+def L_HTK_V0 = [70, 70, 0,  70, 70, 0,  0,  0]
+def L_HTK_V1 = [70, 70, 0,  70, 70, 0,  0,  0]
+def L_HTK_V2 = [34, 0,  34, 0,  34, 0,  0,  0]
+def L_HTK_V3 = [0,  70, 0,  70, 0,  0,  0,  0]
+
+-- Sassazi: dusty Morricone defeat — Am descending with semitone droop
+def L_SAS_V0 = [69, 64, 63, 60, 57, 56, 52, 45]
+def L_SAS_V1 = [57, 52, 51, 48, 45, 44, 40, 33]
+def L_SAS_V2 = [45, 0,  48, 0,  45, 0,  40, 33]
+def L_SAS_V3 = [0,  0,  57, 0,  0,  48, 0,  0]
+
+-- Whaleen: sinking depths — C major draining away into minor
+def L_WAL_V0 = [72, 67, 64, 60, 55, 52, 48, 43]
+def L_WAL_V1 = [60, 55, 52, 48, 43, 40, 36, 31]
+def L_WAL_V2 = [48, 0,  43, 0,  48, 0,  36, 36]
+def L_WAL_V3 = [0,  55, 0,  48, 0,  43, 0,  0]
+
+-- Fiereem: rock funeral — heavy E minor descent, power draining
+def L_FIR_V0 = [64, 59, 55, 52, 47, 43, 40, 40]
+def L_FIR_V1 = [52, 47, 43, 40, 35, 31, 28, 28]
+def L_FIR_V2 = [40, 0,  40, 0,  28, 0,  28, 28]
+def L_FIR_V3 = [0,  0,  52, 0,  0,  40, 0,  0]
+
+-- Sernova: bossa minor twilight — smooth descent fading out
+def L_SRN_V0 = [79, 76, 72, 67, 64, 60, 55, 55]
+def L_SRN_V1 = [67, 64, 60, 55, 52, 48, 43, 43]
+def L_SRN_V2 = [48, 0,  43, 0,  48, 0,  36, 36]
+def L_SRN_V3 = [84, 0,  84, 0,  0,  0,  0,  0]
+
+-- Doorsky: void collapse — tritones sinking into abyss
+def L_DHV_V0 = [67, 66, 60, 54, 48, 42, 36, 30]
+def L_DHV_V1 = [61, 60, 54, 48, 42, 36, 30, 24]
+def L_DHV_V2 = [48, 0,  42, 0,  36, 0,  30, 24]
+def L_DHV_V3 = [0,  0,  54, 0,  0,  42, 0,  0]
+
+-- Grafant: crushed by ice — Phrygian semitones grinding downward
+def L_GRF_V0 = [61, 60, 56, 55, 49, 48, 37, 36]
+def L_GRF_V1 = [49, 48, 44, 43, 37, 36, 25, 24]
+def L_GRF_V2 = [36, 0,  36, 0,  37, 0,  24, 24]
+def L_GRF_V3 = [0,  0,  48, 0,  0,  37, 0,  0]
+
+-- Perilla: tribal death knell — hollow 5ths collapsing, chant dying
+def L_PRL_V0 = [45, 40, 41, 40, 33, 28, 29, 28]
+def L_PRL_V1 = [33, 28, 29, 28, 21, 16, 17, 16]
+def L_PRL_V2 = [28, 0,  28, 0,  28, 0,  16, 16]
+def L_PRL_V3 = [0,  0,  40, 0,  0,  28, 0,  0]
+
+-- Metteor: villain's demise — D minor crumbling, tritone Ab resolve
+def L_MTR_V0 = [68, 65, 62, 56, 62, 56, 50, 50]
+def L_MTR_V1 = [56, 53, 50, 44, 50, 44, 38, 38]
+def L_MTR_V2 = [38, 0,  32, 0,  26, 0,  26, 26]
+def L_MTR_V3 = [0,  0,  56, 0,  0,  44, 0,  0]
+
+-- Tekhnis: loom shutdown — Am descending, machine winding down
+def L_TKS_V0 = [64, 60, 57, 55, 52, 48, 45, 45]
+def L_TKS_V1 = [52, 48, 45, 43, 40, 36, 33, 33]
+def L_TKS_V2 = [33, 0,  33, 0,  33, 0,  21, 21]
+def L_TKS_V3 = [0,  0,  45, 0,  0,  40, 0,  0]
+
+-- Belliko: war defeat — Dm collapse, last horn fading
+def L_BLK_V0 = [62, 57, 53, 50, 45, 41, 38, 38]
+def L_BLK_V1 = [50, 45, 41, 38, 33, 29, 26, 26]
+def L_BLK_V2 = [38, 0,  38, 0,  26, 0,  26, 26]
+def L_BLK_V3 = [0,  0,  50, 0,  0,  38, 0,  0]
+
+-- Gaussle: factory shutdown — Em descending, machinery powering down
+def L_GSS_V0 = [64, 59, 55, 52, 48, 43, 40, 40]
+def L_GSS_V1 = [52, 47, 43, 40, 36, 31, 28, 28]
+def L_GSS_V2 = [40, 0,  40, 0,  28, 0,  28, 28]
+def L_GSS_V3 = [0,  0,  52, 0,  0,  43, 0,  0]
+
+-- Gelgeel: liquid drain — Dm7 sinking into silence
+def L_GEL_V0 = [69, 65, 62, 60, 57, 53, 50, 50]
+def L_GEL_V1 = [57, 53, 50, 48, 45, 41, 38, 38]
+def L_GEL_V2 = [38, 0,  38, 0,  38, 0,  26, 26]
+def L_GEL_V3 = [0,  0,  53, 0,  0,  45, 0,  0]
+
+-- Rastarl: solar fade — A major dimming to minor
+def L_RST_V0 = [76, 73, 69, 64, 61, 57, 52, 52]
+def L_RST_V1 = [64, 61, 57, 52, 49, 45, 40, 40]
+def L_RST_V2 = [45, 0,  45, 0,  45, 0,  33, 33]
+def L_RST_V3 = [0,  0,  57, 0,  0,  49, 0,  0]
+
+-- Neurali: system crash — Cm digital decay descending
+def L_NRL_V0 = [72, 67, 63, 60, 55, 51, 48, 48]
+def L_NRL_V1 = [60, 55, 51, 48, 43, 39, 36, 36]
+def L_NRL_V2 = [36, 0,  36, 0,  36, 0,  24, 24]
+def L_NRL_V3 = [0,  0,  51, 0,  0,  43, 0,  0]
+
+-- Lua=Lua: eclipse descent — Eb minor fading into darkness
+def L_LLA_V0 = [70, 67, 63, 58, 55, 51, 46, 46]
+def L_LLA_V1 = [58, 55, 51, 46, 43, 39, 34, 34]
+def L_LLA_V2 = [39, 0,  39, 0,  39, 0,  27, 27]
+def L_LLA_V3 = [0,  0,  55, 0,  0,  46, 0,  0]
+
+-- Orkarol: fading requiem — Bb minor descending lament
+def L_ORK_V0 = [77, 74, 70, 65, 62, 58, 53, 53]
+def L_ORK_V1 = [65, 62, 58, 53, 50, 46, 41, 41]
+def L_ORK_V2 = [46, 0,  46, 0,  46, 0,  34, 34]
+def L_ORK_V3 = [0,  0,  62, 0,  0,  53, 0,  0]
+
+-- Holonull: void collapse — Cm chromatic descent into silence
+def L_HOL_V0 = [72, 67, 63, 60, 56, 51, 48, 48]
+def L_HOL_V1 = [60, 55, 51, 48, 44, 39, 36, 36]
+def L_HOL_V2 = [37, 0,  37, 0,  37, 0,  25, 25]
+def L_HOL_V3 = [0,  0,  51, 0,  0,  44, 0,  0]
+
+-- Jingle percussion patterns (V7 PSG)
+-- Win: kick-hat-snare-hat-kick-kick-snare-kick (triumphant march)
+def W_JIN_PERC = [30, 95, 65, 95, 30, 30, 65, 30]
+-- Lose: kick-0-0-tom-0-0-kick-0 (sparse funeral)
+def L_JIN_PERC = [30, 0, 0, 48, 0, 0, 30, 0]
+
+-- Is it a win jingle? (vs lose)
+def ?jin_is_win = true
+
+: setup_win_voices(sys = vimana.system) (( -- ))
+    let p = meteor_model.get_planet()
+    if p == 0
+        -- Ealthal win: brass fanfare (V0/V1 saw) + snare drumset (V2/V3 pulse)
+        sys.set_voice(0, vimana.wave_sawtooth)
+        sys.set_envelope(0, 0, 7, 5, 7)
+        sys.set_voice(1, vimana.wave_sawtooth)
+        sys.set_envelope(1, 0, 7, 4, 7)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 2, 0, 1)
+        sys.set_pulse_width(2, 15)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 2, 0, 1)
+        sys.set_pulse_width(3, 25)
+    elif p == 1
+        -- Sassazi win: twangy western pulse flourish
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 8, 3, 7)
+        sys.set_pulse_width(0, 50)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 8, 2, 7)
+        sys.set_pulse_width(1, 60)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 9, 4, 8)
+        sys.set_pulse_width(2, 70)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 7, 0, 5)
+        sys.set_pulse_width(3, 50)
+    elif p == 2
+        -- Whaleen win: flowing triangles — ocean swell
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 2, 10, 6, 10)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 2, 10, 5, 10)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 1, 10, 7, 10)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 1, 9, 0, 9)
+    elif p == 3
+        -- Fiereem win: rock power — thick pulse + saw aggression
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 8, 4, 7)
+        sys.set_pulse_width(0, 180)
+        sys.set_voice(1, vimana.wave_sawtooth)
+        sys.set_envelope(1, 0, 8, 3, 7)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 9, 5, 8)
+        sys.set_pulse_width(2, 200)
+        sys.set_voice(3, vimana.wave_sawtooth)
+        sys.set_envelope(3, 0, 7, 0, 5)
+    elif p == 4
+        -- Sernova win: crisp triangle dings — bossa celebration
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 0, 7, 3, 6)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 0, 7, 2, 6)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 8, 4, 7)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 0, 5, 0, 3)
+    elif p == 5
+        -- Doorsky win: ghostly pulse + triangle — void clearing
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 4, 11, 4, 11)
+        sys.set_pulse_width(0, 25)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 5, 11, 3, 11)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 3, 11, 5, 11)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 3, 10, 0, 10)
+        sys.set_pulse_width(3, 20)
+    elif p == 6
+        -- Grafant win: icy narrow pulse — Phrygian frost breaking
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 9, 3, 8)
+        sys.set_pulse_width(0, 25)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 9, 2, 8)
+        sys.set_pulse_width(1, 30)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 10, 4, 9)
+        sys.set_pulse_width(2, 35)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 8, 0, 6)
+        sys.set_pulse_width(3, 20)
+    elif p == 7
+        -- Perilla win: tribal chant — nasal pulse + stone thuds
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 1, 8, 4, 7)
+        sys.set_pulse_width(0, 25)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 1, 8, 3, 7)
+        sys.set_pulse_width(1, 30)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 4, 0, 2)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 0, 4, 0, 2)
+    elif p == 8
+        -- Gelgeel win: liquid bloom — triangle drip celebration
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 1, 9, 4, 8)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 1, 9, 3, 8)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 2, 10, 5, 9)
+        sys.set_pulse_width(2, 160)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 2, 8, 0, 6)
+    elif p == 9
+        -- Rastarl win: solar burst — bright triangle bells
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 0, 7, 3, 6)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 0, 7, 2, 6)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 8, 4, 7)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 0, 5, 0, 3)
+    elif p == 10
+        -- Neurali win: system online — sharp pulse escalation
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 6, 2, 5)
+        sys.set_pulse_width(0, 100)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 6, 1, 5)
+        sys.set_pulse_width(1, 80)
+        sys.set_voice(2, vimana.wave_sawtooth)
+        sys.set_envelope(2, 0, 7, 3, 6)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 5, 0, 3)
+        sys.set_pulse_width(3, 120)
+    elif p == 11
+        -- Lua=Lua win: moonrise — ethereal triangle shimmer
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 1, 9, 4, 8)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 1, 9, 3, 8)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 2, 10, 5, 9)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 2, 8, 0, 6)
+    elif p == 12
+        -- Orkarol win: sacred triumph — warm organ voices
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 2, 10, 6, 9)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 2, 10, 5, 9)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 3, 11, 7, 10)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 3, 10, 0, 8)
+    elif p == 13
+        -- Holonull win: void revealed — neon pulse shimmer triumph
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 1, 9, 4, 8)
+        sys.set_pulse_width(0, 150)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 1, 9, 3, 8)
+        sys.set_pulse_width(1, 130)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 2, 10, 5, 9)
+        sys.set_pulse_width(2, 120)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 2, 8, 0, 6)
+        sys.set_pulse_width(3, 100)
+    elif p == 14
+        -- Tekhnis win: loom completion — narrow pulse mechanical triumph
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 7, 3, 6)
+        sys.set_pulse_width(0, 35)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 7, 2, 6)
+        sys.set_pulse_width(1, 45)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 8, 4, 7)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 6, 0, 4)
+        sys.set_pulse_width(3, 30)
+    elif p == 15
+        -- Belliko win: war horn victory — sawtooth brass triumph
+        sys.set_voice(0, vimana.wave_sawtooth)
+        sys.set_envelope(0, 0, 8, 4, 7)
+        sys.set_voice(1, vimana.wave_sawtooth)
+        sys.set_envelope(1, 0, 8, 3, 7)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 9, 5, 8)
+        sys.set_pulse_width(2, 160)
+        sys.set_voice(3, vimana.wave_sawtooth)
+        sys.set_envelope(3, 0, 7, 0, 5)
+    elif p == 16
+        -- Gaussle win: factory triumph — wide pulse fanfare + sawtooth grind
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 1, 8, 4, 7)
+        sys.set_pulse_width(0, 160)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 1, 8, 3, 7)
+        sys.set_pulse_width(1, 140)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 9, 5, 8)
+        sys.set_voice(3, vimana.wave_sawtooth)
+        sys.set_envelope(3, 0, 7, 0, 5)
+    elif p == 17
+        -- Metteor win: boss defeated — aggressive saw + thick pulse
+        sys.set_voice(0, vimana.wave_sawtooth)
+        sys.set_envelope(0, 0, 8, 4, 7)
+        sys.set_voice(1, vimana.wave_sawtooth)
+        sys.set_envelope(1, 0, 8, 3, 7)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 9, 5, 8)
+        sys.set_pulse_width(2, 180)
+        sys.set_voice(3, vimana.wave_sawtooth)
+        sys.set_envelope(3, 0, 7, 0, 5)
+    -- V4: bright shimmer doubling melody octave up
+    sys.set_voice(4, vimana.wave_sawtooth)
+    sys.set_envelope(4, 0, 7, 3, 6)
+    -- V5: warm mid fill reinforcing harmony
+    sys.set_voice(5, vimana.wave_triangle)
+    sys.set_envelope(5, 0, 7, 2, 6)
+    -- V6: deep sub-bass reinforcement
+    sys.set_voice(6, vimana.wave_triangle)
+    sys.set_envelope(6, 0, 8, 4, 7)
+    -- V7: PSG percussion hits
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+    sys.set_filter(400, 5, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    sys.set_filter_route(4, 1)
+    sys.set_filter_route(5, 1)
+;
+
+: setup_lose_voices(sys = vimana.system) (( -- ))
+    let p = meteor_model.get_planet()
+    if p == 0
+        -- Ealthal lose: drum roll cutting off — dismissed
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 2, 0, 1)
+        sys.set_pulse_width(0, 15)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 2, 0, 1)
+        sys.set_pulse_width(1, 25)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 3, 0, 2)
+        sys.set_pulse_width(2, 200)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 2, 0, 1)
+        sys.set_pulse_width(3, 20)
+    elif p == 1
+        -- Sassazi lose: twangy droop — Morricone defeat
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 10, 2, 9)
+        sys.set_pulse_width(0, 50)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 10, 1, 9)
+        sys.set_pulse_width(1, 60)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 10, 3, 10)
+        sys.set_pulse_width(2, 70)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 9, 0, 9)
+        sys.set_pulse_width(3, 50)
+    elif p == 2
+        -- Whaleen lose: ocean draining — triangle sinking
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 2, 11, 4, 11)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 2, 11, 3, 11)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 1, 11, 5, 11)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 1, 10, 0, 10)
+    elif p == 3
+        -- Fiereem lose: rock funeral — heavy and slow
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 11, 2, 10)
+        sys.set_pulse_width(0, 200)
+        sys.set_voice(1, vimana.wave_sawtooth)
+        sys.set_envelope(1, 0, 11, 1, 10)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 11, 3, 11)
+        sys.set_pulse_width(2, 200)
+        sys.set_voice(3, vimana.wave_sawtooth)
+        sys.set_envelope(3, 0, 9, 0, 9)
+    elif p == 4
+        -- Sernova lose: sad triangle fading — bossa twilight
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 0, 10, 2, 9)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 0, 10, 1, 9)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 10, 3, 10)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 0, 8, 0, 7)
+    elif p == 5
+        -- Doorsky lose: abyss swallowing — slow ghostly fade
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 4, 12, 2, 12)
+        sys.set_pulse_width(0, 25)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 5, 12, 1, 12)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 3, 12, 3, 12)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 3, 11, 0, 11)
+        sys.set_pulse_width(3, 20)
+    elif p == 6
+        -- Grafant lose: icy crush — hollow pulse grinding down
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 11, 1, 10)
+        sys.set_pulse_width(0, 25)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 11, 1, 10)
+        sys.set_pulse_width(1, 30)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 11, 2, 11)
+        sys.set_pulse_width(2, 35)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 10, 0, 10)
+        sys.set_pulse_width(3, 20)
+    elif p == 7
+        -- Perilla lose: tribal death knell — chant dying out
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 1, 10, 2, 10)
+        sys.set_pulse_width(0, 25)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 1, 10, 1, 10)
+        sys.set_pulse_width(1, 30)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 5, 0, 3)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 0, 5, 0, 3)
+    elif p == 8
+        -- Gelgeel lose: liquid drain — triangle sinking slowly
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 1, 11, 2, 11)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 1, 11, 1, 11)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 2, 11, 3, 11)
+        sys.set_pulse_width(2, 160)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 2, 10, 0, 10)
+    elif p == 9
+        -- Rastarl lose: solar fade — triangle bells dimming
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 0, 10, 2, 9)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 0, 10, 1, 9)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 10, 3, 10)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 0, 8, 0, 7)
+    elif p == 10
+        -- Neurali lose: system crash — pulse decay grinding down
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 10, 1, 9)
+        sys.set_pulse_width(0, 100)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 10, 1, 9)
+        sys.set_pulse_width(1, 80)
+        sys.set_voice(2, vimana.wave_sawtooth)
+        sys.set_envelope(2, 0, 11, 2, 10)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 9, 0, 9)
+        sys.set_pulse_width(3, 120)
+    elif p == 11
+        -- Lua=Lua lose: eclipse — triangle fading into silence
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 1, 11, 2, 11)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 1, 11, 1, 11)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 2, 11, 3, 11)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 2, 10, 0, 10)
+    elif p == 12
+        -- Orkarol lose: fading requiem — solemn triangle lament
+        sys.set_voice(0, vimana.wave_triangle)
+        sys.set_envelope(0, 2, 11, 2, 10)
+        sys.set_voice(1, vimana.wave_triangle)
+        sys.set_envelope(1, 2, 11, 1, 10)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 2, 11, 3, 11)
+        sys.set_pulse_width(2, 120)
+        sys.set_voice(3, vimana.wave_triangle)
+        sys.set_envelope(3, 3, 10, 0, 10)
+    elif p == 13
+        -- Holonull lose: void collapse — neon pulse fading to silence
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 1, 11, 2, 11)
+        sys.set_pulse_width(0, 150)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 1, 11, 1, 11)
+        sys.set_pulse_width(1, 130)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 2, 11, 3, 11)
+        sys.set_pulse_width(2, 120)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 2, 10, 0, 10)
+        sys.set_pulse_width(3, 100)
+    elif p == 14
+        -- Tekhnis lose: loom shutdown — narrow pulse winding down
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 0, 11, 2, 10)
+        sys.set_pulse_width(0, 35)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 0, 11, 1, 10)
+        sys.set_pulse_width(1, 45)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 11, 3, 11)
+        sys.set_voice(3, vimana.wave_pulse)
+        sys.set_envelope(3, 0, 10, 0, 10)
+        sys.set_pulse_width(3, 30)
+    elif p == 15
+        -- Belliko lose: war horn fading — sawtooth defeat
+        sys.set_voice(0, vimana.wave_sawtooth)
+        sys.set_envelope(0, 0, 11, 2, 10)
+        sys.set_voice(1, vimana.wave_sawtooth)
+        sys.set_envelope(1, 0, 11, 1, 10)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 11, 3, 11)
+        sys.set_pulse_width(2, 170)
+        sys.set_voice(3, vimana.wave_sawtooth)
+        sys.set_envelope(3, 0, 10, 0, 10)
+    elif p == 16
+        -- Gaussle lose: factory shutdown — conveyor grinding to halt
+        sys.set_voice(0, vimana.wave_pulse)
+        sys.set_envelope(0, 1, 11, 2, 11)
+        sys.set_pulse_width(0, 160)
+        sys.set_voice(1, vimana.wave_pulse)
+        sys.set_envelope(1, 1, 11, 1, 11)
+        sys.set_pulse_width(1, 140)
+        sys.set_voice(2, vimana.wave_triangle)
+        sys.set_envelope(2, 0, 11, 3, 11)
+        sys.set_voice(3, vimana.wave_sawtooth)
+        sys.set_envelope(3, 0, 10, 0, 10)
+    elif p == 17
+        -- Metteor lose: villain's demise — aggressive saw crumbling
+        sys.set_voice(0, vimana.wave_sawtooth)
+        sys.set_envelope(0, 0, 11, 2, 10)
+        sys.set_voice(1, vimana.wave_sawtooth)
+        sys.set_envelope(1, 0, 11, 1, 10)
+        sys.set_voice(2, vimana.wave_pulse)
+        sys.set_envelope(2, 0, 11, 3, 11)
+        sys.set_pulse_width(2, 180)
+        sys.set_voice(3, vimana.wave_sawtooth)
+        sys.set_envelope(3, 0, 10, 0, 10)
+    -- V4: fading echo doubling melody
+    sys.set_voice(4, vimana.wave_triangle)
+    sys.set_envelope(4, 1, 10, 1, 10)
+    -- V5: hollow echo reinforcing harmony
+    sys.set_voice(5, vimana.wave_pulse)
+    sys.set_envelope(5, 1, 10, 1, 10)
+    sys.set_pulse_width(5, 25)
+    -- V6: dark drone sub-bass
+    sys.set_voice(6, vimana.wave_triangle)
+    sys.set_envelope(6, 2, 11, 2, 11)
+    -- V7: PSG sparse funeral hits
+    sys.set_voice(7, vimana.wave_psg)
+    sys.set_envelope(7, 0, 2, 0, 1)
+    sys.set_filter(1400, 5, 1)
+    sys.set_filter_route(0, 1)
+    sys.set_filter_route(1, 1)
+    sys.set_filter_route(2, 1)
+    sys.set_filter_route(3, 1)
+    sys.set_filter_route(4, 1)
+    sys.set_filter_route(5, 1)
+;
+
+: jin_note_at(idx = num) (( num, num, num, num ))
+    let p = meteor_model.get_planet()
+    if jin_is_win
+        if p == 0
+            <- W_HTK_V0[idx], W_HTK_V1[idx], W_HTK_V2[idx], W_HTK_V3[idx]
+        elif p == 1
+            <- W_SAS_V0[idx], W_SAS_V1[idx], W_SAS_V2[idx], W_SAS_V3[idx]
+        elif p == 2
+            <- W_WAL_V0[idx], W_WAL_V1[idx], W_WAL_V2[idx], W_WAL_V3[idx]
+        elif p == 3
+            <- W_FIR_V0[idx], W_FIR_V1[idx], W_FIR_V2[idx], W_FIR_V3[idx]
+        elif p == 4
+            <- W_SRN_V0[idx], W_SRN_V1[idx], W_SRN_V2[idx], W_SRN_V3[idx]
+        elif p == 5
+            <- W_DHV_V0[idx], W_DHV_V1[idx], W_DHV_V2[idx], W_DHV_V3[idx]
+        elif p == 6
+            <- W_GRF_V0[idx], W_GRF_V1[idx], W_GRF_V2[idx], W_GRF_V3[idx]
+        elif p == 7
+            <- W_PRL_V0[idx], W_PRL_V1[idx], W_PRL_V2[idx], W_PRL_V3[idx]
+        elif p == 8
+            <- W_GEL_V0[idx], W_GEL_V1[idx], W_GEL_V2[idx], W_GEL_V3[idx]
+        elif p == 9
+            <- W_RST_V0[idx], W_RST_V1[idx], W_RST_V2[idx], W_RST_V3[idx]
+        elif p == 10
+            <- W_NRL_V0[idx], W_NRL_V1[idx], W_NRL_V2[idx], W_NRL_V3[idx]
+        elif p == 11
+            <- W_LLA_V0[idx], W_LLA_V1[idx], W_LLA_V2[idx], W_LLA_V3[idx]
+        elif p == 12
+            <- W_ORK_V0[idx], W_ORK_V1[idx], W_ORK_V2[idx], W_ORK_V3[idx]
+        elif p == 13
+            <- W_HOL_V0[idx], W_HOL_V1[idx], W_HOL_V2[idx], W_HOL_V3[idx]
+        elif p == 14
+            <- W_TKS_V0[idx], W_TKS_V1[idx], W_TKS_V2[idx], W_TKS_V3[idx]
+        elif p == 15
+            <- W_BLK_V0[idx], W_BLK_V1[idx], W_BLK_V2[idx], W_BLK_V3[idx]
+        elif p == 16
+            <- W_GSS_V0[idx], W_GSS_V1[idx], W_GSS_V2[idx], W_GSS_V3[idx]
+        <- W_MTR_V0[idx], W_MTR_V1[idx], W_MTR_V2[idx], W_MTR_V3[idx]
+    -- lose
+    if p == 0
+        <- L_HTK_V0[idx], L_HTK_V1[idx], L_HTK_V2[idx], L_HTK_V3[idx]
+    elif p == 1
+        <- L_SAS_V0[idx], L_SAS_V1[idx], L_SAS_V2[idx], L_SAS_V3[idx]
+    elif p == 2
+        <- L_WAL_V0[idx], L_WAL_V1[idx], L_WAL_V2[idx], L_WAL_V3[idx]
+    elif p == 3
+        <- L_FIR_V0[idx], L_FIR_V1[idx], L_FIR_V2[idx], L_FIR_V3[idx]
+    elif p == 4
+        <- L_SRN_V0[idx], L_SRN_V1[idx], L_SRN_V2[idx], L_SRN_V3[idx]
+    elif p == 5
+        <- L_DHV_V0[idx], L_DHV_V1[idx], L_DHV_V2[idx], L_DHV_V3[idx]
+    elif p == 6
+        <- L_GRF_V0[idx], L_GRF_V1[idx], L_GRF_V2[idx], L_GRF_V3[idx]
+    elif p == 7
+        <- L_PRL_V0[idx], L_PRL_V1[idx], L_PRL_V2[idx], L_PRL_V3[idx]
+    elif p == 8
+        <- L_GEL_V0[idx], L_GEL_V1[idx], L_GEL_V2[idx], L_GEL_V3[idx]
+    elif p == 9
+        <- L_RST_V0[idx], L_RST_V1[idx], L_RST_V2[idx], L_RST_V3[idx]
+    elif p == 10
+        <- L_NRL_V0[idx], L_NRL_V1[idx], L_NRL_V2[idx], L_NRL_V3[idx]
+    elif p == 11
+        <- L_LLA_V0[idx], L_LLA_V1[idx], L_LLA_V2[idx], L_LLA_V3[idx]
+    elif p == 12
+        <- L_ORK_V0[idx], L_ORK_V1[idx], L_ORK_V2[idx], L_ORK_V3[idx]
+    elif p == 13
+        <- L_HOL_V0[idx], L_HOL_V1[idx], L_HOL_V2[idx], L_HOL_V3[idx]
+    elif p == 14
+        <- L_TKS_V0[idx], L_TKS_V1[idx], L_TKS_V2[idx], L_TKS_V3[idx]
+    elif p == 15
+        <- L_BLK_V0[idx], L_BLK_V1[idx], L_BLK_V2[idx], L_BLK_V3[idx]
+    elif p == 16
+        <- L_GSS_V0[idx], L_GSS_V1[idx], L_GSS_V2[idx], L_GSS_V3[idx]
+    <- L_MTR_V0[idx], L_MTR_V1[idx], L_MTR_V2[idx], L_MTR_V3[idx]
+;
+
+: step_jingle(sys = vimana.system) (( -- ))
+    let ?n0 = jin_note_at(jin_step)
+    let ?n1 = jin_note_at(jin_step)
+    let ?n2 = jin_note_at(jin_step)
+    let ?n3 = jin_note_at(jin_step)
+    if n0 > 0
+        sys.play_voice(0, n0, 10)
+    if n1 > 0
+        sys.play_voice(1, n1, 8)
+    if n2 > 0
+        sys.play_voice(2, n2, 7)
+    if n3 > 0
+        sys.play_voice(3, n3, 6)
+    -- V4: octave-up shimmer of melody
+    if n0 > 0
+        sys.play_voice(4, n0 + 12, 5)
+    -- V5: harmony reinforcement (different timbre)
+    if n1 > 0
+        sys.play_voice(5, n1, 4)
+    -- V6: deep sub-bass (octave below bass)
+    if n2 > 12
+        sys.play_voice(6, n2 - 12, 3)
+    -- V7: PSG percussion
+    let ?perc = 0
+    if jin_is_win
+        perc = W_JIN_PERC[jin_step]
+    if !jin_is_win
+        perc = L_JIN_PERC[jin_step]
+    if perc > 0
+        sys.play_voice(7, perc, 3)
+;
+
+: modulate_jingle(sys = vimana.system) (( -- ))
+    if jin_is_win
+        sys.set_filter(sweep8(jin_step, 400, 1800), 5, 1)
+    if !jin_is_win
+        sys.set_filter(sweep8(jin_step, 1400, 200), 5, 1)
+;
+
+:: play_win(sys = vimana.system) (( -- ))
+    jin_is_win = true
+    jin_step = 0
+    jin_frame = 0
+    jin_playing = true
+    sys.begin_audio()
+    setup_win_voices(sys)
+    step_jingle(sys)
+    sys.end_audio()
+;
+
+:: play_lose(sys = vimana.system) (( -- ))
+    jin_is_win = false
+    jin_step = 0
+    jin_frame = 0
+    jin_playing = true
+    sys.begin_audio()
+    setup_lose_voices(sys)
+    step_jingle(sys)
+    sys.end_audio()
+;
+
+:: stop_jingle(sys = vimana.system) (( -- ))
+    jin_playing = false
+    sys.begin_audio()
+    sys.stop_voice(0)
+    sys.stop_voice(1)
+    sys.stop_voice(2)
+    sys.stop_voice(3)
+    sys.stop_voice(4)
+    sys.stop_voice(5)
+    sys.stop_voice(6)
+    sys.stop_voice(7)
+    sys.set_filter_route(0, 0)
+    sys.set_filter_route(1, 0)
+    sys.set_filter_route(2, 0)
+    sys.set_filter_route(3, 0)
+    sys.set_filter_route(4, 0)
+    sys.set_filter_route(5, 0)
+    sys.set_ring_mod(0, 0)
+    sys.end_audio()
+;
+
+:: tick_jingle(sys = vimana.system) (( -- ))
+    if !jin_playing
+        <-
+    jin_frame = jin_frame + 1
+    if jin_frame < JIN_TEMPO
+        <-
+    jin_frame = 0
+    jin_step = jin_step + 1
+    if jin_step >= JIN_LEN
+        jin_playing = false
+        sys.begin_audio()
+        sys.stop_voice(0)
+        sys.stop_voice(1)
+        sys.stop_voice(2)
+        sys.stop_voice(3)
+        sys.stop_voice(4)
+        sys.stop_voice(5)
+        sys.stop_voice(6)
+        sys.stop_voice(7)
+        sys.set_filter_route(0, 0)
+        sys.set_filter_route(1, 0)
+        sys.set_filter_route(2, 0)
+        sys.set_filter_route(3, 0)
+        sys.set_filter_route(4, 0)
+        sys.set_filter_route(5, 0)
+        sys.set_ring_mod(0, 0)
+        sys.end_audio()
+        <-
+    sys.begin_audio()
+    step_jingle(sys)
+    modulate_jingle(sys)
+    sys.end_audio()
+;

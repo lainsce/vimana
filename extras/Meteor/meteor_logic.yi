@@ -1,0 +1,1640 @@
+cask meteor_logic
+
+bring stdr
+bring vimana
+
+bring meteor_model
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- PRNG
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?seed = 12345
+
+:: seed_prng(sys = vimana.system) (( -- ))
+    let dt = sys.datetime()
+    seed = dt.second() + dt.minute() * 60 + dt.hour() * 3600 + dt.day() * 17 + dt.month() * 31
+    if seed == 0
+        seed = 1
+;
+
+: prng() (( num ))
+    seed = (seed * 1103515245 + 12345) % 65536
+    if seed < 0
+        seed = 0 - seed
+    <- seed
+;
+
+: prng_range(n = num) (( num ))
+    <- prng() % n
+;
+
+: sqrt_approx(v = num) (( num ))
+    if v <= 0
+        <- 0
+    let ?x = v * 0.5 + 0.5
+    for (let ?i = 0; i < 8; i = i + 1)
+        x = 0.5 * (x + v / x)
+    <- x
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Planet-weighted element distribution (cumulative thresholds out of 10000)
+-- Air=1, Fire=2, Water=3, Soil=4, Iron=5, Zap=6, Herb=7, Dark=8, Zoo=9, Glow=10
+-- EALTHAL:  Soil=22.12, Air=22.12, Water=22.12, Fire=22.12, Zoo=11.06, Glow=0.46
+-- SASSAZI:  Soil=36.24, Air=18.12, Fire=18.12, Iron=18.12, Zoo=9.05, Dark=0.35
+-- WHALEEN:  Water=28.48, Air=17.79, Fire=17.79, Zap=17.79, Herb=17.79, Glow=0.36
+-- FIEREEM:  Fire=39.84, Soil=14.94, Air=14.94, Iron=14.94, Zap=14.94, Dark=0.40
+-- SERNOVA:  Fire=28.58, Zap=28.58, Glow=14.24, Zoo=14.24, Iron=12.24, Water=1.20, Dark=0.92
+-- DOORSKY:  equal 11.11% each of Soil,Air,Water,Fire,Iron,Glow,Zoo,Zap,Dark (no Herb)
+-- GRAFANT:  equal 25% Air, Soil, Iron, Zap
+-- PERILLA:  Herb=36.0, Air=19.0, Water=19.0, Soil=19.0, Glow=7.0
+-- GELGEEL:  Fire=33.33, Air=16.67, Water=16.67, Zap=16.67, Iron=16.66
+-- RASTARL:  Glow=22.29, Air=22.29, Fire=22.29, Iron=22.29, Water=10.84
+-- NEURALI:  Zap=51.95, Water=12.99, Iron=12.99, Herb=12.99, Dark=10.90
+-- LUA=LUA:  Glow=35.71, Fire=16.07, Soil=16.07, Zap=16.07, Dark=16.08
+-- ORKAROL:  equal 25% Glow, Water, Zoo, Herb
+-- HOLONUL:  Zap=52.0, Iron=10.26, Water=10.26, Fire=10.26, Glow=17.22
+-- METTEOR:  all 10 types equally at 10% each
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: weighted_tile(p = num) (( num ))
+    let r = prng_range(10000)
+    -- Ealthal (p == 0)
+    if p == 0
+        if r < 2212
+            <- 4
+        if r < 4424
+            <- 1
+        if r < 6636
+            <- 3
+        if r < 8848
+            <- 2
+        if r < 8894
+            <- 10
+        <- 9
+    -- Sassazi (p == 1)
+    if p == 1
+        if r < 3624
+            <- 4
+        if r < 5436
+            <- 1
+        if r < 7248
+            <- 2
+        if r < 9060
+            <- 5
+        if r < 9965
+            <- 9
+        <- 8
+    -- Whaleen (p == 2)
+    if p == 2
+        if r < 2848
+            <- 3
+        if r < 4627
+            <- 1
+        if r < 6406
+            <- 2
+        if r < 8185
+            <- 6
+        if r < 9964
+            <- 7
+        <- 10
+    -- Fiereem (p == 3)
+    if p == 3
+        if r < 3984
+            <- 2
+        if r < 5478
+            <- 4
+        if r < 6972
+            <- 1
+        if r < 8466
+            <- 5
+        if r < 9960
+            <- 6
+        <- 8
+    -- Sernova (p == 4): Fire/Zap heavy, with Glow/Zoo/Iron, rare Water
+    if p == 4
+        if r < 2858
+            <- 2
+        if r < 5716
+            <- 6
+        if r < 7140
+            <- 10
+        if r < 8564
+            <- 9
+        if r < 9788
+            <- 5
+        if r < 9908
+            <- 3
+        <- 8
+    -- Doorsky (p == 5): equal, no Herb
+    if p == 5
+        if r < 1111
+            <- 4
+        if r < 2222
+            <- 1
+        if r < 3333
+            <- 3
+        if r < 4444
+            <- 2
+        if r < 5555
+            <- 5
+        if r < 6666
+            <- 10
+        if r < 7777
+            <- 9
+        if r < 8888
+            <- 6
+        <- 8
+    -- Grafant (p == 6): equal Air, Soil, Iron, Zap
+    if p == 6
+        if r < 2500
+            <- 1
+        if r < 5000
+            <- 4
+        if r < 7500
+            <- 5
+        <- 6
+    -- Perilla (p == 7): Herb dominant, then Air/Water/Soil, trace Glow
+    if p == 7
+        if r < 3600
+            <- 7
+        if r < 5500
+            <- 1
+        if r < 7400
+            <- 3
+        if r < 9300
+            <- 4
+        <- 10
+    -- Gelgeel (p == 8): 33.33% Fire, 16.67% each Air/Water/Zap/Iron
+    if p == 8
+        if r < 3333
+            <- 2
+        if r < 5000
+            <- 1
+        if r < 6667
+            <- 3
+        if r < 8334
+            <- 6
+        <- 5
+    -- Rastarl (p == 9): 22.29% each Glow/Air/Fire/Iron, ~10.84% Water
+    if p == 9
+        if r < 2229
+            <- 10
+        if r < 4458
+            <- 1
+        if r < 6687
+            <- 2
+        if r < 8916
+            <- 5
+        <- 3
+    -- Neurali (p == 10): 51.95% Zap, 12.99% Water/Iron/Herb, 10.9% Dark
+    if p == 10
+        if r < 5195
+            <- 6
+        if r < 6494
+            <- 3
+        if r < 7793
+            <- 5
+        if r < 9092
+            <- 7
+        <- 8
+    -- Lua=Lua (p == 11): 35.71% Glow, 16.07% each Fire/Soil/Zap/Dark
+    if p == 11
+        if r < 3571
+            <- 10
+        if r < 5178
+            <- 2
+        if r < 6785
+            <- 4
+        if r < 8392
+            <- 6
+        <- 8
+    -- Orkarol (p == 12): equal Glow/Water/Zoo/Herb
+    if p == 12
+        if r < 2500
+            <- 10
+        if r < 5000
+            <- 3
+        if r < 7500
+            <- 9
+        <- 7
+    -- Holonull (p == 13): 52% Zap, 10.26% Iron/Water/Fire, rest Glow
+    if p == 13
+        if r < 5200
+            <- 6
+        if r < 6226
+            <- 5
+        if r < 7252
+            <- 3
+        if r < 8278
+            <- 2
+        <- 10
+    -- Tekhnis (p == 14): industrial tech — Zap/Glow heavy, Air/Water/Iron balanced
+    -- Zap=33.33%, Glow=26.67%, Air=13.33%, Water=13.33%, Iron=13.33%
+    if p == 14
+        if r < 3333
+            <- 6
+        if r < 6000
+            <- 10
+        if r < 7333
+            <- 1
+        if r < 8666
+            <- 3
+        <- 5
+    -- Belliko (p == 15): war zone — Zap/Iron heavy, Dark medium, Herb/Zoo light
+    -- Zap=34.48%, Iron=34.48%, Dark=20.69%, Herb=5.17%, Zoo=5.17%
+    if p == 15
+        if r < 3448
+            <- 6
+        if r < 6896
+            <- 5
+        if r < 8965
+            <- 8
+        if r < 9482
+            <- 7
+        <- 9
+    -- Gaussle (p == 16): industrial world — Soil heavy, Iron medium, Air/Fire/Water light
+    -- Soil=45.45%, Iron=27.27%, Air=9.09%, Fire=9.09%, Water=9.09%
+    if p == 16
+        if r < 4545
+            <- 4
+        if r < 7272
+            <- 5
+        if r < 8181
+            <- 1
+        if r < 9090
+            <- 2
+        <- 3
+    -- Meteor (p == 17): all types equally
+    if r < 1000
+        <- 1
+    if r < 2000
+        <- 2
+    if r < 3000
+        <- 3
+    if r < 4000
+        <- 4
+    if r < 5000
+        <- 5
+    if r < 6000
+        <- 6
+    if r < 7000
+        <- 7
+    if r < 8000
+        <- 8
+    if r < 9000
+        <- 9
+    <- 10
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Field initialization
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: resolve_initial_matches() (( -- ))
+    let w = meteor_model.field_w()
+    for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+        for (let ?x = 0; x < w; x = x + 1)
+            let t = meteor_model.get_tile(x, y)
+            if t == 0
+                continue
+            if x >= 2
+                if meteor_model.get_tile(x - 1, y) == t && meteor_model.get_tile(x - 2, y) == t
+                    meteor_model.set_tile(x, y, (t % meteor_model.NUM_TYPES) + 1)
+            let t2 = meteor_model.get_tile(x, y)
+            if y >= 2
+                if meteor_model.get_tile(x, y - 1) == t2 && meteor_model.get_tile(x, y - 2) == t2
+                    meteor_model.set_tile(x, y, (t2 % meteor_model.NUM_TYPES) + 1)
+;
+
+:: init_field() (( -- ))
+    meteor_model.clear_all()
+    let w = meteor_model.field_w()
+    -- Fill bottom 3 rows with random tiles (rows 11-13)
+    for (let ?y = 11; y < meteor_model.MAX_H; y = y + 1)
+        for (let ?x = 0; x < w; x = x + 1)
+            meteor_model.set_tile(x, y, weighted_tile(meteor_model.get_planet()))
+    resolve_initial_matches()
+    -- Fill bottom 3 rows for each active AI slot
+    let cnt0 = meteor_model.get_cpu_count()
+    for (let ?n = 0; n < cnt0; n = n + 1)
+        let ap = meteor_model.get_ai_assign(n)
+        if ap < 0
+            continue
+        let aw = meteor_model.PLANET_W[ap]
+        for (let ?y = 11; y < meteor_model.MAX_H; y = y + 1)
+            for (let ?x = 0; x < aw; x = x + 1)
+                meteor_model.set_ai_tile_n(n, x, y, weighted_tile(ap))
+    meteor_model.set_scene(meteor_model.SCENE_PLAY)
+    meteor_model.set_phase(meteor_model.PH_INPUT)
+    meteor_model.mark_dirty()
+;
+
+-- Reset player field only (keep lives, countdown, score, AI state)
+: reset_player_field() (( -- ))
+    let w = meteor_model.field_w()
+    for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+        for (let ?x = 0; x < w; x = x + 1)
+            meteor_model.set_tile(x, y, 0)
+            meteor_model.set_garbage_timer(x, y, 0)
+            meteor_model.set_garbage_dest(x, y, 0)
+    meteor_model.clear_matched()
+    meteor_model.clear_selection()
+    meteor_model.set_rise_timer(0)
+    meteor_model.set_combo(0)
+    for (let ?ri = 0; ri < meteor_model.MAX_W; ri = ri + 1)
+        meteor_model.set_rocket_off(ri, 0)
+        meteor_model.set_rocket_vel(ri, 0)
+        meteor_model.set_rocket_col_sent(ri, -1)
+        meteor_model.set_rocket_top(ri, meteor_model.MAX_H)
+    -- Refill bottom 3 rows
+    for (let ?y = 11; y < meteor_model.MAX_H; y = y + 1)
+        for (let ?x = 0; x < w; x = x + 1)
+            meteor_model.set_tile(x, y, weighted_tile(meteor_model.get_planet()))
+    resolve_initial_matches()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Match detection
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: find_matches() (( bool ))
+    meteor_model.clear_matched()
+    let w = meteor_model.field_w()
+    let ?found = false
+    let ?best = 0
+
+    -- Horizontal matches (3+)
+    let in_rocket = meteor_model.get_phase() == meteor_model.PH_ROCKET
+    for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+        let ?x = 0
+        for (; x < w;)
+            let t = meteor_model.get_tile(x, y)
+            if t == meteor_model.EMPTY || t == meteor_model.GARBAGE
+                x = x + 1
+                continue
+            if in_rocket && meteor_model.get_rocket_top(x) < meteor_model.MAX_H && y <= meteor_model.get_rocket_top(x)
+                x = x + 1
+                continue
+            let ?run = 1
+            for (let ?nx = x + 1; nx < w; nx = nx + 1)
+                if meteor_model.get_tile(nx, y) != t
+                    break
+                if in_rocket && meteor_model.get_rocket_top(nx) < meteor_model.MAX_H && y <= meteor_model.get_rocket_top(nx)
+                    break
+                run = run + 1
+            if run >= 3
+                for (let ?i = 0; i < run; i = i + 1)
+                    meteor_model.set_matched(x + i, y)
+                found = true
+                if run > best
+                    best = run
+            x = x + run
+
+    -- Vertical matches (3+)
+    for (let ?x = 0; x < w; x = x + 1)
+        let ?y = 0
+        for (; y < meteor_model.MAX_H;)
+            let t = meteor_model.get_tile(x, y)
+            if t == meteor_model.EMPTY || t == meteor_model.GARBAGE
+                y = y + 1
+                continue
+            if in_rocket && meteor_model.get_rocket_top(x) < meteor_model.MAX_H && y <= meteor_model.get_rocket_top(x)
+                y = y + 1
+                continue
+            let ?run = 1
+            for (let ?ny = y + 1; ny < meteor_model.MAX_H; ny = ny + 1)
+                if meteor_model.get_tile(x, ny) != t
+                    break
+                if in_rocket && meteor_model.get_rocket_top(x) < meteor_model.MAX_H && ny <= meteor_model.get_rocket_top(x)
+                    break
+                run = run + 1
+            if run >= 3
+                for (let ?i = 0; i < run; i = i + 1)
+                    meteor_model.set_matched(x, y + i)
+                found = true
+                if run > best
+                    best = run
+            y = y + run
+
+    meteor_model.set_max_run(best)
+
+    -- Clump: GARBAGE adjacent to matched tiles gets absorbed, propagates through
+    -- connected garbage, then pulls entire stack above into the match.
+    if found
+        -- Seed + flood fill: iterate until stable
+        let ?changed = true
+        for (; changed;)
+            changed = false
+            -- Seed: garbage adjacent (4-dir) to any matched tile
+            for (let ?cy = 0; cy < meteor_model.MAX_H; cy = cy + 1)
+                for (let ?cx = 0; cx < w; cx = cx + 1)
+                    if !meteor_model.get_matched_any(cx, cy)
+                        continue
+                    -- Below
+                    if cy < meteor_model.MAX_H - 1 && meteor_model.get_tile(cx, cy + 1) == meteor_model.GARBAGE && !meteor_model.get_matched_any(cx, cy + 1)
+                        meteor_model.set_matched(cx, cy + 1)
+                        changed = true
+                    -- Above
+                    if cy > 0 && meteor_model.get_tile(cx, cy - 1) == meteor_model.GARBAGE && !meteor_model.get_matched_any(cx, cy - 1)
+                        meteor_model.set_matched(cx, cy - 1)
+                        changed = true
+                    -- Right
+                    if cx < w - 1 && meteor_model.get_tile(cx + 1, cy) == meteor_model.GARBAGE && !meteor_model.get_matched_any(cx + 1, cy)
+                        meteor_model.set_matched(cx + 1, cy)
+                        changed = true
+                    -- Left
+                    if cx > 0 && meteor_model.get_tile(cx - 1, cy) == meteor_model.GARBAGE && !meteor_model.get_matched_any(cx - 1, cy)
+                        meteor_model.set_matched(cx - 1, cy)
+                        changed = true
+            -- Flood fill: propagate through connected GARBAGE in 4 directions
+            for (let ?cy = 0; cy < meteor_model.MAX_H; cy = cy + 1)
+                for (let ?cx = 0; cx < w; cx = cx + 1)
+                    if meteor_model.get_tile(cx, cy) == meteor_model.GARBAGE && meteor_model.get_matched_any(cx, cy)
+                        if cx > 0 && meteor_model.get_tile(cx - 1, cy) == meteor_model.GARBAGE && !meteor_model.get_matched_any(cx - 1, cy)
+                            meteor_model.set_matched(cx - 1, cy)
+                            changed = true
+                        if cx < w - 1 && meteor_model.get_tile(cx + 1, cy) == meteor_model.GARBAGE && !meteor_model.get_matched_any(cx + 1, cy)
+                            meteor_model.set_matched(cx + 1, cy)
+                            changed = true
+                        if cy > 0 && meteor_model.get_tile(cx, cy - 1) == meteor_model.GARBAGE && !meteor_model.get_matched_any(cx, cy - 1)
+                            meteor_model.set_matched(cx, cy - 1)
+                            changed = true
+                        if cy < meteor_model.MAX_H - 1 && meteor_model.get_tile(cx, cy + 1) == meteor_model.GARBAGE && !meteor_model.get_matched_any(cx, cy + 1)
+                            meteor_model.set_matched(cx, cy + 1)
+                            changed = true
+        -- Stack pull: non-empty tiles above clumped garbage are pulled along
+        -- They keep their tile type but get sent directly (not converted to garbage)
+        for (let ?cy = 0; cy < meteor_model.MAX_H; cy = cy + 1)
+            for (let ?cx = 0; cx < w; cx = cx + 1)
+                if meteor_model.get_tile(cx, cy) == meteor_model.GARBAGE && meteor_model.get_matched(cx, cy)
+                    for (let ?ay = cy - 1; ay >= 0; ay = ay - 1)
+                        if meteor_model.get_tile(cx, ay) == meteor_model.EMPTY
+                            break
+                        if !meteor_model.get_matched_any(cx, ay)
+                            meteor_model.set_matched_stack(cx, ay)
+
+    -- Count total matched tiles for scoring
+    if found
+        let ?mc = 0
+        let wc = meteor_model.field_w()
+        for (let ?cy = 0; cy < meteor_model.MAX_H; cy = cy + 1)
+            for (let ?cx = 0; cx < wc; cx = cx + 1)
+                if meteor_model.get_matched_any(cx, cy)
+                    mc = mc + 1
+        meteor_model.set_matched_count(mc)
+
+    <- found
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Rocket launch: clear matched tiles + tiles above them
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: launch_rockets() (( num ))
+    let w = meteor_model.field_w()
+    let grav = meteor_model.field_grav()
+    let ?cleared = 0
+
+    for (let ?x = 0; x < w; x = x + 1)
+        -- Find topmost matched tile in this column
+        let ?top_match = -1
+        for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+            if meteor_model.get_matched(x, y)
+                if top_match < 0
+                    top_match = y
+
+        if top_match >= 0
+            -- Clear all matched tiles in this column
+            for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+                if meteor_model.get_matched_any(x, y)
+                    meteor_model.set_tile(x, y, 0)
+                    cleared = cleared + 1
+            -- Rocket: clear up to grav tiles above topmost match
+            let ?count = 0
+            for (let ?y = top_match - 1; y >= 0 && count < grav; y = y - 1)
+                if meteor_model.get_tile(x, y) != 0
+                    meteor_model.set_tile(x, y, 0)
+                    cleared = cleared + 1
+                    count = count + 1
+
+    meteor_model.clear_matched()
+    <- cleared
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Rocket animation helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: sqrt_approx(x = num) (( num ))
+    if x <= 0
+        <- 0
+    let ?g = x / 2
+    if g < 0.01
+        g = 0.01
+    g = (g + x / g) / 2
+    g = (g + x / g) / 2
+    g = (g + x / g) / 2
+    g = (g + x / g) / 2
+    <- g
+;
+
+: remove_sent_col(x = num, peak = num) (( bool ))
+    let top = meteor_model.get_rocket_top(x)
+    let ?sent = 0
+    let ?remaining = false
+    -- Only clear tiles that are part of the rocket column (0..top).
+    -- Tiles above the rocket column (e.g., ground blocks separated by gaps)
+    -- must be preserved.
+    for (let ?ry = 0; ry <= top; ry = ry + 1)
+        let rt = meteor_model.get_tile(x, ry)
+        if rt != meteor_model.EMPTY
+            if ry * 2 < peak
+                let is_fuel = meteor_model.get_matched(x, ry)
+                meteor_model.set_tile(x, ry, meteor_model.EMPTY)
+                if !is_fuel
+                    sent = sent + 1
+                    if meteor_model.is_rare_metal(rt)
+                        meteor_model.add_score(500)
+                    -- Track element type sent
+                    meteor_model.add_elem_session(rt, 1)
+            else
+                remaining = true
+    meteor_model.set_rocket_col_sent(x, sent)
+    meteor_model.add_sent(sent)
+    if sent > 0
+        meteor_model.set_sent_flash(30)
+    <- remaining
+;
+
+: finish_rocket(instant = bool) (( -- ))
+    let w = meteor_model.field_w()
+    let p = meteor_model.get_planet()
+    for (let ?x = 0; x < w; x = x + 1)
+        -- Convert matched tiles to garbage (stay solid for chains)
+        -- Stack-pulled tiles (val=2) get sent directly as cargo
+        -- Instant launches: everything gets cleared immediately
+        for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+            let mv = meteor_model.get_matched_val(x, y)
+            if mv == 1
+                if instant
+                    meteor_model.set_tile(x, y, meteor_model.EMPTY)
+                    meteor_model.set_garbage_timer(x, y, 0)
+                    meteor_model.set_garbage_dest(x, y, 0)
+                elif meteor_model.get_tile(x, y) != meteor_model.EMPTY
+                    meteor_model.set_tile(x, y, meteor_model.GARBAGE)
+                    meteor_model.set_garbage_timer(x, y, garbage_duration())
+                    meteor_model.set_garbage_dest(x, y, p)
+            elif mv == 2 && instant
+                -- Instant launches: stack-pulled tiles get cleared too
+                meteor_model.set_tile(x, y, meteor_model.EMPTY)
+                meteor_model.set_garbage_timer(x, y, 0)
+                meteor_model.set_garbage_dest(x, y, 0)
+        -- Sent tiles already removed at apex during PH_ROCKET
+        meteor_model.set_rocket_off(x, 0)
+        meteor_model.set_rocket_vel(x, 0)
+    meteor_model.clear_matched()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Gravity: tiles fall to fill gaps
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: apply_gravity() (( bool ))
+    let w = meteor_model.field_w()
+    let ?moved = false
+
+    for (let ?x = 0; x < w; x = x + 1)
+        let ?write_y = meteor_model.MAX_H - 1
+        for (let ?y = meteor_model.MAX_H - 1; y >= 0; y = y - 1)
+            let t = meteor_model.get_tile(x, y)
+            if t != 0
+                if y != write_y
+                    meteor_model.set_tile(x, write_y, t)
+                    meteor_model.set_tile(x, y, 0)
+                    -- Move garbage metadata with the tile
+                    meteor_model.set_garbage_timer(x, write_y, meteor_model.get_garbage_timer(x, y))
+                    meteor_model.set_garbage_dest(x, write_y, meteor_model.get_garbage_dest(x, y))
+                    meteor_model.set_garbage_timer(x, y, 0)
+                    meteor_model.set_garbage_dest(x, y, 0)
+                    moved = true
+                write_y = write_y - 1
+    <- moved
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Swap
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: try_swap(x1 = num, y1 = num, x2 = num, y2 = num) (( -- ))
+    let t1 = meteor_model.get_tile(x1, y1)
+    let t2 = meteor_model.get_tile(x2, y2)
+    meteor_model.set_tile(x1, y1, t2)
+    meteor_model.set_tile(x2, y2, t1)
+    -- Swap garbage metadata
+    let gt1 = meteor_model.get_garbage_timer(x1, y1)
+    let gd1 = meteor_model.get_garbage_dest(x1, y1)
+    meteor_model.set_garbage_timer(x1, y1, meteor_model.get_garbage_timer(x2, y2))
+    meteor_model.set_garbage_dest(x1, y1, meteor_model.get_garbage_dest(x2, y2))
+    meteor_model.set_garbage_timer(x2, y2, gt1)
+    meteor_model.set_garbage_dest(x2, y2, gd1)
+
+    if find_matches()
+        -- Valid swap
+        meteor_model.set_phase(meteor_model.PH_MATCH)
+        meteor_model.set_phase_timer(0)
+        meteor_model.clear_selection()
+        meteor_model.set_sound_pending()
+    else
+        -- Invalid: swap back
+        meteor_model.set_tile(x1, y1, t1)
+        meteor_model.set_tile(x2, y2, t2)
+        -- Restore garbage metadata
+        meteor_model.set_garbage_timer(x2, y2, meteor_model.get_garbage_timer(x1, y1))
+        meteor_model.set_garbage_dest(x2, y2, meteor_model.get_garbage_dest(x1, y1))
+        meteor_model.set_garbage_timer(x1, y1, gt1)
+        meteor_model.set_garbage_dest(x1, y1, gd1)
+    meteor_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Rain: drop random tiles from the top into random columns
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: rain_tiles() (( -- ))
+    let w = meteor_model.field_w()
+    let count = prng_range(9) + meteor_model.field_atmo() + 1
+    let ?added = 0
+
+    -- Rare metal roll: spec says the clock elapses every ~40s, and on that
+    -- next spawn a single 1-in-radix roll fires. The rare metal is NOT an
+    -- attack, so it spawns as a ready-to-play tile (not garbage) and isn't
+    -- counted in `received`. When it lands, it carves through the column
+    -- and settles on the ground row, wiping whatever was in its way.
+    if meteor_model.rare_is_pending()
+        meteor_model.consume_rare_pending()
+        if prng_range(meteor_model.RARE_RADIX) == 0
+            let rcol = prng_range(w)
+            for (let ?ry = 0; ry < meteor_model.MAX_H; ry = ry + 1)
+                meteor_model.set_tile(rcol, ry, meteor_model.EMPTY)
+                meteor_model.set_garbage_timer(rcol, ry, 0)
+                meteor_model.set_garbage_dest(rcol, ry, 0)
+            meteor_model.set_tile(rcol, meteor_model.MAX_H - 1, meteor_model.get_rare_metal())
+            meteor_model.set_garbage_timer(rcol, meteor_model.MAX_H - 1, 0)
+            meteor_model.set_garbage_dest(rcol, meteor_model.MAX_H - 1, 0)
+
+    for (let ?i = 0; i < count; i = i + 1)
+        -- Pick a column; scan for one with an empty top row
+        let ?col = prng_range(w)
+        let ?tries = 0
+        for (; tries < w; tries = tries + 1)
+            if meteor_model.get_tile(col, 0) == meteor_model.EMPTY
+                break
+            col = (col + 1) % w
+
+        if tries >= w
+            -- All top rows occupied: skip this tile
+            continue
+
+        meteor_model.place_garbage(col, 0, meteor_model.get_planet())
+        added = added + 1
+
+    if added > 0
+        meteor_model.add_received(added)
+;
+
+: would_match(x = num, y = num, e = num) (( bool ))
+    let w = meteor_model.field_w()
+    -- Horizontal: count same element left and right
+    let ?left = 0
+    for (let ?lx = x - 1; lx >= 0; lx = lx - 1)
+        if meteor_model.get_tile(lx, y) != e
+            break
+        left = left + 1
+    let ?right = 0
+    for (let ?rx = x + 1; rx < w; rx = rx + 1)
+        if meteor_model.get_tile(rx, y) != e
+            break
+        right = right + 1
+    if left + right >= 2
+        <- true
+    -- Vertical: count same element up and down
+    let ?up = 0
+    for (let ?uy = y - 1; uy >= 0; uy = uy - 1)
+        if meteor_model.get_tile(x, uy) != e
+            break
+        up = up + 1
+    let ?down = 0
+    for (let ?dy = y + 1; dy < meteor_model.MAX_H; dy = dy + 1)
+        if meteor_model.get_tile(x, dy) != e
+            break
+        down = down + 1
+    if up + down >= 2
+        <- true
+    <- false
+;
+
+-- Garbage duration per planet (frames). 900 = 15s baseline.
+: garbage_duration() (( num ))
+    <- meteor_model.PLANET_GDUR[meteor_model.get_planet()]
+;
+
+: safe_element(x = num, y = num, planet = num) (( num ))
+    for (let ?i = 0; i < 10; i = i + 1)
+        let e = weighted_tile(planet)
+        if !would_match(x, y, e)
+            <- e
+    <- weighted_tile(planet)
+;
+
+-- Score launched meteors: P = (30*Ln) + (10*Li + I)
+-- Ln = sent tiles, Li = cargo that didn't make it, I = 10 bonus if Li > 0
+: score_launch(sent_count = num) (( -- ))
+    let cargo = meteor_model.get_last_cargo()
+    let ln = sent_count
+    let li = cargo - sent_count
+    if li < 0
+        li = 0
+    let ?bonus = 0
+    if li > 0
+        bonus = 10
+    meteor_model.add_score(30 * ln + 10 * li + bonus)
+;
+
+-- Check if field is completely empty → screen clear bonus
+: check_screen_clear() (( -- ))
+    let w = meteor_model.field_w()
+    for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+        for (let ?x = 0; x < w; x = x + 1)
+            if meteor_model.get_tile(x, y) != meteor_model.EMPTY
+                <-
+    meteor_model.add_score(10000)
+    meteor_model.set_clear_pending()
+    if meteor_model.get_mode() == meteor_model.MODE_ASTRAL
+        meteor_model.set_astral_screen_clear(true)
+;
+
+: tick_garbage() (( -- ))
+    let w = meteor_model.field_w()
+    for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+        for (let ?x = 0; x < w; x = x + 1)
+            if meteor_model.get_tile(x, y) == meteor_model.GARBAGE
+                let t = meteor_model.get_garbage_timer(x, y)
+                if t <= 1
+                    let src_planet = meteor_model.get_garbage_dest(x, y)
+                    meteor_model.set_tile(x, y, safe_element(x, y, src_planet))
+                    meteor_model.set_garbage_timer(x, y, 0)
+                    meteor_model.set_garbage_dest(x, y, 0)
+                else
+                    meteor_model.set_garbage_timer(x, y, t - 1)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Phase processing (called each frame)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: process_phase() (( -- ))
+    if meteor_model.get_scene() != meteor_model.SCENE_PLAY
+        <-
+
+    meteor_model.inc_game_frames()
+    meteor_model.dec_sent_flash()
+    meteor_model.dec_match_flash()
+    for (let ?fi = 0; fi < meteor_model.get_cpu_count(); fi = fi + 1)
+        meteor_model.dec_ai_recv_flash_n(fi)
+        meteor_model.dec_ai_launch_flash_n(fi)
+        tick_ai_garbage_n(fi)
+    -- Rare metal clock ticks in real frames, unaffected by speeder.
+    meteor_model.tick_rare_clock()
+    -- Decrement flick cooldown
+    if meteor_model.get_flick_cooldown() > 0
+        meteor_model.set_flick_cooldown(meteor_model.get_flick_cooldown() - 1)
+
+    if meteor_model.get_mode() == meteor_model.MODE_VS
+        ai_process()
+        -- Timed mode: decrement countdown and check expiry
+        if meteor_model.get_vs_submode() == meteor_model.VS_TIMED
+            meteor_model.dec_countdown()
+            if meteor_model.get_countdown() <= 0
+                -- Time's up: tally score and field cleanliness
+                let pw = meteor_model.field_w()
+                let ?p_count = 0
+                for (let ?cy = 0; cy < meteor_model.MAX_H; cy = cy + 1)
+                    for (let ?cx = 0; cx < pw; cx = cx + 1)
+                        if meteor_model.get_tile(cx, cy) != meteor_model.EMPTY
+                            p_count = p_count + 1
+                let p_final = meteor_model.get_score() - p_count * 50
+
+                -- Find max AI final score across all opponents
+                let ?max_ai_final = 0
+                let cnt = meteor_model.get_cpu_count()
+                for (let ?n = 0; n < cnt; n = n + 1)
+                    let ap = meteor_model.get_ai_assign(n)
+                    if ap < 0
+                        continue
+                    let aw = meteor_model.PLANET_W[ap]
+                    let ?a_count = 0
+                    for (let ?cy2 = 0; cy2 < meteor_model.MAX_H; cy2 = cy2 + 1)
+                        for (let ?cx2 = 0; cx2 < aw; cx2 = cx2 + 1)
+                            if meteor_model.get_ai_tile_n(n, cx2, cy2) != meteor_model.EMPTY
+                                a_count = a_count + 1
+                    let a_final = meteor_model.get_ai_score_n(n) - a_count * 50
+                    if a_final > max_ai_final
+                        max_ai_final = a_final
+
+                if p_final > max_ai_final
+                    meteor_model.set_scene(meteor_model.SCENE_WIN)
+                else
+                    meteor_model.set_scene(meteor_model.SCENE_LOSE)
+                meteor_model.mark_dirty()
+                <-
+
+    -- Astral Adventure: countdown + mission win/lose each frame
+    let m = meteor_model.get_mode()
+    if m == meteor_model.MODE_ASTRAL
+        let mt = meteor_model.astral_mission_type()
+        -- Run AI only for VS-type missions
+        if meteor_model.astral_is_vs()
+            ai_process()
+        meteor_model.dec_countdown()
+        -- Timer expired: resolve mission result
+        if meteor_model.get_countdown() <= 0
+            if meteor_model.astral_is_vs()
+                -- VS: compare scores (same logic as VS_TIMED)
+                let pw = meteor_model.field_w()
+                let ?p_count = 0
+                for (let ?cy = 0; cy < meteor_model.MAX_H; cy = cy + 1)
+                    for (let ?cx = 0; cx < pw; cx = cx + 1)
+                        if meteor_model.get_tile(cx, cy) != meteor_model.EMPTY
+                            p_count = p_count + 1
+                let p_final = meteor_model.get_score() - p_count * 50
+                let ?max_ai_final = 0
+                let acnt = meteor_model.get_cpu_count()
+                for (let ?an = 0; an < acnt; an = an + 1)
+                    let ap = meteor_model.get_ai_assign(an)
+                    if ap < 0
+                        continue
+                    let aw = meteor_model.PLANET_W[ap]
+                    let ?a_count = 0
+                    for (let ?cy2 = 0; cy2 < meteor_model.MAX_H; cy2 = cy2 + 1)
+                        for (let ?cx2 = 0; cx2 < aw; cx2 = cx2 + 1)
+                            if meteor_model.get_ai_tile_n(an, cx2, cy2) != meteor_model.EMPTY
+                                a_count = a_count + 1
+                    let a_final = meteor_model.get_ai_score_n(an) - a_count * 50
+                    if a_final > max_ai_final
+                        max_ai_final = a_final
+                if p_final > max_ai_final
+                    meteor_model.set_scene(meteor_model.SCENE_WIN)
+                else
+                    meteor_model.set_scene(meteor_model.SCENE_LOSE)
+            else
+                -- Solo mission: timer ran out without completing objective = LOSE
+                meteor_model.set_scene(meteor_model.SCENE_LOSE)
+            meteor_model.mark_dirty()
+            <-
+        -- Check non-VS objective completion (win early)
+        if mt == meteor_model.AMISS_LAUNCH_N
+            if meteor_model.get_sent() >= meteor_model.astral_mission_target()
+                meteor_model.set_scene(meteor_model.SCENE_WIN)
+                meteor_model.mark_dirty()
+                <-
+        if mt == meteor_model.AMISS_CLEAR
+            if meteor_model.get_astral_screen_clear()
+                meteor_model.set_scene(meteor_model.SCENE_WIN)
+                meteor_model.mark_dirty()
+                <-
+        if mt == meteor_model.AMISS_AT_ONCE
+            if meteor_model.get_astral_max_single() >= 30
+                meteor_model.set_scene(meteor_model.SCENE_WIN)
+                meteor_model.mark_dirty()
+                <-
+        if mt == meteor_model.AMISS_WATER_30
+            if meteor_model.get_elem_session(2) >= 30
+                meteor_model.set_scene(meteor_model.SCENE_WIN)
+                meteor_model.mark_dirty()
+                <-
+
+    -- Survival modes: decrement countdown and check expiry
+    if m == meteor_model.MODE_230 || m == meteor_model.MODE_500
+        meteor_model.dec_countdown()
+        if meteor_model.get_countdown() <= 0
+            -- Survived! Player wins
+            meteor_model.set_scene(meteor_model.SCENE_WIN)
+            meteor_model.mark_dirty()
+            <-
+
+    let ph = meteor_model.get_phase()
+
+    if ph == meteor_model.PH_MATCH
+        meteor_model.inc_phase_timer()
+        if meteor_model.get_phase_timer() >= 6
+            -- 1. Init rocket column state + find rocket tops
+            let w = meteor_model.field_w()
+            for (let ?xi = 0; xi < meteor_model.MAX_W; xi = xi + 1)
+                meteor_model.set_rocket_top(xi, meteor_model.MAX_H)
+                meteor_model.set_rocket_col_sent(xi, -1)
+            for (let ?xi = 0; xi < w; xi = xi + 1)
+                for (let ?yi = 0; yi < meteor_model.MAX_H; yi = yi + 1)
+                    if meteor_model.get_matched(xi, yi)
+                        meteor_model.set_rocket_top(xi, yi)
+                        break
+            -- Reset vel/off for non-participating columns only.
+            -- Participating columns keep their current state so cascade adds impulse.
+            for (let ?xi = 0; xi < w; xi = xi + 1)
+                if meteor_model.get_rocket_top(xi) >= meteor_model.MAX_H
+                    meteor_model.set_rocket_vel(xi, 0)
+                    meteor_model.set_rocket_off(xi, 0)
+
+            -- 2. Count total cargo across matched columns
+            let ?total_cargo = 0
+            for (let ?cx0 = 0; cx0 < w; cx0 = cx0 + 1)
+                let tc0 = meteor_model.get_rocket_top(cx0)
+                if tc0 < meteor_model.MAX_H
+                    for (let ?cy0 = tc0 - 1; cy0 >= 0; cy0 = cy0 - 1)
+                        if meteor_model.get_tile(cx0, cy0) != meteor_model.EMPTY
+                            total_cargo = total_cargo + 1
+
+            -- 3. Compute launch mode + target
+            meteor_model.compute_launch_params(total_cargo)
+            let lm = meteor_model.get_launch_mode()
+
+            -- 4a. DUD: no launch
+            if lm == meteor_model.LM_DUD
+                -- Grafantz dud: matched tiles become garbage, activate fuel
+                if meteor_model.get_planet() == meteor_model.P_GRAFANT
+                    let dw = meteor_model.field_w()
+                    for (let ?dy = 0; dy < meteor_model.MAX_H; dy = dy + 1)
+                        for (let ?dx = 0; dx < dw; dx = dx + 1)
+                            let dmv = meteor_model.get_matched_val(dx, dy)
+                            if dmv == 1
+                                meteor_model.set_tile(dx, dy, meteor_model.GARBAGE)
+                                meteor_model.set_garbage_timer(dx, dy, garbage_duration())
+                                meteor_model.set_garbage_dest(dx, dy, meteor_model.get_planet())
+                            elif dmv == 2
+                                meteor_model.set_tile(dx, dy, meteor_model.EMPTY)
+                                meteor_model.set_garbage_timer(dx, dy, 0)
+                                meteor_model.set_garbage_dest(dx, dy, 0)
+                    meteor_model.set_graf_fuel(true)
+                    meteor_model.set_graf_fuel_timer(300)
+                meteor_model.clear_matched()
+                meteor_model.set_match_flash(30)
+                let lca_d = meteor_model.get_launch_count_action()
+                if lca_d > 0
+                    meteor_model.inc_launch_count()
+                elif lca_d < 0
+                    meteor_model.reset_launch_count()
+                meteor_model.set_phase(meteor_model.PH_FALL)
+                meteor_model.set_phase_timer(0)
+                meteor_model.mark_dirty()
+                <-
+
+            -- 4b. Score + combo (NORMAL and INSTANT)
+            meteor_model.inc_combo()
+            meteor_model.set_match_flash(30)
+            let ign_n = meteor_model.get_matched_count()
+            let ign_c = meteor_model.get_combo()
+            meteor_model.add_score(stdr.floor(100 * ign_n * (1 + ign_c * 0.1)))
+
+            -- 4c. INSTANT: skip rocket physics, send everything
+            if lm == meteor_model.LM_INSTANT
+                let sent_before0 = meteor_model.get_sent()
+                for (let ?ix = 0; ix < w; ix = ix + 1)
+                    let top0 = meteor_model.get_rocket_top(ix)
+                    if top0 < meteor_model.MAX_H
+                        let ?cargo0 = 0
+                        for (let ?iy = top0 - 1; iy >= 0; iy = iy - 1)
+                            if meteor_model.get_tile(ix, iy) != meteor_model.EMPTY
+                                let ct = meteor_model.get_tile(ix, iy)
+                                cargo0 = cargo0 + 1
+                                meteor_model.add_elem_session(ct, 1)
+                        meteor_model.set_rocket_col_sent(ix, cargo0)
+                        meteor_model.add_sent(cargo0)
+                        meteor_model.set_sent_flash(30)
+                let launch_sent0 = meteor_model.get_sent() - sent_before0
+                meteor_model.set_last_cargo(launch_sent0)
+                finish_rocket(true)
+                -- Instant: also remove cargo tiles above rocket_top (normally removed by rocket animation)
+                for (let ?rx = 0; rx < w; rx = rx + 1)
+                    let rtop = meteor_model.get_rocket_top(rx)
+                    if rtop < meteor_model.MAX_H
+                        for (let ?ry = rtop - 1; ry >= 0; ry = ry - 1)
+                            if meteor_model.get_tile(rx, ry) != meteor_model.EMPTY
+                                meteor_model.set_tile(rx, ry, meteor_model.EMPTY)
+                                meteor_model.set_garbage_timer(rx, ry, 0)
+                                meteor_model.set_garbage_dest(rx, ry, 0)
+                deliver_to_ai(launch_sent0)
+                score_launch(launch_sent0)
+                -- Astral: track max elements sent in one launch
+                if meteor_model.get_mode() == meteor_model.MODE_ASTRAL
+                    if launch_sent0 > meteor_model.get_astral_max_single()
+                        meteor_model.set_astral_max_single(launch_sent0)
+                -- Grafantz: consume fuel after instant mega launch
+                if meteor_model.has_graf_fuel()
+                    meteor_model.set_graf_fuel(false)
+                    meteor_model.set_graf_fuel_timer(0)
+                let lca_i = meteor_model.get_launch_count_action()
+                if lca_i > 0
+                    meteor_model.inc_launch_count()
+                elif lca_i < 0
+                    meteor_model.reset_launch_count()
+                meteor_model.set_phase(meteor_model.PH_FALL)
+                meteor_model.set_phase_timer(0)
+                meteor_model.mark_dirty()
+                <-
+
+            -- 4d. NORMAL: Rocket launch via physics (velocity + gravity).
+            -- All columns participating in a match share the same initial v0,
+            -- computed from the matched jets, cargo mass, and planet gravity.
+            let lt = meteor_model.get_launch_target()
+            let grav = meteor_model.field_grav()
+
+            -- Count primary matched tiles ("jets") and columns participating
+            let ?raw_jets = 0
+            let ?num_jet_cols = 0
+            for (let ?xv = 0; xv < w; xv = xv + 1)
+                let ?col_has_jet = false
+                for (let ?yv = 0; yv < meteor_model.MAX_H; yv = yv + 1)
+                    if meteor_model.get_matched(xv, yv)
+                        raw_jets = raw_jets + 1
+                        col_has_jet = true
+                if col_has_jet
+                    num_jet_cols = num_jet_cols + 1
+
+            -- Vertical Launch Speed Multiplier (tate jet bonus = 5):
+            -- vertical ignitions only technically have one jet (the bottom
+            -- pushing meteo), which is compensated by this 5x boost.
+            let ?tate_mult = 1.0
+            let ?num_jets = raw_jets
+            if num_jet_cols == 1
+                tate_mult = 5.0
+                num_jets = 1
+
+            -- >3 Jet Launch Coefficient: velocity multiplied by
+            -- (3 jet coefficient * num_jets) when more than 3 jets are used.
+            -- Geolyte 3 jet coefficient = 0.25 → 4 jets = 1.0x, 5 jets = 1.25x.
+            let ?jet_mult = 1.0
+            if num_jets > 3
+                jet_mult = 0.25 * num_jets
+
+            -- Nth Order Launch Multiplier: o = i * n^(2c) where
+            -- c = combo - 1 and n = `n jet bonus` (Geolyte = 1.24).
+            -- Only applies after the first ignition.
+            let ?combo_mult = 1.0
+            let ?cexp = (ign_c - 1) * 2
+            if cexp < 0
+                cexp = 0
+            for (let ?ci = 0; ci < cexp; ci = ci + 1)
+                combo_mult = combo_mult * 1.24
+
+            -- Bottom Launch Multiplier (bottom bonus = 1.15):
+            -- always applies to initial launches.
+            let bottom_mult = 1.15
+
+            -- Physics launch: launch_target defines desired peak height in cells
+            let ?lift_rows = lt
+            if lift_rows < 1
+                lift_rows = 1
+            let base_peak = lift_rows * 2
+
+            -- Pass 1: count total cargo across all participating columns
+            let ?total_cargo2 = 0
+            for (let ?xv = 0; xv < w; xv = xv + 1)
+                let rtop = meteor_model.get_rocket_top(xv)
+                if rtop < meteor_model.MAX_H
+                    for (let ?cy = rtop - 1; cy >= 0; cy = cy - 1)
+                        if meteor_model.get_tile(xv, cy) != meteor_model.EMPTY
+                            total_cargo2 = total_cargo2 + 1
+
+            -- Group mass (lump mass scale = 0.085 per cargo tile)
+            let group_mass = 1.0 + total_cargo2 * 0.085
+            -- Combined velocity multiplier from all bonuses
+            let vel_mult = combo_mult * tate_mult * jet_mult * bottom_mult
+            -- Per-frame gravity deceleration: stronger on heavy-gravity planets
+            let grav_accel = 0.02 + grav * 0.015
+            -- Scale peak by sqrt(vel_mult/mass) for balanced combo progression
+            let effective_peak = base_peak * sqrt_approx(vel_mult / group_mass)
+            -- Initial upward velocity: v0 = sqrt(2 * g * h)
+            let v0 = sqrt_approx(2.0 * grav_accel * effective_peak)
+
+            -- Pass 2: ADD v0 to existing velocity so cascade accumulates impulse
+            for (let ?xv = 0; xv < w; xv = xv + 1)
+                if meteor_model.get_rocket_top(xv) < meteor_model.MAX_H
+                    let old_vel = meteor_model.get_rocket_vel(xv)
+                    meteor_model.set_rocket_vel(xv, old_vel + v0)
+
+            -- On first ignition of chain, mark the sent baseline for cascade tracking
+            if ign_c == 1
+                meteor_model.set_rocket_sent_start(meteor_model.get_sent())
+
+            meteor_model.set_phase(meteor_model.PH_ROCKET)
+            meteor_model.set_phase_timer(0)
+            meteor_model.set_rocket_pending()
+            meteor_model.mark_dirty()
+        <-
+
+    if ph == meteor_model.PH_ROCKET
+        let w = meteor_model.field_w()
+        let grav = meteor_model.field_grav()
+        -- Per-frame deceleration must match the PH_MATCH launch computation
+        let grav_accel = 0.02 + grav * 0.015
+        let fall_cap = 0.075 + grav * 0.025
+        meteor_model.inc_phase_timer()
+        let ?all_done = true
+        for (let ?x = 0; x < w; x = x + 1)
+            let top = meteor_model.get_rocket_top(x)
+            if top >= meteor_model.MAX_H
+                continue
+            let vel = meteor_model.get_rocket_vel(x)
+            let off = meteor_model.get_rocket_off(x)
+            if vel == 0 && off == 0
+                continue
+            -- Physics step: gravity decelerates upward motion, then pulls down
+            let new_vel = vel - grav_accel
+            if new_vel < -fall_cap
+                new_vel = -fall_cap
+            let new_off = off + new_vel
+            -- At velocity peak (sign flips +→≤0): remove cargo that escaped
+            if vel > 0 && new_vel <= 0
+                if meteor_model.get_rocket_col_sent(x) < 0
+                    remove_sent_col(x, stdr.floor(off))
+            -- Landing: tile returns to field
+            if new_off <= 0
+                if meteor_model.get_rocket_col_sent(x) < 0
+                    remove_sent_col(x, 0)
+                meteor_model.set_rocket_off(x, 0)
+                meteor_model.set_rocket_vel(x, 0)
+                continue
+            meteor_model.set_rocket_vel(x, new_vel)
+            meteor_model.set_rocket_off(x, new_off)
+            all_done = false
+        if all_done
+            -- Tiles sent since chain start (includes all cascades)
+            let rocket_total = meteor_model.get_sent() - meteor_model.get_rocket_sent_start()
+            -- Count survivors still on field above rocket tops
+            let ?survivors = 0
+            for (let ?sx = 0; sx < w; sx = sx + 1)
+                let st = meteor_model.get_rocket_top(sx)
+                if st < meteor_model.MAX_H
+                    for (let ?sy = 0; sy < st; sy = sy + 1)
+                        if meteor_model.get_tile(sx, sy) != meteor_model.EMPTY
+                            survivors = survivors + 1
+            meteor_model.set_last_cargo(rocket_total + survivors)
+            finish_rocket(false)
+            deliver_to_ai(rocket_total)
+            score_launch(rocket_total)
+            -- Astral: track max elements sent in one launch
+            if meteor_model.get_mode() == meteor_model.MODE_ASTRAL
+                if rocket_total > meteor_model.get_astral_max_single()
+                    meteor_model.set_astral_max_single(rocket_total)
+            -- Grafantz: consume fuel after mega launch
+            if meteor_model.has_graf_fuel()
+                meteor_model.set_graf_fuel(false)
+                meteor_model.set_graf_fuel_timer(0)
+            -- Update launch count based on sequence
+            let lca_r = meteor_model.get_launch_count_action()
+            if lca_r > 0
+                meteor_model.inc_launch_count()
+            elif lca_r < 0
+                meteor_model.reset_launch_count()
+            meteor_model.set_phase(meteor_model.PH_FALL)
+            meteor_model.set_phase_timer(0)
+        meteor_model.mark_dirty()
+        <-
+
+    if ph == meteor_model.PH_FLICK
+        let fc = meteor_model.get_flick_col()
+        let fv = meteor_model.get_flick_vel()
+        let fo = meteor_model.get_flick_off()
+        let grav = meteor_model.field_grav()
+        let atmo = meteor_model.field_atmo()
+        -- Flick physics: gravity decelerates upward motion, then accelerates downward
+        -- Atmospheric drag reduces velocity proportionally
+        let ?nv = fv - grav * 0.12 - atmo * 0.008 * fv
+        let no = fo + nv
+        meteor_model.set_flick_vel(nv)
+        meteor_model.set_flick_off(no)
+        -- Check if tile reached the top boundary of the field
+        if no >= meteor_model.MAX_H * 2
+            -- Only escape if gravity is zero (e.g., Doorsky vacuum)
+            -- Otherwise, clamp at top and reverse velocity to fall back
+            if grav == 0
+                -- Tile escapes the planet — lost forever
+                meteor_model.set_flick_col(-1)
+                meteor_model.set_phase(meteor_model.PH_FALL)
+                meteor_model.set_phase_timer(0)
+            else
+                -- Blocked by atmosphere/ceiling: clamp and fall back
+                no = meteor_model.MAX_H * 2 - 1
+                nv = -nv * 0.3  -- Dampened bounce
+                meteor_model.set_flick_vel(nv)
+                meteor_model.set_flick_off(no)
+        elif nv <= 0 && no <= 0
+            -- Tile came back down to its launch row
+            let ft = meteor_model.get_flick_tile()
+            -- Find the actual top of the stack below (search from bottom upward)
+            let ?land_y = 0
+            for (let ?ly = meteor_model.MAX_H - 1; ly >= 0; ly = ly - 1)
+                if meteor_model.get_tile(fc, ly) != meteor_model.EMPTY
+                    land_y = ly + 1
+                    break
+            -- Place flicked tile on top of the stack
+            if land_y < meteor_model.MAX_H
+                meteor_model.set_tile(fc, land_y, ft)
+            meteor_model.set_flick_col(-1)
+            meteor_model.set_flick_off(0)
+            meteor_model.set_flick_vel(0)
+            -- Let PH_FALL handle gravity & matches to prevent state conflicts
+            meteor_model.set_phase(meteor_model.PH_FALL)
+            meteor_model.set_phase_timer(0)
+        meteor_model.mark_dirty()
+        <-
+
+    if ph == meteor_model.PH_FALL
+        meteor_model.inc_phase_timer()
+        if meteor_model.get_phase_timer() >= 3
+            apply_gravity()
+            if find_matches()
+                meteor_model.set_phase(meteor_model.PH_MATCH)
+                meteor_model.set_phase_timer(0)
+                meteor_model.set_sound_pending()
+            else
+                meteor_model.set_phase(meteor_model.PH_INPUT)
+                meteor_model.set_phase_timer(0)
+                check_screen_clear()
+                -- Check win
+                let tgt = meteor_model.target()
+                if tgt > 0 && meteor_model.get_sent() >= tgt
+                    meteor_model.set_scene(meteor_model.SCENE_WIN)
+            meteor_model.mark_dirty()
+        <-
+
+    if ph == meteor_model.PH_INPUT
+        tick_garbage()
+        meteor_model.tick_graf_fuel()
+        meteor_model.inc_rise_timer()
+        if meteor_model.get_rise_timer() >= meteor_model.rise_rate()
+            rain_tiles()
+            apply_gravity()
+            if find_matches()
+                meteor_model.set_phase(meteor_model.PH_MATCH)
+                meteor_model.set_phase_timer(0)
+                meteor_model.set_sound_pending()
+            else
+                -- Check lose: any tile in row 0 after gravity settled
+                let ?lose = false
+                let w2 = meteor_model.field_w()
+                for (let ?cx = 0; cx < w2; cx = cx + 1)
+                    if meteor_model.get_tile(cx, 0) != meteor_model.EMPTY
+                        lose = true
+                        break
+                if lose
+                    meteor_model.set_phase(meteor_model.PH_ANNIHILATE)
+                    meteor_model.set_phase_timer(0)
+            meteor_model.set_rise_timer(0)
+            meteor_model.mark_dirty()
+
+    if ph == meteor_model.PH_ANNIHILATE
+        meteor_model.inc_phase_timer()
+        if meteor_model.get_phase_timer() >= meteor_model.annihilate_time()
+            if meteor_model.get_mode() == meteor_model.MODE_ASTRAL
+                -- Astral: field reset, continue until the 2:30 timer expires
+                reset_player_field()
+                meteor_model.set_phase(meteor_model.PH_INPUT)
+                meteor_model.set_phase_timer(0)
+            elif meteor_model.get_mode() == meteor_model.MODE_VS && meteor_model.get_vs_submode() == meteor_model.VS_LIVES
+                meteor_model.dec_player_lives()
+                if meteor_model.get_player_lives() <= 0
+                    meteor_model.set_scene(meteor_model.SCENE_LOSE)
+                else
+                    -- Reset player field but keep lives/score/countdown
+                    reset_player_field()
+                    meteor_model.set_phase(meteor_model.PH_INPUT)
+                    meteor_model.set_phase_timer(0)
+            elif meteor_model.get_mode() == meteor_model.MODE_VS && meteor_model.get_vs_submode() == meteor_model.VS_TIMED
+                -- Timed mode: top-out just resets field, game continues until time expires
+                reset_player_field()
+                meteor_model.set_phase(meteor_model.PH_INPUT)
+                meteor_model.set_phase_timer(0)
+            elif meteor_model.get_mode() == meteor_model.MODE_230 || meteor_model.get_mode() == meteor_model.MODE_500
+                -- Survival modes: top-out resets field, game continues until time expires
+                reset_player_field()
+                meteor_model.set_phase(meteor_model.PH_INPUT)
+                meteor_model.set_phase_timer(0)
+            else
+                meteor_model.set_scene(meteor_model.SCENE_LOSE)
+        meteor_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- AI opponent simulation
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: ai_gravity_n(n = num) (( -- ))
+    let ap = meteor_model.get_ai_assign(n)
+    if ap < 0
+        <-
+    let w = meteor_model.PLANET_W[ap]
+    for (let ?x = 0; x < w; x = x + 1)
+        let ?wy = meteor_model.MAX_H - 1
+        for (let ?y = meteor_model.MAX_H - 1; y >= 0; y = y - 1)
+            let t = meteor_model.get_ai_tile_n(n, x, y)
+            if t != meteor_model.EMPTY
+                if y != wy
+                    meteor_model.set_ai_tile_n(n, x, wy, t)
+                    meteor_model.set_ai_gtimer_n(n, x, wy, meteor_model.get_ai_gtimer_n(n, x, y))
+                    meteor_model.set_ai_gdest_n(n, x, wy, meteor_model.get_ai_gdest_n(n, x, y))
+                    meteor_model.set_ai_tile_n(n, x, y, meteor_model.EMPTY)
+                    meteor_model.set_ai_gtimer_n(n, x, y, 0)
+                    meteor_model.set_ai_gdest_n(n, x, y, 0)
+                wy = wy - 1
+;
+
+: tick_ai_garbage_n(n = num) (( -- ))
+    let ap = meteor_model.get_ai_assign(n)
+    if ap < 0
+        <-
+    if meteor_model.get_vs_submode() == meteor_model.VS_LIVES
+        if meteor_model.get_ai_lives_n(n) <= 0
+            <-
+    let w = meteor_model.PLANET_W[ap]
+    for (let ?y = 0; y < meteor_model.MAX_H; y = y + 1)
+        for (let ?x = 0; x < w; x = x + 1)
+            if meteor_model.get_ai_tile_n(n, x, y) == meteor_model.GARBAGE
+                let t = meteor_model.get_ai_gtimer_n(n, x, y)
+                if t <= 1
+                    let src = meteor_model.get_ai_gdest_n(n, x, y)
+                    meteor_model.set_ai_tile_n(n, x, y, weighted_tile(src))
+                    meteor_model.set_ai_gtimer_n(n, x, y, 0)
+                    meteor_model.set_ai_gdest_n(n, x, y, 0)
+                else
+                    meteor_model.set_ai_gtimer_n(n, x, y, t - 1)
+;
+
+: ai_rain_n(n = num) (( -- ))
+    let ap = meteor_model.get_ai_assign(n)
+    if ap < 0
+        <-
+    let w = meteor_model.PLANET_W[ap]
+    let count = prng_range(9) + meteor_model.PLANET_ATMO[ap] + 1
+    for (let ?i = 0; i < count; i = i + 1)
+        let ?col = prng_range(w)
+        let ?tries = 0
+        for (; tries < w; tries = tries + 1)
+            if meteor_model.get_ai_tile_n(n, col, 0) == meteor_model.EMPTY
+                break
+            col = (col + 1) % w
+        if tries >= w
+            continue
+        let t = weighted_tile(ap)
+        meteor_model.set_ai_tile_n(n, col, 0, t)
+;
+
+: ai_clear_matches_n(n = num) (( -- ))
+    let ap = meteor_model.get_ai_assign(n)
+    if ap < 0
+        <-
+    let w = meteor_model.PLANET_W[ap]
+    let h = meteor_model.MAX_H
+    let ?cleared = 0
+    let ?match_col = prng_range(w)
+    let ?match_y   = 0
+    let ?match_len = 3
+    let ?match_dir = 0
+
+    -- Horizontal matches: runs of 3, 4, or 5
+    for (let ?y = 0; y < h; y = y + 1)
+        for (let ?x = 0; x + 3 <= w; x = x + 1)
+            let t = meteor_model.get_ai_tile_n(n, x, y)
+            if t == meteor_model.EMPTY || t > meteor_model.NUM_TYPES
+                continue
+            if meteor_model.get_ai_tile_n(n, x + 1, y) != t
+                continue
+            if meteor_model.get_ai_tile_n(n, x + 2, y) != t
+                continue
+            let ?len = 3
+            if x + 3 < w
+                if meteor_model.get_ai_tile_n(n, x + 3, y) == t
+                    len = 4
+                    if x + 4 < w
+                        if meteor_model.get_ai_tile_n(n, x + 4, y) == t
+                            len = 5
+            for (let ?i = 0; i < len; i = i + 1)
+                meteor_model.set_ai_tile_n(n, x + i, y, meteor_model.EMPTY)
+            cleared = cleared + len
+            match_col = x
+            match_y   = y
+            match_len = len
+            match_dir = 0
+
+    -- Vertical matches: runs of 3, 4, or 5
+    for (let ?cx = 0; cx < w; cx = cx + 1)
+        for (let ?cy = 0; cy + 3 <= h; cy = cy + 1)
+            let t = meteor_model.get_ai_tile_n(n, cx, cy)
+            if t == meteor_model.EMPTY || t > meteor_model.NUM_TYPES
+                continue
+            if meteor_model.get_ai_tile_n(n, cx, cy + 1) != t
+                continue
+            if meteor_model.get_ai_tile_n(n, cx, cy + 2) != t
+                continue
+            let ?len = 3
+            if cy + 3 < h
+                if meteor_model.get_ai_tile_n(n, cx, cy + 3) == t
+                    len = 4
+                    if cy + 4 < h
+                        if meteor_model.get_ai_tile_n(n, cx, cy + 4) == t
+                            len = 5
+            for (let ?i = 0; i < len; i = i + 1)
+                meteor_model.set_ai_tile_n(n, cx, cy + i, meteor_model.EMPTY)
+            cleared = cleared + len
+            match_col = cx
+            match_y   = cy
+            match_len = len
+            match_dir = 1
+
+    if cleared > 0
+        meteor_model.add_ai_sent_n(n, cleared)
+        meteor_model.add_ai_score_n(n, cleared * 100)
+        deliver_to_player_n(n, cleared)
+        meteor_model.set_ai_launch_col_n(n, match_col)
+        meteor_model.set_ai_launch_y_n(n, match_y)
+        meteor_model.set_ai_launch_len_n(n, match_len)
+        meteor_model.set_ai_launch_dir_n(n, match_dir)
+        meteor_model.set_ai_launch_flash_n(n, 30)
+;
+
+-- Deliver garbage from player to all active AIs (split evenly)
+: deliver_to_ai(count = num) (( -- ))
+    let m0 = meteor_model.get_mode()
+    if m0 != meteor_model.MODE_VS && m0 != meteor_model.MODE_ASTRAL
+        <-
+    let cnt0 = meteor_model.get_cpu_count()
+    if cnt0 <= 0
+        <-
+    let combo = meteor_model.get_combo()
+    let ?actual = count
+    if combo >= 2
+        actual = stdr.floor(count * (1.0 + combo * 0.1))
+    let cnt = meteor_model.get_cpu_count()
+    let ?per_ai = stdr.floor(actual / cnt)
+    if per_ai < 1
+        per_ai = 1
+    let src_planet = meteor_model.get_planet()
+    for (let ?n = 0; n < cnt; n = n + 1)
+        let ap = meteor_model.get_ai_assign(n)
+        if ap < 0
+            continue
+        let w = meteor_model.PLANET_W[ap]
+        for (let ?i = 0; i < per_ai; i = i + 1)
+            let ?col = prng_range(w)
+            let ?tries = 0
+            for (; tries < w; tries = tries + 1)
+                if meteor_model.get_ai_tile_n(n, col, 0) == meteor_model.EMPTY
+                    break
+                col = (col + 1) % w
+            if tries >= w
+                continue
+            meteor_model.place_ai_garbage_n(n, col, 0, src_planet)
+        ai_gravity_n(n)
+        meteor_model.set_ai_recv_count_n(n, per_ai)
+        meteor_model.set_ai_recv_flash_n(n, 30)
+;
+
+-- Deliver garbage from a specific AI to player field
+: deliver_to_player_n(n = num, count = num) (( -- ))
+    let ap = meteor_model.get_ai_assign(n)
+    if ap < 0
+        <-
+    let w = meteor_model.field_w()
+    meteor_model.add_received(count)
+    for (let ?i = 0; i < count; i = i + 1)
+        let ?col = prng_range(w)
+        let ?tries = 0
+        for (; tries < w; tries = tries + 1)
+            if meteor_model.get_tile(col, 0) == meteor_model.EMPTY
+                break
+            col = (col + 1) % w
+        if tries >= w
+            continue
+        meteor_model.place_garbage(col, 0, ap)
+    apply_gravity()
+;
+
+-- Backward compat
+: deliver_to_player(count = num) (( -- ))
+    deliver_to_player_n(0, count)
+;
+
+: ai_process_n(n = num) (( -- ))
+    let ap = meteor_model.get_ai_assign(n)
+    if ap < 0
+        <-
+    if meteor_model.get_vs_submode() == meteor_model.VS_LIVES
+        if meteor_model.get_ai_lives_n(n) <= 0
+            <-
+    meteor_model.inc_ai_rise_timer_n(n)
+    let rate = meteor_model.PLANET_RATE[ap]
+    if meteor_model.get_ai_rise_timer_n(n) >= rate
+        ai_rain_n(n)
+        ai_gravity_n(n)
+        let diff = meteor_model.get_ai_difficulty()
+        -- Match attempt probability:
+        --   1★  5%  (barely makes matches)
+        --   2★ 20%  (some matches, misses many)
+        --   3★ 50%  (balanced)
+        --   4★ 80%  (usually clears, misses brilliant moves)
+        --   5★ 100% (expert, clears all that benefits it)
+        let ?do_clear = false
+        if diff >= 5
+            do_clear = true
+        elif diff == 4
+            do_clear = prng_range(10) < 8
+        elif diff == 3
+            do_clear = prng_range(10) < 5
+        elif diff == 2
+            do_clear = prng_range(10) < 2
+        else
+            do_clear = prng_range(20) < 1
+        -- Cascade passes scale with difficulty:
+        --   1-2★: none (can't capitalize on chain reactions)
+        --   3★:   1 cascade pass
+        --   4★:   2 cascade passes
+        --   5★:   3 cascade passes (full chain play)
+        let ?passes = 0
+        if diff >= 5
+            passes = 3
+        elif diff == 4
+            passes = 2
+        elif diff == 3
+            passes = 1
+        if do_clear
+            ai_clear_matches_n(n)
+            for (let ?cp = 0; cp < passes; cp = cp + 1)
+                ai_gravity_n(n)
+                ai_clear_matches_n(n)
+            ai_gravity_n(n)
+        -- Check top-out
+        let w2 = meteor_model.PLANET_W[ap]
+        let ?ai_lose = false
+        for (let ?cx = 0; cx < w2; cx = cx + 1)
+            if meteor_model.get_ai_tile_n(n, cx, 0) != meteor_model.EMPTY
+                ai_lose = true
+                break
+        if ai_lose
+            if meteor_model.get_vs_submode() == meteor_model.VS_LIVES
+                meteor_model.dec_ai_lives_n(n)
+                if meteor_model.get_ai_lives_n(n) <= 0
+                    -- Clear field so the minimap shows the AI as empty/dithered
+                    meteor_model.clear_ai_n(n)
+                    -- Check if ALL AIs are eliminated
+                    let ?all_dead = true
+                    let cnt = meteor_model.get_cpu_count()
+                    for (let ?k = 0; k < cnt; k = k + 1)
+                        if meteor_model.get_ai_lives_n(k) > 0
+                            all_dead = false
+                            break
+                    if all_dead
+                        meteor_model.set_scene(meteor_model.SCENE_WIN)
+                else
+                    meteor_model.clear_ai_n(n)
+                    for (let ?fy = 11; fy < meteor_model.MAX_H; fy = fy + 1)
+                        for (let ?fx = 0; fx < meteor_model.PLANET_W[ap]; fx = fx + 1)
+                            meteor_model.set_ai_tile_n(n, fx, fy, weighted_tile(ap))
+            elif meteor_model.get_vs_submode() == meteor_model.VS_TIMED
+                meteor_model.clear_ai_n(n)
+            else
+                meteor_model.set_scene(meteor_model.SCENE_WIN)
+        meteor_model.set_ai_rise_timer_n(n, 0)
+        meteor_model.mark_dirty()
+;
+
+: ai_process() (( -- ))
+    if meteor_model.get_scene() != meteor_model.SCENE_PLAY
+        <-
+    let cnt = meteor_model.get_cpu_count()
+    for (let ?i = 0; i < cnt; i = i + 1)
+        ai_process_n(i)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Start game
+-- ─────────────────────────────────────────────────────────────────────────────
+
+:: start_game(sys = vimana.system) (( -- ))
+    seed_prng(sys)
+    meteor_model.reset_launch_count()
+    meteor_model.reset_graf_fuel()
+    meteor_model.reset_rare_clock()
+    init_field()
+
+    -- Set countdown based on mode (after init_field, which resets countdown)
+    let m = meteor_model.get_mode()
+    if m == meteor_model.MODE_230
+        meteor_model.set_countdown(150 * 60)  -- 2:30 = 9000 frames
+    elif m == meteor_model.MODE_500
+        meteor_model.set_countdown(300 * 60)  -- 5:00 = 18000 frames
+    elif m == meteor_model.MODE_ASTRAL
+        -- 2:30 always (clear_all() default = 9000 frames); reset per-mission trackers
+        meteor_model.clear_elem_session()
+        meteor_model.reset_astral_mission()
+;

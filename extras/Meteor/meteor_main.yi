@@ -1,0 +1,494 @@
+cask main
+
+bring stdr
+bring vimana
+
+bring meteor_model
+bring meteor_data
+bring meteor_planet_assets
+bring meteor_tileset_assets
+bring meteor_mono
+bring meteor_font
+bring meteor_logic
+bring meteor_sound
+bring meteor_view
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Astral Adventure: set up and start the current mission
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: setup_and_start_astral(sys = vimana.system, scr = vimana.screen) (( -- ))
+    meteor_model.set_mode(meteor_model.MODE_ASTRAL)
+    let p = meteor_model.astral_planet()
+    meteor_model.set_planet(p)
+    meteor_data.set_planet_palette(scr, p)
+    meteor_data.load_planet_tiles(scr, p)
+    let is_vs = meteor_model.astral_is_vs()
+    if is_vs
+        let cpu = meteor_model.astral_cpu_count()
+        meteor_model.set_cpu_count(cpu)
+        meteor_model.set_ai_difficulty(meteor_model.astral_difficulty())
+        meteor_model.set_vs_submode(meteor_model.VS_LIVES)
+        for (let ?i = 0; i < cpu; i = i + 1)
+            meteor_model.set_ai_assign(i, p)
+        for (let ?j = cpu; j < 3; j = j + 1)
+            meteor_model.set_ai_assign(j, -1)
+    else
+        meteor_model.set_cpu_count(0)
+        for (let ?i = 0; i < 3; i = i + 1)
+            meteor_model.set_ai_assign(i, -1)
+    meteor_logic.start_game(sys)
+    -- Set AI lives to 1 (start_game resets them to 3 via clear_all_ais)
+    if is_vs
+        let cpu2 = meteor_model.astral_cpu_count()
+        for (let ?k = 0; k < cpu2; k = k + 1)
+            meteor_model.set_ai_lives_n(k, 1)
+    meteor_sound.start_music(sys)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Menu input
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_menu_click(sys = vimana.system, scr = vimana.screen, mx = num, my = num) (( -- ))
+    let scene = meteor_model.get_scene()
+
+    if scene == meteor_model.SCENE_TITLE
+        let pick = meteor_view.title_btn_hit(my)
+        if pick == 0
+            -- Astral Adventure
+            meteor_model.reset_astral()
+            astral_map_state = 0
+            meteor_model.set_scene(meteor_model.SCENE_ASTRAL_MAP)
+            meteor_data.set_menu_palette(scr)
+            meteor_model.mark_dirty()
+        if pick == 1
+            -- VS: go to planet select
+            meteor_model.set_mode(meteor_model.MODE_VS)
+            meteor_model.set_scene(meteor_model.SCENE_PLANET)
+            meteor_model.mark_dirty()
+        if pick == 2
+            -- 100 ATTACK: solo on Fireem
+            meteor_model.set_mode(meteor_model.MODE_100)
+            meteor_model.set_planet(meteor_model.P_FIEREEM)
+            meteor_data.set_planet_palette(scr, meteor_model.P_FIEREEM)
+            meteor_data.load_planet_tiles(scr, meteor_model.P_FIEREEM)
+            meteor_logic.start_game(sys)
+            meteor_sound.start_music(sys)
+        if pick == 3
+            -- 1000 ATTACK: solo on Doorheaven
+            meteor_model.set_mode(meteor_model.MODE_1000)
+            meteor_model.set_planet(meteor_model.P_DOORSKY)
+            meteor_data.set_planet_palette(scr, meteor_model.P_DOORSKY)
+            meteor_data.load_planet_tiles(scr, meteor_model.P_DOORSKY)
+            meteor_logic.start_game(sys)
+            meteor_sound.start_music(sys)
+        if pick == 4
+            -- 2:30 ATTACK: solo on Ealthal
+            meteor_model.set_mode(meteor_model.MODE_230)
+            meteor_model.set_planet(meteor_model.P_EALTHAL)
+            meteor_data.set_planet_palette(scr, meteor_model.P_EALTHAL)
+            meteor_data.load_planet_tiles(scr, meteor_model.P_EALTHAL)
+            meteor_logic.start_game(sys)
+            meteor_sound.start_music(sys)
+        if pick == 5
+            -- 5:00 ATTACK: solo on Holonul
+            meteor_model.set_mode(meteor_model.MODE_500)
+            meteor_model.set_planet(meteor_model.P_HOLONULL)
+            meteor_data.set_planet_palette(scr, meteor_model.P_HOLONULL)
+            meteor_data.load_planet_tiles(scr, meteor_model.P_HOLONULL)
+            meteor_logic.start_game(sys)
+            meteor_sound.start_music(sys)
+        if pick == 6
+            -- Elements sent screen
+            meteor_model.set_scene(meteor_model.SCENE_ELEMENTS)
+            meteor_data.set_menu_palette(scr)
+            meteor_model.mark_dirty()
+        <-
+
+    if scene == meteor_model.SCENE_PLANET
+        -- Check left grid (player)
+        let pl_pick = meteor_view.planet_grid_hit(mx, my, meteor_view.PL_LEFT_X)
+        if pl_pick >= 0
+            meteor_model.set_planet(pl_pick)
+            meteor_model.mark_dirty()
+            <-
+        -- Check right grid (AI) — toggle assignment
+        let ai_pick = meteor_view.planet_grid_hit(mx, my, meteor_view.PL_RIGHT_X)
+        if ai_pick >= 0
+            if meteor_model.get_mode() == meteor_model.MODE_VS
+                meteor_model.assign_ai_planet(ai_pick)
+            else
+                meteor_model.set_ai_planet(ai_pick)
+            meteor_model.mark_dirty()
+            <-
+        -- Check star gauge (VS only)
+        if meteor_model.get_mode() == meteor_model.MODE_VS
+            let star = meteor_view.star_hit(mx, my)
+            if star > 0
+                meteor_model.set_ai_difficulty(star)
+                meteor_model.mark_dirty()
+                <-
+            let mt = meteor_view.mode_toggle_hit(mx, my)
+            if mt >= 0
+                meteor_model.set_vs_submode(mt)
+                meteor_model.mark_dirty()
+                <-
+            -- CPU count dots
+            let dot = meteor_view.cpu_dot_hit(mx, my)
+            if dot > 0
+                meteor_model.set_cpu_count(dot)
+                meteor_model.clear_excess_assigns()
+                meteor_model.mark_dirty()
+                <-
+        -- Check PLAY button
+        if mx >= meteor_view.PLAY_BTN_X && mx < meteor_view.PLAY_BTN_X + meteor_view.PLAY_BTN_W && my >= meteor_view.PLAY_BTN_Y && my < meteor_view.PLAY_BTN_Y + meteor_view.PLAY_BTN_H
+            if meteor_model.get_mode() == meteor_model.MODE_VS && !meteor_model.all_ai_assigned()
+                <-
+            meteor_data.set_planet_palette(scr, meteor_model.get_planet())
+            meteor_data.load_planet_tiles(scr, meteor_model.get_planet())
+            meteor_logic.start_game(sys)
+            meteor_sound.start_music(sys)
+        <-
+
+    if scene == meteor_model.SCENE_WIN
+        meteor_sound.stop_jingle(sys)
+        meteor_model.save_elem_total()
+        if meteor_model.get_mode() == meteor_model.MODE_ASTRAL
+            let journey_done = meteor_model.advance_astral()
+            if journey_done
+                meteor_model.reset_astral()
+                meteor_model.set_scene(meteor_model.SCENE_TITLE)
+            else
+                astral_map_state = 0
+                meteor_model.set_scene(meteor_model.SCENE_ASTRAL_MAP)
+            meteor_data.set_menu_palette(scr)
+            meteor_model.mark_dirty()
+            <-
+        meteor_model.set_scene(meteor_model.SCENE_ELEMENTS)
+        meteor_data.set_menu_palette(scr)
+        meteor_model.mark_dirty()
+
+    if scene == meteor_model.SCENE_LOSE
+        meteor_sound.stop_jingle(sys)
+        meteor_model.save_elem_total()
+        if meteor_model.get_mode() == meteor_model.MODE_ASTRAL
+            let gameover = meteor_model.fail_astral()
+            if gameover
+                meteor_model.reset_astral()
+                meteor_model.set_scene(meteor_model.SCENE_TITLE)
+            else
+                astral_map_state = 0
+                meteor_model.set_scene(meteor_model.SCENE_ASTRAL_MAP)
+            meteor_data.set_menu_palette(scr)
+            meteor_model.mark_dirty()
+            <-
+        meteor_model.set_scene(meteor_model.SCENE_TITLE)
+        meteor_data.set_menu_palette(scr)
+        meteor_model.mark_dirty()
+
+    if scene == meteor_model.SCENE_ELEMENTS
+        if meteor_view.elem_btn_hit(mx, my)
+            meteor_model.set_scene(meteor_model.SCENE_TITLE)
+            meteor_model.clear_elem_session()
+            meteor_data.set_menu_palette(scr)
+            meteor_model.mark_dirty()
+
+    if scene == meteor_model.SCENE_ASTRAL_MAP
+        if astral_map_state == 0
+            astral_map_state = 1
+            meteor_model.mark_dirty()
+        else
+            if meteor_view.astral_map_play_hit(mx, my)
+                setup_and_start_astral(sys, scr)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Drag state
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ?prev_scene = -1
+def ?astral_map_state = 0
+
+def ?dragging = false
+def ?drag_col = -1
+def ?last_drag_y = 0
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Game input: press, drag, release
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_game_press(mx = num, my = num) (( -- ))
+    -- Allow input during rocket phase for chain reactions
+    let ph = meteor_model.get_phase()
+    if ph != meteor_model.PH_INPUT && ph != meteor_model.PH_ROCKET
+        <-
+    -- Prevent immediate re-flicking after a flick landing triggers a match
+    if meteor_model.get_flick_cooldown() > 0
+        <-
+
+    -- Speeder button hit test
+    if mx >= meteor_model.SPD_X && mx < meteor_model.SPD_X + meteor_model.SPD_W
+        if my >= meteor_model.SPD_Y && my < meteor_model.SPD_Y + meteor_model.SPD_H
+            meteor_model.toggle_speeder()
+            meteor_model.mark_dirty()
+            <-
+
+    let fx = meteor_model.field_x()
+    let fy = meteor_model.FIELD_Y
+    let w = meteor_model.field_w()
+    let pw = w * meteor_model.CELL_PX
+    let ph2 = meteor_model.MAX_H * meteor_model.CELL_PX
+
+    if mx < fx || mx >= fx + pw || my < fy || my >= fy + ph2
+        <-
+
+    let gx = stdr.floor((mx - fx) / meteor_model.CELL_PX)
+    -- During rocket phase tiles are visually shifted up; correct gy so the click
+    -- lands on the tile's actual grid row rather than where it appears.
+    let ph3 = meteor_model.get_phase()
+    let rock_adj = 0
+    if ph3 == meteor_model.PH_ROCKET
+        rock_adj = stdr.floor(meteor_model.get_rocket_off(gx) * 8)
+    let gy = stdr.floor((my - fy + rock_adj) / meteor_model.CELL_PX)
+
+    if gx < 0 || gx >= w || gy < 0 || gy >= meteor_model.MAX_H
+        <-
+
+    let t = meteor_model.get_tile(gx, gy)
+    if t != meteor_model.EMPTY
+        meteor_model.set_sel(gx, gy)
+        dragging = true
+        drag_col = gx
+        meteor_model.mark_dirty()
+;
+
+: on_game_drag(mx = num, my = num) (( -- ))
+    if !dragging
+        <-
+    let ph = meteor_model.get_phase()
+    if ph != meteor_model.PH_INPUT && ph != meteor_model.PH_ROCKET
+        <-
+
+    last_drag_y = my
+    let fy = meteor_model.FIELD_Y
+    let ?gy = stdr.floor((my - fy) / meteor_model.CELL_PX)
+    if gy < 0
+        gy = 0
+    if gy >= meteor_model.MAX_H
+        gy = meteor_model.MAX_H - 1
+
+    -- Don't rearrange tiles in a column that is currently in flight
+    if ph == meteor_model.PH_ROCKET && meteor_model.get_rocket_top(drag_col) < meteor_model.MAX_H
+        <-
+
+    let ?sy = meteor_model.get_sel_y()
+    if gy == sy
+        <-
+
+    -- Step one cell at a time toward target
+    for (; sy != gy;)
+        let ?next_y = sy
+        if gy > sy
+            next_y = sy + 1
+        else
+            next_y = sy - 1
+        let t1 = meteor_model.get_tile(drag_col, sy)
+        let t2 = meteor_model.get_tile(drag_col, next_y)
+        meteor_model.set_tile(drag_col, sy, t2)
+        meteor_model.set_tile(drag_col, next_y, t1)
+        meteor_model.set_sel(drag_col, next_y)
+        sy = next_y
+    meteor_model.mark_dirty()
+;
+
+: on_game_release() (( -- ))
+    if !dragging
+        <-
+    let saved_col = drag_col
+    dragging = false
+    drag_col = -1
+    if meteor_model.has_selection()
+        let sy = meteor_model.get_sel_y()
+        let ft = meteor_model.get_tile(saved_col, sy)
+        -- Find topmost non-empty tile in column below the selected tile
+        let ?top_other = meteor_model.MAX_H
+        for (let ?scan = sy + 1; scan < meteor_model.MAX_H; scan = scan + 1)
+            if meteor_model.get_tile(saved_col, scan) != meteor_model.EMPTY
+                top_other = scan
+                break
+        -- Flick: tile is one cell above the stack top
+        if top_other < meteor_model.MAX_H && sy == top_other - 1
+            if ft != meteor_model.EMPTY && ft != meteor_model.GARBAGE
+                -- All cells above sy are empty (tile is at top of stack)
+                let ?above_clear = true
+                for (let ?ac = 0; ac < sy; ac = ac + 1)
+                    if meteor_model.get_tile(saved_col, ac) != meteor_model.EMPTY
+                        above_clear = false
+                        break
+                if above_clear
+                    -- Flick physics: -30 N launch force for 1 tick on 1 kg mass
+                    -- Results in strong upward impulse that gravity gradually counters
+                    let grav = meteor_model.field_grav()
+                    let ?v0 = 8.0 - grav * 0.3  -- Base impulse reduced by gravity
+                    if v0 < 3.0
+                        v0 = 3.0
+                    meteor_model.set_flick_col(saved_col)
+                    meteor_model.set_flick_tile(ft)
+                    meteor_model.set_flick_from(sy)
+                    meteor_model.set_flick_off(0)
+                    meteor_model.set_flick_vel(v0)
+                    meteor_model.set_tile(saved_col, sy, meteor_model.EMPTY)
+                    meteor_model.clear_selection()
+                    meteor_model.set_phase(meteor_model.PH_FLICK)
+                    meteor_model.set_phase_timer(0)
+                    meteor_model.set_flick_pending()
+                    meteor_model.mark_dirty()
+                    <-
+        -- Allow match detection even during rocket phase (cascade / mid-air match)
+        let ph = meteor_model.get_phase()
+        if meteor_logic.find_matches()
+            meteor_model.set_phase(meteor_model.PH_MATCH)
+            meteor_model.set_phase_timer(0)
+            -- Only reset chain on fresh match; cascade during PH_ROCKET keeps combo
+            if ph != meteor_model.PH_ROCKET
+                meteor_model.set_combo(0)
+                meteor_model.reset_chain_sent()
+            meteor_model.clear_selection()
+            meteor_model.set_sound_pending()
+        meteor_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Input dispatch
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: on_mouse(sys = vimana.system, scr = vimana.screen, dev = vimana.device) (( -- ))
+    let mx = dev.pointer_x()
+    let my = dev.pointer_y()
+    if meteor_model.get_scene() == meteor_model.SCENE_PLAY
+        if dev.mouse_pressed(vimana.mouse_left)
+            on_game_press(mx, my)
+        elif dev.mouse_down(vimana.mouse_left)
+            on_game_drag(mx, my)
+        else
+            on_game_release()
+    else
+        if dev.mouse_pressed(vimana.mouse_left)
+            on_menu_click(sys, scr, mx, my)
+;
+
+: on_key(dev = vimana.device, scr = vimana.screen) (( -- ))
+    if dev.key_pressed(vimana.key_escape)
+        let kscene = meteor_model.get_scene()
+        if kscene == meteor_model.SCENE_PLAY
+            meteor_model.save_elem_total()
+            if meteor_model.get_mode() == meteor_model.MODE_ASTRAL
+                meteor_model.reset_astral()
+            meteor_model.set_scene(meteor_model.SCENE_TITLE)
+            meteor_data.set_menu_palette(scr)
+            meteor_model.mark_dirty()
+        if kscene == meteor_model.SCENE_ASTRAL_MAP
+            if astral_map_state == 1
+                astral_map_state = 0
+                meteor_model.mark_dirty()
+            else
+                meteor_model.reset_astral()
+                meteor_model.set_scene(meteor_model.SCENE_TITLE)
+                meteor_data.set_menu_palette(scr)
+                meteor_model.mark_dirty()
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Rendering dispatch
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: render(scr = vimana.screen) (( -- ))
+    let scene = meteor_model.get_scene()
+    if scene == meteor_model.SCENE_TITLE
+        meteor_view.draw_title(scr)
+    if scene == meteor_model.SCENE_PLANET
+        meteor_view.draw_planet_select(scr)
+    if scene == meteor_model.SCENE_PLAY
+        meteor_view.draw_game(scr)
+    if scene == meteor_model.SCENE_WIN
+        meteor_view.draw_win(scr)
+    if scene == meteor_model.SCENE_LOSE
+        meteor_view.draw_lose(scr)
+    if scene == meteor_model.SCENE_ELEMENTS
+        meteor_view.draw_elements(scr)
+    if scene == meteor_model.SCENE_ASTRAL_MAP
+        if astral_map_state == 0
+            meteor_view.draw_astral_overview(scr)
+        else
+            meteor_view.draw_astral_map(scr)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Entry point
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def CURSOR_PTR = [0x4060, 0x7078, 0x7c70, 0x5808]
+def CURSOR_ADDR = 0x9000
+def CLOSE_ADDR = 0x9020
+def CLOSE_DOWN_ADDR = 0x9040
+def BG_ADDR = 0x9060
+
+-> ()
+    let sys = vimana.system()
+    let scr = vimana.screen("Meteor", meteor_model.WIN_W, meteor_model.WIN_H, 2)
+    scr.set_cursor(CURSOR_PTR)
+    scr.hide_cursor()
+    meteor_font.setup(scr)
+    meteor_data.load_sprites(scr)
+    -- Upload cursor AFTER loading sprites so it doesn't get overwritten
+    scr.set_sprite(CURSOR_ADDR, CURSOR_PTR, 0)
+    -- Ensure system cursor is hidden on window creation
+    scr.hide_cursor()
+    scr.set_sprite(CLOSE_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(CLOSE_DOWN_ADDR, CURSOR_PTR, 1)
+    scr.set_sprite(BG_ADDR, CURSOR_PTR, 1)
+    scr.set_drag_region(16)
+    meteor_data.set_menu_palette(scr)
+
+    let dev = sys.device()
+    meteor_model.load_elem_total()
+
+    sys.run(scr, () => {
+        dev.poll()
+        on_mouse(sys, scr, dev)
+        on_key(dev, scr)
+        meteor_logic.process_phase()
+        meteor_sound.tick_music(sys)
+        meteor_sound.tick_sfx(sys)
+        meteor_sound.tick_jingle(sys)
+        if meteor_model.pop_sound()
+            meteor_sound.play_match(sys, meteor_model.get_max_run())
+        if meteor_model.pop_flick()
+            meteor_sound.play_flick(sys)
+        if meteor_model.pop_clear()
+            meteor_sound.play_clear(sys)
+        -- Detect scene transitions for jingles
+        let cur_scene = meteor_model.get_scene()
+        if cur_scene != prev_scene
+            if cur_scene == meteor_model.SCENE_WIN
+                meteor_sound.play_win(sys)
+            if cur_scene == meteor_model.SCENE_LOSE
+                meteor_sound.play_lose(sys)
+            prev_scene = cur_scene
+        if meteor_model.get_scene() == meteor_model.SCENE_PLAY
+            meteor_model.mark_dirty()
+
+        scr.clear(vimana.color_bg)
+        render(scr)
+
+        if meteor_model.is_dirty()
+            render(scr)
+
+        -- Draw cursor every frame
+        let mx = dev.pointer_x()
+        let my = dev.pointer_y()
+        scr.set_auto(0x00).set_addr(CURSOR_ADDR).set_x(mx).set_y(my).sprite(0x85)
+        scr.present()
+    })
+;

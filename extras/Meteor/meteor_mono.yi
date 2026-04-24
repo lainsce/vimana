@@ -1,0 +1,32 @@
+cask meteor_mono
+
+bring stdr
+
+-- Palette-aware monochrome color slot mapping
+-- Only for planets using truly monochrome tilesets (4, 6, 11)
+-- Order: T1(Fire), T4(Air), T3(Water), T2(Soil), T5(Iron), T9(Zap), T7(Herb), T6(Dark), T8(Zoo), T10(Glow), WALL
+
+-- Planet 10 (NEURALI) — Tileset 6
+pub def MONO_PAL_10 = [
+    6, 12, 12, 6, 11, 4, 11, 11, 12, 7, 10
+]
+
+-- Planet 11 (LUA=LUA) — Tileset 4
+pub def MONO_PAL_11 = [
+    12, 4, 7, 10, 14, 10, 14, 14, 15, 10, 13
+]
+
+-- Planet 13 (HOLONUL) — Tileset 4
+pub def MONO_PAL_13 = [
+    8, 12, 12, 5, 9, 5, 11, 9, 7, 4, 10
+]
+
+-- Planet 14 (TEKHNIS) — Tileset 6
+pub def MONO_PAL_14 = [
+    9, 15, 15, 9, 4, 7, 14, 6, 5, 10, 13
+]
+
+-- Planet 17 (METTEOR) — Tileset 11
+pub def MONO_PAL_17 = [
+    7, 4, 15, 10, 14, 10, 14, 14, 15, 10, 13
+]

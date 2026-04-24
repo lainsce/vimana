@@ -1,0 +1,1124 @@
+cask meteor_view
+
+bring stdr
+bring vimana
+
+bring meteor_model
+bring meteor_data
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 16x16 tile rendering (2x2 quadrants via auto=0x16)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_tile16_px(scr = vimana.screen, addr = num, px = num, py = num) (( -- ))
+    scr.set_auto(0x16)
+       .set_addr(addr).set_x(px).set_y(py)
+       .sprite(0x201)
+       .set_x(px)
+       .sprite(0x201)
+;
+
+: draw_tile16(scr = vimana.screen, addr = num, tx = num, ty = num) (( -- ))
+    draw_tile16_px(scr, addr, 8 * tx, 8 * ty)
+;
+
+: draw_tile16_ctrl_px(scr = vimana.screen, addr = num, px = num, py = num, ctrl = num) (( -- ))
+    scr.set_auto(0x16)
+       .set_addr(addr).set_x(px).set_y(py)
+       .sprite(ctrl)
+       .set_x(px)
+       .sprite(ctrl)
+;
+
+: draw_tile16_ctrl(scr = vimana.screen, addr = num, tx = num, ty = num, ctrl = num) (( -- ))
+    draw_tile16_ctrl_px(scr, addr, 8 * tx, 8 * ty, ctrl)
+;
+
+: draw_tile16_blend_px(scr = vimana.screen, addr = num, px = num, py = num) (( -- ))
+    scr.set_auto(0x16)
+       .set_addr(addr).set_x(px).set_y(py)
+       .sprite(0x205)
+       .set_x(px)
+       .sprite(0x205)
+;
+
+: draw_tile16_blend(scr = vimana.screen, addr = num, tx = num, ty = num) (( -- ))
+    draw_tile16_blend_px(scr, addr, 8 * tx, 8 * ty)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 32x32 tile rendering (4x4 quadrants, row by row)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_tile32(scr = vimana.screen, addr = num, tx = num, ty = num) (( -- ))
+    scr.set_auto(0x00)
+    for (let ?r = 0; r < 4; r = r + 1)
+        for (let ?c = 0; c < 4; c = c + 1)
+            scr.set_addr(addr + (r * 4 + c) * 0x20)
+               .set_x(8* (tx + c)).set_y(8* (ty + r))
+               .sprite(0x201)
+;
+
+: put_icn8(scr = vimana.screen, tx = num, ty = num, icn = any, fg = num, bg = num) (( -- ))
+    scr.put_icn(8 * tx, 8 * ty, icn, fg, bg)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Title screen
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def TITLE_BTN_Y = [112, 128, 160, 176, 192, 208, 232]
+
+:: draw_title(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+
+    scr.put_text(112, 48, "Meteor", 3, 0)
+
+    scr.put_text(112, 112, "Astral Adventure", 2, 0)
+    scr.put_text(112, 128, "VS", 2, 0)
+
+    scr.put_text(112, 160, "100 Attack", 2, 0)
+    scr.put_text(112, 176, "1000 Attack", 2, 0)
+    scr.put_text(112, 192, "2:30 Timed", 2, 0)
+    scr.put_text(112, 208, "5:00 Timed", 2, 0)
+
+    scr.put_text(112, 232, "Elements Gained", 2, 0)
+
+    scr.put_text(8, 264, "(C) Bandai-Namco/Q?/Nintendo", 1, 0)
+
+    scr.set_auto(0x00)
+;
+
+:: title_btn_hit(my = num) (( num ))
+    for (let ?i = 0; i < 7; i = i + 1)
+        if my >= TITLE_BTN_Y[i] && my < TITLE_BTN_Y[i] + 16
+            <- i
+    <- -1
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Planet select screen (3-row × 2-col grids on left and right)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Left grid columns (player): tile x = 1, 6  →  px = 8, 48
+-- Right grid columns (AI):    tile x = 30, 35 →  px = 240, 280
+-- Rows: tile y = 12, 18, 23  →  px = 96, 144, 184
+
+def PL_LEFT_X  = [8, 40, 72, 104]
+def PL_RIGHT_X = [216, 248, 280, 312]
+def PL_ROW_Y   = [80, 112, 144, 176, 208]
+
+: draw_planet_grid(scr = vimana.screen, gx = [num], gy = [num]) (( -- ))
+    for (let ?i = 0; i < 18; i = i + 1)
+        let col = i % 4
+        let row = stdr.floor(i / 4)
+        let tx = stdr.floor(gx[col] / 8)
+        let ty = stdr.floor(gy[row] / 8)
+        draw_tile32(scr, meteor_data.planet_addr(i), tx, ty)
+;
+
+def PLAY_BTN_X = 136
+def PLAY_BTN_Y = 264
+def PLAY_BTN_W = 64
+def PLAY_BTN_H = 16
+
+-- Star gauge ICN patterns (8x16, split into top + bottom tiles)
+def STAR_FILLED_T = "0000000018183CFF"
+def STAR_FILLED_B = "7E3C3C2400000000"
+def STAR_HOLLOW_T = "00000000181824C1"
+def STAR_HOLLOW_B = "42243C2400000000"
+def LIFE_STAR_T   = "0000000018183CFF"
+def LIFE_STAR_B   = "7E3C3C2400000000"
+def SENT_BOX_T    = "003C428181818181"
+def SENT_BOX_B    = "81818181423C0000"
+
+-- CPU dot ICN patterns (8x8)
+def DOT_FILLED = "183C3C3C3C3C3C18"
+def DOT_HOLLOW = "1824242424242418"
+
+-- Center column for VS settings (between grids)
+def VS_CENTER_X = 168
+
+:: draw_vs_settings(scr = vimana.screen) (( -- ))
+    if meteor_model.get_mode() != meteor_model.MODE_VS
+        <-
+
+    -- Mode toggle (active = highlighted bg, inactive = plain)
+    let sub = meteor_model.get_vs_submode()
+    if sub == meteor_model.VS_TIMED
+        scr.put_text(VS_CENTER_X - 16, 80, "TIMED", 3, 2)
+        scr.put_text(VS_CENTER_X - 16, 96, "LIVES", 1, 0)
+    else
+        scr.put_text(VS_CENTER_X - 16, 80, "TIMED", 1, 0)
+        scr.put_text(VS_CENTER_X - 16, 96, "LIVES", 3, 2)
+
+    -- Difficulty stars
+    let diff = meteor_model.get_ai_difficulty()
+    let star_tx = stdr.floor(VS_CENTER_X / 8) - 1
+    let star_ty = 18
+    scr.put_text(VS_CENTER_X - 16, 128, "LEVEL", 1, 0)
+    for (let ?i = 0; i < 5; i = i + 1)
+        if i < diff
+            put_icn8(scr, star_tx + i, star_ty, STAR_FILLED_T, 1, 0)
+            put_icn8(scr, star_tx + i, star_ty + 1, STAR_FILLED_B, 1, 0)
+        else
+            put_icn8(scr, star_tx + i, star_ty, STAR_HOLLOW_T, 1, 0)
+            put_icn8(scr, star_tx + i, star_ty + 1, STAR_HOLLOW_B, 1, 0)
+
+    -- CPU count dots
+    let cnt = meteor_model.get_cpu_count()
+    let dot_tx = stdr.floor(VS_CENTER_X / 8) - 1
+    scr.put_text(VS_CENTER_X - 16, 168, "CPU", 1, 0)
+    for (let ?d = 0; d < 3; d = d + 1)
+        if d < cnt
+            put_icn8(scr, dot_tx + d, 23, DOT_FILLED, 1, 0)
+        else
+            put_icn8(scr, dot_tx + d, 23, DOT_HOLLOW, 1, 0)
+;
+
+: draw_ai_markers(scr = vimana.screen) (( -- ))
+    -- Draw numbered markers on assigned AI planets in right grid
+    for (let ?i = 0; i < 18; i = i + 1)
+        let lbl = meteor_model.ai_assign_label(i)
+        if lbl > 0
+            let col = i % 4
+            let row = stdr.floor(i / 4)
+            let px = PL_RIGHT_X[col] + 24
+            let py = PL_ROW_Y[row]
+            if lbl == 1
+                scr.put_text(px, py, "1", 0, 1)
+            elif lbl == 2
+                scr.put_text(px, py, "2", 0, 1)
+            else
+                scr.put_text(px, py, "3", 0, 1)
+;
+
+: draw_wrapped_text(scr = vimana.screen, text = string, px = num, py = num, max_chars = num, max_lines = num) (( -- ))
+    let ?pos = 0
+    let total = stdr.len(text)
+    let ?line = 0
+    for (; pos < total && line < max_lines; line = line + 1)
+        let remain = total - pos
+        if remain <= max_chars
+            scr.put_text(px, py + line * 16, stdr.slice(text, pos, total), 1, 0)
+            pos = total
+        else
+            let ?brk = -1
+            for (let ?i = 0; i < max_chars; i = i + 1)
+                if stdr.str_at(text, pos + i) == " "
+                    brk = i
+            if brk < 0
+                brk = max_chars
+            scr.put_text(px, py + line * 16, stdr.slice(text, pos, pos + brk), 1, 0)
+            pos = pos + brk + 1
+;
+
+:: draw_planet_select(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+
+    -- Labels
+    scr.put_text(8, 8, meteor_model.planet_name(), 1, 0)
+    scr.put_text(320, 8, "AI", 1, 0)
+
+    -- Planet description (word-wrapped, player side only)
+    draw_wrapped_text(scr, meteor_model.planet_desc(), 8, 26, 25, 3)
+
+    -- Draw both grids (left = player, right = AI)
+    draw_planet_grid(scr, PL_LEFT_X, PL_ROW_Y)
+    draw_planet_grid(scr, PL_RIGHT_X, PL_ROW_Y)
+
+    -- Player selection highlight (star on chosen planet, top-right)
+    let sel_p = meteor_model.get_planet()
+    let sel_col = sel_p % 4
+    let sel_row = stdr.floor(sel_p / 4)
+    let sel_tx = stdr.floor((PL_LEFT_X[sel_col] + 24) / 8)
+    let sel_ty = stdr.floor(PL_ROW_Y[sel_row] / 8)
+    put_icn8(scr, sel_tx, sel_ty, STAR_FILLED_T, 0, 1)
+    put_icn8(scr, sel_tx, sel_ty + 1, STAR_FILLED_B, 0, 1)
+
+    -- VS settings (star gauge + mode toggle + cpu dots)
+    draw_vs_settings(scr)
+
+    -- AI assignment markers
+    if meteor_model.get_mode() == meteor_model.MODE_VS
+        draw_ai_markers(scr)
+
+    -- Play button
+    if meteor_model.get_mode() != meteor_model.MODE_VS || meteor_model.all_ai_assigned()
+        scr.put_text(PLAY_BTN_X + 16, PLAY_BTN_Y, "PLAY", 1, 0)
+
+    scr.set_auto(0x00)
+;
+
+:: planet_grid_hit(mx = num, my = num, gx = [num]) (( num ))
+    for (let ?i = 0; i < 18; i = i + 1)
+        let col = i % 4
+        let row = stdr.floor(i / 4)
+        let cx = gx[col]
+        let cy = PL_ROW_Y[row]
+        if mx >= cx && mx < cx + 32 && my >= cy && my < cy + 32
+            <- i
+    <- -1
+;
+
+-- Star gauge hit: returns 1-5 or 0 if miss
+:: star_hit(mx = num, my = num) (( num ))
+    let star_tx = stdr.floor(VS_CENTER_X / 8) - 1
+    let star_px = star_tx * 8
+    if my >= 144 && my < 160
+        for (let ?i = 0; i < 5; i = i + 1)
+            let sx = star_px + i * 8
+            if mx >= sx && mx < sx + 8
+                <- i + 1
+    <- 0
+;
+
+-- Mode toggle hit: returns 0=timed, 1=lives, -1=miss
+:: mode_toggle_hit(mx = num, my = num) (( num ))
+    let lx = VS_CENTER_X - 16
+    if mx >= lx && mx < lx + 32
+        if my >= 80 && my < 96
+            <- 0
+        if my >= 96 && my < 112
+            <- 1
+    <- -1
+;
+
+-- CPU dot hit: returns 1-3 or 0 if miss
+:: cpu_dot_hit(mx = num, my = num) (( num ))
+    let dot_tx = stdr.floor(VS_CENTER_X / 8) - 1
+    let dot_px = dot_tx * 8
+    if my >= 184 && my < 192
+        for (let ?i = 0; i < 3; i = i + 1)
+            let dx = dot_px + i * 8
+            if mx >= dx && mx < dx + 8
+                <- i + 1
+    <- 0
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Game field rendering
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_field(scr = vimana.screen) (( -- ))
+    let w = meteor_model.field_w()
+    let fx = meteor_model.field_x()
+    let fy = meteor_model.FIELD_Y
+    let is_rocket = meteor_model.get_phase() == meteor_model.PH_ROCKET
+    let field_top_py = fy
+    let rare_frame = stdr.floor(meteor_model.get_game_frames() / 8) % 5
+
+    for (let ?gy = 0; gy < meteor_model.MAX_H; gy = gy + 1)
+        for (let ?gx = 0; gx < w; gx = gx + 1)
+            let t = meteor_model.get_tile(gx, gy)
+            let px = fx + gx * meteor_model.CELL_PX
+            let py = fy + gy * meteor_model.CELL_PX
+            let rtop = meteor_model.get_rocket_top(gx)
+            let is_matched = meteor_model.get_matched_any(gx, gy)
+            if t == meteor_model.EMPTY && !is_matched
+                continue
+            if is_rocket && rtop < meteor_model.MAX_H
+                if is_matched || gy < rtop
+                    let col_off = stdr.floor(meteor_model.get_rocket_off(gx) * 8)
+                    let spy = py - col_off
+                    if spy < field_top_py - meteor_model.CELL_PX
+                        continue
+                    if t == meteor_model.EMPTY
+                        continue
+                    let mval = meteor_model.get_matched_val(gx, gy)
+                    if mval == 1
+                        -- Direct match / clumped garbage: drawn as wall + rocket trail
+                        let rframe = stdr.floor(meteor_model.get_game_frames() / 4) % 2
+                        draw_tile16_px(scr, meteor_data.ADDR_WALL, px, spy)
+                        draw_tile16_px(scr, meteor_data.rocket_addr(rframe), px, spy + meteor_model.CELL_PX)
+                    else
+                        -- Stack-pulled (val=2) or cargo above: keep original appearance
+                        let addr = meteor_data.tile_addr(t, rare_frame)
+                        let ctrl = meteor_data.tile_ctrl(t)
+                        draw_tile16_ctrl_px(scr, addr, px, spy, ctrl)
+                else
+                    -- Ground tiles below rocket: draw at normal position
+                    let addr = meteor_data.tile_addr(t, rare_frame)
+                    let ctrl = meteor_data.tile_ctrl(t)
+                    draw_tile16_ctrl_px(scr, addr, px, py, ctrl)
+            elif !is_rocket && is_matched
+                -- During PH_MATCH: direct matches shown as garbage, stack-pulled keep type
+                if meteor_model.get_matched_val(gx, gy) == 1
+                    draw_tile16_px(scr, meteor_data.ADDR_WALL, px, py)
+                else
+                    let addr = meteor_data.tile_addr(t, rare_frame)
+                    let ctrl = meteor_data.tile_ctrl(t)
+                    draw_tile16_ctrl_px(scr, addr, px, py, ctrl)
+            elif !is_rocket || rtop >= meteor_model.MAX_H
+                let addr = meteor_data.tile_addr(t, rare_frame)
+                let ctrl = meteor_data.tile_ctrl(t)
+                draw_tile16_ctrl_px(scr, addr, px, py, ctrl)
+;
+
+: draw_selection(scr = vimana.screen) (( -- ))
+    if !meteor_model.has_selection()
+        <-
+    let sx = meteor_model.get_sel_x()
+    let sy = meteor_model.get_sel_y()
+    let fx = meteor_model.field_x()
+    let fy = meteor_model.FIELD_Y
+    let px = fx + sx * meteor_model.CELL_PX
+    let py = fy + sy * meteor_model.CELL_PX
+    draw_tile16_blend_px(scr, meteor_data.ADDR_SELECT, px, py)
+;
+
+: draw_flick_tile(scr = vimana.screen) (( -- ))
+    let fc = meteor_model.get_flick_col()
+    if fc < 0
+        <-
+    let ft = meteor_model.get_flick_tile()
+    let fo = meteor_model.get_flick_off()
+    let ff = meteor_model.get_flick_from()
+    let fx = meteor_model.field_x()
+    let fy = meteor_model.FIELD_Y
+    let px = fx + fc * meteor_model.CELL_PX
+    -- Base position is flick_from row, offset upward by flick_off
+    let base_py = fy + ff * meteor_model.CELL_PX
+    let py = base_py - stdr.floor(fo * meteor_model.CELL_PX)
+    if py < 0 - meteor_model.CELL_PX
+        <-
+    let rare_frame = stdr.floor(meteor_model.get_game_frames() / 8) % 5
+    let addr = meteor_data.tile_addr(ft, rare_frame)
+    let ctrl = meteor_data.tile_ctrl(ft)
+    draw_tile16_ctrl_px(scr, addr, px, py, ctrl)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Sent-at-once meter: 5x5 grid of blocks above the speeder button
+-- Fills bottom-left to top-right. Shrinks to minimap dot size when count > 25.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_sent_meter(scr = vimana.screen) (( -- ))
+    let count = meteor_model.get_chain_sent()
+    if count <= 0
+        <-
+    -- Large: 5×5px blocks with 1px gaps → pitch=6, grid=29px
+    -- Small: 2×2px blocks with 1px gaps → pitch=3, grid=14px
+    let ?block = 5
+    let ?pitch = 6
+    let ?grid_px = 29
+    if count > 25
+        block = 2
+        pitch = 3
+        grid_px = 14
+    -- Grid bottom always 16px above the speeder button top
+    let grid_bottom = meteor_model.SPD_Y - 16
+    let gx = meteor_model.SPD_X + 16 - stdr.floor(grid_px / 2)
+    let gy = grid_bottom - grid_px
+    -- Count text fixed above the large-grid height so it never jumps
+    let cnt_str = str(count)
+    let text_x = meteor_model.SPD_X + 16 - stdr.floor(stdr.len(cnt_str) * 8 / 2)
+    scr.put_text(text_x, grid_bottom - 29 - 16, cnt_str, 2, 0)
+    -- Draw 25 blocks; first min(count,25) cells lit (CLR2), rest dim (CLR3)
+    let ?disp = count
+    if disp > 25
+        disp = 25
+    for (let ?i = 0; i < 25; i = i + 1)
+        let row = 4 - stdr.floor(i / 5)
+        let col = i % 5
+        let bx = gx + col * pitch
+        let by = gy + row * pitch
+        let ?clr = 3
+        if i < disp
+            clr = 2
+        for (let ?dy = 0; dy < block; dy = dy + 1)
+            for (let ?dx = 0; dx < block; dx = dx + 1)
+                scr.set_x(bx + dx).set_y(by + dy).pixel(clr)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- HUD
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_hud(scr = vimana.screen) (( -- ))
+    let right = meteor_model.WIN_W - 8
+    let name = meteor_model.planet_name()
+
+    -- Play timer: 0'00"00 format (minutes, seconds, frames)
+    let ?f = meteor_model.get_game_frames()
+    let m = meteor_model.get_mode()
+    if m == meteor_model.MODE_VS && meteor_model.get_vs_submode() == meteor_model.VS_TIMED
+        f = meteor_model.get_countdown()
+    elif m == meteor_model.MODE_230 || m == meteor_model.MODE_500
+        f = meteor_model.get_countdown()
+    let total_sec = stdr.floor(f / 60)
+    let mins = stdr.floor(total_sec / 60)
+    let secs = total_sec % 60
+    let frames = f % 60
+
+    let ?sec_str = str(secs)
+    if secs < 10
+        sec_str = "0" + sec_str
+    let ?frm_str = str(frames)
+    if frames < 10
+        frm_str = "0" + frm_str
+
+    let timer_str = str(mins) + "'" + sec_str + "\"" + frm_str
+    let timer_x = right - stdr.len(timer_str) * 8
+    scr.put_text(timer_x, 8, timer_str, 1, 0)
+
+    -- Planet sprite + name (right-aligned, sprite ends at FIELD_Y)
+    draw_tile32(scr, meteor_data.planet_addr(meteor_model.get_planet()), stdr.floor((right - 32) / 8), 3)
+    scr.put_text(right - stdr.len(name) * 8, 56, name, 1, 0)
+
+    -- Sent counter: capped at 999, 16px left of timer
+    let ?disp_sent = meteor_model.get_sent()
+    if disp_sent > 999
+        disp_sent = 999
+    let sent_str = str(disp_sent)
+    scr.put_text(timer_x - 16 - stdr.len(sent_str) * 8, 8, sent_str, 2, 0)
+
+    -- VS lives display (at y=72, where sent count used to be)
+    if meteor_model.get_mode() == meteor_model.MODE_VS && meteor_model.get_vs_submode() == meteor_model.VS_LIVES
+        let pl = meteor_model.get_player_lives()
+        let pl_str = "x" + str(pl)
+        let pl_tx = right - stdr.len(pl_str) * 8
+        put_icn8(scr, stdr.floor((pl_tx - 8) / 8), stdr.floor(72 / 8), LIFE_STAR_T, 1, 0)
+        put_icn8(scr, stdr.floor((pl_tx - 8) / 8), stdr.floor(72 / 8) + 1, LIFE_STAR_B, 1, 0)
+        scr.put_text(pl_tx, 72, pl_str, 1, 0)
+
+    draw_sent_meter(scr)
+
+    -- Danger: tiles near top
+    let w = meteor_model.field_w()
+    let ?danger = false
+    for (let ?x = 0; x < w; x = x + 1)
+        if meteor_model.get_tile(x, 1) != 0
+            danger = true
+            break
+    if danger
+        scr.put_text(right - 48, 152, "DANGER", 1, 0)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- AI minimaps (pixel-rendered, up to 3 stacked vertically)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Per-AI minimap block: 16px planet + 48px field = 64px (8 tiles)
+-- Gap between AIs: 8px (1 tile)
+-- 3 AIs: 64 + 8 + 64 + 8 + 64 = 208px, starting at y=24 (tile 3)
+
+def MINI_BASE_Y = 48
+def MINI_BLOCK  = 64
+def MINI_GAP    = 8
+def MINI_LEFT_X = 8
+
+: draw_minimap_n(scr = vimana.screen, n = num) (( -- ))
+    let ap = meteor_model.get_ai_assign(n)
+    if ap < 0
+        <-
+    let w = meteor_model.PLANET_W[ap]
+    let h = meteor_model.MAX_H
+    let base_y = MINI_BASE_Y + n * (MINI_BLOCK + MINI_GAP)
+
+    -- 16x16 planet icon (dedicated downscaled sprite)
+    let ptx = stdr.floor(MINI_LEFT_X / 8)
+    let pty = stdr.floor(base_y / 8)
+    draw_tile16_ctrl(scr, meteor_data.mini_planet_addr(ap), ptx, pty, 0x201)
+
+    -- Per-AI lives counter (right of planet icon)
+    if meteor_model.get_vs_submode() == meteor_model.VS_LIVES
+        let lives_n = meteor_model.get_ai_lives_n(n)
+        let lives_tx = ptx + 2
+        put_icn8(scr, lives_tx, pty, LIFE_STAR_T, 1, 0)
+        put_icn8(scr, lives_tx, pty + 1, LIFE_STAR_B, 1, 0)
+        scr.put_text((lives_tx + 1) * 8, base_y, "x" + str(lives_n), 1, 0)
+
+    -- Frame origin (below planet icon, tile-aligned)
+    let frame_x = MINI_LEFT_X
+    let frame_y = base_y + 16
+    let inner_w = w * 3 - 1
+    let inner_h = h * 3 - 1
+    let total_w = inner_w + 2
+    let total_h = inner_h + 2
+
+    -- Top border (CLR1 = palette 2 = planetary exit)
+    for (let ?px = 0; px < total_w; px = px + 1)
+        scr.set_x(frame_x + px).set_y(frame_y).pixel(2)
+
+    -- Left border (CLR2 = palette 3)
+    for (let ?py = 1; py < total_h; py = py + 1)
+        scr.set_x(frame_x).set_y(frame_y + py).pixel(3)
+
+    -- Right border (CLR2)
+    for (let ?py = 1; py < total_h; py = py + 1)
+        scr.set_x(frame_x + total_w - 1).set_y(frame_y + py).pixel(3)
+
+    -- Bottom border (CLR2)
+    for (let ?px = 0; px < total_w; px = px + 1)
+        scr.set_x(frame_x + px).set_y(frame_y + total_h - 1).pixel(3)
+
+    -- Cells: 2x2 dots with 1px spacing (3px pitch)
+    -- Dead AIs (lives=0 in VS_LIVES) render as a dithered checkerboard
+    let is_dead = meteor_model.get_vs_submode() == meteor_model.VS_LIVES && meteor_model.get_ai_lives_n(n) <= 0
+    for (let ?cy = 0; cy < h; cy = cy + 1)
+        for (let ?cx = 0; cx < w; cx = cx + 1)
+            if is_dead
+                -- Draw every other cell as a faded dot to show the AI is eliminated
+                if (cx + cy) % 2 == 0
+                    let bx = frame_x + 1 + cx * 3
+                    let by = frame_y + 1 + cy * 3
+                    scr.set_x(bx).set_y(by).pixel(3)
+            elif meteor_model.get_ai_tile_n(n, cx, cy) != meteor_model.EMPTY
+                let bx = frame_x + 1 + cx * 3
+                let by = frame_y + 1 + cy * 3
+                scr.set_x(bx).set_y(by).pixel(2)
+                scr.set_x(bx + 1).set_y(by).pixel(2)
+                scr.set_x(bx).set_y(by + 1).pixel(2)
+                scr.set_x(bx + 1).set_y(by + 1).pixel(2)
+
+    -- Launch animation: match flash (lf>20) then rise (lf<=20), clipped to frame
+    let lf = meteor_model.get_ai_launch_flash_n(n)
+    if lf > 0
+        let lx = meteor_model.get_ai_launch_col_n(n)
+        let ly = meteor_model.get_ai_launch_y_n(n)
+        let ll = meteor_model.get_ai_launch_len_n(n)
+        let ld = meteor_model.get_ai_launch_dir_n(n)
+        if lf > 20
+            -- Match-flash phase: ghost dots at original position in CLR1
+            if ld == 0
+                let by = frame_y + 1 + ly * 3
+                for (let ?i = 0; i < ll; i = i + 1)
+                    let bx = frame_x + 1 + (lx + i) * 3
+                    scr.set_x(bx).set_y(by).pixel(1)
+                    scr.set_x(bx + 1).set_y(by).pixel(1)
+                    scr.set_x(bx).set_y(by + 1).pixel(1)
+                    scr.set_x(bx + 1).set_y(by + 1).pixel(1)
+            else
+                let bx = frame_x + 1 + lx * 3
+                for (let ?i = 0; i < ll; i = i + 1)
+                    let by = frame_y + 1 + (ly + i) * 3
+                    scr.set_x(bx).set_y(by).pixel(1)
+                    scr.set_x(bx + 1).set_y(by).pixel(1)
+                    scr.set_x(bx).set_y(by + 1).pixel(1)
+                    scr.set_x(bx + 1).set_y(by + 1).pixel(1)
+        else
+            -- Rise phase: blocks (CLR1) rise with flickering jet trail below (CLR1/CLR3)
+            let rise = (20 - lf) * 2
+            let ?jet_clr = 1
+            if stdr.floor(meteor_model.get_game_frames() / 2) % 2 == 1
+                jet_clr = 3
+            if ld == 0
+                -- Horizontal: all ll blocks share one row
+                let by = frame_y + 1 + ly * 3 - rise
+                let jet_by = by + 3
+                for (let ?i = 0; i < ll; i = i + 1)
+                    let bx = frame_x + 1 + (lx + i) * 3
+                    if by + 1 > frame_y && by < frame_y + total_h
+                        scr.set_x(bx).set_y(by).pixel(1)
+                        scr.set_x(bx + 1).set_y(by).pixel(1)
+                        scr.set_x(bx).set_y(by + 1).pixel(1)
+                        scr.set_x(bx + 1).set_y(by + 1).pixel(1)
+                    if jet_by + 1 > frame_y && jet_by < frame_y + total_h
+                        scr.set_x(bx).set_y(jet_by).pixel(jet_clr)
+                        scr.set_x(bx + 1).set_y(jet_by).pixel(jet_clr)
+                        scr.set_x(bx).set_y(jet_by + 1).pixel(jet_clr)
+                        scr.set_x(bx + 1).set_y(jet_by + 1).pixel(jet_clr)
+            else
+                -- Vertical: each block rises independently; jet below bottom block
+                let bx = frame_x + 1 + lx * 3
+                let bot_by = frame_y + 1 + (ly + ll - 1) * 3 - rise
+                let jet_by = bot_by + 3
+                for (let ?i = 0; i < ll; i = i + 1)
+                    let by = frame_y + 1 + (ly + i) * 3 - rise
+                    if by + 1 > frame_y && by < frame_y + total_h
+                        scr.set_x(bx).set_y(by).pixel(1)
+                        scr.set_x(bx + 1).set_y(by).pixel(1)
+                        scr.set_x(bx).set_y(by + 1).pixel(1)
+                        scr.set_x(bx + 1).set_y(by + 1).pixel(1)
+                if jet_by + 1 > frame_y && jet_by < frame_y + total_h
+                    scr.set_x(bx).set_y(jet_by).pixel(jet_clr)
+                    scr.set_x(bx + 1).set_y(jet_by).pixel(jet_clr)
+                    scr.set_x(bx).set_y(jet_by + 1).pixel(jet_clr)
+                    scr.set_x(bx + 1).set_y(jet_by + 1).pixel(jet_clr)
+;
+
+: draw_minimaps(scr = vimana.screen) (( -- ))
+    let m = meteor_model.get_mode()
+    if m != meteor_model.MODE_VS && m != meteor_model.MODE_ASTRAL
+        <-
+    let cnt = meteor_model.get_cpu_count()
+    for (let ?i = 0; i < cnt; i = i + 1)
+        draw_minimap_n(scr, i)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Themed planet borders around the field
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Border sprite address helper
+-- slot: 0=H(floor), 1=outer vertical, 2=inner vertical
+: border_addr(p = num, slot = num) (( num ))
+    <- meteor_data.ADDR_BDR + p * 0xA0 + slot * 0x20
+;
+
+: draw_border(scr = vimana.screen) (( -- ))
+    let p = meteor_model.get_planet()
+    let fx = meteor_model.field_x()
+    let fy = meteor_model.FIELD_Y
+    let fw = meteor_model.field_w() * meteor_model.CELL_PX
+    let fh = meteor_model.MAX_H * meteor_model.CELL_PX
+
+    let addr_h = border_addr(p, 0)
+    let addr_outer = border_addr(p, 1)
+    let addr_inner = border_addr(p, 2)
+
+    -- Bottom border
+    let ?px = fx - 16
+    for (; px <= fx + fw + 8; px = px + 8)
+        scr.set_auto(0x00).set_addr(addr_h).set_x(px).set_y(fy + fh).sprite(0x201)
+
+    -- Left and right borders (2 tiles wide)
+    let ?py = fy
+    for (; py < fy + fh; py = py + 8)
+        scr.set_auto(0x00).set_addr(addr_outer).set_x(fx - 16).set_y(py).sprite(0x201)
+        scr.set_auto(0x00).set_addr(addr_inner).set_x(fx - 8).set_y(py).sprite(0x201)
+        scr.set_auto(0x00).set_addr(addr_outer).set_x(fx + fw + 8).set_y(py).sprite(0x201)
+        scr.set_auto(0x00).set_addr(addr_inner).set_x(fx + fw).set_y(py).sprite(0x201)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Speeder button — 32x32 with Calc-style chrome bevel + reload glyph
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- 16x16 reload icon split into 4 quadrants (1bpp ICN strings)
+-- Clockwise circular arrow with gap at ~1 o'clock
+def RELOAD_TL = "0000070F1C181818"
+def RELOAD_BL = "18181C0F07000000"
+def RELOAD_TR = "0000C080081C3E7F"
+def RELOAD_BR = "181838F0E0000000"
+
+: draw_chrome_4x4(scr = vimana.screen, base = num, tx = num, ty = num) (( -- ))
+    -- Top row: TL TC TC TR
+    scr.set_auto(0x00)
+       .set_addr(base).set_x(8 * tx).set_y(8 * ty).sprite(0x201)
+       .set_addr(base + 0x20).set_x(8* (tx + 1)).set_y(8 * ty).sprite(0x201)
+       .set_addr(base + 0x20).set_x(8* (tx + 2)).set_y(8 * ty).sprite(0x201)
+       .set_addr(base + 0x40).set_x(8* (tx + 3)).set_y(8 * ty).sprite(0x201)
+
+    -- Middle row 1: ML MC MC MR
+    scr.set_addr(base + 0x60).set_x(8 * tx).set_y(8 * (ty + 1)).sprite(0x201)
+       .set_addr(base + 0x80).set_x(8 * (tx + 1)).set_y(8 * (ty + 1)).sprite(0x201)
+       .set_addr(base + 0x80).set_x(8 * (tx + 2)).set_y(8 * (ty + 1)).sprite(0x201)
+       .set_addr(base + 0xA0).set_x(8 * (tx + 3)).set_y(8 * (ty + 1)).sprite(0x201)
+
+    -- Middle row 2: ML MC MC MR
+    scr.set_addr(base + 0x60).set_x(8 * tx).set_y(8 * (ty + 2)).sprite(0x201)
+       .set_addr(base + 0x80).set_x(8 * (tx + 1)).set_y(8 * (ty + 2)).sprite(0x201)
+       .set_addr(base + 0x80).set_x(8 * (tx + 2)).set_y(8 * (ty + 2)).sprite(0x201)
+       .set_addr(base + 0xA0).set_x(8 * (tx + 3)).set_y(8 * (ty + 2)).sprite(0x201)
+
+    -- Bottom row: BL BC BC BR
+    scr.set_addr(base + 0xC0).set_x(8 * tx).set_y(8 * (ty + 3)).sprite(0x201)
+       .set_addr(base + 0xE0).set_x(8 * (tx + 1)).set_y(8 * (ty + 3)).sprite(0x201)
+       .set_addr(base + 0xE0).set_x(8 * (tx + 2)).set_y(8 * (ty + 3)).sprite(0x201)
+       .set_addr(base + 0x100).set_x(8 * (tx + 3)).set_y(8 * (ty + 3)).sprite(0x201)
+;
+
+: draw_speeder(scr = vimana.screen) (( -- ))
+    let bx = meteor_model.SPD_X
+    let by = meteor_model.SPD_Y
+    let active = meteor_model.get_speeder()
+
+    -- Tile coords (div by 8)
+    let tx = stdr.floor(bx / 8)
+    let ty = stdr.floor(by / 8)
+
+    -- Draw chrome bevel (pressed when active)
+    let ?base = meteor_data.chr_up_addr()
+    if active
+        base = meteor_data.chr_dn_addr()
+    draw_chrome_4x4(scr, base, tx, ty)
+
+    -- Select icon color based on state
+    let ?fg = 3
+    if active
+        fg = 0 -- cuts through the white bg
+
+    -- Draw 16x16 reload icon centered in 32x32 (offset +1 tile)
+    put_icn8(scr, tx + 1, ty + 1, RELOAD_TL, fg, 0)
+    put_icn8(scr, tx + 2, ty + 1, RELOAD_TR, fg, 0)
+    put_icn8(scr, tx + 1, ty + 2, RELOAD_BL, fg, 0)
+    put_icn8(scr, tx + 2, ty + 2, RELOAD_BR, fg, 0)
+    if active
+        put_icn8(scr, tx + 1, ty + 1, RELOAD_TL, fg, 1)
+        put_icn8(scr, tx + 2, ty + 1, RELOAD_TR, fg, 1)
+        put_icn8(scr, tx + 1, ty + 2, RELOAD_BL, fg, 1)
+        put_icn8(scr, tx + 2, ty + 2, RELOAD_BR, fg, 1)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Win/Lose screens — overlay on top of play field
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Checkerboard dither sprite address (1bpp pattern, stored in sprite bank as 4bpp)
+def DITHER_ADDR = 0x46C0
+def DITHER_SPR = [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0, 0, 0, 0, 0, 0, 0, 0]
+
+-- Dialog border tiles (4-word = 8 rows, hi byte = even row, lo byte = odd row)
+def SOLID   = [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]
+def HLINE_T = [0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000]
+def HLINE_B = [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF]
+def VLINE_L = [0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8080]
+def VLINE_R = [0x0101, 0x0101, 0x0101, 0x0101, 0x0101, 0x0101, 0x0101, 0x0101]
+-- Corners: combine horizontal + vertical border pixels
+def CNR_TL  = [0xFF80, 0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8080]
+def CNR_TR  = [0xFF01, 0x0101, 0x0101, 0x0101, 0x0101, 0x0101, 0x0101, 0x0101]
+def CNR_BL  = [0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x80FF]
+def CNR_BR  = [0x0101, 0x0101, 0x0101, 0x0101, 0x0101, 0x0101, 0x0101, 0x01FF]
+
+-- Draw dithered overlay on the whole screen using sprites (transparent bg)
+-- Two passes: bg layer (0x00) + fg layer (0x40) so it covers put_icn/put_text content
+: draw_dither_overlay(scr = vimana.screen) (( -- ))
+    scr.set_sprite(DITHER_ADDR, DITHER_SPR, 3)
+    let tw = meteor_model.WIN_W / 8
+    let th = meteor_model.WIN_H / 8
+    for (let ?ty = 0; ty < th; ty = ty + 1)
+        scr.set_y(8* ty)
+        for (let ?tx = 0; tx < tw; tx = tx + 1)
+            scr.set_x(8* tx).set_addr(DITHER_ADDR).sprite(0x00)
+            scr.set_x(8* tx).set_addr(DITHER_ADDR).sprite(0x40)
+;
+
+-- Draw a centered dialog box with text
+: draw_dialog(scr = vimana.screen, msg = str, sub = str) (( -- ))
+    -- Dialog dimensions
+    let dw = 22
+    let dh = 9
+    let dx = (meteor_model.WIN_W / 8 - dw) / 2
+    let dy = (meteor_model.WIN_H / 8 - dh) / 2
+
+    -- Fill dialog background
+    for (let ?r = 0; r < dh; r = r + 1)
+        for (let ?c = 0; c < dw; c = c + 1)
+            put_icn8(scr, dx + c, dy + r, SOLID, 0, 2)
+
+    -- Top/bottom border (excluding corners)
+    for (let ?c = 1; c < dw - 1; c = c + 1)
+        put_icn8(scr, dx + c, dy, HLINE_T, 1, 2)
+        put_icn8(scr, dx + c, dy + dh - 1, HLINE_B, 1, 2)
+
+    -- Left/right border (excluding corners)
+    for (let ?r = 1; r < dh - 1; r = r + 1)
+        put_icn8(scr, dx, dy + r, VLINE_L, 1, 2)
+        put_icn8(scr, dx + dw - 1, dy + r, VLINE_R, 1, 2)
+
+    -- Corners
+    put_icn8(scr, dx, dy, CNR_TL, 1, 2)
+    put_icn8(scr, dx + dw - 1, dy, CNR_TR, 1, 2)
+    put_icn8(scr, dx, dy + dh - 1, CNR_BL, 1, 2)
+    put_icn8(scr, dx + dw - 1, dy + dh - 1, CNR_BR, 1, 2)
+
+    -- Message text centered in box
+    let msg_len = stdr.len(msg)
+    let msg_px = (dx * 8) + (dw * 8 - msg_len * 8) / 2
+    let msg_py = (dy + 2) * 8
+    scr.put_text(msg_px, msg_py, msg, 1, 0)
+
+    -- Sub text centered below
+    let sub_len = stdr.len(sub)
+    let sub_px = (dx * 8) + (dw * 8 - sub_len * 8) / 2
+    let sub_py = (dy + 5) * 8
+    scr.put_text(sub_px, sub_py, sub, 1, 0)
+;
+
+:: draw_win(scr = vimana.screen) (( -- ))
+    draw_game_inner(scr)
+    draw_dither_overlay(scr)
+    draw_dialog(scr, "YOU  WIN!", "CLICK TO CONTINUE")
+    scr.set_auto(0x00)
+;
+
+:: draw_lose(scr = vimana.screen) (( -- ))
+    draw_game_inner(scr)
+    draw_dither_overlay(scr)
+    draw_dialog(scr, "ANNIHILATION!", "CLICK TO CONTINUE")
+    scr.set_auto(0x00)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Elements Sent screen
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ELEM_BTN_X = 8
+def ELEM_BTN_Y = 264
+def ELEM_BTN_W = 48
+def ELEM_BTN_H = 16
+
+def ELEM_COLS = [24, 184]
+def ELEM_ROWS = [56, 88, 120, 152, 184, 216]
+def ELEM_NAMES = ["AIR  ", "FIRE ", "WATER", "SOIL ", "IRON ", "ZAP  ", "HERB ", "DARK ", "ZOO  ", "GLOW ", "TIME ", "SPACE"]
+
+:: draw_elements(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+    -- Custom title
+    for (let ?tx = 0; tx < meteor_model.WIN_W / 8; tx += 1)
+        scr.put_text(tx * 8, 0, " ", 2, 2)
+        scr.put_text(tx * 8, 8, " ", 2, 2)
+    scr.put_text(8, 0, "Elements", 3, 2)
+
+    -- Title
+    scr.put_text(120, 32, "ELEMENTS GAINED", 1, 0)
+
+    -- Element grid: 6 rows x 2 columns
+    for (let ?r = 0; r < 6; r = r + 1)
+        for (let ?c = 0; c < 2; c = c + 1)
+            let idx = r * 2 + c
+            let tile = meteor_model.ELEM_ORDER[idx]
+            let px = ELEM_COLS[c]
+            let py = ELEM_ROWS[r]
+            let tx = stdr.floor(px / 8)
+            let ty = stdr.floor(py / 8)
+
+            -- Draw element tile icon (16x16 = 2x2 sprite tiles)
+            let addr = meteor_data.tile_addr(tile, 0)
+            draw_tile16(scr, addr, tx, ty)
+
+            -- Element name
+            scr.put_text(px + 24, py, ELEM_NAMES[idx], 1, 0)
+
+            -- Total count (right-aligned)
+            let total = meteor_model.get_elem_total(tile - 1)
+            let total_str = str(total)
+            let total_x = px + 120 - stdr.len(total_str) * 8
+            scr.put_text(total_x, py, total_str, 1, 0)
+
+            -- Session gain (+X) under total, 16px down
+            let sess = meteor_model.get_elem_session(tile - 1)
+            let sess_str = "+" + str(sess)
+            let sess_x = px + 120 - stdr.len(sess_str) * 8
+            scr.put_text(sess_x, py + 16, sess_str, 1, 0)
+
+    -- Button to title screen
+    scr.put_text(ELEM_BTN_X + 8, ELEM_BTN_Y, "MENU", 2, 0)
+
+    scr.set_auto(0x00)
+;
+
+:: elem_btn_hit(mx = num, my = num) (( bool ))
+    if mx >= ELEM_BTN_X && mx < ELEM_BTN_X + ELEM_BTN_W
+        if my >= ELEM_BTN_Y && my < ELEM_BTN_Y + ELEM_BTN_H
+            <- true
+    <- false
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Full game redraw
+-- ─────────────────────────────────────────────────────────────────────────────
+
+: draw_game_inner(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+
+    -- Gameplay layer (behind UI)
+    draw_border(scr)
+    draw_field(scr)
+    draw_flick_tile(scr)
+    draw_selection(scr)
+
+    -- UI layer (on top of gameplay)
+    let mode_str = meteor_model.mode_name()
+    scr.put_text(8, 8, mode_str, 1, 0)
+    let score_x = 8 + (stdr.len(mode_str) + 1) * 8
+    scr.put_text(score_x, 8, str(meteor_model.get_score()), 2, 0)
+
+    draw_hud(scr)
+    draw_minimaps(scr)
+    draw_speeder(scr)
+;
+
+:: draw_game(scr = vimana.screen) (( -- ))
+    draw_game_inner(scr)
+    scr.set_auto(0x00)
+;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Astral Adventure map / briefing screen
+-- ─────────────────────────────────────────────────────────────────────────────
+
+def ASTRAL_PLAY_BTN_X = 128
+def ASTRAL_PLAY_BTN_Y = 248
+def ASTRAL_PLAY_BTN_W = 96
+def ASTRAL_PLAY_BTN_H = 16
+
+def FULL_BLOCK = "FFFFFFFFFFFFFFFF"
+def LINE_H = "FF00000000000000"  -- horizontal line at top row of tile; draw at ty_planet+1 for center alignment
+def LINE_V = "8080808080808080"  -- vertical line at leftmost column; draw at tx=8 for center alignment with planet col 0
+
+-- Draw a 16x16 colored fill then a mini planet blended on top (for the overview map)
+: draw_colored_mini(scr = vimana.screen, p = num, tx = num, ty = num, color = num) (( -- ))
+    put_icn8(scr, tx,     ty,     FULL_BLOCK, color, 0)
+    put_icn8(scr, tx + 1, ty,     FULL_BLOCK, color, 0)
+    put_icn8(scr, tx,     ty + 1, FULL_BLOCK, color, 0)
+    put_icn8(scr, tx + 1, ty + 1, FULL_BLOCK, color, 0)
+    draw_tile16_ctrl(scr, meteor_data.mini_planet_addr(p), tx, ty, 0x105)
+;
+
+-- Draw a 6-char label followed by 8 dot indicators at pixel (x_px, y_px)
+: draw_stat_bar(scr = vimana.screen, label = string, fill = num, x_px = num, y_px = num) (( -- ))
+    scr.put_text(x_px, y_px, label, 1, 0)
+    let dtx = stdr.floor((x_px + 48) / 8)
+    let dty = stdr.floor(y_px / 8)
+    let ?f = fill
+    if f < 0
+        f = 0
+    if f > 8
+        f = 8
+    for (let ?d = 0; d < 8; d = d + 1)
+        if d < f
+            put_icn8(scr, dtx + d, dty, DOT_FILLED, 2, 0)
+        else
+            put_icn8(scr, dtx + d, dty, DOT_HOLLOW, 1, 0)
+;
+
+-- Screen 0: fullscreen overview of all planets in the Astral Adventure
+-- Layout: Gamma row (top), Ealthal + Beta row (middle), Alpha row (bottom)
+-- current planet = color 3 (cyan), Metteor bosses = color 2 (pink), others = color 1
+-- Lines show the path taken so far
+:: draw_astral_overview(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+    -- Custom title
+    for (let ?tx = 0; tx < meteor_model.WIN_W / 8; tx += 1)
+        scr.put_text(tx * 8, 0, " ", 2, 2)
+        scr.put_text(tx * 8, 8, " ", 2, 2)
+    scr.put_text(8, 0, "Astral Overview", 3, 2)
+
+    scr.put_text(112, 8, "ASTRAL ADVENTURE", 3, 0)
+
+    let cur_path = meteor_model.get_astral_path()
+    let cur_pos  = meteor_model.get_astral_pos()
+    let at_entry = meteor_model.get_astral_at_ealthal()
+
+    -- Path trace lines (drawn before planets so icons render on top)
+    -- Rows: Gamma ty=9, Beta/Ealthal ty=14, Alpha ty=19
+    -- Center tiles for lines: ty+1 for horizontal, tx=8 for vertical
+    if !at_entry
+        -- Horizontal from Ealthal right edge (tx=4) to first planet column (tx=7)
+        for (let ?htx = 4; htx < 7; htx = htx + 1)
+            put_icn8(scr, htx, 15, LINE_H, 3, 0)
+
+        if cur_path == meteor_model.ASTRAL_GAMMA
+            -- Vertical up: gap between Gamma row (ends ty=10) and Beta row (starts ty=14)
+            for (let ?vtg = 11; vtg < 14; vtg = vtg + 1)
+                put_icn8(scr, 8, vtg, LINE_V, 3, 0)
+            -- Horizontal along Gamma from planet 0 to cur_pos
+            for (let ?gi = 0; gi < cur_pos; gi = gi + 1)
+                for (let ?gx = 7 + gi * 5 + 2; gx < 7 + gi * 5 + 5; gx = gx + 1)
+                    put_icn8(scr, gx, 10, LINE_H, 3, 0)
+
+        if cur_path == meteor_model.ASTRAL_BETA
+            -- Horizontal along Beta from planet 0 to cur_pos
+            for (let ?bi = 0; bi < cur_pos; bi = bi + 1)
+                for (let ?bx = 7 + bi * 5 + 2; bx < 7 + bi * 5 + 5; bx = bx + 1)
+                    put_icn8(scr, bx, 15, LINE_H, 3, 0)
+
+        if cur_path == meteor_model.ASTRAL_ALPHA
+            -- Vertical down: gap between Beta row (ends ty=15) and Alpha row (starts ty=19)
+            for (let ?vta = 16; vta < 19; vta = vta + 1)
+                put_icn8(scr, 8, vta, LINE_V, 3, 0)
+            -- Horizontal along Alpha from planet 0 to cur_pos
+            for (let ?ai = 0; ai < cur_pos; ai = ai + 1)
+                for (let ?ax = 7 + ai * 5 + 2; ax < 7 + ai * 5 + 5; ax = ax + 1)
+                    put_icn8(scr, ax, 20, LINE_H, 3, 0)
+
+    -- Gamma path (top row)
+    for (let ?i = 0; i < meteor_model.ASTRAL_GAMMA_LEN; i = i + 1)
+        let gp  = meteor_model.ASTRAL_GAMMA_SEQ[i]
+        let gtx = 7 + i * 5
+        let ?gc = 1
+        if gp == meteor_model.P_METTEOR
+            gc = 2
+        if !at_entry && cur_path == meteor_model.ASTRAL_GAMMA && cur_pos == i
+            gc = 3
+        draw_colored_mini(scr, gp, gtx, 9, gc)
+
+    -- Ealthal entry (left of Beta row)
+    let ?entry_c = 1
+    if at_entry
+        entry_c = 3
+    draw_colored_mini(scr, meteor_model.P_EALTHAL, 2, 14, entry_c)
+
+    -- Beta path (middle row, starting at same x as Gamma)
+    for (let ?j = 0; j < meteor_model.ASTRAL_BETA_LEN; j = j + 1)
+        let bp  = meteor_model.ASTRAL_BETA_SEQ[j]
+        let btx = 7 + j * 5
+        let ?bc = 1
+        if bp == meteor_model.P_METTEOR
+            bc = 2
+        if !at_entry && cur_path == meteor_model.ASTRAL_BETA && cur_pos == j
+            bc = 3
+        draw_colored_mini(scr, bp, btx, 14, bc)
+
+    -- Alpha path (bottom row)
+    for (let ?k = 0; k < meteor_model.ASTRAL_ALPHA_LEN; k = k + 1)
+        let ap  = meteor_model.ASTRAL_ALPHA_SEQ[k]
+        let atx = 7 + k * 5
+        let ?ac = 1
+        if ap == meteor_model.P_METTEOR
+            ac = 2
+        if !at_entry && cur_path == meteor_model.ASTRAL_ALPHA && cur_pos == k
+            ac = 3
+        draw_colored_mini(scr, ap, atx, 19, ac)
+
+    scr.put_text(108, 264, "CLICK TO CONTINUE", 1, 0)
+
+    scr.set_auto(0x00)
+;
+
+-- Screen 1: mission briefing — stat bars + planet image + mission text + PLAY
+:: draw_astral_map(scr = vimana.screen) (( -- ))
+    scr.clear(0)
+    -- Custom title
+    for (let ?tx = 0; tx < meteor_model.WIN_W / 8; tx += 1)
+        scr.put_text(tx * 8, 0, " ", 2, 2)
+        scr.put_text(tx * 8, 8, " ", 2, 2)
+    scr.put_text(8, 0, "Astral Map", 3, 2)
+
+    -- Planet 32x32 image (right side, aligned to first stat row)
+    let p = meteor_model.astral_planet()
+    draw_tile32(scr, meteor_data.planet_addr(p), 22, 6)
+
+    -- Stat bars (left side, 4 rows of 8 dots each)
+    let pw = meteor_model.PLANET_W[p]
+    let pg = meteor_model.PLANET_GRAV[p]
+    let pa = meteor_model.PLANET_ATMO[p]
+    let pr = meteor_model.PLANET_RATE[p]
+    draw_stat_bar(scr, "FIELD ", stdr.floor((pw - 7) * 2),          8, 48)
+    draw_stat_bar(scr, "GRAV  ", pg,                                 8, 64)
+    draw_stat_bar(scr, "ATMO  ", pa,                                 8, 80)
+    draw_stat_bar(scr, "SPEED ", stdr.floor((216 - pr) * 8 / 186),  8, 96)
+
+    -- Planet name
+    scr.put_text(8, 120, meteor_model.astral_planet_name(), 3, 0)
+
+    -- Mission description centered
+    let mdesc = meteor_model.astral_mission_desc()
+    scr.put_text((352 - stdr.len(mdesc) * 8) / 2, 184, mdesc, 2, 0)
+
+    -- VS: opponent planet sprites — single centered, or triangle for 3
+    if meteor_model.astral_is_vs()
+        let cpu = meteor_model.astral_cpu_count()
+        let opp_addr = meteor_data.mini_planet_addr(p)
+        if cpu == 1
+            draw_tile16_ctrl(scr, opp_addr, 21, 18, 0x201)
+        else
+            draw_tile16_ctrl(scr, opp_addr, 21, 16, 0x201)
+            draw_tile16_ctrl(scr, opp_addr, 18, 20, 0x201)
+            draw_tile16_ctrl(scr, opp_addr, 24, 20, 0x201)
+
+    -- PLAY button
+    scr.put_text(ASTRAL_PLAY_BTN_X + 16, ASTRAL_PLAY_BTN_Y, "PLAY", 3, 2)
+
+    scr.set_auto(0x00)
+;
+
+:: astral_map_play_hit(mx = num, my = num) (( bool ))
+    if mx >= ASTRAL_PLAY_BTN_X && mx < ASTRAL_PLAY_BTN_X + ASTRAL_PLAY_BTN_W
+        if my >= ASTRAL_PLAY_BTN_Y && my < ASTRAL_PLAY_BTN_Y + ASTRAL_PLAY_BTN_H
+            <- true
+    <- false
+;

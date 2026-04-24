@@ -1,0 +1,94 @@
+cask mono_color_map
+
+-- Palette-aware monochrome color slot mapping
+-- For each planet palette and element type, the optimal palette slot
+
+-- Palette 0
+def MONO_PAL_0 = [
+    6, 15, 15, 4, 7, 4, 14, 9, 8, 10, 13
+]
+
+-- Palette 1
+def MONO_PAL_1 = [
+    7, 4, 15, 12, 14, 10, 14, 14, 15, 10, 13
+]
+
+-- Palette 2
+def MONO_PAL_2 = [
+    12, 7, 4, 10, 14, 10, 14, 14, 15, 10, 13
+]
+
+-- Palette 3
+def MONO_PAL_3 = [
+    4, 7, 15, 10, 14, 10, 14, 14, 15, 10, 13
+]
+
+-- Palette 4
+def MONO_PAL_4 = [
+    4, 15, 15, 9, 14, 7, 14, 14, 15, 10, 13
+]
+
+-- Palette 5
+def MONO_PAL_5 = [
+    7, 4, 10, 7, 14, 15, 14, 14, 15, 13, 13
+]
+
+-- Palette 6
+def MONO_PAL_6 = [
+    8, 12, 12, 8, 9, 12, 6, 4, 7, 10, 10
+]
+
+-- Palette 7
+def MONO_PAL_7 = [
+    11, 15, 15, 6, 12, 4, 9, 7, 10, 4, 13
+]
+
+-- Palette 8
+def MONO_PAL_8 = [
+    11, 15, 4, 8, 12, 8, 14, 12, 10, 7, 13
+]
+
+-- Palette 9
+def MONO_PAL_9 = [
+    9, 15, 15, 9, 4, 7, 14, 6, 5, 10, 13
+]
+
+-- Palette 10
+def MONO_PAL_10 = [
+    6, 12, 12, 6, 11, 4, 11, 11, 12, 7, 10
+]
+
+-- Palette 11
+def MONO_PAL_11 = [
+    12, 4, 7, 10, 14, 10, 14, 14, 15, 10, 13
+]
+
+-- Palette 12
+def MONO_PAL_12 = [
+    4, 15, 15, 4, 7, 15, 12, 10, 8, 13, 13
+]
+
+-- Palette 13
+def MONO_PAL_13 = [
+    8, 12, 12, 5, 9, 5, 11, 9, 7, 4, 10
+]
+
+-- Palette 14
+def MONO_PAL_14 = [
+    9, 15, 15, 9, 4, 7, 14, 6, 5, 10, 13
+]
+
+-- Palette 15
+def MONO_PAL_15 = [
+    7, 4, 10, 7, 14, 15, 14, 14, 15, 13, 13
+]
+
+-- Palette 16
+def MONO_PAL_16 = [
+    6, 12, 12, 6, 11, 4, 11, 11, 12, 7, 10
+]
+
+-- Palette 17
+def MONO_PAL_17 = [
+    7, 4, 15, 10, 14, 10, 14, 14, 15, 10, 13
+]
