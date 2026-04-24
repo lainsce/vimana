@@ -472,7 +472,24 @@ static int val_u16_array(Val v, uint16_t *out, int max) {
     return n;
 }
 
+static int hex_nibble(char c) {
+    if (c>='0'&&c<='9') return c-'0';
+    if (c>='a'&&c<='f') return c-'a'+10;
+    if (c>='A'&&c<='F') return c-'A'+10;
+    return -1;
+}
+
 static int val_byte_array(Val v, uint8_t *out, int max) {
+    if (v.type==VT_STR) {
+        int n=0;
+        for(int i=0;i+1<v.str.len&&n<max;i+=2) {
+            int hi=hex_nibble(v.str.s[i]);
+            int lo=hex_nibble(v.str.s[i+1]);
+            if (hi<0||lo<0) break;
+            out[n++]=(uint8_t)((hi<<4)|lo);
+        }
+        return n;
+    }
     if (v.type!=VT_ARR) return 0;
     int arr_len=v.arr->len;
     if (arr_len==0) return 0;
@@ -808,7 +825,7 @@ static Val helper_put_text(vimana_screen *scr, Val *args, int argc, Val self) {
 }
 
 static Val helper_put_icn(vimana_screen *scr, Val *args, int argc, Val self) {
-    uint8_t data[8];
+    uint8_t data[8] = {0};
     if (argc > 5) {
         val_byte_array(args[3], data, 8);
         vimana_screen_put_icn(scr, (unsigned int)val_to_i64(args[1]),
@@ -820,7 +837,7 @@ static Val helper_put_icn(vimana_screen *scr, Val *args, int argc, Val self) {
 }
 
 static Val helper_set_cursor(vimana_screen *scr, Val *args, int argc, Val self) {
-    uint8_t data[8];
+    uint8_t data[8] = {0};
     if (argc > 1) {
         val_byte_array(args[1], data, 8);
         vimana_screen_set_cursor(scr, data);
