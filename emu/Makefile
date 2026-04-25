@@ -1,6 +1,6 @@
 CC ?= cc
 CXX ?= c++
-CFLAGS ?= -std=c11 -Wall -Wextra -O2
+CFLAGS ?= -std=c11 -Wall -Wextra -O3 -march=native
 LDFLAGS ?=
 PKG_CONFIG ?= pkg-config
 
