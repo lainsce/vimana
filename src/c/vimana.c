@@ -2354,25 +2354,25 @@ void vimana_screen_put_text(vimana_screen *screen, unsigned int x,
     cx += advance;
   }
 
-  if (any_char && screen->layers && screen->width > 0 &&
-      screen->canvas_height > 0 && cx > x) {
-    unsigned int bg_slot = bg & 0x0F;
-    unsigned int left = x;
-    unsigned int right = cx - 1;
-    unsigned int top = y;
-    unsigned int bottom = y + screen->font_height - 1;
-    if (right >= (unsigned int)screen->width)
-      right = (unsigned int)screen->width - 1;
-    if (bottom >= (unsigned int)screen->canvas_height)
-      bottom = (unsigned int)screen->canvas_height - 1;
-    vimana_screen_mark_dirty(screen, (int)left, (int)top,
-                             (int)right + 1, (int)bottom + 1);
-    for (unsigned int py = top; py <= bottom; py++) {
-      uint8_t *dst = screen->layers + py * screen->width_mar + left;
-      for (unsigned int px = left; px <= right; px++)
-        *dst = (uint8_t)bg_slot, dst++;
-    }
-  }
+   if (any_char && screen->layers && screen->width > 0 &&
+       screen->canvas_height > 0 && cx > x) {
+     unsigned int bg_slot = bg & 0x0F;
+     unsigned int left = x;
+     unsigned int right = cx - 1;
+     unsigned int top = y;
+     unsigned int bottom = y + screen->font_height - 1;
+     if (right >= (unsigned int)screen->width)
+       right = (unsigned int)screen->width - 1;
+     if (bottom > (unsigned int)screen->canvas_height)
+       bottom = (unsigned int)screen->canvas_height - 1;
+     vimana_screen_mark_dirty(screen, (int)left, (int)top,
+                              (int)right + 1, (int)bottom);
+     for (unsigned int py = top; py < bottom; py++) {
+       uint8_t *dst = screen->layers + py * screen->width_mar + left;
+       for (unsigned int px = left; px <= right; px++)
+         *dst = (uint8_t)bg_slot, dst++;
+     }
+   }
 
   cx = x;
   for (int i = 0; text[i] != 0; i++) {
