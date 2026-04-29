@@ -371,8 +371,13 @@ static ROM *rom_load(const char *path) {
 
 /* ══════════════════════════════ VM execution ═══════════════════════ */
 
-#define STACK_SIZE  4096
-#define FRAME_SIZE   256
+#define PAGE_SIZE   0x100
+#define NUM_PAGES   0x100
+#define NUM_BANKS   0x10
+#define RAM_SIZE    (PAGE_SIZE * NUM_PAGES * NUM_BANKS)
+#define STACK_SIZE  PAGE_SIZE
+#define DEV_SIZE    PAGE_SIZE
+#define FRAME_SIZE  256
 
 typedef struct {
     int     func_idx;
